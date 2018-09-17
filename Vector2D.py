@@ -10,9 +10,10 @@ class Vector2D:
         self.y = y
 
     @classmethod
-    def from_two_points(self, vector_origin_point, end_point):
-        self.x = vector_origin_point[0] - end_point[0]
-        self.y = vector_origin_point[1] - end_point[1]
+    def from_two_points(cls, vector_origin_point, end_point):
+        x = vector_origin_point[0] - end_point[0]
+        y = vector_origin_point[1] - end_point[1]
+        return __class__(x, y)
 
     def __str__(self):
         return "({:g}, {:g}".format(self.x, self.y)
