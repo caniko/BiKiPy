@@ -2,10 +2,17 @@ import numpy as np
 
 
 class Vector2D:
-    """Class for representing two-dimensional vectors."""
+    """Class for representing two-dimensional vectors.
+    Can be initialised from either a vector or two points using Vector2D.from_two_points().
+    """
     def __init__(self, x, y):
         self.x = x
         self.y = y
+
+    @classmethod
+    def from_two_points(self, vector_origin_point, end_point):
+        self.x = vector_origin_point[0] - end_point[0]
+        self.y = vector_origin_point[1] - end_point[1]
 
     def __str__(self):
         return "({:g}, {:g}".format(self.x, self.y)
@@ -19,7 +26,6 @@ class Vector2D:
             x = self.x + other.x
             y = self.y + other.y
             return self.__class__(x, y)
-
         else:
             raise TypeError("cannot add vector and {}".format(type(other)))
 
@@ -54,10 +60,6 @@ class Vector2D:
 
     def perpendicular(self, other):
         return np.isclose(self*other, 0)
-
-    def two_points_to_vector(self, vector_origin_point, end_point):
-        return self.__class__(vector_origin_point[0] - end_point[0],
-                              vector_origin_point[1] - end_point[1])
 
     @property
     def length(self):
