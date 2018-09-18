@@ -6,8 +6,11 @@ class Vector2D:
     Can be initialised from either a vector or two points using Vector2D.from_two_points().
     """
     def __init__(self, x, y):
-        self.x = x
-        self.y = y
+        try:
+            self.x = float(x)
+            self.y = float(y)
+        except ValueError:
+            raise AttributeError("Vector coordinates must be given in int or float")
 
     @classmethod
     def from_two_points(cls, vector_origin_point, end_point):
@@ -15,12 +18,18 @@ class Vector2D:
         y = vector_origin_point[1] - end_point[1]
         return __class__(x, y)
 
-    def __str__(self):
-        return "({:g}, {:g}".format(self.x, self.y)
+    def __matmul__(self, other, angle="rad"):
+        """Interpret u@v as angle between two vectors"""
+        if angle != "deg" and angle != "rad":
+            raise AttributeError("Angle is given in degrees or radians")
 
-    def __repr__(self):
-        return "{}({}, {})".format(self.__class__.__name__,
-                                   self.x, self.y)
+        result = np.arccos(
+            (self * other) / self.length() * other.length()
+        )
+        if angle == "rad":
+            return result
+        elif angle == "deg":
+            return result * 180/np.pi
 
     def __add__(self, other):
         if isinstance(other, self.__class__):
@@ -53,14 +62,16 @@ class Vector2D:
     def __rmul__(self, other):
         return self * other
 
-    def __matmul__(self, other):
-        """Interpret u@v as angle between two vectors"""
-        return np.arccos(
-            (self * other)/self.length()*other.length()
-        )
+    def __eq__(self, other):
+        same_x = np.isclose(self.x, other.x)
+        same_y = np.isclose(self.y, other.y)
+        return same_x and same_y
 
     def perpendicular(self, other):
         return np.isclose(self*other, 0)
+
+    def abs(self):
+        return np.sqrt(self.x**2 + self.y**2)
 
     @property
     def length(self):
@@ -81,7 +92,9 @@ class Vector2D:
         new_vector.length = 1
         return new_vector
 
-    def __eq__(self, other):
-        same_x = np.isclose(self.x, other.x)
-        same_y = np.isclose(self.y, other.y)
-        return same_x and same_y
+    def __str__(self):
+        return "({:g}, {:g}".format(self.x, self.y)
+
+    def __repr__(self):
+        return "{}({}, {})".format(self.__class__.__name__,
+                                   self.x, self.y)
