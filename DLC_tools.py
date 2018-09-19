@@ -1,6 +1,7 @@
 from Vector2D import Vector2D
 import pandas as pd
 import re
+import matplotlib.pylab as plt
 
 from DLC_analysis_settings import *
 
@@ -12,7 +13,65 @@ class DLCsv:
             raise TypeError(msg)
         self.csv_file = csv_file
         self.invert_y = invert_y
-        self.normalize = normalize
+        if normalize:
+            self.x_max, self.y_max = normalize
+            self.normalize = True
+
+    @property
+    def two_cm_upper_limit(self):
+        if self.invert_y:
+            if self.normalize:
+                return 1 / 1.18
+            else:
+                return self.y_max / 1.18
+        else:
+            if self.normalize:
+                return 1 / 4.65
+            else:
+                return self.y_max / 4.65
+
+    @property
+    def two_cm_lower_limit(self):
+        if self.invert_y:
+            if self.normalize:
+                return 1 / 4.65
+            else:
+                return self.y_max / 4.65
+        else:
+            if self.normalize:
+                return 1 / 1.18
+            else:
+                return self.y_max / 1.18
+
+    def position_preference(self, plot=False):
+        total_frames = self.shape[0]-1
+
+        nose_y = self.df['nose']['y'].values.tolist()[1:]
+        left_ear_y = self.df['left_ear']['y.2'].values.tolist()[1:]
+        right_ear_y = self.df['right_ear']['y.3'].values.tolist()[1:]
+        lower_environment = 0
+        upper_environment = 0
+        for i in range(total_frames):
+            if left_ear_y[i] > self.two_cm_lower_limit \
+                    and nose_y[i] > self.two_cm_lower_limit:
+                lower_environment += 1
+            elif right_ear_y[i] > self.two_cm_lower_limit \
+                    and nose_y[i] > self.two_cm_lower_limit:
+                lower_environment += 1
+            elif left_ear_y[i] < self.two_cm_upper_limit \
+                    and nose_y[i] < self.two_cm_upper_limit:
+                upper_environment += 1
+            elif right_ear_y[i] < self.two_cm_upper_limit \
+                    and nose_y[i] < self.two_cm_upper_limit:
+                upper_environment += 1
+
+        percent_upper = (upper_environment / total_frames) * 100
+        percent_lower = (lower_environment / total_frames) * 100
+        if plot:
+            pass
+        else:
+            return ("Lower environment: {}% \nUpper environment: {}%".
+                    format(round(percent_lower, 2), round(percent_upper, 2)))
 
     def __call__(self, *args, **kwargs):
         pass
@@ -49,11 +108,9 @@ class DLCsv:
         if self.normalize:
             def y_normalizer(y_coord):
                 if self.invert_y:
-                    return 1 - y_coord / y_max
+                    return 1 - y_coord / self.y_max
                 else:
-                    return y_coord / y_max
-
-            x_max, y_max = self.normalize
+                    return y_coord / self.y_max
 
         result = {}
         for body_part, columns in zip(self.body_parts, usecols_gen()):
@@ -63,7 +120,7 @@ class DLCsv:
                     if re.match(r'x(\.\d)?', column):  # or re.search() for
                         # partial matches
                         body_part_df[column] = body_part_df[column].apply(
-                            lambda x_coord: x_coord / x_max)
+                            lambda x_coord: x_coord / self.x_max)
                     if re.match(r'y(\.\d)?', column):
                         body_part_df[column] = body_part_df[column].apply(
                             y_normalizer)     # Inspector warning irrelevant
@@ -71,7 +128,7 @@ class DLCsv:
                 for column in body_part_df:
                     if re.match(r'x(\.\d)?', column):
                         body_part_df[column] = body_part_df[column].apply(
-                            lambda y_coord: y_max - y_coord)
+                            lambda y_coord: self.y_max - y_coord)
             result[body_part] = body_part_df
         return result
 
