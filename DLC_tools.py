@@ -13,9 +13,11 @@ class DLCsv:
             raise TypeError(msg)
         self.csv_file = csv_file
         self.invert_y = invert_y
+        self.x_max, self.y_max = [500, 300]
         if normalize:
-            self.x_max, self.y_max = normalize
             self.normalize = True
+        else:
+            self.normalize = False
 
     @property
     def two_cm_upper_limit(self):
