@@ -41,46 +41,70 @@ class DLCsv:
         lower_lim_coord = plt.ginput()
 
         if limit_orr == 'hor':
-            upper_limit = upper_lim_coord[1]
-            lower_limit = lower_lim_coord[1]
+            orr_var = 1     # Use the y coordinate(s) as the border
+            if self.invert_y:
+                return self.y_max - upper_lim_coord[orr_var],\
+                       self.y_max - lower_lim_coord[orr_var]
         elif limit_orr == 'ver':
-            upper_limit = upper_lim_coord[0]
-            lower_limit = lower_lim_coord[0]
+            orr_var = 0     # Use the x coordinate(s) as the border
         else:
             msg = 'The limit orientation is either \'hor\' (horizontal),' \
                   'or \'ver\' (vertical); not {}'.format(limit_orr)
             raise AttributeError(msg)
 
-        return upper_limit, lower_limit
+        return upper_lim_coord[orr_var], lower_lim_coord[orr_var]
 
     def __repr__(self):
         return '{} with {}'.format(__class__.__name__, self.csv_file)
 
-    def position_preference(self, plot=False):
-        total_frames = self.shape[0]-1
-        nose_y = self.df['nose'].y.values.tolist()
-        left_ear_y = self.df['left_ear'].y.values.tolist()
-        right_ear_y = self.df['right_ear'].y.values.tolist()
+    def position_preference(self, plot=False, limit_orr='hor'):
+        if limit_orr == 'hor':
+            orr_var = 'y'
+        elif limit_orr == 'ver':
+            orr_var = 'x'
+        else:
+            msg = 'The limit orientation is either \'hor\' (horizontal),' \
+                  'or \'ver\' (vertical); not {}'.format(limit_orr)
+            raise AttributeError(msg)
+
+        upper_limit, lower_limit = self.get_limits(limit_orr=limit_orr)
+
+        total_frames = self.shape[0] - 1
+        nose = self.df['nose'][orr_var].values.tolist()
+        left_ear = self.df['left_ear'][orr_var].values.tolist()
+        right_ear = self.df['right_ear'][orr_var].values.tolist()
+
+        if self.invert_y or limit_orr == 'ver':
+            def nose_loc_test(index):
+                return nose[index] < upper_limit or nose[index] > lower_limit
+
+            def ear_loc_test(index, limit):
+                if limit == 'upper':
+                    return left_ear[index] < upper_limit or \
+                           right_ear[index] > upper_limit
+                elif limit == 'lower':
+                    return left_ear[index] < lower_limit or \
+                           right_ear[index] > lower_limit
+        else:
+            def nose_loc_test(index):
+                return nose[index] > upper_limit or nose[index] < lower_limit
+
+            def ear_loc_test(index, limit):
+                if limit == 'upper':
+                    return left_ear[index] > upper_limit or \
+                           right_ear[index] < upper_limit
+                elif limit == 'lower':
+                    return left_ear[index] > lower_limit or \
+                           right_ear[index] < lower_limit
 
         lower_environment = 0
         upper_environment = 0
         for i in range(total_frames):
-            ear_test = (left_ear_y[i], right_ear_y[i])
-            if ear_test > (self.lower_limit,)*2 \
-                    and nose_y[i] > self.lower_limit:
-                lower_environment += 1
-
-            elif right_ear_y[i] > self.lower_limit \
-                    and nose_y[i] > self.lower_limit:
-                lower_environment += 1
-
-            elif left_ear_y[i] < self.upper_limit \
-                    and nose_y[i] < self.upper_limit:
-                upper_environment += 1
-
-            elif right_ear_y[i] < self.upper_limit \
-                    and nose_y[i] < self.upper_limit:
-                upper_environment += 1
+            if nose_loc_test(i):
+                if ear_loc_test(i, 'upper'):
+                    upper_environment += 1
+                elif ear_loc_test(i, 'lower'):
+                    lower_environment += 1
 
         percent_upper = (upper_environment / total_frames) * 100
         percent_lower = (lower_environment / total_frames) * 100
