@@ -1,5 +1,6 @@
 from Vector2D import Vector2D
 import pandas as pd
+import numpy as np
 import matplotlib.pylab as plt
 
 from DLC_analysis_settings import *
@@ -26,6 +27,16 @@ class DLCsv:
             raise AttributeError(msg)
         self.normalize = normalize
 
+        """Import the csv file"""
+
+        type_dict = {'coords': int, 'x': float,
+                    'y': float, 'likelihood': float}
+        self.raw_df = pd.read_csv(self.csv_file, engine='c', delimiter=',',
+                                  index_col=0, skiprows=1, header=[0, 1],
+                                  dtype=type_dict, na_filter=False)
+
+        self.nrow, self.ncolumn = self.raw_df.shape
+
     def get_limits(self, limit_orr='hor'):
         """Returns the location preference of the subject"""
         if not isinstance(limit_orr, str):
@@ -43,8 +54,8 @@ class DLCsv:
         if limit_orr == 'hor':
             orr_var = 1     # Use the y coordinate(s) as the border
             if self.invert_y:
-                return self.y_max - upper_lim_coord[orr_var],\
-                       self.y_max - lower_lim_coord[orr_var]
+                return self.y_max - upper_lim_coord[0][orr_var],\
+                       self.y_max - lower_lim_coord[0][orr_var]
         elif limit_orr == 'ver':
             orr_var = 0     # Use the x coordinate(s) as the border
         else:
@@ -52,7 +63,7 @@ class DLCsv:
                   'or \'ver\' (vertical); not {}'.format(limit_orr)
             raise AttributeError(msg)
 
-        return upper_lim_coord[orr_var], lower_lim_coord[orr_var]
+        return upper_lim_coord[0][orr_var], lower_lim_coord[0][orr_var]
 
     def __repr__(self):
         return '{} with {}'.format(__class__.__name__, self.csv_file)
@@ -69,7 +80,7 @@ class DLCsv:
 
         upper_limit, lower_limit = self.get_limits(limit_orr=limit_orr)
 
-        total_frames = self.shape[0] - 1
+        total_frames = self.nrow - 1
         nose = self.df['nose'][orr_var].values.tolist()
         left_ear = self.df['left_ear'][orr_var].values.tolist()
         right_ear = self.df['right_ear'][orr_var].values.tolist()
@@ -125,7 +136,7 @@ class DLCsv:
         """Return a csv with the angle between three body parts per frame
         WIP
         """
-        rows = self.shape[0]
+        rows = self.nrow
         for row_index in range(1, rows):
             vector_centre = Vector2D(*self.bp_coords(
                 body_part_centre, row_index))
@@ -140,49 +151,86 @@ class DLCsv:
         row = self.df[body_part].loc[str(row_index)].tolist()
         return row[0], row[1]
 
+    def view(self, state='raw'):
+        state_dict = {'raw': self.raw_df,
+                      'cleaned': self.cleaned_df,
+                      'interpolated': self.interpolated_df}
+        use_df = state_dict[state]
+        for body_part in self.body_parts:
+            print(use_df[body_part])
+
     @property
-    def df(self):
-        def usecols_gen(total=self.shape[1]):
-            for i in range(1, total+1, 3):
-                yield [0]+[x for x in range(i, i+3)]
+    def cleaned_df(self, like_thresh=0.90, dif_thresh=80, save=False):
+        if not isinstance(save, bool):
+            msg = 'The save variable has to be bool'
+            raise AttributeError(msg)
+
+        new_df = self.raw_df.copy()
+        if save:
+            outfile = self.save('cleaned')
+
+        for body_part in self.body_parts:
+            new_df.loc[new_df[(body_part, 'likelihood')] < like_thresh,
+                       [(body_part, 'x'), (body_part, 'y')]] = np.nan
+            # for comp in ('x', 'y'):
+            #     pass
 
         if self.normalize:
-            def y_normalizer(y_coord):
-                if self.invert_y:
-                    return 1 - y_coord / self.y_max
-                else:
-                    return y_coord / self.y_max
+            new_df.loc[:, (slice(None), 'x')] = \
+                new_df.loc[:, (slice(None), 'x')] / self.x_max
+            if self.invert_y:
+                new_df.loc[:, (slice(None), 'y')] = \
+                    (self.y_max - new_df.loc[:, (slice(None), 'y')])\
+                    / self.y_max
+            else:
+                new_df.loc[:, (slice(None), 'y')] = \
+                    new_df.loc[:, (slice(None), 'y')] / self.y_max
+        elif self.invert_y:
+            new_df.loc[:, (slice(None), 'y')] = \
+                self.y_max - new_df.loc[:, (slice(None), 'y')]
+        if save:
+            outfile.close()
 
-        result = {}
-        for body_part, columns in zip(self.body_parts, usecols_gen()):
-            body_part_df = self.read_csv(self.csv_file, usecols=columns)
-            if self.normalize:
-                body_part_df.x = body_part_df.x.apply(lambda x_coord:
-                                                      x_coord / self.x_max)
-                # Inspector warning irrelevant
-                body_part_df.y = body_part_df.y.apply(y_normalizer)
-            elif self.invert_y:
-                body_part_df.y = body_part_df.y.apply(lambda y_coord:
-                                                      self.y_max - y_coord)
-            result[body_part] = body_part_df
-        return result
+        return new_df
 
     @property
-    def df_interpolated(self):
-        return
+    def interpolated_df(self, save=False):
+        if not isinstance(save, bool):
+            msg = 'The save variable has to be bool'
+            raise AttributeError(msg)
+
+        new_df = self.cleaned_df.copy()
+        if save:
+            outfile = self.save('interpolated')
+
+        for body_part in self.body_parts:
+            for comp in ('x', 'y'):
+                new_df.loc[:, (body_part, comp)] = \
+                    new_df.loc[:, (body_part, comp)].interpolate(
+                        method='spline', order=4,
+                        limit_area='inside')
+        if save:
+            outfile.close()
+
+        return new_df
 
     @property
     def body_parts(self):
         """Instantiates a list with names of the body parts in the dataframe"""
-        body_part_row = pd.read_csv(self.csv_file, index_col=0,
-                                    skiprows=1, nrows=1)
-        return body_part_row.columns.values.tolist()[::3]
+        csv_headers = list(self.raw_df)
 
-    @property
-    def shape(self):
-        rows, columns = self.read_csv(self.csv_file).shape
-        assert (columns / 3).is_integer(), 'Data file is invalid'
-        return rows, columns
+        body_parts = []
+        for i in range(0, len(csv_headers), 3):
+            body_parts.append(csv_headers[i][0])
+        return tuple(body_parts)
+
+    @staticmethod
+    def save(state, cust_name=None):
+        if cust_name is not None:
+            outfile = open(cust_name + '.csv', 'w')
+        else:
+            outfile = open(state + '_data.csv', 'w')
+        return outfile
 
     @staticmethod
     def get_video_frame(frame_loc='halfway', path='.'):
@@ -217,8 +265,3 @@ class DLCsv:
         assert res, 'Could not extract frame from video'
 
         return frame
-
-    @staticmethod
-    def read_csv(csv_file, usecols=None):
-        return pd.read_csv(csv_file, engine='c', delimiter=',', index_col=0,
-                           skiprows=2, usecols=usecols, header=0)
