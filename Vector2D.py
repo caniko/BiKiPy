@@ -2,15 +2,14 @@ import numpy as np
 
 
 class Vector2D:
-    """Class for representing two-dimensional vectors.
-    Can be initialised from either a vector or two points using Vector2D.from_two_points().
-    """
+    """Class for representing two-dimensional vectors"""
     def __init__(self, x, y):
-        try:
-            self.x = float(x)
-            self.y = float(y)
-        except ValueError:
-            raise AttributeError("Vector coordinates must be given in int or float")
+        if not isinstance((x, y), (int, float)):
+            msg = 'Vector coordinates must be given in int or float'
+            raise AttributeError(msg)
+
+        self.x = float(x)
+        self.y = float(y)
 
     @classmethod
     def from_two_points(cls, vector_origin_point, end_point):
@@ -18,18 +17,12 @@ class Vector2D:
         y = vector_origin_point[1] - end_point[1]
         return __class__(x, y)
 
-    def __matmul__(self, other, angle="rad"):
-        """Interpret u@v as angle between two vectors"""
-        if angle != "deg" and angle != "rad":
-            raise AttributeError("Angle is given in degrees or radians")
+    def __str__(self):
+        return '({:g}, {:g}'.format(self.x, self.y)
 
-        result = np.arccos(
-            (self * other) / self.length() * other.length()
-        )
-        if angle == "rad":
-            return result
-        elif angle == "deg":
-            return result * 180/np.pi
+    def __repr__(self):
+        return '{}({}, {})'.format(self.__class__.__name__,
+                                   self.x, self.y)
 
     def __add__(self, other):
         if isinstance(other, self.__class__):
@@ -37,7 +30,7 @@ class Vector2D:
             y = self.y + other.y
             return self.__class__(x, y)
         else:
-            raise TypeError("cannot add vector and {}".format(type(other)))
+            raise TypeError('cannot add vector and {}'.format(type(other)))
 
     def __neg__(self):
         return self.__class__(-self.x, -self.y)
@@ -46,10 +39,8 @@ class Vector2D:
         if isinstance(other, self.__class__):
             return self + (-other)
         else:
-            raise TypeError("cannot subtract vector and {}".format(type(other)))
-
-    def dot(self, other):
-        return self. x * other.x + self. y * other.y
+            msg = 'cannot subtract vector and {}'.format(type(other))
+            raise TypeError(msg)
 
     def __mul__(self, other):
         if isinstance(other, self.__class__):
@@ -57,7 +48,8 @@ class Vector2D:
         elif isinstance(other, (int, float)):
             return self.__class__(self.x * other, self.y * other)
         else:
-            raise TypeError("cannot multiply vector and {}".format(type(other)))
+            msg = 'cannot multiply vector and {}'.format(type(other))
+            raise TypeError(msg)
 
     def __rmul__(self, other):
         return self * other
@@ -67,11 +59,37 @@ class Vector2D:
         same_y = np.isclose(self.y, other.y)
         return same_x and same_y
 
+    def __matmul__(self, other, angle='rad'):
+        """Interpret u@v as angle between two vectors"""
+        if angle != 'deg' and angle != 'rad':
+            raise AttributeError('Angle is given in degrees or radians')
+
+        result = np.arccos(
+            (self * other) / self.length() * other.length()
+        )
+        if angle == 'rad':
+            return result
+        elif angle == 'deg':
+            return result * 180/np.pi
+
+    def dot(self, other):
+        return self. x * other.x + self. y * other.y
+
     def perpendicular(self, other):
         return np.isclose(self*other, 0)
 
     def abs(self):
         return np.sqrt(self.x**2 + self.y**2)
+
+    def unit(self):
+        """Return a unit vector with the same orientation."""
+        if self.length == 0:
+            msg = 'Vector of zero length has no unit vector.'
+            raise RuntimeError(msg)
+
+        new_vector = self.__class__(self.x, self.y)
+        new_vector.length = 1
+        return new_vector
 
     @property
     def length(self):
@@ -82,19 +100,3 @@ class Vector2D:
         scale = new_length/self.length
         self.x *= scale
         self.y *= scale
-
-    def unit(self):
-        """Return a unit vector with the same orientation."""
-        if self.length == 0:
-            raise RuntimeError("Vector of zero length has no unit vector.")
-
-        new_vector = self.__class__(self.x, self.y)
-        new_vector.length = 1
-        return new_vector
-
-    def __str__(self):
-        return "({:g}, {:g}".format(self.x, self.y)
-
-    def __repr__(self):
-        return "{}({}, {})".format(self.__class__.__name__,
-                                   self.x, self.y)
