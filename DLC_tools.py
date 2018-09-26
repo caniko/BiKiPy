@@ -2,20 +2,73 @@ from Vector2D import Vector2D
 import pandas as pd
 import numpy as np
 import matplotlib.pylab as plt
+from collections import deque
+import re
+import cv2
+from os import listdir
+from os.path import isfile, join, exists
 
 from DLC_analysis_settings import *
 
 
 class DLCsv:
-    def __init__(self, csv_file, normalize=False, invert_y=False,
-                 x_max=None, y_max=None):
-        if not isinstance(csv_file, str) and not csv_file.endswith('.csv'):
+    def __init__(self, csv_filename, normalize=False, invert_y=False,
+                 video_file=None, x_max=None, y_max=None, boarder_orr=None,
+                 upper_boarder=None, lower_boarder=None):
+        """
+        Python class to analyze csv files from DeepLabCut (DLC)
+
+        Parameters
+        ----------
+        csv_filename: str
+            Name of csv file to be analysed; with or without file-extension
+        normalize: boolean, default False
+            Normalizes the coordinates. Requires x_max and y_max to be defined
+        invert_y: boolean, default False
+            Inverts the y axis, yielding a traditional cartesian system;
+            origin on the bottom left. Requires x_max and y_max to be defined
+        video_file: {None, True, str}, default None
+            Defines the name (str) or the existence of a video file
+            in the local directory (True).
+
+            None: No action
+
+            str:  The video matching the string will be selected.
+                  String must include file extension for the decoder.
+
+            True: The first video in alphabetical order will be selected
+
+        x_max: int
+            Maximum x value, can be extracted from video sample or defined
+        y_max: int
+            Maximum y value, can be extracted from video sample or defined
+        boarder_orr: {None, 'hor', 'ver'} default None
+            Optionally, a lower and an upper boarder can be defined.
+            The boarders can be oriented both horizontally (hor)
+            or vertically (ver). If vertical: lower -> right; upper -> left.
+
+            With the use of the position_preference method, the ratio of time
+            spent in the upper; the lower; the mid portion can be calculated.
+
+            For boarder_orr to function, video_file or
+            upper_boarder and lower_boarder has to be defined.
+            In order to either select boarder coordinates during
+            runtime (video file), or define pre-defined values.
+        upper_boarder: int
+            See boarder_orr
+        lower_boarder: int
+            See boarder_orr
+        """
+        if not isinstance(csv_filename, str) and not csv_filename.endswith('.csv'):
             msg = 'The argument has to be a string with the name of a csv file'
             raise AttributeError(msg)
 
-        self.csv_file = str(csv_file)
-        self.x_max = x_max
-        self.y_max = y_max
+        if boarder_orr == 'hor' or boarder_orr == 'ver' or \
+                boarder_orr is not None:
+            msg = 'The boarder orientation must be submitted' \
+                  'in string format,\n and is either \'hor\' (horizontal), ' \
+                  'or \'ver\' (vertical); not {}'.format(boarder_orr)
+            raise AttributeError(msg)
 
         if invert_y and not isinstance(y_max, (int, float)):
             msg = 'y max has to defined in order to invert the y axis'
@@ -27,65 +80,160 @@ class DLCsv:
             raise AttributeError(msg)
         self.normalize = normalize
 
-        """Import the csv file"""
+        """ Import the csv file """
 
         type_dict = {'coords': int, 'x': float,
-                    'y': float, 'likelihood': float}
-        self.raw_df = pd.read_csv(self.csv_file, engine='c', delimiter=',',
+                     'y': float, 'likelihood': float}
+        self.raw_df = pd.read_csv(csv_filename, engine='c', delimiter=',',
                                   index_col=0, skiprows=1, header=[0, 1],
                                   dtype=type_dict, na_filter=False)
-
+        
+        self.csv_filename = csv_filename
+        
         self.nrow, self.ncolumn = self.raw_df.shape
-
-    def get_limits(self, limit_orr='hor'):
-        """Returns the location preference of the subject"""
-        if not isinstance(limit_orr, str):
-            msg = 'Limit orientation has to be declared using string'
-            raise AttributeError(msg)
-
-        frame = self.get_video_frame()
-        plt.imshow(frame)
-
-        plt.title('Upper limit')
-        upper_lim_coord = plt.ginput()
-        plt.title('Lower limit')
-        lower_lim_coord = plt.ginput()
-
-        if limit_orr == 'hor':
-            orr_var = 1     # Use the y coordinate(s) as the border
-            if self.invert_y:
-                return self.y_max - upper_lim_coord[0][orr_var],\
-                       self.y_max - lower_lim_coord[0][orr_var]
-        elif limit_orr == 'ver':
-            orr_var = 0     # Use the x coordinate(s) as the border
+        
+        if video_file:
+            frame, self.x_max, self.y_max = self.get_video_frame()
         else:
-            msg = 'The limit orientation is either \'hor\' (horizontal),' \
-                  'or \'ver\' (vertical); not {}'.format(limit_orr)
-            raise AttributeError(msg)
+            self.x_max = x_max
+            self.y_max = y_max
+        
+        if boarder_orr:
+            if video_file:
+                plt.imshow(frame)
+                
+                plt.title('Upper limit')
+                upper_var = plt.ginput()[0]  # coordinate for the upper boarder
+                plt.title('Lower limit')
+                lower_var = plt.ginput()[0]  # coordinate for the lower boarder
 
-        return upper_lim_coord[0][orr_var], lower_lim_coord[0][orr_var]
+            elif isinstance((upper_boarder, lower_boarder), int):
+                upper_var = upper_boarder
+                lower_var = lower_boarder
+
+            else:
+                msg = 'Either video file, or lower and upper boarder' \
+                      'has to be defined'
+                raise AttributeError(msg)
+            
+            if boarder_orr == 'hor':
+                orr_var = 1     # Use the y coordinate(s) as the border
+            elif boarder_orr == 'ver':
+                orr_var = 0     # Use the x coordinate(s) as the border
+
+            norm_dic = {0: self.x_max, 1: self.y_max}
+            if self.invert_y:
+                self.upper_boarder = y_max - upper_var[orr_var]
+                self.lower_boarder = y_max - lower_var[orr_var]
+                if normalize:
+                    self.upper_boarder /= norm_dic[orr_var]
+                    self.upper_boarder /= norm_dic[orr_var]
+
+            elif normalize:
+                self.upper_boarder = upper_var[orr_var] \
+                                 / norm_dic[orr_var]
+                self.lower_boarder = lower_var[orr_var] \
+                                 / norm_dic[orr_var]
+
+            else:
+                self.upper_boarder = upper_var[orr_var]
+                self.lower_boarder = lower_var[orr_var]
 
     def __repr__(self):
-        return '{} with {}'.format(__class__.__name__, self.csv_file)
+        return '{}({}): norm={}, inv_y={}'.format(__class__.__name__,
+                                                  self.csv_filename,
+                                                  self.normalize,
+                                                  self.invert_y)
 
-    def position_preference(self, plot=False, limit_orr='hor'):
-        if limit_orr == 'hor':
+    @property
+    def cleaned_df(self, like_thresh=0.90, dif_thresh=50, save=False):
+        if not isinstance(save, bool):
+            msg = 'The save variable has to be bool'
+            raise AttributeError(msg)
+
+        def bad_coords(comp):
+            original = new_df.loc[:, (body_part, comp)].values
+            minus_first = np.delete(original, 0, 0)
+            minus_last = np.delete(original, -1, 0)
+
+            ele_dif = np.subtract(minus_first, minus_last)
+            bad_values = deque(np.greater_equal(ele_dif, dif_thresh))
+            bad_values.appendleft(False)
+            return bad_values
+
+        new_df = self.raw_df.copy()
+        if save:
+            outfile = self.save('cleaned')
+
+        for body_part in self.body_parts:
+            """Clean low likelihood values"""
+
+            new_df.loc[new_df[(body_part, 'likelihood')] < like_thresh,
+                       [(body_part, 'x'), (body_part, 'y')]] = np.nan
+
+            """Clean high velocity values"""
+
+            invalid_coords = np.logical_or(bad_coords('x'), bad_coords('y'))
+
+            new_df.loc[invalid_coords, ['x', 'y']] = np.nan
+
+        if self.normalize:
+            new_df.loc[:, (slice(None), 'x')] = \
+                new_df.loc[:, (slice(None), 'x')] / self.x_max
+            if self.invert_y:
+                new_df.loc[:, (slice(None), 'y')] = \
+                    (self.y_max - new_df.loc[:, (slice(None), 'y')])\
+                    / self.y_max
+            else:
+                new_df.loc[:, (slice(None), 'y')] = \
+                    new_df.loc[:, (slice(None), 'y')] / self.y_max
+        elif self.invert_y:
+            new_df.loc[:, (slice(None), 'y')] = \
+                self.y_max - new_df.loc[:, (slice(None), 'y')]
+        if save:
+            outfile.close()
+
+        return new_df
+
+    @property
+    def interpolated_df(self, save=False):
+        if not isinstance(save, bool):
+            msg = 'The save variable has to be bool'
+            raise AttributeError(msg)
+
+        new_df = self.cleaned_df.copy()
+        if save:
+            outfile = self.save('interpolated')
+
+        for body_part in self.body_parts:
+            for comp in ('x', 'y'):
+                new_df.loc[:, (body_part, comp)] = \
+                    new_df.loc[:, (body_part, comp)].interpolate(
+                        method='spline', order=4,
+                        limit_area='inside')
+        if save:
+            outfile.close()
+
+        return new_df
+
+    def position_preference(self, plot=False, boarder_orr='hor'):
+        if boarder_orr == 'hor':
             orr_var = 'y'
-        elif limit_orr == 'ver':
+        elif boarder_orr == 'ver':
             orr_var = 'x'
         else:
             msg = 'The limit orientation is either \'hor\' (horizontal),' \
-                  'or \'ver\' (vertical); not {}'.format(limit_orr)
+                  'or \'ver\' (vertical); not {}'.format(boarder_orr)
             raise AttributeError(msg)
 
-        upper_limit, lower_limit = self.get_limits(limit_orr=limit_orr)
+        upper_limit, lower_limit = self.get_limits(boarder_orr=boarder_orr)
 
         total_frames = self.nrow - 1
         nose = self.df['nose'][orr_var].values.tolist()
         left_ear = self.df['left_ear'][orr_var].values.tolist()
         right_ear = self.df['right_ear'][orr_var].values.tolist()
 
-        if self.invert_y or limit_orr == 'ver':
+        if self.invert_y or boarder_orr == 'ver':
             def nose_loc_test(index):
                 return nose[index] < upper_limit or nose[index] > lower_limit
 
@@ -160,61 +308,6 @@ class DLCsv:
             print(use_df[body_part])
 
     @property
-    def cleaned_df(self, like_thresh=0.90, dif_thresh=80, save=False):
-        if not isinstance(save, bool):
-            msg = 'The save variable has to be bool'
-            raise AttributeError(msg)
-
-        new_df = self.raw_df.copy()
-        if save:
-            outfile = self.save('cleaned')
-
-        for body_part in self.body_parts:
-            new_df.loc[new_df[(body_part, 'likelihood')] < like_thresh,
-                       [(body_part, 'x'), (body_part, 'y')]] = np.nan
-            # for comp in ('x', 'y'):
-            #     pass
-
-        if self.normalize:
-            new_df.loc[:, (slice(None), 'x')] = \
-                new_df.loc[:, (slice(None), 'x')] / self.x_max
-            if self.invert_y:
-                new_df.loc[:, (slice(None), 'y')] = \
-                    (self.y_max - new_df.loc[:, (slice(None), 'y')])\
-                    / self.y_max
-            else:
-                new_df.loc[:, (slice(None), 'y')] = \
-                    new_df.loc[:, (slice(None), 'y')] / self.y_max
-        elif self.invert_y:
-            new_df.loc[:, (slice(None), 'y')] = \
-                self.y_max - new_df.loc[:, (slice(None), 'y')]
-        if save:
-            outfile.close()
-
-        return new_df
-
-    @property
-    def interpolated_df(self, save=False):
-        if not isinstance(save, bool):
-            msg = 'The save variable has to be bool'
-            raise AttributeError(msg)
-
-        new_df = self.cleaned_df.copy()
-        if save:
-            outfile = self.save('interpolated')
-
-        for body_part in self.body_parts:
-            for comp in ('x', 'y'):
-                new_df.loc[:, (body_part, comp)] = \
-                    new_df.loc[:, (body_part, comp)].interpolate(
-                        method='spline', order=4,
-                        limit_area='inside')
-        if save:
-            outfile.close()
-
-        return new_df
-
-    @property
     def body_parts(self):
         """Instantiates a list with names of the body parts in the dataframe"""
         csv_headers = list(self.raw_df)
@@ -234,10 +327,6 @@ class DLCsv:
 
     @staticmethod
     def get_video_frame(frame_loc='halfway', path='.'):
-        import cv2
-        from os import listdir
-        from os.path import isfile, join, exists
-
         videos = [v for v in listdir(path)
                   if isfile(join(path, v)) and v.endswith(video_format)]
         if len(videos) == 1:
@@ -251,6 +340,8 @@ class DLCsv:
         assert exists(user_video), 'Can\'t find video file in directory'
         cap = cv2.VideoCapture(user_video)
         frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
         if frame_loc == 'halfway':
             target_frame = frame_count / 2
@@ -264,4 +355,4 @@ class DLCsv:
         res, frame = cap.read()
         assert res, 'Could not extract frame from video'
 
-        return frame
+        return frame, width, height
