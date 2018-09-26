@@ -1,12 +1,13 @@
-from Vector2D import Vector2D
 import pandas as pd
 import numpy as np
 import matplotlib.pylab as plt
-from collections import deque
 import re
 import cv2
-from os import listdir
+
+from Vector2D import Vector2D
+from collections import deque
 from os.path import isfile, join, exists
+from os import listdir
 
 from DLC_analysis_settings import *
 
@@ -87,7 +88,14 @@ class DLCsv:
         self.raw_df = pd.read_csv(csv_filename, engine='c', delimiter=',',
                                   index_col=0, skiprows=1, header=[0, 1],
                                   dtype=type_dict, na_filter=False)
-        
+
+        csv_headers = list(self.raw_df)
+
+        body_parts = []
+        for i in range(0, len(csv_headers), 3):
+            body_parts.append(csv_headers[i][0])
+        self.body_parts = tuple(body_parts)
+
         self.csv_filename = csv_filename
         
         self.nrow, self.ncolumn = self.raw_df.shape
@@ -144,6 +152,47 @@ class DLCsv:
                                                   self.csv_filename,
                                                   self.normalize,
                                                   self.invert_y)
+
+    @staticmethod
+    def get_video_frame(frame_loc='halfway', path='.'):
+        videos = [v for v in listdir(path)
+                  if isfile(join(path, v)) and
+                  re.search(r'\.((avi)|(mp4))$', v)]
+        if len(videos) == 1:
+            user_video = videos[0]
+        else:
+            print('More than one video in directory')
+            user_video = \
+                input('Please type the filename of the video\n'
+                      'that is to be used;example \'my_video.mp4\': ')
+
+        assert exists(user_video), 'Can\'t find video file in directory'
+        cap = cv2.VideoCapture(user_video)
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+        if frame_loc == 'halfway':
+            target_frame = frame_count / 2
+        else:
+            msg = 'frame_loc can only be halfway; start; end,\n' \
+                  'and not {}'.format(frame_loc)
+            raise AttributeError(msg)
+
+        cap.set(1, target_frame - 1)
+
+        res, frame = cap.read()
+        assert res, 'Could not extract frame from video'
+
+        return frame, width, height
+
+    @staticmethod
+    def save(state, cust_name=None):
+        if cust_name is not None:
+            outfile = open(cust_name + '.csv', 'w')
+        else:
+            outfile = open(state + '_data.csv', 'w')
+        return outfile
 
     @property
     def cleaned_df(self, like_thresh=0.90, dif_thresh=50, save=False):
@@ -306,53 +355,3 @@ class DLCsv:
         use_df = state_dict[state]
         for body_part in self.body_parts:
             print(use_df[body_part])
-
-    @property
-    def body_parts(self):
-        """Instantiates a list with names of the body parts in the dataframe"""
-        csv_headers = list(self.raw_df)
-
-        body_parts = []
-        for i in range(0, len(csv_headers), 3):
-            body_parts.append(csv_headers[i][0])
-        return tuple(body_parts)
-
-    @staticmethod
-    def save(state, cust_name=None):
-        if cust_name is not None:
-            outfile = open(cust_name + '.csv', 'w')
-        else:
-            outfile = open(state + '_data.csv', 'w')
-        return outfile
-
-    @staticmethod
-    def get_video_frame(frame_loc='halfway', path='.'):
-        videos = [v for v in listdir(path)
-                  if isfile(join(path, v)) and v.endswith(video_format)]
-        if len(videos) == 1:
-            user_video = videos[0]
-        else:
-            print('More than one video in directory')
-            user_video = \
-                input('Please type the filename of the video\n'
-                      'that is to be used;example \'my_video.mp4\': ')
-
-        assert exists(user_video), 'Can\'t find video file in directory'
-        cap = cv2.VideoCapture(user_video)
-        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-        if frame_loc == 'halfway':
-            target_frame = frame_count / 2
-        else:
-            msg = 'frame_loc can only be halfway; start; end,\n' \
-                  'and not {}'.format(frame_loc)
-            raise AttributeError(msg)
-
-        cap.set(1, target_frame - 1)
-
-        res, frame = cap.read()
-        assert res, 'Could not extract frame from video'
-
-        return frame, width, height
