@@ -125,6 +125,14 @@ class DLCsv:
                 plt.title('Lower limit')
                 lower_var = plt.ginput()[0]  # coordinate for the lower boarder
 
+                if boarder_orr == 'hor':
+                    orr_var = 1  # Use the y coordinate(s) as the border
+                elif boarder_orr == 'ver':
+                    orr_var = 0  # Use the x coordinate(s) as the border
+
+                upper_var = lower_var[orr_var]
+                lower_var = upper_var[orr_var]
+
             elif upper_boarder is int and lower_boarder is int:
                 upper_var = upper_boarder
                 lower_var = lower_boarder
@@ -134,28 +142,21 @@ class DLCsv:
                       'has to be defined'
                 raise AttributeError(msg)
 
-            if boarder_orr == 'hor':
-                orr_var = 1  # Use the y coordinate(s) as the border
-            elif boarder_orr == 'ver':
-                orr_var = 0  # Use the x coordinate(s) as the border
-
             norm_dic = {0: self.x_max, 1: self.y_max}
             if self.invert_y:
-                self.upper_boarder = y_max - upper_var[orr_var]
-                self.lower_boarder = y_max - lower_var[orr_var]
+                self.upper_boarder = y_max - upper_var
+                self.lower_boarder = y_max - lower_var
                 if normalize:
-                    self.upper_boarder /= norm_dic[orr_var]
-                    self.upper_boarder /= norm_dic[orr_var]
+                    self.upper_boarder /= norm_dic
+                    self.upper_boarder /= norm_dic
 
             elif normalize:
-                self.upper_boarder = upper_var[orr_var] \
-                                     / norm_dic[orr_var]
-                self.lower_boarder = lower_var[orr_var] \
-                                     / norm_dic[orr_var]
+                self.upper_boarder = upper_var / norm_dic
+                self.lower_boarder = lower_var / norm_dic
 
             else:
-                self.upper_boarder = upper_var[orr_var]
-                self.lower_boarder = lower_var[orr_var]
+                self.upper_boarder = upper_var
+                self.lower_boarder = lower_var
 
     def __repr__(self):
         return '{}({}):   norm={}; inv_y={}; vid={};\n'.format(
