@@ -67,9 +67,9 @@ class DLCsv:
             msg = 'The argument has to be a string with the name of a csv file'
             raise AttributeError(msg)
 
-        if boarder_orr == 'hor' or boarder_orr == 'ver' or \
-                boarder_orr is not None:
-            msg = 'The boarder orientation must be submitted' \
+        orr_test = (boarder_orr != 'hor' and boarder_orr != 'ver') and boarder_orr is not None
+        if orr_test:
+            msg = 'The boarder orientation must be submitted ' \
                   'in string format,\n and is either \'hor\' (horizontal), ' \
                   'or \'ver\' (vertical); not {}'.format(boarder_orr)
             raise AttributeError(msg)
@@ -116,7 +116,7 @@ class DLCsv:
             self.x_max = x_max
             self.y_max = y_max
 
-        if boarder_orr is True:
+        if not orr_test:
             if video_file is True:
                 plt.imshow(frame)
 
@@ -130,10 +130,10 @@ class DLCsv:
                 elif boarder_orr == 'ver':
                     orr_var = 0  # Use the x coordinate(s) as the border
 
-                upper_var = lower_var[orr_var]
-                lower_var = upper_var[orr_var]
+                upper_var = upper_var[orr_var]
+                lower_var = lower_var[orr_var]
 
-            elif upper_boarder is int and lower_boarder is int:
+            elif isinstance(upper_boarder, int) and isinstance(lower_boarder, int):
                 upper_var = upper_boarder
                 lower_var = lower_boarder
 
@@ -169,13 +169,10 @@ class DLCsv:
 
     @staticmethod
     def get_video_data(filename, frame_loc='middle', path='.'):
-        if re.search(r'\.((avi)|(mp4))$', filename):
-            user_video = filename
-
-        elif filename is True:
+        if filename is True:
             videos = [v for v in listdir(path)
                       if isfile(join(path, v)) and
-                      re.search(r'\.((avi)|(mp4))$', v)]
+                      v.endswith('.mp4')]
             if len(videos) == 1:
                 user_video = videos[0]
             else:
@@ -234,8 +231,6 @@ class DLCsv:
             """Clean high velocity values"""
 
             invalid_coords = np.logical_or(bad_coords('x'), bad_coords('y'))
-
-            print(np.atleast_1d(invalid_coords))
 
             new_df.loc[invalid_coords,
                        [(body_part, 'x'), (body_part, 'y')]] = np.nan
@@ -296,8 +291,8 @@ class DLCsv:
 
         if self.invert_y or boarder_orr == 'ver':
             def nose_loc_test(index):
-                return nose[index] < self.upper_boarder or \
-                       nose[index] > self.lower_boarder
+                return nose[index] > self.upper_boarder or \
+                       nose[index] < self.lower_boarder
 
             def ear_loc_test(index, limit):
                 if limit == 'upper':
@@ -308,16 +303,16 @@ class DLCsv:
                            right_ear[index] > self.lower_boarder
         else:
             def nose_loc_test(index):
-                return nose[index] > self.upper_boarder or \
-                       nose[index] < self.lower_boarder
+                return nose[index] < self.upper_boarder or \
+                       nose[index] > self.lower_boarder
 
             def ear_loc_test(index, limit):
                 if limit == 'upper':
-                    return left_ear[index] > self.upper_boarder or \
-                           right_ear[index] < self.upper_boarder
+                    return left_ear[index] < self.upper_boarder or \
+                           right_ear[index] > self.upper_boarder
                 elif limit == 'lower':
-                    return left_ear[index] > self.lower_boarder or \
-                           right_ear[index] < self.lower_boarder
+                    return left_ear[index] < self.lower_boarder or \
+                           right_ear[index] > self.lower_boarder
 
         lower_environment = 0
         upper_environment = 0
@@ -330,7 +325,7 @@ class DLCsv:
 
         percent_upper = (upper_environment / total_frames) * 100
         percent_lower = (lower_environment / total_frames) * 100
-        rest = 100 - sum(percent_lower, percent_upper)
+        rest = 100 - sum([percent_lower, percent_upper])
 
         if plot:
             labels = ('Top', 'Bottom', 'Elsewhere')
