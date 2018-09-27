@@ -37,7 +37,9 @@ class DLCsv:
             str:  The video matching the string will be selected.
                   String must include file extension for the decoder.
 
-            True: The first video in alphabetical order will be selected
+            True: If there is only one video file, it will be selected.
+                  If there are several, the user can submit the name of
+                  the videofile to be used during runtime.
 
         x_max: int
             Maximum x value, can be extracted from video sample or defined
