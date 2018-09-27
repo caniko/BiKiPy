@@ -14,7 +14,7 @@ from DLC_analysis_settings import *
 
 class DLCsv:
     def __init__(self, csv_filename, normalize=False, invert_y=False,
-                 video_file=None, x_max=None, y_max=None, boarder_orr=None,
+                 video_file=None, x_max=None, y_max=None, boarder_or=None,
                  upper_boarder=None, lower_boarder=None):
         """
         Python class to analyze csv files from DeepLabCut (DLC)
@@ -45,7 +45,7 @@ class DLCsv:
             Maximum x value, can be extracted from video sample or defined
         y_max: {None, int}, default None
             Maximum y value, can be extracted from video sample or defined
-        boarder_orr: {None, 'hor', 'ver'}, default None
+        boarder_or: {None, 'hor', 'ver'}, default None
             Optionally, a lower and an upper boarder can be defined.
             The boarders can be oriented both horizontally (hor)
             or vertically (ver). If vertical: lower -> right; upper -> left.
@@ -53,25 +53,25 @@ class DLCsv:
             With the use of the position_preference method, the ratio of time
             spent in the upper; the lower; the mid portion can be calculated.
 
-            For boarder_orr to function, video_file or
+            For boarder_or to function, video_file or
             upper_boarder and lower_boarder has to be defined.
             In order to either select boarder coordinates during
             runtime (video file), or define pre-defined values.
         upper_boarder: int
-            See boarder_orr
+            See boarder_or
         lower_boarder: int
-            See boarder_orr
+            See boarder_or
         """
         if not isinstance(csv_filename, str) and not csv_filename.endswith(
                 '.csv'):
             msg = 'The argument has to be a string with the name of a csv file'
             raise AttributeError(msg)
 
-        orr_test = (boarder_orr != 'hor' and boarder_orr != 'ver') and boarder_orr is not None
-        if orr_test:
+        if (boarder_or != 'hor' and boarder_or != 'ver') \
+                and boarder_or is not None:
             msg = 'The boarder orientation must be submitted ' \
                   'in string format,\n and is either \'hor\' (horizontal), ' \
-                  'or \'ver\' (vertical); not {}'.format(boarder_orr)
+                  'or \'ver\' (vertical); not {}'.format(boarder_or)
             raise AttributeError(msg)
 
         if not (isinstance(x_max, (int, float, type(None))) and
@@ -90,6 +90,7 @@ class DLCsv:
 
         self.invert_y = invert_y
         self.normalize = normalize
+        self.boarder_or = boarder_or
 
         # Import the csv file
         type_dict = {'coords': int, 'x': float,
@@ -107,65 +108,70 @@ class DLCsv:
             body_parts.append(csv_multi_i[i][0])
         self.body_parts = body_parts
 
+        self.video_file = video_file
         if video_file is True:
             frame, self.x_max, self.y_max = self.get_video_data(
-                filename=video_file
-            )
-            self.video_file = video_file
+                filename=video_file)
         else:
             self.x_max = x_max
             self.y_max = y_max
 
-        if not orr_test:
+        if boarder_or == 'hor' or boarder_or == 'ver':
+            # 0: Use the x coordinate(s) as the border
+            # 1: Use the y coordinate(s) as the border
+            or_dic = {'ver': 0, 'hor': 1}
+
             if video_file is True:
                 plt.imshow(frame)
 
-                plt.title('Upper limit')
-                upper_var = plt.ginput()[0]  # coordinate for the upper boarder
                 plt.title('Lower limit')
                 lower_var = plt.ginput()[0]  # coordinate for the lower boarder
+                plt.title('Upper limit')
+                upper_var = plt.ginput()[0]  # coordinate for the upper boarder
 
-                if boarder_orr == 'hor':
-                    orr_var = 1  # Use the y coordinate(s) as the border
-                elif boarder_orr == 'ver':
-                    orr_var = 0  # Use the x coordinate(s) as the border
+                lower_var = lower_var[or_dic[boarder_or]]
+                upper_var = upper_var[or_dic[boarder_or]]
 
-                upper_var = upper_var[orr_var]
-                lower_var = lower_var[orr_var]
-
-            elif isinstance(upper_boarder, int) and isinstance(lower_boarder, int):
-                upper_var = upper_boarder
+            elif isinstance(lower_boarder, int) \
+                    and isinstance(upper_boarder, int):
                 lower_var = lower_boarder
+                upper_var = upper_boarder
 
             else:
                 msg = 'Either video file, or lower and upper boarder' \
                       'has to be defined'
                 raise AttributeError(msg)
 
-            norm_dic = {0: self.x_max, 1: self.y_max}
+            norm_dic = {'ver': self.x_max, 'hor': self.y_max}
             if self.invert_y:
-                self.upper_boarder = y_max - upper_var
                 self.lower_boarder = y_max - lower_var
+                self.upper_boarder = y_max - upper_var
                 if normalize:
-                    self.upper_boarder /= norm_dic
-                    self.upper_boarder /= norm_dic
+                    self.lower_boarder /= norm_dic[boarder_or]
+                    self.upper_boarder /= norm_dic[boarder_or]
 
             elif normalize:
-                self.upper_boarder = upper_var / norm_dic
-                self.lower_boarder = lower_var / norm_dic
+                self.lower_boarder = lower_var / norm_dic[boarder_or]
+                self.upper_boarder = upper_var / norm_dic[boarder_or]
 
             else:
-                self.upper_boarder = upper_var
                 self.lower_boarder = lower_var
+                self.upper_boarder = upper_var
 
+    @property
     def __repr__(self):
         return '{}({}):   norm={}; inv_y={}; vid={};\n'.format(
             __class__.__name__, self.csv_filename, self.normalize,
             self.invert_y, self.video_file), \
-               'res_info: x_max={}; y_max={};\n'.format(
+                \
+               'res_info: x_max={}; y_max={}'.format(
                    self.x_max, self.y_max), \
-               'boarder:  upper={}; lower={}'.format(
-                   self.upper_boarder, self.lower_boarder)
+                \
+               '{}'.format(
+                   ';\nboarder:  or={}; upper={}; lower={}'.format(
+                       self.boarder_or, self.upper_boarder,
+                       self.lower_boarder) if self.boarder_or is not None
+                   else None)
 
     @staticmethod
     def get_video_data(filename, frame_loc='middle', path='.'):
@@ -205,7 +211,7 @@ class DLCsv:
         return frame, width, height
 
     @property
-    def cleaned_df(self, like_thresh=0.90, dif_thresh=50, save=False):
+    def clean_df(self, like_thresh=0.90, dif_thresh=50, save=False):
         if not isinstance(save, bool):
             msg = 'The save variable has to be bool'
             raise AttributeError(msg)
@@ -248,18 +254,19 @@ class DLCsv:
         elif self.invert_y:
             new_df.loc[:, (slice(None), 'y')] = \
                 self.y_max - new_df.loc[:, (slice(None), 'y')]
+
         if save is True:
-            new_df.to_csv('cleaned_data.csv', sep='\t')
+            csv_name = 'cleaned_{}.csv'.format(self.csv_filename)
+            new_df.to_csv(csv_name, sep='\t')
 
         return new_df
 
-    @property
     def interpolated_df(self, save=False):
         if not isinstance(save, bool):
             msg = 'The save variable has to be bool'
             raise AttributeError(msg)
 
-        new_df = self.cleaned_df.copy()
+        new_df = self.clean_df()
 
         for body_part in self.body_parts:
             for comp in ('x', 'y'):
@@ -268,64 +275,67 @@ class DLCsv:
                         method='spline', order=4,
                         limit_area='inside')
         if save is True:
-            new_df.to_csv('interpolated_data.csv', sep='\t')
+            csv_name = 'interpolated_{}.csv'.format(self.csv_filename)
+            new_df.to_csv(csv_name, sep='\t')
 
         return new_df
 
     def position_preference(self, state='interpolated',
-                            plot=False, boarder_orr='hor'):
-        if boarder_orr == 'hor':
-            orr_var = 'y'
-        elif boarder_orr == 'ver':
-            orr_var = 'x'
+                            plot=False, boarder_or='hor'):
+        if boarder_or == 'hor':
+            or_var = 'y'
+        elif boarder_or == 'ver':
+            or_var = 'x'
         else:
             msg = 'The limit orientation is either \'hor\' (horizontal),' \
-                  'or \'ver\' (vertical); not {}'.format(boarder_orr)
+                  'or \'ver\' (vertical); not {}'.format(boarder_or)
             raise AttributeError(msg)
 
         use_df = self.get_state(state)
         total_frames = self.row_n - 1
-        nose = use_df['nose'][orr_var].values.tolist()
-        left_ear = use_df['left_ear'][orr_var].values.tolist()
-        right_ear = use_df['right_ear'][orr_var].values.tolist()
+        nose = use_df['nose'][or_var].values.tolist()
+        left_ear = use_df['left_ear'][or_var].values.tolist()
+        right_ear = use_df['right_ear'][or_var].values.tolist()
 
-        if self.invert_y or boarder_orr == 'ver':
+        if self.invert_y or boarder_or == 'ver':
             def nose_loc_test(index):
-                return nose[index] > self.upper_boarder or \
-                       nose[index] < self.lower_boarder
+                return nose[index] < self.lower_boarder or \
+                       nose[index] > self.upper_boarder
 
             def ear_loc_test(index, limit):
                 if limit == 'upper':
-                    return left_ear[index] < self.upper_boarder or \
-                           right_ear[index] > self.upper_boarder
-                elif limit == 'lower':
                     return left_ear[index] < self.lower_boarder or \
                            right_ear[index] > self.lower_boarder
+                elif limit == 'lower':
+                    return left_ear[index] < self.upper_boarder or \
+                           right_ear[index] > self.upper_boarder
+
         else:
             def nose_loc_test(index):
-                return nose[index] < self.upper_boarder or \
-                       nose[index] > self.lower_boarder
+                return nose[index] > self.lower_boarder or \
+                       nose[index] < self.upper_boarder
 
             def ear_loc_test(index, limit):
-                if limit == 'upper':
-                    return left_ear[index] < self.upper_boarder or \
-                           right_ear[index] > self.upper_boarder
-                elif limit == 'lower':
-                    return left_ear[index] < self.lower_boarder or \
-                           right_ear[index] > self.lower_boarder
+                if limit == 'lower':
+                    return left_ear[index] > self.lower_boarder or \
+                           right_ear[index] < self.lower_boarder
+                elif limit == 'upper':
+                    return left_ear[index] > self.upper_boarder or \
+                           right_ear[index] < self.upper_boarder
 
         lower_environment = 0
         upper_environment = 0
         for i in range(total_frames):
             if nose_loc_test(i):
-                if ear_loc_test(i, 'upper'):
-                    upper_environment += 1
-                elif ear_loc_test(i, 'lower'):
+                if ear_loc_test(i, 'lower'):
                     lower_environment += 1
+                elif ear_loc_test(i, 'upper'):
+                    upper_environment += 1
 
-        percent_upper = (upper_environment / total_frames) * 100
         percent_lower = (lower_environment / total_frames) * 100
-        rest = 100 - sum([percent_lower, percent_upper])
+        percent_upper = (upper_environment / total_frames) * 100
+
+        rest = 100 - percent_lower - percent_upper
 
         if plot:
             labels = ('Top', 'Bottom', 'Elsewhere')
@@ -339,13 +349,11 @@ class DLCsv:
             return percent_lower, percent_upper
 
     def angle_df(self, body_part_centre, body_part_1, body_part_2):
-        """Return a csv with the angle between three body parts per frame
-        WIP
-        """
-        rows = self.row_n
-        for row_index in range(1, rows):
+        """Return a csv with the angle between three body parts per frame"""
+        for row_index in range(self.row_n):
             vector_centre = Vector2D(*self.bp_coords(
                 body_part_centre, row_index))
+
             vector_body_part_1 = Vector2D(*self.bp_coords(
                 body_part_1, row_index)) - vector_centre
             vector_body_part_2 = Vector2D(*self.bp_coords(
@@ -355,7 +363,7 @@ class DLCsv:
     def bp_coords(self, body_part, row_index, state='interpolated'):
         """Returns body part coordinate from"""
         use_df = self.get_state(state)
-        row = use_df[body_part].loc[str(row_index)].tolist()
+        row = use_df.loc[str(row_index)].tolist()
         return row[0], row[1]
 
     def view(self, state='raw'):
