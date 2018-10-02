@@ -1,7 +1,10 @@
 import os
 
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-CSV_DIR = os.path.normpath(os.path.join(BASE_DIR, "videos"))
+# Location settings
+DATA_FOLDER_NAME = os.path.abspath('data')
 
-print(CSV_DIR)
+"""Parameters"""
+# Clean data frame
+MIN_LIKELIHOOD = 0.90
+MAX_DIF = 50

@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pylab as plt
-import re
+import os
 import cv2
 
 from Vector2D import Vector2D
@@ -9,13 +9,14 @@ from collections import deque
 from os.path import isfile, join, exists
 from os import listdir
 
-from DLC_analysis_settings import *
+from DLC_analysis_settings import (DATA_FOLDER_NAME, MIN_LIKELIHOOD,
+                                   MAX_DIF)
 
 
 class DLCsv:
     def __init__(self, csv_filename, normalize=False, invert_y=False,
                  video_file=None, x_max=None, y_max=None, boarder_or=None,
-                 upper_boarder=None, lower_boarder=None):
+                 upper_boarder=None, lower_boarder=None, lasso_num=None):
         """
         Python class to analyze csv files from DeepLabCut (DLC)
 
@@ -45,22 +46,24 @@ class DLCsv:
             Maximum x value, can be extracted from video sample or defined
         y_max: {None, int}, default None
             Maximum y value, can be extracted from video sample or defined
-        boarder_or: {None, 'hor', 'ver'}, default None
-            Optionally, a lower and an upper boarder can be defined.
+        boarder_or: {None, 'hor', 'ver', 'lasso'}, default None
+            Optional. A lower and an upper boarder can be defined.
             The boarders can be oriented both horizontally (hor)
             or vertically (ver). If vertical: lower -> right; upper -> left.
 
             With the use of the position_preference method, the ratio of time
             spent in the upper; the lower; the mid portion can be calculated.
 
-            For boarder_or to function, video_file or
-            upper_boarder and lower_boarder has to be defined.
-            In order to either select boarder coordinates during
-            runtime (video file), or define pre-defined values.
-        upper_boarder: int
-            See boarder_or
+            For boarder_or to function, video_file or lower_boarder and
+            upper_boarder has to be defined.
+
+            To use of lasso, video_file and lasso_num has to be defined.
         lower_boarder: int
             See boarder_or
+        upper_boarder: int
+            See boarder_or
+        lasso_num: int
+            Number of lasso selections. See boarder_or for more context
         """
         if not isinstance(csv_filename, str) and not csv_filename.endswith(
                 '.csv'):
@@ -91,15 +94,19 @@ class DLCsv:
         self.invert_y = invert_y
         self.normalize = normalize
         self.boarder_or = boarder_or
+        self.lasso_num = lasso_num
 
         # Import the csv file
+        self.csv_filename = csv_filename
+        csv_path = os.path.join(DATA_FOLDER_NAME, csv_filename)
+
         type_dict = {'coords': int, 'x': float,
                      'y': float, 'likelihood': float}
-        self.raw_df = pd.read_csv(csv_filename, engine='c', delimiter=',',
+        self.raw_df = pd.read_csv(csv_path, engine='c', delimiter=',',
                                   index_col=0, skiprows=1, header=[0, 1],
                                   dtype=type_dict, na_filter=False)
-        self.csv_filename = csv_filename
-        self.row_n, self.column_n = self.raw_df.shape
+
+        self.n_rows, self.n_columns = self.raw_df.shape
 
         # Get name of body parts
         csv_multi_i = list(self.raw_df)
@@ -109,8 +116,9 @@ class DLCsv:
         self.body_parts = body_parts
 
         self.video_file = video_file
-        if video_file is True:
-            frame, self.x_max, self.y_max = self.get_video_data(
+        vid_test = video_file is True or isinstance(video_file, str)
+        if vid_test:
+            self.frame, self.x_max, self.y_max = self.get_video_data(
                 filename=video_file)
         else:
             self.x_max = x_max
@@ -121,13 +129,14 @@ class DLCsv:
             # 1: Use the y coordinate(s) as the border
             or_dic = {'ver': 0, 'hor': 1}
 
-            if video_file is True:
-                plt.imshow(frame)
-
+            if vid_test:
+                plt.imshow(self.frame)
                 plt.title('Lower limit')
-                lower_var = plt.ginput()[0]  # coordinate for the lower boarder
+                # coordinate for the lower boarder
+                lower_var = plt.ginput()[0]
                 plt.title('Upper limit')
-                upper_var = plt.ginput()[0]  # coordinate for the upper boarder
+                # coordinate for the upper boarder
+                upper_var = plt.ginput()[0]
 
                 lower_var = lower_var[or_dic[boarder_or]]
                 upper_var = upper_var[or_dic[boarder_or]]
@@ -158,38 +167,54 @@ class DLCsv:
                 self.lower_boarder = lower_var
                 self.upper_boarder = upper_var
 
-    @property
+        elif boarder_or == 'lasso' and vid_test:
+            x = 6
+            x.isinteger
+
     def __repr__(self):
-        return '{}({}):   norm={}; inv_y={}; vid={};\n'.format(
-            __class__.__name__, self.csv_filename, self.normalize,
-            self.invert_y, self.video_file), \
-                \
-               'res_info: x_max={}; y_max={}'.format(
-                   self.x_max, self.y_max), \
-                \
-               '{}'.format(
-                   ';\nboarder:  or={}; upper={}; lower={}'.format(
-                       self.boarder_or, self.upper_boarder,
-                       self.lower_boarder) if self.boarder_or is not None
-                   else None)
+        header = '{}(\"{}\"):\n'.format(__class__.__name__, self.csv_filename)
+
+        line_i = 'norm={}, inv_y={}, vid={},\n'.format(
+            self.normalize, self.invert_y, self.video_file)
+
+        line_ii = 'x_max={}, y_max={}'.format(self.x_max, self.y_max)
+
+        base = header + line_i + line_ii
+
+        if self.boarder_or is not None:
+            line_iii = ',\nboarder_or=\"{}\"{}'.format(
+                self.boarder_or,
+                ', upper={}, lower={}'.format(self.upper_boarder,
+                                              self.lower_boarder)
+                if self.boarder_or != 'lasso' else
+                ', lasso_num={}'.format(self.lasso_num)
+            )
+            return base + line_iii
+
+        return base
 
     @staticmethod
     def get_video_data(filename, frame_loc='middle', path='.'):
-        if filename is True:
-            videos = [v for v in listdir(path)
-                      if isfile(join(path, v)) and
+        if isinstance(filename, str):
+            user_video = os.path.join(DATA_FOLDER_NAME, filename)
+        elif filename is True:
+            videos = [v for v in listdir(path) if isfile(join(path, v)) and
                       v.endswith('.mp4')]
             if len(videos) == 1:
                 user_video = videos[0]
             else:
                 print('More than one video in directory')
                 msg = 'Please type the filename of the video\n ' \
-                      'that is to be used;example \'my_video.mp4\': '
+                      'that is to be used; example \'my_video.mp4\': '
                 user_video = input(msg)
-                if not re.search(r'\.((avi)|(mp4))$', user_video):
-                    msg = 'Invalid video file'
-                    raise TypeError(msg)
-        assert exists(user_video), 'Can\'t find video file in directory'
+        else:
+            msg = 'filename has to be defined as True, or video file name\n' \
+                  'in string format.'
+            raise AttributeError(msg)
+
+        if user_video.endswith('.mp4') or user_video.endswith('.avi'):
+            msg = 'Invalid video file.'
+            raise TypeError(msg)
 
         cap = cv2.VideoCapture(user_video)
         frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -210,8 +235,7 @@ class DLCsv:
 
         return frame, width, height
 
-    @property
-    def clean_df(self, like_thresh=0.90, dif_thresh=50, save=False):
+    def clean_df(self, min_like=MIN_LIKELIHOOD, max_dif=MAX_DIF, save=False):
         if not isinstance(save, bool):
             msg = 'The save variable has to be bool'
             raise AttributeError(msg)
@@ -222,7 +246,7 @@ class DLCsv:
             minus_last = np.delete(original, -1, 0)
 
             ele_dif = np.subtract(minus_first, minus_last)
-            bad_values = deque(np.greater_equal(ele_dif, dif_thresh))
+            bad_values = deque(np.greater_equal(ele_dif, max_dif))
             bad_values.appendleft(False)
             return bad_values
 
@@ -231,7 +255,7 @@ class DLCsv:
         for body_part in self.body_parts:
             """Clean low likelihood values"""
 
-            new_df.loc[new_df[(body_part, 'likelihood')] < like_thresh,
+            new_df.loc[new_df[(body_part, 'likelihood')] < min_like,
                        [(body_part, 'x'), (body_part, 'y')]] = np.nan
 
             """Clean high velocity values"""
@@ -292,7 +316,7 @@ class DLCsv:
             raise AttributeError(msg)
 
         use_df = self.get_state(state)
-        total_frames = self.row_n - 1
+        total_frames = self.n_rows - 1
         nose = use_df['nose'][or_var].values.tolist()
         left_ear = use_df['left_ear'][or_var].values.tolist()
         right_ear = use_df['right_ear'][or_var].values.tolist()
@@ -350,29 +374,37 @@ class DLCsv:
 
     def angle_df(self, body_part_centre, body_part_1, body_part_2):
         """Return a csv with the angle between three body parts per frame"""
-        for row_index in range(self.row_n):
+        for i in range(self.n_rows):
             vector_centre = Vector2D(*self.bp_coords(
-                body_part_centre, row_index))
+                body_part_centre, i))
 
             vector_body_part_1 = Vector2D(*self.bp_coords(
-                body_part_1, row_index)) - vector_centre
+                body_part_1, i)) - vector_centre
             vector_body_part_2 = Vector2D(*self.bp_coords(
-                body_part_2, row_index)) - vector_centre
+                body_part_2, i)) - vector_centre
             return vector_body_part_1 @ vector_body_part_2
 
     def bp_coords(self, body_part, row_index, state='interpolated'):
         """Returns body part coordinate from"""
+        if not isinstance(body_part, str):
+            msg = 'body_part has to be string'
+            raise AttributeError(msg)
+        if row_index % 1 != 0:
+            msg = 'row_index must be an integer'
+            raise AttributeError(msg)
+        
         use_df = self.get_state(state)
-        row = use_df.loc[str(row_index)].tolist()
+        row = use_df[body_part].loc[row_index].tolist()
         return row[0], row[1]
 
     def view(self, state='raw'):
+        """For viewing data frame in terminal; don't use in jupyter notebook"""
         use_df = self.get_state(state)
         for body_part in self.body_parts:
             print(use_df[body_part])
 
     def get_state(self, state):
         state_dict = {'raw': self.raw_df,
-                      'cleaned': self.cleaned_df,
-                      'interpolated': self.interpolated_df}
+                      'cleaned': self.clean_df(),
+                      'interpolated': self.interpolated_df()}
         return state_dict[state]
