@@ -167,4 +167,5 @@ fabric.properties
 .idea/httpRequests
 
 # Project defined
+data/
 *.csv
