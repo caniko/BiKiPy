@@ -7,7 +7,7 @@ import os
 
 
 class DLCPos:
-    def __init__(self, pandas_df, border_or, normalize=False, invert_y=False,
+    def __init__(self, pandas_df, border_or, normalize=False,
                  usr_lower=None, usr_upper=None, lasso_num=None,
                  video_file=None, frame=None, notebook=False):
         """
@@ -27,8 +27,6 @@ class DLCPos:
             To use of lasso, video_file and lasso_num has to be defined.
         normalize: bool, default False
             Define if pandas_df is normalized
-        invert_y: bool, default False
-            Define if pandas_df has an inverted y-axis; tradition cartesian
         lower_border: int
             Variable to define lower border manually.
             See border_or for context
@@ -78,8 +76,8 @@ class DLCPos:
         else:
             self.lasso_num = lasso_num
 
-        if not isinstance(invert_y, bool) or not isinstance(normalize, bool):
-            msg = 'invert_y and normalize has to boolean'
+        if not isinstance(normalize, bool):
+            msg = 'normalize has to boolean'
             raise AttributeError(msg)
 
         if notebook is False:
@@ -114,10 +112,6 @@ class DLCPos:
             raise AttributeError(msg)
 
         if border_or == 'hor' or border_or == 'ver':
-            if invert_y:
-                self.lower_border = self.y_max - lower_var
-                self.upper_border = self.y_max - upper_var
-
             if normalize:
                 norm_ref_dic = {'ver': self.x_max, 'hor': self.y_max}
                 self.lower_border /= norm_ref_dic[border_or]
@@ -126,7 +120,6 @@ class DLCPos:
                 self.lower_border = lower_var
                 self.upper_border = upper_var
 
-        self.invert_y = invert_y
         self.normalize = normalize
         self.pandas_df = pandas_df
         self.border_or = border_or
@@ -194,7 +187,10 @@ class DLCPos:
         left_ear = use_df.left_ear[or_var].values
         right_ear = use_df.right_ear[or_var].values
 
-        if self.invert_y is True or border_or == 'ver':
+        # Disregard warnings as they arise from NaN being compared to numbers
+        np.warnings.filterwarnings('ignore')
+
+        if border_or == 'ver':
             nose_test = np.logical_or(np.less(nose, self.lower_border),
                                       np.greater(nose, self.upper_border))
 

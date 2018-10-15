@@ -3,10 +3,9 @@ from collections import deque
 import pandas as pd
 import numpy as np
 
-
 class DLCsv:
-    def __init__(self, csv_filename, normalize=False, invert_y=False,
-                 video_file=None, x_max=None, y_max=None):
+    def __init__(self, csv_filename, normalize=False, video_file=None,
+                 x_max=None, y_max=None):
         """
         Python class to analyze csv files from DeepLabCut (DLC)
 
@@ -16,9 +15,6 @@ class DLCsv:
             Name of csv file to be analysed; with or without file-extension
         normalize: boolean, default False
             Normalizes the coordinates. Requires x_max and y_max to be defined
-        invert_y: boolean, default False
-            Inverts the y axis, yielding a traditional cartesian system;
-            origin on the bottom left. Requires x_max and y_max to be defined
         x_max: {None, int}, default None
             Maximum x value, can be extracted from video sample or defined
         y_max: {None, int}, default None
@@ -38,11 +34,6 @@ class DLCsv:
             msg = 'x max and y max has to defined in order to normalize'
             raise AttributeError(msg)
 
-        elif invert_y is True:
-            msg = 'y max has to defined in order to invert the y axis'
-            raise AttributeError(msg)
-
-        self.invert_y = invert_y
         self.normalize = normalize
 
         # Import the csv file
@@ -72,15 +63,15 @@ class DLCsv:
     def __repr__(self):
         header = '{}(\"{}\"):\n'.format(__class__.__name__, self.csv_filename)
 
-        line_i = 'norm={}, inv_y={}, vid={},\n'.format(
-            self.normalize, self.invert_y, self.video_file)
+        line_i = 'norm={}, vid={},\n'.format(
+            self.normalize, self.video_file)
 
         line_ii = 'x_max={}, y_max={}'.format(self.x_max, self.y_max)
 
         base = header + line_i + line_ii
         return base
 
-    def clean_df(self, min_like=0.90, max_dif=50, save=False):
+    def clean(self, min_like=0.90, max_dif=50, save=False):
         if not isinstance(save, bool):
             msg = 'The save variable has to be bool'
             raise AttributeError(msg)
@@ -89,6 +80,9 @@ class DLCsv:
             original = new_df.loc[:, (body_part, comp)].values
             minus_first = np.delete(original, 0, 0)
             minus_last = np.delete(original, -1, 0)
+
+            # Disregard warnings as they arise from NaN being compared to numbers
+            np.warnings.filterwarnings('ignore')
 
             ele_dif = np.subtract(minus_first, minus_last)
             bad_values = deque(np.greater_equal(ele_dif, max_dif))
@@ -113,16 +107,8 @@ class DLCsv:
         if self.normalize:
             new_df.loc[:, (slice(None), 'x')] = \
                 new_df.loc[:, (slice(None), 'x')] / self.x_max
-            if self.invert_y:
-                new_df.loc[:, (slice(None), 'y')] = \
-                    (self.y_max - new_df.loc[:, (slice(None), 'y')]) \
-                    / self.y_max
-            else:
-                new_df.loc[:, (slice(None), 'y')] = \
-                    new_df.loc[:, (slice(None), 'y')] / self.y_max
-        elif self.invert_y:
             new_df.loc[:, (slice(None), 'y')] = \
-                self.y_max - new_df.loc[:, (slice(None), 'y')]
+                new_df.loc[:, (slice(None), 'y')] / self.y_max
 
         if save is True:
             csv_name = 'cleaned_{}.csv'.format(self.csv_filename)
@@ -130,19 +116,18 @@ class DLCsv:
 
         return new_df
 
-    def interpolate_df(self, save=False):
+    def interpolate(self, method='slinear', order=None, save=False):
         if not isinstance(save, bool):
             msg = 'The save variable has to be bool'
             raise AttributeError(msg)
 
-        new_df = self.clean_df()
+        new_df = self.clean()
 
         for body_part in self.body_parts:
             for comp in ('x', 'y'):
-                print(comp)
                 new_df.loc[:, (body_part, comp)] = \
                     new_df.loc[:, (body_part, comp)].interpolate(
-                        method='spline', order=4,
+                        method=method, order=order,
                         limit_area='inside')
 
         if save is True:
@@ -172,6 +157,6 @@ class DLCsv:
 
     def get_state(self, state):
         state_dict = {'raw': self.raw_df,
-                      'cleaned': self.clean_df(),
-                      'interpolated': self.interpolate_df()}
+                      'cleaned': self.clean(),
+                      'interpolated': self.interpolate()}
         return state_dict[state]
