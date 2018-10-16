@@ -1,5 +1,4 @@
 from dlca.video_analysis import get_video_data
-import numba
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
