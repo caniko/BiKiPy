@@ -1,12 +1,12 @@
-from os import listdir
 import cv2
+import os
 
 
 def get_video_data(filename, frame_loc='middle', path='.'):
     if isinstance(filename, str):
-        user_video = filename
+        user_video = os.path.join(path, filename)
     elif filename is True:
-        video_list = [video for video in listdir(path) if
+        video_list = [video for video in os.listdir(path) if
                       video.endswith('.avi') or video.endswith('.mp4')]
         user_video = video_list[0]
     else:
@@ -26,6 +26,8 @@ def get_video_data(filename, frame_loc='middle', path='.'):
         raise AttributeError(msg)
 
     cap.set(1, target_frame - 1)
+
+    print(user_video)
 
     res, frame = cap.read()
     assert res, 'Could not extract frame from media'
