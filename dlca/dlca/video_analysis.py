@@ -1,12 +1,12 @@
-from os import listdir
+import os
 import cv2
 
 
 def get_video_data(filename, frame_loc='middle', path='.'):
     if isinstance(filename, str):
-        user_video = filename
+        user_video = os.path.join(path, filename)
     elif filename is True:
-        video_list = [video for video in listdir(path) if
+        video_list = [video for video in os.listdir(path) if
                       video.endswith('.avi') or video.endswith('.mp4')]
         user_video = video_list[0]
     else:
