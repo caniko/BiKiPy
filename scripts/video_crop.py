@@ -53,7 +53,7 @@ plt.connect('key_press_event', toggle_selector)
 plt.show()
 
 
-#crop video
+#crop video - WIP
 CROPPED_VIDEOS = os.path.join(DATA_FOLDER_NAME, "cropped_videos")
 if not os.path.exists(CROPPED_VIDEOS):
     os.mkdir(CROPPED_VIDEOS)
