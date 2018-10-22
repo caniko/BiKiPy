@@ -1,6 +1,7 @@
 from dlca.video_analysis import get_video_data
 import pandas as pd
 import numpy as np
+import math
 import os
 
 
@@ -43,7 +44,8 @@ class DLCsv:
         self.csv_file_path = os.path.join(self.path, csv_filename)
         type_dict = {'coords': int, 'x': float,
                      'y': float, 'likelihood': float}
-        self.raw_df = pd.read_csv(self.csv_file_path, engine='c', delimiter=',',
+        self.raw_df = pd.read_csv(self.csv_file_path, engine='c',
+                                  delimiter=',',
                                   index_col=0, skiprows=1, header=[0, 1],
                                   dtype=type_dict, na_filter=False)
 
@@ -76,20 +78,23 @@ class DLCsv:
         base = header + line_i + line_ii
         return base
 
-    def clean(self, min_like=0.90, max_vel=150, hv_edge_tol=200, save=False):
+    def clean(self, min_like=0.90, max_vel=100, range_thresh=50,
+              save=False):
         """Clean low likelihood and high velocity points from raw dataframe
 
         Parameters
         ----------
         min_like: float, default 0.90
             The minimum likelihood the coordinates of the respective row.
-            If below the values, the coords are disgarded while being replaced
+            If below the values, the coords are discarded while being replaced
             by numpy.NaN
         max_vel: int, default 150
             The maximum velocity between two points.
 
             Will become automatically generated with reference to
             fps of respective video, x_max and y_max.
+        range_thresh: int, default 50
+
         save: bool, default False
             Bool for saving/exporting the resulting dataframe to a .csv file
 
@@ -102,28 +107,39 @@ class DLCsv:
             msg = 'The save variable has to be bool'
             raise AttributeError(msg)
 
-        def bad_coords(comp):
-            original = new_df.loc[:, (body_part, comp)].values
-            minus_first = np.delete(original, 0, 0)
-            minus_last = np.delete(original, -1, 0)
+        def velocity_threshold():
+            x = new_df.loc[:, (body_part, 'x')].values
+            y = new_df.loc[:, (body_part, 'y')].values
+            bad_values = np.zeros(len(x), dtype=bool)
 
-            # Disregard warnings.
-            # They arise from NaN being compared to numbers:
-            np.warnings.filterwarnings('ignore')
+            velocity = np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2)
+            bad_velocity_lcs = np.where(velocity > max_vel)[0]
+            bad_lcs_intervals = np.diff(bad_velocity_lcs)
 
-            ele_dif = minus_first - minus_last
-            raw_bad_values = np.greater_equal(ele_dif, max_vel)
+            bad_velocity_ranges = []
+            group_index = -1
+            keep = False
+            for i, interval in enumerate(bad_lcs_intervals):
+                if interval < range_thresh:
+                    if not keep:
+                        keep = True
+                        bad_velocity_ranges.append([bad_velocity_lcs[i]])
+                        group_index += 1
+                    else:
+                        bad_velocity_ranges[group_index].\
+                            append(bad_velocity_lcs[i])
+                else:
+                    if keep:
+                        bad_velocity_ranges[group_index].append(
+                            bad_velocity_lcs[i])
+                        keep = False
 
-            raw_edge = np.where(raw_bad_values == 1)
-            raw_edge_val = ele_dif[raw_edge]
-
-            minus_first = np.delete(raw_edge, 0, 0)
-            minus_last = np.delete(raw_edge, -1, 0)
-            raw_interval = minus_first - minus_last
-
-            bad_interval = np.where(raw_interval < hv_edge_tol)
-
-            return raw_bad_values
+            for group in bad_velocity_ranges:
+                if len(group) > 1:
+                    bad_values[range(group[0]+1, group[1]+1)] = True
+                else:
+                    bad_values[group[0]+1] = True
+            return bad_values
 
         new_df = self.raw_df.copy()
 
@@ -134,10 +150,7 @@ class DLCsv:
                        [(body_part, 'x'), (body_part, 'y')]] = np.nan
 
             """Clean high velocity values"""
-
-            invalid_coords = np.logical_or(bad_coords('x'), bad_coords('y'))
-
-            new_df.loc[invalid_coords,
+            new_df.loc[velocity_threshold(),
                        [(body_part, 'x'), (body_part, 'y')]] = np.nan
 
         if self.normalize:
@@ -194,7 +207,7 @@ class DLCsv:
         if row_index % 1 != 0:
             msg = 'row_index must be an integer'
             raise AttributeError(msg)
-        
+
         use_df = self.get_state(state)
         row = use_df[body_part].loc[row_index].tolist()
         return row[0], row[1]
@@ -205,8 +218,29 @@ class DLCsv:
         for body_part in self.body_parts:
             print(use_df[body_part])
 
-    def get_state(self, state):
+    def get_state(self, state, **kwargs):
         state_dict = {'raw': self.raw_df,
-                      'cleaned': self.clean(),
-                      'interpolated': self.interpolate()}
+                      'cleaned': self.clean(**kwargs),
+                      'interpolated': self.interpolate(**kwargs)}
         return state_dict[state]
+
+
+def csv_iterator(method, analysis_initi=None, state='cleaned',
+                 path=os.getcwd(), ret_obj='dict',
+                 kwargs_for_csv={}, kwargs_for_initi={}, kwargs_for_meth={}):
+    path = os.path.abspath(path)
+    csv_list = [file for file in os.listdir(path) if
+                file.endswith('.csv')]
+    result = {}
+    for file in csv_list:
+        file_path = os.path.join(path, file)
+        csv_file_df = DLCsv(file_path).get_state(state, **kwargs_for_csv)
+
+        if analysis_initi is not None:
+            analysis = analysis_initi(csv_file_df, **kwargs_for_initi)
+            result[file] = getattr(analysis, method)(**kwargs_for_meth)
+        else:
+            result[file] = method(csv_file_df, **kwargs_for_meth)
+
+    if ret_obj == 'dict':
+        return result

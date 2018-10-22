@@ -1,8 +1,9 @@
-from dlca.video_analysis import get_video_data
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+
+from dlca.video_analysis import get_video_data
 
 
 class DLCPos:
@@ -149,15 +150,6 @@ class DLCPos:
         )
 
         return header + line_i
-
-    @staticmethod
-    def csv_iterator(method, args, path=os.getcwd(), state='cleaned',
-                     inter_method='linear'):
-        path = os.path.abspath(path)
-        csv_list = [file for file in os.listdir(path) if
-                    file.endswith('.csv')]
-        for file in csv_list:
-            pass
 
     @staticmethod
     def get_border(border_or, frame=None, usr_lower=None, usr_upper=None,

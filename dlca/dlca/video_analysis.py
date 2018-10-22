@@ -8,7 +8,7 @@ def get_video_data(filename, frame_loc='middle', path='.'):
     elif filename is True:
         video_list = [video for video in os.listdir(path) if
                       video.endswith('.avi') or video.endswith('.mp4')]
-        user_video = video_list[0]
+        user_video = os.path.join(path, video_list[0])
     else:
         msg = 'Media file is not defined'
         raise ValueError(msg)

@@ -4,7 +4,7 @@ import os
 
 from dlca.video_analysis import get_video_data
 from dlca.analysis import DLCPos
-from dlca.readers import DLCsv
+from dlca.readers import DLCsv, csv_iterator
 from settings import DATA_FOLDER_NAME
 
 
@@ -36,7 +36,7 @@ if not os.path.exists(DATA_FOLDER_NAME):
     msg = 'The path to data folder is invalid'
     raise ValueError(msg)
 
-if not sys.argv[1].endswith('.csv'):
+if not sys.argv[1].endswith('.csv') and sys.argv[1] != 'all':
     msg = 'The file is not a .csv file'
     raise ValueError(msg)
 
@@ -51,7 +51,7 @@ else:
 
 
 if len(sys.argv) == 3 or len(sys.argv) == 4:
-    if len(sys.argv) == 3:
+    if len(sys.argv) == 3 or sys.argv[3] == 'one':
         frame, x_max, y_max = get_video_data(True, path=DATA_FOLDER_NAME)
 
     elif len(sys.argv) == 4:
@@ -62,11 +62,18 @@ if len(sys.argv) == 3 or len(sys.argv) == 4:
             msg = 'video_file is invalid'
             raise ValueError(msg)
 
-    csv_file = os.path.join(DATA_FOLDER_NAME, sys.argv[1])
-    df_obj = DLCsv(csv_file, x_max=x_max, y_max=y_max)
-    pos_obj = DLCPos(df_obj.interpolate(), border_or, frame=frame)
+    if sys.argv[1] != 'all':
+        csv_file = os.path.join(DATA_FOLDER_NAME, sys.argv[1])
+        df_obj = DLCsv(csv_file, x_max=x_max, y_max=y_max)
+        pos_obj = DLCPos(df_obj.interpolate(), border_or, frame=frame)
 
-    pos_obj.position_preference(plot=True)
+        pos_obj.position_preference(plot=True)
+    else:
+        result = csv_iterator('position_preference', analysis_initi=DLCPos,
+                              state='interpolated', path=DATA_FOLDER_NAME,
+                              kwargs_for_initi={'border_or': border_or,
+                                                'frame': frame})
+
 
 if len(sys.argv) == 5:
     if sys.argv[4] == 'jup':
