@@ -1,14 +1,16 @@
-from dlca.video_analysis import get_video_data
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
+from dlca.video_analysis import get_video_data
+
 
 class DLCPos:
     def __init__(self, pandas_df, border_or, normalize=False,
                  usr_lower=None, usr_upper=None, lasso_num=None,
-                 video_file=None, frame=None, notebook=False):
+                 video_file=None, frame=None, x_max=None, y_max=None,
+                 notebook=False):
         """
         pandas_df: pandas.DataFrame object from DLCsv
             Data container with data to be analysed.
@@ -35,8 +37,9 @@ class DLCPos:
         lasso_num: int
             Number of lasso selections. See border_or for more context
         video_file: {None, str}, default None
-            Optional. Defines the name of the video file in local directory
-            to be used for analysis.
+            Optional. Defines the name of the video file in local directory.
+            Used to acquire resolution information, and a sample frame.
+
             Required if border_or == 'lasso' and frame == None.
             None: No action
 
@@ -44,6 +47,8 @@ class DLCPos:
                   File extension must be included.
 
             True: If there is only one video file, it will be selected.
+        frame: {str, numpy.array, None}, default None
+
         notebook: bool, default False
             Import user defined parameters from jup_data.txt for use in ipynb
         """
@@ -81,7 +86,18 @@ class DLCPos:
 
         if notebook is False:
             if isinstance(video_file, str) or video_file is True:
-                frame, self.x_max, self.y_max = get_video_data(video_file)
+                frame, x_max, y_max = get_video_data(video_file)
+
+            elif frame is not None:
+                if isinstance(frame, type(np.zeros(0))):
+                    pass
+                elif isinstance(frame, str):
+                    from matplotlib.image import imread
+
+                    frame = imread(frame)
+                else:
+                    msg = 'The variable frame has to be a numpy array'
+                    raise AttributeError(msg)
 
             if border_or == 'ver' or border_or == 'hor':
                 lower_var, upper_var = \
@@ -111,8 +127,8 @@ class DLCPos:
             raise AttributeError(msg)
 
         if border_or == 'hor' or border_or == 'ver':
-            if normalize:
-                norm_ref_dic = {'ver': self.x_max, 'hor': self.y_max}
+            if normalize is True:
+                norm_ref_dic = {'ver': x_max, 'hor': y_max}
                 self.lower_border /= norm_ref_dic[border_or]
                 self.upper_border /= norm_ref_dic[border_or]
             else:
@@ -124,7 +140,7 @@ class DLCPos:
         self.border_or = border_or
 
     def __repr__(self):
-        header = '{}(\"{}\"):\n'.format(__class__.__name__, self.df)
+        header = '{}(\"{}\"):\n'.format(__class__.__name__, self.pandas_df)
         line_i = ',\nborder_or=\"{}\"{}'.format(
             self.border_or,
             ', upper={}, lower={}'.format(self.upper_border,
@@ -235,6 +251,10 @@ class DLCPos:
         rest = 100 - percent_lower - percent_upper
 
         if plot:
+            print('Percent bottom: {:.2f}%\n'
+                  'Percent top:    {:.2f}%'.format(percent_lower,
+                                                   percent_upper))
+
             labels = ('Bottom', 'Top', 'Elsewhere')
             sizes = (percent_lower, percent_upper, rest)
 
@@ -243,4 +263,4 @@ class DLCPos:
             ax1.axis('equal')  # Ensures that pie is drawn as a circle.
             plt.show()
         else:
-            return percent_lower, percent_upper
+            return percent_lower, percent_upper, rest

@@ -7,6 +7,9 @@ setup(name='dlca',
       url='https://github.com/caniko2/DeepLabCutAnalysis',
       author='CINPLA',
       author_email='canhtart@gmail.com',
-      license='MIT',
+      license='LGPL-3.0',
       packages=['dlca'],
-      zip_safe=False)
+      zip_safe=False,
+      install_requires=['matplotlib', 'numpy',
+                        'scipy', 'opencv-python',
+                        'pandas'])
