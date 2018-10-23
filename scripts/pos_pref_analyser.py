@@ -56,6 +56,7 @@ else:
 
 if len(sys.argv) == 3 or len(sys.argv) == 4:
     if len(sys.argv) == 3 or sys.argv[3] == 'one':
+        print(1)
         frame, x_max, y_max = get_video_data(True, path=DATA_FOLDER_NAME)
 
     elif len(sys.argv) == 4:
@@ -73,10 +74,12 @@ if len(sys.argv) == 3 or len(sys.argv) == 4:
 
         pos_obj.position_preference(plot=True)
     else:
+        usr_lower, usr_upper = DLCPos.get_border(border_or, frame=frame)
         result = csv_iterator('position_preference', analysis_initi=DLCPos,
                               state='interpolated', path=DATA_FOLDER_NAME,
                               kwargs_for_initi={'border_or': border_or,
-                                                'frame': frame})
+                                                'usr_lower': int(usr_lower),
+                                                'usr_upper': int(usr_upper)})
         df = pd.DataFrame.from_dict(result, orient='index',
                                     columns=['Bottom', 'Top', 'Elsewhere'])
         df.index.name = 'Experiment'
@@ -95,7 +98,7 @@ if len(sys.argv) == 5:
         outfile = open('jup_prep.pckl', 'wb')
         pickle.dump(x_max, outfile)
         pickle.dump(y_max, outfile)
-        
+
         raw_lower_boarder, raw_upper_boarder = \
             DLCPos.get_border(border_or, frame=frame)
 
