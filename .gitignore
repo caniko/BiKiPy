@@ -166,6 +166,20 @@ fabric.properties
 # Editor-based Rest Client
 .idea/httpRequests
 
-# Project defined
+""" Project defined """
+# Dirs
 data/
+apersonal/
+output/
+
+# Types
 *.csv
+
+# Pycharm
+.idea/.name
+.idea/DeepLabCutAnalysis.iml
+.idea/codeStyles/
+.idea/inspectionProfiles/
+.idea/misc.xml
+.idea/modules.xml
+.idea/webResources.xml
