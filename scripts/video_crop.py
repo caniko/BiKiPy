@@ -1,22 +1,22 @@
-from matplotlib.widgets import RectangleSelector
-import matplotlib.pyplot as plt
-from settings import DATA_FOLDER_NAME
-from dlca.video_analysis import get_video_data
-import sys
 import os
-from moviepy.editor import *
+import sys
 
+import matplotlib.pyplot as plt
+from matplotlib.widgets import RectangleSelector
+
+from dlca.video_analysis import get_video_data
+from settings import DATA_FOLDER_NAME
+
+import cv2
 
 """
-moviepy requires setuptools and ex_setup already installed
+This tool gives the user the ability to choose area that they want to crop
+and then crops the video frame by frame.
 
-Do a mouseclick somewhere, move the mouse to some destination, release
-the button.  This class gives click- and release-events and also draws
-a line or a box from the click-point to the actual mouse position
-(within the same axes) until the button is released.  Within the
-method 'self.ignore()' it is checked whether the button from eventpress
-and eventrelease are the same.
+The video created is mp4v (*".mp4").
 
+The command line to run this in terminal:
+python video_crop.py filename
 """
 
 
@@ -37,15 +37,17 @@ def toggle_selector(event):
         print(' RectangleSelector activated.')
         toggle_selector.RS.set_active(True)
 
-# crop frame
-frame = get_video_data(sys.argv[1], path=DATA_FOLDER_NAME)[0]
+
+# choose frame
+frame_example = get_video_data(sys.argv[1], path=DATA_FOLDER_NAME)[0]
 fig, current_ax = plt.subplots()  # make a new plotting range
-plt.imshow(frame)
+plt.imshow(frame_example)
 
 # drawtype is 'box' or 'line' or 'none'
 toggle_selector.RS = RectangleSelector(current_ax, line_select_callback,
                                        drawtype='box', useblit=True,
-                                       button=[1, 3],  # don't use middle button
+                                       button=[1, 3],
+                                       # don't use middle button
                                        minspanx=5, minspany=5,
                                        spancoords='pixels',
                                        interactive=True)
@@ -53,12 +55,31 @@ plt.connect('key_press_event', toggle_selector)
 plt.show()
 
 
-#crop video - WIP
+# cropped video path
 CROPPED_VIDEOS = os.path.join(DATA_FOLDER_NAME, "cropped_videos")
 if not os.path.exists(CROPPED_VIDEOS):
     os.mkdir(CROPPED_VIDEOS)
-
 video_path = os.path.join(DATA_FOLDER_NAME, sys.argv[1])
-original_video = VideoFileClip(video_path)
-cropped_video = vfx.crop(original_video, x1=x1, y1=y1, x2=x2, y2=y2)
-cropped_video.release()
+
+
+# cropping video of interest
+stream = cv2.VideoCapture(video_path)
+outputpath = os.path.join(CROPPED_VIDEOS,
+                          "{}_cropped.mp4".format(sys.argv[1][:-4]))
+size = (int(round(x2-x1)), int(round(y2-y1)))
+codec = cv2.VideoWriter_fourcc(*"mp4v")
+cropped_video = cv2.VideoWriter()
+cropped_video.open(outputpath, fourcc=codec, fps=30, frameSize=size,
+                   isColor=True)
+
+# loading and cropping video frame by frame
+while True:
+    grabbed, frame = stream.read()
+    if not grabbed:
+        break
+    cropped_frame = frame[int(round(y1)):int(round(y2)), int(round(x1)):int(round(x2))]
+    #cv2.imshow('cropped', cropped_frame) # to show each frame
+    #cv2.waitKey(int(round(1000/30))) # to show frames with ca. 30fps
+    cropped_video.write(cropped_frame)
+stream.release()
+
