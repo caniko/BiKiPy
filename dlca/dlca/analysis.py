@@ -263,5 +263,4 @@ class DLCPos:
             ax1.axis('equal')  # Ensures that pie is drawn as a circle.
             plt.show()
         else:
-            return round(percent_lower, 2), round(percent_upper, 2), \
-                   round(rest, 2)
+            return percent_lower, percent_upper, rest
