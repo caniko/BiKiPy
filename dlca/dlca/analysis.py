@@ -251,9 +251,9 @@ class DLCPos:
         rest = 100 - percent_lower - percent_upper
 
         if plot:
-            print('Percent lower: {:.2f}%\n'
-                  'Percent upper: {:.2f}%'.format(percent_lower,
-                                                  percent_upper))
+            print('Percent bottom: {:.2f}%\n'
+                  'Percent top:    {:.2f}%'.format(percent_lower,
+                                                   percent_upper))
 
             labels = ('Bottom', 'Top', 'Elsewhere')
             sizes = (percent_lower, percent_upper, rest)
@@ -263,4 +263,5 @@ class DLCPos:
             ax1.axis('equal')  # Ensures that pie is drawn as a circle.
             plt.show()
         else:
-            return percent_lower, percent_upper
+            return round(percent_lower, 2), round(percent_upper, 2), \
+                   round(rest, 2)

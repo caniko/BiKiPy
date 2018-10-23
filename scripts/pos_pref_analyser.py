@@ -1,3 +1,4 @@
+import pandas as pd
 import pickle
 import sys
 import os
@@ -5,19 +6,22 @@ import os
 from dlca.video_analysis import get_video_data
 from dlca.analysis import DLCPos
 from dlca.readers import DLCsv, csv_iterator
-from settings import DATA_FOLDER_NAME
+from settings import DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME
 
 
 """
-sys.argv[1] = <.csv filename>
+sys.argv[1] = <.csv filename>: {'<name>', 'all'}
+    If provided <name> only the file with filename will be analysed;
+    'all' will analyse all files and return a .csv file with results to the
+        root/output folder.
 
-sys.argv[2] = <border_var>:     {'hor' 'ver' 'lasso'}
+sys.argv[2] = <border_var>: {'hor', 'ver', 'lasso'}
     The orientation and style of border:
         hor:    horizontal
         ver:    vertical
         lasso:  define border(s) using lasso tool
 
-sys.argv[3] = <video filename>: {str}, default str: 'one'
+sys.argv[3] = <video filename>: {'<name>', 'one'}, default str: 'one'
     Name of video file located in DATA_FOLDER
 
 sys.argv[4] = <kwarg>: optional: jup
@@ -73,7 +77,18 @@ if len(sys.argv) == 3 or len(sys.argv) == 4:
                               state='interpolated', path=DATA_FOLDER_NAME,
                               kwargs_for_initi={'border_or': border_or,
                                                 'frame': frame})
+        df = pd.DataFrame.from_dict(result, orient='index',
+                                    columns=['Bottom', 'Top', 'Elsewhere'])
+        df.index.name = 'Experiment'
 
+        if not os.path.exists(OUTPUT_FOLDER_NAME):
+            os.mkdir(OUTPUT_FOLDER_NAME)
+
+        data_id = int(input('ID number for output data: '))
+        out_csv_name = 'position_preference_{}.csv'.format(data_id)
+        csv_path = os.path.join(OUTPUT_FOLDER_NAME, out_csv_name)
+
+        df.to_csv(csv_path)
 
 if len(sys.argv) == 5:
     if sys.argv[4] == 'jup':

@@ -235,12 +235,13 @@ def csv_iterator(method, analysis_initi=None, state='cleaned',
     for file in csv_list:
         file_path = os.path.join(path, file)
         csv_file_df = DLCsv(file_path).get_state(state, **kwargs_for_csv)
+        cleaned_name = file[:-4]
 
         if analysis_initi is not None:
             analysis = analysis_initi(csv_file_df, **kwargs_for_initi)
-            result[file] = getattr(analysis, method)(**kwargs_for_meth)
+            result[cleaned_name] = getattr(analysis, method)(**kwargs_for_meth)
         else:
-            result[file] = method(csv_file_df, **kwargs_for_meth)
+            result[cleaned_name] = method(csv_file_df, **kwargs_for_meth)
 
     if ret_obj == 'dict':
         return result
