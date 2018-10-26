@@ -247,8 +247,7 @@ class DLCPref:
             ax1.axis('equal')  # Ensures that pie is drawn as a circle.
             plt.show()
         else:
-            return percent_lower, percent_upper
+            return percent_lower, percent_upper, rest
 
     def area_preference(self):
         pass
-

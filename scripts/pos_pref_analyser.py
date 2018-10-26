@@ -4,7 +4,7 @@ import sys
 import os
 
 from dlca.video_analysis import get_video_data
-from dlca.analysis import DLCPos
+from dlca.analysis import DLCPref
 from dlca.readers import DLCsv, csv_iterator
 from settings import DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME
 
@@ -56,7 +56,6 @@ else:
 
 if len(sys.argv) == 3 or len(sys.argv) == 4:
     if len(sys.argv) == 3 or sys.argv[3] == 'one':
-        print(1)
         frame, x_max, y_max = get_video_data(True, path=DATA_FOLDER_NAME)
 
     elif len(sys.argv) == 4:
@@ -70,12 +69,12 @@ if len(sys.argv) == 3 or len(sys.argv) == 4:
     if sys.argv[1] != 'all':
         csv_file = os.path.join(DATA_FOLDER_NAME, sys.argv[1])
         df_obj = DLCsv(csv_file, x_max=x_max, y_max=y_max)
-        pos_obj = DLCPos(df_obj.interpolate(), border_or, frame=frame)
+        pos_obj = DLCPref(df_obj.interpolate(), border_or, frame=frame)
 
-        pos_obj.position_preference(plot=True)
+        pos_obj.border_preference(plot=True)
     else:
-        usr_lower, usr_upper = DLCPos.get_border(border_or, frame=frame)
-        result = csv_iterator('position_preference', analysis_initi=DLCPos,
+        usr_lower, usr_upper = DLCPref.get_border(border_or, frame=frame)
+        result = csv_iterator('border_preference', analysis_initi=DLCPref,
                               state='interpolated', path=DATA_FOLDER_NAME,
                               kwargs_for_initi={'border_or': border_or,
                                                 'usr_lower': int(usr_lower),
@@ -88,7 +87,7 @@ if len(sys.argv) == 3 or len(sys.argv) == 4:
             os.mkdir(OUTPUT_FOLDER_NAME)
 
         data_id = int(input('ID number for output data: '))
-        out_csv_name = 'position_preference_{}.csv'.format(data_id)
+        out_csv_name = 'border_preference_{}.csv'.format(data_id)
         csv_path = os.path.join(OUTPUT_FOLDER_NAME, out_csv_name)
 
         df.to_csv(csv_path)
@@ -100,7 +99,7 @@ if len(sys.argv) == 5:
         pickle.dump(y_max, outfile)
 
         raw_lower_boarder, raw_upper_boarder = \
-            DLCPos.get_border(border_or, frame=frame)
+            DLCPref.get_border(border_or, frame=frame)
 
         pickle.dump(raw_lower_boarder, outfile)
         pickle.dump(raw_upper_boarder, outfile)
