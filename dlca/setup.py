@@ -9,4 +9,5 @@ setup(name='dlca',
       author_email='canhtart@gmail.com',
       license='MIT',
       packages=['dlca'],
-      zip_safe=False)
+      zip_safe=False,
+      install_requires=['numpy', 'pandas', 'matplotlib'])

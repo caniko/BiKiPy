@@ -1,13 +1,15 @@
-from dlca.video_analysis import get_video_data
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
+from dlca.video_analysis import get_video_data
 
-class DLCPos:
+
+class DLCPref:
     def __init__(self, pandas_df, border_or, normalize=False,
-                 usr_lower=None, usr_upper=None, lasso_num=None,
+                 usr_lower=None, usr_upper=None,
+                 lasso_num=None,
                  video_file=None, frame=None, notebook=False):
         """
         pandas_df: pandas.DataFrame object from DLCsv
@@ -50,6 +52,8 @@ class DLCPos:
         if not isinstance(pandas_df, pd.DataFrame):
             msg = 'pandas_df has to be a pandas data frame'
             raise AttributeError(msg)
+        else:
+            self.pandas_df = pandas_df
 
         if border_or != 'hor' and border_or != 'ver' and border_or != 'lasso':
             msg = 'The border orientation must be submitted ' \
@@ -120,7 +124,7 @@ class DLCPos:
                 self.upper_border = upper_var
 
         self.normalize = normalize
-        self.pandas_df = pandas_df
+
         self.border_or = border_or
 
     def __repr__(self):
@@ -137,7 +141,7 @@ class DLCPos:
 
     @staticmethod
     def get_border(border_or, frame=None, usr_lower=None, usr_upper=None,
-                    lasso_num=None):
+                   lasso_num=None):
         if border_or == 'hor' or border_or == 'ver':
             # 0: Use the x coordinate(s) as the border
             # 1: Use the y coordinate(s) as the border
@@ -170,7 +174,7 @@ class DLCPos:
         elif border_or == 'lasso':
             return
 
-    def position_preference(self, plot=False, border_or='hor'):
+    def border_preference(self, plot=False, border_or='hor'):
         if border_or == 'hor':
             or_var = 'y'
         elif border_or == 'ver':
@@ -244,3 +248,7 @@ class DLCPos:
             plt.show()
         else:
             return percent_lower, percent_upper
+
+    def area_preference(self):
+        pass
+
