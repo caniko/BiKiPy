@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
-from dlca.video_analysis import get_video_data
+from dlca.video_analysis import handle_video_data
 
 
 class DLCPref:
@@ -85,7 +85,7 @@ class DLCPref:
 
         if notebook is False:
             if isinstance(video_file, str) or video_file is True:
-                frame, self.x_max, self.y_max = get_video_data(video_file)
+                frame, self.x_max, self.y_max = handle_video_data(video_file)
 
             if border_or == 'ver' or border_or == 'hor':
                 lower_var, upper_var = \

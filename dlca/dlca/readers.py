@@ -2,8 +2,10 @@ import pandas as pd
 import numpy as np
 import os
 
-from dlca.video_analysis import get_video_data
-from dlca.mechanics import high_velocity_values
+from dlca.video_analysis import handle_video_data
+from dlca.functions.hviva import (get_high_velocity_locations as get_hv_loc,
+                                  get_flicks_locations as get_flick_loc,
+                                  invalid_relative_part_distance as irpd)
 
 
 class DLCsv:
@@ -58,7 +60,7 @@ class DLCsv:
         self.video_file = video_file
         self.vid_test = video_file is True or isinstance(video_file, str)
         if self.vid_test:
-            self.x_max, self.y_max = get_video_data(
+            self.x_max, self.y_max = handle_video_data(
                 filename=video_file)[1:3]
         else:
             self.x_max = x_max
@@ -102,7 +104,8 @@ class DLCsv:
             msg = 'The save variable has to be bool'
             raise AttributeError(msg)
 
-        new_df = self.raw_df.copy()
+        # Remove flicks from a copy of raw_df
+        new_df = irpd(self.raw_df.copy())
 
         for body_part in self.body_parts:
             """Clean low likelihood values"""
@@ -110,9 +113,14 @@ class DLCsv:
             new_df.loc[new_df[(body_part, 'likelihood')] < min_like,
                        [(body_part, 'x'), (body_part, 'y')]] = np.nan
 
+            """Clean flicks"""
+            new_df.loc[
+                get_flick_loc(new_df, body_part, max_vel),
+                [(body_part, 'x'), (body_part, 'y')]] = np.nan
+
             """Clean high velocity values"""
             new_df.loc[
-                high_velocity_values(new_df, body_part, max_vel, range_thresh),
+                get_hv_loc(new_df, body_part, max_vel, range_thresh),
                 [(body_part, 'x'), (body_part, 'y')]] = np.nan
 
         if self.normalize:
@@ -159,18 +167,29 @@ class DLCsv:
 
         return new_df
 
-    def bp_coords(self, body_part, row_index, state='interpolated'):
-        """Returns body part coordinate from"""
-        if not isinstance(body_part, str):
-            msg = 'body_part has to be string'
-            raise AttributeError(msg)
-        if row_index % 1 != 0:
-            msg = 'row_index must be an integer'
-            raise AttributeError(msg)
+    def coords(self, body_part=None, state='raw'):
+        """Returns body part coordinate from"""        
+        def coord_list(body_part_df):
+            coords = []
+            for i in range(len(body_part_df.x)):
+                coords.append(
+                    (body_part_df.x[i], body_part_df.y[i])
+                )
+            return np.array(coords)
 
         use_df = self.get_state(state)
-        row = use_df[body_part].loc[row_index].tolist()
-        return row[0], row[1]
+        if body_part == None:
+            coords = {}
+            print(self.body_parts)
+            for body_part in self.body_parts:
+                coords[body_part] = coord_list(use_df[body_part])
+        elif isinstance(body_part, str):
+            coords = coord_list(body_part)
+        else:
+            msg = 'body_part has to be string or None'
+            raise AttributeError(msg)
+
+        return coords
 
     def view(self, state='raw'):
         """For viewing data frame in terminal; don't use in jupyter notebook"""
@@ -179,13 +198,17 @@ class DLCsv:
             print(use_df[body_part])
 
     def get_state(self, state, **kwargs):
-        state_dict = {'raw': self.raw_df,
-                      'cleaned': self.clean(**kwargs),
-                      'interpolated': self.interpolate(**kwargs)}
-        return state_dict[state]
+        if state == 'raw':
+            return self.raw_df
+        elif state == 'cleaned':
+            return self.clean(**kwargs)
+        elif state == 'interpolated':
+            return self.interpolate(**kwargs)
+        else:
+            msg = 'The state can only be raw; cleaned; interpolated'
+            raise AttributeError(msg)
 
-
-def csv_iterator(method, analysis_initi=None, state='cleaned',
+def csv_iterator(method, analysis_initi=None, state='raw',
                  path=os.getcwd(), ret_obj='dict',
                  kwargs_for_csv={}, kwargs_for_initi={}, kwargs_for_meth={}):
     path = os.path.abspath(path)
