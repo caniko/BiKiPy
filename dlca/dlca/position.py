@@ -3,14 +3,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
-from dlca.video_analysis import handle_video_data
-
 
 class DLCPref:
-    def __init__(self, pandas_df, border_or, normalize=False,
-                 usr_lower=None, usr_upper=None,
-                 lasso_num=None,
-                 video_file=None, frame=None, notebook=False):
+    def __init__(
+        self, pandas_df, border_or, normalize=False,
+        usr_lower=None, usr_upper=None, lasso_num=None,
+        video_file=None, frame=None, notebook=False):
         """
         pandas_df: pandas.DataFrame object from DLCsv
             Data container with data to be analysed.
@@ -85,6 +83,11 @@ class DLCPref:
 
         if notebook is False:
             if isinstance(video_file, str) or video_file is True:
+                try:
+                    from dlca.video_analysis import handle_video_data
+                except ModuleNotFoundError:
+                    msg = 'opencv-python is required to analyse video'
+                    raise ModuleNotFoundError(msg)
                 frame, self.x_max, self.y_max = handle_video_data(video_file)
 
             if border_or == 'ver' or border_or == 'hor':
@@ -251,3 +254,22 @@ class DLCPref:
 
     def area_preference(self):
         pass
+
+
+def dynamic_relative_position(dlca, ref_point, points, axis=1):
+    """
+    <axis value> < ref : True <- Left (x); Above (y)
+    """
+    if axis == 0:
+        axis_name = 'x'
+    elif axis == 1:
+        axis_name = 'y'
+
+    df = dlca.raw_df
+    ref = df.loc[:, (ref_point, axis_name)].values
+
+    result = {}
+    for point in points:
+        result[point] = df.loc[:, (point, axis_name)].values < ref
+
+    return result
