@@ -27,6 +27,9 @@ def clockwise_angle(vector_1, vector_2):
 
     clockwise_angle = np.where(determinants.T >= 0, inner_angle, 2*np.pi - inner_angle)[0]
 
+    # The degree range is [pi, -pi]
+    clockwise_angle -= np.pi
+
     return clockwise_angle
 
 
@@ -40,4 +43,9 @@ def angle_over_time(dlca, point_a, point_b, point_c):
     ab_vec = position[point_a] - position[point_b]
     bc_vec = position[point_b] - position[point_c]
 
-    return clockwise_angle(ab_vec, bc_vec)
+    angles = clockwise_angle(ab_vec, bc_vec)
+    accuracy_score = (df.loc[:, [(point_a, 'likelihood')]].values
+                      + df.loc[:, [(point_b, 'likelihood')]].values
+                      + df.loc[:, [(point_c, 'likelihood')]].values) / 3
+    
+    return {'Angles': angles, 'Accuracy Score': accuracy_score.T[0]}
