@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+
+from pathlib import Path
 import os
 
 from dlca.functions.hviva import (
@@ -9,16 +11,19 @@ from dlca.functions.hviva import (
 )
 
 
-class DLCsv:
+class dlcDF:
     def __init__(
-        self, csv_filename, centre_bp=None, future_scaling=False, min_like=0.95,
-        video_file=None, x_max=None, y_max=None, path=os.getcwd()):
+        self, df, data_label, video_path=None, center_bp=None,
+        future_scaling=False, min_like=0.95, x_max=None, y_max=None
+    ):
         """
-        Python class to analyze csv files from DeepLabCut (DLC)
-        Parameters
-        ----------
-        csv_filename: str
-            Name of csv csv_path to be analysed; with or without csv_path-extension
+        data_label: string
+
+        video_path: string-like, default None
+            Path to the video file that was used for generating dataset in DeepLabCut
+        center_bp: list-like, default None
+            List-like structure of labels that consist of pairs that should have their center computed.
+            The centered pairs will be replaced by the center set
         future_scaling: boolean, default False
             Scales the coordinates with respect to their min and max.
             True requires x_max and y_max
@@ -31,54 +36,35 @@ class DLCsv:
         y_max: {None, int}, default None
             Maximum y value, can be extracted from video sample or defined
         """
-        if not isinstance(csv_filename, str) and not csv_filename.endswith(
-                '.csv'):
-            msg = 'The argument has to be a string with the name of a csv csv_path'
-            raise AttributeError(msg)
 
         if not (isinstance(x_max, (int, float, type(None))) and
                 isinstance(y_max, (int, float, type(None)))):
             msg = 'x and y max are integers; not {}; {}'.format(x_max, y_max)
             raise AttributeError(msg)
 
-        if future_scaling is True and video_file is None and (x_max is None and y_max is None):
+        if future_scaling is True and video_path is None and (x_max is None and y_max is None):
             msg = 'x max and y max, or vieo_file has to defined in order to future_scaling'
             raise AttributeError(msg)
 
-        if centre_bp is not None and not (isinstance(centre_bp, list) or isinstance(centre_bp, tuple)):
-            msg = 'centre_bp can only be defined as list or tuple;\nthe most convinient data structure for body_part names'
+        if center_bp is not None and not (isinstance(center_bp, list) or isinstance(center_bp, tuple)):
+            msg = 'center_bp can only be defined as list or tuple;\nthe most convinient data structure for body_part names'
             raise AttributeError(msg)
 
-
-        self.name = csv_filename.split('\\')[-1].split('_')[0]
+        self.df = df
+        self.data_label = data_label
         self.future_scaling = future_scaling
-        self.path = os.path.abspath(path)
         self.min_like = min_like
 
-        # Import the csv csv_path
-        self.csv_filename = csv_filename
-        self.csv_file_path = os.path.join(self.path, csv_filename)
-        type_dict = {
-            'coords': int, 'x': float,
-            'y': float, 'likelihood': float
-        }
-
-        self.raw_df = pd.read_csv(
-            self.csv_file_path, engine='c',
-            index_col=0, skiprows=1, header=[0, 1],
-            dtype=type_dict, na_filter=False
-        )
-
         # Get name of body parts
-        csv_multi_i = list(self.raw_df)
+        multi_index = list(self.df)
         body_parts = []
-        for i in range(0, len(csv_multi_i), 3):
-            body_parts.append(csv_multi_i[i][0])
+        for i in range(0, len(multi_index), 3):
+            body_parts.append(multi_index[i][0])
         self.body_parts = body_parts
 
-        self.video_file = video_file
-        self.vid_test = video_file is True or isinstance(video_file, str)
-        if self.vid_test:
+        # Pair data frame with its raw source, which is a video file
+        self.video_path = video_path
+        if video_path is True or isinstance(video_path, str):
             try:
                 from dlca.video_analysis import handle_video_data
             except ModuleNotFoundError:
@@ -86,7 +72,7 @@ class DLCsv:
                 raise ModuleNotFoundError(msg)
 
             self.x_max, self.y_max = handle_video_data(
-                video_path=video_file)[1:3]
+                video_path=video_path)[1:3]
         else:
             self.x_max = x_max
             self.y_max = y_max
@@ -94,47 +80,41 @@ class DLCsv:
         self.invalid_points = {}
         self.valid_points = {}
         for body_part in self.body_parts:
-            self.invalid_points[body_part] = self.raw_df[(body_part, 'likelihood')] < self.min_like
+            self.invalid_points[body_part] = self.df[(body_part, 'likelihood')] < self.min_like
             self.valid_points[body_part] = np.logical_not(self.invalid_points[body_part])
             
             # Remove likelihood values below min_like value
-            self.raw_df.loc[
+            self.df.loc[
                 self.invalid_points[body_part],
                 [(body_part, 'x'), (body_part, 'y')]
             ] = np.nan
 
             # Invert y axis
-            self.raw_df[(body_part, 'y')] = self.raw_df[(body_part, 'y')].map(lambda y: self.y_max - y)
+            self.df[(body_part, 'y')] = self.df[(body_part, 'y')].map(lambda y: self.y_max - y)
 
-        if centre_bp:
+        if center_bp is not None:
             pair_names = []
             raw_data = []
-            for bp_pairs in centre_bp:
-                if not isinstance(bp_pairs, tuple) and not isinstance(bp_pairs, list):
-                    msg = 'The pairs must be stored in python tuple or list'
-                    raise AttributeError(msg)
-
-                if not (
-                    (bp_pairs[0] in self.body_parts and bp_pairs[1] in self.body_parts) and 
-                    (isinstance(bp_pairs[0], str) and isinstance(bp_pairs[1], str))):
-                    msg = 'The body part names must be referred to with their names in string form'
+            for bp_pairs in center_bp:
+                if not (bp_pairs[0] in self.body_parts and bp_pairs[1] in self.body_parts):
+                    msg = f'The body part names must be referred to with their names, and be string:\nbp_pairs: {bp_pairs}\nbody_parts: {self.body_parts}'
                     raise AttributeError(msg)
 
                 if len(bp_pairs) != 2:
-                    msg = 'Each pair can only consist of 2 elements'
+                    msg = 'Each pair must consist of 2 elements'
                     raise AttributeError(msg)
 
                 name = 'c_%s_%s' % bp_pairs
                 pair_names.append(name)
 
-                likelihood = (self.raw_df.loc[:, [(bp_pairs[0], 'likelihood')]].values \
-                            + self.raw_df.loc[:, [(bp_pairs[1], 'likelihood')]].values) \
+                likelihood = (self.df.loc[:, [(bp_pairs[0], 'likelihood')]].values \
+                            + self.df.loc[:, [(bp_pairs[1], 'likelihood')]].values) \
                             / 2
                 self.invalid_points[name] = likelihood < self.min_like
                 self.valid_points[name] = np.logical_not(self.invalid_points[name])
 
-                bp_1 = self.raw_df.loc[:, [(bp_pairs[0], 'x'), (bp_pairs[0], 'y')]].values
-                bp_2 = self.raw_df.loc[:, [(bp_pairs[1], 'x'), (bp_pairs[1], 'y')]].values
+                bp_1 = self.df.loc[:, [(bp_pairs[0], 'x'), (bp_pairs[0], 'y')]].values
+                bp_2 = self.df.loc[:, [(bp_pairs[1], 'x'), (bp_pairs[1], 'y')]].values
 
                 bp_1_mag_median = np.nanmedian(np.apply_along_axis(np.linalg.norm, 1, bp_1))
                 bp_2_mag_median = np.nanmedian(np.apply_along_axis(np.linalg.norm, 1, bp_2))
@@ -146,31 +126,94 @@ class DLCsv:
                     centre_point = bp_1 + ((bp_2 - bp_1) / 2)
                 raw_data.extend((centre_point, likelihood))
 
-            self.raw_df = self.raw_df.join(pd.DataFrame(
-                np.hstack(raw_data),
-                columns=pd.MultiIndex.from_product([pair_names, ['x', 'y', 'likelihood']]),
-                index=self.raw_df.index)
-            )
             self.body_parts.extend(pair_names)
 
+            self.df = self.df.join(
+                pd.DataFrame(
+                    np.hstack(raw_data),
+                    columns=pd.MultiIndex.from_product([pair_names, ['x', 'y', 'likelihood']]),
+                    index=self.df.index
+                )
+            )
 
     def __repr__(self):
-        header = '{}(\"{}\"):\n'.format(
-            __class__.__name__, self.csv_filename if self.path == os.getcwd()
-            else self.csv_file_path)
+        return (
+            f'{__class__.__name__} data_label={self.data_label}\n' \
+            f'norm={self.future_scaling}, vid={self.video_path},\n' \
+            f'x_max={self.x_max}, y_max={self.y_max}'
+        )
 
-        line_i = 'norm={}, vid={},\n'.format(
-            self.future_scaling, self.video_file)
+    @classmethod
+    def from_csv(cls, csv_path, **kwargs):
+        """
+        Python classmethod to import DataFrame from csv files with DeepLabCut (DLC) format
 
-        line_ii = 'x_max={}, y_max={}'.format(self.x_max, self.y_max)
+        Parameters
+        ----------
+        csv_filename: str
+            Name of csv csv_path to be analysed; with or without csv_path-extension
 
-        base = header + line_i + line_ii
-        return base
+        """
+        if not csv_path.endswith('.csv'):
+            msg = 'The argument has to be a string with the name of a csv csv_path'
+            raise AttributeError(msg)
+        
+        path = Path(csv_path)
+        if not path.exists():
+            msg = 'The defined path to the .csv file does not exist'
+            raise AttributeError(msg)
+
+        # Import the csv csv_path
+        type_dict = {
+            'coords': int, 'x': float,
+            'y': float, 'likelihood': float
+        }
+
+        df = pd.read_csv(
+            csv_path, engine='c',
+            index_col=0, skiprows=1, header=[0, 1],
+            dtype=type_dict, na_filter=False
+        )
+
+        return cls(df, **kwargs)
+
+    @classmethod
+    def init_many(cls, file_paths, init_from='csv', labels=None, init_kwargs={}):
+        """
+        Method to create many dlcDF objects simultaniously using specified initialization classmethod
+        """
+        if init_from == 'csv':
+            init_method = cls.from_csv
+        else:
+            msg = 'This file type has no init function implementation, currently'
+            raise AttributeError(msg)
+
+        if labels is None:
+            return [init_method(file_path, **init_kwargs) for file_path in file_paths]
+        else:
+            return [init_method(file_path, data_label=label, **init_kwargs) for file_path, label in zip(file_paths, labels)]
+
+    @staticmethod
+    def map_function(func, dlcDF_objs, keep_label=True, manual_labels=None, kwargs_for_meth={}):
+        """
+        Method for applying function to a list of dlcDF objects
+        """
+        if manual_labels is None:
+            if keep_label is True:
+                return {dlcDF_obj.data_label: func(dlcDF_obj, **kwargs_for_meth) for dlcDF_obj in dlcDF_objs}
+            else:
+                return [func(dlcDF_obj, **kwargs_for_meth) for dlcDF_obj in dlcDF_objs]
+        else:
+            return {label: func(dlcDF_obj, **kwargs_for_meth) for label, dlcDF_obj in zip(manual_labels, dlcDF_objs)}
+        
 
     def remove_flicks_hv(
         self, max_vel=100, range_thresh=100, flicks_hivel=False,
-        save=False):
-        """Clean low likelihood and high velocity points from raw dataframe
+        save=False
+    ):
+        """
+        Clean low likelihood and high velocity points from raw dataframe
+
         Parameters
         ----------
         max_vel: int, default 150
@@ -180,17 +223,18 @@ class DLCsv:
         range_thresh: int, default 50
         save: bool, default False
             Bool for saving/exporting the resulting dataframe to a .csv csv_path
+
         Returns
         -------
         new_df: pandas.DataFrame
-            The cleaned raw_df
+            The cleaned df
         """
         if not isinstance(save, bool):
             msg = 'The save variable has to be bool'
             raise AttributeError(msg)
 
-        # Remove flicks from a copy of raw_df
-        new_df = irpd(self.raw_df.copy())
+        # Remove flicks from a copy of df
+        new_df = irpd(self.df.copy())
 
         for body_part in self.body_parts:
             """Clean flicks"""
@@ -226,7 +270,7 @@ class DLCsv:
         Returns
         -------
         new_df: pandas.DataFrame
-            The interpolated raw_df
+            The interpolated df
         """
         if not isinstance(save, bool):
             msg = 'The save variable has to be bool'
@@ -278,7 +322,7 @@ class DLCsv:
 
     def get_state(self, state, **kwargs):
         if state == 'raw':
-            return self.raw_df
+            return self.df
         elif state == 'cleaned':
             return self.remove_flicks_hv(**kwargs)
         elif state == 'interpolated':
@@ -286,24 +330,3 @@ class DLCsv:
         else:
             msg = 'The state can only be raw; cleaned; interpolated'
             raise AttributeError(msg)
-
-
-def csv_iterator_pre(csv_paths, csv_file_id_depth=2, kwargs_for_csv={}):
-    result = {}
-    for csv_path in csv_paths:
-        csv_file_df = DLCsv(csv_path, **kwargs_for_csv)
-
-        name = csv_path.split('\\\\')[-1][:-4]
-        result[name] = csv_file_df
-    return result
-
-
-def csv_iterator(
-    method, csv_dlcsv_objs, loc_base_hierarchy=True,
-    kwargs_for_meth={}):
-
-    result = {}
-    for dlcsv_obj in csv_dlcsv_objs:
-        result[dlcsv_obj.name] = method(dlcsv_obj, **kwargs_for_meth)
-
-    return result

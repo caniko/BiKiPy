@@ -8,9 +8,10 @@ class DLCPref:
     def __init__(
         self, pandas_df, border_or, normalize=False,
         usr_lower=None, usr_upper=None, lasso_num=None,
-        video_file=None, frame=None, notebook=False):
+        video_file=None, frame=None, notebook=False
+    ):
         """
-        pandas_df: pandas.DataFrame object from DLCsv
+        pandas_df: pandas.DataFrame object from dlcDF
             Data container with data to be analysed.
         border_or: {'hor', 'ver', 'lasso'}, default None
             Optional. A lower and an upper border can be defined.
@@ -265,7 +266,7 @@ def dynamic_relative_position(dlca, ref_point, points, axis=1):
     elif axis == 1:
         axis_name = 'y'
 
-    df = dlca.raw_df
+    df = dlca.df
     ref = df.loc[:, (ref_point, axis_name)].values
 
     result = {}
