@@ -34,7 +34,7 @@ def clockwise_angle(vector_1, vector_2):
 
 
 def angle_over_time(dlca, point_a, point_b, point_c):
-    df = dlca.raw_df
+    df = dlca.df
 
     position = {}
     for point in (point_a, point_b, point_c):
