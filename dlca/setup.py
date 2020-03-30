@@ -10,5 +10,5 @@ setup(name='dlca',
       license='MIT',
       packages=['dlca'],
       zip_safe=False,
-      install_requires=['numpy', 'pandas', 'matplotlib']
+      install_requires=['numpy', 'pandas', 'tables', 'matplotlib']
 )

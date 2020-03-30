@@ -13,12 +13,13 @@ from dlca.functions.hviva import (
 
 class dlcDF:
     def __init__(
-        self, df, data_label, video_path=None, center_bp=None,
-        future_scaling=False, min_like=0.95, x_max=None, y_max=None
+        self, df, data_label=None, video_path=None, center_bp=None,
+        future_scaling=False, min_like=0.95,
+        invert_y=False, x_max=None, y_max=None
     ):
         """
-        data_label: string
-
+        data_label: string, default None
+            Label for the data
         video_path: string-like, default None
             Path to the video file that was used for generating dataset in DeepLabCut
         center_bp: list-like, default None
@@ -31,6 +32,9 @@ class dlcDF:
             The minimum likelihood the coordinates of the respective row.
             If below the values, the coords are discarded while being replaced
             by numpy.NaN
+        invert_y: bool, default False
+            Bool if True will invert the y-axis. Useful when the user wants to work in traditional Cartesian coordinate
+            system where the origin is on the bottom-left
         x_max: {None, int}, default None
             Maximum x value, can be extracted from video sample or defined
         y_max: {None, int}, default None
@@ -49,6 +53,10 @@ class dlcDF:
         if center_bp is not None and not (isinstance(center_bp, list) or isinstance(center_bp, tuple)):
             msg = 'center_bp can only be defined as list or tuple;\nthe most convinient data structure for body_part names'
             raise AttributeError(msg)
+        
+        if invert_y is True and self.y_max is None:
+            msg = 'y_max needs to be defined if y-axis is to be inverted'
+            raise AttributeError(msg)
 
         self.df = df
         self.data_label = data_label
@@ -64,6 +72,7 @@ class dlcDF:
 
         # Pair data frame with its raw source, which is a video file
         self.video_path = video_path
+
         if video_path is True or isinstance(video_path, str):
             try:
                 from dlca.video_analysis import handle_video_data
@@ -84,13 +93,11 @@ class dlcDF:
             self.valid_points[body_part] = np.logical_not(self.invalid_points[body_part])
             
             # Remove likelihood values below min_like value
-            self.df.loc[
-                self.invalid_points[body_part],
-                [(body_part, 'x'), (body_part, 'y')]
-            ] = np.nan
+            self.df.loc[self.invalid_points[body_part], [(body_part, 'x'), (body_part, 'y')]] = np.nan
 
             # Invert y axis
-            self.df[(body_part, 'y')] = self.df[(body_part, 'y')].map(lambda y: self.y_max - y)
+            if invert_y is True:
+                self.df[(body_part, 'y')] = self.df[(body_part, 'y')].map(lambda y: self.y_max - y)    
 
         if center_bp is not None:
             pair_names = []
@@ -148,11 +155,14 @@ class dlcDF:
         """
         Python classmethod to import DataFrame from csv files with DeepLabCut (DLC) format
 
+        Note: You should assign a value to object.data_label by including it as a kwarg
+
         Parameters
         ----------
-        csv_filename: str
-            Name of csv csv_path to be analysed; with or without csv_path-extension
-
+        csv_path: str
+            The path to the csv file that shall be analysed; with or without ".csv" extension
+        kwargs:
+            Keyword arguments are passed to the class init-method as arguments
         """
         if not csv_path.endswith('.csv'):
             msg = 'The argument has to be a string with the name of a csv csv_path'
@@ -178,9 +188,30 @@ class dlcDF:
         return cls(df, **kwargs)
 
     @classmethod
+    def from_hdf(cls, hdf_path, drop_level=True, **kwargs):
+        """
+        Python classmethod to import DataFrame from hdf files with DeepLabCut (DLC) format
+        
+        Note: You should assign a value to object.data_label by including it as a kwarg
+
+        Parameters
+        ----------
+        h5_path: str
+            The path to the hdf file that shall be analysed; with or without ".h5" extension
+        kwargs:
+            Keyword arguments are passed to the class init-method as arguments
+        """
+        
+        df = pd.read_hdf(hdf_path)
+        if drop_level is True:
+            df = df.droplevel(0, axis=1)
+
+        return cls(df, **kwargs)
+
+    @classmethod
     def init_many(cls, file_paths, init_from='csv', labels=None, init_kwargs={}):
         """
-        Method to create many dlcDF objects simultaniously using specified initialization classmethod
+        Method to create many dlcDF objects simultaniously using specified classmethod for initialization
         """
         if init_from == 'csv':
             init_method = cls.from_csv
@@ -194,18 +225,33 @@ class dlcDF:
             return [init_method(file_path, data_label=label, **init_kwargs) for file_path, label in zip(file_paths, labels)]
 
     @staticmethod
-    def map_function(func, dlcDF_objs, keep_label=True, manual_labels=None, kwargs_for_meth={}):
+    def map_function(func, dlcDF_objs, keep_labels=True, manual_labels=None, kwargs_for_func={}):
         """
-        Method for applying function to a list of dlcDF objects
+        Method for mapping a function to a list of dlcDF objects
+        
+        Parameters
+        ----------
+        func: function
+            A pre-defined function that processes dlcDF objects
+        dlcDF_objs: list
+            List of dlcDF objects to have func (a function) mapped to them
+        keep_labels: bool
+            Boolean that if True, the function will store the returned values along with dlcDF.data_label as keys in a dictionary
+        manual_labels: list
+            Must have length equal to number of dlcDF objects in dlcDF_objs. Will create dictionary where values will be correlated based on indexed.
+        kwargs_for_func:
+            Keyword arguments to be passed to func
         """
         if manual_labels is None:
-            if keep_label is True:
-                return {dlcDF_obj.data_label: func(dlcDF_obj, **kwargs_for_meth) for dlcDF_obj in dlcDF_objs}
+            if keep_labels is True:
+                if any([dlcDF_obj.data_label is None for dlcDF_obj in dlcDF_objs]):
+                    msg = 'At least one of dlcDF objects have no "data_label", keep label should be set to False in this case'
+                    raise AttributeError(msg)
+                return {dlcDF_obj.data_label: func(dlcDF_obj, **kwargs_for_func) for dlcDF_obj in dlcDF_objs}
             else:
-                return [func(dlcDF_obj, **kwargs_for_meth) for dlcDF_obj in dlcDF_objs]
+                return [func(dlcDF_obj, **kwargs_for_func) for dlcDF_obj in dlcDF_objs]
         else:
-            return {label: func(dlcDF_obj, **kwargs_for_meth) for label, dlcDF_obj in zip(manual_labels, dlcDF_objs)}
-        
+            return {label: func(dlcDF_obj, **kwargs_for_func) for label, dlcDF_obj in zip(manual_labels, dlcDF_objs)}
 
     def remove_flicks_hv(
         self, max_vel=100, range_thresh=100, flicks_hivel=False,
