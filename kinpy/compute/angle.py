@@ -27,7 +27,10 @@ def clockwise_2d(vector_a: np.array, vector_b: np.array) -> np.array:
     for i in range(len(vector_1_u)):
         determinants[i] = np.linalg.det(np.vstack((vector_1_u[i], vector_2_u[i])))
 
-    return (np.pi - np.arctan2(determinants, np.vdot(vector_1_u, vector_2_u)))[0]
+    # dot = np.einsum("ij,ij->i", vector_1_u, vector_2_u)
+    dot_prod = np.sum(vector_1_u * vector_2_u, axis=1)
+
+    return (np.pi - np.arctan2(determinants, dot_prod))[0]
 
 
 def angle_over_time(kin_data, point_a, point_b, point_c):
