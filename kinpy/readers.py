@@ -1,8 +1,6 @@
 import pandas as pd
 import numpy as np
 
-from pathlib import Path
-
 from kinpy.compute.remove_flicks import (
     find_high_velocity_events as get_hv_loc,
     get_flicks as get_flick_loc,
@@ -10,26 +8,29 @@ from kinpy.compute.remove_flicks import (
 )
 
 
-class KinematicData:
+class DeepLabCutReader:
+    def __repr__(self):
+        return self.df
+
     def __init__(
         self,
-        df,
-        video_res,
-        data_label=None,
-        center_bp=None,
-        future_scaling=False,
-        min_like=0.95,
-        invert_y=False,
+        df: pd.DataFrame,
+        video_res: tuple,
+        data_label: str = None,
+        center_bp: str = None,
+        future_scaling: bool = False,
+        min_like: float = 0.95,
+        invert_y: bool = False,
     ):
         """
-        :param df: Kinematic data to stored and analyzed in the instance
+        :param df: Kinematic data from DeepLabCut as a pd.DataFrame
         :param video_res: tuple-like
             The resolution of the videos that are being analyzed
         :param data_label: string, default None
             Label for the data
         :param center_bp: list-like, default None
-            List-like structure of labels that consist of pairs that should have their center computed.
-            The centered pairs will be replaced by the center set
+            List-like structure of labels that consist of pairs that should have their
+            center computed. The centered pairs will be replaced by the center set
         :param future_scaling: boolean, default False
             Scales the coordinates with respect to their min and max.
             True requires x_max and y_max
@@ -38,8 +39,8 @@ class KinematicData:
             If below the values, the coords are discarded while being replaced
             by numpy.NaN
         :param invert_y: bool, default False
-            Bool if True will invert the y-axis. Useful when the user wants to work in traditional Cartesian coordinate
-            system where the origin is on the bottom-left
+            Bool if True will invert the y-axis. Useful when the user wants to work in
+            traditional Cartesian coordinate system where the origin is on the bottom-left
         """
 
         self.x_res, self.y_res = video_res
@@ -50,17 +51,17 @@ class KinematicData:
             msg = f"x and y max are integers; not {self.x_res}; {self.y_res}"
             raise ValueError(msg)
 
-        if center_bp is not None and not (
+        if center_bp and not (
             isinstance(center_bp, list) or isinstance(center_bp, tuple)
         ):
             msg = (
-                "center_bp can only be defined as list or tuple;\n"
+                "center_bp can only be defined as a list or tuple;\n"
                 "the most convenient data structure for body_part names"
             )
             raise ValueError(msg)
 
-        if invert_y and self.y_res is None:
-            msg = "y_res needs to be defined if y-axis is to be inverted"
+        if invert_y and not self.y_res:
+            msg = "video_res needs to be defined if the y-axis is to be inverted"
             raise ValueError(msg)
 
         self.df = df
@@ -96,17 +97,19 @@ class KinematicData:
                     lambda y: self.y_res - y
                 )
 
-        if center_bp is not None:
+        if center_bp:
             pair_names = []
             raw_data = []
             for bp_pairs in center_bp:
                 if not (
                     bp_pairs[0] in self.body_parts and bp_pairs[1] in self.body_parts
                 ):
-                    msg = f"The body part names must be referred to with " \
-                          f"their names, and be string:\n" \
-                          f"bp_pairs: {bp_pairs}\n" \
-                          f"body_parts: {self.body_parts}"
+                    msg = (
+                        f"The body part names must be referred to with "
+                        f"their names, and be string:\n"
+                        f"bp_pairs: {bp_pairs}\n"
+                        f"body_parts: {self.body_parts}"
+                    )
                     raise ValueError(msg)
 
                 if len(bp_pairs) != 2:
@@ -152,13 +155,6 @@ class KinematicData:
                 )
             )
 
-    def __repr__(self):
-        return (
-            f"{__class__.__name__} data_label={self.data_label}\n"
-            f"norm={self.future_scaling}, "
-            f"x_res={self.x_res}, y_res={self.y_res}"
-        )
-
     @classmethod
     def from_video(cls, video_path, *args, **kwargs):
         """Initialize class using data from a sample video file
@@ -166,15 +162,15 @@ class KinematicData:
         :param video_path: Path to the video file that was used for generating dataset in DeepLabCut
         :param args: Arguments for the class.__init__
         :param kwargs: Keyword-arguments for the class.__init__
-        :return: KinematicData instance
+        :return: DeepLabCutReader instance
         """
         try:
-            from kinpy.video_analysis import handle_video_data
+            from kinpy.video_analysis import get_video_data
         except ModuleNotFoundError:
             msg = "opencv-python is required to analyse video"
             raise ModuleNotFoundError(msg)
 
-        _frame, x_res, y_res = handle_video_data(video_path)
+        _frame, x_res, y_res = get_video_data(video_path)
         kwargs["video_res"] = (x_res, y_res)
 
         if "csv_path" in kwargs:
@@ -186,55 +182,43 @@ class KinematicData:
 
     @classmethod
     def from_csv(cls, csv_path, *args, **kwargs):
-        """
-        Python classmethod to import DataFrame from csv files with DeepLabCut (DLC) format
+        """Create a pd.DataFrame from a csv file in DeepLabCut (DLC) format.
 
         Note: You should assign a value to object.data_label by including it as a kwarg
 
-        Parameters
-        ----------
-        csv_path: str
+        :param csv_path: str
             The path to the csv file that shall be analysed; with or without ".csv" extension
-        kwargs:
-            Keyword arguments are passed to the class init-method as arguments
+        :param args:
+        :param kwargs: Keyword arguments are passed to the class init-method as arguments
+        :return:
         """
-        if not csv_path.endswith(".csv"):
-            msg = "The argument has to be a string with the name of a csv csv_path"
+
+        try:
+            df = pd.read_csv(
+                csv_path,
+                index_col=0,
+                skiprows=1,
+                header=[0, 1],
+                na_filter=False,
+                dtype={"coords": int, "x": float, "y": float, "likelihood": float},
+            )
+        except FileNotFoundError:
+            msg = f"csv_path does not exist, {csv_path}"
             raise ValueError(msg)
-
-        path = Path(csv_path)
-        if not path.exists():
-            msg = "The defined path to the .csv file does not exist"
-            raise ValueError(msg)
-
-        # Import the csv csv_path
-        type_dict = {"coords": int, "x": float, "y": float, "likelihood": float}
-
-        df = pd.read_csv(
-            csv_path,
-            engine="c",
-            index_col=0,
-            skiprows=1,
-            header=[0, 1],
-            dtype=type_dict,
-            na_filter=False,
-        )
 
         return cls(df, *args, **kwargs)
 
     @classmethod
     def from_hdf(cls, hdf_path, *args, drop_level=True, **kwargs):
-        """
-        Python classmethod to import DataFrame from hdf files with DeepLabCut (DLC) format
+        """Initialize class using data from a hdf file
         
         Note: You should assign a value to object.data_label by including it as a kwarg
 
-        Parameters
-        ----------
-        h5_path: str
-            The path to the hdf file that shall be analysed; with or without ".h5" extension
-        kwargs:
-            Keyword arguments are passed to the class init-method as arguments
+
+        :param hdf_path: str
+            The path to the hdf file that shall be analysed
+        :param kwargs: dict
+            Keyword arguments for the class init-method
         """
 
         df = pd.read_hdf(hdf_path)
@@ -244,9 +228,14 @@ class KinematicData:
         return cls(df, *args, **kwargs)
 
     @classmethod
-    def init_many(cls, file_paths, init_from="csv", labels=None, init_kwargs={}):
-        """
-        Method to create many KinematicData objects simultaniously using specified classmethod for initialization
+    def init_many(
+        cls,
+        file_paths: list,
+        init_from="csv",
+        labels: tuple = None,
+        init_kwargs: dict = None,
+    ):
+        """Create many DeepLabCutReader objects using specified mapping-function
         """
         ext_to_method = {"csv": cls.from_csv, "h5": cls.from_hdf, "hdf": cls.from_hdf}
         try:
@@ -255,7 +244,7 @@ class KinematicData:
             msg = "This file type has no init function implementation, currently"
             raise ValueError(msg)
 
-        if labels is None:
+        if not labels:
             return [init_method(file_path, **init_kwargs) for file_path in file_paths]
         else:
             return [
@@ -265,39 +254,52 @@ class KinematicData:
 
     @staticmethod
     def map_function(
-        func, dlcDF_objs, keep_labels=True, manual_labels=None, kwargs_for_func={}
+        func: callable,
+        dlc_df_objs: list,
+        keep_labels: bool = True,
+        manual_labels: tuple = None,
+        kwargs_for_func: dict = None,
     ):
         """
-        Method for mapping a function to a list of KinematicData objects
+        Method for mapping a function to a list of DeepLabCutReader objects
         
         Parameters
         ----------
-        func: function
-            A pre-defined function that processes KinematicData objects
-        dlcDF_objs: list
-            List of KinematicData objects to have func (a function) mapped to them
-        keep_labels: bool
-            Boolean that if True, the function will store the returned values along with KinematicData.data_label as keys in a dictionary
-        manual_labels: list
-            Must have length equal to number of KinematicData objects in dlcDF_objs. Will create dictionary where values will be correlated based on indexed.
-        kwargs_for_func:
+        :param func: function
+            A pre-defined function that processes DeepLabCutReader objects
+        :param dlc_df_objs: list
+            List of DeepLabCutReader objects to have func (a function) mapped to them
+        :param keep_labels: bool
+            If True, the function will store the returned values along with
+            DeepLabCutReader.data_label as keys in a dictionary
+        :param manual_labels: list
+            Must have length equal to number of DeepLabCutReader objects in dlc_df_objs.
+            Will create a dictionary where values will be correlated based on indexed.
+        :param kwargs_for_func: dict
             Keyword arguments to be passed to func
         """
-        if manual_labels is None:
+        if not kwargs_for_func:
+            kwargs_for_func = {}
+
+        if not manual_labels:
             if keep_labels:
-                if any([dlcDF_obj.data_label is None for dlcDF_obj in dlcDF_objs]):
-                    msg = 'At least one of KinematicData objects have no "data_label", keep label should be set to False in this case'
+                if not all([dlcDF_obj.data_label for dlcDF_obj in dlc_df_objs]):
+                    msg = (
+                        "At least one of the DeepLabCutReader objects "
+                        "have no data_label, keep label should be set to False"
+                    )
                     raise ValueError(msg)
+
                 return {
                     dlcDF_obj.data_label: func(dlcDF_obj, **kwargs_for_func)
-                    for dlcDF_obj in dlcDF_objs
+                    for dlcDF_obj in dlc_df_objs
                 }
             else:
-                return [func(dlcDF_obj, **kwargs_for_func) for dlcDF_obj in dlcDF_objs]
+                return [func(dlcDF_obj, **kwargs_for_func) for dlcDF_obj in dlc_df_objs]
         else:
             return {
                 label: func(dlcDF_obj, **kwargs_for_func)
-                for label, dlcDF_obj in zip(manual_labels, dlcDF_objs)
+                for label, dlcDF_obj in zip(manual_labels, dlc_df_objs)
             }
 
     def remove_flicks_hv(
@@ -350,23 +352,19 @@ class KinematicData:
             )
 
         if save:
-            csv_name = "cleaned_{}".format(self.csv_filename)
-            new_df.to_csv(csv_name, sep="\t")
+            new_df.to_hdf(f"cleaned_{self.data_label}.h5", self.data_label)
 
         return new_df
 
     def interpolate(self, method="linear", order=None, save=False):
         """Interpolate points that have NaN
-        Parameters
-        ----------
-        method: str, default linear
-        order: {int, None}, default None
-        save: bool, default False
+
+        :param method: str, default linear
+        :param order: {int, None}, default None
+        :param save: bool, default False
             Bool for saving/exporting the resulting dataframe to a .csv csv_path
-        Returns
-        -------
-        new_df: pandas.DataFrame
-            The interpolated df
+
+        :returns new_df: Interpolated df
         """
         if not isinstance(save, bool):
             msg = "The save variable has to be bool"
@@ -381,38 +379,9 @@ class KinematicData:
                 ].interpolate(method=method, order=order, limit_area="inside")
 
         if save:
-            csv_name = "interpolated_{}".format(self.csv_filename)
-            new_df.to_csv(csv_name, sep="\t")
+            new_df.to_hdf(f"interpolated_{self.data_label}.h5", self.data_label)
 
         return new_df
-
-    def coords(self, body_part=None, state="raw"):
-        """Returns body part coordinate from"""
-
-        def coord_list(body_part_df):
-            coords = []
-            for i in range(len(body_part_df.x)):
-                coords.append((body_part_df.x[i], body_part_df.y[i]))
-            return np.array(coords)
-
-        use_df = self.get_state(state)
-        if body_part == None:
-            coords = {}
-            for body_part in self.body_parts:
-                coords[body_part] = coord_list(use_df[body_part])
-        elif isinstance(body_part, str):
-            coords = coord_list(body_part)
-        else:
-            msg = "body_part has to be string or None"
-            raise ValueError(msg)
-
-        return coords
-
-    def view(self, state="raw"):
-        """For viewing data frame in terminal; don't use in jupyter notebook"""
-        use_df = self.get_state(state)
-        for body_part in self.body_parts:
-            print(use_df[body_part])
 
     def get_state(self, state, **kwargs):
         if state == "raw":
@@ -422,5 +391,5 @@ class KinematicData:
         elif state == "interpolated":
             return self.interpolate(**kwargs)
         else:
-            msg = "The state can only be raw; cleaned; interpolated"
+            msg = "The state can only be raw, cleaned, or interpolated"
             raise ValueError(msg)

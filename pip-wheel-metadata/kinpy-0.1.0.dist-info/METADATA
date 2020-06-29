@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: kinpy
+Version: 0.1.0
+Summary: Liberary for automatic analysis of kinematic data
+License: BSD-3-Clause
+Author: Can H. Tartanoglu
+Author-email: canhtart@gmail.com
+Requires-Python: >=3.7.4,<4.0.0
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Requires-Dist: matplotlib (>=3.2.2,<4.0.0)
+Requires-Dist: numpy (>=1.19.0,<2.0.0)
+Requires-Dist: opencv-python (>=4.2.0,<5.0.0)
+Requires-Dist: pandas (>=1.0.5,<2.0.0)
+Requires-Dist: tables (>=3.6.1,<4.0.0)

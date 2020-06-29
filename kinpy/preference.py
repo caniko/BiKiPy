@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from .readers import KinematicData
+from .readers import DeepLabCutReader
 
 
 # 0: Use the x coordinate(s) as the border
@@ -14,10 +14,10 @@ class Preference:
     @classmethod
     def from_image(
         cls,
-        kin_data: KinematicData,
-        border_orient,
+        kin_data: DeepLabCutReader,
+        border_orient: str,
         img,
-        feature_scale_resolution: tuple = None
+        feature_scale_resolution: tuple = None,
     ):
         """Initialize class using data from a sample frame/image
 
@@ -41,15 +41,12 @@ class Preference:
             border_orient,
             first_border,
             second_border,
-            feature_scale_resolution
+            feature_scale_resolution,
         )
 
     @classmethod
     def from_video(
-        cls,
-        kin_data: KinematicData,
-        border_orient,
-        video_path
+        cls, kin_data: DeepLabCutReader, border_orient: str, video_path: str
     ):
         """Initialize class using data from a sample video file
 
@@ -67,12 +64,12 @@ class Preference:
         :return:
         """
         try:
-            from kinpy.video_analysis import handle_video_data
+            from kinpy.video_analysis import get_video_data
         except ModuleNotFoundError:
             msg = "opencv-python is required to analyse video"
             raise ModuleNotFoundError(msg)
 
-        frame, x_res, y_res = handle_video_data(video_path)
+        frame, x_res, y_res = get_video_data(video_path)
 
         return cls.from_image(
             kin_data, border_orient, frame, feature_scale_resolution=(x_res, y_res)
@@ -87,7 +84,7 @@ class Preference:
         feature_scale_resolution: tuple = None,
     ):
         """
-        kin_data: KinematicData object
+        kin_data: DeepLabCutReader object
             Data container with data to be analysed.
         border_orient: {'horizontal', 'vertical', 'lasso'}, default None
             Optional. A lower and an upper border can be defined.
@@ -136,7 +133,7 @@ class Preference:
         return (
             f"border orientation: "
             f"first={self.first_border}; second={self.second_border}\n"
-            f"KinematicData:\n{self.kin_data}"
+            f"DeepLabCutReader:\n{self.kin_data}"
         )
 
     def area_preference(self, plot=False, border_orient="horizontal"):
