@@ -4,7 +4,7 @@ import numpy as np
 from kinpy import DeepLabCutReader
 from kinpy.compute import angle_over_time, clockwise_2d
 
-HDF_PATH = Path().resolve() / "data_for_angle.h5"
+HDF_PATH = Path(__file__).parent.parent.resolve() / "example_data/data_for_angle.h5"
 
 
 def test_angle_over_time():
@@ -13,15 +13,15 @@ def test_angle_over_time():
         video_res=(1280, 720),
         center_bp=[("left_ear", "right_ear")],
         future_scaling=False,
-        min_like=0.95
+        min_like=0.95,
     )
 
     tail_base_tip = angle_over_time(
-        dlcr, point_a="tail_base", point_b="tail_mid", point_c="tail_tip"
+        dlcr.df, point_a="tail_base", point_b="tail_mid", point_c="tail_tip"
     )
 
     head_tail = angle_over_time(
-        dlcr, point_a="c_left_ear_right_ear", point_b="tail_base", point_c="tail_tip"
+        dlcr.df, point_a="c_left_ear_right_ear", point_b="tail_base", point_c="tail_tip"
     )
 
     assert tail_base_tip["Angles"].size == dlcr.df.index.size, tail_base_tip["Angles"]
@@ -32,9 +32,9 @@ def test_angle_over_time():
     tail_base_tip_no_nan = tail_base_tip["Angles"][~np.isnan(tail_base_tip["Angles"])]
     head_tail_no_nan = head_tail["Angles"][~np.isnan(head_tail["Angles"])]
 
-    assert all(np.logical_and(
-        tail_base_tip_no_nan >= 0, tail_base_tip_no_nan <= 2 * np.pi
-    ))
+    assert all(
+        np.logical_and(tail_base_tip_no_nan >= 0, tail_base_tip_no_nan <= 2 * np.pi)
+    )
     assert all(np.logical_and(head_tail_no_nan >= 0, head_tail_no_nan <= 2 * np.pi))
 
 
