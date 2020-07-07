@@ -38,12 +38,34 @@ def test_angle_over_time():
     assert all(np.logical_and(head_tail_no_nan >= 0, head_tail_no_nan <= 2 * np.pi))
 
 
-def test_clockwise_angle():
-    a = np.array([[0, 0]])
-    b = np.array([[1, 0]])
-    c = np.array([[2, 0]])
+def test_clockwise_2d():
+    def three_point_vector_path(
+        point_1,
+        point_2,
+        point_3,
+        answer
+    ):
+        point_1 = np.asarray(point_1)
+        point_2 = np.asarray(point_2)
+        point_3 = np.asarray(point_3)
 
-    ab_vec = a - b
-    bc_vec = b - c
+        vector_1_2 = point_2 - point_1
+        vector_2_3 = point_3 - point_2
 
-    assert np.isclose(clockwise_2d(ab_vec, bc_vec)[0], np.pi)
+        result = clockwise_2d(vector_1_2, vector_2_3)[0]
+        assert np.isclose(result, answer), result
+
+        result = clockwise_2d(vector_2_3, vector_1_2)[0]
+        assert np.isclose(result, 2*np.pi - answer), result
+
+    three_point_vector_path(
+        ((0, 0),), ((1, 0),), ((2, 0),), np.pi
+    )
+
+    three_point_vector_path(
+        ((0, 0),), ((1, 0),), ((1, 1),), np.pi / 2
+    )
+
+    three_point_vector_path(
+        ((0, 0),), ((1, 0),), ((1, -1),), 3*np.pi / 2
+    )
