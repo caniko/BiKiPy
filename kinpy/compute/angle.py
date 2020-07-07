@@ -23,19 +23,18 @@ def clockwise_2d(vector_a: np.array, vector_b: np.array) -> np.array:
     vector_2_u = np.apply_along_axis(_unit_vector, 1, vector_b)
 
     # Compute determinants and store them in a vertical stack
-    determinants = np.zeros((len(vector_1_u), 1))
-    for i in range(len(vector_1_u)):
-        determinants[i] = np.linalg.det(np.vstack((vector_1_u[i], vector_2_u[i])))
+    determinants = np.array([
+        np.linalg.det(np.vstack((vector_1_u[i], vector_2_u[i])))
+        for i in range(len(vector_1_u))
+    ])
 
     # dot = np.einsum("ij,ij->i", vector_1_u, vector_2_u)
     dot_prod = np.sum(vector_1_u * vector_2_u, axis=1)
 
-    return (np.pi - np.arctan2(determinants, dot_prod))[0]
+    return np.pi - np.arctan2(determinants, dot_prod)
 
 
-def angle_over_time(kin_data, point_a, point_b, point_c):
-    df = kin_data.df
-
+def angle_over_time(df, point_a, point_b, point_c):
     position = {}
     for point in (point_a, point_b, point_c):
         position[point] = df.loc[:, [(point, "x"), (point, "y")]].values
