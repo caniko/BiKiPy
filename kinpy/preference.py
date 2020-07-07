@@ -8,6 +8,7 @@ from .readers import DeepLabCutReader
 # 0: Use the x coordinate(s) as the border
 # 1: Use the y coordinate(s) as the border
 ORIENTATION_TO_INDEX = {"vertical": 0, "horizontal": 1}
+AXIS_INDEX_TO_NAME = {0: "x", 1: "y"}
 
 
 class Preference:
@@ -110,7 +111,10 @@ class Preference:
             raise ValueError(msg)
 
         if border_orient != "horizontal" and border_orient != "vertical":
-            msg = f"border_orient is either horizontal or vertical, and not {border_orient}"
+            msg = (
+                f"border_orient is either horizontal or vertical, "
+                f"and not {border_orient}"
+            )
             raise ValueError(msg)
 
         self.kin_data = kin_data
@@ -210,20 +214,31 @@ class Preference:
             return percent_lower, percent_upper, rest
 
 
-def dynamic_relative_position(kinpy, ref_point, points, axis=1):
-    """
-    <axis value> < ref : True <- Left (x); Above (y)
-    """
-    if axis == 0:
-        axis_name = "x"
-    elif axis == 1:
-        axis_name = "y"
+def dynamic_relative_position(
+    df: pd.DataFrame, ref_point: tuple, points: list, axis: int = 1
+) -> dict:
+    """ Determine the location of an object with respect to either a
+        vertical (axis=0 -> x) or horizontal (axis=1 -> y) line
 
-    df = kinpy.df
-    ref = df.loc[:, (ref_point, axis_name)].values
+    <axis value> < ref :
 
-    result = {}
-    for point in points:
-        result[point] = df.loc[:, (point, axis_name)].values < ref
+    :param df: data to be analysed
+    :param ref_point: The point that is to be used to determine the location of
+                      the border
+    :param points: Points of that are to be tracked with respect to the border
+    :param axis: The axis of which the border spans
+    :return: dict = point -> True if Left (x); Above (y)
+    """
+
+    try:
+        ref = df.loc[:, (ref_point, AXIS_INDEX_TO_NAME[axis])].values
+    except KeyError as e:
+        msg = f"axis can be set to either 0 or 1, and not {axis}"
+        raise ValueError(msg) from e
+
+    result = {
+        point: df.loc[:, (point, AXIS_INDEX_TO_NAME[axis])].values < ref
+        for point in points
+    }
 
     return result

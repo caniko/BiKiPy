@@ -1,23 +1,15 @@
+from collections.abc import Iterable
 import pandas as pd
 import numpy as np
 
-from kinpy.compute.remove_flicks import (
-    find_high_velocity_events as get_hv_loc,
-    get_flicks as get_flick_loc,
-    invalid_relative_part_distance as irpd,
-)
-
 
 class DeepLabCutReader:
-    def __repr__(self):
-        return self.df
-
     def __init__(
         self,
         df: pd.DataFrame,
         video_res: tuple,
         data_label: str = None,
-        center_bp: str = None,
+        center_bp: Iterable = None,
         future_scaling: bool = False,
         min_like: float = 0.95,
         invert_y: bool = False,
@@ -49,15 +41,6 @@ class DeepLabCutReader:
             and isinstance(self.y_res, (int, float, type(None)))
         ):
             msg = f"x and y max are integers; not {self.x_res}; {self.y_res}"
-            raise ValueError(msg)
-
-        if center_bp and not (
-            isinstance(center_bp, list) or isinstance(center_bp, tuple)
-        ):
-            msg = (
-                "center_bp can only be defined as a list or tuple;\n"
-                "the most convenient data structure for body_part names"
-            )
             raise ValueError(msg)
 
         if invert_y and not self.y_res:
@@ -291,7 +274,7 @@ class DeepLabCutReader:
                     raise ValueError(msg)
 
                 return {
-                    dlcDF_obj.data_label: func(dlcDF_obj, **kwargs_for_func)
+                    dlcDF_obj.data_label: func(dlcDF_obj.df, **kwargs_for_func)
                     for dlcDF_obj in dlc_df_objs
                 }
             else:
@@ -301,95 +284,3 @@ class DeepLabCutReader:
                 label: func(dlcDF_obj, **kwargs_for_func)
                 for label, dlcDF_obj in zip(manual_labels, dlc_df_objs)
             }
-
-    def remove_flicks_hv(
-        self, max_vel=100, range_thresh=100, flicks_hivel=False, save=False
-    ):
-        """
-        Clean low likelihood and high velocity points from raw dataframe
-
-        Parameters
-        ----------
-        max_vel: int, default 150
-            The maximum velocity between two points.
-            Will become automatically generated with reference to
-            fps of respective video, x_res and y_res.
-        range_thresh: int, default 50
-        save: bool, default False
-            Bool for saving/exporting the resulting dataframe to a .csv csv_path
-
-        Returns
-        -------
-        new_df: pandas.DataFrame
-            The cleaned df
-        """
-        if not isinstance(save, bool):
-            msg = "The save variable has to be bool"
-            raise ValueError(msg)
-
-        # Remove flicks from a copy of df
-        new_df = irpd(self.df.copy())
-
-        for body_part in self.body_parts:
-            """Clean flicks"""
-            new_df.loc[
-                get_flick_loc(new_df, body_part, max_vel),
-                [(body_part, "x"), (body_part, "y")],
-            ] = np.nan
-
-            """Clean high velocity values"""
-            new_df.loc[
-                get_hv_loc(new_df, body_part, max_vel, range_thresh),
-                [(body_part, "x"), (body_part, "y")],
-            ] = np.nan
-
-        if self.future_scaling:
-            new_df.loc[:, (slice(None), "x")] = (
-                new_df.loc[:, (slice(None), "x")] / self.x_res
-            )
-            new_df.loc[:, (slice(None), "y")] = (
-                new_df.loc[:, (slice(None), "y")] / self.y_res
-            )
-
-        if save:
-            new_df.to_hdf(f"cleaned_{self.data_label}.h5", self.data_label)
-
-        return new_df
-
-    def interpolate(self, method="linear", order=None, save=False):
-        """Interpolate points that have NaN
-
-        :param method: str, default linear
-        :param order: {int, None}, default None
-        :param save: bool, default False
-            Bool for saving/exporting the resulting dataframe to a .csv csv_path
-
-        :returns new_df: Interpolated df
-        """
-        if not isinstance(save, bool):
-            msg = "The save variable has to be bool"
-            raise ValueError(msg)
-
-        new_df = self.remove_flicks_hv()
-
-        for body_part in self.body_parts:
-            for comp in ("x", "y"):
-                new_df.loc[:, (body_part, comp)] = new_df.loc[
-                    :, (body_part, comp)
-                ].interpolate(method=method, order=order, limit_area="inside")
-
-        if save:
-            new_df.to_hdf(f"interpolated_{self.data_label}.h5", self.data_label)
-
-        return new_df
-
-    def get_state(self, state, **kwargs):
-        if state == "raw":
-            return self.df
-        elif state == "cleaned":
-            return self.remove_flicks_hv(**kwargs)
-        elif state == "interpolated":
-            return self.interpolate(**kwargs)
-        else:
-            msg = "The state can only be raw, cleaned, or interpolated"
-            raise ValueError(msg)
