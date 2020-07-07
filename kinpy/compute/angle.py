@@ -19,8 +19,8 @@ def clockwise_2d(vector_a: np.array, vector_b: np.array) -> np.array:
         >>> clockwise_2d((1, 0, 0), (-1, 0, 0))
         3.141592653589793
     """
-    vector_1_u = np.apply_along_axis(_unit_vector, 1, vector_a)
-    vector_2_u = np.apply_along_axis(_unit_vector, 1, vector_b)
+    vector_1_u = np.apply_along_axis(_unit_vector, 1, np.asarray(vector_a))
+    vector_2_u = np.apply_along_axis(_unit_vector, 1, np.asarray(vector_b))
 
     # Compute determinants and store them in a vertical stack
     determinants = np.array([
