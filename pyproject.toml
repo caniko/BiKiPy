@@ -17,6 +17,9 @@ tables = "^3.6.1"
 matplotlib = "^3.2.2"
 opencv-python = {version = "^4.2.0", optional = true }
 
+[tool.poetry.extras]
+opencv = ["opencv-python"]
+
 [tool.poetry.dev-dependencies]
 black = "^19.10b0"
 pytest = "^5.4.3"
