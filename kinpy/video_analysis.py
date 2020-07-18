@@ -1,4 +1,7 @@
-import cv2
+try:
+    import cv2
+except ModuleNotFoundError:
+    msg = "opencv-python has to be installed to get data from video"
 
 
 def get_video_data(video, frame_loc="middle"):
