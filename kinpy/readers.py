@@ -2,6 +2,8 @@ from collections.abc import Iterable
 import pandas as pd
 import numpy as np
 
+from .compute.midpoints import compute_from_dlc_df
+
 
 class DeepLabCutReader:
     def __init__(
@@ -9,7 +11,7 @@ class DeepLabCutReader:
         df: pd.DataFrame,
         video_res: tuple,
         data_label: str = None,
-        center_bp: Iterable = None,
+        midpoint_pairs: Iterable = None,
         future_scaling: bool = False,
         min_like: float = 0.95,
         invert_y: bool = False,
@@ -20,7 +22,7 @@ class DeepLabCutReader:
             The resolution of the videos that are being analyzed
         :param data_label: string, default None
             Label for the data
-        :param center_bp: list-like, default None
+        :param midpoint_pairs: list-like, default None
             List-like structure of labels that consist of pairs that should have their
             center computed. The centered pairs will be replaced by the center set
         :param future_scaling: boolean, default False
@@ -80,62 +82,22 @@ class DeepLabCutReader:
                     lambda y: self.y_res - y
                 )
 
-        if center_bp:
-            pair_names = []
-            raw_data = []
-            for bp_pairs in center_bp:
-                if not (
-                    bp_pairs[0] in self.body_parts and bp_pairs[1] in self.body_parts
-                ):
+        if midpoint_pairs:
+            for pair in midpoint_pairs:
+                if not (pair[0] in self.body_parts and pair[1] in self.body_parts):
                     msg = (
                         f"The body part names must be referred to with "
                         f"their names, and be string:\n"
-                        f"bp_pairs: {bp_pairs}\n"
+                        f"pair: {pair}\n"
                         f"body_parts: {self.body_parts}"
                     )
                     raise ValueError(msg)
 
-                if len(bp_pairs) != 2:
-                    msg = "Each pair must consist of 2 elements"
-                    raise ValueError(msg)
-
-                name = "c_%s_%s" % bp_pairs
-                pair_names.append(name)
-
-                likelihood = (
-                    self.df.loc[:, [(bp_pairs[0], "likelihood")]].values
-                    + self.df.loc[:, [(bp_pairs[1], "likelihood")]].values
-                ) / 2
-                self.invalid_points[name] = likelihood < self.min_like
-                self.valid_points[name] = np.logical_not(self.invalid_points[name])
-
-                bp_1 = self.df.loc[:, [(bp_pairs[0], "x"), (bp_pairs[0], "y")]].values
-                bp_2 = self.df.loc[:, [(bp_pairs[1], "x"), (bp_pairs[1], "y")]].values
-
-                bp_1_mag_median = np.nanmedian(
-                    np.apply_along_axis(np.linalg.norm, 1, bp_1)
-                )
-                bp_2_mag_median = np.nanmedian(
-                    np.apply_along_axis(np.linalg.norm, 1, bp_2)
-                )
-
-                if bp_1_mag_median >= bp_2_mag_median:
-                    centre_point = bp_2 + ((bp_1 - bp_2) / 2)
-
-                else:
-                    centre_point = bp_1 + ((bp_2 - bp_1) / 2)
-                raw_data.extend((centre_point, likelihood))
-
-            self.body_parts.extend(pair_names)
-
-            self.df = self.df.join(
-                pd.DataFrame(
-                    np.hstack(raw_data),
-                    columns=pd.MultiIndex.from_product(
-                        [pair_names, ["x", "y", "likelihood"]]
-                    ),
-                    index=self.df.index,
-                )
+            self.df, self.midpoint_df = compute_from_dlc_df(
+                self.df,
+                point_pair_names=midpoint_pairs,
+                min_likelihood=0.95,
+                integrate=True,
             )
 
     @classmethod

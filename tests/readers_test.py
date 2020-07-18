@@ -3,7 +3,7 @@ from pathlib import Path
 import kinpy
 
 
-EXAMPLES_ROOT = Path().resolve() / "example_data"
+EXAMPLES_ROOT = Path(__file__).resolve().parent / "example_data"
 
 HDF_PATH = EXAMPLES_ROOT / "data_for_angle.h5"
 CSV_PATH = EXAMPLES_ROOT / "test_tracking.csv"
@@ -18,7 +18,7 @@ def test_deep_lab_cut_reader():
         str(VIDEO_PATH),
         future_scaling=True,
         csv_path=CSV_PATH,
-        center_bp=[("left_ear", "right_ear")],
+        midpoint_pairs=[("left_ear", "right_ear")],
     )
 
     assert from_video_obj
@@ -27,7 +27,7 @@ def test_deep_lab_cut_reader():
         str(CSV_PATH),
         RESOLUTION,
         future_scaling=True,
-        center_bp=[("left_ear", "right_ear")]
+        midpoint_pairs=[("left_ear", "right_ear")],
     )
 
     assert from_csv_obj
@@ -36,7 +36,7 @@ def test_deep_lab_cut_reader():
         str(HDF_PATH),
         RESOLUTION,
         future_scaling=True,
-        center_bp=[("left_ear", "right_ear")]
+        midpoint_pairs=[("left_ear", "right_ear")],
     )
 
     assert from_hdf_obj
