@@ -23,10 +23,12 @@ def clockwise_2d(vector_a: np.array, vector_b: np.array) -> np.array:
     vector_2_u = np.apply_along_axis(_unit_vector, 1, np.asarray(vector_b))
 
     # Compute determinants and store them in a vertical stack
-    determinants = np.array([
-        np.linalg.det(np.vstack((vector_1_u[i], vector_2_u[i])))
-        for i in range(len(vector_1_u))
-    ])
+    determinants = np.array(
+        [
+            np.linalg.det(np.vstack((vector_1_u[i], vector_2_u[i])))
+            for i in range(len(vector_1_u))
+        ]
+    )
 
     # dot = np.einsum("ij,ij->i", vector_1_u, vector_2_u)
     dot_prod = np.sum(vector_1_u * vector_2_u, axis=1)
