@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "kinpy"
-version = "0.1.0"
+version = "0.2.0"
 license = "BSD-3-Clause"
 description = "Liberary for automatic analysis of kinematic data"
 authors = ["Can H. Tartanoglu <canhtart@gmail.com>"]
@@ -27,7 +27,6 @@ pre-commit = "^2.5.1"
 target-version = ['py37']
 include = '\.pyi?$'
 exclude = '''
-
 (
  /(
      \.eggs         # exclude a few common directories in the
