@@ -62,9 +62,7 @@ def compute_midpoint(point_1, point_2) -> np.array:
     return compute
 
 
-def compute_from_dlc_df(
-    df, point_pair_names, min_likelihood: float = 0.95, integrate: bool = True
-):
+def compute_from_dlc_df(df, point_pair_names, min_likelihood: float = 0.95):
     result = {}
     compute_results, likelihoods = [], []
     for point_1_name, point_2_name in point_pair_names:
@@ -88,12 +86,5 @@ def compute_from_dlc_df(
 
         compute_results.append(compute_result)
         likelihoods.append(likelihood)
-
-    result = pd.DataFrame.from_dict(result)
-
-    if integrate:
-        new_df = df.join(result)
-        new_df.to_excel("test.xlsx")
-        return new_df, result
 
     return result

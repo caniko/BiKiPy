@@ -17,7 +17,7 @@ class DeepLabCutReader:
         invert_y: bool = False,
     ):
         """
-        :param df: Kinematic data from DeepLabCut as a pd.DataFrame
+        :param df: Kinematic data from DeepLabCut ingested as a pd.DataFrame
         :param video_res: tuple-like
             The resolution of the videos that are being analyzed
         :param data_label: string, default None
@@ -54,50 +54,53 @@ class DeepLabCutReader:
         self.future_scaling = future_scaling
         self.min_like = min_like
 
-        # Get name of body parts
+        # Get the name of regions of interest
         multi_index = list(self.df)
-        body_parts = []
+        regions_of_interest = []
         for i in range(0, len(multi_index), 3):
-            body_parts.append(multi_index[i][0])
-        self.body_parts = body_parts
+            regions_of_interest.append(multi_index[i][0])
+        self.regions_of_interest = regions_of_interest
 
         self.invalid_points = {}
         self.valid_points = {}
-        for body_part in self.body_parts:
-            self.invalid_points[body_part] = (
-                self.df[(body_part, "likelihood")] < self.min_like
+        for region_of_interest in self.regions_of_interest:
+            self.invalid_points[region_of_interest] = (
+                self.df[(region_of_interest, "likelihood")] < self.min_like
             )
-            self.valid_points[body_part] = np.logical_not(
-                self.invalid_points[body_part]
+            self.valid_points[region_of_interest] = np.logical_not(
+                self.invalid_points[region_of_interest]
             )
 
             # Remove likelihood values below min_like value
             self.df.loc[
-                self.invalid_points[body_part], [(body_part, "x"), (body_part, "y")]
+                self.invalid_points[region_of_interest],
+                [(region_of_interest, "x"), (region_of_interest, "y")],
             ] = np.nan
 
             # Invert y-axis
             if invert_y:
-                self.df[(body_part, "y")] = self.df[(body_part, "y")].map(
-                    lambda y: self.y_res - y
-                )
+                self.df[(region_of_interest, "y")] = self.df[
+                    (region_of_interest, "y")
+                ].map(lambda y: self.y_res - y)
 
         if midpoint_pairs:
             for pair in midpoint_pairs:
-                if not (pair[0] in self.body_parts and pair[1] in self.body_parts):
+                if not (
+                    pair[0] in self.regions_of_interest
+                    and pair[1] in self.regions_of_interest
+                ):
                     msg = (
-                        f"The body part names must be referred to with "
+                        f"The region of interest names must be referred to with "
                         f"their names, and be string:\n"
-                        f"pair: {pair}\n"
-                        f"body_parts: {self.body_parts}"
+                        f"pair: {pair}\nregions_of_interest: {self.regions_of_interest}"
                     )
                     raise ValueError(msg)
 
-            self.df, self.midpoint_df = compute_from_dlc_df(
-                self.df,
-                point_pair_names=midpoint_pairs,
-                min_likelihood=0.95,
-                integrate=True,
+            self.df = self.add_regions_of_interest_to_df(
+                master=self.df,
+                new_data=compute_from_dlc_df(
+                    self.df, point_pair_names=midpoint_pairs, min_likelihood=0.95
+                ),
             )
 
     @classmethod
@@ -246,3 +249,23 @@ class DeepLabCutReader:
                 label: func(dlcDF_obj, **kwargs_for_func)
                 for label, dlcDF_obj in zip(manual_labels, dlc_df_objs)
             }
+
+    @staticmethod
+    def add_regions_of_interest_to_df(
+        master: pd.DataFrame, new_data: dict
+    ) -> pd.DataFrame:
+        unwrapped_data = np.vstack(
+            [
+                np.hstack(tuple(roi_data_set.values()))
+                for roi_data_set in new_data.values()
+            ]
+        )
+        return master.join(
+            pd.DataFrame(
+                unwrapped_data,
+                columns=pd.MultiIndex.from_product(
+                    [tuple(new_data.keys()), ["x", "y", "likelihood"]]
+                ),
+                index=master.index,
+            )
+        )

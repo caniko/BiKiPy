@@ -22,7 +22,7 @@ def test_angle_over_time():
 
     head_tail = angle_over_time(
         test_data.df,
-        point_a="c_left_ear_right_ear",
+        point_a="mid_left_ear_right_ear",
         point_b="tail_base",
         point_c="tail_tip",
     )
