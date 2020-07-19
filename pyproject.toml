@@ -3,7 +3,7 @@ requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
 
 [tool.poetry]
-name = "kinpy"
+name = "bikipy"
 version = "0.2.1"
 license = "LGPL-3.0-or-later"
 description = "Liberary for automatic analysis of kinematic data"

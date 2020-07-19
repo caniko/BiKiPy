@@ -112,11 +112,7 @@ class DeepLabCutReader:
         :param kwargs: Keyword-arguments for the class.__init__
         :return: DeepLabCutReader instance
         """
-        try:
-            from kinpy.video_analysis import get_video_data
-        except ModuleNotFoundError:
-            msg = "opencv-python is required to analyse video"
-            raise ModuleNotFoundError(msg)
+        from .video_analysis import get_video_data
 
         _frame, x_res, y_res = get_video_data(video_path)
         kwargs["video_res"] = (x_res, y_res)

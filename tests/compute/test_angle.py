@@ -1,8 +1,8 @@
 from pathlib import Path
 import numpy as np
 
-from kinpy import DeepLabCutReader
-from kinpy.compute import angle_over_time, clockwise_2d
+from bikipy import DeepLabCutReader
+from bikipy.compute import angle_over_time, clockwise_2d
 
 HDF_PATH = Path(__file__).parent.parent.resolve() / "example_data/data_for_angle.h5"
 

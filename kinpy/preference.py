@@ -64,11 +64,7 @@ class Preference:
             True: If there is only one video file, it will be selected.
         :return:
         """
-        try:
-            from kinpy.video_analysis import get_video_data
-        except ModuleNotFoundError:
-            msg = "opencv-python is required to analyse video"
-            raise ModuleNotFoundError(msg)
+        from .video_analysis import get_video_data
 
         frame, x_res, y_res = get_video_data(video_path)
 

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import kinpy
+import bikipy
 
 
 EXAMPLES_ROOT = Path(__file__).resolve().parent / "example_data"
@@ -14,7 +14,7 @@ RESOLUTION = (1280, 720)
 
 
 def test_deep_lab_cut_reader():
-    from_video_obj = kinpy.DeepLabCutReader.from_video(
+    from_video_obj = bikipy.DeepLabCutReader.from_video(
         str(VIDEO_PATH),
         future_scaling=True,
         csv_path=CSV_PATH,
@@ -23,7 +23,7 @@ def test_deep_lab_cut_reader():
 
     assert from_video_obj
 
-    from_csv_obj = kinpy.DeepLabCutReader.from_csv(
+    from_csv_obj = bikipy.DeepLabCutReader.from_csv(
         str(CSV_PATH),
         RESOLUTION,
         future_scaling=True,
@@ -32,7 +32,7 @@ def test_deep_lab_cut_reader():
 
     assert from_csv_obj
 
-    from_hdf_obj = kinpy.DeepLabCutReader.from_hdf(
+    from_hdf_obj = bikipy.DeepLabCutReader.from_hdf(
         str(HDF_PATH),
         RESOLUTION,
         future_scaling=True,
