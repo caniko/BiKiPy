@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from typing import Iterable, Callable, Union
 import pandas as pd
 import numpy as np
 
@@ -10,8 +10,8 @@ class DeepLabCutReader:
         self,
         df: pd.DataFrame,
         video_res: tuple,
-        data_label: str = None,
-        midpoint_pairs: Iterable = None,
+        data_label: Union[str, None] = None,
+        midpoint_groups: Union[Iterable, None] = None,
         future_scaling: bool = False,
         min_like: float = 0.95,
         invert_y: bool = False,
@@ -198,11 +198,11 @@ class DeepLabCutReader:
 
     @staticmethod
     def map_function(
-        func: callable,
+        func: Callable,
         dlc_df_objs: list,
         keep_labels: bool = True,
-        manual_labels: tuple = None,
-        kwargs_for_func: dict = None,
+        manual_labels: Union[tuple, None] = None,
+        kwargs_for_func: Union[dict, None] = None,
     ):
         """
         Method for mapping a function to a list of DeepLabCutReader objects

@@ -3,8 +3,7 @@ Note that points in this context is the location of a region of interest across 
 """
 
 
-from collections.abc import Sequence
-import pandas as pd
+from typing import Sequence
 import numpy as np
 
 
