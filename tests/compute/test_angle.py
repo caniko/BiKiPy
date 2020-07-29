@@ -11,7 +11,7 @@ def test_angle_over_time():
     test_data = DeepLabCutReader.from_hdf(
         HDF_PATH,
         video_res=(1280, 720),
-        midpoint_pairs=[("left_ear", "right_ear")],
+        midpoint_groups=[("left_ear", "right_ear")],
         future_scaling=False,
         min_like=0.95,
     )
