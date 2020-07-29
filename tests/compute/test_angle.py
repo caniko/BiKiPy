@@ -22,7 +22,7 @@ def test_angle_over_time():
 
     head_tail = angle_over_time(
         test_data.df,
-        point_a="mid_left_ear_right_ear",
+        point_a="mid-left_ear-right_ear",
         point_b="tail_base",
         point_c="tail_tip",
     )
@@ -31,8 +31,8 @@ def test_angle_over_time():
         "Angles"
     ]
 
-    assert all(tail_base_tip["Accuracy Score"] <= 1.0)
-    assert all(head_tail["Accuracy Score"] <= 1.0)
+    assert all(tail_base_tip["Likelihood"] <= 1.0)
+    assert all(head_tail["Likelihood"] <= 1.0)
 
     tail_base_tip_no_nan = tail_base_tip["Angles"][~np.isnan(tail_base_tip["Angles"])]
     head_tail_no_nan = head_tail["Angles"][~np.isnan(head_tail["Angles"])]
@@ -47,9 +47,9 @@ def test_angle_over_time():
 
 def test_clockwise_2d():
     def three_point_vector_path(point_1, point_2, point_3, answer):
-        point_1 = np.asarray(point_1)
-        point_2 = np.asarray(point_2)
-        point_3 = np.asarray(point_3)
+        point_1 = np.asanyarray(point_1)
+        point_2 = np.asanyarray(point_2)
+        point_3 = np.asanyarray(point_3)
 
         vector_1_2 = point_2 - point_1
         vector_2_3 = point_3 - point_2
@@ -65,3 +65,6 @@ def test_clockwise_2d():
     three_point_vector_path(((0, 0),), ((1, 0),), ((1, 1),), np.pi / 2)
 
     three_point_vector_path(((0, 0),), ((1, 0),), ((1, -1),), 3 * np.pi / 2)
+
+
+test_angle_over_time()

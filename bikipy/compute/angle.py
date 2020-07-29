@@ -1,7 +1,6 @@
+from warnings import warn
 import pandas as pd
 import numpy as np
-
-from bikipy.utils import compute_nan_ratio, validate_nan_ratio
 
 
 def _unit_vector(vector):
@@ -22,8 +21,8 @@ def clockwise_2d(vector_a, vector_b) -> np.array:
         >>> clockwise_2d((1, 0, 0), (-1, 0, 0))
         3.141592653589793
     """
-    vector_1_u = np.apply_along_axis(_unit_vector, 1, np.asarray(vector_a))
-    vector_2_u = np.apply_along_axis(_unit_vector, 1, np.asarray(vector_b))
+    vector_1_u = np.apply_along_axis(_unit_vector, 1, np.asanyarray(vector_a))
+    vector_2_u = np.apply_along_axis(_unit_vector, 1, np.asanyarray(vector_b))
 
     # Compute determinants and store them in a vertical stack
     determinants = np.array(
@@ -40,22 +39,27 @@ def clockwise_2d(vector_a, vector_b) -> np.array:
 
 
 def angle_over_time(df: pd.DataFrame, point_a, point_b, point_c):
-    position = {
+    ordered_point_names = (point_a, point_b, point_c)
+
+    likelihood = np.multiply.reduce(
+        [df.loc[:, [(point, "likelihood")]].values for point in ordered_point_names]
+    )
+
+    names_v_points = {
         point: df.loc[:, [(point, "x"), (point, "y")]].values
         for point in (point_a, point_b, point_c)
     }
+    
+    if any([points.dtype == "object" for points in names_v_points.values()]):
+        warn("At least one of the arrays consists solely of NaN (Not a Number) objects")
+        return {
+            "Angle": np.full((names_v_points[point_a].size,), np.nan),
+            "Likelihood": likelihood
+        }
 
-    ab_vec = position[point_a] - position[point_b]
-    bc_vec = position[point_b] - position[point_c]
-
-    nan_ratio = compute_nan_ratio((ab_vec, bc_vec))
-    validate_nan_ratio(nan_ratio)
+    ab_vec = names_v_points[point_a] - names_v_points[point_b]
+    bc_vec = names_v_points[point_b] - names_v_points[point_c]
 
     angles = clockwise_2d(ab_vec, bc_vec)
-    accuracy_score = (
-        df.loc[:, [(point_a, "likelihood")]].values
-        + df.loc[:, [(point_b, "likelihood")]].values
-        + df.loc[:, [(point_c, "likelihood")]].values
-    ) / 3
 
-    return {"Angles": angles, "Accuracy Score": accuracy_score.T[0]}
+    return {"Angle": angles, "Likelihood": likelihood}

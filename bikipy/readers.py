@@ -2,7 +2,16 @@ from typing import Iterable, Callable, Union
 import pandas as pd
 import numpy as np
 
-from .compute.midpoints import compute_from_dlc_df
+from bikipy.compute.midpoints import compute_from_dlc_df
+
+
+DEEPLABCUT_DF_INIT_KWARGS = {
+    "index_col": 0,
+    "skiprows": 1,
+    "header": [0, 1],
+    "na_filter": False,
+    "dtype": {"coords": int, "x": float, "y": float, "likelihood": float},
+}
 
 
 class DeepLabCutReader:
@@ -13,8 +22,9 @@ class DeepLabCutReader:
         data_label: Union[str, None] = None,
         midpoint_groups: Union[Iterable, None] = None,
         future_scaling: bool = False,
-        min_like: float = 0.95,
+        min_likelihood: float = 0.80,
         invert_y: bool = False,
+        trim_tolerance: Union[int, None] = 2
     ):
         """
         :param df: Kinematic data from DeepLabCut ingested as a pd.DataFrame
@@ -28,7 +38,7 @@ class DeepLabCutReader:
         :param future_scaling: boolean, default False
             Scales the coordinates with respect to their min and max.
             True requires x_max and y_max
-        :param min_like: float, default 0.90
+        :param min_likelihood: float, default 0.90
             The minimum likelihood the coordinates of the respective row.
             If below the values, the coords are discarded while being replaced
             by numpy.NaN
@@ -43,45 +53,22 @@ class DeepLabCutReader:
             and isinstance(self.y_res, (int, float, type(None)))
         ):
             msg = f"x and y max are integers; not {self.x_res}; {self.y_res}"
-            raise ValueError(msg)
-
-        if invert_y and not self.y_res:
-            msg = "video_res needs to be defined if the y-axis is to be inverted"
-            raise ValueError(msg)
+            raise AttributeError(msg)
 
         self.df = df
+        if not isinstance(df, pd.DataFrame):
+            msg = "df has to be a pandas.DataFrame"
+            raise AttributeError(msg)
+
         self.data_label = data_label
         self.future_scaling = future_scaling
-        self.min_like = min_like
+        self.min_likelihood = min_likelihood
+        self.trim_tolerance = trim_tolerance
 
-        # Get the name of regions of interest
-        multi_index = list(self.df)
-        regions_of_interest = []
-        for i in range(0, len(multi_index), 3):
-            regions_of_interest.append(multi_index[i][0])
-        self.regions_of_interest = regions_of_interest
-
-        self.invalid_points = {}
-        self.valid_points = {}
-        for region_of_interest in self.regions_of_interest:
-            self.invalid_points[region_of_interest] = (
-                self.df[(region_of_interest, "likelihood")] < self.min_like
-            )
-            self.valid_points[region_of_interest] = np.logical_not(
-                self.invalid_points[region_of_interest]
-            )
-
-            # Remove likelihood values below min_like value
-            self.df.loc[
-                self.invalid_points[region_of_interest],
-                [(region_of_interest, "x"), (region_of_interest, "y")],
-            ] = np.nan
-
-            # Invert y-axis
-            if invert_y:
-                self.df[(region_of_interest, "y")] = self.df[
-                    (region_of_interest, "y")
-                ].map(lambda y: self.y_res - y)
+        if invert_y:
+            for roi in self.regions_of_interest:
+                self.df[(roi, "y")] = \
+                    self.df[(roi, "y")].map(lambda y: self.y_res - y)
 
         if midpoint_groups:
             for group in midpoint_groups:
@@ -96,19 +83,60 @@ class DeepLabCutReader:
                     )
                     raise ValueError(msg)
 
-            computation_result = compute_from_dlc_df(
-                self.df, point_group_names_set=midpoint_groups, min_likelihood=0.95
+            midpoints = compute_from_dlc_df(
+                self.df, point_group_names_set=midpoint_groups
             )
-            new_data = {
-                midpoint_name: np.concatenate(
-                    (data["midpoint"], data["likelihood"]), axis=1
-                )
-                for midpoint_name, data in computation_result.items()
-            }
+            midpoint_dict = {}
+            for midpoint_name, data in midpoints.items():
+                midpoint_dict[(midpoint_name, "x")], midpoint_dict[(midpoint_name, "y")] = [
+                    np.hstack(component) for component in np.hsplit(data["midpoint"], 2)
+                ]
+                midpoint_dict[(midpoint_name, "likelihood")] = np.hstack(data["likelihood"])
 
             self.df = self.add_regions_of_interest_to_df(
-                master=self.df, new_data=new_data,
+                master=self.df, new_data=midpoint_dict,
             )
+
+        if trim_tolerance:
+            valid_point_locations = self.valid_point_locations
+            first = find_first_valid_index(valid_point_locations, self.trim_tolerance, self.frame_num)
+            last = self.frame_num - find_first_valid_index(np.flip(valid_point_locations), self.trim_tolerance, self.frame_num)
+            1
+
+    @property
+    def valid_point_booleans(self):
+        return {
+            roi: self.df[(roi, "likelihood")].values >= self.min_likelihood
+            for roi in self.regions_of_interest
+        }
+
+    @property
+    def valid_point_locations(self):
+        return {
+            roi: np.where(data)[0] for roi, data in self.valid_point_booleans.items()
+        }
+
+    @property
+    def valid_ratios(self):
+        valid_point_booleans = self.valid_point_booleans
+        return {
+            roi: np.sum(valid_point_booleans[roi]) / self.df[(roi, "x")].size
+            for roi in self.regions_of_interest
+        }
+
+    @property
+    def comp_likelihood(self):
+        return np.multiply.reduce(
+            [self.df[(roi, "likelihood")] for roi in self.regions_of_interest])
+
+    @property
+    def regions_of_interest(self):
+        multi_indeces = list(self.df)
+        return [multi_indeces[i][0] for i in range(0, len(multi_indeces), 3)]
+
+    @property
+    def frame_num(self):
+        return self.df.shape[0]
 
     @classmethod
     def from_video(cls, video_path, *args, **kwargs):
@@ -145,14 +173,7 @@ class DeepLabCutReader:
         """
 
         try:
-            df = pd.read_csv(
-                csv_path,
-                index_col=0,
-                skiprows=1,
-                header=[0, 1],
-                na_filter=False,
-                dtype={"coords": int, "x": float, "y": float, "likelihood": float},
-            )
+            df = pd.read_csv(csv_path, **DEEPLABCUT_DF_INIT_KWARGS)
         except FileNotFoundError:
             msg = f"csv_path does not exist, {csv_path}"
             raise ValueError(msg)
@@ -172,7 +193,7 @@ class DeepLabCutReader:
             Keyword arguments for the class init-method
         """
 
-        df = pd.read_hdf(hdf_path)
+        df = pd.read_hdf(hdf_path, **DEEPLABCUT_DF_INIT_KWARGS)
         if drop_level:
             df = df.droplevel(0, axis=1)
 
@@ -209,6 +230,7 @@ class DeepLabCutReader:
         dlc_df_objs: list,
         keep_labels: bool = True,
         manual_labels: Union[tuple, None] = None,
+        min_valid_ratio: Union[float, None] = 0.80,
         kwargs_for_func: Union[dict, None] = None,
     ):
         """ Method for mapping a function to a list of DeepLabCutReader objects
@@ -251,15 +273,5 @@ class DeepLabCutReader:
             }
 
     @staticmethod
-    def add_regions_of_interest_to_df(
-        master: pd.DataFrame, new_data: dict
-    ) -> pd.DataFrame:
-        return master.join(
-            pd.DataFrame(
-                new_data,
-                columns=pd.MultiIndex.from_product(
-                    [tuple(new_data.keys()), ["x", "y", "likelihood"]]
-                ),
-                index=master.index,
-            )
-        )
+    def add_regions_of_interest_to_df(master: pd.DataFrame, new_data: dict) -> pd.DataFrame:
+        return master.join(pd.DataFrame.from_dict(new_data))

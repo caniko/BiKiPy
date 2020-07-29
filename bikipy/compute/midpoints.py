@@ -1,16 +1,14 @@
 """
 Note that points in this context is the location of a region of interest across time.
 """
-
-
 from typing import Sequence
 import numpy as np
 
-from bikipy.utils import compute_nan_ratio, validate_nan_ratio
+from bikipy.utils.validators import compute_nan_ratio
 
 
 def compute_midpoint(point_1, point_2) -> np.array:
-    point_1, point_2 = np.asarray(point_1), np.asarray(point_2)
+    point_1, point_2 = np.asanyarray(point_1), np.asanyarray(point_2)
 
     point_1_vector_norms = np.apply_along_axis(np.linalg.norm, 1, point_1)
     point_2_vector_norms = np.apply_along_axis(np.linalg.norm, 1, point_2)
@@ -32,7 +30,7 @@ def compute_midpoint(point_1, point_2) -> np.array:
     return compute
 
 
-def recursive_midpoint(points: Sequence) -> np.array:
+def recursive_midpoint(point_sets: Sequence) -> np.array:
     """ Compute midpoints using last midpoint as point 1, and the next point
     as point 2 in compute_midpoint.
 
@@ -43,12 +41,14 @@ def recursive_midpoint(points: Sequence) -> np.array:
     This function could be interpreted as triangulating between three points
     when the length of the list is 3.
 
-    :param points:
+    :param point_sets:
     :return:
     """
-    midpoint = points[0]
-    for i in range(1, len(points)):
-        midpoint = compute_midpoint(midpoint, points[i])
+    midpoint = compute_midpoint(point_sets[0], point_sets[1])
+    if len(midpoint) >= 2:
+        for point_set in point_sets[2:]:
+            midpoint = compute_midpoint(midpoint, point_set)
+
     return midpoint
 
 
@@ -63,23 +63,15 @@ def triangulate(point_1, point_2, point_3) -> np.array:
     return recursive_midpoint((point_1, point_2, point_3))
 
 
-def compute_from_dlc_df(df, point_group_names_set, min_likelihood: float = 0.95):
+def compute_from_dlc_df(df, point_group_names_set, min_likelihood: float = None):
     result = {}
     for group_subset_names in point_group_names_set:
-        likelihood = np.array(
+        likelihood = np.multiply.reduce(
             [
                 df.loc[:, [(point_name, "likelihood")]].values
                 for point_name in group_subset_names
             ]
-        ) / len(group_subset_names)
-
-        points = []
-        for point_name in group_subset_names:
-            rem = df.loc[:, [(point_name, "x"), (point_name, "y")]].values
-            nan_ratio = compute_nan_ratio(rem)
-            validate_nan_ratio(nan_ratio)
-
-            points.append(rem)
+        )
 
         points = [
             df.loc[:, [(point_name, "x"), (point_name, "y")]].values
@@ -92,8 +84,8 @@ def compute_from_dlc_df(df, point_group_names_set, min_likelihood: float = 0.95)
             compute_result[np.where(likelihood < min_likelihood)[0]] = np.nan
 
         result[f"mid-{'-'.join(group_subset_names)}"] = {
-            "midpoint": compute_result,
-            "likelihood": likelihood[0],
+            "midpoint": compute_result.copy(),
+            "likelihood": likelihood.copy()
         }
 
     return result
