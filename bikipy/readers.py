@@ -22,9 +22,9 @@ class DeepLabCutReader:
             The resolution of the videos that are being analyzed
         :param data_label: string, default None
             Label for the data
-        :param midpoint_pairs: list-like, default None
-            List-like structure of labels that consist of pairs that should have their
-            center computed. The centered pairs will be replaced by the center set
+        :param midpoint_groups: list-like, default None
+            List-like structure of labels that consist of groups that should have their
+            midpoint computed.
         :param future_scaling: boolean, default False
             Scales the coordinates with respect to their min and max.
             True requires x_max and y_max
@@ -83,24 +83,31 @@ class DeepLabCutReader:
                     (region_of_interest, "y")
                 ].map(lambda y: self.y_res - y)
 
-        if midpoint_pairs:
-            for pair in midpoint_pairs:
+        if midpoint_groups:
+            for group in midpoint_groups:
                 if not (
-                    pair[0] in self.regions_of_interest
-                    and pair[1] in self.regions_of_interest
+                    group[0] in self.regions_of_interest
+                    and group[1] in self.regions_of_interest
                 ):
                     msg = (
                         f"The region of interest names must be referred to with "
                         f"their names, and be string:\n"
-                        f"pair: {pair}\nregions_of_interest: {self.regions_of_interest}"
+                        f"group: {group}\nregions_of_interest: {self.regions_of_interest}"
                     )
                     raise ValueError(msg)
 
+            computation_result = compute_from_dlc_df(
+                self.df, point_group_names_set=midpoint_groups, min_likelihood=0.95
+            )
+            new_data = {
+                midpoint_name: np.concatenate(
+                    (data["midpoint"], data["likelihood"]), axis=1
+                )
+                for midpoint_name, data in computation_result.items()
+            }
+
             self.df = self.add_regions_of_interest_to_df(
-                master=self.df,
-                new_data=compute_from_dlc_df(
-                    self.df, point_pair_names=midpoint_pairs, min_likelihood=0.95
-                ),
+                master=self.df, new_data=new_data,
             )
 
     @classmethod
@@ -204,11 +211,8 @@ class DeepLabCutReader:
         manual_labels: Union[tuple, None] = None,
         kwargs_for_func: Union[dict, None] = None,
     ):
-        """
-        Method for mapping a function to a list of DeepLabCutReader objects
-        
-        Parameters
-        ----------
+        """ Method for mapping a function to a list of DeepLabCutReader objects
+
         :param func: function
             A pre-defined function that processes DeepLabCutReader objects
         :param dlc_df_objs: list
@@ -250,15 +254,9 @@ class DeepLabCutReader:
     def add_regions_of_interest_to_df(
         master: pd.DataFrame, new_data: dict
     ) -> pd.DataFrame:
-        unwrapped_data = np.vstack(
-            [
-                np.hstack(tuple(roi_data_set.values()))
-                for roi_data_set in new_data.values()
-            ]
-        )
         return master.join(
             pd.DataFrame(
-                unwrapped_data,
+                new_data,
                 columns=pd.MultiIndex.from_product(
                     [tuple(new_data.keys()), ["x", "y", "likelihood"]]
                 ),

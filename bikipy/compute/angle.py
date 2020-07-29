@@ -1,4 +1,7 @@
+import pandas as pd
 import numpy as np
+
+from bikipy.utils import compute_nan_ratio, validate_nan_ratio
 
 
 def _unit_vector(vector):
@@ -6,7 +9,7 @@ def _unit_vector(vector):
     return vector / np.linalg.norm(vector)
 
 
-def clockwise_2d(vector_a: np.array, vector_b: np.array) -> np.array:
+def clockwise_2d(vector_a, vector_b) -> np.array:
     """ Returns the inner_angle in radians between two vectors
 
         :param vector_a: numpy array containing the location of per time
@@ -36,13 +39,17 @@ def clockwise_2d(vector_a: np.array, vector_b: np.array) -> np.array:
     return np.pi - np.arctan2(determinants, dot_prod)
 
 
-def angle_over_time(df, point_a, point_b, point_c):
-    position = {}
-    for point in (point_a, point_b, point_c):
-        position[point] = df.loc[:, [(point, "x"), (point, "y")]].values
+def angle_over_time(df: pd.DataFrame, point_a, point_b, point_c):
+    position = {
+        point: df.loc[:, [(point, "x"), (point, "y")]].values
+        for point in (point_a, point_b, point_c)
+    }
 
     ab_vec = position[point_a] - position[point_b]
     bc_vec = position[point_b] - position[point_c]
+
+    nan_ratio = compute_nan_ratio((ab_vec, bc_vec))
+    validate_nan_ratio(nan_ratio)
 
     angles = clockwise_2d(ab_vec, bc_vec)
     accuracy_score = (
