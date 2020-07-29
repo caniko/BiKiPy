@@ -1,8 +1,10 @@
 try:
     import cv2
 except ModuleNotFoundError:
-    msg = "opencv-python is required to get data from video, type: " \
-          "poetry install -E opencv"
+    msg = (
+        "opencv-python is required to get data from video, type: "
+        "poetry install -E opencv"
+    )
 
 
 def get_video_data(video, frame_loc="middle"):

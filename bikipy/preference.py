@@ -46,9 +46,7 @@ class Preference:
         )
 
     @classmethod
-    def from_video(
-        cls, kin_data: DeepLabCutReader, border_orient: str, video_path: str
-    ):
+    def from_video(cls, kin_data: DeepLabCutReader, border_orient: str, video_path):
         """Initialize class using data from a sample video file
 
         :param kin_data:
