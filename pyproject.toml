@@ -25,6 +25,7 @@ black = "^19.10b0"
 pytest = "^5.4.3"
 commitizen = "^1.23.0"
 pre-commit = "^2.5.1"
+opencv-python = "4.2.0.34"
 
 [tool.black]
 target-version = ['py37']

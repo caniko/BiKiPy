@@ -3,7 +3,7 @@ try:
 except ModuleNotFoundError:
     msg = (
         "opencv-python is required to get data from video, type: "
-        "poetry install -E opencv"
+        "pip install opencv-python=4.2.0.34"
     )
 
 
