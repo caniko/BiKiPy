@@ -47,12 +47,12 @@ class DeepLabCutReader:
             traditional Cartesian coordinate system where the origin is on the bottom-left
         """
 
-        self.x_res, self.y_res = video_res
+        self.horizontal_res, self.vertical_res = video_res
         if not (
-            isinstance(self.x_res, (int, float, type(None)))
-            and isinstance(self.y_res, (int, float, type(None)))
+            isinstance(self.horizontal_res, (int, float, type(None)))
+            and isinstance(self.vertical_res, (int, float, type(None)))
         ):
-            msg = f"x and y max are integers; not {self.x_res}; {self.y_res}"
+            msg = f"x and y max are integers; not {self.horizontal_res}; {self.vertical_res}"
             raise AttributeError(msg)
 
         self.df = df
@@ -66,8 +66,9 @@ class DeepLabCutReader:
 
         if invert_y:
             for roi in self.regions_of_interest:
-                self.df[(roi, "y")] = \
-                    self.df[(roi, "y")].map(lambda y: self.y_res - y)
+                self.df[(roi, "y")] = self.df[(roi, "y")].map(
+                    lambda y: self.vertical_res - y
+                )
 
         if midpoint_groups:
             for group in midpoint_groups:
@@ -87,10 +88,15 @@ class DeepLabCutReader:
             )
             midpoint_dict = {}
             for midpoint_name, data in midpoints.items():
-                midpoint_dict[(midpoint_name, "x")], midpoint_dict[(midpoint_name, "y")] = [
+                (
+                    midpoint_dict[(midpoint_name, "x")],
+                    midpoint_dict[(midpoint_name, "y")],
+                ) = [
                     np.hstack(component) for component in np.hsplit(data["midpoint"], 2)
                 ]
-                midpoint_dict[(midpoint_name, "likelihood")] = np.hstack(data["likelihood"])
+                midpoint_dict[(midpoint_name, "likelihood")] = np.hstack(
+                    data["likelihood"]
+                )
 
             self.df = self.add_regions_of_interest_to_df(
                 master=self.df, new_data=midpoint_dict,
