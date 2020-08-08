@@ -4,8 +4,6 @@ Note that points in this context is the location of a region of interest across 
 from typing import Sequence
 import numpy as np
 
-from bikipy.utils.validators import compute_nan_ratio
-
 
 def compute_midpoint(point_1, point_2) -> np.array:
     point_1, point_2 = np.asanyarray(point_1), np.asanyarray(point_2)
@@ -64,17 +62,14 @@ def triangulate(point_1, point_2, point_3) -> np.array:
 
 
 def compute_from_dlc_df(df, point_group_names_set, min_likelihood: float = None):
+    from bikipy.utils.deeplabcut import reduce_likelihoods, get_region_of_interest_data
+
     result = {}
     for group_subset_names in point_group_names_set:
-        likelihood = np.multiply.reduce(
-            [
-                df.loc[:, [(point_name, "likelihood")]].values
-                for point_name in group_subset_names
-            ]
-        )
+        likelihood = reduce_likelihoods(df, group_subset_names)
 
         points = [
-            df.loc[:, [(point_name, "x"), (point_name, "y")]].values
+            get_region_of_interest_data(df, point_name)
             for point_name in group_subset_names
         ]
 
@@ -85,7 +80,7 @@ def compute_from_dlc_df(df, point_group_names_set, min_likelihood: float = None)
 
         result[f"mid-{'-'.join(group_subset_names)}"] = {
             "midpoint": compute_result.copy(),
-            "likelihood": likelihood.copy()
+            "likelihood": likelihood.copy(),
         }
 
     return result
