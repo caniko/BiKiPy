@@ -11,8 +11,18 @@ except ModuleNotFoundError as e:
 def get_video_data(video_path, frame_loc="middle"):
     """ Get a frame from a given relative location, and resolution info of video
 
-def get_video_data(video, frame_loc="middle"):
-    cap = cv2.VideoCapture(video)
+    Parameters
+    ----------
+    video_path: str
+        Path to video to be analysed
+    frame_loc:
+        Relative location of the frame used for reference in analysis
+
+    Returns
+    -------
+    Tuple: (frame, height, width)
+    """
+    cap = cv2.VideoCapture(video_path)
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))

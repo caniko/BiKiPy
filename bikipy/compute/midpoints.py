@@ -5,7 +5,7 @@ from typing import Sequence
 import numpy as np
 
 
-def compute_midpoint(point_1, point_2) -> np.array:
+def compute_midpoint(point_1, point_2) -> np.ndarray:
     point_1, point_2 = np.asanyarray(point_1), np.asanyarray(point_2)
 
     point_1_vector_norms = np.apply_along_axis(np.linalg.norm, 1, point_1)
@@ -28,7 +28,7 @@ def compute_midpoint(point_1, point_2) -> np.array:
     return compute
 
 
-def recursive_midpoint(point_sets: Sequence) -> np.array:
+def recursive_midpoint(point_sets: Sequence) -> np.ndarray:
     """ Compute midpoints using last midpoint as point 1, and the next point
     as point 2 in compute_midpoint.
 
@@ -50,7 +50,7 @@ def recursive_midpoint(point_sets: Sequence) -> np.array:
     return midpoint
 
 
-def triangulate(point_1, point_2, point_3) -> np.array:
+def triangulate(point_1, point_2, point_3) -> np.ndarray:
     """ Midpoint between point_3, and the midpoint between point_1 and point_2
 
     :param point_1: Set of points used for computing first midpoint

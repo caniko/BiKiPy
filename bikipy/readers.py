@@ -1,4 +1,4 @@
-from typing import Iterable, Callable, Union
+from typing import Iterable, Callable, Union, Sequence, MutableSequence
 import pandas as pd
 import numpy as np
 
@@ -24,25 +24,27 @@ class DeepLabCutReader:
         future_scaling: bool = False,
         min_likelihood: float = 0.80,
         invert_y: bool = False,
-        trim_tolerance: Union[int, None] = 2
     ):
-        """
-        :param df: Kinematic data from DeepLabCut ingested as a pd.DataFrame
-        :param video_res: tuple-like
-            The resolution of the videos that are being analyzed
-        :param data_label: string, default None
+        """ Class that stores information about a given experiment conducted with DeepLabCut
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            Kinematic data from DeepLabCut ingested as a pd.DataFrame
+        video_res : Sequence
+             The resolution of the videos that are being analyzed
+        data_label : string, optional
             Label for the data
-        :param midpoint_groups: list-like, default None
+        midpoint_groups : list-like, default None
             List-like structure of labels that consist of groups that should have their
-            midpoint computed.
-        :param future_scaling: boolean, default False
+        future_scaling : boolean, default False
             Scales the coordinates with respect to their min and max.
             True requires x_max and y_max
-        :param min_likelihood: float, default 0.90
+        min_likelihood : float, default 0.90
             The minimum likelihood the coordinates of the respective row.
             If below the values, the coords are discarded while being replaced
             by numpy.NaN
-        :param invert_y: bool, default False
+        invert_y : bool, default False
             Bool if True will invert the y-axis. Useful when the user wants to work in
             traditional Cartesian coordinate system where the origin is on the bottom-left
         """
@@ -103,42 +105,72 @@ class DeepLabCutReader:
             )
 
     @property
-    def valid_point_booleans(self):
+    def _valid_point_booleans(self) -> dict:
+        """
+
+       Returns
+       -------
+       dictionary; region of interest versus np.ndarray of booleans, True if data in the respective index is valid
+       """
         return {
             roi: self.df[(roi, "likelihood")].values >= self.min_likelihood
             for roi in self.regions_of_interest
         }
 
     @property
-    def valid_ratios(self):
-        valid_point_booleans = self.valid_point_booleans
+    def valid_ratios(self) -> dict:
+        """
+
+        Returns
+        -------
+        dictionary; region of interest versus valid data number divided by size of data
+        """
+        valid_point_booleans = self._valid_point_booleans
         return {
             roi: np.sum(valid_point_booleans[roi]) / self.df[(roi, "x")].size
             for roi in self.regions_of_interest
         }
 
     @property
-    def regions_of_interest(self):
-        multi_indeces = list(self.df)
-        return [multi_indeces[i][0] for i in range(0, len(multi_indeces), 3)]
+    def regions_of_interest(self) -> tuple:
+        """
+
+        Returns
+        -------
+        Tuple containing the name of the regions of interest in the DataFrame
+        """
+        return tuple(self.df.columns.levels[0])
 
     @property
     def frame_num(self):
+        """
+
+        Returns
+        -------
+        Number of frame in the DeepLabCut experiment, i.e. the maximum index in the DataFrame
+        """
         return self.df.shape[0]
 
     @classmethod
     def from_video(cls, video_path, *args, **kwargs):
-        """Initialize class using data from a sample video file
+        """ Initialize class using data from a sample video file
 
-        :param video_path: Path to the video file that was used for generating dataset in DeepLabCut
-        :param args: Arguments for the class.__init__
-        :param kwargs: Keyword-arguments for the class.__init__
-        :return: DeepLabCutReader instance
+        ----------
+        video_path
+            Path to the video file that was used for generating dataset in DeepLabCut
+        args
+            Arguments for the class.__init__
+        kwargs
+            Keyword-arguments for the class.__init__
+
+        Returns
+        -------
+        __init__ call
         """
         from bikipy.utils.video import get_video_data
 
-        _frame, x_res, y_res = get_video_data(video_path)
-        kwargs["video_res"] = (x_res, y_res)
+        _frame, horizontal_res, vertical_res = get_video_data(video_path)
+        kwargs["video_res"] = (horizontal_res, vertical_res)
 
         if "csv_path" in kwargs:
             return cls.from_csv(*args, **kwargs)
@@ -148,16 +180,24 @@ class DeepLabCutReader:
             return cls(*args, **kwargs)
 
     @classmethod
-    def from_csv(cls, csv_path, *args, **kwargs):
-        """Create a pd.DataFrame from a csv file in DeepLabCut (DLC) format.
+    def from_csv(cls, csv_path: str, *args, **kwargs):
+        """
+        Create a pd.DataFrame from a csv file in DeepLabCut (DLC) format.
 
         Note: You should assign a value to object.data_label by including it as a kwarg
 
-        :param csv_path: str
+        Parameters
+        ----------
+        csv_path: str
             The path to the csv file that shall be analysed; with or without ".csv" extension
-        :param args:
-        :param kwargs: Keyword arguments are passed to the class init-method as arguments
-        :return:
+        args:
+            Arguments for the class init-method
+        kwargs: dict
+            Keyword arguments for the class init-method
+
+        Returns
+        -------
+        __init__ call
         """
 
         try:
@@ -169,16 +209,26 @@ class DeepLabCutReader:
         return cls(df, *args, **kwargs)
 
     @classmethod
-    def from_hdf(cls, hdf_path, *args, drop_level=True, **kwargs):
-        """Initialize class using data from a hdf file
-        
+    def from_hdf(cls, hdf_path: str, *args, drop_level: bool = True, **kwargs):
+        """
+        Initialize class using data from a hdf file
+
         Note: You should assign a value to object.data_label by including it as a kwarg
 
-
-        :param hdf_path: str
+        Parameters
+        ----------
+        hdf_path: str
             The path to the hdf file that shall be analysed
-        :param kwargs: dict
+        args
+            Arguments for the class init-method
+        drop_level: bool
+            If True, remove a potentially redundant level in DataFrame
+        kwargs: dict
             Keyword arguments for the class init-method
+
+        Returns
+        -------
+        __init__ call
         """
 
         df = pd.read_hdf(hdf_path, **DEEPLABCUT_DF_INIT_KWARGS)
@@ -190,12 +240,27 @@ class DeepLabCutReader:
     @classmethod
     def init_many(
         cls,
-        file_paths: list,
-        init_from="csv",
-        labels: tuple = None,
-        init_kwargs: dict = None,
-    ):
-        """Create many DeepLabCutReader objects using specified mapping-function
+        file_paths: MutableSequence,
+        init_from: str = "csv",
+        labels: Union[Sequence, None] = None,
+        **init_kwargs,
+    ) -> list:
+        """ Create many DeepLabCutReader objects using specified mapping-function
+
+        Parameters
+        ----------
+        file_paths: list
+            Path to the data sources that will be used to generate class instances
+        init_from: str
+            Classmethod label to use for initialization
+        labels: tuple-like
+            Sequence of labels that will be stored as self.label in the class instance
+        init_kwargs: dict
+            Keyword arguments for the class init-method
+
+        Returns
+        -------
+        List of class objects instantiated with the use of provided data
         """
         ext_to_method = {"csv": cls.from_csv, "h5": cls.from_hdf, "hdf": cls.from_hdf}
         try:
@@ -215,26 +280,31 @@ class DeepLabCutReader:
     @staticmethod
     def map_function(
         func: Callable,
-        dlc_df_objs: list,
+        dlc_df_objs: Sequence,
         keep_labels: bool = True,
-        manual_labels: Union[tuple, None] = None,
-        min_valid_ratio: Union[float, None] = 0.80,
-        kwargs_for_func: Union[dict, None] = None,
-    ):
-        """ Method for mapping a function to a list of DeepLabCutReader objects
+        manual_labels: Union[Sequence, None] = None,
+        **kwargs_for_func
+    ) -> dict:
+        """ Method for mapping a function to a sequence of class objects
 
-        :param func: function
+        Parameters
+        ----------
+        func: Callable
             A pre-defined function that processes DeepLabCutReader objects
-        :param dlc_df_objs: list
-            List of DeepLabCutReader objects to have func (a function) mapped to them
-        :param keep_labels: bool
-            If True, the function will store the returned values along with
-            DeepLabCutReader.data_label as keys in a dictionary
-        :param manual_labels: list
+        dlc_df_objs: tuple-like
+            List-like of class objects to have func (a function) mapped to them
+        keep_labels: bool
+            If True, the function will store the returned values along with DeepLabCutReader.
+            data_label as keys in a dictionary
+        manual_labels: tuple-like; optional
             Must have length equal to number of DeepLabCutReader objects in dlc_df_objs.
             Will create a dictionary where values will be correlated based on indexed.
-        :param kwargs_for_func: dict
+        kwargs_for_func
             Keyword arguments to be passed to func
+
+        Returns
+        -------
+        dict: {<data label>: <class instance>...}
         """
         if not kwargs_for_func:
             kwargs_for_func = {}
@@ -261,5 +331,7 @@ class DeepLabCutReader:
             }
 
     @staticmethod
-    def add_regions_of_interest_to_df(master: pd.DataFrame, new_data: dict) -> pd.DataFrame:
+    def add_regions_of_interest_to_df(
+        master: pd.DataFrame, new_data: dict
+    ) -> pd.DataFrame:
         return master.join(pd.DataFrame.from_dict(new_data))
