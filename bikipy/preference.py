@@ -62,7 +62,7 @@ class Preference:
             True: If there is only one video file, it will be selected.
         :return:
         """
-        from .video_analysis import get_video_data
+        from bikipy.utils.video import get_video_data
 
         frame, x_res, y_res = get_video_data(video_path)
 
