@@ -63,7 +63,6 @@ class DeepLabCutReader:
         self.data_label = data_label
         self.future_scaling = future_scaling
         self.min_likelihood = min_likelihood
-        self.trim_tolerance = trim_tolerance
 
         if invert_y:
             for roi in self.regions_of_interest:
@@ -97,23 +96,11 @@ class DeepLabCutReader:
                 master=self.df, new_data=midpoint_dict,
             )
 
-        if trim_tolerance:
-            valid_point_locations = self.valid_point_locations
-            first = find_first_valid_index(valid_point_locations, self.trim_tolerance, self.frame_num)
-            last = self.frame_num - find_first_valid_index(np.flip(valid_point_locations), self.trim_tolerance, self.frame_num)
-            1
-
     @property
     def valid_point_booleans(self):
         return {
             roi: self.df[(roi, "likelihood")].values >= self.min_likelihood
             for roi in self.regions_of_interest
-        }
-
-    @property
-    def valid_point_locations(self):
-        return {
-            roi: np.where(data)[0] for roi, data in self.valid_point_booleans.items()
         }
 
     @property
@@ -123,11 +110,6 @@ class DeepLabCutReader:
             roi: np.sum(valid_point_booleans[roi]) / self.df[(roi, "x")].size
             for roi in self.regions_of_interest
         }
-
-    @property
-    def comp_likelihood(self):
-        return np.multiply.reduce(
-            [self.df[(roi, "likelihood")] for roi in self.regions_of_interest])
 
     @property
     def regions_of_interest(self):
