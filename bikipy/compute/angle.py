@@ -87,6 +87,8 @@ def compute_angles_from_vectors(
     row_vectors_point_b: np.ndarray,
     row_vectors_point_c: np.ndarray,
     median_points: Union[str, list, None] = None,
+    feature_scale_data: bool = False,
+    feature_scale_min_max: Union[Sequence, None] = None,
     degrees: bool = False,
 ):
     """ Compute the angle between three groups of vectors
@@ -103,6 +105,10 @@ def compute_angles_from_vectors(
         Array of row vectors
     median_points: str, list; optional
         Anchor one or several row vectors to their respective median. Information about median computation in _find_median_vector()
+    feature_scale_data: bool; default False
+        If True, data will be scaled based on minimum and maximum of data
+    feature_scale_min_max: iterable(min, max); default None
+        Optional override of minimum and maximum used for feature scaling
     degrees: bool; default False
         If True, convert resulting angle data to degrees
 
@@ -128,8 +134,20 @@ def compute_angles_from_vectors(
         ValueError(msg)
 
     computation = inner_clockwise_angel_2d(points[0] - points[1], points[1] - points[2])
+    if feature_scale_data:
+        if feature_scale_min_max:
+            try:
+                computation = feature_scale(computation, *feature_scale_min_max)
+            except TypeError as e:
+                msg = "feature_scale_data must either be (min, max) or bool"
+                raise ValueError(msg) from e
+        else:
+            computation = feature_scale(computation)
 
-    return np.rad2deg(computation) if degrees else computation
+    elif degrees:
+        computation = np.rad2deg(computation)
+
+    return computation
 
 
 def dlc_compute_angles_from_vectors(
