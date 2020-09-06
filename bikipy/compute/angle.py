@@ -1,18 +1,17 @@
-from pandas import DataFrame
+from pandas.core.frame import DataFrame as DataFrameType
+from typing import Union, Sequence, AnyStr
 from warnings import warn
-from typing import Union
 import numpy as np
 
-
-POINT_NAME_TO_INDEX = {
-    "row_vectors_point_a": 0,
-    "row_vectors_point_b": 1,
-    "row_vectors_point_c": 2,
-}
+from bikipy.utils.statistics import feature_scale
 
 
-def _unit_vector(row_vectors) -> np.ndarray:
-    """ Computes unit vector, i.e. vector/<norm of the vector>
+POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}
+
+
+def _unit_vector(row_vectors: Sequence) -> np.ndarray:
+    """
+    Computes unit vector, i.e. vector/<norm of the vector>
 
     Parameters
     ----------
@@ -57,11 +56,11 @@ def inner_clockwise_angel_2d(vector_a, vector_b) -> np.ndarray:
     -------
     np.ndarray
     
-    >>> inner_clockwise_angel_2d((1, 0, 0), (0, 1, 0))
+    >>> inner_clockwise_angel_2d((1, 0), (0, 1))
     1.5707963267948966      # pi / 2
-    >>> inner_clockwise_angel_2d((1, 0, 0), (1, 0, 0))
+    >>> inner_clockwise_angel_2d((1, 0), (1, 0))
     0.0
-    >>> inner_clockwise_angel_2d((1, 0, 0), (-1, 0, 0))
+    >>> inner_clockwise_angel_2d((1, 0), (-1, 0))
     3.141592653589793       # pi
     """
 
@@ -86,14 +85,13 @@ def compute_angles_from_vectors(
     row_vectors_point_a: np.ndarray,
     row_vectors_point_b: np.ndarray,
     row_vectors_point_c: np.ndarray,
-    median_points: Union[str, list, None] = None,
+    median_points: Union[AnyStr, Sequence, None] = None,
     feature_scale_data: bool = False,
     feature_scale_min_max: Union[Sequence, None] = None,
     degrees: bool = False,
 ):
-    """ Compute the angle between three groups of vectors
-
-    Computed with respect to their index in their respective store.
+    """
+    Compute the angle between three groups of vectors
 
     Parameters
     ----------
@@ -151,10 +149,10 @@ def compute_angles_from_vectors(
 
 
 def dlc_compute_angles_from_vectors(
-    df: DataFrame,
-    point_a_name: str,
-    point_b_name: str,
-    point_c_name: str,
+    df: DataFrameType,
+    point_a_name: AnyStr,
+    point_b_name: AnyStr,
+    point_c_name: AnyStr,
     *args,
     **kwargs,
 ):

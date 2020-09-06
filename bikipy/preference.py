@@ -1,4 +1,4 @@
-from typing import Union, Sequence
+from typing import Union, Sequence, AnyStr
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -17,7 +17,7 @@ class Preference:
     def from_image(
         cls,
         kin_data: DeepLabCutReader,
-        border_orient: str,
+        border_orient: AnyStr,
         img,
         feature_scale_resolution: Union[Sequence, None] = None,
     ):
@@ -57,7 +57,7 @@ class Preference:
 
     @classmethod
     def from_video(
-        cls, kin_data: DeepLabCutReader, border_orient: str, video_path: str
+        cls, kin_data: DeepLabCutReader, border_orient: AnyStr, video_path: AnyStr
     ):
         """ Initialize class using data from a sample video file
 
@@ -92,7 +92,7 @@ class Preference:
     def __init__(
         self,
         kin_data: pd.DataFrame,
-        border_orient: str,
+        border_orient: AnyStr,
         first_border: tuple,
         second_border: tuple,
         feature_scale_resolution: tuple = None,

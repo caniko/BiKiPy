@@ -1,4 +1,4 @@
-from typing import Iterable, Callable, Union, Sequence, MutableSequence
+from typing import Iterable, Callable, Union, Sequence, AnyStr, SupportsFloat, Dict
 import pandas as pd
 import numpy as np
 
@@ -18,11 +18,11 @@ class DeepLabCutReader:
     def __init__(
         self,
         df: pd.DataFrame,
-        video_res: tuple,
-        data_label: Union[str, None] = None,
+        video_res: Sequence,
+        data_label: Union[AnyStr, None] = None,
         midpoint_groups: Union[Iterable, None] = None,
         future_scaling: bool = False,
-        min_likelihood: float = 0.80,
+        min_likelihood: SupportsFloat = 0.80,
         invert_y: bool = False,
     ):
         """ Class that stores information about a given experiment conducted with DeepLabCut
@@ -64,7 +64,7 @@ class DeepLabCutReader:
 
         self.data_label = data_label
         self.future_scaling = future_scaling
-        self.min_likelihood = min_likelihood
+        self.min_likelihood = float(min_likelihood)
 
         if invert_y:
             for roi in self.regions_of_interest:
@@ -180,7 +180,7 @@ class DeepLabCutReader:
             return cls(*args, **kwargs)
 
     @classmethod
-    def from_csv(cls, csv_path: str, *args, **kwargs):
+    def from_csv(cls, csv_path: AnyStr, *args, **kwargs):
         """
         Create a pd.DataFrame from a csv file in DeepLabCut (DLC) format.
 
@@ -209,7 +209,7 @@ class DeepLabCutReader:
         return cls(df, *args, **kwargs)
 
     @classmethod
-    def from_hdf(cls, hdf_path: str, *args, drop_level: bool = True, **kwargs):
+    def from_hdf(cls, hdf_path: AnyStr, *args, drop_level: bool = True, **kwargs):
         """
         Initialize class using data from a hdf file
 
@@ -240,8 +240,8 @@ class DeepLabCutReader:
     @classmethod
     def init_many(
         cls,
-        file_paths: MutableSequence,
-        init_from: str = "csv",
+        file_paths: Sequence,
+        init_from: AnyStr = "csv",
         labels: Union[Sequence, None] = None,
         **init_kwargs,
     ) -> list:
@@ -249,7 +249,7 @@ class DeepLabCutReader:
 
         Parameters
         ----------
-        file_paths: list
+        file_paths: Sequence
             Path to the data sources that will be used to generate class instances
         init_from: str
             Classmethod label to use for initialization
@@ -280,18 +280,18 @@ class DeepLabCutReader:
     @staticmethod
     def map_function(
         func: Callable,
-        dlc_df_objs: Sequence,
+        dlc_df_objs: Dict,
         keep_labels: bool = True,
         manual_labels: Union[Sequence, None] = None,
-        **kwargs_for_func
-    ) -> dict:
+        **kwargs_for_func,
+    ) -> Dict:
         """ Method for mapping a function to a sequence of class objects
 
         Parameters
         ----------
         func: Callable
             A pre-defined function that processes DeepLabCutReader objects
-        dlc_df_objs: tuple-like
+        dlc_df_objs: dict
             List-like of class objects to have func (a function) mapped to them
         keep_labels: bool
             If True, the function will store the returned values along with DeepLabCutReader.
@@ -332,6 +332,6 @@ class DeepLabCutReader:
 
     @staticmethod
     def add_regions_of_interest_to_df(
-        master: pd.DataFrame, new_data: dict
+        master: pd.DataFrame, new_data: Dict
     ) -> pd.DataFrame:
         return master.join(pd.DataFrame.from_dict(new_data))
