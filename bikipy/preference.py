@@ -1,6 +1,7 @@
+from typing import Union, Sequence, AnyStr
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
+import numpy as np
 
 from .readers import DeepLabCutReader
 
@@ -16,17 +17,26 @@ class Preference:
     def from_image(
         cls,
         kin_data: DeepLabCutReader,
-        border_orient: str,
+        border_orient: AnyStr,
         img,
-        feature_scale_resolution: tuple = None,
+        feature_scale_resolution: Union[Sequence, None] = None,
     ):
-        """Initialize class using data from a sample frame/image
+        """ Initialize class using data from a sample frame/image
 
-        :param kin_data:
-        :param border_orient:
-        :param img:
-        :param feature_scale_resolution:
-        :return: Preference object
+        Parameters
+        ----------
+        kin_data
+            Kinematic data stored in DeepLabCutReader object
+        border_orient: str; {"vertical", "horizontal"}
+            The orientation of the border used for analysis
+        img
+            object containing the image that will be used to determine the border location
+        feature_scale_resolution: tuple-like; optional
+            Resolution of the video that will be used for feature scaling
+
+        Returns
+        -------
+        __init__ call
         """
 
         plt.imshow(img)
@@ -47,14 +57,18 @@ class Preference:
 
     @classmethod
     def from_video(
-        cls, kin_data: DeepLabCutReader, border_orient: str, video_path: str
+        cls, kin_data: DeepLabCutReader, border_orient: AnyStr, video_path: AnyStr
     ):
-        """Initialize class using data from a sample video file
+        """ Initialize class using data from a sample video file
 
-        :param kin_data:
-        :param border_orient:
-        :param video_path: The name of the video file in local directory
-                            to be used for analysis.
+        Parameters
+        ----------
+        kin_data
+            Kinematic data stored in DeepLabCutReader object
+        border_orient: str; {"vertical", "horizontal"}
+            The orientation of the border used for analysis
+        video_path: str
+            The name of the video file in local directory to be used for analysis.
             Required if border_orient == 'lasso' and frame == None.
             None: No action
 
@@ -62,9 +76,12 @@ class Preference:
                   File extension must be included.
 
             True: If there is only one video file, it will be selected.
-        :return:
+
+        Returns
+        -------
+        __init__ call
         """
-        from .video_analysis import get_video_data
+        from bikipy.utils.video import get_video_data
 
         frame, x_res, y_res = get_video_data(video_path)
 
@@ -75,7 +92,7 @@ class Preference:
     def __init__(
         self,
         kin_data: pd.DataFrame,
-        border_orient: str,
+        border_orient: AnyStr,
         first_border: tuple,
         second_border: tuple,
         feature_scale_resolution: tuple = None,
@@ -93,14 +110,14 @@ class Preference:
 
             For border_orient to function, video_path or first_border and
             second_border has to be defined.
-        feature_scale_resolution: bool, default False
-            Define if data is normalized
         first_border: int
             Variable to define lower border manually.
             See border_orient for context
         second_border: int
             Variable to define upper border manually.
             See border_orient for context
+        feature_scale_resolution: bool, default False
+            Define if data is normalized
         """
         if not isinstance(kin_data, pd.DataFrame):
             msg = "kin_data has to be a pandas data frame"
@@ -211,19 +228,25 @@ class Preference:
 
 
 def dynamic_relative_position(
-    df: pd.DataFrame, ref_point: tuple, points: list, axis: int = 1
+    df: pd.DataFrame, ref_point: Sequence, points: Sequence, axis: int = 1
 ) -> dict:
     """ Determine the location of an object with respect to either a
-        vertical (axis=0 -> x) or horizontal (axis=1 -> y) line
+    vertical (axis=0 -> x) or horizontal (axis=1 -> y) line
 
-    <axis value> < ref :
+    Parameters
+    ----------
+    df: pd.DataFrame
+        Data to be analysed
+    ref_point: tuple-like
+        The point that is to be used to determine the location of the border
+    points: tuple-like
+        Points of that are to be tracked with respect to the border
+    axis: int
+        The axis of which the border spans
 
-    :param df: data to be analysed
-    :param ref_point: The point that is to be used to determine the location of
-                      the border
-    :param points: Points of that are to be tracked with respect to the border
-    :param axis: The axis of which the border spans
-    :return: dict = point -> True if Left (x); Above (y)
+    Returns
+    -------
+    dict: point -> True if Left (x); Above (y)
     """
 
     try:

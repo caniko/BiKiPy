@@ -18,7 +18,7 @@ def test_deep_lab_cut_reader():
         str(VIDEO_PATH),
         future_scaling=True,
         csv_path=CSV_PATH,
-        midpoint_pairs=[("left_ear", "right_ear")],
+        midpoint_groups=[("left_ear", "right_ear")],
     )
 
     assert from_video_obj
@@ -27,7 +27,7 @@ def test_deep_lab_cut_reader():
         str(CSV_PATH),
         RESOLUTION,
         future_scaling=True,
-        midpoint_pairs=[("left_ear", "right_ear")],
+        midpoint_groups=[("left_ear", "right_ear")],
     )
 
     assert from_csv_obj
@@ -36,7 +36,7 @@ def test_deep_lab_cut_reader():
         str(HDF_PATH),
         RESOLUTION,
         future_scaling=True,
-        midpoint_pairs=[("left_ear", "right_ear")],
+        midpoint_groups=[("left_ear", "right_ear")],
     )
 
     assert from_hdf_obj

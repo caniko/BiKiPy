@@ -1,41 +1,48 @@
 from pathlib import Path
 import numpy as np
 
-from bikipy import DeepLabCutReader
-from bikipy.compute import angle_over_time, clockwise_2d
+from bikipy.utils.statistics import feature_scale
+from bikipy.readers import DeepLabCutReader
+from bikipy.compute.angle import (
+    compute_angles_from_vectors,
+    dlc_compute_angles_from_vectors,
+)
 
 HDF_PATH = Path(__file__).parent.parent.resolve() / "example_data/data_for_angle.h5"
 
 
-def test_angle_over_time():
+def test_compute_angles_from_vectors():
     test_data = DeepLabCutReader.from_hdf(
         HDF_PATH,
         video_res=(1280, 720),
-        midpoint_pairs=[("left_ear", "right_ear")],
+        midpoint_groups=[("left_ear", "right_ear")],
         future_scaling=False,
-        min_like=0.95,
+        min_likelihood=0.95,
     )
 
-    tail_base_tip = angle_over_time(
-        test_data.df, point_a="tail_base", point_b="tail_mid", point_c="tail_tip"
-    )
-
-    head_tail = angle_over_time(
+    tail_base_tip = dlc_compute_angles_from_vectors(
         test_data.df,
-        point_a="mid_left_ear_right_ear",
-        point_b="tail_base",
-        point_c="tail_tip",
+        point_a_name="tail_base",
+        point_b_name="tail_mid",
+        point_c_name="tail_tip",
     )
 
-    assert tail_base_tip["Angles"].size == test_data.df.index.size, tail_base_tip[
-        "Angles"
+    head_tail = dlc_compute_angles_from_vectors(
+        test_data.df,
+        point_a_name="mid-left_ear-right_ear",
+        point_b_name="tail_base",
+        point_c_name="tail_tip",
+    )
+
+    assert tail_base_tip["Angle"].size == test_data.df.index.size, tail_base_tip[
+        "Angle"
     ]
 
-    assert all(tail_base_tip["Accuracy Score"] <= 1.0)
-    assert all(head_tail["Accuracy Score"] <= 1.0)
+    assert all(tail_base_tip["Likelihood"] <= 1.0)
+    assert all(head_tail["Likelihood"] <= 1.0)
 
-    tail_base_tip_no_nan = tail_base_tip["Angles"][~np.isnan(tail_base_tip["Angles"])]
-    head_tail_no_nan = head_tail["Angles"][~np.isnan(head_tail["Angles"])]
+    tail_base_tip_no_nan = tail_base_tip["Angle"][~np.isnan(tail_base_tip["Angle"])]
+    head_tail_no_nan = head_tail["Angle"][~np.isnan(head_tail["Angle"])]
 
     assert all(
         np.logical_and(tail_base_tip_no_nan >= 0, tail_base_tip_no_nan <= 2 * np.pi)
@@ -46,22 +53,30 @@ def test_angle_over_time():
 
 
 def test_clockwise_2d():
-    def three_point_vector_path(point_1, point_2, point_3, answer):
-        point_1 = np.asarray(point_1)
-        point_2 = np.asarray(point_2)
-        point_3 = np.asarray(point_3)
+    point_1 = ((0, 0), (0, 0), (0, 0))
+    point_2 = ((1, 0), (1, 0), (1, 0))
+    point_3 = ((2, 0), (1, 1), (1, -1))
 
-        vector_1_2 = point_2 - point_1
-        vector_2_3 = point_3 - point_2
+    answers = np.array((np.pi, np.pi / 2, 3 * np.pi / 2))
 
-        result = clockwise_2d(vector_1_2, vector_2_3)[0]
-        assert np.isclose(result, answer), result
+    # AB -> BC
+    result = compute_angles_from_vectors(point_1, point_2, point_3)
+    assert np.allclose(result, answers), result
 
-        result = clockwise_2d(vector_2_3, vector_1_2)[0]
-        assert np.isclose(result, 2 * np.pi - answer), result
+    # CB -> BA
+    result = compute_angles_from_vectors(point_3, point_2, point_1)
+    assert np.allclose(result, 2 * np.pi - answers), result
 
-    three_point_vector_path(((0, 0),), ((1, 0),), ((2, 0),), np.pi)
+    feature_scaled_answers = feature_scale(answers)
+    result = compute_angles_from_vectors(
+        point_1, point_2, point_3,
+        feature_scale_data=True
+    )
+    assert np.allclose(result, feature_scaled_answers), result
 
-    three_point_vector_path(((0, 0),), ((1, 0),), ((1, 1),), np.pi / 2)
-
-    three_point_vector_path(((0, 0),), ((1, 0),), ((1, -1),), 3 * np.pi / 2)
+    answers_in_deg = answers * 180 / np.pi
+    result = compute_angles_from_vectors(
+        point_1, point_2, point_3,
+        degrees=True
+    )
+    assert np.allclose(result, answers_in_deg), result
