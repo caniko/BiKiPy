@@ -1,11 +1,12 @@
 from pathlib import Path
 import numpy as np
 
+from bikipy.utils.statistics import feature_scale
+from bikipy.readers import DeepLabCutReader
 from bikipy.compute.angle import (
+    compute_angles_from_vectors,
     dlc_compute_angles_from_vectors,
-    inner_clockwise_angel_2d,
 )
-from bikipy import DeepLabCutReader
 
 HDF_PATH = Path(__file__).parent.parent.resolve() / "example_data/data_for_angle.h5"
 
@@ -52,22 +53,30 @@ def test_compute_angles_from_vectors():
 
 
 def test_clockwise_2d():
-    def three_point_vector_path(point_1, point_2, point_3, answer):
-        point_1 = np.asanyarray(point_1)
-        point_2 = np.asanyarray(point_2)
-        point_3 = np.asanyarray(point_3)
+    point_1 = ((0, 0), (0, 0), (0, 0))
+    point_2 = ((1, 0), (1, 0), (1, 0))
+    point_3 = ((2, 0), (1, 1), (1, -1))
 
-        vector_1_2 = point_2 - point_1
-        vector_2_3 = point_3 - point_2
+    answers = np.array((np.pi, np.pi / 2, 3 * np.pi / 2))
 
-        result = inner_clockwise_angel_2d(vector_1_2, vector_2_3)[0]
-        assert np.isclose(result, answer), result
+    # AB -> BC
+    result = compute_angles_from_vectors(point_1, point_2, point_3)
+    assert np.allclose(result, answers), result
 
-        result = inner_clockwise_angel_2d(vector_2_3, vector_1_2)[0]
-        assert np.isclose(result, 2 * np.pi - answer), result
+    # CB -> BA
+    result = compute_angles_from_vectors(point_3, point_2, point_1)
+    assert np.allclose(result, 2 * np.pi - answers), result
 
-    three_point_vector_path(((0, 0),), ((1, 0),), ((2, 0),), np.pi)
+    feature_scaled_answers = feature_scale(answers)
+    result = compute_angles_from_vectors(
+        point_1, point_2, point_3,
+        feature_scale_data=True
+    )
+    assert np.allclose(result, feature_scaled_answers), result
 
-    three_point_vector_path(((0, 0),), ((1, 0),), ((1, 1),), np.pi / 2)
-
-    three_point_vector_path(((0, 0),), ((1, 0),), ((1, -1),), 3 * np.pi / 2)
+    answers_in_deg = answers * 180 / np.pi
+    result = compute_angles_from_vectors(
+        point_1, point_2, point_3,
+        degrees=True
+    )
+    assert np.allclose(result, answers_in_deg), result
