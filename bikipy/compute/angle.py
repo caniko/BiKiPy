@@ -115,23 +115,36 @@ def compute_angles_from_vectors(
     np.ndarray
     """
 
-    points = [row_vectors_point_a, row_vectors_point_b, row_vectors_point_c]
+    points = [
+        np.asanyarray(row_vectors_point_a),
+        np.asanyarray(row_vectors_point_b),
+        np.asanyarray(row_vectors_point_c),
+    ]
     if any(point.dtype == "object" for point in points):
         warn("At least one of the arrays consists solely of NaN (Not a Number) objects")
         return np.full((points[0].size,), np.nan)
 
-    if isinstance(median_points, list):
-        for label in median_points:
-            index = POINT_NAME_TO_INDEX[label]
-            points[index] = _find_median_vector(points[index])
+    if not median_points:
+        pass
     elif isinstance(median_points, str):
         index = POINT_NAME_TO_INDEX[median_points]
         points[index] = _find_median_vector(points[index])
     else:
-        msg = "median_points has to be list, string or None"
-        ValueError(msg)
+        try:
+            for label in median_points:
+                index = POINT_NAME_TO_INDEX[label]
+                points[index] = _find_median_vector(points[index])
+        except KeyError as e:
+            msg = "When median_points is an Iterable it must store either a, b and/or c"
+            raise KeyError(msg) from e
+        except TypeError as e:
+            msg = "median_points has to be list, string or None"
+            raise ValueError(msg) from e
 
-    computation = inner_clockwise_angel_2d(points[0] - points[1], points[1] - points[2])
+    computation = inner_clockwise_angel_2d(
+        points[1] - points[0], points[2] - points[1]  # AB Vector  # BC Vector
+    )
+
     if feature_scale_data:
         if feature_scale_min_max:
             try:
