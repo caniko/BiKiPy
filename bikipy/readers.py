@@ -15,6 +15,10 @@ DEEPLABCUT_DF_INIT_KWARGS = {
 
 
 class DeepLabCutReader:
+    """
+    Class that stores information about a given experiment conducted with DeepLabCut
+    """
+
     def __init__(
         self,
         df: pd.DataFrame,
@@ -25,15 +29,14 @@ class DeepLabCutReader:
         min_likelihood: SupportsFloat = 0.80,
         invert_y: bool = False,
     ):
-        """ Class that stores information about a given experiment conducted with DeepLabCut
-
+        """
         Parameters
         ----------
         df : pandas.DataFrame
             Kinematic data from DeepLabCut ingested as a pd.DataFrame
         video_res : Sequence
              The resolution of the videos that are being analyzed
-        data_label : string, optional
+        data_label : String; optional
             Label for the data
         midpoint_groups : list-like, default None
             List-like structure of labels that consist of groups that should have their
@@ -101,17 +104,17 @@ class DeepLabCutReader:
                 )
 
             self.df = self.add_regions_of_interest_to_df(
-                master=self.df, new_data=midpoint_dict,
+                master=self.df,
+                new_data=midpoint_dict,
             )
 
     @property
     def _valid_point_booleans(self) -> dict:
         """
-
-       Returns
-       -------
-       dictionary; region of interest versus np.ndarray of booleans, True if data in the respective index is valid
-       """
+        Returns
+        -------
+        dictionary; region of interest to np.ndarray of booleans, True if data in the respective index is valid
+        """
         return {
             roi: self.df[(roi, "likelihood")].values >= self.min_likelihood
             for roi in self.regions_of_interest
@@ -153,7 +156,8 @@ class DeepLabCutReader:
 
     @classmethod
     def from_video(cls, video_path, *args, **kwargs):
-        """ Initialize class using data from a sample video file
+        """
+        Initialize class using data from a sample video file
 
         ----------
         video_path
@@ -245,7 +249,8 @@ class DeepLabCutReader:
         labels: Union[Sequence, None] = None,
         **init_kwargs,
     ) -> list:
-        """ Create many DeepLabCutReader objects using specified mapping-function
+        """
+        Create many DeepLabCutReader objects using specified mapping-function
 
         Parameters
         ----------
@@ -285,7 +290,7 @@ class DeepLabCutReader:
         manual_labels: Union[Sequence, None] = None,
         **kwargs_for_func,
     ) -> Dict:
-        """ Method for mapping a function to a sequence of class objects
+        """Method for mapping a function to a sequence of class objects
 
         Parameters
         ----------

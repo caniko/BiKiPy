@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "bikipy"
-version = "0.2.2"
+version = "0.3.0"
 license = "LGPL-3.0-or-later"
 description = "Liberary for automatic analysis of kinematic data"
 authors = ["Can H. Tartanoglu <canhtart@gmail.com>"]
@@ -21,7 +21,7 @@ opencv-python = { version = "4.2.0.34", optional = true }
 opencv = ["opencv-python"]
 
 [tool.poetry.dev-dependencies]
-black = "^19.10b0"
+black = {extras = ["d"], version = "^20.8b1"}
 pytest = "^5.4.3"
 commitizen = "^1.23.0"
 pre-commit = "^2.5.1"

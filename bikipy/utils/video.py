@@ -9,7 +9,8 @@ except ModuleNotFoundError as e:
 
 
 def get_video_data(video_path, frame_loc="middle"):
-    """ Get a frame from a given relative location, and resolution info of video
+    """
+    Get a frame from a given relative location, and resolution info of video
 
     Parameters
     ----------

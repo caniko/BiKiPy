@@ -5,7 +5,21 @@ from typing import Sequence
 import numpy as np
 
 
-def compute_midpoint(point_1, point_2) -> np.ndarray:
+def compute_midpoint(point_1: Sequence, point_2: Sequence) -> np.ndarray:
+    """
+    Computes the point(s) in the middle of two points, midpoint(s).
+
+    Parameters
+    ----------
+    point_1: np.ndarray
+        Set of points part of the pair used for computing the midpoint(s)
+    point_2
+        Set of points part of the pair used for computing the midpoint(s)
+
+    Returns
+    -------
+    np.ndarray; midpoint(s)
+    """
     point_1, point_2 = np.asanyarray(point_1), np.asanyarray(point_2)
 
     point_1_vector_norms = np.apply_along_axis(np.linalg.norm, 1, point_1)
@@ -29,18 +43,22 @@ def compute_midpoint(point_1, point_2) -> np.ndarray:
 
 
 def recursive_midpoint(point_sets: Sequence) -> np.ndarray:
-    """ Compute midpoints using last midpoint as point 1, and the next point
-    as point 2 in compute_midpoint.
+    """
+    Compute midpoint(s) using last midpoint as first in the pair,
+    and the upcoming point as the second in the pair in compute_midpoint.
 
     The first compute, where there is no midpoint, the last midpoint will be set to the
-    first point in the sequence.
+    first point in the sequence. This function could be interpreted as
+    triangulating between three points when the length of the list is 3.
 
-    For example:
-    This function could be interpreted as triangulating between three points
-    when the length of the list is 3.
+    Parameters
+    ----------
+    point_sets: np.ndarray
+        Set of points used for computing the midpoint(s) recursively.
 
-    :param point_sets:
-    :return:
+    Returns
+    -------
+    np.ndarray; midpoint(s).
     """
     midpoint = compute_midpoint(point_sets[0], point_sets[1])
     if len(midpoint) >= 2:
@@ -50,13 +68,24 @@ def recursive_midpoint(point_sets: Sequence) -> np.ndarray:
     return midpoint
 
 
-def triangulate(point_1, point_2, point_3) -> np.ndarray:
-    """ Midpoint between point_3, and the midpoint between point_1 and point_2
+def triangulate(point_1: Sequence, point_2: Sequence, point_3: Sequence) -> np.ndarray:
+    """
+    Midpoint between point_3, and the midpoint between point_1 and point_2
 
-    :param point_1: Set of points used for computing first midpoint
-    :param point_2: Set of points used for computing first midpoint
-    :param point_3: Set of points used for computing the last midpoint
-    :return: triangulation between three points
+    Wrapper
+
+    Parameters
+    ----------
+    point_1: np.ndarray
+        Set of points part of the pair used for computing first midpoint(s).
+    point_2: np.ndarray
+        Set of points part of the pair used for computing first midpoint(s).
+    point_3: np.ndarray
+        Set of points part of the pair used for computing the second/last midpoint(s).
+
+    Returns
+    -------
+    np.ndarray; triangulation between three points.
     """
     return recursive_midpoint((point_1, point_2, point_3))
 

@@ -4,29 +4,15 @@ from warnings import warn
 import numpy as np
 
 from bikipy.utils.statistics import feature_scale
+from bikipy.utils.math import unit_vector
 
 
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}
 
 
-def _unit_vector(row_vectors: Sequence) -> np.ndarray:
-    """
-    Computes unit vector, i.e. vector/<norm of the vector>
-
-    Parameters
-    ----------
-    row_vectors: np.ndarray-like
-        Array of row vector(s)
-
-    Returns
-    -------
-    np.ndarray
-    """
-    return row_vectors / np.linalg.norm(row_vectors)
-
-
 def _find_median_vector(row_vectors: np.ndarray) -> np.ndarray:
-    """ Computes the median point from a row vectors
+    """
+    Computes the median point from a row vectors
 
     Median of each component -> combine medians to create median point. Note that this point doesn't exist
 
@@ -43,8 +29,9 @@ def _find_median_vector(row_vectors: np.ndarray) -> np.ndarray:
 
 
 def inner_clockwise_angel_2d(vector_a, vector_b) -> np.ndarray:
-    """ Computes the clockwise inner_angle in radians between two vectors
-    
+    """
+    Computes the clockwise inner_angle in radians between two vectors
+
     Parameters
     ----------
     vector_a: np.ndarray
@@ -55,7 +42,7 @@ def inner_clockwise_angel_2d(vector_a, vector_b) -> np.ndarray:
     Returns
     -------
     np.ndarray
-    
+
     >>> inner_clockwise_angel_2d((1, 0), (0, 1))
     1.5707963267948966      # pi / 2
     >>> inner_clockwise_angel_2d((1, 0), (1, 0))
@@ -64,8 +51,8 @@ def inner_clockwise_angel_2d(vector_a, vector_b) -> np.ndarray:
     3.141592653589793       # pi
     """
 
-    vector_1_u = np.apply_along_axis(_unit_vector, 1, np.asanyarray(vector_a))
-    vector_2_u = np.apply_along_axis(_unit_vector, 1, np.asanyarray(vector_b))
+    vector_1_u = np.apply_along_axis(unit_vector, 1, np.asanyarray(vector_a))
+    vector_2_u = np.apply_along_axis(unit_vector, 1, np.asanyarray(vector_b))
 
     # Compute determinants and store them in a vertical stack
     determinants = np.array(
@@ -91,7 +78,7 @@ def compute_angles_from_vectors(
     degrees: bool = False,
 ):
     """
-    Compute the angle between three groups of vectors
+    Computes the angle between three groups of vectors
 
     Parameters
     ----------
@@ -169,7 +156,8 @@ def dlc_compute_angles_from_vectors(
     *args,
     **kwargs,
 ):
-    """ compute_angles_from_vectors wrapper for DataFrames generated from DeepLabCut 2d result files
+    """
+    compute_angles_from_vectors wrapper for DataFrames generated from DeepLabCut 2d result files
 
     Parameters
     ----------
