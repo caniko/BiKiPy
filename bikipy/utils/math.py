@@ -44,7 +44,10 @@ def normal_from_line_to_point(
     line_vector: Sequence, line_start: Sequence, point: Sequence
 ):
     """
-    Computes the normal vector from point to a line in 2D
+    Computes the magnitude of two vectors. Vector nr. 1 with line vector as unit,
+    from 'line_start' to the beginning of the normal, and,
+    vector nr. 2 with orthogonal to line vector as unit,
+    from beginning of normal to the given 'point'.
 
     Parameters
     ----------
@@ -74,3 +77,32 @@ def normal_from_line_to_point(
     sol = np.linalg.solve(lhs, rhs)
 
     return sol
+
+
+def find_intersection_between_two_vectors(
+    vector_a: Sequence,
+    vector_b: Sequence,
+    vector_a_start: Sequence,
+    vector_b_start: Sequence,
+) -> np.ndarray:
+    """
+
+    Parameters
+    ----------
+    vector_a
+    vector_b
+    vector_a_start
+    vector_b_start
+
+    Returns
+    -------
+
+    """
+    rhs = np.array(((vector_a[0], -vector_b[0]), (vector_a[1], -vector_b[1])))
+    lhs = np.array(
+        (
+            (vector_b_start[0] - vector_a_start[0],),
+            (vector_b_start[1] - vector_a_start[1],),
+        )
+    )
+    return np.linalg.solve(rhs, lhs).T[0]

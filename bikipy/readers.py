@@ -1,4 +1,5 @@
 from typing import Iterable, Callable, Union, Sequence, AnyStr, SupportsFloat, Dict
+from functools import lru_cache
 import pandas as pd
 import numpy as np
 
@@ -76,12 +77,13 @@ class DeepLabCutReader:
                 )
 
         if midpoint_groups:
-            for group in midpoint_groups:
+            for i, group in enumerate(midpoint_groups):
                 if not (
                     group[0] in self.regions_of_interest
                     and group[1] in self.regions_of_interest
                 ):
                     msg = (
+                        f"Index {i} in midpoint_groups:"
                         f"The region of interest names must be referred to with "
                         f"their names, and be string:\n"
                         f"group: {group}\nregions_of_interest: {self.regions_of_interest}"
@@ -108,12 +110,26 @@ class DeepLabCutReader:
                 new_data=midpoint_dict,
             )
 
+    @lru_cache
+    def __getitem__(self, item):
+        if item not in self.regions_of_interest:
+            msg = f"'{item}' is not in object DataFrame (self.df)"
+            raise AttributeError(msg)
+
+        # remove likelihood col
+        coordinates = np.delete(self.df[item].values, 2, 1)
+        # clean values beneath min likelihood
+        coordinates[self._valid_point_booleans[item] is False] = np.nan
+
+        return coordinates
+
     @property
     def _valid_point_booleans(self) -> dict:
         """
         Returns
         -------
-        dictionary; region of interest to np.ndarray of booleans, True if data in the respective index is valid
+        dictionary; region of interest to np.ndarray of booleans
+            True if data in the respective index is valid
         """
         return {
             roi: self.df[(roi, "likelihood")].values >= self.min_likelihood
