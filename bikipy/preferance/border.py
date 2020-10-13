@@ -426,7 +426,7 @@ class ParallelogramBorder(Border):
             self.plt_show(ax)
 
         return valid_points
-    
+
     @classmethod
     def detect_sequential_border_presence(
         cls, data: Sequence, *instances, overlap: bool = False
@@ -438,16 +438,16 @@ class ParallelogramBorder(Border):
                 msg = f"The objects passed to this class method has to be instances of {cls.__name__}"
                 raise ValueError(msg)
 
-        presence = np.zeros(data.shape[0], dtype='object')
+        presence = np.zeros(data.shape[0], dtype="object")
 
         for border in instances:
             confined_coord_index_booleans = border.confined_coordinate_indexes(data)
 
             if not overlap:
                 if presence[confined_coord_index_booleans].any():
-                    presence[np.where(
-                            presence[confined_coord_index_booleans] == True
-                    )[0]] = np.nan
+                    presence[
+                        np.where(presence[confined_coord_index_booleans] == True)[0]
+                    ] = np.nan
                     warn(f"Border {border.label} has data overlap with other borders")
                     # raise BorderOverlapError(border)
                 presence[confined_coord_index_booleans] = border.label
@@ -459,8 +459,15 @@ class ParallelogramBorder(Border):
         return presence
 
     @classmethod
-    def many(cls, guiding_image: Any, n: SupportsInt, object_kwargs: Union[Sequence, None] = None):
-        return [cls(guiding_image=guiding_image, **object_kwargs[i]) for i in range(int(n))]
+    def many(
+        cls,
+        guiding_image: Any,
+        n: SupportsInt,
+        object_kwargs: Union[Sequence, None] = None,
+    ):
+        return [
+            cls(guiding_image=guiding_image, **object_kwargs[i]) for i in range(int(n))
+        ]
 
 
 class GradientBorder(ParallelogramBorder):
@@ -545,12 +552,14 @@ class GradientBorder(ParallelogramBorder):
 
 if __name__ == "__main__":
     from pathlib import Path
-    import re, os
     from glob import glob
+    import re, os
 
     from bikipy import DeepLabCutReader
 
-    border_img = Path("C:/Users/Can/Projects/Neuroscience/bikipy/examples/data/images/maze.png")
+    border_img = Path(
+        "C:/Users/Can/Projects/Neuroscience/bikipy/examples/data/images/maze.png"
+    )
     assert border_img.exists(), f"The image file doesn't exist in {border_img}"
     border_img = str(border_img)
 
@@ -558,35 +567,49 @@ if __name__ == "__main__":
     #     guiding_image=border_img, n=3,
     #     object_kwargs=[{"label": "A"}, {"label": "B"}, {"label": "C"}]
     # )
-    borders = [
-        ParallelogramBorder(
-            base=[[308.81687801, 193.11825], [288.30224458, 234.14751686]],
-            apex=[[174.33205886, 120.17733115], [151.53802172, 158.92719429]],
-            guiding_image=border_img, label="A"
-        ),
-        ParallelogramBorder(
-            base=[[309.95657987, 193.11825], [335.03002072, 234.14751686]],
-            apex=[[441.02229344, 116.75822557], [461.53692687, 154.36838686]],
-            guiding_image=border_img, label="B"
-        ),
-        ParallelogramBorder(
-            base=[[290.58164829, 234.14751686], [335.03002072, 234.14751686]],
-            apex=[[294.00075387, 394.84547872], [338.44912629, 394.84547872]],
-            guiding_image=border_img, label="C"
-        )
-    ]
 
-    DATA_DIR = Path("C:/Users/Can/Projects/Neuroscience/Imen/data")
-    exp_id_finder = re.compile("\d+")
-    data_dict = {}
-    for subdir in os.listdir(str(DATA_DIR)):
-        for file_path in glob(os.path.join(str(DATA_DIR / subdir), "**.h5"))[1:]:
-            # filename = "C:/Users/Can/Projects/Neuroscience/Imen/data/y_maze/before/Test 1DLC_resnet50_y_mazeSep13shuffle1_400000.h5"
-            f = DeepLabCutReader.from_hdf(
-                file_path, (640, 480), midpoint_groups=(("left_ear", "right_ear"),)
-            )
-            # borders[0].plot(f["mid-left_ear-right_ear"])
-            data_dict[(subdir, exp_id_finder.findall(Path(file_path).stem)[0])] = \
-                ParallelogramBorder.detect_sequential_border_presence(
-                    f["mid-left_ear-right_ear"], *borders)
+    ParallelogramBorder(guiding_image=border_img)
 
+    # borders = [
+    #     ParallelogramBorder(
+    #         base=[[308.81687801, 193.11825], [288.30224458, 234.14751686]],
+    #         apex=[[174.33205886, 120.17733115], [151.53802172, 158.92719429]],
+    #         guiding_image=border_img,
+    #         label="A",
+    #     ),
+    #     ParallelogramBorder(
+    #         base=[[309.95657987, 193.11825], [335.03002072, 234.14751686]],
+    #         apex=[[441.02229344, 116.75822557], [461.53692687, 154.36838686]],
+    #         guiding_image=border_img,
+    #         label="B",
+    #     ),
+    #     ParallelogramBorder(
+    #         base=[[290.58164829, 234.14751686], [335.03002072, 234.14751686]],
+    #         apex=[[294.00075387, 394.84547872], [338.44912629, 394.84547872]],
+    #         guiding_image=border_img,
+    #         label="C",
+    #     ),
+    # ]
+    #
+    # filename = "C:/Users/Can/Projects/Neuroscience/Imen/data/y_maze/before/Test 1DLC_resnet50_y_mazeSep13shuffle1_400000.h5"
+    # f = DeepLabCutReader.from_hdf(
+    #     filename, (640, 480), midpoint_groups=(("left_ear", "right_ear"),)
+    # )
+    # borders[0].plot()
+    #
+    #
+    # DATA_DIR = Path("C:/Users/Can/Projects/Neuroscience/Imen/data")
+    # exp_id_finder = re.compile("\d+")
+    # data_dict = {}
+    # for subdir in os.listdir(str(DATA_DIR)):
+    #     for file_path in glob(os.path.join(str(DATA_DIR / subdir), "**.h5"))[1:]:
+    #         filename = "C:/Users/Can/Projects/Neuroscience/Imen/data/y_maze/before/Test 1DLC_resnet50_y_mazeSep13shuffle1_400000.h5"
+    #         f = DeepLabCutReader.from_hdf(
+    #             file_path, (640, 480), midpoint_groups=(("left_ear", "right_ear"),)
+    #         )
+    #         # borders[0].plot(f["mid-left_ear-right_ear"])
+    #         data_dict[
+    #             (subdir, exp_id_finder.findall(Path(file_path).stem)[0])
+    #         ] = ParallelogramBorder.detect_sequential_border_presence(
+    #             f["mid-left_ear-right_ear"], *borders
+    #         )

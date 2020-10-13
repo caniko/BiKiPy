@@ -22,6 +22,11 @@ def compute_midpoint(point_1: Sequence, point_2: Sequence) -> np.ndarray:
     """
     point_1, point_2 = np.asanyarray(point_1), np.asanyarray(point_2)
 
+    if len(point_1.shape) == 1:
+        point_1 = np.expand_dims(point_1, 0)
+    if len(point_2.shape) == 1:
+        point_2 = np.expand_dims(point_2, 0)
+
     point_1_vector_norms = np.apply_along_axis(np.linalg.norm, 1, point_1)
     point_2_vector_norms = np.apply_along_axis(np.linalg.norm, 1, point_2)
 

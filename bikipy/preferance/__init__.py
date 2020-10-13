@@ -1,1 +1,2 @@
-from .border import LineBorder, GradientBorder
+from .border import LineBorder, ParallelogramBorder, GradientBorder
+from .gaze import NortObject

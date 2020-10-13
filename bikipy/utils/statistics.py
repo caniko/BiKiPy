@@ -23,3 +23,8 @@ def feature_scale(
     maximum = real_max or data.max()
 
     return (data - minimum) / maximum - minimum
+
+
+def invalidate_array(data, boolean_array):
+    data[boolean_array] = np.nan
+    return data

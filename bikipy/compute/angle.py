@@ -3,8 +3,8 @@ from typing import Union, Sequence, AnyStr
 from warnings import warn
 import numpy as np
 
+from bikipy.utils.math import unit_vector, dot_prod_along_axis_1
 from bikipy.utils.statistics import feature_scale
-from bikipy.utils.math import unit_vector
 
 
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}
@@ -62,8 +62,7 @@ def inner_clockwise_angel_2d(vector_a, vector_b) -> np.ndarray:
         ]
     )
 
-    # dot = np.einsum("ij,ij->i", vector_1_u, vector_2_u)
-    dot_prod = np.sum(vector_1_u * vector_2_u, axis=1)
+    dot_prod = dot_prod_along_axis_1(vector_1_u, vector_2_u)
 
     return np.pi - np.arctan2(determinants, dot_prod)
 

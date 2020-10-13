@@ -40,6 +40,11 @@ def orthogonal_vector(vector: Sequence) -> np.ndarray:
         return np.apply_along_axis(lambda x: unit_vector((-x[1], x[0])), 1, vector)
 
 
+def dot_prod_along_axis_1(vector_a, vector_b):
+    # np.einsum("ij,ij->i", vector_a, vector_b)
+    return np.sum(vector_a * vector_b, axis=1)
+
+
 def normal_from_line_to_point(
     line_vector: Sequence, line_start: Sequence, point: Sequence
 ):

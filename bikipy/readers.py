@@ -3,7 +3,7 @@ from functools import lru_cache
 import pandas as pd
 import numpy as np
 
-from bikipy.compute.midpoints import compute_from_dlc_df
+from bikipy.compute.midpoint import compute_from_dlc_df
 
 
 DEEPLABCUT_DF_INIT_KWARGS = {
