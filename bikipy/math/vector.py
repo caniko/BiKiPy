@@ -2,6 +2,9 @@ from typing import Sequence
 import numpy as np
 
 
+# TODO: Sanity checks, is the array 2D, etc
+
+
 def unit_vector(row_vectors: Sequence) -> np.ndarray:
     """
     Computes unit vector, i.e. vector/<norm of the vector>
@@ -42,7 +45,7 @@ def orthogonal_vector(vector: Sequence) -> np.ndarray:
 
 def dot_prod_along_axis_1(vector_a, vector_b):
     # np.einsum("ij,ij->i", vector_a, vector_b)
-    return np.sum(vector_a * vector_b, axis=1)
+    return np.nansum(vector_a * vector_b, axis=1)
 
 
 def normal_from_line_to_point(

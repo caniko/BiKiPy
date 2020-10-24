@@ -1,4 +1,4 @@
-from bikipy.utils.statistics import feature_scale
+from bikipy.math.statistics import feature_scale
 
 
 def test_feature_scale():

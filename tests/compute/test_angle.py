@@ -1,8 +1,8 @@
 from pathlib import Path
 import numpy as np
 
-from bikipy.utils.statistics import feature_scale
-from bikipy.readers import DeepLabCutReader
+from bikipy.math.statistics import feature_scale
+from bikipy.data_readers.deeplabcut import DeepLabCutReader
 from bikipy.compute.angle import (
     compute_angles_from_vectors,
     dlc_compute_angles_from_vectors,

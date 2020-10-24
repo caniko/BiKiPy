@@ -1,11 +1,4 @@
-try:
-    import cv2
-except ModuleNotFoundError as e:
-    msg = (
-        "opencv-python is required to get data from video, type: "
-        "pip install opencv-python=4.2.0.34"
-    )
-    raise ModuleNotFoundError(msg) from e
+import cv2
 
 
 def get_video_data(video_path, frame_time="middle"):

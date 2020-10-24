@@ -3,7 +3,7 @@ from functools import lru_cache
 import pandas as pd
 import numpy as np
 
-from bikipy.compute.midpoint import compute_from_dlc_df
+from bikipy.features.midpoint import compute_from_dlc_df
 
 
 DEEPLABCUT_DF_INIT_KWARGS = {
@@ -77,11 +77,19 @@ class DeepLabCutReader:
                 )
 
         if midpoint_groups:
+            if isinstance(midpoint_groups, dict):
+                midpoint_labels = tuple(midpoint_groups.keys())
+                midpoint_groups = tuple(midpoint_groups.values())
+            else:
+                midpoint_labels = None
+
+            recursive_midpoint_groups, normal_groups = [], []
             for i, group in enumerate(midpoint_groups):
-                if not (
-                    group[0] in self.regions_of_interest
-                    and group[1] in self.regions_of_interest
-                ):
+                if any("mid" in element for element in group):
+                    recursive_midpoint_groups.append(group)
+                elif any(element in self.regions_of_interest for element in group):
+                    normal_groups.append(group)
+                else:
                     msg = (
                         f"Index {i} in midpoint_groups:"
                         f"The region of interest names must be referred to with "
@@ -91,10 +99,13 @@ class DeepLabCutReader:
                     raise ValueError(msg)
 
             midpoints = compute_from_dlc_df(
-                self.df, point_group_names_set=midpoint_groups
+                self.df, point_group_names_set=normal_groups
             )
+
             midpoint_dict = {}
-            for midpoint_name, data in midpoints.items():
+            for i, (key, data) in enumerate(midpoints.items()):
+                midpoint_name = midpoint_labels[i] if midpoint_labels else key
+
                 (
                     midpoint_dict[(midpoint_name, "x")],
                     midpoint_dict[(midpoint_name, "y")],
@@ -109,6 +120,30 @@ class DeepLabCutReader:
                 master=self.df,
                 new_data=midpoint_dict,
             )
+
+            if recursive_midpoint_groups:
+                midpoints = compute_from_dlc_df(
+                    self.df, point_group_names_set=recursive_midpoint_groups
+                )
+                midpoint_dict = {}
+                for i, (key, data) in enumerate(midpoints.items()):
+                    midpoint_name = midpoint_labels[i] if midpoint_labels else key
+
+                    (
+                        midpoint_dict[(midpoint_name, "x")],
+                        midpoint_dict[(midpoint_name, "y")],
+                    ) = [
+                        np.hstack(component)
+                        for component in np.hsplit(data["midpoint"], 2)
+                    ]
+                    midpoint_dict[(midpoint_name, "likelihood")] = np.hstack(
+                        data["likelihood"]
+                    )
+
+                self.df = self.add_regions_of_interest_to_df(
+                    master=self.df,
+                    new_data=midpoint_dict,
+                )
 
     @lru_cache
     def __getitem__(self, item):

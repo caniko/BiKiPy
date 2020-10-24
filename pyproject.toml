@@ -17,6 +17,8 @@ tables = "^3.6.1"
 matplotlib = "^3.2.2"
 opencv-python = { version = "4.2.0.34", optional = true }
 numba = "^0.51.2"
+xlrd = "^1.2.0"
+jupyter = "^1.0.0"
 
 [tool.poetry.extras]
 opencv = ["opencv-python"]

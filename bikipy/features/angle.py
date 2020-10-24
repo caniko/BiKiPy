@@ -3,8 +3,8 @@ from typing import Union, Sequence, AnyStr
 from warnings import warn
 import numpy as np
 
-from bikipy.utils.math import unit_vector, dot_prod_along_axis_1
-from bikipy.utils.statistics import feature_scale
+from bikipy.math.vector import unit_vector, dot_prod_along_axis_1
+from bikipy.math.statistics import feature_scale
 
 
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}

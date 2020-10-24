@@ -3,7 +3,8 @@ from collections.abc import Sequence
 import matplotlib.pyplot as plt
 from PIL import Image
 
-from bikipy.preferance.border import LineBorder
+from bikipy.border.linear.classes import LineBorder
+from bikipy.utils.video import get_video_data
 
 
 def borders_on_image(
@@ -48,7 +49,7 @@ def borders_on_image(
     return greater_than_borders, less_than_borders
 
 
-def borders_on_video(video_path: AnyStr, orientation: AnyStr):
+def draw_on_video_frame(video_path: AnyStr, orientation: AnyStr):
     """Initialize class using data from a sample video file
 
     Parameters
@@ -67,10 +68,8 @@ def borders_on_video(video_path: AnyStr, orientation: AnyStr):
 
     Returns
     -------
-    bikipy.preferance.border.borders_on_image call
+    bikipy.border.linear.draw.borders_on_image call with frame from video
     """
-    from bikipy.utils.video import get_video_data
-
     frame, x_res, y_res = get_video_data(video_path)
 
     return borders_on_image(frame, orientation, resolution=(x_res, y_res))
