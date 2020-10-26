@@ -3,10 +3,12 @@ from typing import Union, SupportsFloat, Sequence
 import matplotlib.pyplot as plt
 import numpy as np
 
-from bikipy.border.base import PolygonalBorder
+from bikipy.border.base import GenericPolygonalBorder
 
 
-class TriangularBorder(PolygonalBorder):
+class TriangularBorder(GenericPolygonalBorder):
+    corners = 3
+
     def __init__(
         self,
         base_a: Sequence[SupportsFloat],
@@ -29,9 +31,9 @@ class TriangularBorder(PolygonalBorder):
         """
         super().__init__(*args, **kwargs)
 
-        self.base_a = base_a
-        self.base_b = base_b
-        self.apex = apex
+        self.base_a = np.asanyarray(base_a)
+        self.base_b = np.asanyarray(base_b)
+        self.apex = np.asanyarray(apex)
 
     def confined_coordinate_indexes(self, coordinates: Sequence) -> np.ndarray:
         """
@@ -80,7 +82,6 @@ class TriangularBorder(PolygonalBorder):
             "-b",
         )
 
-        plt.legend(("Base", "Apex", "Close Feet", "Far Feet", "Midline"))
         if points is not None:
             points = np.asanyarray(points)
             ax.scatter(points.T[0], points.T[1], marker=".")

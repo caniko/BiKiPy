@@ -11,9 +11,9 @@ from bikipy.behaviour.nort import NortObject
 
 def attention(
     nort_object: NortObject,
-    eye_center: Sequence,
-    nose: Sequence,
-    torso: Sequence,
+    eye_center: Sequence[Sequence[SupportsFloat]],
+    nose: Sequence[Sequence[SupportsFloat]],
+    torso: Sequence[Sequence[SupportsFloat]],
     fps: SupportsFloat,
     max_distance_from_nose_to_border: SupportsFloat,
     max_radians_between_gaze_and_object: SupportsFloat = 1 / 4 * np.pi,

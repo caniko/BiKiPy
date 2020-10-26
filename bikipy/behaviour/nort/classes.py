@@ -1,68 +1,32 @@
-from typing import Union, Any, AnyStr, SupportsFloat, Sequence
+from typing import Union, SupportsFloat, Sequence
 
 import numpy as np
 
+from bikipy.border.base import GenericPolygonalBorder
 from bikipy.math.vector import unit_vector
-from bikipy.border.draw.polygon import (
-    draw_polygon_corners,
-    define_polygon_border,
-)
-from bikipy.utils.video import get_video_data
 
 
-class NortObject:
+class NortObject(GenericPolygonalBorder):
+    corners = 0
+
     def __init__(
         self,
-        sides: Union[Sequence, None] = None,
-        guiding_image: Any = None,
-        border_distance: Union[SupportsFloat, None] = None,
-        feature_scale: Union[Sequence, None] = None,
-        label: Union[AnyStr, None] = None,
-    ):
-        self.label = label
-        self.border_distance = border_distance
-        self.feature_scale = (
-            np.asanyarray(feature_scale) if feature_scale is not None else None
-        )
-
-        if sides is None:
-            if guiding_image is None:
-                msg = "'sides' not defined, define 'guiding_image' to define sides with user"
-                raise ValueError(msg)
-
-            self.sides = draw_polygon_corners(guiding_image, n=0)
-            # TODO: Feature scale
-        else:
-            self.sides = sides
-
-    @classmethod
-    def from_video(
-        cls,
-        video_path,
-        labels: Union[Sequence, None] = None,
-        frame_time: AnyStr = "middle",
+        sides: Sequence[Sequence[SupportsFloat]],
         *args,
+        border_distance: Union[SupportsFloat, None] = None,
         **kwargs,
     ):
-        frame, x_res, y_res = get_video_data(video_path, frame_time)
+        super().__init__(*args, **kwargs)
 
-        if not labels:
-            return cls(
-                *args, guiding_image=frame, feature_scale=(x_res, y_res), **kwargs
-            )
-        return {
-            label: cls(
-                *args, guiding_image=frame, feature_scale=(x_res, y_res), **kwargs
-            )
-            for label in labels
-        }
+        self.sides = sides
+        self.border_distance = border_distance
 
     @property
     def sides(self):
         return self.__sides
 
     @sides.setter
-    def sides(self, sides: Sequence):
+    def sides(self, sides: Sequence[Sequence[SupportsFloat]]):
         sides = np.asanyarray(sides)
 
         self.__sides = sides
@@ -83,13 +47,6 @@ class NortObject:
                 for i in range(self.number_of_sides)
             },
         }
-
-    @property
-    def feat_scaled_sides(self):
-        if not self.feature_scale:
-            msg = "Feature scale parameters have not been defined in this instance"
-            raise AttributeError(msg)
-        return self.sides / self.feature_scale
 
     @property
     def order(self):

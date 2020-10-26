@@ -6,9 +6,9 @@ import re
 import pandas as pd
 import numpy as np
 
-from bikipy.behaviour.nort.attention import attention
+from bikipy.behaviour.nort.experiment import attention
 from bikipy.behaviour.nort import NortObject
-from bikipy.data_readers.deeplabcut import DeepLabCutReader
+from bikipy.readers.deeplabcut import DeepLabCutReader
 
 
 WORKING_DIR = Path("C:/Users/Can/Projects/Neuroscience/Imen/data")

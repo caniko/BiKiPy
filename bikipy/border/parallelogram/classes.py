@@ -1,5 +1,4 @@
 from typing import Union, Any, AnyStr, SupportsFloat, SupportsInt, Sequence
-from warnings import warn
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,10 +12,10 @@ from bikipy.math.vector import (
 from bikipy.border.parallelogram.draw import parallelogram_input
 from bikipy.math.vector import find_intersection_between_two_vectors
 from bikipy.math.point_in_polygon import points_in_parallelogram
-from bikipy.border.base import Border, BorderOverlapError
+from bikipy.border.base import PolygonalBorder
 
 
-class ParallelogramBorder(Border):
+class ParallelogramBorder(PolygonalBorder):
     def __init__(
         self,
         base: Union[Sequence[SupportsFloat], None] = None,
