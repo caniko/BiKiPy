@@ -11,46 +11,13 @@ class NortObject(GenericPolygonalBorder):
 
     def __init__(
         self,
-        sides: Sequence[Sequence[SupportsFloat]],
         *args,
         border_distance: Union[SupportsFloat, None] = None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
-        self.sides = sides
         self.border_distance = border_distance
-
-    @property
-    def sides(self):
-        return self.__sides
-
-    @sides.setter
-    def sides(self, sides: Sequence[Sequence[SupportsFloat]]):
-        sides = np.asanyarray(sides)
-
-        self.__sides = sides
-        self.number_of_sides = len(sides)
-        self.edges = np.array(
-            [
-                sides[i + 1 if i + 1 != self.number_of_sides else 0] - sides[i]
-                for i in range(self.number_of_sides)
-            ]
-        )
-        self.side_pair_to_edge = {
-            **{
-                f"{i}_{i + 1 if i + 1 != self.number_of_sides else 0}": self.edges[i]
-                for i in range(self.number_of_sides)
-            },
-            **{
-                f"{i + 1 if i + 1 != self.number_of_sides else 0}_{i}": self.edges[i]
-                for i in range(self.number_of_sides)
-            },
-        }
-
-    @property
-    def order(self):
-        return self.sides.shape[0]
 
     @property
     def borders(self):
@@ -69,3 +36,31 @@ class NortObject(GenericPolygonalBorder):
                 self.sides[3] - diagonal_unit_3_1 * self.border_distance,
             )
         )
+
+    def plot_borders(self, points: Union[Sequence, None] = None, show: bool = True):
+        """
+
+        Parameters
+        ----------
+        points
+            User defined coordinates that will be plotted alongside the object
+
+        show
+            If True, the plot will be shown through plt.show()
+
+        Returns
+        -------
+
+        """
+
+        fig, ax = self.plot(points)
+        for i in range(len(self.borders) - 1):
+            border_a = self.borders[i]
+            border_b = self.borders[i+1]
+
+            ax.plot((border_a[0], border_a[1]), (border_b[0], border_b[1]))
+
+        if show:
+            self.plt_show(ax)
+
+        return fig, ax

@@ -20,6 +20,7 @@ numba = "^0.51.2"
 xlrd = "^1.2.0"
 jupyter = "^1.0.0"
 openpyxl = "^3.0.5"
+PyQt5 = "^5.15.1"
 
 [tool.poetry.extras]
 opencv = ["opencv-python"]

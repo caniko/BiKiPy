@@ -87,6 +87,15 @@ def normal_from_line_to_point(
     return sol
 
 
+def distance_between_line_and_point(*args, **kwargs):
+    """
+    Compute distance between point and a line.
+
+    Wrapper around normal_from_line_to_point()
+    """
+    return normal_from_line_to_point(*args, **kwargs)[1]
+
+
 def find_intersection_between_two_vectors(
     vector_a: Sequence,
     vector_b: Sequence,

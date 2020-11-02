@@ -29,11 +29,14 @@ class TriangularBorder(GenericPolygonalBorder):
             Coordinates of one of the sides that denote the apex of the triangle
         kwargs
         """
-        super().__init__(*args, **kwargs)
 
         self.base_a = np.asanyarray(base_a)
         self.base_b = np.asanyarray(base_b)
         self.apex = np.asanyarray(apex)
+
+        sides = (self.base_a, self.base_b, self.apex)
+
+        super().__init__(*args, sides=sides, **kwargs)
 
     def confined_coordinate_indexes(self, coordinates: Sequence) -> np.ndarray:
         """

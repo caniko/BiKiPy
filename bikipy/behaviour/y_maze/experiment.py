@@ -1,5 +1,5 @@
-from typing import Union, SupportsFloat, Sequence, Iterable, Dict, List, AnyStr
-from itertools import permutations
+from typing import Union, SupportsFloat, Sequence, Iterable, Dict, AnyStr
+import itertools as it
 
 import pandas as pd
 import numpy as np
@@ -66,25 +66,20 @@ class YMaze:
             self.mean_acceleration,
         ) = displacement_mean_speed_acceleration(self.coordinate_sequence, self.fps)
 
-    @property
-    def arm_labels(self):
-        return "".join([border_object.label for border_object in self.arms])
+        # Data labeling helpers
+        self.arm_labels = [arm.label for arm in self.arms]
+        self.arm_labels_str = "".join(self.arm_labels)
 
-    @property
-    def arm_triplets(self):
-        return ["".join(triplet) for triplet in permutations(self.arm_labels)]
+        self.arm_triplets = ["".join(triplet) for triplet in it.permutations(self.arm_labels_str)]
+        self.arm_center_labels = self.arm_labels + [self.center.label]
 
-    @property
-    def _arm_center_label_dict(self):
-        return dict.fromkeys((*self.arm_labels, self.center.label))
+        self._arm_center_label_dict = dict.fromkeys(self.arm_center_labels)
+        self._arm_triplet_dict = {arm: 0 for arm in self.arm_triplets}
 
-    @property
-    def _arm_triplet_dict(self):
-        return {arm: 0 for arm in self.arm_triplets}
-
-    @property
-    def triplet_permutation_vs_base_key(self):
-        return triplet_permutation_vs_base_permutation_dictionary(self.arm_labels)
+        self.arm_triplet_combinations = it.combinations_with_replacement(
+            self.arm_triplets, 3
+        )
+        self.triplet_permutation_vs_base_key = triplet_permutation_vs_base_permutation_dictionary(self.arm_labels_str)
 
     @property
     def seconds_spent_in_areas(self) -> Dict:
@@ -104,7 +99,7 @@ class YMaze:
         return result
 
     @property
-    def arm_alternations(self) -> Dict:
+    def area_alternations(self) -> Dict:
         """
         The number of alternations to every arm and center
 
@@ -180,9 +175,7 @@ class YMaze:
         return 100.0 * alternations / self.sum_of_alternations
 
     @staticmethod
-    def export_to_dataframe(
-        y_maze_objects: Iterable, return_as_dict: bool = False
-    ) -> Union[pd.DataFrame, Dict]:
+    def export_to_dataframe(y_maze_objects: Iterable) -> pd.DataFrame:
         """
         Export experimental data to pandas DataFrame
 
@@ -192,56 +185,47 @@ class YMaze:
         ----------
         y_maze_objects
             Sequence of YMaze objects each depicting an experiment
-        return_as_dict
-            If True return results as dict
 
         Returns
         -------
         DataFrame with the combined experiment attributes of all the YMaze objects
         """
 
-        def _generate_key(
-            base_key: Union[AnyStr, Sequence], new: Union[AnyStr, Sequence]
-        ):
-            key = []
-            key.append(base_key) if isinstance(base_key, str) else key.extend(base_key)
-            key.append(new) if isinstance(new, str) else key.extend(new)
-            return tuple(key)
+        def feature_area(feature, arm_center_labels):
+            return tuple([(feature, area) for area in arm_center_labels])
 
-        def _generate_third_order_dict(
-            data_dict: Dict, base_key: List, base_feat_label: AnyStr
-        ) -> pd.DataFrame:
-            return {
-                _generate_key(base_key, (base_feat_label, arm)): [time]
-                for arm, time in data_dict.items()
-            }
+        def feature_triplet(feature, triplets):
+            return tuple([(feature, area) for area in triplets])
 
-        export_data = {}
+        first = tuple(y_maze_objects)[0]
+        feature_order = pd.MultiIndex.from_tuples((
+                ("Displacement", ""), ("Mean speed", ""), ("Mean acceleration", ""),
+                ("Spontaneous alternations", ""),
+                *feature_area("Seconds in area", first.arm_center_labels),
+                *feature_area("Area alternations", first.arm_center_labels),
+                *feature_triplet("Triplet alternation", first.arm_triplets)
+            ),
+            names=("Feature", "Area/Triplet")
+        )
+        print(feature_order)
+
+        unit_length = None
+        index_vs_data = {}
         for y_maze in y_maze_objects:
-            export_data = {
-                **export_data,
-                _generate_key(y_maze.label, "Displacement"): y_maze.displacement,
-                _generate_key(y_maze.label, "Mean speed"): y_maze.mean_speed,
-                _generate_key(
-                    y_maze.label, "Mean acceleration"
-                ): y_maze.mean_acceleration,
-                _generate_key(
-                    y_maze.label, "Spontaneous alternations"
-                ): y_maze.spontaneous_alternations,
-                **_generate_third_order_dict(
-                    y_maze.seconds_spent_in_areas, y_maze.label, "Seconds in area"
-                ),
-                **_generate_third_order_dict(
-                    y_maze.arm_alternations, y_maze.label, "Arm alternations"
-                ),
-                **_generate_third_order_dict(
-                    y_maze.triplet_alternation_distribution,
-                    y_maze.label,
-                    "Triplet alternation",
-                ),
-            }
-        return (
-            export_data
-            if return_as_dict
-            else pd.DataFrame.from_dict(export_data, orient="columns")
+            index_vs_data[y_maze.label] = (
+                y_maze.displacement, y_maze.mean_speed, y_maze.mean_acceleration,
+                y_maze.spontaneous_alternations,
+                *tuple(y_maze.seconds_spent_in_areas.values()),
+                *tuple(y_maze.area_alternations.values()),
+                *tuple(y_maze.triplet_alternation_distribution.values())
+            )
+            if not unit_length:
+                unit_length = len(index_vs_data[y_maze.label])
+
+        index_vs_data = dict(sorted(index_vs_data.items(), key=lambda item: item[0]))
+
+        return pd.DataFrame(
+            tuple(index_vs_data.values()),
+            index=tuple(index_vs_data.keys()),
+            columns=feature_order
         )

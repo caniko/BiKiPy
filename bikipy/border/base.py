@@ -145,6 +145,47 @@ class PolygonalBorder(Border):
 
 
 class GenericPolygonalBorder(PolygonalBorder):
+    def __init__(
+        self,
+        sides: Sequence[Sequence[SupportsFloat]],
+        *args,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+
+        self.sides = sides
+
+    @property
+    def sides(self):
+        return self.__sides
+
+    @sides.setter
+    def sides(self, sides: Sequence[Sequence[SupportsFloat]]):
+        sides = np.asanyarray(sides)
+
+        self.__sides = sides
+        self.number_of_sides = len(sides)
+        self.edges = np.array(
+            [
+                sides[i + 1 if i + 1 != self.number_of_sides else 0] - sides[i]
+                for i in range(self.number_of_sides)
+            ]
+        )
+        self.side_pair_to_edge = {
+            **{
+                f"{i}_{i + 1 if i + 1 != self.number_of_sides else 0}": self.edges[i]
+                for i in range(self.number_of_sides)
+            },
+            **{
+                f"{i + 1 if i + 1 != self.number_of_sides else 0}_{i}": self.edges[i]
+                for i in range(self.number_of_sides)
+            },
+        }
+
+    @property
+    def order(self):
+        return self.sides.shape[0]
+
     # Define "corners" (integer) as a class variable for the ginput in from_image(...)
     @classmethod
     def from_image(cls, guiding_image: Any, *args, **kwargs):
@@ -175,23 +216,15 @@ class GenericPolygonalBorder(PolygonalBorder):
         cls, video_path: Any, frame_time: AnyStr = "middle", *args, **kwargs
     ):
         """
-        Initialize class using data from a sample video file
+        Initialize class using a frame from a sample video file
 
         Parameters
         ----------
         video_path: str
-            The name of the video file in local directory to be used for analysis.
-            Required if orientation == 'lasso' and frame == None.
-            None: No action
+            The path to the video file
 
-            str:  The video file matching the string will be selected.
-                  File extension must be included.
-
-            True: If there is only one video file, it will be selected.
         frame_time: str
             Relative location of the frame used for reference in analysis
-        corners: int
-            Number of corners on polygon
 
         Returns
         -------
@@ -201,3 +234,33 @@ class GenericPolygonalBorder(PolygonalBorder):
         frame, x_res, y_res = get_video_data(video_path, frame_time)
 
         return cls.from_image(frame, *args, feature_scale=(x_res, y_res), **kwargs)
+
+    def plot(self, points: Union[Sequence, None] = None, show: bool = True):
+        """
+        Plot the sides defined in the object
+
+        Parameters
+        ----------
+        points
+            User defined coordinates that will be plotted alongside the object
+
+        show
+            If True, the plot will be shown through plt.show()
+
+        Returns
+        -------
+        matplotlib Figure and Axes object with the plot
+        """
+        fig, ax = plt.subplots()
+        for i in range(len(self.sides) - 1):
+            side_a = self.sides[i]
+            side_b = self.sides[i+1]
+            ax.plot((side_a[0], side_a[1]), (side_b[0], side_b[1]))
+
+        if points is not None:
+            points = np.asanyarray(points)
+            ax.scatter(points.T[0], points.T[1], marker=".")
+        if show:
+            self.plt_show(ax)
+
+        return fig, ax
