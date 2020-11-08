@@ -6,13 +6,13 @@ import re
 import pandas as pd
 import numpy as np
 
-from bikipy.behaviour.nort.experiment import attention
-from bikipy.behaviour.nort import NortObject
+from bikipy.border.base import GenericPolygonalBorder
 from bikipy.readers.deeplabcut import DeepLabCutReader
+from bikipy.behaviour.nort_observation import nort_observation
 
 
 WORKING_DIR = Path("C:/Users/Can/Projects/Neuroscience/Imen/data")
-NORT_DIR = WORKING_DIR / "nort"
+NORT_DIR = WORKING_DIR / "nort_observation"
 BEFORE_DIR = NORT_DIR / "0_before_02.06.2020"
 AFTER_DIR = NORT_DIR / "1_after_24.08.2020"
 
@@ -63,6 +63,10 @@ def dlc_objectifier(dir_path):
     return exp_id_vs_dlc
 
 
+with open(IMPORTED_DLC_FILES, "rb") as infile:
+    id_dlc_0, id_dlc_1 = pickle.load(infile)
+
+
 def border_analysis(id_exp, app_to_obj_t1, app_to_obj_t2, id_app):
     result = {}
     for animal, exp_ids in id_exp.items():
@@ -79,7 +83,7 @@ def border_analysis(id_exp, app_to_obj_t1, app_to_obj_t2, id_app):
         t1 = id_dlc_0[exp_ids[0]]
         t2 = id_dlc_0[exp_ids[1]]
 
-        t1_a_at = attention(
+        t1_a_at = nort_observation(
             app_a_t1,
             t1["mid-left_ear-right_ear"],
             t1["nose"],
@@ -87,28 +91,25 @@ def border_analysis(id_exp, app_to_obj_t1, app_to_obj_t2, id_app):
             BORDER_DISTANCE,
             14.99,
         )
-        t1_B_at = attention(
+        t1_B_at = nort_observation(
             app_b_t1,
             t1["mid-left_ear-right_ear"],
             t1["nose"],
             t1["mid-mid-left_ear-right_ear-tail"],
-            BORDER_DISTANCE,
             14.99,
         )
-        t2_a_at = attention(
+        t2_a_at = nort_observation(
             app_a_t2,
             t2["mid-left_ear-right_ear"],
             t2["nose"],
             t2["mid-mid-left_ear-right_ear-tail"],
-            BORDER_DISTANCE,
             14.99,
         )
-        t2_B_at = attention(
+        t2_B_at = nort_observation(
             app_b_t2,
             t2["mid-left_ear-right_ear"],
             t2["nose"],
             t2["mid-mid-left_ear-right_ear-tail"],
-            BORDER_DISTANCE,
             14.99,
         )
 
@@ -120,19 +121,6 @@ def border_analysis(id_exp, app_to_obj_t1, app_to_obj_t2, id_app):
         }
 
     return result
-
-
-class RenameUnpickler(pickle.Unpickler):
-    def find_class(self, module, name):
-        renamed_module = module
-        if module == "bikipy.preferance.gaze":
-            renamed_module = "bikipy.behaviour.nort"
-
-        return super(RenameUnpickler, self).find_class(renamed_module, name)
-
-
-def renamed_load(file_obj):
-    return RenameUnpickler(file_obj).load()
 
 
 with open(ANNOTATIONS_PATH, "rb") as infile:
@@ -153,44 +141,7 @@ with open(ANNOTATIONS_PATH, "rb") as infile:
         b2_2,
         b2_3,
         b2_4,
-    ) = renamed_load(infile)
-
-with open(IMPORTED_DLC_FILES, "rb") as infile:
-    id_dlc_0, id_dlc_1 = pickle.load(infile)
-
-b1_1["A"] = NortObject(b1_1["A"].sides, border_distance=BORDER_DISTANCE)
-b1_2["A"] = NortObject(b1_2["A"].sides, border_distance=BORDER_DISTANCE)
-b1_3["A"] = NortObject(b1_3["A"].sides, border_distance=BORDER_DISTANCE)
-b1_4["A"] = NortObject(b1_4["A"].sides, border_distance=BORDER_DISTANCE)
-b2_1["A"] = NortObject(b2_1["A"].sides, border_distance=BORDER_DISTANCE)
-b2_2["A"] = NortObject(b2_2["A"].sides, border_distance=BORDER_DISTANCE)
-b2_3["A"] = NortObject(b2_3["A"].sides, border_distance=BORDER_DISTANCE)
-b2_4["A"] = NortObject(b2_4["A"].sides, border_distance=BORDER_DISTANCE)
-a1_1["A"] = NortObject(a1_1["A"].sides, border_distance=BORDER_DISTANCE)
-a1_2["A"] = NortObject(a1_2["A"].sides, border_distance=BORDER_DISTANCE)
-a1_3["A"] = NortObject(a1_3["A"].sides, border_distance=BORDER_DISTANCE)
-a1_4["A"] = NortObject(a1_4["A"].sides, border_distance=BORDER_DISTANCE)
-a2_1["A"] = NortObject(a2_1["A"].sides, border_distance=BORDER_DISTANCE)
-a2_2["A"] = NortObject(a2_2["A"].sides, border_distance=BORDER_DISTANCE)
-a2_3["A"] = NortObject(a2_3["A"].sides, border_distance=BORDER_DISTANCE)
-a2_4["A"] = NortObject(a2_4["A"].sides, border_distance=BORDER_DISTANCE)
-
-b1_1["B"] = NortObject(b1_1["B"].sides, border_distance=BORDER_DISTANCE)
-b1_2["B"] = NortObject(b1_2["B"].sides, border_distance=BORDER_DISTANCE)
-b1_3["B"] = NortObject(b1_3["B"].sides, border_distance=BORDER_DISTANCE)
-b1_4["B"] = NortObject(b1_4["B"].sides, border_distance=BORDER_DISTANCE)
-b2_1["B"] = NortObject(b2_1["B"].sides, border_distance=BORDER_DISTANCE)
-b2_2["B"] = NortObject(b2_2["B"].sides, border_distance=BORDER_DISTANCE)
-b2_3["B"] = NortObject(b2_3["B"].sides, border_distance=BORDER_DISTANCE)
-b2_4["B"] = NortObject(b2_4["B"].sides, border_distance=BORDER_DISTANCE)
-a1_1["B"] = NortObject(a1_1["B"].sides, border_distance=BORDER_DISTANCE)
-a1_2["B"] = NortObject(a1_2["B"].sides, border_distance=BORDER_DISTANCE)
-a1_3["B"] = NortObject(a1_3["B"].sides, border_distance=BORDER_DISTANCE)
-a1_4["B"] = NortObject(a1_4["B"].sides, border_distance=BORDER_DISTANCE)
-a2_1["B"] = NortObject(a2_1["B"].sides, border_distance=BORDER_DISTANCE)
-a2_2["B"] = NortObject(a2_2["B"].sides, border_distance=BORDER_DISTANCE)
-a2_3["B"] = NortObject(a2_3["B"].sides, border_distance=BORDER_DISTANCE)
-a2_4["B"] = NortObject(a2_4["B"].sides, border_distance=BORDER_DISTANCE)
+    ) = pickle.load(infile)
 
 app_to_obj_0_1 = {1: b1_1, 2: b1_2, 3: b1_3, 4: b1_4}
 app_to_obj_1_1 = {1: a1_1, 2: a1_2, 3: a1_3, 4: a1_4}

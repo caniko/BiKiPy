@@ -10,7 +10,7 @@ from bikipy.math.vector import (
 )
 
 from bikipy.border.parallelogram.draw import parallelogram_input
-from bikipy.math.vector import find_intersection_between_two_vectors
+from bikipy.math.vector import intersection_between_two_lines
 from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.border.base import PolygonalBorder
 
@@ -103,6 +103,16 @@ class ParallelogramBorder(PolygonalBorder):
         self.apex_mid = self.midpoint(*self.__apex)
         self.apex_vector = apex[1] - apex[0]
 
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(\n"
+            f"    base={self.base.tolist()},\n"
+            f"    apex={self.apex.tolist()},\n"
+            f'    guiding_image="{self.guiding_image}",\n'
+            f'    label="{self.label}"\n'
+            ")"
+        )
+
     @property
     def midline_vector(self):
         return self.apex_mid - self.base_mid
@@ -120,20 +130,20 @@ class ParallelogramBorder(PolygonalBorder):
         return np.linalg.norm(self.midline_vector)
 
     @property
-    def close_feet_vector(self):
+    def close_to_origin_side_vector(self):
         return self.apex[0] - self.base[0]
 
     @property
-    def close_feet_unit(self):
-        return unit_vector(self.close_feet_vector)
+    def close_to_origin_side_unit(self):
+        return unit_vector(self.close_to_origin_side_vector)
 
     @property
-    def far_feet_vector(self):
+    def far_from_origin_side_vector(self):
         return self.apex[1] - self.base[1]
 
     @property
-    def far_feet_unit(self):
-        return unit_vector(self.far_feet_vector)
+    def far_from_origin_side_unit(self):
+        return unit_vector(self.far_from_origin_side_vector)
 
     def base_midpoint_coordinate_unit_vector_magnitudes(
         self, coordinates: Sequence
@@ -302,15 +312,21 @@ class GradientBorder(ParallelogramBorder):
 
         if self.base_mid[1] >= self.apex_mid[1]:
             compute[east_of_midpoint_booleans] = np.apply_along_axis(
-                lambda x: find_intersection_between_two_vectors(
-                    self.midline_unit_orthogonal, self.far_feet_unit, x, self.base[1]
+                lambda x: intersection_between_two_lines(
+                    self.midline_unit_orthogonal,
+                    self.far_from_origin_side_unit,
+                    x,
+                    self.base[1],
                 ),
                 1,
                 compute[east_of_midpoint_booleans],
             )
             compute[west_of_midpoint_booleans] = np.apply_along_axis(
-                lambda x: find_intersection_between_two_vectors(
-                    self.midline_unit_orthogonal, self.close_feet_unit, x, self.base[0]
+                lambda x: intersection_between_two_lines(
+                    self.midline_unit_orthogonal,
+                    self.close_to_origin_side_unit,
+                    x,
+                    self.base[0],
                 ),
                 1,
                 compute[west_of_midpoint_booleans],
@@ -330,15 +346,21 @@ class GradientBorder(ParallelogramBorder):
 
         else:
             compute[west_of_midpoint_booleans] = np.apply_along_axis(
-                lambda x: find_intersection_between_two_vectors(
-                    self.midline_unit_orthogonal, self.far_feet_unit, x, self.base[1]
+                lambda x: intersection_between_two_lines(
+                    self.midline_unit_orthogonal,
+                    self.far_from_origin_side_unit,
+                    x,
+                    self.base[1],
                 ),
                 1,
                 compute[west_of_midpoint_booleans],
             )
             compute[east_of_midpoint_booleans] = np.apply_along_axis(
-                lambda x: find_intersection_between_two_vectors(
-                    self.midline_unit_orthogonal, self.close_feet_unit, x, self.base[0]
+                lambda x: intersection_between_two_lines(
+                    self.midline_unit_orthogonal,
+                    self.close_to_origin_side_unit,
+                    x,
+                    self.base[0],
                 ),
                 1,
                 compute[east_of_midpoint_booleans],

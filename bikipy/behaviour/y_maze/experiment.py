@@ -1,76 +1,66 @@
-from typing import Union, SupportsFloat, Sequence, Iterable, Dict, AnyStr
+from typing import Any, AnyStr, SupportsFloat, Sequence, Iterable, Dict
+from warnings import warn
 import itertools as it
 
 import pandas as pd
 import numpy as np
 
-from bikipy.features.movement import displacement_mean_speed_acceleration
-from bikipy.behaviour.y_maze.utils import (
+from bikipy.behaviour.utils import (
     unique_with_counts_zipped,
     exclude_value_from_sequence,
     triplet_permutation_vs_base_permutation_dictionary,
-    reduce_location_sequence,
+    reduce_str_sequence,
 )
+from bikipy.behaviour.base import BaseExperiment
 from bikipy.border.base import PolygonalBorder
 
 
-class YMaze:
+class YMaze(BaseExperiment):
     def __init__(
         self,
-        coordinate_sequence: Sequence[Sequence[SupportsFloat]],
         arms: Sequence[PolygonalBorder],
         center: PolygonalBorder,
+        coordinate_sequence: Any,
         fps: SupportsFloat,
         cm_per_pixel: SupportsFloat,
-        label: Union[Sequence[AnyStr], AnyStr, None] = None,
+        movement_feature_point_label: AnyStr,
+        label: Any = None,
     ):
         """
         Parameters
         ----------
-        coordinate_sequence: Sequence
-            The coordinates of the subject across the frames of the video recording
         arms: Sequence
             bikipy border objects defining the arms of the y-maze
         center
             bikipy border object defining the centre of the y-maze
-        fps: SupportsFloat
-            Number of frames per second
-        cm_per_pixel: SupportsFloat
-            Number defining the number of pixels that goes into one centimeter
-        label: Sequence[AnyStr], AnyStr; optional
-
         """
 
-        self.fps = float(fps)
-        self.cm_per_pixel = float(cm_per_pixel)
-        self.label = label
+        super().__init__(
+            coordinate_sequence, fps, cm_per_pixel, movement_feature_point_label, label
+        )
 
         self.arms = arms
         self.center = center
-        self.coordinate_sequence = np.asanyarray(coordinate_sequence)
         self.location_sequence = PolygonalBorder.detect_sequential_border_presence(
             self.coordinate_sequence,
             self.arms,
             inferior_poly_border_instances=[self.center],
         )
-        self.reduced_sequence = reduce_location_sequence(self.location_sequence)
+        self.reduced_sequence = reduce_str_sequence(self.location_sequence)
         self.reduced_without_center = exclude_value_from_sequence(
             self.reduced_sequence, self.center.label
         )
 
         # Quick computations
         self.sum_of_alternations = len(self.reduced_without_center) - 2
-        (
-            self.displacement,
-            self.mean_speed,
-            self.mean_acceleration,
-        ) = displacement_mean_speed_acceleration(self.coordinate_sequence, self.fps)
 
         # Data labeling helpers
         self.arm_labels = [arm.label for arm in self.arms]
         self.arm_labels_str = "".join(self.arm_labels)
 
-        self.arm_triplets = ["".join(triplet) for triplet in it.permutations(self.arm_labels_str)]
+        self.arm_triplets = [
+            "".join(triplet) for triplet in it.permutations(self.arm_labels_str)
+        ]
         self.arm_center_labels = self.arm_labels + [self.center.label]
 
         self._arm_center_label_dict = dict.fromkeys(self.arm_center_labels)
@@ -79,7 +69,9 @@ class YMaze:
         self.arm_triplet_combinations = it.combinations_with_replacement(
             self.arm_triplets, 3
         )
-        self.triplet_permutation_vs_base_key = triplet_permutation_vs_base_permutation_dictionary(self.arm_labels_str)
+        self.triplet_permutation_vs_base_key = (
+            triplet_permutation_vs_base_permutation_dictionary(self.arm_labels_str)
+        )
 
     @property
     def seconds_spent_in_areas(self) -> Dict:
@@ -112,6 +104,20 @@ class YMaze:
         for label, counts in unique_with_counts_zipped(self.reduced_sequence):
             assert label in result
             result[label] = counts
+
+        total_arm_alternations = np.sum([result[lab] for lab in self.arm_labels])
+
+        if (
+            not result[self.center.label]
+            or result[self.center.label] < total_arm_alternations / 2
+        ):
+            if result[self.center.label] is None:
+                result[self.center.label] = 0
+            warn(
+                f"{self.label}: The number of alternations to the center, "
+                f"{result[self.center.label]} can't be less than the "
+                f"half of the total arm alternations, {total_arm_alternations / 2}"
+            )
 
         return result
 
@@ -198,14 +204,17 @@ class YMaze:
             return tuple([(feature, area) for area in triplets])
 
         first = tuple(y_maze_objects)[0]
-        feature_order = pd.MultiIndex.from_tuples((
-                ("Displacement", ""), ("Mean speed", ""), ("Mean acceleration", ""),
+        feature_order = pd.MultiIndex.from_tuples(
+            (
+                ("Displacement", ""),
+                ("Mean speed", ""),
+                ("Mean acceleration", ""),
                 ("Spontaneous alternations", ""),
                 *feature_area("Seconds in area", first.arm_center_labels),
                 *feature_area("Area alternations", first.arm_center_labels),
-                *feature_triplet("Triplet alternation", first.arm_triplets)
+                *feature_triplet("Triplet alternation", first.arm_triplets),
             ),
-            names=("Feature", "Area/Triplet")
+            names=("Feature", "Area/Triplet"),
         )
         print(feature_order)
 
@@ -213,11 +222,13 @@ class YMaze:
         index_vs_data = {}
         for y_maze in y_maze_objects:
             index_vs_data[y_maze.label] = (
-                y_maze.displacement, y_maze.mean_speed, y_maze.mean_acceleration,
+                y_maze.displacement,
+                y_maze.mean_speed,
+                y_maze.mean_acceleration,
                 y_maze.spontaneous_alternations,
                 *tuple(y_maze.seconds_spent_in_areas.values()),
                 *tuple(y_maze.area_alternations.values()),
-                *tuple(y_maze.triplet_alternation_distribution.values())
+                *tuple(y_maze.triplet_alternation_distribution.values()),
             )
             if not unit_length:
                 unit_length = len(index_vs_data[y_maze.label])
@@ -227,5 +238,5 @@ class YMaze:
         return pd.DataFrame(
             tuple(index_vs_data.values()),
             index=tuple(index_vs_data.keys()),
-            columns=feature_order
+            columns=feature_order,
         )

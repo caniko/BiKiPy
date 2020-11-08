@@ -1,4 +1,5 @@
 from typing import Iterable, Callable, Union, Sequence, AnyStr, SupportsFloat, Dict
+from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 import pandas as pd
 import numpy as np
@@ -295,9 +296,9 @@ class DeepLabCutReader:
     @classmethod
     def init_many(
         cls,
-        file_paths: Sequence,
-        init_from: AnyStr = "csv",
-        labels: Union[Sequence, None] = None,
+        file_paths: Iterable,
+        init_from: AnyStr = "hdf",
+        labels: Union[Iterable, None] = None,
         **init_kwargs,
     ) -> list:
         """
@@ -305,7 +306,7 @@ class DeepLabCutReader:
 
         Parameters
         ----------
-        file_paths: Sequence
+        file_paths: Iterable
             Path to the data sources that will be used to generate class instances
         init_from: str
             Classmethod label to use for initialization
@@ -320,18 +321,24 @@ class DeepLabCutReader:
         """
         ext_to_method = {"csv": cls.from_csv, "h5": cls.from_hdf, "hdf": cls.from_hdf}
         try:
-            init_method = ext_to_method[init_from]
+            init_method = ext_to_method[str(init_from).lower()]
         except KeyError:
             msg = "This file type has no init function implementation, currently"
             raise ValueError(msg)
 
-        if not labels:
-            return [init_method(file_path, **init_kwargs) for file_path in file_paths]
-        else:
-            return [
-                init_method(file_path, data_label=label, **init_kwargs)
-                for file_path, label in zip(file_paths, labels)
-            ]
+        with ThreadPoolExecutor() as executor:
+            if not labels:
+                return [
+                    executor.submit(init_method, file_path, **init_kwargs)
+                    for file_path in file_paths
+                ]
+            else:
+                return [
+                    executor.submit(
+                        init_method, file_path, data_label=label, **init_kwargs
+                    )
+                    for file_path, label in zip(file_paths, labels)
+                ]
 
     @staticmethod
     def map_function(

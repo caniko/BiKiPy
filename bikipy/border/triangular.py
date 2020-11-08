@@ -11,9 +11,10 @@ class TriangularBorder(GenericPolygonalBorder):
 
     def __init__(
         self,
-        base_a: Sequence[SupportsFloat],
-        base_b: Sequence[SupportsFloat],
-        apex: Sequence[SupportsFloat],
+        base_a: Union[Sequence[SupportsFloat], None] = None,
+        base_b: Union[Sequence[SupportsFloat], None] = None,
+        apex: Union[Sequence[SupportsFloat], None] = None,
+        sides: Union[Sequence[Sequence[SupportsFloat]]] = None,
         *args,
         **kwargs,
     ):
@@ -30,13 +31,25 @@ class TriangularBorder(GenericPolygonalBorder):
         kwargs
         """
 
-        self.base_a = np.asanyarray(base_a)
-        self.base_b = np.asanyarray(base_b)
-        self.apex = np.asanyarray(apex)
+        if sides:
+            self.base_a, self.base_b, self.apex = np.asanyarray(sides)
+        else:
+            self.base_a = np.asanyarray(base_a)
+            self.base_b = np.asanyarray(base_b)
+            self.apex = np.asanyarray(apex)
 
-        sides = (self.base_a, self.base_b, self.apex)
+        super().__init__(sides=(self.base_a, self.base_b, self.apex), *args, **kwargs)
 
-        super().__init__(*args, sides=sides, **kwargs)
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(\n"
+            f"    base_a={self.base_a.tolist()},\n"
+            f"    base_b={self.base_b.tolist()},\n"
+            f"    apex={self.apex.tolist()},\n"
+            f'    guiding_image="{self.guiding_image}",\n'
+            f'    label="{self.label}"\n'
+            ")"
+        )
 
     def confined_coordinate_indexes(self, coordinates: Sequence) -> np.ndarray:
         """

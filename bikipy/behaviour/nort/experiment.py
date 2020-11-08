@@ -1,143 +1,167 @@
-from typing import Union, SupportsFloat, SupportsInt, Sequence
+from typing import Union, AnyStr, Any, SupportsFloat, SupportsInt, Sequence
+from warnings import warn
+import itertools as it
 
+import pandas as pd
 import numpy as np
 
-from bikipy.math.vector import unit_vector, dot_prod_along_axis_1, distance_between_line_and_point
 from bikipy.math.point_in_polygon import points_in_parallelogram
+from bikipy.border.base import PolygonalBorder
 
-from bikipy.behaviour.nort import NortObject
+from bikipy.behaviour.nort.observation import nort_observation
+from bikipy.behaviour.base import BaseExperiment
+from bikipy.behavirou.utils import reduce_str_sequence
 
 
-def location_filter(
-    nort_object: NortObject,
-    nose: Sequence[Sequence[SupportsFloat]],
-    torso: Sequence[Sequence[SupportsFloat]]
-) -> np.ndarray[bool]:
-    # Remove nose points that aren't inside the border
-    if nort_object.order == 4:
-        nose_within_border = points_in_parallelogram(
-            nort_object.borders[0],
-            nort_object.borders[-1],
-            nort_object.borders[1],
-            nose,
+class NortBase(BaseExperiment):
+    def __init__(
+        self,
+        coordinate_sequence: Any,
+        recording_resolution: Sequence[SupportsInt],
+        square_box_size_cm: SupportsFloat,
+        center_size_cm: SupportsFloat,
+        fps: SupportsFloat,
+        cm_per_pixel: SupportsFloat,
+        movement_feature_point_label: Union[AnyStr, None] = None,
+        label: Any = None,
+    ):
+        super().__init__(
+            coordinate_sequence, fps, cm_per_pixel, movement_feature_point_label, label
         )
-        torso_outside_polygon = np.logical_not(
-            points_in_parallelogram(
-                nort_object.sides[0], nort_object.sides[-1], nort_object.sides[1], torso
+
+        self.x_res = int(recording_resolution[0])
+        self.y_res = int(recording_resolution[1])
+
+        self.square_box_size_cm = float(square_box_size_cm)
+        self.center_size_cm = float(center_size_cm)
+        assert self.square_box_size_cm > self.center_size_cm
+
+        self.center_box_ratio = self.center_size_cm / self.square_box_size_cm
+        self.one_minus_center_box_ratio = 1 - self.center_box_ratio
+
+        if self.x_res == self.y_res:
+            self.center_square = (
+                (  # x_short, y_long
+                    self.x_res * self.center_box_ratio,
+                    self.y_res * self.one_minus_center_box_ratio,
+                ),
+                (  # x_short, y_short
+                    self.x_res * self.center_box_ratio,
+                    self.y_res * self.center_box_ratio,
+                ),
+                (  # x_long, y_short
+                    self.x_res * self.one_minus_center_box_ratio,
+                    self.y_res * self.center_box_ratio,
+                ),
+                (  # x_long, y_long
+                    self.x_res * self.one_minus_center_box_ratio,
+                    self.y_res * self.one_minus_center_box_ratio,
+                ),
             )
-        )
-    else:
-        msg = f"Polygon with {nort_object.order} sides is not supported"
-        raise NotImplemented(msg)
-
-    # Find states where the nose is within border while the torso is not over object
-    return np.logical_and(nose_within_border, torso_outside_polygon)
-
-
-def gaze_direction_filter(
-    nort_object: NortObject,
-    nose: Sequence[Sequence[SupportsFloat]],
-    eye_center: Sequence[Sequence[SupportsFloat]]
-):
-    
-    distance_between_nose_and_nort_object = None
-
-    eye_to_nose_unit = np.apply_along_axis(
-        lambda x: unit_vector(x), 1, nose - eye_center
-    )
-    closest_edges_eye_nose_dot_prod = dot_prod_along_axis_1(
-        closest_edges_to_nose * eye_to_nose_unit
-    )
-
-    compute_step_radians_between_vectors = (
-        closest_edges_eye_nose_dot_prod
-        / np.linalg.norm(closest_edges_to_nose, axis=1)
-        # * np.apply_along_axis(np.linalg.norm, 1, eye_to_nose_unit)  norm is 1
-    )
-    radians_between_gaze_and_object = np.abs(
-        np.arccos(compute_step_radians_between_vectors)
-    )
-    valid_radians = (
-        radians_between_gaze_and_object <= max_radians_between_gaze_and_object
-    )
-
-
-def attention_span_filter(
-    observation_boolean_indexes: Sequence[bool], fps: SupportsInt
-) -> np.ndarray[bool]:
-
-    fps = round(fps)
-    tolerance = int(round(fps / 4))
-
-    first_valid_index = None
-    length = observation_boolean_indexes.shape[0]
-    observation_boolean_indexes = np.full(length, False)
-    i, valid_frames_within_border, true_counter, consecutive_false = 0, 0, 0, 0
-    while i < length:
-        if observation_boolean_indexes[i]:
-            true_counter += 1
-            if true_counter == fps:  # One second
-                first_valid_index = i
-                valid_frames_within_border += true_counter
-            elif true_counter > fps:
-                valid_frames_within_border += 1
+        elif self.x_res < self.y_res:
+            self.center_square = self.non_square_rectification(
+                y_bias=(self.y_res - self.x_res) / 2
+            )
         else:
-            if first_valid_index:
-                if consecutive_false < tolerance:
-                    consecutive_false += 1
-                else:
-                    observation_boolean_indexes[first_valid_index:i] = True
-                    consecutive_false, true_counter = 0, 0
-                    first_valid_index = None
-        i += 1
+            self.center_square = self.non_square_rectification(
+                x_bias=(self.x_res - self.y_res) / 2
+            )
 
-    if valid_frames_within_border == 0:
-        print("Subject didn't observe the nort object")
-        return False
+        self.center_boolean_indexes = points_in_parallelogram(
+            self.center_square[0],
+            self.center_square[-1],
+            self.center_square[1],
+            self.coordinate_sequence,
+        )
+        self.periphery_boolean_indexes = np.logical_not(self.center_boolean_indexes)
 
-    assert (
-        np.any(observation_boolean_indexes)
-        and np.sum(observation_boolean_indexes) >= fps
-    )
+        self.time_in_center = np.sum(self.center_boolean_indexes) / self.fps
+        self.time_in_periphery = np.sum(self.periphery_boolean_indexes) / self.fps
 
-    return observation_boolean_indexes
+        (
+            self.center_displacement,
+            self.center_mean_speed,
+            self.center_mean_acceleration,
+        ) = self.compute_movement_features_over_boolean_index(
+            self.center_boolean_indexes
+        )
+        (
+            self.periphery_displacement,
+            self.periphery_mean_speed,
+            self.periphery_mean_acceleration,
+        ) = self.compute_movement_features_over_boolean_index(
+            self.periphery_boolean_indexes
+        )
+
+        self.entry_sequence = np.zeros_like(self.center_boolean_indexes, dtype=str)
+        self.entry_sequence[self.center_boolean_indexes] = "C"
+        self.entry_sequence[self.periphery_displacement] = "P"
+        self.entry_sequence = reduce_str_sequence(self.entry_sequence)
+
+    def non_square_rectification(
+        self, x_bias: SupportsFloat = 0.0, y_bias: SupportsFloat = 0.0
+    ):
+        if (x_bias := float(x_bias)) and (y_bias := float(y_bias)):
+            raise ValueError
+
+        if x_bias:
+            y_short = self.y_res * self.center_box_ratio
+            y_long = self.y_res * self.one_minus_center_box_ratio
+
+            x_short = y_short + x_bias
+            x_long = y_long + x_bias
+
+        else:
+            x_short = self.x_res * self.center_box_ratio
+            x_long = self.x_res * self.one_minus_center_box_ratio
+
+            y_short = x_short + y_bias
+            y_long = x_long + y_bias
+
+        return (
+            (x_short, y_long),
+            (x_short, y_short),
+            (x_long, y_short),
+            (x_long, y_long),
+        )
 
 
-def nort(
-    nort_object: NortObject,
-    eye_center: Sequence[Sequence[SupportsFloat]],
-    nose: Sequence[Sequence[SupportsFloat]],
-    torso: Sequence[Sequence[SupportsFloat]],
-    fps: Union[SupportsInt, SupportsFloat],
-    max_radians_between_gaze_and_object: SupportsFloat = 1 / 4 * np.pi,
-):
-    """
+class NortHabituation(NortBase):
+    pass
 
-    Parameters
-    ----------
-    nort_object
-    eye_center
-        Points across time defining the position between the eyes of the animal
-    nose
-        Points across time defining the position of the animal nose
-    torso
-        Points across time defining the central position of the animal torso
-    fps
-        Frames per second in the media used for the respective data source
-    max_distance_from_nose_to_border
-        Maximum distance between nose and border
-    max_radians_between_gaze_and_object
-        Maximum radians between the gaze vector (eye_centre to nose) and object tangent
 
-    Returns
-    -------
+class NortWithObjects(NortBase):
+    def __init__(
+        self,
+        nort_a: PolygonalBorder,
+        nort_b: PolygonalBorder,
+        coordinate_sequence: Any,
+        fps: SupportsFloat,
+        cm_per_pixel: SupportsFloat,
+        movement_feature_point_label: AnyStr,
+        max_radians_gaze_and_object: SupportsFloat = 1 / 4 * np.pi,
+    ):
+        super().__init__(
+            coordinate_sequence, fps, cm_per_pixel, movement_feature_point_label
+        )
 
-    """
-    eye_center, nose, torso = (
-        np.asanyarray(eye_center),
-        np.asanyarray(nose),
-        np.asanyarray(torso),
-    )
-    max_radians_between_gaze_and_object = float(max_radians_between_gaze_and_object)
+        self.nort_a, self.nort_b = nort_a, nort_b
 
-    fps = float(fps)
+        self.max_radians_gaze_and_object = float(max_radians_gaze_and_object)
+
+        self.observe_times_a, self.observe_a_start_end = self._dlc_nort_observation(
+            self.nort_a
+        )
+        self.observe_times_b, self.observe_b_start_end = self._dlc_nort_observation(
+            self.nort_b
+        )
+
+    def _dlc_nort_observation(self, nort_object):
+        return nort_observation(
+            nort_object,
+            self.coordinate_sequence["mid-left_ear-right_ear"],
+            self.coordinate_sequence["nose"],
+            self.coordinate_sequence["mid-mid-left_ear-right_ear-tail"],
+            self.fps,
+            self.max_radians_gaze_and_object,
+        )

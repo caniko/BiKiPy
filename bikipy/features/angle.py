@@ -28,41 +28,41 @@ def _find_median_vector(row_vectors: np.ndarray) -> np.ndarray:
     return np.array([np.median(component) for component in row_vectors.T])
 
 
-def inner_clockwise_angel_2d(vector_a, vector_b) -> np.ndarray:
+def counter_clockwise_angel_2d(start_vector, end_vector) -> np.ndarray:
     """
     Computes the clockwise inner_angle in radians between two vectors
 
     Parameters
     ----------
-    vector_a: np.ndarray
-        Array of row vectors
-    vector_b: np.ndarray
-        Array of row vectors
+    start_vector: np.ndarray
+        Array of row vectors in which "the clock starts turning" counter clockwise
+    end_vector: np.ndarray
+        Array of row vectors in which the clock stops
 
     Returns
     -------
     np.ndarray
 
-    >>> inner_clockwise_angel_2d((1, 0), (0, 1))
+    >>> counter_clockwise_angel_2d((1, 0), (0, 1))
     1.5707963267948966      # pi / 2
-    >>> inner_clockwise_angel_2d((1, 0), (1, 0))
+    >>> counter_clockwise_angel_2d((1, 0), (1, 0))
     0.0
-    >>> inner_clockwise_angel_2d((1, 0), (-1, 0))
+    >>> counter_clockwise_angel_2d((1, 0), (-1, 0))
     3.141592653589793       # pi
     """
 
-    vector_1_u = np.apply_along_axis(unit_vector, 1, np.asanyarray(vector_a))
-    vector_2_u = np.apply_along_axis(unit_vector, 1, np.asanyarray(vector_b))
+    start_unit_vector = unit_vector(start_vector, force_1_dim=True)
+    end_unit_vector = unit_vector(end_vector, force_1_dim=True)
 
     # Compute determinants and store them in a vertical stack
     determinants = np.array(
         [
-            np.linalg.det(np.vstack((vector_1_u[i], vector_2_u[i])))
-            for i in range(len(vector_1_u))
+            np.linalg.det(np.vstack((start_unit_vector[i], end_unit_vector[i])))
+            for i in range(len(start_unit_vector))
         ]
     )
 
-    dot_prod = dot_prod_along_axis_1(vector_1_u, vector_2_u)
+    dot_prod = dot_prod_along_axis_1(start_unit_vector, end_unit_vector)
 
     return np.pi - np.arctan2(determinants, dot_prod)
 
@@ -127,7 +127,7 @@ def compute_angles_from_vectors(
             msg = "median_points has to be list, string or None"
             raise ValueError(msg) from e
 
-    computation = inner_clockwise_angel_2d(
+    computation = counter_clockwise_angel_2d(
         points[1] - points[0], points[2] - points[1]  # AB Vector  # BC Vector
     )
 
@@ -193,3 +193,7 @@ def dlc_compute_angles_from_vectors(
         "Angle": compute_angles_from_vectors(*point_set, *args, **kwargs),
         "Likelihood": likelihood,
     }
+
+
+if __name__ == "__main__":
+    print(np.rad2deg(counter_clockwise_angel_2d([(1, 0)], [(0, 1)]) - np.pi))

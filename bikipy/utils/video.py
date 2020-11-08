@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import cv2
 
 
@@ -16,12 +18,16 @@ def get_video_data(video_path, frame_time="middle"):
     -------
     Tuple: (frame, height, width)
     """
-    cap = cv2.VideoCapture(video_path)
+    video_path = Path(video_path).resolve()
+    assert video_path.exists()
+
+    frame_time = frame_time.lower()
+
+    cap = cv2.VideoCapture(str(video_path))
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 
-    frame_time = frame_time.lower()
     if frame_time == "middle":
         target_frame = frame_count / 2
     elif frame_time == "start" or frame_time == "beginning":

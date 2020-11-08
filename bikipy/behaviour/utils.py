@@ -6,7 +6,6 @@ import numpy as np
 
 
 def unique_with_counts_zipped(array):
-    array = np.asanyarray(array)
     return zip(*np.unique(array, return_counts=True))
 
 
@@ -37,24 +36,23 @@ def triplet_permutation_vs_base_permutation_dictionary(base_triplets: Sequence):
     return result
 
 
-def reduce_location_sequence(location_per_frame: Sequence) -> List:
+def reduce_str_sequence(str_sequence: Sequence) -> List:
     """
-    Reduce the location per frame to a location sequence
+    Reduce consecutive sub-sequences in string sequence
 
     Parameters
     ----------
-    location_per_frame
-        Sequence of location on the respective frame
+    str_sequence
+        Sequence of strings
 
     Returns
     -------
-    List containing the location sequence; (A, A, A, B, B, C) -> [A, B, C]
+    List, reduced string sequence; (A, A, A, B, B, C) -> [A, B, C]
     """
 
-    current_char = None
-    arm_location_sequence = []
-    for location in location_per_frame:
-        if isinstance(location, str) and (location != current_char or not current_char):
-            arm_location_sequence.append((current_char := location))
+    reduced_str_sequence = [(current_str := str_sequence[0])]
+    for string_element in str_sequence[1:]:
+        if isinstance(string_element, str) and string_element != current_str:
+            reduced_str_sequence.append((current_str := string_element))
 
-    return arm_location_sequence
+    return reduced_str_sequence

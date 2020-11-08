@@ -6,13 +6,14 @@ import numpy as np
 import cv2
 
 from bikipy.utils.video import get_video_data
+from bikipy.math.vector import unit_vector
 
 
 class Border:
     def __init__(
         self,
         guiding_image: Union[AnyStr, None] = None,
-        label: Union[AnyStr, None] = None,
+        label: Any = None,
     ):
         """
         Parameters
@@ -23,14 +24,9 @@ class Border:
         label: Optional, string
             Label for the border. Useful for manual audition and testing.
         """
-        if label:
-            try:
-                self.label = str(label)
-            except TypeError as e:
-                msg = f"label has to be a string, not {type(label)}"
-                raise TypeError(msg) from e
 
         self.guiding_image = guiding_image
+        self.label = label
 
     def plt_show(self, ax):
         if self.guiding_image:
@@ -147,13 +143,15 @@ class PolygonalBorder(Border):
 class GenericPolygonalBorder(PolygonalBorder):
     def __init__(
         self,
-        sides: Sequence[Sequence[SupportsFloat]],
+        sides: Union[Sequence[Sequence[SupportsFloat]], None] = None,
+        border_distance: Union[SupportsFloat, None] = None,
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
         self.sides = sides
+        self.border_distance = border_distance
 
     @property
     def sides(self):
@@ -182,9 +180,91 @@ class GenericPolygonalBorder(PolygonalBorder):
             },
         }
 
+    def __repr__(self):
+        return (
+            f"\n{self.__class__.__name__}(\n"
+            f"    sides={self.sides},\n"
+            f"    guiding_image={self.guiding_image},\n"
+            f"    label={self.label}\n"
+            ")"
+        )
+
     @property
     def order(self):
         return self.sides.shape[0]
+
+    @property
+    def borders(self):
+        if not self.border_distance:
+            msg = "border_distance has to be defined as an object attribute"
+            raise AttributeError(msg)
+
+        diagonal_unit_2_0 = unit_vector(self.sides[0] - self.sides[2])
+        diagonal_unit_3_1 = unit_vector(self.sides[1] - self.sides[3])
+
+        return np.array(
+            (
+                self.sides[0] + diagonal_unit_2_0 * self.border_distance,
+                self.sides[1] + diagonal_unit_3_1 * self.border_distance,
+                self.sides[2] - diagonal_unit_2_0 * self.border_distance,
+                self.sides[3] - diagonal_unit_3_1 * self.border_distance,
+            )
+        )
+
+    @staticmethod
+    def corner_to_corner_vectors(ordered_corners):
+        return unit_vector(
+            (
+                *np.diff(ordered_corners, axis=0),
+                ordered_corners[0] - ordered_corners[-1],
+            )
+        )
+
+    @property
+    def side_vectors(self):
+        return self.corner_to_corner_vectors(self.sides)
+
+    @property
+    def border_vectors(self):
+        return self.corner_to_corner_vectors(self.borders)
+
+    def plot_sides(self, points: Union[Sequence, None] = None, show: bool = True):
+        """
+        Plot the sides defined in the object
+
+        Parameters
+        ----------
+        points
+            User defined coordinates that will be plotted alongside the object
+
+        show
+            If True, the plot will be shown through plt.show()
+
+        Returns
+        -------
+        matplotlib Figure and Axes object with the plot
+        """
+        fig, ax = plt.subplots()
+        for i in range(len(self.sides) - 1):
+            side_a = self.sides[i]
+            side_b = self.sides[i + 1]
+            border_a = self.borders[i]
+            border_b = self.borders[i + 1]
+
+            ax.plot(
+                (side_a[0], side_a[1]),
+                (side_b[0], side_b[1]),
+                (border_a[0], border_a[1]),
+                (border_b[0], border_b[1]),
+            )
+
+        if points is not None:
+            points = np.asanyarray(points)
+            ax.scatter(points.T[0], points.T[1], marker=".")
+        if show:
+            self.plt_show(ax)
+
+        return fig, ax
 
     # Define "corners" (integer) as a class variable for the ginput in from_image(...)
     @classmethod
@@ -205,11 +285,11 @@ class GenericPolygonalBorder(PolygonalBorder):
         if isinstance(guiding_image, np.ndarray):
             img = guiding_image
         else:
-            img = cv2.imshow(guiding_image)
+            img = cv2.imread(str(guiding_image))
         plt.imshow(img)
 
         sides = plt.ginput(n=cls.corners, timeout=0)
-        return cls(sides, *args, guiding_image=guiding_image, **kwargs)
+        return cls(sides=sides, guiding_image=guiding_image, *args, **kwargs)
 
     @classmethod
     def from_video(
@@ -234,33 +314,3 @@ class GenericPolygonalBorder(PolygonalBorder):
         frame, x_res, y_res = get_video_data(video_path, frame_time)
 
         return cls.from_image(frame, *args, feature_scale=(x_res, y_res), **kwargs)
-
-    def plot(self, points: Union[Sequence, None] = None, show: bool = True):
-        """
-        Plot the sides defined in the object
-
-        Parameters
-        ----------
-        points
-            User defined coordinates that will be plotted alongside the object
-
-        show
-            If True, the plot will be shown through plt.show()
-
-        Returns
-        -------
-        matplotlib Figure and Axes object with the plot
-        """
-        fig, ax = plt.subplots()
-        for i in range(len(self.sides) - 1):
-            side_a = self.sides[i]
-            side_b = self.sides[i+1]
-            ax.plot((side_a[0], side_a[1]), (side_b[0], side_b[1]))
-
-        if points is not None:
-            points = np.asanyarray(points)
-            ax.scatter(points.T[0], points.T[1], marker=".")
-        if show:
-            self.plt_show(ax)
-
-        return fig, ax
