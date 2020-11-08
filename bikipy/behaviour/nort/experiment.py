@@ -7,7 +7,7 @@ from bikipy.border.base import PolygonalBorder
 
 from bikipy.behaviour.nort.observation import nort_observation
 from bikipy.behaviour.base import BaseExperiment
-from bikipy.behavirou.utils import reduce_str_sequence
+from bikipy.behaviour.utils import reduce_str_sequence
 
 
 class NortBase(BaseExperiment):
@@ -16,7 +16,8 @@ class NortBase(BaseExperiment):
         recording_resolution: Sequence[SupportsInt],
         experiment_box_size_cm: SupportsFloat,
         center_size_cm: SupportsFloat,
-        *args, **kwargs
+        *args,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
@@ -84,6 +85,10 @@ class NortBase(BaseExperiment):
             self.periphery_boolean_indexes
         )
 
+        self.total_displacement = self.periphery_displacement + self.center_displacement
+        self.mean_speed = (self.center_mean_speed + self.periphery_mean_speed) / 2
+        self.mean_acceleration = (self.center_mean_acceleration + self.periphery_mean_acceleration) / 2
+
         self.entry_sequence = np.zeros_like(self.center_boolean_indexes, dtype=str)
         self.entry_sequence[self.center_boolean_indexes] = "C"
         self.entry_sequence[self.periphery_displacement] = "P"
@@ -121,6 +126,7 @@ class NortHabituation(NortBase):
     """
     Overloaded for biological intuition
     """
+
     pass
 
 
@@ -139,7 +145,9 @@ class NortWithObjects(NortBase):
 
         self.nort_a, self.nort_b = nort_a, nort_b
         self.torso_label, self.eye_center_label, self.nose_label = (
-            str(torso_label), str(eye_center_label), str(nose_label)
+            str(torso_label),
+            str(eye_center_label),
+            str(nose_label),
         )
         self.max_radians_gaze_and_object = float(max_radians_gaze_and_object)
 

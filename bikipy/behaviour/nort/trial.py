@@ -18,23 +18,38 @@ class NortTrial(BaseTrial):
         center_size_cm: SupportsFloat,
         cm_per_pixel: SupportsFloat,
         max_radians_gaze_and_object: SupportsFloat = 1 / 4 * np.pi,
-        *args, **kwargs
+        *args,
+        **kwargs,
     ):
         """"""
         super().__init__(*args, **kwargs)
 
         self.exp_ids_range_vs_exp_meta = dict(exp_ids_range_vs_exp_meta)
         self.torso_label, self.eye_center_label, self.nose_label = (
-            str(torso_label), str(eye_center_label), str(nose_label)
+            str(torso_label),
+            str(eye_center_label),
+            str(nose_label),
         )
-        self.experiment_box_size_cm, self.center_size_cm, self.cm_per_pixel, self.max_radians_gaze_and_object = float(experiment_box_size_cm), float(center_size_cm), float(cm_per_pixel), float(max_radians_gaze_and_object)
+        (
+            self.experiment_box_size_cm,
+            self.center_size_cm,
+            self.cm_per_pixel,
+            self.max_radians_gaze_and_object,
+        ) = (
+            float(experiment_box_size_cm),
+            float(center_size_cm),
+            float(cm_per_pixel),
+            float(max_radians_gaze_and_object),
+        )
 
         self.habituation_experiments, self.novelty_object_experiments = [], []
         for exp_id, exp_meta in self.exp_ids_range_vs_exp_meta.items():
             if exp_meta["type"] == "habituation":
                 self.habituation_experiments.append(
                     NortHabituation(
-                        coordinate_sequence=self.exp_id_vs_coordinate_sequences[exp_id][self.eye_center_label],
+                        coordinate_sequence=self.exp_id_vs_coordinate_sequences[exp_id][
+                            self.eye_center_label
+                        ],
                         recording_resolution=exp_meta["recording_resolution"],
                         experiment_box_size_cm=self.experiment_box_size_cm,
                         center_size_cm=self.center_size_cm,
@@ -57,7 +72,9 @@ class NortTrial(BaseTrial):
                         recording_resolution=exp_meta["recording_resolution"],
                         experiment_box_size_cm=self.experiment_box_size_cm,
                         center_size_cm=self.center_size_cm,
-                        exp_id_vs_coordinate_data_path=self.exp_id_vs_coordinate_sequences[exp_id],
+                        exp_id_vs_coordinate_data_path=self.exp_id_vs_coordinate_sequences[
+                            exp_id
+                        ],
                         fps=self.fps,
                         cm_per_pixel=self.cm_per_pixel,
                         label=exp_id,
@@ -79,40 +96,55 @@ class NortTrial(BaseTrial):
         DataFrame with the combined experiment attributes of all the YMaze objects
         """
 
-        def feature_area(feature, arm_center_labels):
-            return tuple([(feature, area) for area in arm_center_labels])
+        def general_data(nort_obj):
+            return (
+                nort_obj.total_displacement,
+                nort_obj.mean_speed,
+                nort_obj.mean_acceleration,
+                nort_obj.periphery_displacement,
+                nort_obj.periphery_mean_speed,
+                nort_obj.periphery_mean_acceleration,
+                nort_obj.center_displacement,
+                nort_obj.center_mean_speed,
+                nort_obj.center_mean_acceleration,
+            )
 
-        def feature_triplet(feature, triplets):
-            return tuple([(feature, area) for area in triplets])
+        def feature_area(feature, areas):
+            return tuple([(feature, area) for area in areas])
 
-        first = self.y_maze_experiments[0]
+        def movement_feature(category):
+            return (
+                ("Displacement", category),
+                ("Mean speed", category),
+                ("Mean acceleration", category),
+            )
+
         feature_order = pd.MultiIndex.from_tuples(
             (
-                ("Displacement", ""),
-                ("Mean speed", ""),
-                ("Mean acceleration", ""),
-                ("Spontaneous alternations", ""),
-                *feature_area("Seconds in area", first.arm_center_labels),
-                *feature_area("Area alternations", first.arm_center_labels),
-                *feature_triplet("Triplet alternation", first.arm_triplets),
+                *movement_feature("All"),
+                *movement_feature("Periphery"),
+                *movement_feature("Center"),
+                *feature_area("Entries", ("Periphery", "Center")),
+                *feature_area("Time spent", ("Periphery", "Center")),
+                *feature_area("Observations", ("A", "B")),
             ),
-            names=("Feature", "Area/Triplet"),
+            names=("Feature", "Area"),
         )
 
-        unit_length = None
+        habituation_filler = ("Habituation", "Habituation")
+
         index_vs_data = {}
-        for y_maze in self.y_maze_experiments:
-            index_vs_data[y_maze.label] = (
-                y_maze.displacement,
-                y_maze.mean_speed,
-                y_maze.mean_acceleration,
-                y_maze.spontaneous_alternations,
-                *tuple(y_maze.seconds_spent_in_areas.values()),
-                *tuple(y_maze.area_alternations.values()),
-                *tuple(y_maze.triplet_alternation_distribution.values()),
+        for nort_habituation in self.habituation_experiments:
+            index_vs_data[nort_habituation.label] = (
+                *general_data(nort_habituation),
+                *habituation_filler
             )
-            if not unit_length:
-                unit_length = len(index_vs_data[y_maze.label])
+        for novelty_experiment in self.novelty_object_experiments:
+            index_vs_data[novelty_experiment.label] = (
+                *general_data(novelty_experiment),
+                novelty_experiment.observe_times_a,
+                novelty_experiment.observe_times_b
+            )
 
         index_vs_data = dict(sorted(index_vs_data.items(), key=lambda item: item[0]))
 
