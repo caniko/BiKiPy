@@ -86,13 +86,31 @@ class BaseExperiment:
 
 
 class BaseTrial:
-    def __init__(self, exp_id_vs_coordinate_data_path: Dict, coordinate_data_format: AnyStr = "deeplabcut"):
-        self.coordinate_data_format = str(coordinate_data_format)
+    def __init__(
+        self,
+        exp_id_vs_coordinate_data_path: Dict,
+        fps: SupportsFloat,
+        label: Any,
+        coordinate_data_format: AnyStr = "deeplabcut",
+    ):
+
+        self.exp_id_vs_coordinate_data_path = exp_id_vs_coordinate_data_path
+        self.fps = float(fps)
+        self.label = label
+
+        self.coordinate_data_format = str(coordinate_data_format).lower()
 
         if self.coordinate_data_format == "deeplabcut":
             self.exp_id_vs_coordinate_sequences = {
-                exp_id: dlc_obj for exp_id, dlc_obj in zip(
+                exp_id: dlc_obj
+                for exp_id, dlc_obj in zip(
                     exp_id_vs_coordinate_data_path.keys(),
-                    DeepLabCutReader.init_many()
+                    DeepLabCutReader.init_many(
+                        exp_id_vs_coordinate_data_path.values(),
+                        labels=exp_id_vs_coordinate_data_path.keys(),
+                    ),
                 )
             }
+        else:
+            msg = f"{self.coordinate_data_format} as a format for data ingestion has no implementation"
+            raise NotImplemented(msg)

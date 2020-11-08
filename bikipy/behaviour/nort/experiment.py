@@ -1,8 +1,5 @@
 from typing import Union, AnyStr, Any, SupportsFloat, SupportsInt, Sequence
-from warnings import warn
-import itertools as it
 
-import pandas as pd
 import numpy as np
 
 from bikipy.math.point_in_polygon import points_in_parallelogram
@@ -16,27 +13,21 @@ from bikipy.behavirou.utils import reduce_str_sequence
 class NortBase(BaseExperiment):
     def __init__(
         self,
-        coordinate_sequence: Any,
         recording_resolution: Sequence[SupportsInt],
-        square_box_size_cm: SupportsFloat,
+        experiment_box_size_cm: SupportsFloat,
         center_size_cm: SupportsFloat,
-        fps: SupportsFloat,
-        cm_per_pixel: SupportsFloat,
-        movement_feature_point_label: Union[AnyStr, None] = None,
-        label: Any = None,
+        *args, **kwargs
     ):
-        super().__init__(
-            coordinate_sequence, fps, cm_per_pixel, movement_feature_point_label, label
-        )
+        super().__init__(*args, **kwargs)
 
         self.x_res = int(recording_resolution[0])
         self.y_res = int(recording_resolution[1])
 
-        self.square_box_size_cm = float(square_box_size_cm)
+        self.experiment_box_size_cm = float(experiment_box_size_cm)
         self.center_size_cm = float(center_size_cm)
-        assert self.square_box_size_cm > self.center_size_cm
+        assert self.experiment_box_size_cm > self.center_size_cm
 
-        self.center_box_ratio = self.center_size_cm / self.square_box_size_cm
+        self.center_box_ratio = self.center_size_cm / self.experiment_box_size_cm
         self.one_minus_center_box_ratio = 1 - self.center_box_ratio
 
         if self.x_res == self.y_res:
@@ -127,6 +118,9 @@ class NortBase(BaseExperiment):
 
 
 class NortHabituation(NortBase):
+    """
+    Overloaded for biological intuition
+    """
     pass
 
 
@@ -135,18 +129,18 @@ class NortWithObjects(NortBase):
         self,
         nort_a: PolygonalBorder,
         nort_b: PolygonalBorder,
-        coordinate_sequence: Any,
-        fps: SupportsFloat,
-        cm_per_pixel: SupportsFloat,
-        movement_feature_point_label: AnyStr,
+        nose_label: AnyStr,
+        eye_center_label: AnyStr,
+        torso_label: AnyStr,
         max_radians_gaze_and_object: SupportsFloat = 1 / 4 * np.pi,
+        *args, **kwargs
     ):
-        super().__init__(
-            coordinate_sequence, fps, cm_per_pixel, movement_feature_point_label
-        )
+        super().__init__(*args, **kwargs)
 
         self.nort_a, self.nort_b = nort_a, nort_b
-
+        self.torso_label, self.eye_center_label, self.nose_label = (
+            str(torso_label), str(eye_center_label), str(nose_label)
+        )
         self.max_radians_gaze_and_object = float(max_radians_gaze_and_object)
 
         self.observe_times_a, self.observe_a_start_end = self._dlc_nort_observation(

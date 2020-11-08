@@ -1,80 +1,71 @@
 from typing import Any, AnyStr, SupportsFloat, Dict
 
 import pandas as pd
+import numpy as np
 
 from bikipy.behaviour.nort.experiment import NortHabituation, NortWithObjects
+from bikipy.behaviour.base import BaseTrial
 
 
-class YMazeTrial:
+class NortTrial(BaseTrial):
     def __init__(
         self,
         exp_ids_range_vs_exp_meta: Dict,
-        exp_id_vs_coordinate_sequence: Dict,
-        region_of_interest: AnyStr,
-        fps: SupportsFloat,
-        center_triangle_cm_width: SupportsFloat,
-        label: Any,
+        torso_label: AnyStr,
+        eye_center_label: AnyStr,
+        nose_label: AnyStr,
+        experiment_box_size_cm: SupportsFloat,
+        center_size_cm: SupportsFloat,
+        cm_per_pixel: SupportsFloat,
+        max_radians_gaze_and_object: SupportsFloat = 1 / 4 * np.pi,
+        *args, **kwargs
     ):
-        """
+        """"""
+        super().__init__(*args, **kwargs)
 
-        Parameters
-        ----------
-        exp_id_range_vs_area_sets
-            Key value pair of experiment ID and border sets
-            each depicting the parameters of the experiments within their range.
-            The experiment ID range is defined as key : next_key (exp_id:next_exp_id)
-
-        exp_id_vs_coordinate_sequence
-        region_of_interest
-        fps
-        center_triangle_cm_width
-        label
-        """
-        self.exp_id_range_vs_area_sets = dict(exp_id_range_vs_area_sets)
-        self.exp_id_vs_coordinate_sequence = dict(exp_id_vs_coordinate_sequence)
-        self.region_of_interest = str(region_of_interest)
-        self.fps = float(fps)
-        self.center_triangle_cm_width = float(center_triangle_cm_width)
-        self.label = label
-
-        keys = tuple([int(exp_id) for exp_id in self.exp_id_range_vs_area_sets.keys()])
-        self.exp_id_ranges = tuple(
-            [
-                tuple([exp_id for exp_id in range(keys[i], keys[i + 1])])
-                for i in range(len(keys) - 1)
-            ]
+        self.exp_ids_range_vs_exp_meta = dict(exp_ids_range_vs_exp_meta)
+        self.torso_label, self.eye_center_label, self.nose_label = (
+            str(torso_label), str(eye_center_label), str(nose_label)
         )
-        self.last_exp_area_info_id = keys[-1]
+        self.experiment_box_size_cm, self.center_size_cm, self.cm_per_pixel, self.max_radians_gaze_and_object = float(experiment_box_size_cm), float(center_size_cm), float(cm_per_pixel), float(max_radians_gaze_and_object)
 
-        self.area_sets = tuple(self.exp_id_range_vs_area_sets.values())
-
-        y_maze_experiments = []
-        for exp_id, coordinate_sequence in self.exp_id_vs_coordinate_sequence.items():
-            exp_id = int(exp_id)
-            experiment_area_set = None
-            for i, exp_range in enumerate(self.exp_id_ranges):
-                if exp_id in exp_range:
-                    experiment_area_set = self.area_sets[i]
-                    break
-            if not experiment_area_set:
-                if exp_id >= self.last_exp_area_info_id:
-                    experiment_area_set = self.area_sets[-1]
-                else:
-                    msg = f"exp ID {exp_id} is not in {self.exp_id_ranges}, last area info exp ID key {self.last_exp_area_info_id}"
-                    raise ValueError(msg)
-
-            y_maze_experiments.append(
-                YMaze(
-                    coordinate_sequence[self.region_of_interest],
-                    experiment_area_set["arms"],
-                    experiment_area_set["center"],
-                    self.fps,
-                    self.center_triangle_cm_width,
-                    exp_id,
+        self.habituation_experiments, self.novelty_object_experiments = [], []
+        for exp_id, exp_meta in self.exp_ids_range_vs_exp_meta.items():
+            if exp_meta["type"] == "habituation":
+                self.habituation_experiments.append(
+                    NortHabituation(
+                        coordinate_sequence=self.exp_id_vs_coordinate_sequences[exp_id][self.eye_center_label],
+                        recording_resolution=exp_meta["recording_resolution"],
+                        experiment_box_size_cm=self.experiment_box_size_cm,
+                        center_size_cm=self.center_size_cm,
+                        fps=self.fps,
+                        cm_per_pixel=self.cm_per_pixel,
+                        eye_center_label=self.eye_center_label,
+                        label=exp_id,
+                    )
                 )
-            )
-        self.y_maze_experiments = sorted(
-            y_maze_experiments, key=lambda item: item.label
+
+            elif exp_meta["type"] == "novelty_observation":
+                self.novelty_object_experiments.append(
+                    NortWithObjects(
+                        nort_a=exp_meta["A"],
+                        nort_b=exp_meta["B"],
+                        nose_label=self.nose_label,
+                        eye_center_label=self.eye_center_label,
+                        torso_label=self.torso_label,
+                        max_radians_gaze_and_object=self.max_radians_gaze_and_object,
+                        recording_resolution=exp_meta["recording_resolution"],
+                        experiment_box_size_cm=self.experiment_box_size_cm,
+                        center_size_cm=self.center_size_cm,
+                        exp_id_vs_coordinate_data_path=self.exp_id_vs_coordinate_sequences[exp_id],
+                        fps=self.fps,
+                        cm_per_pixel=self.cm_per_pixel,
+                        label=exp_id,
+                    )
+                )
+
+        self.experiments = tuple(
+            self.habituation_experiments + self.novelty_object_experiments
         )
 
     def export_to_dataframe(self) -> pd.DataFrame:
