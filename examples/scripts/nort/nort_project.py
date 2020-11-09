@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 
 from bikipy.border.base import GenericPolygonalBorder
-from bikipy.readers.deeplabcut import DeepLabCutReader
+from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.behaviour.nort_observation import nort_observation
 
 

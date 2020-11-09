@@ -1,10 +1,19 @@
-from typing import Iterable, Callable, Union, Sequence, AnyStr, SupportsFloat, Dict
-from concurrent.futures import ThreadPoolExecutor
-from functools import lru_cache
+from typing import (
+    Iterable,
+    Callable,
+    Union,
+    Sequence,
+    AnyStr,
+    SupportsFloat,
+    Dict,
+    List,
+)
+from concurrent.futures import ProcessPoolExecutor
+from functools import lru_cache, partial
 import pandas as pd
 import numpy as np
 
-from bikipy.features.midpoint import compute_from_dlc_df
+from bikipy.feature.midpoint import compute_from_dlc_df
 
 
 DEEPLABCUT_DF_INIT_KWARGS = {
@@ -24,7 +33,7 @@ class DeepLabCutReader:
     def __init__(
         self,
         df: pd.DataFrame,
-        video_res: Sequence,
+        video_res: Union[Sequence, None] = None,
         data_label: Union[AnyStr, None] = None,
         midpoint_groups: Union[Iterable, None] = None,
         future_scaling: bool = False,
@@ -54,13 +63,14 @@ class DeepLabCutReader:
             traditional Cartesian coordinate system where the origin is on the bottom-left
         """
 
-        self.horizontal_res, self.vertical_res = video_res
-        if not (
-            isinstance(self.horizontal_res, (int, float, type(None)))
-            and isinstance(self.vertical_res, (int, float, type(None)))
-        ):
-            msg = f"x and y max are integers; not {self.horizontal_res}; {self.vertical_res}"
-            raise AttributeError(msg)
+        if video_res:
+            self.horizontal_res, self.vertical_res = video_res
+            if not (
+                isinstance(self.horizontal_res, (int, float, type(None)))
+                and isinstance(self.vertical_res, (int, float, type(None)))
+            ):
+                msg = f"x and y max are integers; not {self.horizontal_res}; {self.vertical_res}"
+                raise AttributeError(msg)
 
         self.df = df
         if not isinstance(df, pd.DataFrame):
@@ -225,7 +235,7 @@ class DeepLabCutReader:
         """
         from bikipy.utils.video import get_video_data
 
-        _frame, horizontal_res, vertical_res = get_video_data(video_path)
+        _frame, horizontal_res, vertical_res, _fps = get_video_data(video_path)
         kwargs["video_res"] = (horizontal_res, vertical_res)
 
         if "csv_path" in kwargs:
@@ -296,22 +306,26 @@ class DeepLabCutReader:
     @classmethod
     def init_many(
         cls,
-        file_paths: Iterable,
+        file_paths: Union[Sequence, Iterable],
         init_from: AnyStr = "hdf",
-        labels: Union[Iterable, None] = None,
+        labels: Union[Sequence, Iterable, None] = None,
+        process_pooling: bool = False,
         **init_kwargs,
-    ) -> list:
+    ) -> List:
         """
         Create many DeepLabCutReader objects using specified mapping-function
 
         Parameters
         ----------
         file_paths: Iterable
-            Path to the data sources that will be used to generate class instances
+            Path to the data sources that will be used to generate class instance
         init_from: str
             Classmethod label to use for initialization
         labels: tuple-like
             Sequence of labels that will be stored as self.label in the class instance
+        process_pooling: bool
+            If True, initialize each DeepLabCutReader object with multiprocessing.
+            Useful when initialize approximately 20 or more dlc objects
         init_kwargs: dict
             Keyword arguments for the class init-method
 
@@ -326,19 +340,25 @@ class DeepLabCutReader:
             msg = "This file type has no init function implementation, currently"
             raise ValueError(msg)
 
-        with ThreadPoolExecutor() as executor:
-            if not labels:
-                return [
-                    executor.submit(init_method, file_path, **init_kwargs)
-                    for file_path in file_paths
-                ]
-            else:
-                return [
-                    executor.submit(
-                        init_method, file_path, data_label=label, **init_kwargs
-                    )
-                    for file_path, label in zip(file_paths, labels)
-                ]
+        kwarg_loaded_init = partial(init_method, **init_kwargs)
+
+        if process_pooling:
+            with ProcessPoolExecutor() as executor:
+                mapped = executor.map(kwarg_loaded_init, file_paths)
+                dlc_objects = [result.result() for result in mapped]
+
+            if labels:
+                labels = tuple(labels)
+                for i in range(len(dlc_objects)):
+                    dlc_objects[i].data_label = labels[i]
+
+        else:
+            dlc_objects = [
+                kwarg_loaded_init(file_path, data_label=label)
+                for file_path, label in zip(file_paths, labels)
+            ]
+
+        return dlc_objects
 
     @staticmethod
     def map_function(

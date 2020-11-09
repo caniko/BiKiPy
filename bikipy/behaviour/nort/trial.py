@@ -11,12 +11,11 @@ class NortTrial(BaseTrial):
     def __init__(
         self,
         exp_ids_range_vs_exp_meta: Dict,
-        torso_label: AnyStr,
-        eye_center_label: AnyStr,
         nose_label: AnyStr,
+        eye_center_label: AnyStr,
+        torso_label: AnyStr,
         experiment_box_size_cm: SupportsFloat,
         center_size_cm: SupportsFloat,
-        cm_per_pixel: SupportsFloat,
         max_radians_gaze_and_object: SupportsFloat = 1 / 4 * np.pi,
         *args,
         **kwargs,
@@ -33,34 +32,38 @@ class NortTrial(BaseTrial):
         (
             self.experiment_box_size_cm,
             self.center_size_cm,
-            self.cm_per_pixel,
             self.max_radians_gaze_and_object,
         ) = (
             float(experiment_box_size_cm),
             float(center_size_cm),
-            float(cm_per_pixel),
             float(max_radians_gaze_and_object),
         )
 
         self.habituation_experiments, self.novelty_object_experiments = [], []
         for exp_id, exp_meta in self.exp_ids_range_vs_exp_meta.items():
-            if exp_meta["type"] == "habituation":
+            print(f"{exp_meta['exp_category']}: {exp_id}")
+
+            x, y = exp_meta["recording_resolution"]
+            unit_per_pixel = self.experiment_box_size_cm / (x if x < y else y)
+
+            coordinate_sequences = self.exp_id_vs_coordinate_sequences[exp_id]
+
+            if exp_meta["exp_category"] == "habituation":
                 self.habituation_experiments.append(
                     NortHabituation(
-                        coordinate_sequence=self.exp_id_vs_coordinate_sequences[exp_id][
+                        coordinate_sequences=coordinate_sequences[
                             self.eye_center_label
                         ],
                         recording_resolution=exp_meta["recording_resolution"],
                         experiment_box_size_cm=self.experiment_box_size_cm,
                         center_size_cm=self.center_size_cm,
-                        fps=self.fps,
-                        cm_per_pixel=self.cm_per_pixel,
-                        eye_center_label=self.eye_center_label,
+                        fps=exp_meta["fps"],
+                        unit_per_pixel=unit_per_pixel,
                         label=exp_id,
                     )
                 )
 
-            elif exp_meta["type"] == "novelty_observation":
+            elif exp_meta["exp_category"] == "novelty_observation":
                 self.novelty_object_experiments.append(
                     NortWithObjects(
                         nort_a=exp_meta["A"],
@@ -72,11 +75,10 @@ class NortTrial(BaseTrial):
                         recording_resolution=exp_meta["recording_resolution"],
                         experiment_box_size_cm=self.experiment_box_size_cm,
                         center_size_cm=self.center_size_cm,
-                        exp_id_vs_coordinate_data_path=self.exp_id_vs_coordinate_sequences[
-                            exp_id
-                        ],
-                        fps=self.fps,
-                        cm_per_pixel=self.cm_per_pixel,
+                        coordinate_sequences=coordinate_sequences,
+                        fps=exp_meta["fps"],
+                        unit_per_pixel=unit_per_pixel,
+                        movement_feature_point_label=self.eye_center_label,
                         label=exp_id,
                     )
                 )
@@ -107,6 +109,10 @@ class NortTrial(BaseTrial):
                 nort_obj.center_displacement,
                 nort_obj.center_mean_speed,
                 nort_obj.center_mean_acceleration,
+                nort_obj.periphery_entries,
+                nort_obj.center_entries,
+                nort_obj.time_in_periphery,
+                nort_obj.time_in_center,
             )
 
         def feature_area(feature, areas):
@@ -137,13 +143,13 @@ class NortTrial(BaseTrial):
         for nort_habituation in self.habituation_experiments:
             index_vs_data[nort_habituation.label] = (
                 *general_data(nort_habituation),
-                *habituation_filler
+                *habituation_filler,
             )
         for novelty_experiment in self.novelty_object_experiments:
             index_vs_data[novelty_experiment.label] = (
                 *general_data(novelty_experiment),
-                novelty_experiment.observe_times_a,
-                novelty_experiment.observe_times_b
+                novelty_experiment.novelty_observation_a,
+                novelty_experiment.novelty_observation_b,
             )
 
         index_vs_data = dict(sorted(index_vs_data.items(), key=lambda item: item[0]))

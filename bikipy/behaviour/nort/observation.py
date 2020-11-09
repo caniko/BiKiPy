@@ -2,7 +2,7 @@ from typing import Union, SupportsFloat, SupportsInt, Sequence, Tuple, List
 
 import numpy as np
 
-from bikipy.features.angle import counter_clockwise_angel_2d
+from bikipy.feature.angle import counter_clockwise_angel_2d
 from bikipy.math.vector import unit_vector, closest_line_to_point
 from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.border.base import PolygonalBorder
@@ -55,37 +55,37 @@ def gaze_direction_filter(
 
 def attention_span_filter(
     valid_indexes: Sequence[bool], fps: SupportsFloat
-) -> Tuple[List[float], List[Tuple[int, int]]]:
+) -> np.ndarray:
     valid_indexes = np.asanyarray(valid_indexes)
-    fps = float(fps)
     tolerance = int(round(fps / 4))
+    fps = int(round(fps))
 
     length = valid_indexes.shape[0]
     observation_boolean_indexes = np.full(length, False)
 
     first_valid_index = None
-    observation_time, observe_start_end = [], []
     i, valid_frames_within_border, true_counter, consecutive_false = 0, 0, 0, 0
     while True:
         if valid_indexes[i]:
             true_counter += 1
+            consecutive_false = 0
             if true_counter == fps:  # One second
-                first_valid_index = i
-                valid_frames_within_border += true_counter
-            elif true_counter > fps:
-                valid_frames_within_border += 1
+                first_valid_index = i - fps
         else:
             if first_valid_index:
-                if consecutive_false < tolerance:
+                if consecutive_false <= tolerance:
                     consecutive_false += 1
                 else:
-                    observation_time.append((i - first_valid_index) / fps)
-                    observe_start_end.append((first_valid_index, i))
                     observation_boolean_indexes[first_valid_index:i] = True
+                    valid_frames_within_border += true_counter
 
                     consecutive_false, true_counter = 0, 0
                     first_valid_index = None
+            else:
+                true_counter = 0
+
         i += 1
+
         if i == length:
             if true_counter != 0:
                 observation_boolean_indexes[first_valid_index:] = True
@@ -98,9 +98,9 @@ def attention_span_filter(
     assert (
         np.any(observation_boolean_indexes)
         and np.sum(observation_boolean_indexes) >= fps
-    )
+    ), f"True: {np.sum(observation_boolean_indexes)}; fps: {fps}"
 
-    return observation_time, observe_start_end
+    return observation_boolean_indexes
 
 
 def nort_observation(
@@ -110,7 +110,7 @@ def nort_observation(
     torso: Sequence[Sequence[SupportsFloat]],
     fps: Union[SupportsInt, SupportsFloat],
     max_radians_gaze_and_object: SupportsFloat = 1 / 4 * np.pi,
-) -> Tuple[List[float], List[Tuple[int, int]]]:
+) -> np.ndarray:
     """
 
     Parameters
@@ -148,4 +148,4 @@ def nort_observation(
     if np.sum(proto_observations) < fps:
         return np.full_like(proto_observations, False)
 
-    return attention_span_filter(proto_observations, fps)
+    return np.array(attention_span_filter(proto_observations, fps))

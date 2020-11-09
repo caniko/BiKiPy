@@ -20,9 +20,9 @@ class YMaze(BaseExperiment):
         self,
         arms: Sequence[PolygonalBorder],
         center: PolygonalBorder,
-        coordinate_sequence: Any,
+        coordinate_sequences: Any,
         fps: SupportsFloat,
-        cm_per_pixel: SupportsFloat,
+        unit_per_pixel: SupportsFloat,
         movement_feature_point_label: AnyStr,
         label: Any = None,
     ):
@@ -36,13 +36,17 @@ class YMaze(BaseExperiment):
         """
 
         super().__init__(
-            coordinate_sequence, fps, cm_per_pixel, movement_feature_point_label, label
+            coordinate_sequences,
+            fps,
+            unit_per_pixel,
+            movement_feature_point_label,
+            label,
         )
 
         self.arms = arms
         self.center = center
         self.location_sequence = PolygonalBorder.detect_sequential_border_presence(
-            self.coordinate_sequence,
+            self.coordinate_sequences,
             self.arms,
             inferior_poly_border_instances=[self.center],
         )

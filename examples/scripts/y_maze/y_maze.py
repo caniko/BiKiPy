@@ -8,7 +8,7 @@ import pandas as pd
 from bikipy.border.parallelogram.classes import ParallelogramBorder
 from bikipy.border.triangular import TriangularBorder
 from bikipy.behaviour.y_maze.trial import YMazeTrial
-from bikipy.readers import DeepLabCutReader
+from bikipy.reader import DeepLabCutReader
 
 
 WORKING_DIR = Path("C:/Users/Can/Projects/Neuroscience/bikipy/examples/data/")

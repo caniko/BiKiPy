@@ -49,7 +49,7 @@ class YMazeTrial:
         self.area_sets = tuple(self.exp_id_range_vs_area_sets.values())
 
         y_maze_experiments = []
-        for exp_id, coordinate_sequence in self.exp_id_vs_coordinate_sequence.items():
+        for exp_id, coordinate_sequences in self.exp_id_vs_coordinate_sequence.items():
             exp_id = int(exp_id)
             experiment_area_set = None
             for i, exp_range in enumerate(self.exp_id_ranges):
@@ -65,7 +65,7 @@ class YMazeTrial:
 
             y_maze_experiments.append(
                 YMaze(
-                    coordinate_sequence[self.region_of_interest],
+                    coordinate_sequences[self.region_of_interest],
                     experiment_area_set["arms"],
                     experiment_area_set["center"],
                     self.fps,

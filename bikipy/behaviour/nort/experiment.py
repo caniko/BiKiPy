@@ -1,4 +1,4 @@
-from typing import Union, AnyStr, Any, SupportsFloat, SupportsInt, Sequence
+from typing import AnyStr, SupportsFloat, SupportsInt, Sequence
 
 import numpy as np
 
@@ -28,7 +28,9 @@ class NortBase(BaseExperiment):
         self.center_size_cm = float(center_size_cm)
         assert self.experiment_box_size_cm > self.center_size_cm
 
-        self.center_box_ratio = self.center_size_cm / self.experiment_box_size_cm
+        self.center_box_ratio = (
+            (self.experiment_box_size_cm - self.center_size_cm) / 2
+        ) / self.experiment_box_size_cm
         self.one_minus_center_box_ratio = 1 - self.center_box_ratio
 
         if self.x_res == self.y_res:
@@ -63,7 +65,7 @@ class NortBase(BaseExperiment):
             self.center_square[0],
             self.center_square[-1],
             self.center_square[1],
-            self.coordinate_sequence,
+            self.movement_feature_coordinates,
         )
         self.periphery_boolean_indexes = np.logical_not(self.center_boolean_indexes)
 
@@ -87,12 +89,17 @@ class NortBase(BaseExperiment):
 
         self.total_displacement = self.periphery_displacement + self.center_displacement
         self.mean_speed = (self.center_mean_speed + self.periphery_mean_speed) / 2
-        self.mean_acceleration = (self.center_mean_acceleration + self.periphery_mean_acceleration) / 2
+        self.mean_acceleration = (
+            self.center_mean_acceleration + self.periphery_mean_acceleration
+        ) / 2
 
-        self.entry_sequence = np.zeros_like(self.center_boolean_indexes, dtype=str)
+        self.entry_sequence = np.ones_like(self.center_boolean_indexes, dtype=str)
         self.entry_sequence[self.center_boolean_indexes] = "C"
-        self.entry_sequence[self.periphery_displacement] = "P"
-        self.entry_sequence = reduce_str_sequence(self.entry_sequence)
+        self.entry_sequence[self.periphery_boolean_indexes] = "P"
+        self.entry_sequence = np.array(reduce_str_sequence(self.entry_sequence))
+
+        self.periphery_entries = np.sum(self.entry_sequence == "P")
+        self.center_entries = np.sum(self.entry_sequence == "C")
 
     def non_square_rectification(
         self, x_bias: SupportsFloat = 0.0, y_bias: SupportsFloat = 0.0
@@ -139,7 +146,8 @@ class NortWithObjects(NortBase):
         eye_center_label: AnyStr,
         torso_label: AnyStr,
         max_radians_gaze_and_object: SupportsFloat = 1 / 4 * np.pi,
-        *args, **kwargs
+        *args,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
@@ -151,19 +159,33 @@ class NortWithObjects(NortBase):
         )
         self.max_radians_gaze_and_object = float(max_radians_gaze_and_object)
 
-        self.observe_times_a, self.observe_a_start_end = self._dlc_nort_observation(
-            self.nort_a
+        self.observe_a_per_frame = self._dlc_nort_observation(self.nort_a)
+        self.observe_b_per_frame = self._dlc_nort_observation(self.nort_b)
+        self.not_observing = np.logical_not(
+            np.logical_or(self.observe_a_per_frame, self.observe_b_per_frame)
         )
-        self.observe_times_b, self.observe_b_start_end = self._dlc_nort_observation(
-            self.nort_b
+
+        assert self.observe_a_per_frame.size == self.observe_b_per_frame.size
+
+        self.observation_sequence = np.ones_like(self.observe_a_per_frame, dtype=str)
+
+        self.observation_sequence[self.observe_a_per_frame] = "A"
+        self.observation_sequence[self.observe_b_per_frame] = "B"
+        self.observation_sequence[self.not_observing] = "X"
+
+        self.observation_sequence = np.array(
+            reduce_str_sequence(self.observation_sequence)
         )
+
+        self.novelty_observation_a = np.sum(self.observation_sequence == "A")
+        self.novelty_observation_b = np.sum(self.observation_sequence == "B")
 
     def _dlc_nort_observation(self, nort_object):
         return nort_observation(
             nort_object,
-            self.coordinate_sequence["mid-left_ear-right_ear"],
-            self.coordinate_sequence["nose"],
-            self.coordinate_sequence["mid-mid-left_ear-right_ear-tail"],
+            self.coordinate_sequences["mid-left_ear-right_ear"],
+            self.coordinate_sequences["nose"],
+            self.coordinate_sequences["mid-mid-left_ear-right_ear-tail"],
             self.fps,
             self.max_radians_gaze_and_object,
         )

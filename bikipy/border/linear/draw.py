@@ -70,6 +70,6 @@ def draw_on_video_frame(video_path: AnyStr, orientation: AnyStr):
     -------
     bikipy.border.linear.draw.borders_on_image call with frame from video
     """
-    frame, x_res, y_res = get_video_data(video_path)
+    frame, x_res, y_res, _fps = get_video_data(video_path)
 
     return borders_on_image(frame, orientation, resolution=(x_res, y_res))

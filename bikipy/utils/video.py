@@ -3,6 +3,10 @@ from pathlib import Path
 import cv2
 
 
+def seconds_from_frames(frames, fps):
+    return frames / fps
+
+
 def get_video_data(video_path, frame_time="middle"):
     """
     Get a frame from a given relative location, and resolution info of video
@@ -16,7 +20,7 @@ def get_video_data(video_path, frame_time="middle"):
 
     Returns
     -------
-    Tuple: (frame, height, width)
+    Tuple: (frame, height, width, fps)
     """
     video_path = Path(video_path).resolve()
     assert video_path.exists()
@@ -25,8 +29,6 @@ def get_video_data(video_path, frame_time="middle"):
 
     cap = cv2.VideoCapture(str(video_path))
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 
     if frame_time == "middle":
         target_frame = frame_count / 2
@@ -43,4 +45,9 @@ def get_video_data(video_path, frame_time="middle"):
     res, frame = cap.read()
     assert res, f"Could not extract frame from media, {video_path}"
 
-    return frame, height, width
+    return (
+        frame,
+        int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+        int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+        int(cap.get(cv2.CAP_PROP_FPS))
+    )

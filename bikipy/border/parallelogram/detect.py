@@ -41,7 +41,7 @@ if __name__ == "__main__":
     ROOT = Path("C:/Users/Can/Projects/Neuroscience/Imen/data/nort/0_before_02.06.2020")
     video = ROOT / "Test 47.mp4"
 
-    frame, _height, _width = get_video_data(video, "start")
+    frame, _width, _height, _fps = get_video_data(video, "start")
 
     alpha = 1
 

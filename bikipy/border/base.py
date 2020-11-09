@@ -311,6 +311,6 @@ class GenericPolygonalBorder(PolygonalBorder):
         bikipy.border.polygon.polygon_corners_on_image call with frame from video
         """
 
-        frame, x_res, y_res = get_video_data(video_path, frame_time)
+        frame, x_res, y_res, _fps = get_video_data(video_path, frame_time)
 
         return cls.from_image(frame, *args, feature_scale=(x_res, y_res), **kwargs)
