@@ -173,12 +173,15 @@ class NortWithObjects(NortBase):
         self.observation_sequence[self.observe_b_per_frame] = "B"
         self.observation_sequence[self.not_observing] = "X"
 
-        self.observation_sequence = np.array(
+        self.reduced_observation_sequence = np.array(
             reduce_str_sequence(self.observation_sequence)
         )
 
-        self.novelty_observation_a = np.sum(self.observation_sequence == "A")
-        self.novelty_observation_b = np.sum(self.observation_sequence == "B")
+        self.novelty_observation_a = np.sum(self.reduced_observation_sequence == "A")
+        self.novelty_observation_b = np.sum(self.reduced_observation_sequence == "B")
+
+        self.time_spent_a = np.sum(self.observation_sequence == "A") / self.fps
+        self.time_spent_b = np.sum(self.observation_sequence == "B") / self.fps
 
     def _dlc_nort_observation(self, nort_object):
         return nort_observation(

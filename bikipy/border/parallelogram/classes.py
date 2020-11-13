@@ -190,8 +190,10 @@ class ParallelogramBorder(PolygonalBorder):
             cls(guiding_image=guiding_image, **object_kwargs[i]) for i in range(int(n))
         ]
 
-    def plot(self, points: Union[Sequence, None] = None, show: bool = True):
-        fig, ax = plt.subplots()
+    def plot(self, points: Union[Sequence, None] = None, ax: Any = None, show: bool = True):
+        if not ax:
+            fig, ax = plt.subplots()
+
         ax.plot(
             # Base
             (self.base[0][0], self.base[1][0]),
@@ -218,9 +220,8 @@ class ParallelogramBorder(PolygonalBorder):
         if points is not None:
             points = np.asanyarray(points)
             ax.scatter(points.T[0], points.T[1], marker=".")
-        if show:
-            self.plt_show(ax)
-        return fig, ax
+
+        super().plot(ax)
 
 
 class GradientBorder(ParallelogramBorder):
@@ -385,7 +386,6 @@ class GradientBorder(ParallelogramBorder):
             coordinates[valid_coordinates_boolean_indexes.T[0]].T[1],
             marker="x",
         )
-        self.plt_show(ax)
 
         return valid_coordinates_boolean_indexes.T[0]
 

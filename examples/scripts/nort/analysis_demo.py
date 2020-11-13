@@ -1,5 +1,3 @@
-#%%
-
 from pathlib import Path
 from glob import glob
 import pickle
@@ -8,12 +6,9 @@ import re
 import pandas as pd
 import numpy as np
 
-#%%
-
 from bikipy.behaviour.nort.trial import NortTrial
 from bikipy.utils.video import get_video_data
 
-#%%
 
 WORKING_DIR = Path("C:/Users/Can/Projects/Neuroscience/Imen/data")
 NORT_DIR = WORKING_DIR / "nort"
@@ -59,7 +54,7 @@ with open(ANNOTATIONS_PATH, "rb") as infile:
         b2_4,
     ) = pickle.load(infile)
 
-#%%
+
 
 app_to_obj = {
     "before": {
@@ -72,12 +67,10 @@ app_to_obj = {
     },
 }
 
-#%%
+
 
 exp_info_df_0 = pd.read_excel(str(WORKING_DIR / "NORT_Round1.xlsx"), sheet_name=0)
 exp_info_df_1 = pd.read_excel(str(WORKING_DIR / "NORT_Round1.xlsx"), sheet_name=1)
-
-#%%
 
 
 def get_animal_id_vs_exp_ids(info_df):
@@ -102,14 +95,10 @@ def get_exp_id_vs_animal_id(id_exp):
     return result
 
 
-#%%
-
 exp_animal = {
     "before": get_exp_id_vs_animal_id(get_animal_id_vs_exp_ids(exp_info_df_0)),
     "after": get_exp_id_vs_animal_id(get_animal_id_vs_exp_ids(exp_info_df_1)),
 }
-
-#%%
 
 
 def get_animal_id_vs_apparatus(info_df):
@@ -122,15 +111,10 @@ def get_animal_id_vs_apparatus(info_df):
     }
 
 
-#%%
-
 id_app = {
     "before": get_animal_id_vs_apparatus(exp_info_df_0),
     "after": get_animal_id_vs_apparatus(exp_info_df_1),
 }
-
-
-#%%
 
 
 def get_exp_id_vs_stage(exp_info_df):
@@ -142,15 +126,10 @@ def get_exp_id_vs_stage(exp_info_df):
 
     return result
 
-
-#%%
-
 exp_id_vs_stage = {
     "before": get_exp_id_vs_stage(exp_info_df_0),
     "after": get_exp_id_vs_stage(exp_info_df_1),
 }
-
-#%%
 
 exp_ids_range_vs_exp_meta = {"before": {}, "after": {}}
 exp_id_vs_coordinate_data_path = {"before": {}, "after": {}}
@@ -172,7 +151,7 @@ for time, paths in zip(
             exp_ids_range_vs_exp_meta[time][exp_id] = {
                 "exp_category": exp_category,
                 "recording_resolution": (x, y),
-                "fps": fps
+                "fps": fps,
             }
 
             if exp_category == "novelty_observation":

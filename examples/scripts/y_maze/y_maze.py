@@ -8,7 +8,7 @@ import pandas as pd
 from bikipy.border.parallelogram.classes import ParallelogramBorder
 from bikipy.border.triangular import TriangularBorder
 from bikipy.behaviour.y_maze.trial import YMazeTrial
-from bikipy.reader import DeepLabCutReader
+from bikipy.utils.video import get_video_data
 
 
 WORKING_DIR = Path("C:/Users/Can/Projects/Neuroscience/bikipy/examples/data/")
@@ -270,28 +270,42 @@ exp_id_vs_areas["after"][140] = {
     ),
 }
 
-
-trial_data = []
+trial_datas = []
 for subdir in os.listdir(str(DATA_DIR)):
     trial_name = subdir.split("_")[1].lower()
-    area_infos = exp_id_vs_areas[trial_name]
+    exp_id_range_vs_area_sets = exp_id_vs_areas[trial_name]
 
-    dlc_data = {}
-    for file_path in glob(os.path.join(str(DATA_DIR / subdir), "**.h5")):
+    exp_id_vs_dlc_path, exp_id_vs_fps = {}, {}
+    for file_path in glob(str(DATA_DIR / subdir / "*.h5")):
         exp_id = int(EXP_ID_FINDER.findall(Path(file_path).stem)[0])
-        print(exp_id)
+        exp_id_vs_dlc_path[exp_id] = file_path
 
-        dlc_data[exp_id] = DeepLabCutReader.from_hdf(
-            file_path, (640, 480), midpoint_groups=(("left_ear", "right_ear"),)
+    for file_path in glob(str(DATA_DIR / subdir / "*.mp4")):
+        exp_id = int(EXP_ID_FINDER.findall(Path(file_path).stem)[0])
+
+        _, _x, _y, fps = get_video_data(file_path)
+        exp_id_vs_fps[exp_id] = fps
+
+    trial_datas.append(
+        YMazeTrial(
+            exp_id_range_vs_area_sets=exp_id_range_vs_area_sets,
+            feature_tracking_point="mid-left_ear-right_ear",
+            exp_id_vs_coordinate_data_path=exp_id_vs_dlc_path,
+            fps=exp_id_vs_fps,
+            center_triangle_cm_width=8,
+            label=subdir,
+            midpoint_groups=(("left_ear", "right_ear"),),
+            x_crop_start=95.,
+            y_crop_start=75.
         )
-
-    trial_data.append(
-        YMazeTrial(area_infos, dlc_data, "mid-left_ear-right_ear", 14, 8, trial_name)
     )
+
+    trial_datas[-1].debug_trial()
 
 
 with pd.ExcelWriter(
     "C:/Users/Can/Projects/Neuroscience/bikipy/examples/data/master's.xlsx"
 ) as writer:
-    for trial in trial_data:
-        trial.export_to_dataframe().to_excel(writer, sheet_name=trial.label)
+    for trial in trial_datas:
+        df = trial.export_to_dataframe()
+        df.to_excel(writer, sheet_name=trial.label)

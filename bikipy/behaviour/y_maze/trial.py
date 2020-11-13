@@ -1,19 +1,24 @@
-from typing import Any, AnyStr, SupportsFloat, Dict
+from typing import AnyStr, SupportsFloat, SupportsInt, Dict
 
+import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
+
+from bikipy.utils.store import RangeDict
+from border.base import PolygonalBorder
 
 from bikipy.behaviour.y_maze.experiment import YMaze
+from bikipy.behaviour.base import BaseTrial
 
 
-class YMazeTrial:
+class YMazeTrial(BaseTrial):
     def __init__(
         self,
-        exp_id_range_vs_area_sets: Dict,
-        exp_id_vs_coordinate_sequence: Dict,
-        region_of_interest: AnyStr,
-        fps: SupportsFloat,
+        exp_id_range_vs_area_sets: Dict[SupportsInt, PolygonalBorder],
+        feature_tracking_point: AnyStr,
         center_triangle_cm_width: SupportsFloat,
-        label: Any,
+
+        *args, **kwargs
     ):
         """
 
@@ -24,58 +29,60 @@ class YMazeTrial:
             each depicting the parameters of the experiments within their range.
             The experiment ID range is defined as key : next_key (exp_id:next_exp_id)
 
-        exp_id_vs_coordinate_sequence
-        region_of_interest
-        fps
-        center_triangle_cm_width
-        label
         """
-        self.exp_id_range_vs_area_sets = dict(exp_id_range_vs_area_sets)
-        self.exp_id_vs_coordinate_sequence = dict(exp_id_vs_coordinate_sequence)
-        self.region_of_interest = str(region_of_interest)
-        self.fps = float(fps)
+        super().__init__(*args, **kwargs)
+
+        self.exp_id_range_vs_area_sets = RangeDict(exp_id_range_vs_area_sets)
+
+        self.feature_tracking_point = str(feature_tracking_point)
         self.center_triangle_cm_width = float(center_triangle_cm_width)
-        self.label = label
 
-        keys = tuple([int(exp_id) for exp_id in self.exp_id_range_vs_area_sets.keys()])
-        self.exp_id_ranges = tuple(
-            [
-                tuple([exp_id for exp_id in range(keys[i], keys[i + 1])])
-                for i in range(len(keys) - 1)
-            ]
-        )
-        self.last_exp_area_info_id = keys[-1]
+        self.y_maze_experiments = []
+        for exp_id, coordinate_sequences in self.exp_id_vs_coordinate_sequences.items():
+            experiment_area_set = self.exp_id_range_vs_area_sets[exp_id]
+            unit_per_pixel = self.center_triangle_cm_width / np.linalg.norm(
+                experiment_area_set["center"][0] - experiment_area_set["center"][1]
+            )
 
-        self.area_sets = tuple(self.exp_id_range_vs_area_sets.values())
+            if isinstance(self.fps, dict):
+                exp_fps = self.fps[exp_id]
+            elif isinstance(self.fps, (int, float)):
+                exp_fps = self.fps
+            else:
+                msg = "fps has to be defined"
+                raise AttributeError(msg)
 
-        y_maze_experiments = []
-        for exp_id, coordinate_sequences in self.exp_id_vs_coordinate_sequence.items():
-            exp_id = int(exp_id)
-            experiment_area_set = None
-            for i, exp_range in enumerate(self.exp_id_ranges):
-                if exp_id in exp_range:
-                    experiment_area_set = self.area_sets[i]
-                    break
-            if not experiment_area_set:
-                if exp_id >= self.last_exp_area_info_id:
-                    experiment_area_set = self.area_sets[-1]
-                else:
-                    msg = f"exp ID {exp_id} is not in {self.exp_id_ranges}, last area info exp ID key {self.last_exp_area_info_id}"
-                    raise ValueError(msg)
-
-            y_maze_experiments.append(
+            self.y_maze_experiments.append(
                 YMaze(
-                    coordinate_sequences[self.region_of_interest],
-                    experiment_area_set["arms"],
-                    experiment_area_set["center"],
-                    self.fps,
-                    self.center_triangle_cm_width,
-                    exp_id,
+                    arms=experiment_area_set["arms"],
+                    center=experiment_area_set["center"],
+                    coordinate_sequences=coordinate_sequences[
+                        self.feature_tracking_point],
+                    fps=exp_fps,
+                    unit_per_pixel=unit_per_pixel,
+                    label=exp_id,
                 )
             )
+
         self.y_maze_experiments = sorted(
-            y_maze_experiments, key=lambda item: item.label
+            self.y_maze_experiments, key=lambda item: item.label
         )
+        self.exp_id_vs_y_maze = {
+            y_maze.label: y_maze for y_maze in self.y_maze_experiments
+        }
+
+    def debug_trial(self):
+        for exp_id, area_set in self.exp_id_range_vs_area_sets.items():
+            coordinate_sequence = self.exp_id_vs_coordinate_sequences[exp_id][
+                self.feature_tracking_point]
+
+            fig, ax = plt.subplots(1, 1)
+            for poly_area in area_set["arms"]:
+                poly_area.plot(ax=ax, show=False)
+
+            area_set["center"].plot(points=coordinate_sequence, include_borders=False, ax=ax)
+
+            plt.show()
 
     def export_to_dataframe(self) -> pd.DataFrame:
         """

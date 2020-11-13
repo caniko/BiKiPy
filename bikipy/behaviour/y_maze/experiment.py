@@ -20,11 +20,8 @@ class YMaze(BaseExperiment):
         self,
         arms: Sequence[PolygonalBorder],
         center: PolygonalBorder,
-        coordinate_sequences: Any,
-        fps: SupportsFloat,
-        unit_per_pixel: SupportsFloat,
-        movement_feature_point_label: AnyStr,
-        label: Any = None,
+        *args,
+        **kwargs
     ):
         """
         Parameters
@@ -35,13 +32,7 @@ class YMaze(BaseExperiment):
             bikipy border object defining the centre of the y-maze
         """
 
-        super().__init__(
-            coordinate_sequences,
-            fps,
-            unit_per_pixel,
-            movement_feature_point_label,
-            label,
-        )
+        super().__init__(*args, **kwargs)
 
         self.arms = arms
         self.center = center
@@ -67,7 +58,7 @@ class YMaze(BaseExperiment):
         ]
         self.arm_center_labels = self.arm_labels + [self.center.label]
 
-        self._arm_center_label_dict = dict.fromkeys(self.arm_center_labels)
+        self._arm_center_label_dict = {area: 0 for area in self.arm_center_labels}
         self._arm_triplet_dict = {arm: 0 for arm in self.arm_triplets}
 
         self.arm_triplet_combinations = it.combinations_with_replacement(

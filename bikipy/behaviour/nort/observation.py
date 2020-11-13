@@ -57,8 +57,11 @@ def attention_span_filter(
     valid_indexes: Sequence[bool], fps: SupportsFloat
 ) -> np.ndarray:
     valid_indexes = np.asanyarray(valid_indexes)
-    tolerance = int(round(fps / 4))
-    fps = int(round(fps))
+    
+    fps = float(fps)
+
+    distraction_tolerance = round(fps / 2)
+    minimum_time_valid_observation = round(fps / 3)
 
     length = valid_indexes.shape[0]
     observation_boolean_indexes = np.full(length, False)
@@ -68,37 +71,48 @@ def attention_span_filter(
     while True:
         if valid_indexes[i]:
             true_counter += 1
-            consecutive_false = 0
-            if true_counter == fps:  # One second
-                first_valid_index = i - fps
+
+            if consecutive_false:
+                true_counter += consecutive_false - 1  # make up for the previous += 1
+                consecutive_false = 0
+
+            if true_counter == minimum_time_valid_observation:
+                first_valid_index = i - minimum_time_valid_observation + 1
+
         else:
-            if first_valid_index:
-                if consecutive_false <= tolerance:
+            if first_valid_index is not None:
+                if consecutive_false <= distraction_tolerance:
                     consecutive_false += 1
                 else:
-                    observation_boolean_indexes[first_valid_index:i] = True
+                    observation_boolean_indexes[first_valid_index : i + 1] = True
                     valid_frames_within_border += true_counter
 
                     consecutive_false, true_counter = 0, 0
                     first_valid_index = None
+
             else:
                 true_counter = 0
 
         i += 1
 
         if i == length:
-            if true_counter != 0:
+            if first_valid_index is not None:
                 observation_boolean_indexes[first_valid_index:] = True
+                valid_frames_within_border += true_counter
+
             break
 
     if valid_frames_within_border == 0:
-        print("Subject didn't observe the nort object")
-        return valid_indexes
+        print(f"Subject didn't observe the nort object")
+
+        assert not np.any(observation_boolean_indexes)
+        return observation_boolean_indexes
 
     assert (
         np.any(observation_boolean_indexes)
-        and np.sum(observation_boolean_indexes) >= fps
-    ), f"True: {np.sum(observation_boolean_indexes)}; fps: {fps}"
+        and np.sum(observation_boolean_indexes) >= minimum_time_valid_observation
+    ), f"True: {np.sum(observation_boolean_indexes)}; fps: {fps}; " \
+       f"Minimum observation frames: {minimum_time_valid_observation}"
 
     return observation_boolean_indexes
 

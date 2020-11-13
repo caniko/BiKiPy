@@ -28,10 +28,11 @@ class Border:
         self.guiding_image = guiding_image
         self.label = label
 
-    def plt_show(self, ax):
+    def plot(self, ax):
         if self.guiding_image:
-            ax.imshow(cv2.imshow(self.guiding_image))
-        plt.show()
+            ax.imshow(cv2.imread(str(self.guiding_image)))
+
+        return ax
 
 
 class PolygonalBorder(Border):
@@ -189,6 +190,9 @@ class GenericPolygonalBorder(PolygonalBorder):
             ")"
         )
 
+    def __getitem__(self, item):
+        return self.sides[item]
+
     @property
     def order(self):
         return self.sides.shape[0]
@@ -228,7 +232,12 @@ class GenericPolygonalBorder(PolygonalBorder):
     def border_vectors(self):
         return self.corner_to_corner_vectors(self.borders)
 
-    def plot_sides(self, points: Union[Sequence, None] = None, show: bool = True):
+    def plot(
+        self,
+        points: Union[Sequence, None] = None,
+        include_borders: bool = False,
+        ax: Any = None
+    ):
         """
         Plot the sides defined in the object
 
@@ -244,27 +253,30 @@ class GenericPolygonalBorder(PolygonalBorder):
         -------
         matplotlib Figure and Axes object with the plot
         """
-        fig, ax = plt.subplots()
+        if not ax:
+            fig, ax = plt.subplots()
+
         for i in range(len(self.sides) - 1):
             side_a = self.sides[i]
             side_b = self.sides[i + 1]
-            border_a = self.borders[i]
-            border_b = self.borders[i + 1]
-
             ax.plot(
                 (side_a[0], side_a[1]),
                 (side_b[0], side_b[1]),
-                (border_a[0], border_a[1]),
-                (border_b[0], border_b[1]),
             )
+
+            if include_borders:
+                border_a = self.borders[i]
+                border_b = self.borders[i + 1]
+                ax.plot(
+                    (border_a[0], border_a[1]),
+                    (border_b[0], border_b[1]),
+                )
 
         if points is not None:
             points = np.asanyarray(points)
             ax.scatter(points.T[0], points.T[1], marker=".")
-        if show:
-            self.plt_show(ax)
 
-        return fig, ax
+        super().plot(ax)
 
     # Define "corners" (integer) as a class variable for the ginput in from_image(...)
     @classmethod

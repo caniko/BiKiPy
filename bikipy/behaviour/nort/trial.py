@@ -48,6 +48,17 @@ class NortTrial(BaseTrial):
 
             coordinate_sequences = self.exp_id_vs_coordinate_sequences[exp_id]
 
+            if isinstance(self.fps, dict):
+                exp_fps = self.fps["exp_id"]
+            elif "fps" in exp_meta:
+                exp_fps = exp_meta["fps"]
+            elif isinstance(self.fps, (int, float)):
+                exp_fps = self.fps
+            else:
+                msg = "fps has to be defined inside exp_meta, " \
+                      "or in the fps class/trial variable"
+                raise AttributeError(msg)
+
             if exp_meta["exp_category"] == "habituation":
                 self.habituation_experiments.append(
                     NortHabituation(
@@ -57,7 +68,7 @@ class NortTrial(BaseTrial):
                         recording_resolution=exp_meta["recording_resolution"],
                         experiment_box_size_cm=self.experiment_box_size_cm,
                         center_size_cm=self.center_size_cm,
-                        fps=exp_meta["fps"],
+                        fps=exp_fps,
                         unit_per_pixel=unit_per_pixel,
                         label=exp_id,
                     )
@@ -76,7 +87,7 @@ class NortTrial(BaseTrial):
                         experiment_box_size_cm=self.experiment_box_size_cm,
                         center_size_cm=self.center_size_cm,
                         coordinate_sequences=coordinate_sequences,
-                        fps=exp_meta["fps"],
+                        fps=exp_fps,
                         unit_per_pixel=unit_per_pixel,
                         movement_feature_point_label=self.eye_center_label,
                         label=exp_id,
@@ -125,19 +136,24 @@ class NortTrial(BaseTrial):
                 ("Mean acceleration", category),
             )
 
+        base_idx = [
+            *movement_feature("All"),
+            *movement_feature("Periphery"),
+            *movement_feature("Center"),
+            *feature_area("Entries", ("Periphery", "Center")),
+            *feature_area("Time spent", ("Periphery", "Center"))
+        ]
+        novelty_idx = [
+            *feature_area("Observation instances", ("A", "B")),
+            *feature_area("Observation time", ("A", "B", "Total"))
+        ]
+
         feature_order = pd.MultiIndex.from_tuples(
-            (
-                *movement_feature("All"),
-                *movement_feature("Periphery"),
-                *movement_feature("Center"),
-                *feature_area("Entries", ("Periphery", "Center")),
-                *feature_area("Time spent", ("Periphery", "Center")),
-                *feature_area("Observations", ("A", "B")),
-            ),
+            base_idx + novelty_idx,
             names=("Feature", "Area"),
         )
 
-        habituation_filler = ("Habituation", "Habituation")
+        habituation_filler = tuple(["Habituation" for _i in range(len(novelty_idx))])
 
         index_vs_data = {}
         for nort_habituation in self.habituation_experiments:
@@ -150,6 +166,9 @@ class NortTrial(BaseTrial):
                 *general_data(novelty_experiment),
                 novelty_experiment.novelty_observation_a,
                 novelty_experiment.novelty_observation_b,
+                novelty_experiment.time_spent_a,
+                novelty_experiment.time_spent_b,
+                novelty_experiment.time_spent_a + novelty_experiment.time_spent_b,
             )
 
         index_vs_data = dict(sorted(index_vs_data.items(), key=lambda item: item[0]))

@@ -49,5 +49,5 @@ def get_video_data(video_path, frame_time="middle"):
         frame,
         int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
         int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-        int(cap.get(cv2.CAP_PROP_FPS))
+        int(cap.get(cv2.CAP_PROP_FPS)),
     )

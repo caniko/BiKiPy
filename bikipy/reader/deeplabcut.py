@@ -15,13 +15,19 @@ import numpy as np
 
 from bikipy.feature.midpoint import compute_from_dlc_df
 
-
 DEEPLABCUT_DF_INIT_KWARGS = {
     "index_col": 0,
     "skiprows": 1,
     "header": [0, 1],
     "na_filter": False,
     "dtype": {"coords": int, "x": float, "y": float, "likelihood": float},
+}
+
+CROPPING_PARAMETERS_BASE = {
+    "x1": None,
+    "x2": None,
+    "y1": None,
+    "y2": None
 }
 
 
@@ -38,6 +44,8 @@ class DeepLabCutReader:
         midpoint_groups: Union[Iterable, None] = None,
         future_scaling: bool = False,
         min_likelihood: SupportsFloat = 0.80,
+        x_crop_start: SupportsFloat = 0.,
+        y_crop_start: SupportsFloat = 0.,
         invert_y: bool = False,
     ):
         """
@@ -81,11 +89,30 @@ class DeepLabCutReader:
         self.future_scaling = future_scaling
         self.min_likelihood = float(min_likelihood)
 
-        if invert_y:
+        self.x_crop_start = float(x_crop_start)
+        if self.x_crop_start:
             for roi in self.regions_of_interest:
-                self.df[(roi, "y")] = self.df[(roi, "y")].map(
-                    lambda y: self.vertical_res - y
+                self.df[(roi, "x")] = self.df[(roi, "x")].map(
+                    lambda x: self.x_crop_start + x
                 )
+
+        self.y_crop_start = float(y_crop_start)
+        self.invert_y = invert_y
+
+        if self.y_crop_start or self.invert_y:
+            if self.invert_y:
+                if self.y_crop_start:
+                    y_mod = self.vertical_res - self.y_crop_start
+
+                def y_map_func(y):
+                    return y_mod - y
+            elif self.y_crop_start:
+
+                def y_map_func(y):
+                    return self.y_crop_start + y
+
+            for roi in self.regions_of_interest:
+                self.df[(roi, "y")] = self.df[(roi, "y")].map(y_map_func)
 
         if midpoint_groups:
             if isinstance(midpoint_groups, dict):

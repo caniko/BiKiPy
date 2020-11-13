@@ -2,7 +2,9 @@ from typing import Union, Sequence, SupportsFloat
 
 import numpy as np
 
-from bikipy.utils.video import seconds_from_frames
+
+def units_pixels_per_second_frame(units_per_pixel, fps):
+    return units_per_pixel * fps
 
 
 def displacement(location_sequence: Sequence[Sequence[SupportsFloat]]) -> np.ndarray:
@@ -16,14 +18,6 @@ def displacement_mean_speed_acceleration(
     unit_per_pixel: Union[SupportsFloat, None] = None,
     as_array: bool = True,
 ):
-    def mean_of_feature_per_fps(feature: np.ndarray):
-        mean_feature = np.sum(feature) / total_seconds
-
-        if unit_per_pixel:
-            mean_feature *= unit_per_pixel
-
-        return mean_feature
-
     location_sequence = np.asanyarray(location_sequence)
     fps = float(fps)
     unit_per_pixel = float(unit_per_pixel)
@@ -36,11 +30,11 @@ def displacement_mean_speed_acceleration(
     if unit_per_pixel:
         total_displacement *= unit_per_pixel
 
-    total_seconds = seconds_from_frames(fps, location_sequence.shape[0])
+    unit_convertor = units_pixels_per_second_frame(unit_per_pixel, fps)
 
     result = (
         total_displacement,
-        mean_of_feature_per_fps(speed_per_frame),
-        mean_of_feature_per_fps(acceleration_per_frame),
+        np.mean(speed_per_frame) * unit_convertor,
+        np.mean(acceleration_per_frame) * unit_convertor,
     )
     return np.array(result) if as_array else result

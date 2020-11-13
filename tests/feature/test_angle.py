@@ -3,7 +3,7 @@ import numpy as np
 
 from bikipy.math.statistics import feature_scale
 from bikipy.reader.deeplabcut import DeepLabCutReader
-from bikipy.compute.angle import (
+from bikipy.feature.angle import (
     compute_angles_from_vectors,
     dlc_compute_angles_from_vectors,
 )

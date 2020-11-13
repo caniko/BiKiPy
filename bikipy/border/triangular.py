@@ -1,4 +1,4 @@
-from typing import Union, SupportsFloat, Sequence
+from typing import Any, Union, SupportsFloat, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -80,28 +80,3 @@ class TriangularBorder(GenericPolygonalBorder):
             np.logical_and(c1 > 0, np.logical_and(c2 > 0, c3 > 0)),
             np.logical_and(c1 < 0, np.logical_and(c2 < 0, c3 < 0)),
         )
-
-    def plot(self, points: Union[Sequence, None] = None, show: bool = True):
-        fig, ax = plt.subplots()
-        ax.plot(
-            # Base
-            (self.base_a[0], self.base_b[0]),
-            (self.base_a[1], self.base_b[1]),
-            "-r",
-            # base_b -> apex
-            (self.base_b[0], self.apex[0]),
-            (self.base_b[1], self.apex[1]),
-            "-c",
-            # base_a -> apex
-            (self.base_a[0], self.apex[0]),
-            (self.base_a[1], self.apex[1]),
-            "-b",
-        )
-
-        if points is not None:
-            points = np.asanyarray(points)
-            ax.scatter(points.T[0], points.T[1], marker=".")
-        if show:
-            self.plt_show(ax)
-
-        return fig, ax
