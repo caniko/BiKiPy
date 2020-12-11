@@ -1,25 +1,24 @@
-from pathlib import Path
-from glob import glob
 import os
 import re
+from glob import glob
+from pathlib import Path
 
 import pandas as pd
 
+from bikipy.behaviour.y_maze.trial import YMazeTrial
 from bikipy.border.parallelogram.classes import ParallelogramBorder
 from bikipy.border.triangular import TriangularBorder
-from bikipy.behaviour.y_maze.trial import YMazeTrial
 from bikipy.utils.video import get_video_data
 
 
-WORKING_DIR = Path("C:/Users/Can/Projects/Neuroscience/bikipy/examples/data/")
 DATA_DIR = Path("C:/Users/Can/Projects/Neuroscience/Imen/data/y_maze/master's")
 EXP_ID_FINDER = re.compile("\d+")
 
-IMAGE_ROOT = Path(
-    "C:/Users/Can/Projects/Neuroscience/bikipy/examples/data/images/y_maze/master's"
-)
-exp_id_vs_areas = {"before": {}, "after": {}}
+REPO_PATH = Path("C:/Users/Can/Projects/Neuroscience/bikipy")
+IMAGE_ROOT = REPO_PATH / "examples/data/images/y_maze/master's"
+RESULT_PATH = REPO_PATH / "examples/data/results/y_maze"
 
+exp_id_vs_areas = {"before": {}, "after": {}}
 
 guiding_image = IMAGE_ROOT / "before_11_masters.png"
 exp_id_vs_areas["before"][11] = {
@@ -76,36 +75,36 @@ exp_id_vs_areas["before"][45] = {
     "arms": [
         ParallelogramBorder(
             base=[
-                [281.37121755652583, 179.32029904113125],
-                [255.76127205363264, 221.29215417087295],
+                [281.60649616867585, 178.30212586054756],
+                [255.3933534539957, 220.47109457546776],
             ],
             apex=[
-                [149.76455316665786, 100.35630040721048],
-                [122.73183291360391, 138.77121866155028],
+                [145.9819751666352, 99.66269771650718],
+                [122.04823616627507, 138.41256085994735],
             ],
             guiding_image=guiding_image,
             label="A",
         ),
         ParallelogramBorder(
             base=[
-                [280.5301435966245, 179.14872095136081],
-                [304.5354702642285, 220.67144816018947],
+                [282.74619802583584, 179.44182771770755],
+                [304.4005333118759, 221.61079643262775],
             ],
             apex=[
-                [416.77659225059335, 102.59119266008304],
-                [440.78191891819745, 142.16754203099782],
+                [417.2310171707164, 101.94210143082717],
+                [443.4441598853966, 141.83166643142738],
             ],
             guiding_image=guiding_image,
             label="B",
         ),
         ParallelogramBorder(
             base=[
-                [256.3748482885825, 219.26922716246264],
-                [304.78109443996016, 219.9323264248103],
+                [256.5330553111557, 221.61079643262775],
+                [305.54023516903595, 219.3313927183077],
             ],
             apex=[
-                [257.03794755093014, 381.72854643763435],
-                [302.79179665291724, 383.05474496232955],
+                [257.67275716831574, 382.3087582921885],
+                [302.1211295975559, 383.4484601493485],
             ],
             guiding_image=guiding_image,
             label="C",
@@ -272,6 +271,8 @@ exp_id_vs_areas["after"][140] = {
 
 trial_datas = []
 for subdir in os.listdir(str(DATA_DIR)):
+    print(f"Reading {subdir}")
+
     trial_name = subdir.split("_")[1].lower()
     exp_id_range_vs_area_sets = exp_id_vs_areas[trial_name]
 
@@ -287,25 +288,25 @@ for subdir in os.listdir(str(DATA_DIR)):
         exp_id_vs_fps[exp_id] = fps
 
     trial_datas.append(
-        YMazeTrial(
-            exp_id_range_vs_area_sets=exp_id_range_vs_area_sets,
-            feature_tracking_point="mid-left_ear-right_ear",
-            exp_id_vs_coordinate_data_path=exp_id_vs_dlc_path,
-            fps=exp_id_vs_fps,
-            center_triangle_cm_width=8,
-            label=subdir,
-            midpoint_groups=(("left_ear", "right_ear"),),
-            x_crop_start=95.,
-            y_crop_start=75.
+        (
+            trial := YMazeTrial(
+                exp_id_range_vs_area_sets=exp_id_range_vs_area_sets,
+                feature_tracking_point="mid-left_ear-right_ear",
+                exp_id_vs_coordinate_data_path=exp_id_vs_dlc_path,
+                fps=exp_id_vs_fps,
+                center_triangle_cm_width=8,
+                label=subdir,
+                midpoint_groups=(("left_ear", "right_ear"),),
+                x_crop_start=95.0,
+                y_crop_start=75.0,
+            )
         )
     )
 
-    trial_datas[-1].debug_trial()
+    # trial.plot()
 
-
-with pd.ExcelWriter(
-    "C:/Users/Can/Projects/Neuroscience/bikipy/examples/data/master's.xlsx"
-) as writer:
+with pd.ExcelWriter(RESULT_PATH / "master's.xlsx") as writer:
     for trial in trial_datas:
+        print(f"Analysing {trial.label}")
         df = trial.export_to_dataframe()
         df.to_excel(writer, sheet_name=trial.label)

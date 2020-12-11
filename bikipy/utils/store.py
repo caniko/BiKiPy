@@ -1,5 +1,5 @@
-from typing import Union, SupportsFloat, SupportsInt
 from collections import UserDict
+from typing import SupportsFloat, SupportsInt, Union
 
 
 class RangeDict(UserDict):

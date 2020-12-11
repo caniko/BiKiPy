@@ -1,6 +1,5 @@
 from setuptools import setup
 
-
 install_requires = ["numpy", "pandas", "tables", "matplotlib"]
 
 setup(

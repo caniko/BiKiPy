@@ -1,8 +1,10 @@
-from typing import AnyStr, Sequence, List
 import itertools as it
 from functools import lru_cache
+from typing import AnyStr, List, Sequence, SupportsInt
 
 import numpy as np
+
+ARM_STRING_LABELS = ("A", "B", "C")
 
 
 def unique_with_counts_zipped(array):
@@ -36,7 +38,7 @@ def triplet_permutation_vs_base_permutation_dictionary(base_triplets: Sequence):
     return result
 
 
-def reduce_str_sequence(str_sequence: Sequence) -> List:
+def reduce_str_sequence(str_sequence: Sequence, tolerance: SupportsInt = 6) -> List:
     """
     Reduce consecutive sub-sequences in string sequence
 
@@ -44,15 +46,63 @@ def reduce_str_sequence(str_sequence: Sequence) -> List:
     ----------
     str_sequence
         Sequence of strings
+    tolerance
 
     Returns
     -------
     List, reduced string sequence; (A, A, A, B, B, C) -> [A, B, C]
     """
 
-    reduced_str_sequence = [(current_str := str_sequence[0])]
-    for string_element in str_sequence[1:]:
-        if isinstance(string_element, str) and string_element != current_str:
-            reduced_str_sequence.append((current_str := string_element))
+    tolerance = int(tolerance)
+
+    labels = np.unique(str_sequence)
+    assert 2 <= len(labels) <= 4
+
+    center_label = None
+    for label in labels:
+        if label not in ARM_STRING_LABELS:
+            center_label = label
+            break
+    assert center_label
+
+    i = 0
+    max_len = len(str_sequence) - tolerance
+    reduced_str_sequence = []
+    while i < max_len:
+        current_str = str_sequence[i]
+
+        tolerable = True
+        for following_idx in range(i + 1, i + 1 + tolerance):
+            i = following_idx
+            if str_sequence[following_idx] != current_str:
+                tolerable = False
+                break
+        if tolerable:
+            reduced_str_sequence.append(str_sequence[i])
+            break
+
+    assert reduced_str_sequence
+
+    i += 1
+    while i < max_len:
+        if (current_str := reduced_str_sequence[-1]) == (next_str := str_sequence[i]):
+            i += 1
+            continue
+
+        tolerable = True
+        for following_idx in range(i + 1, i + 1 + tolerance):
+            if str_sequence[following_idx] == current_str:
+                tolerable = False
+                i = following_idx
+                break
+        if tolerable:
+            if (
+                current_str.upper() in ARM_STRING_LABELS
+                and next_str.upper() in ARM_STRING_LABELS
+            ):
+                reduced_str_sequence.append(center_label)
+
+            reduced_str_sequence.append(next_str)
+            i += 1
 
     return reduced_str_sequence

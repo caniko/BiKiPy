@@ -11,27 +11,31 @@ authors = ["Can H. Tartanoglu <canhtart@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = ">=3.6.1,<4.0.0"
-numpy = "^1.19.0"
+numpy = "1.19.3"
 pandas = "^1.0.5"
 tables = "^3.6.1"
 matplotlib = "^3.2.2"
-opencv-python = { version = "4.2.0.34", optional = true }
 numba = "^0.51.2"
 xlrd = "^1.2.0"
 jupyter = "^1.0.0"
 openpyxl = "^3.0.5"
-PyQt5 = "^5.15.1"
 scipy = "^1.5.3"
+opencv-python = { version = "4.2.0.34", optional = true }
+pywin32 = {version = "228", platform = "win32"}
 
 [tool.poetry.extras]
 opencv = ["opencv-python"]
 
 [tool.poetry.dev-dependencies]
-black = {extras = ["d"], version = "^20.8b1"}
+black = "^20.8b1"
 pytest = "^5.4.3"
 commitizen = "^1.23.0"
 pre-commit = "^2.5.1"
 opencv-python = "4.2.0.34"
+isort = "^5.6.4"
+
+[tool.isort]
+profile = "black"
 
 [tool.black]
 target-version = ['py37']

@@ -1,7 +1,7 @@
-from typing import Sequence, AnyStr
+from typing import AnyStr, Sequence
 
-from pandas.core.frame import DataFrame as DataFrameType
 import numpy as np
+from pandas.core.frame import DataFrame as DataFrameType
 
 
 def reduce_likelihoods(df: DataFrameType, regions_of_interest: Sequence) -> float:

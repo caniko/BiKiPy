@@ -1,9 +1,9 @@
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-from scipy import ndimage
-import numpy as np
 import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy import ndimage
 
 
 def detect(image, alpha):

@@ -1,8 +1,7 @@
-from pathlib import Path
 import pickle
+from pathlib import Path
 
 from bikipy.border.base import GenericPolygonalBorder
-
 
 WORKING_DIR = Path("C:/Users/Can/Projects/Neuroscience/Imen/data")
 ANNOTATIONS_PATH = str(WORKING_DIR / "python_data" / "annotations" / "all.pickle")

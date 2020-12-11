@@ -1,6 +1,5 @@
-from typing import Any, Union, SupportsFloat, Sequence
+from typing import Sequence, SupportsFloat, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 from bikipy.border.base import GenericPolygonalBorder
@@ -32,13 +31,25 @@ class TriangularBorder(GenericPolygonalBorder):
         """
 
         if sides:
-            self.base_a, self.base_b, self.apex = np.asanyarray(sides)
+            self.sides = (base_a, base_b, apex)
         else:
             self.base_a = np.asanyarray(base_a)
             self.base_b = np.asanyarray(base_b)
             self.apex = np.asanyarray(apex)
 
-        super().__init__(sides=(self.base_a, self.base_b, self.apex), *args, **kwargs)
+        super().__init__(*args, **kwargs)
+
+    @property
+    def sides(self):
+        return self.base_a, self.base_b, self.apex
+
+    @sides.setter
+    def sides(self, sides: Sequence):
+        if (n := len(sides)) != 3:
+            msg = f"Parallelogram border has to have 3 sides, got only {n} sides"
+            raise ValueError(msg)
+
+        self.base_a, self.base_b, self.apex = np.asanyarray(sides)
 
     def __repr__(self):
         return (

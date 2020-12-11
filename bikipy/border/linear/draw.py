@@ -1,5 +1,6 @@
-from typing import Union, AnyStr, Any
 from collections.abc import Sequence
+from typing import Any, AnyStr, Union
+
 import matplotlib.pyplot as plt
 from PIL import Image
 

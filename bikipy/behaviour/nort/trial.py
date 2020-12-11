@@ -1,10 +1,10 @@
-from typing import Any, AnyStr, SupportsFloat, Dict
+from typing import Any, AnyStr, Dict, SupportsFloat
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from bikipy.behaviour.nort.experiment import NortHabituation, NortWithObjects
 from bikipy.behaviour.base import BaseTrial
+from bikipy.behaviour.nort.experiment import NortHabituation, NortWithObjects
 
 
 class NortTrial(BaseTrial):
@@ -55,8 +55,10 @@ class NortTrial(BaseTrial):
             elif isinstance(self.fps, (int, float)):
                 exp_fps = self.fps
             else:
-                msg = "fps has to be defined inside exp_meta, " \
-                      "or in the fps class/trial variable"
+                msg = (
+                    "fps has to be defined inside exp_meta, "
+                    "or in the fps class/trial variable"
+                )
                 raise AttributeError(msg)
 
             if exp_meta["exp_category"] == "habituation":
@@ -141,11 +143,11 @@ class NortTrial(BaseTrial):
             *movement_feature("Periphery"),
             *movement_feature("Center"),
             *feature_area("Entries", ("Periphery", "Center")),
-            *feature_area("Time spent", ("Periphery", "Center"))
+            *feature_area("Time spent", ("Periphery", "Center")),
         ]
         novelty_idx = [
             *feature_area("Observation instances", ("A", "B")),
-            *feature_area("Observation time", ("A", "B", "Total"))
+            *feature_area("Observation time", ("A", "B", "Total")),
         ]
 
         feature_order = pd.MultiIndex.from_tuples(

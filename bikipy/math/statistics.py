@@ -1,5 +1,5 @@
-from typing import Union, Sequence, List
 import itertools
+from typing import List, Sequence, Union
 
 import numpy as np
 

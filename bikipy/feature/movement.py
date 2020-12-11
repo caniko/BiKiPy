@@ -1,4 +1,4 @@
-from typing import Union, Sequence, SupportsFloat
+from typing import Sequence, SupportsFloat, Union
 
 import numpy as np
 

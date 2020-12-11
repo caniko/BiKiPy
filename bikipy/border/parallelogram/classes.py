@@ -1,18 +1,17 @@
-from typing import Union, Any, AnyStr, SupportsFloat, SupportsInt, Sequence
+from typing import Any, AnyStr, Sequence, SupportsFloat, SupportsInt, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from bikipy.math.vector import (
-    unit_vector,
-    orthogonal_vector,
-    normal_from_line_to_point,
-)
-
-from bikipy.border.parallelogram.draw import parallelogram_input
-from bikipy.math.vector import intersection_between_two_lines
-from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.border.base import PolygonalBorder
+from bikipy.border.parallelogram.draw import parallelogram_input
+from bikipy.math.point_in_polygon import points_in_parallelogram
+from bikipy.math.vector import (
+    intersection_between_two_lines,
+    normal_from_line_to_point,
+    orthogonal_vector,
+    unit_vector,
+)
 
 
 class ParallelogramBorder(PolygonalBorder):
@@ -103,6 +102,19 @@ class ParallelogramBorder(PolygonalBorder):
         self.apex_mid = self.midpoint(*self.__apex)
         self.apex_vector = apex[1] - apex[0]
 
+    @property
+    def sides(self):
+        return *self.base, *self.apex
+
+    @sides.setter
+    def sides(self, sides: Sequence):
+        if (n := len(sides)) != 4:
+            msg = f"Parallelogram border has to have 4 sides, got only {n} sides"
+            raise ValueError(msg)
+
+        self.base = (sides[0], sides[1])
+        self.apex = (sides[2], sides[3])
+
     def __repr__(self):
         return (
             f"{self.__class__.__name__}(\n"
@@ -190,7 +202,9 @@ class ParallelogramBorder(PolygonalBorder):
             cls(guiding_image=guiding_image, **object_kwargs[i]) for i in range(int(n))
         ]
 
-    def plot(self, points: Union[Sequence, None] = None, ax: Any = None, show: bool = True):
+    def plot(
+        self, points: Union[Sequence, None] = None, ax: Any = None, show: bool = True
+    ):
         if not ax:
             fig, ax = plt.subplots()
 

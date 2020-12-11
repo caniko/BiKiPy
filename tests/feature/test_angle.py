@@ -1,12 +1,13 @@
 from pathlib import Path
+
 import numpy as np
 
-from bikipy.math.statistics import feature_scale
-from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.feature.angle import (
     compute_angles_from_vectors,
     dlc_compute_angles_from_vectors,
 )
+from bikipy.math.statistics import feature_scale
+from bikipy.reader.deeplabcut import DeepLabCutReader
 
 HDF_PATH = Path(__file__).parent.parent.resolve() / "example_data/data_for_angle.h5"
 

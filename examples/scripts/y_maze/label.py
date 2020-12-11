@@ -1,10 +1,7 @@
 from pathlib import Path
 
-import cv2
-
 from bikipy.border.parallelogram.classes import ParallelogramBorder
 from bikipy.border.triangular import TriangularBorder
-
 
 ROOT = Path(
     "C:/Users/Can/Projects/Neuroscience/bikipy/examples/data/images/y_maze/master's"

@@ -1,9 +1,8 @@
-from typing import Union, AnyStr, SupportsFloat, SupportsInt, Sequence
+from typing import AnyStr, Sequence, SupportsFloat, SupportsInt, Union
 
 import numpy as np
 
 from bikipy.border.base import Border
-
 
 # 0: Use the x coordinate(s) as the border
 # 1: Use the y coordinate(s) as the border

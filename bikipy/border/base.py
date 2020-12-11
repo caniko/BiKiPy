@@ -1,12 +1,12 @@
-from typing import Union, Any, AnyStr, Sequence, SupportsFloat
+from typing import Any, AnyStr, Sequence, SupportsFloat, Union
 from warnings import warn
 
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import cv2
 
-from bikipy.utils.video import get_video_data
 from bikipy.math.vector import unit_vector
+from bikipy.utils.video import get_video_data
 
 
 class Border:
@@ -151,8 +151,10 @@ class GenericPolygonalBorder(PolygonalBorder):
     ):
         super().__init__(*args, **kwargs)
 
-        self.sides = sides
-        self.border_distance = border_distance
+        if sides:
+            self.sides = sides
+        if border_distance:
+            self.border_distance = border_distance
 
     @property
     def sides(self):
@@ -236,7 +238,7 @@ class GenericPolygonalBorder(PolygonalBorder):
         self,
         points: Union[Sequence, None] = None,
         include_borders: bool = False,
-        ax: Any = None
+        ax: Any = None,
     ):
         """
         Plot the sides defined in the object
@@ -256,12 +258,12 @@ class GenericPolygonalBorder(PolygonalBorder):
         if not ax:
             fig, ax = plt.subplots()
 
-        for i in range(len(self.sides) - 1):
-            side_a = self.sides[i]
-            side_b = self.sides[i + 1]
+        for i in range(len(self.sides)):
+            side_a = self.sides[i - 1]
+            side_b = self.sides[i]
             ax.plot(
-                (side_a[0], side_a[1]),
-                (side_b[0], side_b[1]),
+                (side_a[0], side_b[0]),
+                (side_a[1], side_b[1]),
             )
 
             if include_borders:

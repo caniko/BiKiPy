@@ -1,6 +1,6 @@
 from typing import Sequence
-import numpy as np
 
+import numpy as np
 
 # TODO: Sanity checks, is the array 2D, etc
 

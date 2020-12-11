@@ -1,8 +1,7 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from bikipy.utils.deeplabcut import reduce_likelihoods, get_region_of_interest_data
-
+from bikipy.utils.deeplabcut import get_region_of_interest_data, reduce_likelihoods
 
 test_data = {
     ("Left_Ear", "x"): np.random.random(5),

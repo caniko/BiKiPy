@@ -1,13 +1,12 @@
-from typing import AnyStr, SupportsFloat, SupportsInt, Sequence
+from typing import AnyStr, Sequence, SupportsFloat, SupportsInt
 
 import numpy as np
 
-from bikipy.math.point_in_polygon import points_in_parallelogram
-from bikipy.border.base import PolygonalBorder
-
-from bikipy.behaviour.nort.observation import nort_observation
 from bikipy.behaviour.base import BaseExperiment
+from bikipy.behaviour.nort.observation import nort_observation
 from bikipy.behaviour.utils import reduce_str_sequence
+from bikipy.border.base import PolygonalBorder
+from bikipy.math.point_in_polygon import points_in_parallelogram
 
 
 class NortBase(BaseExperiment):

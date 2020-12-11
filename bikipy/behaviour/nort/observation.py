@@ -1,11 +1,11 @@
-from typing import Union, SupportsFloat, SupportsInt, Sequence, Tuple, List
+from typing import List, Sequence, SupportsFloat, SupportsInt, Tuple, Union
 
 import numpy as np
 
-from bikipy.feature.angle import counter_clockwise_angel_2d
-from bikipy.math.vector import unit_vector, closest_line_to_point
-from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.border.base import PolygonalBorder
+from bikipy.feature.angle import counter_clockwise_angel_2d
+from bikipy.math.point_in_polygon import points_in_parallelogram
+from bikipy.math.vector import closest_line_to_point, unit_vector
 
 
 def location_filter(
@@ -57,7 +57,7 @@ def attention_span_filter(
     valid_indexes: Sequence[bool], fps: SupportsFloat
 ) -> np.ndarray:
     valid_indexes = np.asanyarray(valid_indexes)
-    
+
     fps = float(fps)
 
     distraction_tolerance = round(fps / 2)
@@ -111,8 +111,10 @@ def attention_span_filter(
     assert (
         np.any(observation_boolean_indexes)
         and np.sum(observation_boolean_indexes) >= minimum_time_valid_observation
-    ), f"True: {np.sum(observation_boolean_indexes)}; fps: {fps}; " \
-       f"Minimum observation frames: {minimum_time_valid_observation}"
+    ), (
+        f"True: {np.sum(observation_boolean_indexes)}; fps: {fps}; "
+        f"Minimum observation frames: {minimum_time_valid_observation}"
+    )
 
     return observation_boolean_indexes
 

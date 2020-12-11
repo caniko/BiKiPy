@@ -1,17 +1,20 @@
-from typing import Any, AnyStr, SupportsFloat, Sequence, Iterable, Dict
-from warnings import warn
 import itertools as it
+from copy import copy
+from math import ceil
+from typing import Dict, Iterable, Sequence
+from warnings import warn
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from bikipy.behaviour.utils import (
-    unique_with_counts_zipped,
-    exclude_value_from_sequence,
-    triplet_permutation_vs_base_permutation_dictionary,
-    reduce_str_sequence,
-)
 from bikipy.behaviour.base import BaseExperiment
+from bikipy.behaviour.utils import (
+    exclude_value_from_sequence,
+    reduce_str_sequence,
+    triplet_permutation_vs_base_permutation_dictionary,
+    unique_with_counts_zipped,
+)
+from bikipy.behaviour.y_maze.utils import mean_intersecting_points_on_borders
 from bikipy.border.base import PolygonalBorder
 
 
@@ -20,8 +23,9 @@ class YMaze(BaseExperiment):
         self,
         arms: Sequence[PolygonalBorder],
         center: PolygonalBorder,
+        average_intersections: bool = True,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """
         Parameters
@@ -34,8 +38,11 @@ class YMaze(BaseExperiment):
 
         super().__init__(*args, **kwargs)
 
-        self.arms = arms
-        self.center = center
+        if average_intersections:
+            self.arms, self.center = mean_intersecting_points_on_borders(arms, center)
+        else:
+            self.arms, self.center = arms, center
+
         self.location_sequence = PolygonalBorder.detect_sequential_border_presence(
             self.coordinate_sequences,
             self.arms,
@@ -46,7 +53,6 @@ class YMaze(BaseExperiment):
             self.reduced_sequence, self.center.label
         )
 
-        # Quick computations
         self.sum_of_alternations = len(self.reduced_without_center) - 2
 
         # Data labeling helpers
@@ -78,7 +84,7 @@ class YMaze(BaseExperiment):
         Dict, area vs time
         """
 
-        result = self._arm_center_label_dict
+        result = copy(self._arm_center_label_dict)
         for label, counts in unique_with_counts_zipped(self.location_sequence):
             assert label in result
             result[label] = (counts / self.fps) if self.fps else counts
@@ -95,23 +101,22 @@ class YMaze(BaseExperiment):
         Dict, arm label vs alternations to arm
         """
 
-        result = self._arm_center_label_dict
+        result = copy(self._arm_center_label_dict)
         for label, counts in unique_with_counts_zipped(self.reduced_sequence):
             assert label in result
             result[label] = counts
 
         total_arm_alternations = np.sum([result[lab] for lab in self.arm_labels])
+        minimum_center_entries = ceil(total_arm_alternations / 2)
 
-        if (
-            not result[self.center.label]
-            or result[self.center.label] < total_arm_alternations / 2
-        ):
-            if result[self.center.label] is None:
-                result[self.center.label] = 0
+        if not result[self.center.label]:
+            result[self.center.label] = 0
+
+        if result[self.center.label] < minimum_center_entries:
             warn(
                 f"{self.label}: The number of alternations to the center, "
                 f"{result[self.center.label]} can't be less than the "
-                f"half of the total arm alternations, {total_arm_alternations / 2}"
+                f"ceil of half of the total arm alternations, {minimum_center_entries}"
             )
 
         return result
@@ -172,6 +177,9 @@ class YMaze(BaseExperiment):
                 and "C" in current_triplet
             ):
                 alternations += 1
+
+        if self.sum_of_alternations <= 0:
+            print(1)
 
         return 100.0 * alternations / self.sum_of_alternations
 

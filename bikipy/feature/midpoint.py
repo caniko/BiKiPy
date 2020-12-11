@@ -2,6 +2,7 @@
 Note that points in this context is the location of a region of interest across time.
 """
 from typing import Sequence
+
 import numpy as np
 
 
@@ -96,7 +97,7 @@ def triangulate(point_1: Sequence, point_2: Sequence, point_3: Sequence) -> np.n
 
 
 def compute_from_dlc_df(df, point_group_names_set, min_likelihood: float = None):
-    from bikipy.utils.deeplabcut import reduce_likelihoods, get_region_of_interest_data
+    from bikipy.utils.deeplabcut import get_region_of_interest_data, reduce_likelihoods
 
     result = {}
     for group_subset_names in point_group_names_set:

@@ -1,14 +1,13 @@
-from pathlib import Path
-from glob import glob
 import pickle
 import re
+from glob import glob
+from pathlib import Path
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from bikipy.behaviour.nort.trial import NortTrial
 from bikipy.utils.video import get_video_data
-
 
 WORKING_DIR = Path("C:/Users/Can/Projects/Neuroscience/Imen/data")
 NORT_DIR = WORKING_DIR / "nort"
@@ -55,7 +54,6 @@ with open(ANNOTATIONS_PATH, "rb") as infile:
     ) = pickle.load(infile)
 
 
-
 app_to_obj = {
     "before": {
         1: {1: b1_1, 2: b1_2, 3: b1_3, 4: b1_4},
@@ -66,7 +64,6 @@ app_to_obj = {
         2: {1: a2_1, 2: a2_2, 3: a2_3, 4: a2_4},
     },
 }
-
 
 
 exp_info_df_0 = pd.read_excel(str(WORKING_DIR / "NORT_Round1.xlsx"), sheet_name=0)
@@ -125,6 +122,7 @@ def get_exp_id_vs_stage(exp_info_df):
         result[exp_idx] = stage
 
     return result
+
 
 exp_id_vs_stage = {
     "before": get_exp_id_vs_stage(exp_info_df_0),

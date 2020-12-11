@@ -1,17 +1,18 @@
-from typing import (
-    Iterable,
-    Callable,
-    Union,
-    Sequence,
-    AnyStr,
-    SupportsFloat,
-    Dict,
-    List,
-)
 from concurrent.futures import ProcessPoolExecutor
 from functools import lru_cache, partial
-import pandas as pd
+from typing import (
+    AnyStr,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Sequence,
+    SupportsFloat,
+    Union,
+)
+
 import numpy as np
+import pandas as pd
 
 from bikipy.feature.midpoint import compute_from_dlc_df
 
@@ -23,12 +24,7 @@ DEEPLABCUT_DF_INIT_KWARGS = {
     "dtype": {"coords": int, "x": float, "y": float, "likelihood": float},
 }
 
-CROPPING_PARAMETERS_BASE = {
-    "x1": None,
-    "x2": None,
-    "y1": None,
-    "y2": None
-}
+CROPPING_PARAMETERS_BASE = {"x1": None, "x2": None, "y1": None, "y2": None}
 
 
 class DeepLabCutReader:
@@ -44,8 +40,8 @@ class DeepLabCutReader:
         midpoint_groups: Union[Iterable, None] = None,
         future_scaling: bool = False,
         min_likelihood: SupportsFloat = 0.80,
-        x_crop_start: SupportsFloat = 0.,
-        y_crop_start: SupportsFloat = 0.,
+        x_crop_start: SupportsFloat = 0.0,
+        y_crop_start: SupportsFloat = 0.0,
         invert_y: bool = False,
     ):
         """
@@ -106,6 +102,7 @@ class DeepLabCutReader:
 
                 def y_map_func(y):
                     return y_mod - y
+
             elif self.y_crop_start:
 
                 def y_map_func(y):

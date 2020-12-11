@@ -1,7 +1,6 @@
 import numpy as np
 
-from bikipy.feature.midpoint import recursive_midpoint, compute_midpoint
-
+from bikipy.feature.midpoint import compute_midpoint, recursive_midpoint
 
 point_1 = np.array(((2, 0), (3, 0), (0, 4)))
 point_2 = np.array(((4, 0), (7, 0), (0, 10)))

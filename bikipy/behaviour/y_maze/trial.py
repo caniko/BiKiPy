@@ -1,24 +1,24 @@
-from typing import AnyStr, SupportsFloat, SupportsInt, Dict
+from typing import AnyStr, Dict, SupportsFloat, SupportsInt
 
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
-
-from bikipy.utils.store import RangeDict
+import pandas as pd
 from border.base import PolygonalBorder
 
-from bikipy.behaviour.y_maze.experiment import YMaze
 from bikipy.behaviour.base import BaseTrial
+from bikipy.behaviour.y_maze.experiment import YMaze
+from bikipy.behaviour.y_maze.utils import mean_intersecting_points_on_borders
+from bikipy.utils.store import RangeDict
 
 
 class YMazeTrial(BaseTrial):
     def __init__(
         self,
-        exp_id_range_vs_area_sets: Dict[SupportsInt, PolygonalBorder],
+        exp_id_range_vs_area_sets: Dict,
         feature_tracking_point: AnyStr,
         center_triangle_cm_width: SupportsFloat,
-
-        *args, **kwargs
+        *args,
+        **kwargs,
     ):
         """
 
@@ -31,6 +31,12 @@ class YMazeTrial(BaseTrial):
 
         """
         super().__init__(*args, **kwargs)
+
+        # for key, value in exp_id_range_vs_area_sets.items():
+        #     arms, center = mean_intersecting_points_on_borders(
+        #         value["arms"], value["center"]
+        #     )
+        #     exp_id_range_vs_area_sets[key] = {"arms": arms, "center": center}
 
         self.exp_id_range_vs_area_sets = RangeDict(exp_id_range_vs_area_sets)
 
@@ -56,8 +62,10 @@ class YMazeTrial(BaseTrial):
                 YMaze(
                     arms=experiment_area_set["arms"],
                     center=experiment_area_set["center"],
+                    average_intersections=False,
                     coordinate_sequences=coordinate_sequences[
-                        self.feature_tracking_point],
+                        self.feature_tracking_point
+                    ],
                     fps=exp_fps,
                     unit_per_pixel=unit_per_pixel,
                     label=exp_id,
@@ -71,18 +79,30 @@ class YMazeTrial(BaseTrial):
             y_maze.label: y_maze for y_maze in self.y_maze_experiments
         }
 
-    def debug_trial(self):
-        for exp_id, area_set in self.exp_id_range_vs_area_sets.items():
-            coordinate_sequence = self.exp_id_vs_coordinate_sequences[exp_id][
-                self.feature_tracking_point]
+    def plot(self):
+        previous_id = 0
+        for next_exp_id, area_set in self.exp_id_range_vs_area_sets.items():
+            coordinate_sequence = []
+            for exp_id in range(previous_id, next_exp_id + 1):
+                try:
+                    coordinate_sequence.extend(
+                        self.exp_id_vs_coordinate_sequences[exp_id][
+                            self.feature_tracking_point
+                        ]
+                    )
+                except KeyError:
+                    pass
 
             fig, ax = plt.subplots(1, 1)
             for poly_area in area_set["arms"]:
                 poly_area.plot(ax=ax, show=False)
 
-            area_set["center"].plot(points=coordinate_sequence, include_borders=False, ax=ax)
+            area_set["center"].plot(
+                points=coordinate_sequence, include_borders=False, ax=ax
+            )
 
             plt.show()
+            previous_id = next_exp_id + 1
 
     def export_to_dataframe(self) -> pd.DataFrame:
         """

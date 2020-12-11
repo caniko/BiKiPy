@@ -1,9 +1,9 @@
-from typing import Union, AnyStr, Any, SupportsFloat, Sequence, Dict
+from typing import Any, AnyStr, Dict, Sequence, SupportsFloat, Union
 
 import numpy as np
 
-from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.feature import movement
+from bikipy.reader.deeplabcut import DeepLabCutReader
 
 
 class BaseExperiment:
@@ -67,7 +67,7 @@ class BaseExperiment:
 
                 group_idx = (start, i)
                 location_sequence = self.movement_feature_coordinates[
-                    group_idx[0]: group_idx[1] + 1
+                    group_idx[0] : group_idx[1] + 1
                 ]
                 displacement = movement.displacement(location_sequence)
                 speed = np.abs(np.diff(displacement, axis=0))

@@ -1,8 +1,8 @@
-from typing import SupportsFloat, Any
+from typing import Any, SupportsFloat
 
 import matplotlib.pyplot as plt
-from PIL import Image
 import numpy as np
+from PIL import Image
 
 lines = {1: None, 2: None}
 

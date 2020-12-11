@@ -1,11 +1,11 @@
-from pandas.core.frame import DataFrame as DataFrameType
-from typing import Union, Sequence, AnyStr
+from typing import AnyStr, Sequence, Union
 from warnings import warn
+
 import numpy as np
+from pandas.core.frame import DataFrame as DataFrameType
 
-from bikipy.math.vector import unit_vector, dot_prod_along_axis_1
 from bikipy.math.statistics import feature_scale
-
+from bikipy.math.vector import dot_prod_along_axis_1, unit_vector
 
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}
 
@@ -177,10 +177,7 @@ def dlc_compute_angles_from_vectors(
     -------
     dict: {Angle, Likelihood}
     """
-    from bikipy.utils.deeplabcut import (
-        reduce_likelihoods,
-        get_region_of_interest_data,
-    )
+    from bikipy.utils.deeplabcut import get_region_of_interest_data, reduce_likelihoods
 
     ordered_point_names = (point_a_name, point_b_name, point_c_name)
     likelihood = reduce_likelihoods(df, ordered_point_names)

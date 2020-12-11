@@ -1,5 +1,6 @@
-from typing import Union, SupportsFloat, Sequence
+from typing import Sequence, SupportsFloat, Union
 from warnings import warn
+
 import numpy as np
 
 
