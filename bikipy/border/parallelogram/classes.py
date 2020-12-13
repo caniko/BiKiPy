@@ -9,7 +9,7 @@ from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.math.vector import (
     intersection_between_two_lines,
     normal_from_line_to_point,
-    orthogonal_vector,
+    orthogonal_unit_vector,
     unit_vector,
 )
 
@@ -135,7 +135,7 @@ class ParallelogramBorder(PolygonalBorder):
 
     @property
     def midline_unit_orthogonal(self):
-        return orthogonal_vector(self.midline_unit)
+        return orthogonal_unit_vector(self.midline_unit)
 
     @property
     def midline_magnitude(self):
@@ -392,7 +392,7 @@ class GradientBorder(ParallelogramBorder):
 
         line_to_coord_segment = line_segment_apex + np.expand_dims(
             mid_apex_to_coordinate_magnitudes[valid_coordinates_boolean_indexes], 0
-        ).T * orthogonal_vector(self.midline_unit)
+        ).T * orthogonal_unit_vector(self.midline_unit)
 
         fig, ax = self.plot(show=False)
         ax.scatter(

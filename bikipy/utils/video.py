@@ -3,10 +3,6 @@ from pathlib import Path
 import cv2
 
 
-def seconds_from_frames(frames, fps):
-    return frames / fps
-
-
 def get_video_data(video_path, frame_time="middle"):
     """
     Get a frame from a given relative location, and resolution info of video

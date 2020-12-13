@@ -11,11 +11,11 @@ def test_recursive_midpoint():
     result = recursive_midpoint((point_1, point_2, point_3))
     expected = np.array(((4, 0), (7, 0), (0, 8)))
 
-    assert np.allclose(result, expected), result
+    np.testing.assert_allclose(result, expected), result
 
 
 def test_compute_midpoint():
     result = compute_midpoint(point_1, point_2)
     expected = np.array(((3, 0), (5, 0), (0, 7)))
 
-    assert np.allclose(result, expected), result
+    np.testing.assert_allclose(result, expected), result

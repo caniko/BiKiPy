@@ -7,7 +7,9 @@ def units_pixels_per_second_frame(units_per_pixel, fps):
     return units_per_pixel * fps
 
 
-def displacement(location_sequence: Sequence[Sequence[SupportsFloat]]) -> np.ndarray:
+def displacement_per_frame(
+    location_sequence: Sequence[Sequence[SupportsFloat]],
+) -> np.ndarray:
     location_sequence = np.asanyarray(location_sequence)
     return np.linalg.norm(np.diff(location_sequence, axis=0), axis=1)
 
@@ -22,8 +24,8 @@ def displacement_mean_speed_acceleration(
     fps = float(fps)
     unit_per_pixel = float(unit_per_pixel)
 
-    displacement_per_frame = displacement(location_sequence)
-    speed_per_frame = np.abs(np.diff(displacement_per_frame, axis=0))
+    displacement = displacement_per_frame(location_sequence)
+    speed_per_frame = np.abs(np.diff(displacement, axis=0))
     acceleration_per_frame = np.abs(np.diff(speed_per_frame, axis=0))
 
     total_displacement = np.sum(displacement_per_frame)

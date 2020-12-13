@@ -197,7 +197,7 @@ for subdir in os.listdir(str(DATA_DIR)):
                 fps=exp_id_vs_fps,
                 center_triangle_cm_width=8,
                 label=subdir,
-                midpoint_groups=(("left_ear", "right_ear"),)
+                midpoint_groups=(("left_ear", "right_ear"),),
             )
         )
     )

@@ -10,7 +10,6 @@ from bikipy.border.parallelogram.classes import ParallelogramBorder
 from bikipy.border.triangular import TriangularBorder
 from bikipy.utils.video import get_video_data
 
-
 DATA_DIR = Path("C:/Users/Can/Projects/Neuroscience/Imen/data/y_maze/master's")
 EXP_ID_FINDER = re.compile("\d+")
 

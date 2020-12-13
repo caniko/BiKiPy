@@ -16,7 +16,7 @@ def unit_vector(row_vectors: Sequence, force_1_dim: bool = False) -> np.ndarray:
 
     force_1_dim: bool
         If True, make sure that the results are sent back as a Sequence within an array
-        important when working with single vectors and functions that expect
+        important when working with single vectors within functions that expect
         Sequence of vectors
 
     Returns
@@ -38,7 +38,7 @@ def unit_vector(row_vectors: Sequence, force_1_dim: bool = False) -> np.ndarray:
     return (row_vectors.T / np.linalg.norm(row_vectors, axis=1)).T
 
 
-def orthogonal_vector(vector: Sequence) -> np.ndarray:
+def orthogonal_unit_vector(vector: Sequence) -> np.ndarray:
     """
     Computes the orthogonal unit vector of the given 2D vector
 
@@ -59,7 +59,7 @@ def orthogonal_vector(vector: Sequence) -> np.ndarray:
         return unit_vector(np.array((-vector.T[1], vector.T[0])).T)
 
 
-def dot_prod_along_axis_1(vector_a, vector_b):
+def dot_prod_along_axis_1(vector_a, vector_b) -> np.ndarray:
     # np.einsum("ij,ij->i", vector_a, vector_b)
     return np.nansum(vector_a * vector_b, axis=1)
 
@@ -84,7 +84,7 @@ def normal_from_line_to_point(
 
     """
     line_unit_vector = unit_vector(line_vector)
-    orthogonal_unit_line_vector = orthogonal_vector(line_unit_vector)
+    orthogonal_unit_line_vector = orthogonal_unit_vector(line_unit_vector)
 
     lhs = np.array(
         (
@@ -103,7 +103,7 @@ def normal_from_line_to_point(
     return sol
 
 
-def distance_between_line_and_point(*args, **kwargs):
+def distance_between_line_and_point(*args, **kwargs) -> np.ndarray:
     """
     Compute distance between point and a line.
 
@@ -130,17 +130,25 @@ def intersection_between_two_lines(
     vector_b_start: Sequence,
 ) -> np.ndarray:
     """
+    Compute the intersection between two lines designated by a starting point
+    and a direction/unit vector
+
+    FIXME: Does not work when the intersection is on (0, 0); very rare case
 
     Parameters
     ----------
-    vector_a
-    vector_b
-    vector_a_start
-    vector_b_start
+    vector_a: Sequence
+        Unit vector of line A
+    vector_b: Sequence
+        Unit vector of line B
+    vector_a_start: Sequence
+        Origin or starting point of line A
+    vector_b_start: Sequence
+        Origin or starting point of line B
 
     Returns
     -------
-
+    Sequence: The intersection point between lina A and B
     """
     rhs = np.array(((vector_a[0], -vector_b[0]), (vector_a[1], -vector_b[1])))
     lhs = np.array(

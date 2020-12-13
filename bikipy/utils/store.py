@@ -1,29 +1,42 @@
 from collections import UserDict
-from typing import SupportsFloat, SupportsInt, Union
+from typing import Iterable, SupportsFloat, SupportsInt, Union
 
 
 class RangeDict(UserDict):
+    """
+    Ranges are generated from left to right from keys as the following [left, right).
+    Practically speaking, a key in range will return the key referred to as left.
+
+    Useful when working with data that is generalised for a given range of values.
+    """
+
     def __init__(self, class_dict, **kwargs):
 
-        class_dict = {key: class_dict[key] for key in sorted(class_dict)}
+        self.descending = sorted(class_dict, reverse=True)
 
         super().__init__(class_dict, **kwargs)
+
+    @staticmethod
+    def find_range(sequence: Iterable, value: Union[SupportsFloat, SupportsInt]):
+        for number in sequence:
+            if number <= value:
+                return number
+
+        msg = f"Provided key is less than the first key in the RangeDict; {value}"
+        raise KeyError(msg)
 
     def __getitem__(self, key: Union[SupportsFloat, SupportsInt]):
         try:
             return super().__getitem__(key)
         except KeyError:
-            proto_key = None
-            for d_key in self.keys():
-                if d_key <= key:
-                    proto_key = d_key
-                elif proto_key and d_key > key:
-                    return super().__getitem__(proto_key)
+            return super().__getitem__(self.find_range(self.descending, key))
 
-            if proto_key is not None:
-                return super().__getitem__(proto_key)
+    def __setitem__(self, key, value):
+        if not isinstance(key, (int, float)):
+            msg = "Keys in RangeDict(s) have to be either integer or float"
+            raise TypeError(msg)
 
+        self.descending.append(key)
+        self.descending = sorted(self.descending, reverse=True)
 
-if __name__ == "__main__":
-    a = RangeDict({1: "can", 4: "dej", 10: "x"})
-    print(a[4])
+        super().__setitem__(key, value)

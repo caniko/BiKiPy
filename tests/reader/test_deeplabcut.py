@@ -1,3 +1,4 @@
+from functools import partial
 from pathlib import Path
 
 from bikipy.reader.deeplabcut import DeepLabCutReader
@@ -9,33 +10,36 @@ CSV_PATH = EXAMPLES_ROOT / "test_tracking.csv"
 VIDEO_PATH = EXAMPLES_ROOT / "test_video.mp4"
 IMG_PATH = EXAMPLES_ROOT / "test.png"
 
-RESOLUTION = (1280, 720)
+PIXEL_RESOLUTION = (388, 442)
 
 
-def test_deep_lab_cut_reader():
-    from_video_obj = DeepLabCutReader.from_video(
+def test_deep_lab_cut_reader_from_video():
+    partial_dlc = partial(
+        DeepLabCutReader.from_video,
         str(VIDEO_PATH),
         future_scaling=True,
-        csv_path=CSV_PATH,
         midpoint_groups=[("left_ear", "right_ear")],
     )
 
-    assert from_video_obj
+    assert partial_dlc(csv_path=CSV_PATH)
+    assert partial_dlc(hdf_path=HDF_PATH)
 
-    from_csv_obj = DeepLabCutReader.from_csv(
+    assert partial_dlc(hdf_path=HDF_PATH).pixel_resolution == PIXEL_RESOLUTION
+
+
+def test_deep_lab_cut_reader_from_csv():
+    assert DeepLabCutReader.from_csv(
         str(CSV_PATH),
-        RESOLUTION,
+        PIXEL_RESOLUTION,
         future_scaling=True,
         midpoint_groups=[("left_ear", "right_ear")],
     )
 
-    assert from_csv_obj
 
-    from_hdf_obj = DeepLabCutReader.from_hdf(
+def test_deep_lab_cut_reader_from_hdf():
+    assert DeepLabCutReader.from_hdf(
         str(HDF_PATH),
-        RESOLUTION,
+        PIXEL_RESOLUTION,
         future_scaling=True,
         midpoint_groups=[("left_ear", "right_ear")],
     )
-
-    assert from_hdf_obj

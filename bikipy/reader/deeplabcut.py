@@ -35,7 +35,7 @@ class DeepLabCutReader:
     def __init__(
         self,
         df: pd.DataFrame,
-        video_res: Union[Sequence, None] = None,
+        pixel_resolution: Union[Sequence, None] = None,
         data_label: Union[AnyStr, None] = None,
         midpoint_groups: Union[Iterable, None] = None,
         future_scaling: bool = False,
@@ -49,7 +49,7 @@ class DeepLabCutReader:
         ----------
         df : pandas.DataFrame
             Kinematic data from DeepLabCut ingested as a pd.DataFrame
-        video_res : Sequence
+        pixel_resolution : Sequence
              The resolution of the videos that are being analyzed
         data_label : String; optional
             Label for the data
@@ -67,8 +67,11 @@ class DeepLabCutReader:
             traditional Cartesian coordinate system where the origin is on the bottom-left
         """
 
-        if video_res:
-            self.horizontal_res, self.vertical_res = video_res
+        if pixel_resolution:
+            self.pixel_resolution = pixel_resolution
+            self.resolution = self.pixel_resolution
+
+            self.horizontal_res, self.vertical_res = pixel_resolution
             if not (
                 isinstance(self.horizontal_res, (int, float, type(None)))
                 and isinstance(self.vertical_res, (int, float, type(None)))
@@ -260,12 +263,12 @@ class DeepLabCutReader:
         from bikipy.utils.video import get_video_data
 
         _frame, horizontal_res, vertical_res, _fps = get_video_data(video_path)
-        kwargs["video_res"] = (horizontal_res, vertical_res)
+        kwargs["pixel_resolution"] = (horizontal_res, vertical_res)
 
-        if "csv_path" in kwargs:
-            return cls.from_csv(*args, **kwargs)
-        elif "hdf_path" in kwargs:
+        if "hdf_path" in kwargs:
             return cls.from_hdf(*args, **kwargs)
+        elif "csv_path" in kwargs:
+            return cls.from_csv(*args, **kwargs)
         else:
             return cls(*args, **kwargs)
 

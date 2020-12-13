@@ -15,7 +15,7 @@ HDF_PATH = Path(__file__).parent.parent.resolve() / "example_data/data_for_angle
 def test_compute_angles_from_vectors():
     test_data = DeepLabCutReader.from_hdf(
         HDF_PATH,
-        video_res=(1280, 720),
+        pixel_resolution=(1280, 720),
         midpoint_groups=[("left_ear", "right_ear")],
         future_scaling=False,
         min_likelihood=0.95,
@@ -62,18 +62,18 @@ def test_clockwise_2d():
 
     # AB -> BC
     result = compute_angles_from_vectors(point_1, point_2, point_3)
-    assert np.allclose(result, answers), result
+    np.testing.assert_allclose(result, answers), result
 
     # CB -> BA
     result = compute_angles_from_vectors(point_3, point_2, point_1)
-    assert np.allclose(result, 2 * np.pi - answers), result
+    np.testing.assert_allclose(result, 2 * np.pi - answers), result
 
     feature_scaled_answers = feature_scale(answers)
     result = compute_angles_from_vectors(
         point_1, point_2, point_3, feature_scale_data=True
     )
-    assert np.allclose(result, feature_scaled_answers), result
+    np.testing.assert_allclose(result, feature_scaled_answers), result
 
     answers_in_deg = answers * 180 / np.pi
     result = compute_angles_from_vectors(point_1, point_2, point_3, degrees=True)
-    assert np.allclose(result, answers_in_deg), result
+    np.testing.assert_allclose(result, answers_in_deg), result
