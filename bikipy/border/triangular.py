@@ -31,11 +31,16 @@ class TriangularBorder(GenericPolygonalBorder):
         """
 
         if sides:
-            self.sides = (base_a, base_b, apex)
-        else:
-            self.base_a = np.asanyarray(base_a)
-            self.base_b = np.asanyarray(base_b)
-            self.apex = np.asanyarray(apex)
+            base_a, base_b, apex = sides
+        elif not (base_a and base_b and apex):
+            msg = "sides or (base_a, base_b, apex) has to be defined"
+            raise ValueError(msg)
+
+        self.base_a = np.asanyarray(base_a)
+        self.base_b = np.asanyarray(base_b)
+        self.apex = np.asanyarray(apex)
+
+        self.sides = (self.base_a, self.base_b, self.apex)
 
         super().__init__(*args, **kwargs)
 
@@ -58,7 +63,7 @@ class TriangularBorder(GenericPolygonalBorder):
             f"    base_b={self.base_b.tolist()},\n"
             f"    apex={self.apex.tolist()},\n"
             f'    guiding_image="{self.guiding_image}",\n'
-            f'    label="{self.label}"\n'
+            f'    label="{self.semantic_label}"\n'
             ")"
         )
 

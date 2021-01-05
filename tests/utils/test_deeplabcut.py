@@ -15,19 +15,19 @@ def dlc_test_instance():
     return DeepLabCutReader.from_hdf(str(HDF_PATH))
 
 
-def test_reduce_likelihoods(dlc_test_instance):
+@pytest.mark.parametrize("roi_a, roi_b", (("left_ear", "right_ear"),))
+def test_reduce_likelihoods(dlc_test_instance, roi_a, roi_b):
     expected_result = np.expand_dims(
-        dlc_test_instance.df[("left_ear", "likelihood")].values
-        * dlc_test_instance.df[("right_ear", "likelihood")].values,
+        dlc_test_instance.df[(roi_a, "likelihood")].values
+        * dlc_test_instance.df[(roi_b, "likelihood")].values,
         axis=1,
     )
 
-    reduced_likelihoods = reduce_likelihoods(
-        dlc_test_instance.df, ("left_ear", "right_ear")
+    np.testing.assert_allclose(
+        expected_result, reduce_likelihoods(dlc_test_instance.df, (roi_a, roi_b))
     )
 
-    np.testing.assert_allclose(expected_result, reduced_likelihoods)
 
-
-def test_get_region_of_interest_data(dlc_test_instance):
-    assert np.any(get_region_of_interest_data(dlc_test_instance.df, "left_ear"))
+@pytest.mark.parametrize("roi", ("left_ear", "right_ear"))
+def test_get_region_of_interest_data(dlc_test_instance, roi):
+    assert np.any(get_region_of_interest_data(dlc_test_instance.df, roi))

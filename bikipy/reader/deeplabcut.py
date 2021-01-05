@@ -349,7 +349,7 @@ class DeepLabCutReader:
         init_from: str
             Classmethod label to use for initialization
         labels: tuple-like
-            Sequence of labels that will be stored as self.label in the class instance
+            Sequence of labels that will be stored as self.semantic_label in the class instance
         process_pooling: bool
             If True, initialize each DeepLabCutReader object with multiprocessing.
             Useful when initialize approximately 20 or more dlc objects

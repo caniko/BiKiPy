@@ -18,7 +18,7 @@ def detect(image, alpha):
 
     ret, thresh = cv2.threshold(contrasted, lowpass, 255, cv2.THRESH_BINARY_INV)
 
-    # labeled, objs = ndimage.label(np.mean(thresh, axis=2))
+    # labeled, objs = ndimage.semantic_label(np.mean(thresh, axis=2))
     # b = ndimage.find_objects(labeled)
     #
     # # labeled = ndimage.binary_erosion(labeled, iterations=1)

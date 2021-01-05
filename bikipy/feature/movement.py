@@ -28,7 +28,7 @@ def displacement_mean_speed_acceleration(
     speed_per_frame = np.abs(np.diff(displacement, axis=0))
     acceleration_per_frame = np.abs(np.diff(speed_per_frame, axis=0))
 
-    total_displacement = np.sum(displacement_per_frame)
+    total_displacement = np.sum(displacement)
     if unit_per_pixel:
         total_displacement *= unit_per_pixel
 

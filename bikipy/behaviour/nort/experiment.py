@@ -4,7 +4,7 @@ import numpy as np
 
 from bikipy.behaviour.base import BaseExperiment
 from bikipy.behaviour.nort.observation import nort_observation
-from bikipy.behaviour.utils import reduce_str_sequence
+from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.border.base import PolygonalBorder
 from bikipy.math.point_in_polygon import points_in_parallelogram
 
@@ -95,7 +95,7 @@ class NortBase(BaseExperiment):
         self.entry_sequence = np.ones_like(self.center_boolean_indexes, dtype=str)
         self.entry_sequence[self.center_boolean_indexes] = "C"
         self.entry_sequence[self.periphery_boolean_indexes] = "P"
-        self.entry_sequence = np.array(reduce_str_sequence(self.entry_sequence))
+        self.entry_sequence = np.array(reduce_repeating_sequences(self.entry_sequence))
 
         self.periphery_entries = np.sum(self.entry_sequence == "P")
         self.center_entries = np.sum(self.entry_sequence == "C")
@@ -173,7 +173,7 @@ class NortWithObjects(NortBase):
         self.observation_sequence[self.not_observing] = "X"
 
         self.reduced_observation_sequence = np.array(
-            reduce_str_sequence(self.observation_sequence)
+            reduce_repeating_sequences(self.observation_sequence)
         )
 
         self.novelty_observation_a = np.sum(self.reduced_observation_sequence == "A")
@@ -185,9 +185,9 @@ class NortWithObjects(NortBase):
     def _dlc_nort_observation(self, nort_object):
         return nort_observation(
             nort_object,
-            self.coordinate_sequences["mid-left_ear-right_ear"],
-            self.coordinate_sequences["nose"],
-            self.coordinate_sequences["mid-mid-left_ear-right_ear-tail"],
+            self.location_sequence["mid-left_ear-right_ear"],
+            self.location_sequence["nose"],
+            self.location_sequence["mid-mid-left_ear-right_ear-tail"],
             self.fps,
             self.max_radians_gaze_and_object,
         )

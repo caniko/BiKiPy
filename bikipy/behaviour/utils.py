@@ -4,7 +4,9 @@ from typing import AnyStr, List, Sequence, SupportsInt
 
 import numpy as np
 
-ARM_STRING_LABELS = ("A", "B", "C")
+
+ARM_STRING_LABELS = (1, 2, 3)
+CENTER_LABEL = 4
 
 
 def unique_with_counts_zipped(array):
@@ -38,7 +40,7 @@ def triplet_permutation_vs_base_permutation_dictionary(base_triplets: Sequence):
     return result
 
 
-def reduce_str_sequence(str_sequence: Sequence, tolerance: SupportsInt = 6) -> List:
+def reduce_repeating_sequences(str_sequence: Sequence, tolerance: SupportsInt = 6) -> List:
     """
     Reduce consecutive sub-sequences in string sequence
 
@@ -56,16 +58,9 @@ def reduce_str_sequence(str_sequence: Sequence, tolerance: SupportsInt = 6) -> L
     tolerance = int(tolerance)
 
     labels = np.unique(str_sequence)
-    assert 2 <= len(labels) <= 4
+    assert 2 <= len(labels) <= 4, labels
 
-    center_label = None
-    for label in labels:
-        if label not in ARM_STRING_LABELS:
-            center_label = label
-            break
-    assert center_label
-
-    i = 0
+    i, no_center_entry = 0, 0
     max_len = len(str_sequence) - tolerance
     reduced_str_sequence = []
     while i < max_len:
@@ -96,13 +91,16 @@ def reduce_str_sequence(str_sequence: Sequence, tolerance: SupportsInt = 6) -> L
                 i = following_idx
                 break
         if tolerable:
-            if (
-                current_str.upper() in ARM_STRING_LABELS
-                and next_str.upper() in ARM_STRING_LABELS
-            ):
-                reduced_str_sequence.append(center_label)
+            if current_str in ARM_STRING_LABELS and next_str in ARM_STRING_LABELS:
+                reduced_str_sequence.append(CENTER_LABEL)
+                no_center_entry += 1
 
             reduced_str_sequence.append(next_str)
             i += 1
+
+    if no_center_entry:
+        print(
+            f"No center entry between entries from one arm to another, {no_center_entry}"
+        )
 
     return reduced_str_sequence

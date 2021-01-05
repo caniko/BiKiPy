@@ -32,7 +32,7 @@ exp_id_vs_areas["before"][11] = {
                 [120.93677697210052, 144.58991294077043],
             ],
             guiding_image=guiding_image,
-            label="A",
+            semantic_label="A",
         ),
         ParallelogramBorder(
             base=[
@@ -44,7 +44,7 @@ exp_id_vs_areas["before"][11] = {
                 [440.33620448840816, 143.39719096049328],
             ],
             guiding_image=guiding_image,
-            label="B",
+            semantic_label="B",
         ),
         ParallelogramBorder(
             base=[
@@ -56,7 +56,7 @@ exp_id_vs_areas["before"][11] = {
                 [304.8352836048429, 388.97163068789314],
             ],
             guiding_image=guiding_image,
-            label="C",
+            semantic_label="C",
         ),
     ],
     "center": TriangularBorder(
@@ -64,7 +64,7 @@ exp_id_vs_areas["before"][11] = {
         base_b=[304.4131513647642, 223.99627791563267],
         apex=[281.38585607940445, 182.70595533498755],
         guiding_image=guiding_image,
-        label="X",
+        semantic_label="X",
     ),
 }
 
@@ -82,7 +82,7 @@ exp_id_vs_areas["before"][45] = {
                 [122.04823616627507, 138.41256085994735],
             ],
             guiding_image=guiding_image,
-            label="A",
+            semantic_label="A",
         ),
         ParallelogramBorder(
             base=[
@@ -94,7 +94,7 @@ exp_id_vs_areas["before"][45] = {
                 [443.4441598853966, 141.83166643142738],
             ],
             guiding_image=guiding_image,
-            label="B",
+            semantic_label="B",
         ),
         ParallelogramBorder(
             base=[
@@ -106,7 +106,7 @@ exp_id_vs_areas["before"][45] = {
                 [302.1211295975559, 383.4484601493485],
             ],
             guiding_image=guiding_image,
-            label="C",
+            semantic_label="C",
         ),
     ],
     "center": TriangularBorder(
@@ -114,7 +114,7 @@ exp_id_vs_areas["before"][45] = {
         base_b=[304.6483163295394, 220.05882526390275],
         apex=[281.24795069882646, 179.2968980362092],
         guiding_image=guiding_image,
-        label="X",
+        semantic_label="X",
     ),
 }
 
@@ -132,7 +132,7 @@ exp_id_vs_areas["before"][63] = {
                 [122.99790424732295, 141.5064413357117],
             ],
             guiding_image=guiding_image,
-            label="A",
+            semantic_label="A",
         ),
         ParallelogramBorder(
             base=[
@@ -144,7 +144,7 @@ exp_id_vs_areas["before"][63] = {
                 [442.8920384627408, 141.50103619982804],
             ],
             guiding_image=guiding_image,
-            label="B",
+            semantic_label="B",
         ),
         ParallelogramBorder(
             base=[
@@ -156,7 +156,7 @@ exp_id_vs_areas["before"][63] = {
                 [306.3691248039164, 387.2035957524236],
             ],
             guiding_image=guiding_image,
-            label="C",
+            semantic_label="C",
         ),
     ],
     "center": TriangularBorder(
@@ -164,7 +164,7 @@ exp_id_vs_areas["before"][63] = {
         base_b=[306.4937400784737, 223.15255937939912],
         apex=[282.72400934495465, 179.4469254500254],
         guiding_image=guiding_image,
-        label="X",
+        semantic_label="X",
     ),
 }
 
@@ -182,7 +182,7 @@ exp_id_vs_areas["after"][94] = {
                 [126.13880030940723, 143.04208964487884],
             ],
             guiding_image=guiding_image,
-            label="A",
+            semantic_label="A",
         ),
         ParallelogramBorder(
             base=[
@@ -194,7 +194,7 @@ exp_id_vs_areas["after"][94] = {
                 [444.34088857929504, 143.61042926184166],
             ],
             guiding_image=guiding_image,
-            label="B",
+            semantic_label="B",
         ),
         ParallelogramBorder(
             base=[
@@ -206,7 +206,7 @@ exp_id_vs_areas["after"][94] = {
                 [305.1272743365672, 383.7543167866629],
             ],
             guiding_image=guiding_image,
-            label="C",
+            semantic_label="C",
         ),
     ],
     "center": TriangularBorder(
@@ -214,7 +214,7 @@ exp_id_vs_areas["after"][94] = {
         base_b=[306.51298701298697, 223.39610389610385],
         apex=[281.8376623376623, 179.24025974025966],
         guiding_image=guiding_image,
-        label="X",
+        semantic_label="X",
     ),
 }
 
@@ -232,7 +232,7 @@ exp_id_vs_areas["after"][140] = {
                 [126.83522861652372, 140.17127078439125],
             ],
             guiding_image=guiding_image,
-            label="A",
+            semantic_label="A",
         ),
         ParallelogramBorder(
             base=[
@@ -244,7 +244,7 @@ exp_id_vs_areas["after"][140] = {
                 [443.48940453089836, 141.22077658692382],
             ],
             guiding_image=guiding_image,
-            label="B",
+            semantic_label="B",
         ),
         ParallelogramBorder(
             base=[
@@ -256,7 +256,7 @@ exp_id_vs_areas["after"][140] = {
                 [304.96712211845903, 383.5240864658306],
             ],
             guiding_image=guiding_image,
-            label="C",
+            semantic_label="C",
         ),
     ],
     "center": TriangularBorder(
@@ -264,7 +264,7 @@ exp_id_vs_areas["after"][140] = {
         base_b=[307.34229390681, 220.0917132616487],
         apex=[283.1186379928315, 178.25085304659495],
         guiding_image=guiding_image,
-        label="X",
+        semantic_label="X",
     ),
 }
 
@@ -279,33 +279,39 @@ for subdir in os.listdir(str(DATA_DIR)):
     for file_path in glob(str(DATA_DIR / subdir / "*.h5")):
         exp_id = int(EXP_ID_FINDER.findall(Path(file_path).stem)[0])
         exp_id_vs_dlc_path[exp_id] = file_path
+        break
 
     for file_path in glob(str(DATA_DIR / subdir / "*.mp4")):
         exp_id = int(EXP_ID_FINDER.findall(Path(file_path).stem)[0])
 
         _, _x, _y, fps = get_video_data(file_path)
         exp_id_vs_fps[exp_id] = fps
+        break
 
     trial_datas.append(
         (
             trial := YMazeTrial(
                 exp_id_range_vs_area_sets=exp_id_range_vs_area_sets,
-                feature_tracking_point="mid-left_ear-right_ear",
+                feature_tracking_point="mid-mid-left_ear-right_ear-base_tail",
                 exp_id_vs_coordinate_data_path=exp_id_vs_dlc_path,
                 fps=exp_id_vs_fps,
-                center_triangle_cm_width=8,
+                center_triangle_meter_width=0.08,
                 label=subdir,
-                midpoint_groups=(("left_ear", "right_ear"),),
+                midpoint_groups=(
+                    ("left_ear", "right_ear"),
+                    ("mid-left_ear-right_ear", "base_tail"),
+                ),
                 x_crop_start=95.0,
                 y_crop_start=75.0,
             )
         )
     )
+    break
 
-    # trial.plot()
+    #  trial.plot(invalid=False)
 
 with pd.ExcelWriter(RESULT_PATH / "master's.xlsx") as writer:
     for trial in trial_datas:
-        print(f"Analysing {trial.label}")
+        print(f"Analysing {trial.semantic_label}")
         df = trial.export_to_dataframe()
-        df.to_excel(writer, sheet_name=trial.label)
+        df.to_excel(writer, sheet_name=trial.semantic_label)

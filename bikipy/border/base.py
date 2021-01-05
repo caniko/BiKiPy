@@ -1,5 +1,4 @@
-from typing import Any, AnyStr, Sequence, SupportsFloat, Union
-from warnings import warn
+from typing import Any, AnyStr, Sequence, SupportsFloat, SupportsInt, Union
 
 import cv2
 import matplotlib.pyplot as plt
@@ -13,7 +12,8 @@ class Border:
     def __init__(
         self,
         guiding_image: Union[AnyStr, None] = None,
-        label: Any = None,
+        semantic_label: Any = None,
+        int_label: Union[SupportsInt, None] = None
     ):
         """
         Parameters
@@ -21,16 +21,31 @@ class Border:
         guiding_image: Optional, string
             Label for the border. Useful for manual audition and testing.
 
-        label: Optional, string
+        semantic_label: Optional, string
             Label for the border. Useful for manual audition and testing.
         """
 
         self.guiding_image = guiding_image
-        self.label = label
+        self.semantic_label = semantic_label
+        self.int_label = int_label
 
-    def plot(self, ax):
+    def plot(
+        self, ax: Any = None, points: Union[Sequence, None] = None, bin: bool = True
+    ):
+        if not ax:
+            fig, ax = plt.subplots()
+
         if self.guiding_image:
             ax.imshow(cv2.imread(str(self.guiding_image)))
+
+        if points is not None:
+            points = np.asanyarray(points)
+
+            if bin:
+                histogram, _x_edges, _y_edges = np.histogram2d(*points.T, bins=60)
+                ax.imshow(histogram.T, interpolation="sinc")
+
+            ax.plot(*points.T, ".r-")
 
         return ax
 
@@ -43,7 +58,6 @@ class PolygonalBorder(Border):
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
-
         self.feature_scale = np.asanyarray(feature_scale) if feature_scale else None
 
     def confined_coordinates(
@@ -71,9 +85,9 @@ class PolygonalBorder(Border):
             self.confined_coordinate_indexes(coordinates)
         ]
         if plot:
-            fig, ax = self.plot(show=False)
+            ax = super().plot()
             ax.scatter(confined_coordinates.T[0], confined_coordinates.T[1], marker="x")
-            self.plt_show(ax)
+            plt.show()
 
         return confined_coordinates
 
@@ -110,28 +124,39 @@ class PolygonalBorder(Border):
         np.ndarray that stores the sequential border presence across frames
         """
 
+        coordinates = np.asanyarray(coordinates)
+
         border_sequence = (
-            list(inferior_poly_border_instances) + list(superior_poly_border_instances)
+            (*inferior_poly_border_instances, *superior_poly_border_instances)
             if inferior_poly_border_instances
             else superior_poly_border_instances
         )
-        coordinates = np.asanyarray(coordinates)
-        presence = np.zeros(coordinates.shape[0], dtype=np.object)
+        presence = np.zeros(coordinates.shape[0], dtype=np.int8 if len(border_sequence) <= 7 else np.int16)
+        overlap_locations = {}
+
         for border in border_sequence:
             confined_coord_booleans_index = border.confined_coordinate_indexes(
                 coordinates
             )
 
             if presence[confined_coord_booleans_index].any():
-                presence[np.where(presence[confined_coord_booleans_index])[0]] = np.nan
-                warn(f"Border {border.label} has coordinate overlap with other borders")
-                # raise BorderOverlapError(border)
-            presence[confined_coord_booleans_index] = border.label
+                overlap_locations[border.semantic_label] = np.flatnonzero(presence[confined_coord_booleans_index])
+                presence[overlap_locations[border.semantic_label]] = 0
+                print(
+                    f"Border {border.semantic_label} has coordinate overlap with "
+                    f"other borders, {overlap_locations[border.semantic_label].size}"
+                )
 
+            presence[confined_coord_booleans_index] = border.int_label
+
+        valid_indexes = np.nonzero(presence)
         if clean_outliers:
-            presence = [e for e in presence[presence != 0] if isinstance(e, str)]
+            presence = presence[valid_indexes]
 
-        return presence
+        boolean_array = np.full(coordinates.shape[0], False, dtype=np.bool)
+        boolean_array[valid_indexes] = True
+
+        return presence, valid_indexes, boolean_array
 
     @property
     def feat_scaled_sides(self):
@@ -188,7 +213,7 @@ class GenericPolygonalBorder(PolygonalBorder):
             f"\n{self.__class__.__name__}(\n"
             f"    sides={self.sides},\n"
             f"    guiding_image={self.guiding_image},\n"
-            f"    label={self.label}\n"
+            f"    label={self.semantic_label}\n"
             ")"
         )
 
@@ -234,29 +259,15 @@ class GenericPolygonalBorder(PolygonalBorder):
     def border_vectors(self):
         return self.corner_to_corner_vectors(self.borders)
 
-    def plot(
-        self,
-        points: Union[Sequence, None] = None,
-        include_borders: bool = False,
-        ax: Any = None,
-    ):
+    def plot(self, *args, include_borders: bool = False, **kwargs):
         """
         Plot the sides defined in the object
 
-        Parameters
-        ----------
-        points
-            User defined coordinates that will be plotted alongside the object
-
-        show
-            If True, the plot will be shown through plt.show()
-
         Returns
         -------
-        matplotlib Figure and Axes object with the plot
+        matplotlib Axes object with the plot
         """
-        if not ax:
-            fig, ax = plt.subplots()
+        ax = super().plot(*args, **kwargs)
 
         for i in range(len(self.sides)):
             side_a = self.sides[i - 1]
@@ -273,12 +284,6 @@ class GenericPolygonalBorder(PolygonalBorder):
                     (border_a[0], border_a[1]),
                     (border_b[0], border_b[1]),
                 )
-
-        if points is not None:
-            points = np.asanyarray(points)
-            ax.scatter(points.T[0], points.T[1], marker=".")
-
-        super().plot(ax)
 
     # Define "corners" (integer) as a class variable for the ginput in from_image(...)
     @classmethod

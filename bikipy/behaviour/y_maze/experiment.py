@@ -1,16 +1,16 @@
 import itertools as it
 from copy import copy
 from math import ceil
-from typing import Dict, Iterable, Sequence
-from warnings import warn
+from typing import Any, Dict, Iterable, Sequence, Union
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 from bikipy.behaviour.base import BaseExperiment
 from bikipy.behaviour.utils import (
     exclude_value_from_sequence,
-    reduce_str_sequence,
+    reduce_repeating_sequences,
     triplet_permutation_vs_base_permutation_dictionary,
     unique_with_counts_zipped,
 )
@@ -43,26 +43,32 @@ class YMaze(BaseExperiment):
         else:
             self.arms, self.center = arms, center
 
-        self.location_sequence = PolygonalBorder.detect_sequential_border_presence(
-            self.coordinate_sequences,
-            self.arms,
-            inferior_poly_border_instances=[self.center],
+        self.alternation_sequence, self.valid_indexes, self.valid_boolean_indexes = \
+            PolygonalBorder.detect_sequential_border_presence(
+                self.location_sequence,
+                self.arms,
+                inferior_poly_border_instances=[self.center],
+            )
+        self.invalid_boolean_indexes = np.logical_not(self.valid_boolean_indexes)
+
+        self.reduced_alternation_sequence = reduce_repeating_sequences(
+            self.alternation_sequence
         )
-        self.reduced_sequence = reduce_str_sequence(self.location_sequence)
         self.reduced_without_center = exclude_value_from_sequence(
-            self.reduced_sequence, self.center.label
+            self.reduced_alternation_sequence, self.center.int_label
         )
 
         self.sum_of_alternations = len(self.reduced_without_center) - 2
+        assert self.sum_of_alternations > 0, self.sum_of_alternations
 
         # Data labeling helpers
-        self.arm_labels = [arm.label for arm in self.arms]
+        self.arm_labels = [arm.semantic_label for arm in self.arms]
         self.arm_labels_str = "".join(self.arm_labels)
 
         self.arm_triplets = [
             "".join(triplet) for triplet in it.permutations(self.arm_labels_str)
         ]
-        self.arm_center_labels = self.arm_labels + [self.center.label]
+        self.arm_center_labels = self.arm_labels + [self.center.semantic_label]
 
         self._arm_center_label_dict = {area: 0 for area in self.arm_center_labels}
         self._arm_triplet_dict = {arm: 0 for arm in self.arm_triplets}
@@ -85,7 +91,7 @@ class YMaze(BaseExperiment):
         """
 
         result = copy(self._arm_center_label_dict)
-        for label, counts in unique_with_counts_zipped(self.location_sequence):
+        for label, counts in unique_with_counts_zipped(self.alternation_sequence):
             assert label in result
             result[label] = (counts / self.fps) if self.fps else counts
 
@@ -102,20 +108,22 @@ class YMaze(BaseExperiment):
         """
 
         result = copy(self._arm_center_label_dict)
-        for label, counts in unique_with_counts_zipped(self.reduced_sequence):
+        for label, counts in unique_with_counts_zipped(
+            self.reduced_alternation_sequence
+        ):
             assert label in result
             result[label] = counts
 
         total_arm_alternations = np.sum([result[lab] for lab in self.arm_labels])
         minimum_center_entries = ceil(total_arm_alternations / 2)
 
-        if not result[self.center.label]:
-            result[self.center.label] = 0
+        if not result[self.center.semantic_label]:
+            result[self.center.semantic_label] = 0
 
-        if result[self.center.label] < minimum_center_entries:
-            warn(
-                f"{self.label}: The number of alternations to the center, "
-                f"{result[self.center.label]} can't be less than the "
+        if result[self.center.semantic_label] < minimum_center_entries:
+            print(
+                f"{self.semantic_label}: The number of alternations to the center, "
+                f"{result[self.center.semantic_label]} can't be less than the "
                 f"ceil of half of the total arm alternations, {minimum_center_entries}"
             )
 
@@ -178,10 +186,31 @@ class YMaze(BaseExperiment):
             ):
                 alternations += 1
 
-        if self.sum_of_alternations <= 0:
-            print(1)
+        assert self.sum_of_alternations > 0
 
         return 100.0 * alternations / self.sum_of_alternations
+
+    def plot(self, ax: Any = None, points: Union[Sequence, None] = None, invalid: bool = False):
+        if points and invalid:
+            msg = "points can not be defined while invalid is True"
+            raise ValueError(msg)
+
+        if not ax:
+            fig, ax = plt.subplots()
+
+        for arm in self.arms:
+            arm.plot(ax=ax)
+
+        self.center.plot(
+            include_borders=False,
+            ax=ax,
+            bin=True,
+            points=points or self.location_sequence[
+                self.invalid_boolean_indexes if invalid else self.valid_boolean_indexes
+            ],
+        )
+
+        return ax
 
     @staticmethod
     def export_to_dataframe(y_maze_objects: Iterable) -> pd.DataFrame:
@@ -224,7 +253,7 @@ class YMaze(BaseExperiment):
         unit_length = None
         index_vs_data = {}
         for y_maze in y_maze_objects:
-            index_vs_data[y_maze.label] = (
+            index_vs_data[y_maze.semantic_label] = (
                 y_maze.displacement,
                 y_maze.mean_speed,
                 y_maze.mean_acceleration,
@@ -234,7 +263,7 @@ class YMaze(BaseExperiment):
                 *tuple(y_maze.triplet_alternation_distribution.values()),
             )
             if not unit_length:
-                unit_length = len(index_vs_data[y_maze.label])
+                unit_length = len(index_vs_data[y_maze.semantic_label])
 
         index_vs_data = dict(sorted(index_vs_data.items(), key=lambda item: item[0]))
 

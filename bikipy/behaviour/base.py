@@ -9,7 +9,7 @@ from bikipy.reader.deeplabcut import DeepLabCutReader
 class BaseExperiment:
     def __init__(
         self,
-        coordinate_sequences: Any,
+        location_sequence: Any,
         fps: SupportsFloat,
         unit_per_pixel: SupportsFloat,
         movement_feature_point_label: Union[AnyStr, None] = None,
@@ -18,8 +18,8 @@ class BaseExperiment:
         """
         Parameters
         ----------
-        coordinate_sequences: Sequence
-            The coordinates of the subject across the frames of the video recording
+        location_sequence: Sequence
+            The coordinates of the subject across the frames in the video recording
         fps: SupportsFloat
             Number of frames per second
         unit_per_pixel: SupportsFloat
@@ -28,20 +28,20 @@ class BaseExperiment:
         """
 
         if movement_feature_point_label:
-            # coordinate_sequences must be a reader object, like DeepLabCutReader
+            # location_sequence must be a reader object, like DeepLabCutReader
             self.movement_feature_point_label = str(movement_feature_point_label)
-            self.coordinate_sequences = coordinate_sequences
-            self.movement_feature_coordinates = self.coordinate_sequences[
+            self.location_sequence = location_sequence
+            self.movement_feature_coordinates = self.location_sequence[
                 self.movement_feature_point_label
             ]
         else:
             self.movement_feature_point_label = None
-            self.coordinate_sequences = np.asanyarray(coordinate_sequences)
-            self.movement_feature_coordinates = self.coordinate_sequences
+            self.location_sequence = np.asanyarray(location_sequence)
+            self.movement_feature_coordinates = self.location_sequence
 
         self.fps = float(fps)
         self.unit_per_pixel = float(unit_per_pixel)
-        self.label = label
+        self.semantic_label = label
 
         (
             self.displacement,
@@ -104,6 +104,7 @@ class BaseTrial:
         fps: Union[Dict, SupportsFloat, None] = None,
         coordinate_data_format: AnyStr = "deeplabcut",
         label: Any = None,
+        debug: bool = False,
         **init_kwargs,
     ):
 
@@ -111,10 +112,10 @@ class BaseTrial:
         self.fps = fps
 
         self.coordinate_data_format = str(coordinate_data_format).lower()
-        self.label = label
+        self.semantic_label, self.debug = label, debug
 
         if self.coordinate_data_format == "deeplabcut":
-            self.exp_id_vs_coordinate_sequences = {
+            self.exp_id_vs_location_sequences = {
                 exp_id: dlc_obj
                 for exp_id, dlc_obj in zip(
                     exp_id_vs_coordinate_data_path.keys(),

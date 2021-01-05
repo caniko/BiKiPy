@@ -46,7 +46,7 @@ class NortTrial(BaseTrial):
             x, y = exp_meta["recording_resolution"]
             unit_per_pixel = self.experiment_box_size_cm / (x if x < y else y)
 
-            coordinate_sequences = self.exp_id_vs_coordinate_sequences[exp_id]
+            location_sequences = self.exp_id_vs_location_sequence[exp_id]
 
             if isinstance(self.fps, dict):
                 exp_fps = self.fps["exp_id"]
@@ -64,9 +64,7 @@ class NortTrial(BaseTrial):
             if exp_meta["exp_category"] == "habituation":
                 self.habituation_experiments.append(
                     NortHabituation(
-                        coordinate_sequences=coordinate_sequences[
-                            self.eye_center_label
-                        ],
+                        location_sequences=location_sequences[self.eye_center_label],
                         recording_resolution=exp_meta["recording_resolution"],
                         experiment_box_size_cm=self.experiment_box_size_cm,
                         center_size_cm=self.center_size_cm,
@@ -88,7 +86,7 @@ class NortTrial(BaseTrial):
                         recording_resolution=exp_meta["recording_resolution"],
                         experiment_box_size_cm=self.experiment_box_size_cm,
                         center_size_cm=self.center_size_cm,
-                        coordinate_sequences=coordinate_sequences,
+                        location_sequences=location_sequences,
                         fps=exp_fps,
                         unit_per_pixel=unit_per_pixel,
                         movement_feature_point_label=self.eye_center_label,
@@ -159,12 +157,12 @@ class NortTrial(BaseTrial):
 
         index_vs_data = {}
         for nort_habituation in self.habituation_experiments:
-            index_vs_data[nort_habituation.label] = (
+            index_vs_data[nort_habituation.semantic_label] = (
                 *general_data(nort_habituation),
                 *habituation_filler,
             )
         for novelty_experiment in self.novelty_object_experiments:
-            index_vs_data[novelty_experiment.label] = (
+            index_vs_data[novelty_experiment.semantic_label] = (
                 *general_data(novelty_experiment),
                 novelty_experiment.novelty_observation_a,
                 novelty_experiment.novelty_observation_b,

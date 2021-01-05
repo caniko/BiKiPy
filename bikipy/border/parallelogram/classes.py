@@ -121,7 +121,7 @@ class ParallelogramBorder(PolygonalBorder):
             f"    base={self.base.tolist()},\n"
             f"    apex={self.apex.tolist()},\n"
             f'    guiding_image="{self.guiding_image}",\n'
-            f'    label="{self.label}"\n'
+            f'    label="{self.semantic_label}"\n'
             ")"
         )
 
@@ -202,237 +202,25 @@ class ParallelogramBorder(PolygonalBorder):
             cls(guiding_image=guiding_image, **object_kwargs[i]) for i in range(int(n))
         ]
 
-    def plot(
-        self, points: Union[Sequence, None] = None, ax: Any = None, show: bool = True
-    ):
-        if not ax:
-            fig, ax = plt.subplots()
+    def plot(self, *args, **kwargs):
+        ax = super().plot(*args, **kwargs)
 
         ax.plot(
-            # Base
-            (self.base[0][0], self.base[1][0]),
             (self.base[0][1], self.base[1][1]),
             "-r",
-            # Apex
             (self.apex[0][0], self.apex[1][0]),
             (self.apex[0][1], self.apex[1][1]),
             "-c",
-            # Close feet
             (self.base[0][0], self.apex[0][0]),
             (self.base[0][1], self.apex[0][1]),
             "-b",
-            # Far feet
             (self.base[1][0], self.apex[1][0]),
             (self.base[1][1], self.apex[1][1]),
             "-g",
-            # Midline
             (self.base_mid[0], self.apex_mid[0]),
             (self.base_mid[1], self.apex_mid[1]),
             "-k",
         )
         plt.legend(("Base", "Apex", "Close Feet", "Far Feet", "Midline"))
-        if points is not None:
-            points = np.asanyarray(points)
-            ax.scatter(points.T[0], points.T[1], marker=".")
 
-        super().plot(ax)
-
-
-class GradientBorder(ParallelogramBorder):
-    def __init__(
-        self,
-        gradient_range: Sequence = (0.5, 1.0),
-        **kwargs,
-    ):
-        """
-
-        Parameters
-        ----------
-        base: Sequence
-            The coordinates of the sides of the base of the parallelogram
-        apex: Sequence
-            The coordinates of the sides of the apex of the parallelogram
-        gradient_range: Sequence
-            The range of the gradient; (starting weight, end weight)
-        guiding_image: Path to image
-            Image used for annotating base and apex; apex and base cannot be defined
-            if guiding_image is defined
-        """
-        super().__init__(**kwargs)
-
-        self.gradient_range = gradient_range
-
-    @property
-    def gradient_range(self):
-        return self.__gradient_range
-
-    @gradient_range.setter
-    def gradient_range(self, gradient_range: Sequence):
-        gradient_min, gradient_max = tuple(gradient_range)
-        if gradient_min >= gradient_max:
-            msg = "gradient_range has to be less than self.gradient_max"
-            raise ValueError(msg)
-
-        if not 0.0 <= gradient_min <= 1.0 or not 0.0 <= gradient_max <= 1.0:
-            msg = "gradient range must be between 0 and 1.0"
-            raise ValueError(msg)
-
-        self.__gradient_range = gradient_range
-
-    @property
-    def gradient(self):
-        return np.linspace(*self.gradient_range, 100000)
-
-    def confined_coordinate_indexes(self, coordinates: Sequence) -> np.ndarray:
-        """
-
-        Parameters
-        ----------
-        coordinates
-            Sequence of coordinates
-
-        Returns
-        -------
-
-        """
-        coordinates = np.asanyarray(coordinates)
-        (
-            base_to_mid_apex_magnitudes,
-            mid_apex_to_coordinate_magnitudes,
-        ) = self.base_midpoint_coordinate_unit_vector_magnitudes(coordinates)
-
-        valid_coordinates_boolean_indexes = base_to_mid_apex_magnitudes <= 0
-        east_of_midpoint_booleans = mid_apex_to_coordinate_magnitudes <= 0
-
-        valid_magnitudes = base_to_mid_apex_magnitudes[
-            valid_coordinates_boolean_indexes
-        ]
-        expanded_valid_magnitudes = np.expand_dims(valid_magnitudes, 0).T
-
-        line_segment_apex = (
-            self.base_mid - expanded_valid_magnitudes * self.midline_unit
-            if self.base_mid[0] > self.apex_mid[0]
-            else self.base_mid + expanded_valid_magnitudes * self.midline_unit
-        )
-
-        compute = line_segment_apex.copy()
-        east_of_midpoint_booleans = east_of_midpoint_booleans[
-            valid_coordinates_boolean_indexes
-        ]
-        west_of_midpoint_booleans = np.logical_not(east_of_midpoint_booleans)
-        midline_to_coordinates_norm = np.linalg.norm(
-            coordinates[valid_coordinates_boolean_indexes.T[0]] - line_segment_apex,
-            axis=1,
-        )
-
-        if self.base_mid[1] >= self.apex_mid[1]:
-            compute[east_of_midpoint_booleans] = np.apply_along_axis(
-                lambda x: intersection_between_two_lines(
-                    self.midline_unit_orthogonal,
-                    self.far_from_origin_side_unit,
-                    x,
-                    self.base[1],
-                ),
-                1,
-                compute[east_of_midpoint_booleans],
-            )
-            compute[west_of_midpoint_booleans] = np.apply_along_axis(
-                lambda x: intersection_between_two_lines(
-                    self.midline_unit_orthogonal,
-                    self.close_to_origin_side_unit,
-                    x,
-                    self.base[0],
-                ),
-                1,
-                compute[west_of_midpoint_booleans],
-            )
-
-            compute = compute + line_segment_apex
-
-            compute = np.linalg.norm(compute, axis=1)
-            compute[east_of_midpoint_booleans] = (
-                compute[east_of_midpoint_booleans]
-                >= midline_to_coordinates_norm[east_of_midpoint_booleans]
-            )
-            compute[west_of_midpoint_booleans] = (
-                compute[west_of_midpoint_booleans]
-                <= midline_to_coordinates_norm[west_of_midpoint_booleans]
-            )
-
-        else:
-            compute[west_of_midpoint_booleans] = np.apply_along_axis(
-                lambda x: intersection_between_two_lines(
-                    self.midline_unit_orthogonal,
-                    self.far_from_origin_side_unit,
-                    x,
-                    self.base[1],
-                ),
-                1,
-                compute[west_of_midpoint_booleans],
-            )
-            compute[east_of_midpoint_booleans] = np.apply_along_axis(
-                lambda x: intersection_between_two_lines(
-                    self.midline_unit_orthogonal,
-                    self.close_to_origin_side_unit,
-                    x,
-                    self.base[0],
-                ),
-                1,
-                compute[east_of_midpoint_booleans],
-            )
-            compute = np.linalg.norm(line_segment_apex - compute, axis=1)
-            compute[east_of_midpoint_booleans] = (
-                compute[east_of_midpoint_booleans]
-                <= midline_to_coordinates_norm[east_of_midpoint_booleans]
-            )
-            compute[west_of_midpoint_booleans] = (
-                compute[west_of_midpoint_booleans]
-                >= midline_to_coordinates_norm[west_of_midpoint_booleans]
-            )
-
-        line_to_coord_segment = line_segment_apex + np.expand_dims(
-            mid_apex_to_coordinate_magnitudes[valid_coordinates_boolean_indexes], 0
-        ).T * orthogonal_unit_vector(self.midline_unit)
-
-        fig, ax = self.plot(show=False)
-        ax.scatter(
-            coordinates[valid_coordinates_boolean_indexes.T[0]].T[0],
-            coordinates[valid_coordinates_boolean_indexes.T[0]].T[1],
-            marker="x",
-        )
-
-        return valid_coordinates_boolean_indexes.T[0]
-
-    def weight_coordinates(self, coordinates: Sequence, plot: AnyStr = "scatter"):
-        coordinates = np.asanyarray(coordinates)
-        (
-            base_to_mid_apex_magnitudes,
-            mid_apex_to_coordinate_magnitudes,
-        ) = self.line_segment_magnitudes(coordinates)
-
-        valid_coordinates_boolean_indexes = (
-            base_to_mid_apex_magnitudes < 0
-            if self.base_mid[0] > self.apex_mid[0]
-            else base_to_mid_apex_magnitudes > 0
-        )
-        weights = np.abs(valid_magnitudes / self.midline_magnitude)
-
-        if plot:
-            fig, ax = self.plot(show=False)
-            line_segment_apex = (
-                self.base_mid - valid_magnitudes * self.midline_unit
-                if self.base_mid[0] > self.apex_mid[0]
-                else self.base_mid + valid_magnitudes * self.midline_unit
-            )
-
-            if plot == "scatter":
-                ax.scatter(line_segment_apex.T[0], line_segment_apex.T[1])
-            elif plot == "normal":
-                ax.plot(
-                    (line_segment_apex.T[0], coordinates.T[0]),
-                    (line_segment_apex.T[1], coordinates.T[1]),
-                )
-
-            self.plt_show(ax)
-
-        return weights
+        return ax

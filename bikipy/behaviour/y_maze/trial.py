@@ -1,22 +1,25 @@
-from typing import AnyStr, Dict, SupportsFloat, SupportsInt
+from typing import AnyStr, Dict, SupportsFloat, SupportsInt, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from border.base import PolygonalBorder
 
 from bikipy.behaviour.base import BaseTrial
 from bikipy.behaviour.y_maze.experiment import YMaze
 from bikipy.behaviour.y_maze.utils import mean_intersecting_points_on_borders
+from bikipy.border.base import PolygonalBorder
+from bikipy.border.triangular import TriangularBorder
 from bikipy.utils.store import RangeDict
 
 
 class YMazeTrial(BaseTrial):
     def __init__(
         self,
-        exp_id_range_vs_area_sets: Dict,
+        exp_id_range_vs_area_sets: Dict[
+            SupportsInt, Dict[AnyStr, Union[PolygonalBorder, TriangularBorder]]
+        ],
         feature_tracking_point: AnyStr,
-        center_triangle_cm_width: SupportsFloat,
+        center_triangle_meter_width: SupportsFloat,
         *args,
         **kwargs,
     ):
@@ -38,15 +41,23 @@ class YMazeTrial(BaseTrial):
         #     )
         #     exp_id_range_vs_area_sets[key] = {"arms": arms, "center": center}
 
+        for area_set in exp_id_range_vs_area_sets.values():
+            for i, arm in enumerate(area_set["arms"], start=1):
+                arm.int_label = i
+            area_set["center"].int_label = 4
+
         self.exp_id_range_vs_area_sets = RangeDict(exp_id_range_vs_area_sets)
 
         self.feature_tracking_point = str(feature_tracking_point)
-        self.center_triangle_cm_width = float(center_triangle_cm_width)
+        self.center_triangle_meter_width = float(center_triangle_meter_width)
+
+        if self.debug:
+            self.plot()
 
         self.y_maze_experiments = []
-        for exp_id, coordinate_sequences in self.exp_id_vs_coordinate_sequences.items():
+        for exp_id, location_sequence in self.exp_id_vs_location_sequences.items():
             experiment_area_set = self.exp_id_range_vs_area_sets[exp_id]
-            unit_per_pixel = self.center_triangle_cm_width / np.linalg.norm(
+            unit_per_pixel = self.center_triangle_meter_width / np.linalg.norm(
                 experiment_area_set["center"][0] - experiment_area_set["center"][1]
             )
 
@@ -63,9 +74,7 @@ class YMazeTrial(BaseTrial):
                     arms=experiment_area_set["arms"],
                     center=experiment_area_set["center"],
                     average_intersections=False,
-                    coordinate_sequences=coordinate_sequences[
-                        self.feature_tracking_point
-                    ],
+                    location_sequence=location_sequence[self.feature_tracking_point],
                     fps=exp_fps,
                     unit_per_pixel=unit_per_pixel,
                     label=exp_id,
@@ -73,35 +82,33 @@ class YMazeTrial(BaseTrial):
             )
 
         self.y_maze_experiments = sorted(
-            self.y_maze_experiments, key=lambda item: item.label
+            self.y_maze_experiments, key=lambda item: item.semantic_label
         )
         self.exp_id_vs_y_maze = {
-            y_maze.label: y_maze for y_maze in self.y_maze_experiments
+            y_maze.semantic_label: y_maze for y_maze in self.y_maze_experiments
         }
 
-    def plot(self):
+    def plot(self, *args, **kwargs):
         previous_id = 0
-        for next_exp_id, area_set in self.exp_id_range_vs_area_sets.items():
-            coordinate_sequence = []
-            for exp_id in range(previous_id, next_exp_id + 1):
-                try:
-                    coordinate_sequence.extend(
-                        self.exp_id_vs_coordinate_sequences[exp_id][
-                            self.feature_tracking_point
-                        ]
-                    )
-                except KeyError:
-                    pass
+        for next_exp_id, y_maze in self.exp_id_vs_y_maze.items():
+            if not ("invalid" in kwargs and kwargs["invalid"]):
+                across_trial_location_sequence = []
+                for exp_id in range(previous_id, next_exp_id + 1):
+                    try:
+                        across_trial_location_sequence.extend(
+                            self.exp_id_vs_location_sequences[exp_id][
+                                self.feature_tracking_point
+                            ]
+                        )
+                    except KeyError:
+                        pass
 
-            fig, ax = plt.subplots(1, 1)
-            for poly_area in area_set["arms"]:
-                poly_area.plot(ax=ax, show=False)
-
-            area_set["center"].plot(
-                points=coordinate_sequence, include_borders=False, ax=ax
-            )
+                y_maze.plot(points=across_trial_location_sequence, *args, **kwargs)
+            else:
+                y_maze.plot(*args, **kwargs)
 
             plt.show()
+
             previous_id = next_exp_id + 1
 
     def export_to_dataframe(self) -> pd.DataFrame:
@@ -138,7 +145,7 @@ class YMazeTrial(BaseTrial):
         unit_length = None
         index_vs_data = {}
         for y_maze in self.y_maze_experiments:
-            index_vs_data[y_maze.label] = (
+            index_vs_data[y_maze.semantic_label] = (
                 y_maze.displacement,
                 y_maze.mean_speed,
                 y_maze.mean_acceleration,
@@ -148,7 +155,7 @@ class YMazeTrial(BaseTrial):
                 *tuple(y_maze.triplet_alternation_distribution.values()),
             )
             if not unit_length:
-                unit_length = len(index_vs_data[y_maze.label])
+                unit_length = len(index_vs_data[y_maze.semantic_label])
 
         index_vs_data = dict(sorted(index_vs_data.items(), key=lambda item: item[0]))
 
