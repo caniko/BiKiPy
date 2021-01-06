@@ -14,16 +14,32 @@ class NortBase(BaseExperiment):
         self,
         recording_resolution: Sequence[SupportsInt],
         experiment_box_size_cm: SupportsFloat,
-        center_size_cm: SupportsFloat,
         *args,
-        **kwargs,
+        **kwargs
+    ):
+        super().__init__(*args, recording_resolution=recording_resolution, **kwargs)
+
+        self.experiment_box_size_cm = float(experiment_box_size_cm)
+
+
+class NortOpenField(NortBase):
+    def __init__(
+        self,
+        *args,
+        **kwargs
     ):
         super().__init__(*args, **kwargs)
 
-        self.x_res = int(recording_resolution[0])
-        self.y_res = int(recording_resolution[1])
 
-        self.experiment_box_size_cm = float(experiment_box_size_cm)
+class NortHabituation(NortBase):
+    def __init__(
+        self,
+        center_size_cm: SupportsFloat,
+        *args,
+        **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+
         self.center_size_cm = float(center_size_cm)
         assert self.experiment_box_size_cm > self.center_size_cm
 
@@ -32,32 +48,32 @@ class NortBase(BaseExperiment):
         ) / self.experiment_box_size_cm
         self.one_minus_center_box_ratio = 1 - self.center_box_ratio
 
-        if self.x_res == self.y_res:
+        if self.horizontal_resolution == self.vertical_resolution:
             self.center_square = (
                 (  # x_short, y_long
-                    self.x_res * self.center_box_ratio,
-                    self.y_res * self.one_minus_center_box_ratio,
+                    self.horizontal_resolution * self.center_box_ratio,
+                    self.vertical_resolution * self.one_minus_center_box_ratio,
                 ),
                 (  # x_short, y_short
-                    self.x_res * self.center_box_ratio,
-                    self.y_res * self.center_box_ratio,
+                    self.horizontal_resolution * self.center_box_ratio,
+                    self.vertical_resolution * self.center_box_ratio,
                 ),
                 (  # x_long, y_short
-                    self.x_res * self.one_minus_center_box_ratio,
-                    self.y_res * self.center_box_ratio,
+                    self.horizontal_resolution * self.one_minus_center_box_ratio,
+                    self.vertical_resolution * self.center_box_ratio,
                 ),
                 (  # x_long, y_long
-                    self.x_res * self.one_minus_center_box_ratio,
-                    self.y_res * self.one_minus_center_box_ratio,
+                    self.horizontal_resolution * self.one_minus_center_box_ratio,
+                    self.vertical_resolution * self.one_minus_center_box_ratio,
                 ),
             )
-        elif self.x_res < self.y_res:
+        elif self.horizontal_resolution < self.vertical_resolution:
             self.center_square = self.non_square_rectification(
-                y_bias=(self.y_res - self.x_res) / 2
+                y_bias=(self.vertical_resolution - self.horizontal_resolution) / 2
             )
         else:
             self.center_square = self.non_square_rectification(
-                x_bias=(self.x_res - self.y_res) / 2
+                x_bias=(self.horizontal_resolution - self.vertical_resolution) / 2
             )
 
         self.center_boolean_indexes = points_in_parallelogram(
@@ -107,15 +123,15 @@ class NortBase(BaseExperiment):
             raise ValueError
 
         if x_bias:
-            y_short = self.y_res * self.center_box_ratio
-            y_long = self.y_res * self.one_minus_center_box_ratio
+            y_short = self.vertical_resolution * self.center_box_ratio
+            y_long = self.vertical_resolution * self.one_minus_center_box_ratio
 
             x_short = y_short + x_bias
             x_long = y_long + x_bias
 
         else:
-            x_short = self.x_res * self.center_box_ratio
-            x_long = self.x_res * self.one_minus_center_box_ratio
+            x_short = self.horizontal_resolution * self.center_box_ratio
+            x_long = self.horizontal_resolution * self.one_minus_center_box_ratio
 
             y_short = x_short + y_bias
             y_long = x_long + y_bias
@@ -128,15 +144,7 @@ class NortBase(BaseExperiment):
         )
 
 
-class NortHabituation(NortBase):
-    """
-    Overloaded for biological intuition
-    """
-
-    pass
-
-
-class NortWithObjects(NortBase):
+class NortWithObjects(NortHabituation):
     def __init__(
         self,
         nort_a: PolygonalBorder,

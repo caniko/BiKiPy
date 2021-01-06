@@ -1,4 +1,4 @@
-from typing import Any, AnyStr, Dict, Sequence, SupportsFloat, Union
+from typing import Any, AnyStr, Dict, Sequence, SupportsFloat, SupportsInt, Union
 
 import numpy as np
 
@@ -12,6 +12,7 @@ class BaseExperiment:
         location_sequence: Any,
         fps: SupportsFloat,
         unit_per_pixel: SupportsFloat,
+        recording_resolution: Union[Sequence[SupportsInt, SupportsInt], None] = None,
         movement_feature_point_label: Union[AnyStr, None] = None,
         label: Any = None,
     ):
@@ -26,6 +27,13 @@ class BaseExperiment:
             Number defining the number of pixels that goes into one centimeter
         label: Any; optional
         """
+
+        if recording_resolution:
+            self.horizontal_resolution = int(recording_resolution[0])
+            self.vertical_resolution = int(recording_resolution[1])
+            self.recording_resolution = (
+                self.horizontal_resolution, self.vertical_resolution
+            )
 
         if movement_feature_point_label:
             # location_sequence must be a reader object, like DeepLabCutReader
@@ -52,7 +60,7 @@ class BaseExperiment:
         )
 
     def compute_movement_features_over_boolean_index(
-        self, boolean_index: Sequence[bool]
+        self, boolean_index: Sequence[bool, ...]
     ):
         boolean_index = np.asanyarray(boolean_index)
 
