@@ -1,5 +1,16 @@
 from collections import UserDict
-from typing import Iterable, SupportsFloat, SupportsInt, Union
+from typing import Dict, Iterable, SupportsFloat, SupportsInt, Union
+
+
+def translate_keys(store: Dict, translation: Dict) -> Dict:
+    result = {}
+    for key, value in store.items():
+        result[translation[key]] = value
+    return result
+
+
+def sort_dict_by_key_value(obj: Dict):
+    return dict(sorted(obj.items(), key=lambda item: item[0]))
 
 
 class RangeDict(UserDict):

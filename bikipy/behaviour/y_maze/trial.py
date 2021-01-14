@@ -1,3 +1,4 @@
+from logging import getLogger
 from typing import AnyStr, Dict, SupportsFloat, SupportsInt, Union
 
 import matplotlib.pyplot as plt
@@ -10,6 +11,8 @@ from bikipy.behaviour.y_maze.utils import mean_intersecting_points_on_borders
 from bikipy.border.base import PolygonalBorder
 from bikipy.border.triangular import TriangularBorder
 from bikipy.utils.store import RangeDict
+
+logger = getLogger(__name__)
 
 
 class YMazeTrial(BaseTrial):
@@ -55,9 +58,9 @@ class YMazeTrial(BaseTrial):
             self.plot()
 
         self.y_maze_experiments = []
-        for exp_id, location_sequence in self.exp_id_vs_location_sequences.items():
+        for exp_id, coordinate_sequence in self.exp_id_vs_coordinate_sequences.items():
             experiment_area_set = self.exp_id_range_vs_area_sets[exp_id]
-            unit_per_pixel = self.center_triangle_meter_width / np.linalg.norm(
+            length_unit_per_pixel = self.center_triangle_meter_width / np.linalg.norm(
                 experiment_area_set["center"][0] - experiment_area_set["center"][1]
             )
 
@@ -74,9 +77,11 @@ class YMazeTrial(BaseTrial):
                     arms=experiment_area_set["arms"],
                     center=experiment_area_set["center"],
                     average_intersections=False,
-                    location_sequence=location_sequence[self.feature_tracking_point],
+                    coordinate_sequence=coordinate_sequence[
+                        self.feature_tracking_point
+                    ],
                     fps=exp_fps,
-                    unit_per_pixel=unit_per_pixel,
+                    length_unit_per_pixel=length_unit_per_pixel,
                     label=exp_id,
                 )
             )
@@ -92,18 +97,18 @@ class YMazeTrial(BaseTrial):
         previous_id = 0
         for next_exp_id, y_maze in self.exp_id_vs_y_maze.items():
             if not ("invalid" in kwargs and kwargs["invalid"]):
-                across_trial_location_sequence = []
+                across_trial_coordinate_sequence = []
                 for exp_id in range(previous_id, next_exp_id + 1):
                     try:
-                        across_trial_location_sequence.extend(
-                            self.exp_id_vs_location_sequences[exp_id][
+                        across_trial_coordinate_sequence.extend(
+                            self.exp_id_vs_coordinate_sequences[exp_id][
                                 self.feature_tracking_point
                             ]
                         )
                     except KeyError:
                         pass
 
-                y_maze.plot(points=across_trial_location_sequence, *args, **kwargs)
+                y_maze.plot(points=across_trial_coordinate_sequence, *args, **kwargs)
             else:
                 y_maze.plot(*args, **kwargs)
 
@@ -135,9 +140,9 @@ class YMazeTrial(BaseTrial):
                 ("Mean speed", ""),
                 ("Mean acceleration", ""),
                 ("Spontaneous alternations", ""),
-                *feature_area("Seconds in area", first.arm_center_labels),
-                *feature_area("Area alternations", first.arm_center_labels),
-                *feature_triplet("Triplet alternation", first.arm_triplets),
+                *feature_area("Seconds in area", first.arm_center_semantic_labels),
+                *feature_area("Area alternations", first.arm_center_semantic_labels),
+                *feature_triplet("Triplet alternation", first.arm_semantic_triplets),
             ),
             names=("Feature", "Area/Triplet"),
         )

@@ -1,5 +1,5 @@
 from concurrent.futures import ProcessPoolExecutor
-from functools import lru_cache, partial
+from functools import partial
 from typing import (
     AnyStr,
     Callable,
@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 
 from bikipy.feature.midpoint import compute_from_dlc_df
+from bikipy.reader.base import BaseReader
 
 DEEPLABCUT_DF_INIT_KWARGS = {
     "index_col": 0,
@@ -27,37 +28,26 @@ DEEPLABCUT_DF_INIT_KWARGS = {
 CROPPING_PARAMETERS_BASE = {"x1": None, "x2": None, "y1": None, "y2": None}
 
 
-class DeepLabCutReader:
+class DeepLabCutReader(BaseReader):
     """
     Class that stores information about a given experiment conducted with DeepLabCut
     """
 
     def __init__(
         self,
-        df: pd.DataFrame,
-        pixel_resolution: Union[Sequence, None] = None,
-        data_label: Union[AnyStr, None] = None,
+        *args,
         midpoint_groups: Union[Iterable, None] = None,
-        future_scaling: bool = False,
         min_likelihood: SupportsFloat = 0.80,
         x_crop_start: SupportsFloat = 0.0,
         y_crop_start: SupportsFloat = 0.0,
         invert_y: bool = False,
+        **kwargs,
     ):
         """
         Parameters
         ----------
-        df : pandas.DataFrame
-            Kinematic data from DeepLabCut ingested as a pd.DataFrame
-        pixel_resolution : Sequence
-             The resolution of the videos that are being analyzed
-        data_label : String; optional
-            Label for the data
         midpoint_groups : list-like, default None
             List-like structure of labels that consist of groups that should have their
-        future_scaling : boolean, default False
-            Scales the coordinates with respect to their min and max.
-            True requires x_max and y_max
         min_likelihood : float, default 0.90
             The minimum likelihood the coordinates of the respective row.
             If below the values, the coords are discarded while being replaced
@@ -67,25 +57,8 @@ class DeepLabCutReader:
             traditional Cartesian coordinate system where the origin is on the bottom-left
         """
 
-        if pixel_resolution:
-            self.pixel_resolution = pixel_resolution
-            self.resolution = self.pixel_resolution
+        super().__init__(*args, **kwargs)
 
-            self.horizontal_res, self.vertical_res = pixel_resolution
-            if not (
-                isinstance(self.horizontal_res, (int, float, type(None)))
-                and isinstance(self.vertical_res, (int, float, type(None)))
-            ):
-                msg = f"x and y max are integers; not {self.horizontal_res}; {self.vertical_res}"
-                raise AttributeError(msg)
-
-        self.df = df
-        if not isinstance(df, pd.DataFrame):
-            msg = "df has to be a pandas.DataFrame"
-            raise AttributeError(msg)
-
-        self.data_label = data_label
-        self.future_scaling = future_scaling
         self.min_likelihood = float(min_likelihood)
 
         self.x_crop_start = float(x_crop_start)
@@ -183,18 +156,17 @@ class DeepLabCutReader:
                     new_data=midpoint_dict,
                 )
 
-    @lru_cache
     def __getitem__(self, item):
-        if item not in self.regions_of_interest:
+        if item not in self.items:
             msg = f"'{item}' is not in object DataFrame (self.df)"
             raise AttributeError(msg)
 
         # remove likelihood col
         coordinates = np.delete(self.df[item].values, 2, 1)
         # clean values beneath min likelihood
-        coordinates[self._valid_point_booleans[item] is False] = np.nan
+        coordinates[np.logical_not(self._valid_point_booleans[item])] = np.nan
 
-        return coordinates
+        return coordinates[self.valid_tails[item]]
 
     @property
     def _valid_point_booleans(self) -> dict:
@@ -210,6 +182,28 @@ class DeepLabCutReader:
         }
 
     @property
+    def _valid_point_indexes(self) -> dict:
+        """
+        Returns
+        -------
+        dictionary; region of interest to np.ndarray of valid indexes generated from
+        _valid_point_booleans
+        """
+        valid_point_booleans = self._valid_point_booleans
+        return {
+            roi: np.where(valid_point_booleans[roi])[0]
+            for roi in self.regions_of_interest
+        }
+
+    @property
+    def valid_tails(self) -> dict:
+        valid_point_indexes = self._valid_point_indexes
+        return {
+            item: slice(valid_point_indexes[item][0], valid_point_indexes[item][-1])
+            for item in self.items
+        }
+
+    @property
     def valid_ratios(self) -> dict:
         """
 
@@ -217,24 +211,13 @@ class DeepLabCutReader:
         -------
         dictionary; region of interest versus valid data number divided by size of data
         """
-        valid_point_booleans = self._valid_point_booleans
         return {
-            roi: np.sum(valid_point_booleans[roi]) / self.df[(roi, "x")].size
+            roi: np.sum(self._valid_point_booleans[roi]) / self.df[(roi, "x")].size
             for roi in self.regions_of_interest
         }
 
     @property
-    def regions_of_interest(self) -> tuple:
-        """
-
-        Returns
-        -------
-        Tuple containing the name of the regions of interest in the DataFrame
-        """
-        return tuple(self.df.columns.levels[0])
-
-    @property
-    def frame_num(self):
+    def frames(self):
         """
 
         Returns

@@ -12,13 +12,21 @@ from bikipy.utils.video import get_video_data
 WORKING_DIR = Path("C:/Users/Can/Projects/Neuroscience/Imen/data")
 NORT_DIR = WORKING_DIR / "nort"
 
-HABIT_DIR = NORT_DIR / "habituation"
+HABIT_DIR = NORT_DIR / "Habituation"
 H_BEFORE_DIR = HABIT_DIR / "0_before"
 H_AFTER_DIR = HABIT_DIR / "1_after"
 
-NOVELTY_DIR = NORT_DIR / "novelty"
-N_BEFORE_DIR = NOVELTY_DIR / "0_before_02.06.2020"
-N_AFTER_DIR = NOVELTY_DIR / "1_after_24.08.2020"
+NOVELTY_DIR = NORT_DIR / "Novelty"
+N_1A_DIR = NOVELTY_DIR / "NORT_02.06.2020 (1A)"
+N_2A_DIR = NOVELTY_DIR / "NORT (after)_24.08.2020 (2A)"
+N_1B_DIR = NOVELTY_DIR / "NORT2_30.08.2020 (1B)"
+N_2B_DIR = NOVELTY_DIR / "NORT2 (after)_23.11.2020 (2B)"
+
+OPEN_FIELD_DIR = NORT_DIR / "Open-Field"
+N_1C_DIR = OPEN_FIELD_DIR / "NORT_02.06.2020 (1C)"
+N_2C_DIR = OPEN_FIELD_DIR / "NORT (after)_24.08.2020 (2C)"
+N_1D_DIR = OPEN_FIELD_DIR / "NORT2_30.08.2020 (1D)"
+N_2D_DIR = OPEN_FIELD_DIR / "NORT2 (after)_23.11.2020 (2D)"
 
 ANNOTATIONS_PATH = str(WORKING_DIR / "python_data" / "annotations" / "all.pickle")
 BEFORE_ANNOTATIONS_PATH = str(
@@ -66,8 +74,8 @@ app_to_obj = {
 }
 
 
-exp_info_df_0 = pd.read_excel(str(WORKING_DIR / "NORT_Round1.xlsx"), sheet_name=0)
-exp_info_df_1 = pd.read_excel(str(WORKING_DIR / "NORT_Round1.xlsx"), sheet_name=1)
+exp_info_df_0 = pd.read_excel(str(WORKING_DIR / "NORT_Round1.ods"), sheet_name=0)
+exp_info_df_1 = pd.read_excel(str(WORKING_DIR / "NORT_Round1.ods"), sheet_name=1)
 
 
 def get_animal_id_vs_exp_ids(info_df):
@@ -133,7 +141,7 @@ exp_ids_range_vs_exp_meta = {"before": {}, "after": {}}
 exp_id_vs_coordinate_data_path = {"before": {}, "after": {}}
 for time, paths in zip(
     exp_ids_range_vs_exp_meta,
-    ((H_BEFORE_DIR, N_BEFORE_DIR), (H_AFTER_DIR, N_AFTER_DIR)),
+    ((H_BEFORE_DIR, N_1A_DIR), (H_AFTER_DIR, N_2A_DIR)),
 ):
     for exp_category, root in zip(("habituation", "novelty_observation"), paths):
         for data_path in glob(str(root / "*.h5")):
@@ -168,19 +176,19 @@ for time, paths in zip(
 result = {}
 for time in exp_ids_range_vs_exp_meta:
     result[time] = NortTrial(
-        exp_ids_range_vs_exp_meta[time],
-        "nose",
-        "mid-left_ear-right_ear",
-        "mid-mid-left_ear-right_ear-tail",
-        40,
-        20,
-        1 / 4 * np.pi,
-        exp_id_vs_coordinate_data_path[time],
+        exp_ids_range_vs_exp_meta=exp_ids_range_vs_exp_meta[time],
+        nose_label="nose",
+        eye_center_label="mid-left_ear-right_ear",
+        torso_label="mid-mid-left_ear-right_ear-tail",
+        experiment_box_real_length=40,
+        center_size_real_length=20,
+        max_radians_gaze_and_object=1 / 4 * np.pi,
+        exp_id_vs_coordinate_data_path=exp_id_vs_coordinate_data_path[time],
         midpoint_groups=[("left_ear", "right_ear"), ("mid-left_ear-right_ear", "tail")],
     )
 
 with pd.ExcelWriter(
-    "C:/Users/Can/Projects/Neuroscience/bikipy/examples/data/results/nort.xlsx"
+    "C:/Users/Can/Projects/Neuroscience/bikipy/examples/data/results/nort.ods"
 ) as writer:
     for time, trial in result.items():
         trial.export_to_dataframe().to_excel(writer, sheet_name=time)

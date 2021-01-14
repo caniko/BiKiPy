@@ -350,7 +350,7 @@ for subdir in os.listdir(str(DATA_DIR)):
                 exp_id_vs_coordinate_data_path=exp_id_vs_dlc_path,
                 fps=exp_id_vs_fps,
                 center_triangle_meter_width=0.08,
-                semantic_label=subdir,
+                label=subdir,
                 midpoint_groups=(
                     ("left_ear", "right_ear"),
                     ("mid-left_ear-right_ear", "base_tail"),
@@ -362,8 +362,11 @@ for subdir in os.listdir(str(DATA_DIR)):
         )
     )
 
-with pd.ExcelWriter(RESULT_PATH / "phd.xlsx") as writer:
+    # trial.plot(invalid=False)
+
+
+with pd.ExcelWriter(RESULT_PATH / "phd.ods") as writer:
     for trial in trial_datas:
-        print(f"Analysing {trial.semantic_label}")
+        print(f"Analysing {trial.label}")
         df = trial.export_to_dataframe()
-        df.to_excel(writer, sheet_name=trial.semantic_label)
+        df.to_excel(writer, sheet_name=trial.label)

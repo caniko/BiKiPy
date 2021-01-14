@@ -1,3 +1,4 @@
+from logging import getLogger
 from typing import List, Sequence, SupportsFloat, SupportsInt, Tuple, Union
 
 import numpy as np
@@ -6,6 +7,8 @@ from bikipy.border.base import PolygonalBorder
 from bikipy.feature.angle import counter_clockwise_angel_2d
 from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.math.vector import closest_line_to_point, unit_vector
+
+logger = getLogger(__name__)
 
 
 def location_filter(

@@ -1,51 +1,52 @@
-from typing import AnyStr, Sequence, SupportsFloat, SupportsInt
+from logging import getLogger
+from typing import AnyStr, Sequence, SupportsFloat, SupportsInt, Dict
 
 import numpy as np
 
 from bikipy.behaviour.base import BaseExperiment
 from bikipy.behaviour.nort.observation import nort_observation
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.border.base import PolygonalBorder
+from bikipy.border.base import PolygonalBorder, GenericPolygonalBorder
 from bikipy.math.point_in_polygon import points_in_parallelogram
 
+logger = getLogger(__name__)
 
-class NortBase(BaseExperiment):
+
+class NortOpenField(BaseExperiment):
     def __init__(
         self,
         recording_resolution: Sequence[SupportsInt],
-        experiment_box_size_cm: SupportsFloat,
+        experiment_box_real_length: SupportsFloat,
         *args,
-        **kwargs
+        **kwargs,
     ):
-        super().__init__(*args, recording_resolution=recording_resolution, **kwargs)
+        self.experiment_box_real_length = float(experiment_box_real_length)
 
-        self.experiment_box_size_cm = float(experiment_box_size_cm)
+        super().__init__(
+            *args,
+            length_unit_per_pixel=(
+                self.experiment_box_real_length / np.mean(recording_resolution)
+            ),
+            recording_resolution=recording_resolution,
+            **kwargs,
+        )
+
+        self.total_displacement = np.sum(self.displacement)
+
+    def get_info(self):
+        return [self.total_displacement, self.mean_speed, self.mean_acceleration]
 
 
-class NortOpenField(NortBase):
-    def __init__(
-        self,
-        *args,
-        **kwargs
-    ):
+class NortHabituation(NortOpenField):
+    def __init__(self, center_size_real_length: SupportsFloat, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-
-class NortHabituation(NortBase):
-    def __init__(
-        self,
-        center_size_cm: SupportsFloat,
-        *args,
-        **kwargs
-    ):
-        super().__init__(*args, **kwargs)
-
-        self.center_size_cm = float(center_size_cm)
-        assert self.experiment_box_size_cm > self.center_size_cm
+        self.center_size_real_length = float(center_size_real_length)
+        assert self.experiment_box_real_length > self.center_size_real_length
 
         self.center_box_ratio = (
-            (self.experiment_box_size_cm - self.center_size_cm) / 2
-        ) / self.experiment_box_size_cm
+            (self.experiment_box_real_length - self.center_size_real_length) / 2
+        ) / self.experiment_box_real_length
         self.one_minus_center_box_ratio = 1 - self.center_box_ratio
 
         if self.horizontal_resolution == self.vertical_resolution:
@@ -143,6 +144,20 @@ class NortHabituation(NortBase):
             (x_long, y_long),
         )
 
+    def get_info(self):
+        return super().get_info() + [
+            self.periphery_displacement,
+            self.periphery_mean_speed,
+            self.periphery_mean_acceleration,
+            self.center_displacement,
+            self.center_mean_speed,
+            self.center_mean_acceleration,
+            self.periphery_entries,
+            self.center_entries,
+            self.time_in_periphery,
+            self.time_in_center,
+        ]
+
 
 class NortWithObjects(NortHabituation):
     def __init__(
@@ -166,8 +181,8 @@ class NortWithObjects(NortHabituation):
         )
         self.max_radians_gaze_and_object = float(max_radians_gaze_and_object)
 
-        self.observe_a_per_frame = self._dlc_nort_observation(self.nort_a)
-        self.observe_b_per_frame = self._dlc_nort_observation(self.nort_b)
+        self.observe_a_per_frame = self.nort_observation(self.nort_a)
+        self.observe_b_per_frame = self.nort_observation(self.nort_b)
         self.not_observing = np.logical_not(
             np.logical_or(self.observe_a_per_frame, self.observe_b_per_frame)
         )
@@ -190,12 +205,75 @@ class NortWithObjects(NortHabituation):
         self.time_spent_a = np.sum(self.observation_sequence == "A") / self.fps
         self.time_spent_b = np.sum(self.observation_sequence == "B") / self.fps
 
-    def _dlc_nort_observation(self, nort_object):
+    def get_info(self):
+        return super().get_info() + [
+            self.novelty_observation_a,
+            self.novelty_observation_b,
+            self.time_spent_a,
+            self.time_spent_b,
+            self.time_spent_a + self.time_spent_b,
+        ]
+
+    def nort_observation(self, nort_object):
         return nort_observation(
             nort_object,
-            self.location_sequence["mid-left_ear-right_ear"],
-            self.location_sequence["nose"],
-            self.location_sequence["mid-mid-left_ear-right_ear-tail"],
+            self.coordinate_sequence[self.eye_center_label],
+            self.coordinate_sequence[self.nose_label],
+            self.coordinate_sequence[self.torso_label],
             self.fps,
             self.max_radians_gaze_and_object,
         )
+
+
+class NortObjectField:
+    def __init__(
+        self,
+        constant_object: PolygonalBorder,
+        variable_object: PolygonalBorder,
+        novel_object: PolygonalBorder,
+    ):
+        self.constant_object = constant_object
+        self.variable_object = variable_object
+        self.novel_object = novel_object
+
+    @classmethod
+    def from_images(cls, habituation_img, novelty_img):
+        GenericPolygonalBorder.corners = 3
+
+        habituation_border_a = GenericPolygonalBorder.from_image(habituation_img)
+        habituation_border_b = GenericPolygonalBorder.from_image(habituation_img)
+
+        novel_object = GenericPolygonalBorder.from_image(novelty_img)
+
+        if GenericPolygonalBorder.distance_between_two_borders(
+            habituation_border_a, novel_object
+        ) < GenericPolygonalBorder.distance_between_two_borders(
+            habituation_border_b, novel_object
+        ):
+            constant_border = habituation_border_b
+            variable_border = habituation_border_a
+        else:
+            constant_border = habituation_border_a
+            variable_border = habituation_border_b
+
+        return cls(constant_border, variable_border, novel_object)
+
+    def habituation(self, *args, **kwargs):
+        experiment = NortWithObjects(
+            nort_a=self.nort_identical_obj,
+            nort_b=self.nort_identical_obj_variable,
+            *args,
+            **kwargs
+        )
+
+
+
+    def novelty(self, *args, **kwargs):
+        experiment = NortWithObjects(
+            nort_a=self.nort_identical_obj,
+            nort_b=self.nort_novel,
+            *args,
+            **kwargs
+        )
+
+

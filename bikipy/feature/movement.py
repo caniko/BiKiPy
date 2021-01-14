@@ -1,6 +1,10 @@
+from logging import getLogger
 from typing import Sequence, SupportsFloat, Union
 
 import numpy as np
+from scipy.interpolate import interp1d
+
+logger = getLogger(__name__)
 
 
 def units_pixels_per_second_frame(units_per_pixel, fps):
@@ -8,35 +12,53 @@ def units_pixels_per_second_frame(units_per_pixel, fps):
 
 
 def displacement_per_frame(
-    location_sequence: Sequence[Sequence[SupportsFloat]],
+    coordinate_sequence: Sequence[Sequence[SupportsFloat]],
 ) -> np.ndarray:
-    location_sequence = np.asanyarray(location_sequence)
-    return np.linalg.norm(np.diff(location_sequence, axis=0), axis=1)
+    coordinate_sequence = np.asanyarray(coordinate_sequence)
+    magnitudes = np.linalg.norm(coordinate_sequence, axis=1)
+
+    if not np.any((finite_indexes := np.where(np.isfinite(magnitudes))[0])):
+        return np.abs(np.diff(magnitudes, axis=0))
+
+    logger.debug(
+        "Interpolating data as there are non-finite values in the location data"
+    )
+    f = interp1d(
+        finite_indexes,
+        magnitudes[finite_indexes],
+        bounds_error=False,
+        copy=False,
+        kind="cubic",
+    )
+    magnitudes = f(np.arange(magnitudes.size))
+
+    return np.abs(np.diff(magnitudes, axis=0))
 
 
 def displacement_mean_speed_acceleration(
-    location_sequence: Sequence[Sequence[SupportsFloat]],
+    coordinate_sequence: Sequence[Sequence[SupportsFloat]],
     fps: SupportsFloat,
-    unit_per_pixel: Union[SupportsFloat, None] = None,
+    length_unit_per_pixel: Union[SupportsFloat, None] = None,
     as_array: bool = True,
 ):
-    location_sequence = np.asanyarray(location_sequence)
+    coordinate_sequence = np.asanyarray(coordinate_sequence)
     fps = float(fps)
-    unit_per_pixel = float(unit_per_pixel)
+    length_unit_per_pixel = float(length_unit_per_pixel)
 
-    displacement = displacement_per_frame(location_sequence)
-    speed_per_frame = np.abs(np.diff(displacement, axis=0))
-    acceleration_per_frame = np.abs(np.diff(speed_per_frame, axis=0))
+    displacement = displacement_per_frame(coordinate_sequence)
+    delta_displacement = np.abs(np.diff(displacement, axis=0))
 
-    total_displacement = np.sum(displacement)
-    if unit_per_pixel:
-        total_displacement *= unit_per_pixel
+    total_displacement = np.sum(np.abs(displacement))
+    if length_unit_per_pixel:
+        total_displacement *= length_unit_per_pixel
 
-    unit_convertor = units_pixels_per_second_frame(unit_per_pixel, fps)
+    unit_convertor = units_pixels_per_second_frame(length_unit_per_pixel, fps)
 
     result = (
         total_displacement,
-        np.mean(speed_per_frame) * unit_convertor,
-        np.mean(acceleration_per_frame) * unit_convertor,
+        # speed
+        np.mean(displacement) * unit_convertor,
+        # acceleration
+        np.mean(delta_displacement) * unit_convertor,
     )
     return np.array(result) if as_array else result

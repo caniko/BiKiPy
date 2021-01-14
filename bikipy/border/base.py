@@ -1,3 +1,4 @@
+from logging import getLogger
 from typing import Any, AnyStr, Sequence, SupportsFloat, SupportsInt, Union
 
 import cv2
@@ -7,13 +8,15 @@ import numpy as np
 from bikipy.math.vector import unit_vector
 from bikipy.utils.video import get_video_data
 
+logger = getLogger(__name__)
+
 
 class Border:
     def __init__(
         self,
         guiding_image: Union[AnyStr, None] = None,
         semantic_label: Any = None,
-        int_label: Union[SupportsInt, None] = None
+        int_label: Union[SupportsInt, None] = None,
     ):
         """
         Parameters
@@ -42,7 +45,9 @@ class Border:
             points = np.asanyarray(points)
 
             if bin:
-                histogram, _x_edges, _y_edges = np.histogram2d(*points.T, bins=60)
+                histogram, _x_edges, _y_edges = np.histogram2d(
+                    *points[np.logical_and(*np.isfinite(points).T)].T, bins=60
+                )
                 ax.imshow(histogram.T, interpolation="sinc")
 
             ax.plot(*points.T, ".r-")
@@ -131,7 +136,10 @@ class PolygonalBorder(Border):
             if inferior_poly_border_instances
             else superior_poly_border_instances
         )
-        presence = np.zeros(coordinates.shape[0], dtype=np.int8 if len(border_sequence) <= 7 else np.int16)
+        presence = np.zeros(
+            coordinates.shape[0],
+            dtype=np.int8 if len(border_sequence) <= 7 else np.int16,
+        )
         overlap_locations = {}
 
         for border in border_sequence:
@@ -140,7 +148,9 @@ class PolygonalBorder(Border):
             )
 
             if presence[confined_coord_booleans_index].any():
-                overlap_locations[border.semantic_label] = np.flatnonzero(presence[confined_coord_booleans_index])
+                overlap_locations[border.semantic_label] = np.flatnonzero(
+                    presence[confined_coord_booleans_index]
+                )
                 presence[overlap_locations[border.semantic_label]] = 0
                 print(
                     f"Border {border.semantic_label} has coordinate overlap with "
@@ -180,6 +190,8 @@ class GenericPolygonalBorder(PolygonalBorder):
             self.sides = sides
         if border_distance:
             self.border_distance = border_distance
+
+        self.centroid = np.mean(sides, axes=1)
 
     @property
     def sides(self):
@@ -284,6 +296,10 @@ class GenericPolygonalBorder(PolygonalBorder):
                     (border_a[0], border_a[1]),
                     (border_b[0], border_b[1]),
                 )
+
+    @staticmethod
+    def distance_between_two_borders(border_a, border_b):
+        return np.linalg_norm(border_a.centroid - border_b.centroid)
 
     # Define "corners" (integer) as a class variable for the ginput in from_image(...)
     @classmethod

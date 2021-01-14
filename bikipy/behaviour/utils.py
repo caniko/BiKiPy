@@ -1,8 +1,10 @@
 import itertools as it
-from functools import lru_cache
+from logging import getLogger
 from typing import AnyStr, List, Sequence, SupportsInt
 
 import numpy as np
+
+logger = getLogger(__name__)
 
 
 ARM_STRING_LABELS = (1, 2, 3)
@@ -18,7 +20,6 @@ def exclude_value_from_sequence(sequence: Sequence, exclude: AnyStr):
     return sequence[sequence != exclude]
 
 
-@lru_cache
 def triplet_permutation_vs_base_permutation_dictionary(base_triplets: Sequence):
     """
 
@@ -30,17 +31,17 @@ def triplet_permutation_vs_base_permutation_dictionary(base_triplets: Sequence):
     -------
 
     """
-    result = {}
     if isinstance(base_triplets, str):
         base_triplets = it.combinations_with_replacement(base_triplets, 3)
-    for base_triplet in base_triplets:
-        base_triplet = "".join(base_triplet)
-        for permutation in set(it.permutations(base_triplet, 3)):
-            result["".join(permutation)] = base_triplet
-    return result
+    return {
+        base_triplet: set(it.permutations(base_triplet, 3))
+        for base_triplet in base_triplets
+    }
 
 
-def reduce_repeating_sequences(str_sequence: Sequence, tolerance: SupportsInt = 6) -> List:
+def reduce_repeating_sequences(
+    str_sequence: Sequence, tolerance: SupportsInt = 6
+) -> List:
     """
     Reduce consecutive sub-sequences in string sequence
 

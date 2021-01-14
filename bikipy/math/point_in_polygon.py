@@ -7,8 +7,11 @@ from bikipy.math.vector import dot_prod_along_axis_1
 
 
 def points_in_parallelogram(
-    corner_point: Sequence, point_a: Sequence, point_b: Sequence, coordinates: Sequence,
-    inspect_points: bool = False
+    corner_point: Sequence,
+    point_a: Sequence,
+    point_b: Sequence,
+    coordinates: Sequence,
+    inspect_points: bool = False,
 ):
     corner_point, point_a, point_b, coordinates = (
         np.asanyarray(corner_point),
@@ -35,8 +38,10 @@ def points_in_parallelogram(
 
     if inspect_points:
         plt.plot(
-            *np.append(corner_point, point_a).T, ".-r",
-            *np.append(corner_point, point_b).T, ".-b"
+            *np.append(corner_point, point_a).T,
+            ".-r",
+            *np.append(corner_point, point_b).T,
+            ".-b",
         )
         plt.scatter(*coordinates[result].T)
         plt.scatter(*coordinates[np.logical_not(result)].T)

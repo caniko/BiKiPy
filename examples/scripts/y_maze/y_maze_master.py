@@ -279,14 +279,12 @@ for subdir in os.listdir(str(DATA_DIR)):
     for file_path in glob(str(DATA_DIR / subdir / "*.h5")):
         exp_id = int(EXP_ID_FINDER.findall(Path(file_path).stem)[0])
         exp_id_vs_dlc_path[exp_id] = file_path
-        break
 
     for file_path in glob(str(DATA_DIR / subdir / "*.mp4")):
         exp_id = int(EXP_ID_FINDER.findall(Path(file_path).stem)[0])
 
         _, _x, _y, fps = get_video_data(file_path)
         exp_id_vs_fps[exp_id] = fps
-        break
 
     trial_datas.append(
         (
@@ -306,12 +304,11 @@ for subdir in os.listdir(str(DATA_DIR)):
             )
         )
     )
-    break
 
     #  trial.plot(invalid=False)
 
-with pd.ExcelWriter(RESULT_PATH / "master's.xlsx") as writer:
+with pd.ExcelWriter(RESULT_PATH / "master's.ods") as writer:
     for trial in trial_datas:
-        print(f"Analysing {trial.semantic_label}")
+        print(f"Analysing {trial.label}")
         df = trial.export_to_dataframe()
-        df.to_excel(writer, sheet_name=trial.semantic_label)
+        df.to_excel(writer, sheet_name=trial.label)

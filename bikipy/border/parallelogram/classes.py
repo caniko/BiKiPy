@@ -1,4 +1,8 @@
+from logging import getLogger
 from typing import Any, AnyStr, Sequence, SupportsFloat, SupportsInt, Union
+
+logger = getLogger(__name__)
+
 
 import matplotlib.pyplot as plt
 import numpy as np
