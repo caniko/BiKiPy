@@ -41,7 +41,7 @@ def triplet_permutation_vs_base_permutation_dictionary(base_triplets: Sequence):
 
 def reduce_repeating_sequences(
     str_sequence: Sequence, tolerance: SupportsInt = 6
-) -> List:
+) -> Sequence:
     """
     Reduce consecutive sub-sequences in string sequence
 
@@ -59,7 +59,9 @@ def reduce_repeating_sequences(
     tolerance = int(tolerance)
 
     labels = np.unique(str_sequence)
-    assert 2 <= len(labels) <= 4, labels
+    if (unique_labels := len(labels)) <= 1:
+        logger.info(f"Found on {unique_labels} unique labels, reducing to {labels}")
+        return labels
 
     i, no_center_entry = 0, 0
     max_len = len(str_sequence) - tolerance

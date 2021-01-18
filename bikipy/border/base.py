@@ -5,7 +5,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-from bikipy.math.vector import unit_vector
+from bikipy.math.geometry import order_parallelogram_corners, expand_parallelogram
 from bikipy.utils.video import get_video_data
 
 logger = getLogger(__name__)
@@ -191,7 +191,7 @@ class GenericPolygonalBorder(PolygonalBorder):
         if border_distance:
             self.border_distance = border_distance
 
-        self.centroid = np.mean(sides, axes=1)
+        self.centroid = np.mean(sides, axis=1)
 
     @property
     def sides(self):
@@ -199,26 +199,16 @@ class GenericPolygonalBorder(PolygonalBorder):
 
     @sides.setter
     def sides(self, sides: Sequence[Sequence[SupportsFloat]]):
-        sides = np.asanyarray(sides)
+        if (number_of_sides := len(sides)) == 4:
+            self.__sides = order_parallelogram_corners(sides)
+        else:
+            logger.warn(
+                f"Number of sides, {number_of_sides}, not supported. The object may "
+                f"not work as intended as the sides are not graphed/sorted."
+            )
+            self.__sides = sides
 
-        self.__sides = sides
-        self.number_of_sides = len(sides)
-        self.edges = np.array(
-            [
-                sides[i + 1 if i + 1 != self.number_of_sides else 0] - sides[i]
-                for i in range(self.number_of_sides)
-            ]
-        )
-        self.side_pair_to_edge = {
-            **{
-                f"{i}_{i + 1 if i + 1 != self.number_of_sides else 0}": self.edges[i]
-                for i in range(self.number_of_sides)
-            },
-            **{
-                f"{i + 1 if i + 1 != self.number_of_sides else 0}_{i}": self.edges[i]
-                for i in range(self.number_of_sides)
-            },
-        }
+        self.number_of_sides = number_of_sides
 
     def __repr__(self):
         return (
@@ -242,25 +232,13 @@ class GenericPolygonalBorder(PolygonalBorder):
             msg = "border_distance has to be defined as an object attribute"
             raise AttributeError(msg)
 
-        diagonal_unit_2_0 = unit_vector(self.sides[0] - self.sides[2])
-        diagonal_unit_3_1 = unit_vector(self.sides[1] - self.sides[3])
-
-        return np.array(
-            (
-                self.sides[0] + diagonal_unit_2_0 * self.border_distance,
-                self.sides[1] + diagonal_unit_3_1 * self.border_distance,
-                self.sides[2] - diagonal_unit_2_0 * self.border_distance,
-                self.sides[3] - diagonal_unit_3_1 * self.border_distance,
-            )
-        )
+        return expand_parallelogram(self.sides, self.border_distance)
 
     @staticmethod
     def corner_to_corner_vectors(ordered_corners):
-        return unit_vector(
-            (
-                *np.diff(ordered_corners, axis=0),
-                ordered_corners[0] - ordered_corners[-1],
-            )
+        return (
+            *np.diff(ordered_corners, axis=0),
+            ordered_corners[0] - ordered_corners[-1],
         )
 
     @property
@@ -281,25 +259,39 @@ class GenericPolygonalBorder(PolygonalBorder):
         """
         ax = super().plot(*args, **kwargs)
 
+        legends = []
         for i in range(len(self.sides)):
-            side_a = self.sides[i - 1]
-            side_b = self.sides[i]
-            ax.plot(
-                (side_a[0], side_b[0]),
-                (side_a[1], side_b[1]),
-            )
+            next = 0 if i + 1 == len(self.sides) else i + 1
+
+            side_a = self.sides[i]
+            side_b = self.sides[next]
+            ax.plot((side_a[0], side_b[0]), (side_a[1], side_b[1]), "o-")
+
+            legend = [self._add_label_to_str(f"side {i}")]
 
             if include_borders:
                 border_a = self.borders[i]
-                border_b = self.borders[i + 1]
-                ax.plot(
-                    (border_a[0], border_a[1]),
-                    (border_b[0], border_b[1]),
-                )
+                border_b = self.borders[next]
+                ax.plot((border_a[0], border_a[1]), (border_b[0], border_b[1]), "o-")
+
+                legend.append(self._add_label_to_str(f"border {i}"))
+
+            legends.extend(legend)
+
+        plt.legend(legends)
+        return ax
+
+    def _add_label_to_str(self, in_string):
+        if self.semantic_label:
+            return f"{self.semantic_label} {in_string}"
+        if self.int_label:
+            return f"{self.int_label} {in_string}"
+
+        return in_string
 
     @staticmethod
     def distance_between_two_borders(border_a, border_b):
-        return np.linalg_norm(border_a.centroid - border_b.centroid)
+        return np.linalg.norm(border_a.centroid - border_b.centroid)
 
     # Define "corners" (integer) as a class variable for the ginput in from_image(...)
     @classmethod

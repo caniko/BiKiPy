@@ -20,6 +20,7 @@ class BaseExperiment:
         recording_resolution: Union[Sequence[SupportsInt], None] = None,
         movement_feature_point_label: Union[AnyStr, None] = None,
         label: Any = None,
+        guiding_image: Any = None,
     ):
         """
         Parameters
@@ -46,24 +47,32 @@ class BaseExperiment:
             # coordinate_sequence must be a reader object, like DeepLabCutReader
             self.movement_feature_point_label = str(movement_feature_point_label)
             self.coordinate_sequence = coordinate_sequence
-            self.movement_feature_coordinates = self.coordinate_sequence[
+            self.coordinates_per_frame = self.coordinate_sequence[
                 self.movement_feature_point_label
             ]
         else:
             self.movement_feature_point_label = None
             self.coordinate_sequence = np.asanyarray(coordinate_sequence)
-            self.movement_feature_coordinates = self.coordinate_sequence
+            self.coordinates_per_frame = self.coordinate_sequence
+
+        self.displacement_per_frame = movement.displacement_per_frame(
+            self.coordinates_per_frame
+        )
+        self.acceleration_per_frame = np.abs(
+            np.diff(self.displacement_per_frame, axis=0)
+        )
 
         self.fps = float(fps)
         self.length_unit_per_pixel = float(length_unit_per_pixel)
-        self.semantic_label = label
+        self.label = label
+        self.guiding_image = guiding_image
 
         (
             self.displacement,
             self.mean_speed,
             self.mean_acceleration,
         ) = movement.displacement_mean_speed_acceleration(
-            self.movement_feature_coordinates, self.fps, self.length_unit_per_pixel
+            self.coordinates_per_frame, self.fps, self.length_unit_per_pixel
         )
 
     def compute_movement_features_over_boolean_index(
@@ -72,7 +81,7 @@ class BaseExperiment:
         boolean_index = np.asanyarray(boolean_index)
 
         start = None
-        displacements, speeds, accelerations = [], [], []
+        displacements, accelerations = [], []
         for i, b_idx in enumerate(boolean_index):
             if b_idx and start is None:
                 start = i
@@ -80,17 +89,8 @@ class BaseExperiment:
                 if i - start <= self.fps / 3:
                     continue
 
-                group_idx = (start, i)
-                coordinate_sequence = self.movement_feature_coordinates[
-                    group_idx[0] : group_idx[1] + 1
-                ]
-                displacement = movement.displacement(coordinate_sequence)
-                speed = np.abs(np.diff(displacement, axis=0))
-                acceleration = np.abs(np.diff(speed, axis=0))
-
-                displacements.append(displacement)
-                speeds.append(speed)
-                accelerations.append(acceleration)
+                displacements.append(self.displacement_per_frame[start : i - 1])
+                accelerations.append(self.acceleration_per_frame[start : i - 2])
 
                 start = None
 
@@ -98,7 +98,6 @@ class BaseExperiment:
             return 0, 0, 0
 
         displacements = np.concatenate(displacements)
-        speeds = np.concatenate(speeds)
         accelerations = np.concatenate(accelerations)
 
         unit_converter = movement.units_pixels_per_second_frame(
@@ -106,9 +105,9 @@ class BaseExperiment:
         )
 
         return (
-            np.sum(displacements) * self.length_unit_per_pixel,
-            np.mean(speeds) * unit_converter,
-            np.mean(accelerations) * unit_converter,
+            np.sum(displacements) * self.length_unit_per_pixel,  # total_displacement
+            np.mean(displacements) * unit_converter,  # average speed
+            np.mean(accelerations) * unit_converter,  # average acceleration
         )
 
 

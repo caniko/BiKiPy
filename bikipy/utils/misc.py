@@ -6,7 +6,12 @@ logger = getLogger(__name__)
 
 
 def resolve_stem_in_filepath(filepath: Any):
-    filepath = Path(filepath)
+    if filepath is None:
+        return
+
+    filepath = Path(filepath).resolve()
+    assert filepath.parent.exists(), filepath
+
     if filepath.exists():
         i = 2
         stem = filepath.stem

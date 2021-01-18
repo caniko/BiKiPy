@@ -1,21 +1,20 @@
 from logging import getLogger
-from typing import Any, AnyStr, Sequence, SupportsFloat, SupportsInt, Union
-
-logger = getLogger(__name__)
-
+from typing import Any, Sequence, SupportsFloat, SupportsInt, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from bikipy.border.base import PolygonalBorder
 from bikipy.border.parallelogram.draw import parallelogram_input
+from bikipy.math.geometry import order_parallelogram_corners
 from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.math.vector import (
-    intersection_between_two_lines,
     normal_from_line_to_point,
     orthogonal_unit_vector,
     unit_vector,
 )
+
+logger = getLogger(__name__)
 
 
 class ParallelogramBorder(PolygonalBorder):
@@ -116,8 +115,12 @@ class ParallelogramBorder(PolygonalBorder):
             msg = f"Parallelogram border has to have 4 sides, got only {n} sides"
             raise ValueError(msg)
 
-        self.base = (sides[0], sides[1])
-        self.apex = (sides[2], sides[3])
+        down_left, down_right, up_right, up_left = order_parallelogram_corners(sides)
+
+        self.base = (down_left, down_right)
+        self.apex = (up_left, up_right)
+
+        self.sides = (down_left, down_right, up_right, up_left)
 
     def __repr__(self):
         return (

@@ -39,7 +39,7 @@ IMPORTED_DLC_FILES = str(WORKING_DIR / "python_data" / "dlc.pickle")
 RESULTS = str(WORKING_DIR / "python_data" / "results.pickle")
 
 EXP_ID_FINDER = re.compile("\d+")
-BORDER_DISTANCE = 3 * 224 / 40
+BORDER_DISTANCE = 0.03 * 224 / 0.4
 
 with open(ANNOTATIONS_PATH, "rb") as infile:
     (
@@ -143,7 +143,7 @@ for time, paths in zip(
     exp_ids_range_vs_exp_meta,
     ((H_BEFORE_DIR, N_1A_DIR), (H_AFTER_DIR, N_2A_DIR)),
 ):
-    for exp_category, root in zip(("habituation", "novelty_observation"), paths):
+    for stage, root in zip(("habituation", "novelty_observation"), paths):
         for data_path in glob(str(root / "*.h5")):
             exp_id = int(EXP_ID_FINDER.findall(Path(data_path).stem)[0])
 
@@ -155,12 +155,12 @@ for time, paths in zip(
             _, x, y, fps = get_video_data(data_path)
 
             exp_ids_range_vs_exp_meta[time][exp_id] = {
-                "exp_category": exp_category,
+                "stage": stage,
                 "recording_resolution": (x, y),
                 "fps": fps,
             }
 
-            if exp_category == "novelty_observation":
+            if stage == "novelty_observation":
                 animal_id = exp_animal[time][exp_id]
                 apparatus = id_app[time][animal_id]
 
@@ -180,9 +180,10 @@ for time in exp_ids_range_vs_exp_meta:
         nose_label="nose",
         eye_center_label="mid-left_ear-right_ear",
         torso_label="mid-mid-left_ear-right_ear-tail",
-        experiment_box_real_length=40,
-        center_size_real_length=20,
+        experiment_box_real_length=0.4,
+        center_size_real_length=0.2,
         max_radians_gaze_and_object=1 / 4 * np.pi,
+        border_distance=BORDER_DISTANCE,
         exp_id_vs_coordinate_data_path=exp_id_vs_coordinate_data_path[time],
         midpoint_groups=[("left_ear", "right_ear"), ("mid-left_ear-right_ear", "tail")],
     )

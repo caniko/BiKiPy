@@ -1,4 +1,5 @@
 from concurrent.futures import ProcessPoolExecutor
+import collections.abc as abc
 from functools import partial
 from typing import (
     AnyStr,
@@ -156,65 +157,64 @@ class DeepLabCutReader(BaseReader):
                     new_data=midpoint_dict,
                 )
 
-    def __getitem__(self, item):
-        if item not in self.items:
-            msg = f"'{item}' is not in object DataFrame (self.df)"
-            raise AttributeError(msg)
-
-        # remove likelihood col
-        coordinates = np.delete(self.df[item].values, 2, 1)
-        # clean values beneath min likelihood
-        coordinates[np.logical_not(self._valid_point_booleans[item])] = np.nan
-
-        return coordinates[self.valid_tails[item]]
-
-    @property
-    def _valid_point_booleans(self) -> dict:
-        """
-        Returns
-        -------
-        dictionary; region of interest to np.ndarray of booleans
-            True if data in the respective index is valid
-        """
-        return {
+        self._valid_point_booleans = {
             roi: self.df[(roi, "likelihood")].values >= self.min_likelihood
             for roi in self.regions_of_interest
         }
 
-    @property
-    def _valid_point_indexes(self) -> dict:
-        """
-        Returns
-        -------
-        dictionary; region of interest to np.ndarray of valid indexes generated from
-        _valid_point_booleans
-        """
-        valid_point_booleans = self._valid_point_booleans
-        return {
-            roi: np.where(valid_point_booleans[roi])[0]
+        self._valid_point_indexes = {
+            roi: np.where(self._valid_point_booleans[roi])[0]
             for roi in self.regions_of_interest
         }
 
-    @property
-    def valid_tails(self) -> dict:
-        valid_point_indexes = self._valid_point_indexes
-        return {
-            item: slice(valid_point_indexes[item][0], valid_point_indexes[item][-1])
+        self._valid_tails = {
+            item: (
+                self._valid_point_indexes[item][0],
+                self._valid_point_indexes[item][-1],
+            )
             for item in self.items
         }
 
-    @property
-    def valid_ratios(self) -> dict:
-        """
+        self.valid_tails_slices = {
+            item: slice(
+                self._valid_point_indexes[item][0], self._valid_point_indexes[item][-1]
+            )
+            for item in self.items
+        }
 
-        Returns
-        -------
-        dictionary; region of interest versus valid data number divided by size of data
-        """
-        return {
+        self.valid_ratios = {
             roi: np.sum(self._valid_point_booleans[roi]) / self.df[(roi, "x")].size
             for roi in self.regions_of_interest
         }
+
+    def __getitem__(self, query):
+        def isolate_coordinates(item):
+            # remove likelihood col
+            coordinates = np.delete(self.df[item].values, 2, 1)
+            # clean values beneath min likelihood
+            coordinates[np.logical_not(self._valid_point_booleans[item])] = np.nan
+            return coordinates
+
+        if isinstance(query, str):
+            if query not in self.items:
+                msg = f"'{query}' is not in object DataFrame (self.df)"
+                raise AttributeError(msg)
+            return isolate_coordinates(query)[self.valid_tails_slices[query]]
+
+        elif isinstance(query, abc.Sequence):
+            common_slice = self.find_longest_tails(query)
+            return [isolate_coordinates(item)[common_slice] for item in query]
+        else:
+            raise NotImplementedError(f"{type(query)} has no implementation")
+
+    def find_longest_tails(self, items, as_slice: bool = True):
+        left_valid_tails, right_valid_tails = np.array(
+            [self._valid_tails[item] for item in items]
+        ).T
+
+        result = (left_valid_tails.max(), right_valid_tails.min())
+
+        return slice(*result) if as_slice else result
 
     @property
     def frames(self):

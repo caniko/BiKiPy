@@ -8,6 +8,8 @@ import pandas as pd
 from bikipy.behaviour.nort.trial import NortTrial
 from bikipy.utils.video import get_video_data
 
+DATA_DIR = Path("C:/Users/Can/Projects/Neuroscience/bikipy/examples/data")
+
 WORKING_DIR = Path("C:/Users/Can/Projects/Neuroscience/Imen/data")
 NORT_DIR = WORKING_DIR / "nort"
 
@@ -23,7 +25,7 @@ EXP_ID_FINDER = re.compile("\d+")
 
 exp_ids_range_vs_exp_meta = {"1C": {}, "2C": {}, "1D": {}, "2D": {}}
 exp_id_vs_coordinate_data_path = {"1C": {}, "2C": {}, "1D": {}, "2D": {}}
-exp_category = "open field"
+stage = "open field"
 for time, root in zip(
     exp_ids_range_vs_exp_meta,
     (OF_1C_DIR, OF_2C_DIR, OF_1D_DIR, OF_2D_DIR),
@@ -39,7 +41,7 @@ for time, root in zip(
         _, x, y, fps = get_video_data(data_path)
 
         exp_ids_range_vs_exp_meta[time][exp_id] = {
-            "exp_category": exp_category,
+            "stage": stage,
             "recording_resolution": (x, y),
             "fps": fps,
         }
@@ -50,6 +52,7 @@ for time in exp_ids_range_vs_exp_meta:
         NortTrial(
             exp_ids_range_vs_exp_meta=exp_ids_range_vs_exp_meta[time],
             experiment_box_real_length=0.4,
+            center_size_real_length=0.2,
             eye_center_label="mid-left_ear-right_ear",
             exp_id_vs_coordinate_data_path=exp_id_vs_coordinate_data_path[time],
             midpoint_groups=[("left_ear", "right_ear")],
@@ -57,8 +60,8 @@ for time in exp_ids_range_vs_exp_meta:
         )
     )
 
-with pd.ExcelWriter(NORT_DIR / "open_field.ods") as writer:
+with pd.ExcelWriter(DATA_DIR / "open_field.xlsx") as writer:
     for trial in result:
-        trial.export_to_dataframe()["Open-Field"].to_excel(
-            writer, sheet_name=trial.label
+        trial.export_to_dataframe()["Habituation"].to_excel(
+            writer, sheet_name=f"Habituation_{trial.label}"
         )

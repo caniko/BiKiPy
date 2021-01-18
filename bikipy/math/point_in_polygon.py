@@ -34,18 +34,17 @@ def points_in_parallelogram(
         cb_cc_dot > 0, cb_cc_dot < np.linalg.norm(cb_vector) ** 2
     )
 
-    result = np.logical_and(ca_cc_dot_booleans, cb_cc_dot_booleans)
+    result = np.logical_not(np.logical_and(ca_cc_dot_booleans, cb_cc_dot_booleans))
 
     if inspect_points:
-        plt.plot(
-            *np.append(corner_point, point_a).T,
-            ".-r",
-            *np.append(corner_point, point_b).T,
-            ".-b",
-        )
-        plt.scatter(*coordinates[result].T)
-        plt.scatter(*coordinates[np.logical_not(result)].T)
-        plt.legend(("A", "B", "valid_points", "invalid_points"))
+        fig, ax = plt.subplots()
+        for point in (point_a, corner_point, point_b):
+            ax.scatter(*point.T)
+
+        ax.scatter(*coordinates[result].T)
+        ax.scatter(*coordinates[np.logical_not(result)].T)
+        ax.legend(("A", "B", "valid_points", "invalid_points"))
+
         plt.show()
 
     return result

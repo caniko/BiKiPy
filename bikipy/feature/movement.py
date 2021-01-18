@@ -23,13 +23,29 @@ def displacement_per_frame(
     logger.debug(
         "Interpolating data as there are non-finite values in the location data"
     )
-    f = interp1d(
-        finite_indexes,
-        magnitudes[finite_indexes],
-        bounds_error=False,
-        copy=False,
-        kind="cubic",
-    )
+
+    try:
+        f = interp1d(
+            finite_indexes,
+            magnitudes[finite_indexes],
+            bounds_error=False,
+            fill_value="extrapolate",
+            copy=False,
+            kind="cubic",
+        )
+    except ValueError:
+        try:
+            f = interp1d(
+                finite_indexes,
+                magnitudes[finite_indexes],
+                bounds_error=False,
+                fill_value="extrapolate",
+                copy=False,
+                kind="quadratic",
+            )
+        except ValueError:
+            return np.abs(np.diff(magnitudes, axis=0))
+
     magnitudes = f(np.arange(magnitudes.size))
 
     return np.abs(np.diff(magnitudes, axis=0))

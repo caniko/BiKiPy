@@ -64,32 +64,5 @@ class BaseReader:
     def regions_of_interest(self) -> tuple:
         return self.items
 
-    def displacement_per_frame(
-        self, item, invalid_boolean_indexes: Union[Sequence[bool], None] = None
-    ):
-        coordinate_sequence = np.asanyarray(self[item])
-        invalid_boolean_indexes = invalid_boolean_indexes or np.logical_not(
-            coordinate_sequence
-        )
-        raw_displacement = displacement_per_frame(coordinate_sequence)
-        if not invalid_boolean_indexes.any():
-            return raw_displacement
-
-        invalid_indexes = np.where(invalid_boolean_indexes)[0]
-
-        i = 0
-        while i < invalid_indexes.size:
-            start_index = invalid_indexes[i]
-            stop_index = invalid_indexes[i] + 1
-            z = 1
-            while stop_index == invalid_indexes[i + z]:
-                stop_index += 1
-                z += 1
-            assert (
-                np.isnan(raw_displacement[start_index:stop_index]).all(),
-                np.isnan(raw_displacement[2 - start_index : stop_index + 2]),
-            )
-
-            start_point = coordinate_sequence[start_index - 1]
-            stop_point = coordinate_sequence[stop_index + 1]
-            mean = (start_point - stop_point) / z
+    def interpolate_item_displacement(self, item: AnyStr):
+        return displacement_per_frame(self[str(item)])

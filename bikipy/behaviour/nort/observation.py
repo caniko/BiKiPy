@@ -1,6 +1,7 @@
 from logging import getLogger
-from typing import List, Sequence, SupportsFloat, SupportsInt, Tuple, Union
+from typing import Sequence, SupportsFloat, SupportsInt, Union
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from bikipy.border.base import PolygonalBorder
@@ -15,6 +16,7 @@ def location_filter(
     nort_object,
     nose: Sequence[Sequence[SupportsFloat]],
     torso: Sequence[Sequence[SupportsFloat]],
+    inspect: bool = False,
 ) -> Sequence[bool]:
     # Remove nose points that aren't inside the border
     if nort_object.order == 4:
@@ -24,17 +26,30 @@ def location_filter(
             nort_object.borders[1],
             nose,
         )
-        torso_outside_polygon = np.logical_not(
-            points_in_parallelogram(
-                nort_object.sides[0], nort_object.sides[-1], nort_object.sides[1], torso
-            )
+        torso_outside_polygon = points_in_parallelogram(
+            nort_object.sides[0],
+            nort_object.sides[-1],
+            nort_object.sides[1],
+            torso,
         )
     else:
         msg = f"Polygon with {nort_object.order} sides is not supported"
         raise NotImplemented(msg)
 
     # Find states where the nose is within border while the torso is not over object
-    return np.logical_and(nose_within_border, torso_outside_polygon)
+    result = np.logical_and(nose_within_border, torso_outside_polygon)
+    if inspect:
+        plt.scatter(*np.array(nose)[result].T)
+        plt.scatter(
+            *np.array(nose)[
+                np.logical_and(nose_within_border, np.logical_not(result))
+            ].T
+        )
+
+        plt.legend(("Valid", "Nose valid, but invalid"))
+        plt.show()
+
+    return result
 
 
 def gaze_direction_filter(
