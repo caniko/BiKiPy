@@ -23,3 +23,14 @@ def resolve_stem_in_filepath(filepath: Any):
         )
 
     return filepath
+
+
+def read_image(image: Any):
+    import cv2
+
+    if isinstance(image, str):
+        image_path = Path(image).resolve()
+        assert image_path.exists(), image_path
+        image = cv2.imread(str(image_path))
+
+    return image

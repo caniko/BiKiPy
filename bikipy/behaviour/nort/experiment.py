@@ -82,8 +82,8 @@ class NortHabituation(BaseExperiment):
             np.logical_and(*np.isfinite(self.coordinates_per_frame).T),
         )
 
-        self.time_in_center = np.sum(self.center_boolean_indexes) / self.fps
-        self.time_in_periphery = np.sum(self.periphery_boolean_indexes) / self.fps
+        self.seconds_in_center = np.sum(self.center_boolean_indexes) / self.fps
+        self.seconds_in_periphery = np.sum(self.periphery_boolean_indexes) / self.fps
 
         (
             self.center_displacement,
@@ -154,8 +154,8 @@ class NortHabituation(BaseExperiment):
             self.center_mean_acceleration,
             self.periphery_entries,
             self.center_entries,
-            self.time_in_periphery,
-            self.time_in_center,
+            self.seconds_in_periphery,
+            self.seconds_in_center,
         ]
 
     def plot(self, ax: Any = None):
@@ -180,7 +180,7 @@ class NortOpenField(NortHabituation):
     pass
 
 
-class NortWithObjects(NortHabituation):
+class NortObjectTraining(NortHabituation):
     def __init__(
         self,
         nort_a: PolygonalBorder,
@@ -211,7 +211,9 @@ class NortWithObjects(NortHabituation):
 
         assert self.observe_a_per_frame.size == self.observe_b_per_frame.size
 
-        self.observation_sequence = np.ones_like(self.observe_a_per_frame, dtype=str)
+        self.observation_sequence = np.zeros_like(
+            self.observe_a_per_frame, dtype=np.str
+        )
 
         self.observation_sequence[self.observe_a_per_frame] = "A"
         self.observation_sequence[self.observe_b_per_frame] = "B"
@@ -224,16 +226,24 @@ class NortWithObjects(NortHabituation):
         self.novelty_observation_a = np.sum(self.reduced_observation_sequence == "A")
         self.novelty_observation_b = np.sum(self.reduced_observation_sequence == "B")
 
-        self.time_spent_a = np.sum(self.observation_sequence == "A") / self.fps
-        self.time_spent_b = np.sum(self.observation_sequence == "B") / self.fps
+        self.seconds_spent_a = np.sum(self.observation_sequence == "A") / self.fps
+        self.seconds_spent_b = np.sum(self.observation_sequence == "B") / self.fps
+        self.seconds_observing = self.seconds_spent_a + self.seconds_spent_b
+
+        self.object_bias_score = 100 * self.seconds_spent_a / self.seconds_observing
+
+        assert (
+            self.seconds_observing < self.experiment_seconds
+        ), f"not {self.seconds_observing} < {self.experiment_seconds}"
 
     def get_info(self):
         return super().get_info() + [
             self.novelty_observation_a,
             self.novelty_observation_b,
-            self.time_spent_a,
-            self.time_spent_b,
-            self.time_spent_a + self.time_spent_b,
+            self.seconds_spent_a,
+            self.seconds_spent_b,
+            self.seconds_observing,
+            self.object_bias_score,
         ]
 
     def nort_observation(self, nort_object):
@@ -256,6 +266,28 @@ class NortWithObjects(NortHabituation):
         self.nort_b.plot(ax=ax, include_borders=True)
 
         return ax
+
+
+class NortNovelObject(NortObjectTraining):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.absolute_discrimination = np.sum(self.observe_b_per_frame) - np.sum(
+            self.observe_a_per_frame
+        )
+
+        self.discrimination_index = (
+            self.absolute_discrimination / self.experiment_seconds
+        )
+
+        self.novelty_preference = 100 * self.seconds_spent_b / self.experiment_seconds
+
+    def get_info(self):
+        return super().get_info() + [
+            self.absolute_discrimination,
+            self.discrimination_index,
+            self.novelty_preference,
+        ]
 
 
 class NortObjectField:
@@ -315,7 +347,7 @@ class NortObjectField:
         return cls(constant_border, variable_border, novel_object, **kwargs)
 
     def habituation(self, *args, **kwargs):
-        return NortWithObjects(
+        return NortObjectTraining(
             nort_a=self.constant_object,
             nort_b=self.variable_object,
             *args,
@@ -326,7 +358,7 @@ class NortObjectField:
         return self.habituation(*args, **kwargs)
 
     def novelty(self, *args, **kwargs):
-        return NortWithObjects(
+        return NortObjectTraining(
             nort_a=self.constant_object, nort_b=self.novel_object, *args, **kwargs
         )
 

@@ -34,6 +34,11 @@ class BaseExperiment:
         label: Any; optional
         """
 
+        self.fps = float(fps)
+        self.length_unit_per_pixel = float(length_unit_per_pixel)
+        self.label = label
+        self.guiding_image = guiding_image
+
         if recording_resolution:
             assert len(recording_resolution) == 2, recording_resolution
             self.horizontal_resolution = int(recording_resolution[0])
@@ -55,17 +60,14 @@ class BaseExperiment:
             self.coordinate_sequence = np.asanyarray(coordinate_sequence)
             self.coordinates_per_frame = self.coordinate_sequence
 
+        self.experiment_seconds = self.coordinates_per_frame.shape[0] / self.fps
+
         self.displacement_per_frame = movement.displacement_per_frame(
             self.coordinates_per_frame
         )
         self.acceleration_per_frame = np.abs(
             np.diff(self.displacement_per_frame, axis=0)
         )
-
-        self.fps = float(fps)
-        self.length_unit_per_pixel = float(length_unit_per_pixel)
-        self.label = label
-        self.guiding_image = guiding_image
 
         (
             self.displacement,

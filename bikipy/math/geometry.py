@@ -27,7 +27,7 @@ def order_parallelogram_corners(sides: Sequence):
             up_left = sides[corner]
             (up_right,) = sides[horizontal_side_a[horizontal_side_a != corner]]
 
-    assert np.all((result := np.array((down_left, down_right, up_left, up_right))))
+    assert np.all((result := np.array((down_left, down_right, up_right, up_left))))
     return result
 
 
