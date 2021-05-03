@@ -2,7 +2,7 @@ import pickle
 from glob import glob
 from pathlib import Path
 
-from bikipy.behaviour.nort.experiment import NortObjectField
+from bikipy.behaviour.nort.trial import NortObjectField
 
 ROOT = Path("C:/Users/Can/Projects/Neuroscience/bikipy/examples/data")
 IMG_ROOT = ROOT / "images" / "nort" / "A"

@@ -19,7 +19,7 @@ def feature_scale(
     :return: Feature scaled data in nd.array
     """
 
-    data = np.asanyarray(data)
+    data = np.asarray(data)
 
     minimum = real_min or data.min()
     maximum = real_max or data.max()

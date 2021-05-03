@@ -17,7 +17,7 @@ def resolve_stem_in_filepath(filepath: Any):
         stem = filepath.stem
         while not filepath.exists():
             filepath.with_name(f"{stem}_{i}.ods")
-        logger.warn(
+        logger.warning(
             f"The file exists, and adding index "
             f"increment to the new file, {filepath.stem}"
         )

@@ -8,11 +8,11 @@ import numpy as np
 import pandas as pd
 
 from bikipy.utils.video import get_video_data
-from bikipy.behaviour.nort.trial import NortTrial
+from bikipy.behaviour.nort.experiment import NortExperiment
 from bikipy.utils.misc import resolve_stem_in_filepath
 
 
-DATA_DIR = Path("C:/Users/Can/Projects/Neuroscience/Imen/data")
+DATA_DIR = Path("/mnt/md0/Projects/Neuroscience/Imen/data")
 NORT_DIR = DATA_DIR / "nort"
 
 NOVELTY_DIR = NORT_DIR / "Novelty"
@@ -139,7 +139,7 @@ for trial_name, trial_dir, trial_meta in zip(
             }
 
     result_dfs.append(
-        NortTrial(
+        NortExperiment(
             exp_ids_range_vs_exp_meta=exp_ids_range_vs_exp_meta,
             nose_label="nose",
             eye_center_label="mid-left_ear-right_ear",

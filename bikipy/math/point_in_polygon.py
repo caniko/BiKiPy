@@ -14,10 +14,10 @@ def points_in_parallelogram(
     inspect_points: bool = False,
 ):
     corner_point, point_a, point_b, coordinates = (
-        np.asanyarray(corner_point),
-        np.asanyarray(point_a),
-        np.asanyarray(point_b),
-        np.asanyarray(coordinates),
+        np.asarray(corner_point),
+        np.asarray(point_a),
+        np.asarray(point_b),
+        np.asarray(coordinates),
     )
 
     ca_vector = point_a - corner_point

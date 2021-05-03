@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from bikipy.behaviour.nort.trial import NortTrial
+from bikipy.behaviour.nort.experiment import NortExperiment
 from bikipy.utils.video import get_video_data
 
 DATA_DIR = Path("C:/Users/Can/Projects/Neuroscience/bikipy/examples/data")
@@ -49,7 +49,7 @@ for time, root in zip(
 result = []
 for time in exp_ids_range_vs_exp_meta:
     result.append(
-        NortTrial(
+        NortExperiment(
             exp_ids_range_vs_exp_meta=exp_ids_range_vs_exp_meta[time],
             experiment_box_real_length=0.4,
             center_size_real_length=0.2,

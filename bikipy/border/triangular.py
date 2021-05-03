@@ -36,9 +36,9 @@ class TriangularBorder(GenericPolygonalBorder):
             msg = "sides or (base_a, base_b, apex) has to be defined"
             raise ValueError(msg)
 
-        self.base_a = np.asanyarray(base_a)
-        self.base_b = np.asanyarray(base_b)
-        self.apex = np.asanyarray(apex)
+        self.base_a = np.asarray(base_a)
+        self.base_b = np.asarray(base_b)
+        self.apex = np.asarray(apex)
 
         self.sides = (self.base_a, self.base_b, self.apex)
 
@@ -54,7 +54,7 @@ class TriangularBorder(GenericPolygonalBorder):
             msg = f"Parallelogram border has to have 3 sides, got only {n} sides"
             raise ValueError(msg)
 
-        self.base_a, self.base_b, self.apex = np.asanyarray(sides)
+        self.base_a, self.base_b, self.apex = np.asarray(sides)
 
     def __repr__(self):
         return (
@@ -80,7 +80,7 @@ class TriangularBorder(GenericPolygonalBorder):
         -------
         np.ndarray of all the indexes
         """
-        coord_x_comp, coord_y_comp = np.asanyarray(coordinates).T
+        coord_x_comp, coord_y_comp = np.asarray(coordinates).T
 
         c1 = (self.base_b[0] - self.base_a[0]) * (coord_y_comp - self.base_a[1]) - (
             self.base_b[1] - self.base_a[1]

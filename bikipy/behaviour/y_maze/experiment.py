@@ -7,11 +7,10 @@ from typing import Any, Dict, Sequence, Union
 import matplotlib.pyplot as plt
 import numpy as np
 
-from bikipy.behaviour.base import BaseExperiment
+from bikipy.behaviour.base import BaseTrial
 from bikipy.behaviour.utils import (
     exclude_value_from_sequence,
     reduce_repeating_sequences,
-    triplet_permutation_vs_base_permutation_dictionary,
     unique_with_counts_zipped,
 )
 from bikipy.behaviour.y_maze.utils import mean_intersecting_points_on_borders
@@ -24,7 +23,7 @@ generic_int_to_semantic_key_translator = partial(
 )
 
 
-class YMaze(BaseExperiment):
+class YMaze(BaseTrial):
     def __init__(
         self,
         arms: Sequence[PolygonalBorder],

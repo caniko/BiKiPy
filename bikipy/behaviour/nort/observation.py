@@ -22,7 +22,7 @@ def location_filter(
     ax: Any = None,
 ) -> Sequence[bool]:
     # Remove nose points that aren't inside the border
-    nose = np.asanyarray(nose)
+    nose = np.asarray(nose)
     if nort_object.order == 4:
         nose_within_border = points_in_parallelogram(
             nort_object.borders[1],
@@ -76,7 +76,7 @@ def gaze_direction_filter(
     inspection_image: Any = None,
     ax: Any = None,
 ):
-    nose, eye_center = np.asanyarray(nose), np.asanyarray(eye_center)
+    nose, eye_center = np.asarray(nose), np.asarray(eye_center)
     eye_to_nose_unit = unit_vector(nose - eye_center)
 
     closest_side, idx = closest_line_to_point(
@@ -106,7 +106,7 @@ def gaze_direction_filter(
 def attention_span_filter(
     valid_indexes: Sequence[bool], fps: SupportsFloat
 ) -> np.ndarray:
-    valid_indexes = np.asanyarray(valid_indexes)
+    valid_indexes = np.asarray(valid_indexes)
 
     fps = float(fps)
 
@@ -177,47 +177,56 @@ def nort_observation(
     fps: Union[SupportsInt, SupportsFloat],
     max_radians_gaze_and_object: SupportsFloat = 1 / 4 * np.pi,
     inspect: bool = False,
-    # TODO: Remove this before going public!
-    inspection_image: Any = "C:/Users/Can/Projects/Neuroscience/bikipy/examples/data/images/nort/B1/habit_1.png",
+    inspection_image: Any = None,
 ) -> np.ndarray:
     """
 
     Parameters
     ----------
-    nort_object
-    eye_center
+    nort_object: PolygonalBorder
+    eye_center: Sequence
         Points across time defining the position between the eyes of the animal
-    nose
+    nose: Sequence
         Points across time defining the position of the animal nose
-    torso
+    torso: Sequence
         Points across time defining the central position of the animal torso
-    fps
+    fps: float
         Frames per second in the media used for the respective data source
-    max_radians_gaze_and_object
+    max_radians_gaze_and_object: float
         Maximum radians between the gaze vector (eye_centre to nose) and object tangent
+    inspect: bool
+        If True, will generate and show and inspection figure for the inspection of
+        each filter
+    inspection_image: Any
+
 
     Returns
     -------
 
     """
     eye_center, nose, torso = (
-        np.asanyarray(eye_center),
-        np.asanyarray(nose),
-        np.asanyarray(torso),
+        np.asarray(eye_center),
+        np.asarray(nose),
+        np.asarray(torso),
     )
     fps = float(fps)
     max_radians_gaze_and_object = float(max_radians_gaze_and_object)
-    inspection_image = read_image(inspection_image)
 
     if inspect:
         fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 20))
+        loc_filter_kwargs = {"ax": axes[0][0]}
+        gaze_filter_kwargs = {"ax": axes[0][1]}
     else:
-        axes = ((None, None),)
+        loc_filter_kwargs, gaze_filter_kwargs = {}, {}
 
     quasi_observations = np.logical_and(
-        location_filter(nort_object, nose, torso, ax=axes[0][0]),
+        location_filter(nort_object, nose, torso, **loc_filter_kwargs),
         gaze_direction_filter(
-            nort_object, nose, eye_center, max_radians_gaze_and_object, ax=axes[0][1]
+            nort_object,
+            nose,
+            eye_center,
+            max_radians_gaze_and_object,
+            **gaze_filter_kwargs,
         ),
     )
 
@@ -229,9 +238,10 @@ def nort_observation(
 
     if inspect:
         if inspection_image is not None:
+            inspection_image = read_image(inspection_image)
             for row in axes:
                 for ax in row:
-                    ax.imshow(read_image(inspection_image))
+                    ax.imshow(inspection_image)
 
         axes[1][0].set_title("Quasi object observation")
         axes[1][0].scatter(*nose[quasi_observations].T)

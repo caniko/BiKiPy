@@ -102,9 +102,9 @@ def compute_angles_from_vectors(
     """
 
     points = [
-        np.asanyarray(row_vectors_point_a),
-        np.asanyarray(row_vectors_point_b),
-        np.asanyarray(row_vectors_point_c),
+        np.asarray(row_vectors_point_a),
+        np.asarray(row_vectors_point_b),
+        np.asarray(row_vectors_point_c),
     ]
     if any(point.dtype == "object" for point in points):
         warn("At least one of the arrays consists solely of NaN (Not a Number) objects")

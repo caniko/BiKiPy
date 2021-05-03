@@ -11,7 +11,7 @@ from bikipy.utils.misc import resolve_stem_in_filepath
 logger = getLogger(__name__)
 
 
-class BaseExperiment:
+class BaseTrial:
     def __init__(
         self,
         coordinate_sequence: Any,
@@ -57,7 +57,7 @@ class BaseExperiment:
             ]
         else:
             self.movement_feature_point_label = None
-            self.coordinate_sequence = np.asanyarray(coordinate_sequence)
+            self.coordinate_sequence = np.asarray(coordinate_sequence)
             self.coordinates_per_frame = self.coordinate_sequence
 
         self.experiment_seconds = self.coordinates_per_frame.shape[0] / self.fps
@@ -80,7 +80,7 @@ class BaseExperiment:
     def compute_movement_features_over_boolean_index(
         self, boolean_index: Sequence[bool]
     ):
-        boolean_index = np.asanyarray(boolean_index)
+        boolean_index = np.asarray(boolean_index)
 
         start = None
         displacements, accelerations = [], []
@@ -113,7 +113,7 @@ class BaseExperiment:
         )
 
 
-class BaseTrial:
+class BaseExperiment:
     def __init__(
         self,
         exp_id_vs_coordinate_data_path: Dict,

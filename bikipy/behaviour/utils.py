@@ -16,7 +16,7 @@ def unique_with_counts_zipped(array):
 
 
 def exclude_value_from_sequence(sequence: Sequence, exclude: AnyStr):
-    sequence = np.asanyarray(sequence)
+    sequence = np.asarray(sequence)
     return sequence[sequence != exclude]
 
 

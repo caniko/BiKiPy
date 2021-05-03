@@ -1,3 +1,4 @@
+from abc import ABC
 from logging import getLogger
 from typing import Any, AnyStr, Sequence, SupportsFloat, SupportsInt, Union
 
@@ -26,30 +27,44 @@ class Border:
 
         semantic_label: Optional, string
             Label for the border. Useful for manual audition and testing.
+
+        int_label
         """
 
         self.guiding_image = guiding_image
         self.semantic_label = semantic_label
         self.int_label = int_label
 
-    def plot(
-        self, ax: Any = None, points: Union[Sequence, None] = None, bin: bool = True
-    ):
+    def plot(self, ax: Any = None, points: Union[Sequence, None] = None):
+        """
+        Plot the border using matplotlib. Optionally, plot points alongside the border
+
+        Parameters
+        ----------
+        ax
+            Axes object that the plot will be saved in. A new instance of Axes will be used
+            if object returns False.
+
+        points
+            Sequence of 2D coordinates that will be plotted alongside the border
+
+        Returns
+        -------
+        Axes object with plots
+        """
         if not ax:
             fig, ax = plt.subplots()
 
-        if self.guiding_image:
+        if self.guiding_image is not None:
             ax.imshow(cv2.imread(str(self.guiding_image)))
 
         if points is not None:
-            points = np.asanyarray(points)
+            points = np.asarray(points)
 
-            if bin:
-                histogram, _x_edges, _y_edges = np.histogram2d(
-                    *points[np.logical_and(*np.isfinite(points).T)].T, bins=60
-                )
-                ax.imshow(histogram.T, interpolation="sinc")
-
+            histogram, _x_edges, _y_edges = np.histogram2d(
+                *points[np.logical_and(*np.isfinite(points).T)].T, bins=60
+            )
+            ax.imshow(histogram.T, interpolation="sinc")
             ax.plot(*points.T, ".r-")
 
         return ax
@@ -63,7 +78,10 @@ class PolygonalBorder(Border):
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
-        self.feature_scale = np.asanyarray(feature_scale) if feature_scale else None
+        self.feature_scale = np.asarray(feature_scale) if feature_scale else None
+
+    def confined_coordinate_indexes(self):
+        raise NotImplementedError
 
     def confined_coordinates(
         self, coordinates: Sequence, plot: bool = False
@@ -85,7 +103,7 @@ class PolygonalBorder(Border):
         np.ndarray, confined coordinates
         """
 
-        coordinates = np.asanyarray(coordinates)
+        coordinates = np.asarray(coordinates)
         confined_coordinates = coordinates[
             self.confined_coordinate_indexes(coordinates)
         ]
@@ -103,7 +121,7 @@ class PolygonalBorder(Border):
         superior_poly_border_instances: Union[Sequence, None],
         inferior_poly_border_instances: Union[Sequence, None] = None,
         clean_outliers: bool = True,
-    ) -> np.ndarray:
+    ):
         """
         Define sequential border confinements of coordinates
 
@@ -129,7 +147,7 @@ class PolygonalBorder(Border):
         np.ndarray that stores the sequential border presence across frames
         """
 
-        coordinates = np.asanyarray(coordinates)
+        coordinates = np.asarray(coordinates)
 
         border_sequence = (
             (*inferior_poly_border_instances, *superior_poly_border_instances)
@@ -176,15 +194,15 @@ class PolygonalBorder(Border):
         return self.sides / self.feature_scale
 
 
-class GenericPolygonalBorder(PolygonalBorder):
+class GenericPolygonalBorder(PolygonalBorder, ABC):
     def __init__(
         self,
         sides: Union[Sequence[Sequence[SupportsFloat]], None] = None,
         border_distance: Union[SupportsFloat, None] = None,
-        *args,
-        **kwargs,
+        *polygonal_border_args,
+        **polygonal_border_kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(*polygonal_border_args, **polygonal_border_kwargs)
 
         if sides:
             self.sides = sides
@@ -202,7 +220,7 @@ class GenericPolygonalBorder(PolygonalBorder):
         if (number_of_sides := len(sides)) == 4:
             self.__sides = order_parallelogram_corners(sides)
         else:
-            logger.warn(
+            logger.warning(
                 f"Number of sides, {number_of_sides}, not supported. The object may "
                 f"not work as intended as the sides are not graphed/sorted."
             )
@@ -211,11 +229,11 @@ class GenericPolygonalBorder(PolygonalBorder):
         self.number_of_sides = number_of_sides
 
     def __repr__(self):
-        return (
-            f"\n{self.__class__.__name__}(\n"
-            f"    sides={self.sides},\n"
-            f"    guiding_image={self.guiding_image},\n"
-            f"    label={self.semantic_label}\n"
+        print(
+            f"{self.__class__.__name__}(\n\t"
+            f"sides={self.sides},\n\t"
+            f"guiding_image={self.guiding_image},\n\t"
+            f"label={self.semantic_label}\n"
             ")"
         )
 
@@ -293,7 +311,7 @@ class GenericPolygonalBorder(PolygonalBorder):
     def distance_between_two_borders(border_a, border_b):
         return np.linalg.norm(border_a.centroid - border_b.centroid)
 
-    # Define "corners" (integer) as a class variable for the ginput in from_image(...)
+    # TODO: Define "corners" (integer) as a class variable for the ginput in from_image(...)
     @classmethod
     def from_image(cls, guiding_image: Any, *args, **kwargs):
         """

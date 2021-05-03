@@ -3,7 +3,7 @@ import numpy as np
 
 def mean_intersecting_points_on_borders(arms, center):
     for center_idx, corner in enumerate(center.sides):
-        corner = np.asanyarray(corner)
+        corner = np.asarray(corner)
         closest_sides, closest_idxs, closest_distances = [], [], []
         for arm in arms:
             vectors = np.array(arm.sides) - corner

@@ -62,14 +62,14 @@ class ParallelogramBorder(PolygonalBorder):
 
         """
         close_corner, far_corner = (
-            np.asanyarray(close_corner),
-            np.asanyarray(far_corner),
+            np.asarray(close_corner),
+            np.asarray(far_corner),
         )
         return close_corner + (far_corner - close_corner) / 2.0
 
     @staticmethod
     def sort_vectors(vectors: Sequence) -> np.ndarray:
-        vectors = np.asanyarray(vectors)
+        vectors = np.asarray(vectors)
 
         assert vectors.shape == (2, 2), (
             f"Vector set must define the endpoints of a side,"
@@ -85,7 +85,7 @@ class ParallelogramBorder(PolygonalBorder):
 
     @base.setter
     def base(self, base: Sequence):
-        base = np.asanyarray(base)
+        base = np.asarray(base)
         self.__base = self.sort_vectors(base)
 
         # self.base_mid = self.base[0] + (self.base[1] - self.base[0]) / 2
@@ -98,7 +98,7 @@ class ParallelogramBorder(PolygonalBorder):
 
     @apex.setter
     def apex(self, apex: Sequence):
-        apex = np.asanyarray(apex)
+        apex = np.asarray(apex)
         self.__apex = self.sort_vectors(apex)
 
         # self.apex_mid = self.apex[0] + (self.apex[1] - self.apex[0]) / 2
@@ -182,7 +182,7 @@ class ParallelogramBorder(PolygonalBorder):
         2nd row is midpoint apex to coordinate magnitudes
         """
 
-        coordinates = np.asanyarray(coordinates)
+        coordinates = np.asarray(coordinates)
         magnitudes = np.apply_along_axis(
             lambda x: normal_from_line_to_point(self.midline_unit, self.base_mid, x),
             1,
@@ -192,7 +192,7 @@ class ParallelogramBorder(PolygonalBorder):
         return np.squeeze(np.hsplit(magnitudes, 2))
 
     def confined_coordinate_indexes(self, coordinates: Sequence):
-        coordinates = np.asanyarray(coordinates)
+        coordinates = np.asarray(coordinates)
 
         return points_in_parallelogram(
             self.base[0], self.apex[0], self.base[1], coordinates

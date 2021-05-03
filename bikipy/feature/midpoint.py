@@ -21,7 +21,7 @@ def compute_midpoint(point_1: Sequence, point_2: Sequence) -> np.ndarray:
     -------
     np.ndarray; midpoint(s)
     """
-    point_1, point_2 = np.asanyarray(point_1), np.asanyarray(point_2)
+    point_1, point_2 = np.asarray(point_1), np.asarray(point_2)
 
     if len(point_1.shape) == 1:
         point_1 = np.expand_dims(point_1, 0)

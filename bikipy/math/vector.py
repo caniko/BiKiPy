@@ -23,7 +23,7 @@ def unit_vector(row_vectors: Sequence, force_1_dim: bool = False) -> np.ndarray:
     -------
     np.ndarray
     """
-    row_vectors = np.asanyarray(row_vectors)
+    row_vectors = np.asarray(row_vectors)
 
     if len(row_vectors.shape) != 2:
         # Single vector
@@ -51,7 +51,7 @@ def orthogonal_unit_vector(vector: Sequence) -> np.ndarray:
     -------
     np.ndarray
     """
-    vector = np.asanyarray(vector)
+    vector = np.asarray(vector)
 
     if vector.shape == (2,):
         return unit_vector((-vector[1], vector[0]))

@@ -51,17 +51,3 @@ class RangeDict(UserDict):
         self.descending = sorted(self.descending, reverse=True)
 
         super().__setitem__(key, value)
-
-
-class ManyToOneDict:
-    def __init__(self, class_dict):
-        self.next_index = 0
-        self._key_to_value_index, self._value_index_to_value = {}, {}
-        self.depolymerize_many_to_one(class_dict)
-
-    def depolymerize_many_to_one(self, base_dict: Dict):
-        for keys, value in base_dict.items():
-            self._value_index_to_value[self.next_index] = value
-            for key in keys:
-                self._key_to_value_index[key] = self.next_index
-            self.next_index += 1

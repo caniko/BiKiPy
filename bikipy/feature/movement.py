@@ -14,7 +14,7 @@ def units_pixels_per_second_frame(units_per_pixel, fps):
 def displacement_per_frame(
     coordinate_sequence: Sequence[Sequence[SupportsFloat]],
 ) -> np.ndarray:
-    coordinate_sequence = np.asanyarray(coordinate_sequence)
+    coordinate_sequence = np.asarray(coordinate_sequence)
     magnitudes = np.linalg.norm(coordinate_sequence, axis=1)
 
     if not np.any((finite_indexes := np.where(np.isfinite(magnitudes))[0])):
@@ -57,7 +57,7 @@ def displacement_mean_speed_acceleration(
     length_unit_per_pixel: Union[SupportsFloat, None] = None,
     as_array: bool = True,
 ):
-    coordinate_sequence = np.asanyarray(coordinate_sequence)
+    coordinate_sequence = np.asarray(coordinate_sequence)
     fps = float(fps)
     length_unit_per_pixel = float(length_unit_per_pixel)
 

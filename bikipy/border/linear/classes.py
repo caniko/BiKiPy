@@ -96,7 +96,7 @@ class LineBorder(Border):
         other: 1 or 2 dimensional coordinates
         :return:
         """
-        other = np.asanyarray(other)
+        other = np.asarray(other)
 
         o_dimensions = len(other.shape)
         if o_dimensions > 2:
@@ -111,7 +111,7 @@ class LineBorder(Border):
         return f"{self.logic}{self.location}; {self.orientation_label}"
 
     def true_values(self, coordinates: Sequence) -> np.ndarray:
-        return np.asanyarray(coordinates)[self.location % coordinates]
+        return np.asarray(coordinates)[self.location % coordinates]
 
     def number_true(self, coordinates: Sequence) -> float:
         return np.sum(self % coordinates)

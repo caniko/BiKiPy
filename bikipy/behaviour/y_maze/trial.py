@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from bikipy.behaviour.base import BaseTrial
+from bikipy.behaviour.base import BaseExperiment
 from bikipy.behaviour.y_maze.experiment import YMaze
 from bikipy.behaviour.y_maze.utils import mean_intersecting_points_on_borders
 from bikipy.border.base import PolygonalBorder
@@ -15,7 +15,7 @@ from bikipy.utils.store import RangeDict
 logger = getLogger(__name__)
 
 
-class YMazeTrial(BaseTrial):
+class YMazeTrial(BaseExperiment):
     def __init__(
         self,
         exp_id_range_vs_area_sets: Dict[

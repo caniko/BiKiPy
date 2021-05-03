@@ -5,7 +5,7 @@ import numpy as np
 
 
 def order_parallelogram_corners(sides: Sequence):
-    sides = np.asanyarray(sides)
+    sides = np.asarray(sides)
     argsorted_x, argsorted_y = np.argsort(sides.T, axis=1)
 
     # Order corners with respect to perimeter
