@@ -1,28 +1,48 @@
 from typing import Sequence
 
 import matplotlib.pyplot as plt
+from seaborn import set_theme
 import numpy as np
 
 from bikipy.math.vector import dot_prod_along_axis_1
 
 
 def points_in_parallelogram(
-    corner_point: Sequence,
-    point_a: Sequence,
-    point_b: Sequence,
+    ab_mid_corner: Sequence,
+    corner_a: Sequence,
+    corner_b: Sequence,
     coordinates: Sequence,
     inspect_points: bool = False,
-):
-    corner_point, point_a, point_b, coordinates = (
-        np.asarray(corner_point),
-        np.asarray(point_a),
-        np.asarray(point_b),
+) -> Sequence[bool]:
+    """
+
+    Parameters
+    ----------
+    ab_mid_corner
+    corner_a
+    corner_b
+    coordinates
+    inspect_points
+
+    Returns
+    -------
+
+    """
+    ab_mid_corner, corner_a, corner_b, coordinates = (
+        np.asarray(ab_mid_corner),
+        np.asarray(corner_a),
+        np.asarray(corner_b),
         np.asarray(coordinates),
     )
 
-    ca_vector = point_a - corner_point
-    cb_vector = point_b - corner_point
-    c_coord_vectors = coordinates - corner_point
+    assert all(
+        coord_array.shape[-1] == 2 for coord_array
+        in (ab_mid_corner, corner_a, corner_b, coordinates)
+    ), "Coordinate data must be 2 dimensional"
+
+    ca_vector = corner_a - ab_mid_corner
+    cb_vector = corner_b - ab_mid_corner
+    c_coord_vectors = coordinates - ab_mid_corner
 
     ca_cc_dot = dot_prod_along_axis_1(c_coord_vectors, ca_vector)
     cb_cc_dot = dot_prod_along_axis_1(c_coord_vectors, cb_vector)
@@ -37,8 +57,9 @@ def points_in_parallelogram(
     result = np.logical_and(ca_cc_dot_booleans, cb_cc_dot_booleans)
 
     if inspect_points:
+        set_theme(style="darkgrid")
         fig, ax = plt.subplots()
-        for point in (point_a, corner_point, point_b):
+        for point in (corner_a, ab_mid_corner, corner_b):
             ax.scatter(*point.T)
 
         ax.scatter(*coordinates[result].T)

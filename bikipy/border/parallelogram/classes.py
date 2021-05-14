@@ -28,9 +28,9 @@ class ParallelogramBorder(PolygonalBorder):
         Parameters
         ----------
         base: Sequence
-            The coordinates of the sides of the base of the parallelogram
+            The coordinates of the perimeter_corners of the base of the parallelogram
         apex: Sequence
-            The coordinates of the sides of the apex of the parallelogram
+            The coordinates of the perimeter_corners of the apex of the parallelogram
         guiding_image: Path to image
             Image used for annotating base and apex; apex and base cannot be defined
             if guiding_image is defined
@@ -106,21 +106,21 @@ class ParallelogramBorder(PolygonalBorder):
         self.apex_vector = apex[1] - apex[0]
 
     @property
-    def sides(self):
+    def perimeter_corners(self):
         return *self.base, *self.apex
 
-    @sides.setter
-    def sides(self, sides: Sequence):
-        if (n := len(sides)) != 4:
-            msg = f"Parallelogram border has to have 4 sides, got only {n} sides"
+    @perimeter_corners.setter
+    def perimeter_corners(self, perimeter_corners: Sequence):
+        if (n := len(perimeter_corners)) != 4:
+            msg = f"Parallelogram border has to have 4 perimeter_corners, got only {n} perimeter_corners"
             raise ValueError(msg)
 
-        down_left, down_right, up_right, up_left = order_parallelogram_corners(sides)
+        down_left, down_right, up_right, up_left = order_parallelogram_corners(perimeter_corners)
 
         self.base = (down_left, down_right)
         self.apex = (up_left, up_right)
 
-        self.sides = (down_left, down_right, up_right, up_left)
+        self.perimeter_corners = (down_left, down_right, up_right, up_left)
 
     def __repr__(self):
         return (

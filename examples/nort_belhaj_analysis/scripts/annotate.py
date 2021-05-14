@@ -5,7 +5,7 @@ from pathlib import Path
 from bikipy.behaviour.nort.trial import NortObjectField
 
 ROOT = Path("C:/Users/Can/Projects/Neuroscience/bikipy/examples/data")
-IMG_ROOT = ROOT / "images" / "nort" / "A"
+IMG_ROOT = ROOT / "images" / "nort_belhaj_analysis" / "A"
 
 T1 = IMG_ROOT / "before"
 T2 = IMG_ROOT / "after"

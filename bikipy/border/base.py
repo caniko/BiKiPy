@@ -139,7 +139,7 @@ class PolygonalBorder(Border):
             in case of overlap with respect to confinement
 
         clean_outliers
-            Clear elements that aren't confined to any of the given borders
+            Clear elements that aren't confined to any of the given border_corners
             as a final action before returning the sequential border presence
 
         Returns
@@ -172,7 +172,7 @@ class PolygonalBorder(Border):
                 presence[overlap_locations[border.semantic_label]] = 0
                 print(
                     f"Border {border.semantic_label} has coordinate overlap with "
-                    f"other borders, {overlap_locations[border.semantic_label].size}"
+                    f"other border_corners, {overlap_locations[border.semantic_label].size}"
                 )
 
             presence[confined_coord_booleans_index] = border.int_label
@@ -191,66 +191,66 @@ class PolygonalBorder(Border):
         if not self.feature_scale:
             msg = "Feature scale parameters have not been defined in this instance"
             raise AttributeError(msg)
-        return self.sides / self.feature_scale
+        return self.perimeter_corners / self.feature_scale
 
 
 class GenericPolygonalBorder(PolygonalBorder, ABC):
     def __init__(
         self,
-        sides: Union[Sequence[Sequence[SupportsFloat]], None] = None,
+        perimeter_corners: Union[Sequence[Sequence[SupportsFloat]], None] = None,
         border_distance: Union[SupportsFloat, None] = None,
         *polygonal_border_args,
         **polygonal_border_kwargs,
     ):
         super().__init__(*polygonal_border_args, **polygonal_border_kwargs)
 
-        if sides:
-            self.sides = sides
+        if perimeter_corners is not None:
+            self.perimeter_corners = perimeter_corners
         if border_distance:
             self.border_distance = border_distance
 
-        self.centroid = np.mean(sides, axis=1)
+        self.centroid = np.mean(perimeter_corners, axis=1)
 
     @property
-    def sides(self):
+    def perimeter_corners(self):
         return self.__sides
 
-    @sides.setter
-    def sides(self, sides: Sequence[Sequence[SupportsFloat]]):
-        if (number_of_sides := len(sides)) == 4:
-            self.__sides = order_parallelogram_corners(sides)
+    @perimeter_corners.setter
+    def perimeter_corners(self, perimeter_corners: Sequence[Sequence[SupportsFloat]]):
+        if (number_of_sides := len(perimeter_corners)) == 4:
+            self.__sides = order_parallelogram_corners(perimeter_corners)
         else:
             logger.warning(
-                f"Number of sides, {number_of_sides}, not supported. The object may "
-                f"not work as intended as the sides are not graphed/sorted."
+                f"Number of perimeter_corners, {number_of_sides}, not supported. The object may "
+                f"not work as intended as the perimeter_corners are not graphed/sorted."
             )
-            self.__sides = sides
+            self.__sides = perimeter_corners
 
         self.number_of_sides = number_of_sides
 
     def __repr__(self):
         print(
             f"{self.__class__.__name__}(\n\t"
-            f"sides={self.sides},\n\t"
+            f"perimeter_corners={self.perimeter_corners},\n\t"
             f"guiding_image={self.guiding_image},\n\t"
             f"label={self.semantic_label}\n"
             ")"
         )
 
     def __getitem__(self, item):
-        return self.sides[item]
+        return self.perimeter_corners[item]
 
     @property
     def order(self):
-        return self.sides.shape[0]
+        return self.perimeter_corners.shape[0]
 
     @property
-    def borders(self):
+    def border_corners(self):
         if not self.border_distance:
             msg = "border_distance has to be defined as an object attribute"
             raise AttributeError(msg)
 
-        return expand_parallelogram(self.sides, self.border_distance)
+        return expand_parallelogram(self.perimeter_corners, self.border_distance)
 
     @staticmethod
     def corner_to_corner_vectors(ordered_corners):
@@ -261,15 +261,15 @@ class GenericPolygonalBorder(PolygonalBorder, ABC):
 
     @property
     def side_vectors(self):
-        return self.corner_to_corner_vectors(self.sides)
+        return self.corner_to_corner_vectors(self.perimeter_corners)
 
     @property
     def border_vectors(self):
-        return self.corner_to_corner_vectors(self.borders)
+        return self.corner_to_corner_vectors(self.border_corners)
 
     def plot(self, *args, include_borders: bool = False, **kwargs):
         """
-        Plot the sides defined in the object
+        Plot the perimeter_corners defined in the object
 
         Returns
         -------
@@ -278,18 +278,18 @@ class GenericPolygonalBorder(PolygonalBorder, ABC):
         ax = super().plot(*args, **kwargs)
 
         legends = []
-        for i in range(len(self.sides)):
-            next = 0 if i + 1 == len(self.sides) else i + 1
+        for i in range(len(self.perimeter_corners)):
+            next = 0 if i + 1 == len(self.perimeter_corners) else i + 1
 
-            side_a = self.sides[i]
-            side_b = self.sides[next]
+            side_a = self.perimeter_corners[i]
+            side_b = self.perimeter_corners[next]
             ax.plot((side_a[0], side_b[0]), (side_a[1], side_b[1]), "o-")
 
             legend = [self._add_label_to_str(f"side {i}")]
 
             if include_borders:
-                border_a = self.borders[i]
-                border_b = self.borders[next]
+                border_a = self.border_corners[i]
+                border_b = self.border_corners[next]
                 ax.plot((border_a[0], border_a[1]), (border_b[0], border_b[1]), "o-")
 
                 legend.append(self._add_label_to_str(f"border {i}"))
@@ -333,8 +333,8 @@ class GenericPolygonalBorder(PolygonalBorder, ABC):
             img = cv2.imread(str(guiding_image))
         plt.imshow(img)
 
-        sides = plt.ginput(n=cls.corners, timeout=0)
-        return cls(sides=sides, guiding_image=guiding_image, *args, **kwargs)
+        perimeter_corners = plt.ginput(n=cls.corners, timeout=0)
+        return cls(perimeter_corners=perimeter_corners, guiding_image=guiding_image, *args, **kwargs)
 
     @classmethod
     def from_video(

@@ -32,7 +32,7 @@ class LineBorder(Border):
             The location given in pixels
         orientation: AnyStr, int
             A lower and an upper border can be defined.
-            The borders can be oriented both horizontally (horizontal)
+            The border_corners can be oriented both horizontally (horizontal)
             or vertically (vertical). If vertical: lower -> right; upper -> left.
 
             With the use of the position_preference method, the ratio of time

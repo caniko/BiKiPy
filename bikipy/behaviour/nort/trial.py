@@ -324,15 +324,15 @@ class NortObjectField:
         novel_object: GenericPolygonalBorder,
         label: Union[AnyStr, None] = None,
     ):
+        assert (
+            constant_object.border_distance
+            and variable_object.border_distance
+            and novel_object.border_distance
+        )
+
         self.constant_object = constant_object
         self.variable_object = variable_object
         self.novel_object = novel_object
-
-        assert (
-            self.constant_object.border_distance
-            and self.variable_object.border_distance
-            and self.novel_object.border_distance
-        )
         self.label = str(label)
 
     @classmethod

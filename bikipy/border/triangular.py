@@ -13,7 +13,7 @@ class TriangularBorder(GenericPolygonalBorder):
         base_a: Union[Sequence[SupportsFloat], None] = None,
         base_b: Union[Sequence[SupportsFloat], None] = None,
         apex: Union[Sequence[SupportsFloat], None] = None,
-        sides: Union[Sequence[Sequence[SupportsFloat]]] = None,
+        perimeter_corners: Union[Sequence[Sequence[SupportsFloat]]] = None,
         *args,
         **kwargs,
     ):
@@ -22,39 +22,39 @@ class TriangularBorder(GenericPolygonalBorder):
         Parameters
         ----------
         base_a
-            Coordinates of one of the sides that denote the base of the triangle
+            Coordinates of one of the perimeter_corners that denote the base of the triangle
         base_b
-            Coordinates of one of the sides that denote the base of the triangle
+            Coordinates of one of the perimeter_corners that denote the base of the triangle
         apex
-            Coordinates of one of the sides that denote the apex of the triangle
+            Coordinates of one of the perimeter_corners that denote the apex of the triangle
         kwargs
         """
 
-        if sides:
-            base_a, base_b, apex = sides
+        if perimeter_corners:
+            base_a, base_b, apex = perimeter_corners
         elif not (base_a and base_b and apex):
-            msg = "sides or (base_a, base_b, apex) has to be defined"
+            msg = "perimeter_corners or (base_a, base_b, apex) has to be defined"
             raise ValueError(msg)
 
         self.base_a = np.asarray(base_a)
         self.base_b = np.asarray(base_b)
         self.apex = np.asarray(apex)
 
-        self.sides = (self.base_a, self.base_b, self.apex)
+        self.perimeter_corners = (self.base_a, self.base_b, self.apex)
 
         super().__init__(*args, **kwargs)
 
     @property
-    def sides(self):
+    def perimeter_corners(self):
         return self.base_a, self.base_b, self.apex
 
-    @sides.setter
-    def sides(self, sides: Sequence):
-        if (n := len(sides)) != 3:
-            msg = f"Parallelogram border has to have 3 sides, got only {n} sides"
+    @perimeter_corners.setter
+    def perimeter_corners(self, perimeter_corners: Sequence):
+        if (n := len(perimeter_corners)) != 3:
+            msg = f"Parallelogram border has to have 3 perimeter_corners, got only {n} perimeter_corners"
             raise ValueError(msg)
 
-        self.base_a, self.base_b, self.apex = np.asarray(sides)
+        self.base_a, self.base_b, self.apex = np.asarray(perimeter_corners)
 
     def __repr__(self):
         return (

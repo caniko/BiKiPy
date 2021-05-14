@@ -38,7 +38,7 @@ def detect(image, alpha):
 if __name__ == "__main__":
     from bikipy.utils.video import get_video_data
 
-    ROOT = Path("C:/Users/Can/Projects/Neuroscience/Imen/data/nort/0_before_02.06.2020")
+    ROOT = Path("C:/Users/Can/Projects/Neuroscience/Imen/data/nort_belhaj_analysis/0_before_02.06.2020")
     video = ROOT / "Test 47.mp4"
 
     frame, _width, _height, _fps = get_video_data(video, "start")

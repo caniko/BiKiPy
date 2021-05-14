@@ -32,6 +32,7 @@ class NortExperiment(BaseExperiment):
         "training": "training",
 
         "t2": "novelty",
+        "test": "novelty",
         "novelty_observation": "novelty",
         "novelty": "novelty"
     }
@@ -113,7 +114,7 @@ class NortExperiment(BaseExperiment):
 
             exp_class = None
             for labels in self.trial_label_to_experiment_class_name:
-                if exp_meta["stage"].lower() == labels:
+                if exp_meta["stage"].lower().replace(" ", "_") == labels:
                     exp_class = self.trial_label_to_experiment_class_name[labels]
             assert exp_class
 
@@ -132,7 +133,7 @@ class NortExperiment(BaseExperiment):
 
             elif exp_class == "training" or exp_class == "novelty":
                 assert self.nort_fields
-                fields = self.nort_fields[exp_meta["field"]]
+                fields = self.nort_fields[exp_meta["stage"]][exp_meta["field"]]
 
                 with_object_arguments = {
                     "nort_a": fields.constant_object,

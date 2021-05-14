@@ -1,7 +1,12 @@
+"""
+Kinematic filters defined in 2D, 3D not supported. The operations
+are memory intensive for large datasets.
+"""
 from logging import getLogger
 from typing import Sequence, SupportsFloat, SupportsInt, Union, Any
 
 import matplotlib.pyplot as plt
+from seaborn import set_theme
 import numpy as np
 
 from bikipy.border.base import PolygonalBorder
@@ -19,49 +24,67 @@ def location_filter(
     torso: Sequence[Sequence[SupportsFloat]],
     inspect: bool = False,
     inspection_image: Any = None,
-    ax: Any = None,
+    inspection_ax: Any = None,
 ) -> Sequence[bool]:
+    """
+
+    Parameters
+    ----------
+    nort_object
+    nose
+        Nose cartesian coordinate location sequence
+    torso
+        Torso (center) cartesian coordinate location sequence
+    inspect
+        If True, generate and view an analytics of the resulting filter
+    inspection_image
+        Image from the experiment recording used as background in inspection
+    inspection_ax
+        matplotlib Axes that the inspection plots will (optionally) be saved in
+
+    Returns
+    -------
+
+    """
     # Remove nose points that aren't inside the border
     nose = np.asarray(nose)
-    if nort_object.order == 4:
-        nose_within_border = points_in_parallelogram(
-            nort_object.borders[1],
-            nort_object.borders[0],
-            nort_object.borders[2],
-            nose,
+
+    nose_within_border = points_in_parallelogram(
+        nort_object.border_corners[1],
+        nort_object.border_corners[0],
+        nort_object.border_corners[2],
+        nose,
+    )
+    torso_outside_polygon = np.logical_not(
+        points_in_parallelogram(
+            nort_object.perimeter_corners[1],
+            nort_object.perimeter_corners[0],
+            nort_object.perimeter_corners[2],
+            torso,
+            inspect_points=False,
         )
-        torso_outside_polygon = np.logical_not(
-            points_in_parallelogram(
-                nort_object.sides[1],
-                nort_object.sides[0],
-                nort_object.sides[2],
-                torso,
-                inspect_points=False,
-            )
-        )
-    else:
-        msg = f"Polygon with {nort_object.order} sides is not supported"
-        raise NotImplemented(msg)
+    )
 
     # Find states where the nose is within border while the torso is not over object
     result = np.logical_and(nose_within_border, torso_outside_polygon)
 
-    if ax is not None or inspect:
-        if ax is None:
-            fig, ax = plt.subplots()
-        ax.set_title("Location filter")
+    if inspection_ax is not None or inspect:
+        if inspection_ax is None:
+            set_theme(style="darkgrid")
+            fig, inspection_ax = plt.subplots()
+        inspection_ax.set_title("Location filter")
 
         if inspection_image:
-            ax.imshow(read_image(inspection_image))
+            inspection_ax.imshow(read_image(inspection_image))
 
         not_result = np.logical_not(result)
-        ax.scatter(*nose[np.logical_and(nose_within_border, not_result)].T)
-        ax.scatter(*nose[np.logical_and(torso_outside_polygon, not_result)].T)
-        ax.scatter(*nose[result].T)
+        inspection_ax.scatter(*nose[np.logical_and(nose_within_border, not_result)].T)
+        inspection_ax.scatter(*nose[np.logical_and(torso_outside_polygon, not_result)].T)
+        inspection_ax.scatter(*nose[result].T)
 
-        ax.legend(("Nose valid, invalid torso", "Torso valid, invalid nose", "Valid"))
+        inspection_ax.legend(("Nose valid, invalid torso", "Torso valid, invalid nose", "Valid"))
 
-        if not ax:
+        if not inspection_ax:
             plt.show()
 
     return result
@@ -74,30 +97,30 @@ def gaze_direction_filter(
     max_radians: SupportsFloat,
     inspect: bool = False,
     inspection_image: Any = None,
-    ax: Any = None,
+    inspection_ax: Any = None,
 ):
     nose, eye_center = np.asarray(nose), np.asarray(eye_center)
     eye_to_nose_unit = unit_vector(nose - eye_center)
 
     closest_side, idx = closest_line_to_point(
-        nort_object.side_vectors, nort_object.sides, eye_center
+        nort_object.side_vectors, nort_object.perimeter_corners, eye_center
     )
 
     radians = np.abs(counter_clockwise_angel_2d(closest_side, eye_to_nose_unit) - np.pi)
 
     result = radians <= max_radians
 
-    if ax is not None or inspect:
-        if ax is None:
-            fig, ax = plt.subplots()
-        ax.set_title("Gaze direction filter")
+    if inspection_ax is not None or inspect:
+        if inspection_ax is None:
+            fig, inspection_ax = plt.subplots()
+        inspection_ax.set_title("Gaze direction filter")
 
-        ax.scatter(*nose[result].T)
+        inspection_ax.scatter(*nose[result].T)
 
         if inspection_image:
-            ax.imshow(read_image(inspection_image))
+            inspection_ax.imshow(read_image(inspection_image))
 
-        if not ax:
+        if not inspection_ax:
             plt.show()
 
     return result

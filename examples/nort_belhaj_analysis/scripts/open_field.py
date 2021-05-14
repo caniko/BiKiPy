@@ -2,16 +2,13 @@ import re
 from glob import glob
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from bikipy.behaviour.nort.experiment import NortExperiment
 from bikipy.utils.video import get_video_data
 
-DATA_DIR = Path("C:/Users/Can/Projects/Neuroscience/bikipy/examples/data")
-
-WORKING_DIR = Path("C:/Users/Can/Projects/Neuroscience/Imen/data")
-NORT_DIR = WORKING_DIR / "nort"
+WORKING_DIR = Path("/mnt/md0/Projects/Neuroscience/Imen/data")
+NORT_DIR = WORKING_DIR / "nort_belhaj_analysis"
 
 OPEN_FIELD_DIR = NORT_DIR / "Open-Field"
 OF_1C_DIR = OPEN_FIELD_DIR / "NORT_02.06.2020 (1C)"

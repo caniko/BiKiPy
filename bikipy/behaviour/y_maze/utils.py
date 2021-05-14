@@ -2,11 +2,11 @@ import numpy as np
 
 
 def mean_intersecting_points_on_borders(arms, center):
-    for center_idx, corner in enumerate(center.sides):
+    for center_idx, corner in enumerate(center.perimeter_corners):
         corner = np.asarray(corner)
         closest_sides, closest_idxs, closest_distances = [], [], []
         for arm in arms:
-            vectors = np.array(arm.sides) - corner
+            vectors = np.array(arm.perimeter_corners) - corner
             distance = np.linalg.norm(vectors, axis=1)
 
             # Find the closest value to the corner in the center border
@@ -14,7 +14,7 @@ def mean_intersecting_points_on_borders(arms, center):
             closest_idxs.append(closest_side_idx)
 
             closest_distances.append(distance[closest_side_idx])
-            closest_sides.append(arm.sides[closest_side_idx])
+            closest_sides.append(arm.perimeter_corners[closest_side_idx])
 
         # Only two arms intersect at corner, need to eliminate the 3rd non-intersecting one
         closest_sides = np.array(closest_sides)
@@ -30,12 +30,12 @@ def mean_intersecting_points_on_borders(arms, center):
             if non_intersecting_arm == arm_idx:
                 continue
 
-            current_sides = list(arms[arm_idx].sides)
+            current_sides = list(arms[arm_idx].perimeter_corners)
             current_sides[closest_side_idx] = average_position
-            arms[arm_idx].sides = current_sides
+            arms[arm_idx].perimeter_corners = current_sides
 
-        center_sides = list(center.sides)
+        center_sides = list(center.perimeter_corners)
         center_sides[center_idx] = average_position
-        center.sides = center_sides
+        center.perimeter_corners = center_sides
 
     return arms, center

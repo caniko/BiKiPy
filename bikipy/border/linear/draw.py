@@ -36,12 +36,12 @@ def borders_on_image(
 
     plt.imshow(img)
 
-    plt.title("Greater than borders")
+    plt.title("Greater than border_corners")
     greater_than_borders = [
         LineBorder(coordinate, orientation, logic=">", resolution=resolution)
         for coordinate in plt.ginput(0, 0)
     ]
-    plt.title("Less than borders")
+    plt.title("Less than border_corners")
     less_than_borders = [
         LineBorder(coordinate, orientation, logic="<", resolution=resolution)
         for coordinate in plt.ginput(0, 0)
