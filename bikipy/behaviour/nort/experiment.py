@@ -28,9 +28,11 @@ class NortExperiment(BaseExperiment):
         "habituation": "habituation",
         "open_field": "habituation",
 
+        "1": "training",
         "t1": "training",
         "training": "training",
 
+        "2": "novelty",
         "t2": "novelty",
         "test": "novelty",
         "novelty_observation": "novelty",
@@ -112,11 +114,9 @@ class NortExperiment(BaseExperiment):
                 msg = "fps has to be defined inside exp_meta, or in the class"
                 raise AttributeError(msg)
 
-            exp_class = None
-            for labels in self.trial_label_to_experiment_class_name:
-                if exp_meta["stage"].lower().replace(" ", "_") == labels:
-                    exp_class = self.trial_label_to_experiment_class_name[labels]
-            assert exp_class
+            exp_class = self.trial_label_to_experiment_class_name[
+                exp_meta["stage"].lower().replace(" ", "_")
+            ]
 
             if exp_class == "habituation":
                 self.habituation_trials.append(
@@ -137,10 +137,12 @@ class NortExperiment(BaseExperiment):
 
                 with_object_arguments = {
                     "nort_a": fields.constant_object,
-                    "nort_b": fields.novel_object
-                    if exp_meta["stage"] == "test"
-                    or exp_meta["stage"] == "novelty_observation"
-                    else fields.variable_object,
+                    "nort_b": (
+                        fields.novel_object
+                        if exp_meta["stage"] == "test" or
+                           exp_meta["stage"] == "novelty_observation"
+                        else fields.variable_object
+                    ),
                     "nose_label": self.nose_label,
                     "eye_center_label": self.eye_center_label,
                     "torso_label": self.torso_label,

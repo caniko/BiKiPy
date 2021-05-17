@@ -122,7 +122,7 @@ def parallelogram_input(img: Any, invert_y: bool = False):
             for i in range(2):
                 lines[key][i][1] = img.size[1] - lines[key][i][1]
 
-    result = tuple(lines.values())
+    result = np.array(lines.values())
     lines = {1: None, 2: None}
 
     return result

@@ -102,7 +102,7 @@ def reduce_repeating_sequences(
             i += 1
 
     if no_center_entry:
-        print(
+        logger.info(
             f"No center entry between entries from one arm to another, {no_center_entry}"
         )
 

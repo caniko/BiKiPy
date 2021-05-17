@@ -170,7 +170,7 @@ class PolygonalBorder(Border):
                     presence[confined_coord_booleans_index]
                 )
                 presence[overlap_locations[border.semantic_label]] = 0
-                print(
+                logger.info(
                     f"Border {border.semantic_label} has coordinate overlap with "
                     f"other border_corners, {overlap_locations[border.semantic_label].size}"
                 )
@@ -229,7 +229,14 @@ class GenericPolygonalBorder(PolygonalBorder, ABC):
         self.number_of_sides = number_of_sides
 
     def __repr__(self):
-        print(
+        return str({
+            "perimeter_corners": self.perimeter_corners,
+            "guiding_image": self.guiding_image,
+            "label": self.semantic_label
+        })
+
+    def __str__(self):
+        return (
             f"{self.__class__.__name__}(\n\t"
             f"perimeter_corners={self.perimeter_corners},\n\t"
             f"guiding_image={self.guiding_image},\n\t"

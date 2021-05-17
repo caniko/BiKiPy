@@ -25,12 +25,12 @@ IMAGE_DIR = NORT_EXAMPLE_DIR / "area_images"
 ANNOTATION_B1_T1 = str(IMAGE_DIR / "B1" / "b1_labels.pickle")
 ANNOTATION_B1_T2 = str(IMAGE_DIR / "B2" / "b2_labels.pickle")
 
-EXP_ID_FINDER = re.compile(r"\d+")
+EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 BORDER_DISTANCE = 0.03 * 224 / 0.4
 
 
 def get_exp():
-    return int(EXP_ID_FINDER.findall(Path(data_path).stem)[0])
+    return int(EXP_ID_REGEX_PATTERN.findall(Path(data_path).stem)[0])
 
 
 def get_test_id_vs_meta(info_df):
@@ -48,8 +48,12 @@ def get_test_id_vs_meta(info_df):
 
 def standardize_stage_vs_section(stage_vs_section):
     for experiment_type, section in stage_vs_section.items():
-        standard_experiment_type_name = NortExperiment.trial_label_to_experiment_class_name[experiment_type]
-        stage_vs_section[standard_experiment_type_name] = stage_vs_section[experiment_type]
+        standard_experiment_type_name = (
+            NortExperiment.trial_label_to_experiment_class_name[experiment_type]
+        )
+        stage_vs_section[standard_experiment_type_name] = stage_vs_section[
+            experiment_type
+        ]
 
 
 a1_meta = get_test_id_vs_meta(
@@ -92,14 +96,10 @@ with open(IMAGE_DIR / "A_annotations.pickle", "rb") as infile:
 
 stage_experiment_type_section_obj = {
     "before": {
-        "T1": {
-            1: before_1, 2: before_2, 3: before_3, 4: before_4
-        },
-        "T2": {
-            1: after_1, 2: after_2, 3: after_3, 4: after_4
-        },
+        "T1": {1: before_1, 2: before_2, 3: before_3, 4: before_4},
+        "T2": {1: after_1, 2: after_2, 3: after_3, 4: after_4},
     },
-    "after": stage_a
+    "after": stage_a,
 }
 
 

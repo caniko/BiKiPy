@@ -15,6 +15,9 @@ def points_in_parallelogram(
     inspect_points: bool = False,
 ) -> Sequence[bool]:
     """
+    Algebraic solver for finding points located inside a parallelogram.
+
+
 
     Parameters
     ----------
@@ -45,14 +48,16 @@ def points_in_parallelogram(
     c_coord_vectors = coordinates - ab_mid_corner
 
     ca_cc_dot = dot_prod_along_axis_1(c_coord_vectors, ca_vector)
-    cb_cc_dot = dot_prod_along_axis_1(c_coord_vectors, cb_vector)
-
     ca_cc_dot_booleans = np.logical_and(
         ca_cc_dot > 0, ca_cc_dot < np.linalg.norm(ca_vector) ** 2
     )
+    del ca_cc_dot
+
+    cb_cc_dot = dot_prod_along_axis_1(c_coord_vectors, cb_vector)
     cb_cc_dot_booleans = np.logical_and(
         cb_cc_dot > 0, cb_cc_dot < np.linalg.norm(cb_vector) ** 2
     )
+    del cb_cc_dot
 
     result = np.logical_and(ca_cc_dot_booleans, cb_cc_dot_booleans)
 

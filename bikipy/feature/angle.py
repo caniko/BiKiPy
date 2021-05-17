@@ -190,7 +190,3 @@ def dlc_compute_angles_from_vectors(
         "Angle": compute_angles_from_vectors(*point_set, *args, **kwargs),
         "Likelihood": likelihood,
     }
-
-
-if __name__ == "__main__":
-    print(np.rad2deg(counter_clockwise_angel_2d([(1, 0)], [(0, 1)]) - np.pi))

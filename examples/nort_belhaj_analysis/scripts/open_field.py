@@ -17,7 +17,7 @@ OF_1D_DIR = OPEN_FIELD_DIR / "NORT2_30.08.2020 (1D)"
 OF_2D_DIR = OPEN_FIELD_DIR / "NORT2 (after)_23.11.2020 (2D)"
 
 
-EXP_ID_FINDER = re.compile("\d+")
+EXP_ID_REGEX_PATTERN = re.compile("\d+")
 
 
 exp_ids_range_vs_exp_meta = {"1C": {}, "2C": {}, "1D": {}, "2D": {}}
@@ -28,12 +28,12 @@ for time, root in zip(
     (OF_1C_DIR, OF_2C_DIR, OF_1D_DIR, OF_2D_DIR),
 ):
     for data_path in glob(str(root / "*.h5")):
-        exp_id = int(EXP_ID_FINDER.findall(Path(data_path).stem)[0])
+        exp_id = int(EXP_ID_REGEX_PATTERN.findall(Path(data_path).stem)[0])
 
         exp_id_vs_coordinate_data_path[time][exp_id] = data_path
 
     for data_path in glob(str(root / "*.mp4")):
-        exp_id = int(EXP_ID_FINDER.findall(Path(data_path).stem)[0])
+        exp_id = int(EXP_ID_REGEX_PATTERN.findall(Path(data_path).stem)[0])
 
         _, x, y, fps = get_video_data(data_path)
 

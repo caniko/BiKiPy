@@ -1,6 +1,8 @@
 import itertools as it
 from copy import copy
 from functools import partial
+from logging import getLogger
+
 from math import ceil
 from typing import Any, Dict, Sequence, Union
 
@@ -21,6 +23,9 @@ INT_TO_SEMANTIC_LABELS = {1: "A", 2: "B", 3: "C", 4: "X"}
 generic_int_to_semantic_key_translator = partial(
     translate_keys, translation=INT_TO_SEMANTIC_LABELS
 )
+
+
+logger = getLogger(__name__)
 
 
 class YMaze(BaseTrial):
@@ -140,7 +145,7 @@ class YMaze(BaseTrial):
             result[self.center.int_label] = 0
 
         if result[self.center.int_label] < minimum_center_entries:
-            print(
+            logger.info(
                 f"{self.center.semantic_label}: The number of alternations to the center, "
                 f"{result[self.center.semantic_label]} can't be less than the "
                 f"ceil of half of the total arm alternations, {minimum_center_entries}"

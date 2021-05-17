@@ -14,7 +14,7 @@ from bikipy.utils.video import get_video_data
 DATASET_LABEL = "phd"
 
 DATA_DIR = Path("C:/Users/Can/Projects/Neuroscience/Imen/data/results/phd")
-EXP_ID_FINDER = re.compile("\d+")
+EXP_ID_REGEX_PATTERN = re.compile("\d+")
 
 REPO_PATH = Path("C:/Users/Can/Projects/Neuroscience/bikipy")
 IMAGE_ROOT = REPO_PATH / "examples/data/images/results/phd"
@@ -333,11 +333,11 @@ for subdir in os.listdir(str(DATA_DIR)):
 
     exp_id_vs_dlc_path, exp_id_vs_fps = {}, {}
     for file_path in glob(str(DATA_DIR / subdir / "*.h5")):
-        exp_id = int(EXP_ID_FINDER.findall(Path(file_path).stem)[0])
+        exp_id = int(EXP_ID_REGEX_PATTERN.findall(Path(file_path).stem)[0])
         exp_id_vs_dlc_path[exp_id] = file_path
 
     for file_path in glob(str(DATA_DIR / subdir / "*.mp4")):
-        exp_id = int(EXP_ID_FINDER.findall(Path(file_path).stem)[0])
+        exp_id = int(EXP_ID_REGEX_PATTERN.findall(Path(file_path).stem)[0])
 
         _, _x, _y, fps = get_video_data(file_path)
         exp_id_vs_fps[exp_id] = fps

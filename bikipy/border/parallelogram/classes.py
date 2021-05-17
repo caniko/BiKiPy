@@ -22,6 +22,7 @@ class ParallelogramBorder(PolygonalBorder):
         self,
         base: Union[Sequence[SupportsFloat], None] = None,
         apex: Union[Sequence[SupportsFloat], None] = None,
+        perimeter_corners: Union[Sequence[SupportsFloat], None] = None,
         **kwargs,
     ):
         """
@@ -37,13 +38,18 @@ class ParallelogramBorder(PolygonalBorder):
         """
         super().__init__(**kwargs)
 
-        if not base and not apex:
-            if not self.guiding_image:
-                msg = "Image cannot be defined when base and apex are defined"
-                raise AttributeError(msg)
-            self.base, self.apex = parallelogram_input(self.guiding_image)
+        if self.guiding_image:
+            base, apex = parallelogram_input(self.guiding_image)
+
+        if base and apex:
+            self.base, self.apex = np.asarray(base), np.asarray(apex)
+            self.perimeter_corners = np.concatenate((self.base, self.apex))
+        elif perimeter_corners:
+            self.perimeter_corners = np.asarray(perimeter_corners)
+            self.base, self.apex = np.split(self.perimeter_corners, 2)
         else:
-            self.base, self.apex = base, apex
+            msg = "No data that can be used for defining perimeter_corners were given"
+            raise ValueError(msg)
 
     @staticmethod
     def midpoint(

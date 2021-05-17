@@ -5,7 +5,7 @@ import numpy as np
 # TODO: Sanity checks, is the array 2D, etc
 
 
-def unit_vector(row_vectors: Sequence, force_1_dim: bool = False) -> np.ndarray:
+def unit_vector(row_vectors: np.ndarray, force_1_dim: bool = False) -> np.ndarray:
     """
     Computes unit vector, i.e. vector/<norm of the vector>
 
@@ -15,13 +15,13 @@ def unit_vector(row_vectors: Sequence, force_1_dim: bool = False) -> np.ndarray:
         Array of row vector(s)
 
     force_1_dim: bool
-        If True, make sure that the results are sent back as a Sequence within an array
+        If True, make sure that the results are sent back as a sequence within an array
         important when working with single vectors within functions that expect
-        Sequence of vectors
+        a sequence of vectors
 
     Returns
     -------
-    np.ndarray
+    All unit vectors along the rows of row_vectors
     """
     row_vectors = np.asarray(row_vectors)
 
@@ -59,7 +59,7 @@ def orthogonal_unit_vector(vector: Sequence) -> np.ndarray:
         return unit_vector(np.array((-vector.T[1], vector.T[0])).T)
 
 
-def dot_prod_along_axis_1(vector_a, vector_b) -> np.ndarray:
+def dot_prod_along_axis_1(vector_a: np.ndarray, vector_b: np.ndarray) -> np.ndarray:
     # np.einsum("ij,ij->i", vector_a, vector_b)
     return np.nansum(vector_a * vector_b, axis=1)
 
