@@ -3,11 +3,11 @@ Kinematic filters defined in 2D, 3D not supported. The operations
 are memory intensive for large datasets.
 """
 from logging import getLogger
-from typing import Sequence, SupportsFloat, SupportsInt, Union, Any
+from typing import Any, Sequence, SupportsFloat, SupportsInt, Union
 
 import matplotlib.pyplot as plt
-from seaborn import set_theme
 import numpy as np
+from seaborn import set_theme
 
 from bikipy.border.base import PolygonalBorder
 from bikipy.feature.angle import counter_clockwise_angel_2d
@@ -79,10 +79,14 @@ def location_filter(
 
         not_result = np.logical_not(result)
         inspection_ax.scatter(*nose[np.logical_and(nose_within_border, not_result)].T)
-        inspection_ax.scatter(*nose[np.logical_and(torso_outside_polygon, not_result)].T)
+        inspection_ax.scatter(
+            *nose[np.logical_and(torso_outside_polygon, not_result)].T
+        )
         inspection_ax.scatter(*nose[result].T)
 
-        inspection_ax.legend(("Nose valid, invalid torso", "Torso valid, invalid nose", "Valid"))
+        inspection_ax.legend(
+            ("Nose valid, invalid torso", "Torso valid, invalid nose", "Valid")
+        )
 
         if not inspection_ax:
             plt.show()
@@ -237,8 +241,8 @@ def nort_observation(
 
     if inspect:
         fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 20))
-        loc_filter_kwargs = {"ax": axes[0][0]}
-        gaze_filter_kwargs = {"ax": axes[0][1]}
+        loc_filter_kwargs = {"inspection_ax": axes[0][0]}
+        gaze_filter_kwargs = {"inspection_ax": axes[0][1]}
     else:
         loc_filter_kwargs, gaze_filter_kwargs = {}, {}
 
@@ -262,8 +266,8 @@ def nort_observation(
     if inspect:
         if inspection_image is not None:
             inspection_image = read_image(inspection_image)
-            for row in axes:
-                for ax in row:
+            for rows in axes:
+                for ax in rows:
                     ax.imshow(inspection_image)
 
         axes[1][0].set_title("Quasi object observation")

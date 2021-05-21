@@ -38,8 +38,8 @@ class ParallelogramBorder(PolygonalBorder):
         """
         super().__init__(**kwargs)
 
-        if self.guiding_image:
-            base, apex = parallelogram_input(self.guiding_image)
+        if self.inspect_image:
+            base, apex = parallelogram_input(self.inspect_image)
 
         if base and apex:
             self.base, self.apex = np.asarray(base), np.asarray(apex)
@@ -121,7 +121,9 @@ class ParallelogramBorder(PolygonalBorder):
             msg = f"Parallelogram border has to have 4 perimeter_corners, got only {n} perimeter_corners"
             raise ValueError(msg)
 
-        down_left, down_right, up_right, up_left = order_parallelogram_corners(perimeter_corners)
+        down_left, down_right, up_right, up_left = order_parallelogram_corners(
+            perimeter_corners
+        )
 
         self.base = (down_left, down_right)
         self.apex = (up_left, up_right)
@@ -133,7 +135,7 @@ class ParallelogramBorder(PolygonalBorder):
             f"{self.__class__.__name__}(\n"
             f"    base={self.base.tolist()},\n"
             f"    apex={self.apex.tolist()},\n"
-            f'    guiding_image="{self.guiding_image}",\n'
+            f'    guiding_image="{self.inspect_image}",\n'
             f'    label="{self.semantic_label}"\n'
             ")"
         )

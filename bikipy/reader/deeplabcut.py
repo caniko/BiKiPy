@@ -1,5 +1,5 @@
-from concurrent.futures import ProcessPoolExecutor
 import collections.abc as abc
+from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 from typing import (
     AnyStr,

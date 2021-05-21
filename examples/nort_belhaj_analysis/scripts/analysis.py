@@ -1,16 +1,15 @@
+import os
 import pickle
 import re
-import os
 from glob import glob
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from bikipy.utils.video import get_video_data
 from bikipy.behaviour.nort.experiment import NortExperiment
 from bikipy.utils.misc import resolve_stem_in_filepath
-
+from bikipy.utils.video import get_video_data
 
 DATA_DIR = Path("/mnt/md0/Projects/Neuroscience/Imen/data")
 

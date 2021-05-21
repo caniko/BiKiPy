@@ -20,7 +20,8 @@ class BaseTrial:
         recording_resolution: Union[Sequence[SupportsInt], None] = None,
         movement_feature_point_label: Union[AnyStr, None] = None,
         label: Any = None,
-        guiding_image: Any = None,
+        func_inspect: bool = False,
+        inspect_image: Any = None,
     ):
         """
         Parameters
@@ -37,7 +38,8 @@ class BaseTrial:
         self.fps = float(fps)
         self.length_unit_per_pixel = float(length_unit_per_pixel)
         self.label = label
-        self.guiding_image = guiding_image
+        self.func_inspect = func_inspect
+        self.inspect_image = inspect_image
 
         if recording_resolution:
             assert len(recording_resolution) == 2, recording_resolution
@@ -120,15 +122,18 @@ class BaseExperiment:
         fps: Union[Dict, SupportsFloat, None] = None,
         coordinate_data_format: AnyStr = "deeplabcut",
         label: Any = None,
-        debug: bool = False,
-        **init_kwargs,
+        func_inspect: bool = False,
+        **data_import_kwargs,
     ):
+        if fps and not isinstance(fps, (int, float, dict)):
+            msg = f"fps has to be int, float or dict, and not {type(fps)}"
+            raise ValueError(msg)
 
         self.exp_id_vs_coordinate_data_path = exp_id_vs_coordinate_data_path
         self.fps = fps
 
         self.coordinate_data_format = str(coordinate_data_format).lower()
-        self.label, self.debug = label, debug
+        self.label, self.func_inspect = label, func_inspect
 
         if self.coordinate_data_format == "deeplabcut":
             self.exp_id_vs_coordinate_sequences = {
@@ -138,7 +143,7 @@ class BaseExperiment:
                     DeepLabCutReader.init_many(
                         exp_id_vs_coordinate_data_path.values(),
                         labels=exp_id_vs_coordinate_data_path.keys(),
-                        **init_kwargs,
+                        **data_import_kwargs,
                     ),
                 )
             }

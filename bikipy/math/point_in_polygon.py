@@ -1,8 +1,8 @@
 from typing import Sequence
 
 import matplotlib.pyplot as plt
-from seaborn import set_theme
 import numpy as np
+from seaborn import set_theme
 
 from bikipy.math.vector import dot_prod_along_axis_1
 
@@ -39,8 +39,8 @@ def points_in_parallelogram(
     )
 
     assert all(
-        coord_array.shape[-1] == 2 for coord_array
-        in (ab_mid_corner, corner_a, corner_b, coordinates)
+        coord_array.shape[-1] == 2
+        for coord_array in (ab_mid_corner, corner_a, corner_b, coordinates)
     ), "Coordinate data must be 2 dimensional"
 
     ca_vector = corner_a - ab_mid_corner

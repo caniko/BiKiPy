@@ -7,11 +7,10 @@ import pandas as pd
 from bikipy.behaviour.base import BaseExperiment
 from bikipy.behaviour.nort.trial import (
     NortHabituation,
-    NortObjectTraining,
     NortNovelObject,
+    NortObjectTraining,
 )
 from bikipy.utils.store import sort_dict_by_key_value
-
 
 logger = getLogger(__name__)
 
@@ -20,6 +19,7 @@ class NortExperiment(BaseExperiment):
     """
     Class for combining several NORT trials under one class for joint analysis
     """
+
     period_columns = ("T1", "T2", "Total")
 
     box_area_names = ("Periphery", "Center")
@@ -27,38 +27,36 @@ class NortExperiment(BaseExperiment):
     trial_label_to_experiment_class_name = {
         "habituation": "habituation",
         "open_field": "habituation",
-
         "1": "training",
         "t1": "training",
         "training": "training",
-
         "2": "novelty",
         "t2": "novelty",
         "test": "novelty",
         "novelty_observation": "novelty",
-        "novelty": "novelty"
+        "novelty": "novelty",
     }
 
     def __init__(
         self,
-        exp_ids_range_vs_exp_meta: Dict,
+        exp_id_range_vs_exp_meta: Dict,
         experiment_box_real_length: SupportsFloat,
+        nose_label: AnyStr,
         eye_center_label: AnyStr,
-        nort_fields: Any = None,
-        nose_label: Union[AnyStr, None] = None,
-        torso_label: Union[AnyStr, None] = None,
+        torso_label: AnyStr,
+        nort_field_vs_apparatus: Any = None,
         center_size_real_length: Union[SupportsFloat, None] = None,
-        max_radians_gaze_and_object: SupportsFloat = 1. / 4. * np.pi,
+        max_radians_gaze_and_object: SupportsFloat = 1.0 / 4.0 * np.pi,
         *base_trial_args,
         **base_trial_kwargs,
     ):
         """
         Parameters
         ----------
-        exp_ids_range_vs_exp_meta
+        exp_id_range_vs_exp_meta
         experiment_box_real_length
         eye_center_label
-        nort_fields
+        nort_field_vs_apparatus
         nose_label
         torso_label
         center_size_real_length
@@ -68,9 +66,9 @@ class NortExperiment(BaseExperiment):
         """
         super().__init__(*base_trial_args, **base_trial_kwargs)
 
-        self.nort_fields = nort_fields
+        self.nort_field_vs_apparatus = nort_field_vs_apparatus
 
-        self.exp_ids_range_vs_exp_meta = dict(exp_ids_range_vs_exp_meta)
+        self.exp_id_range_vs_exp_meta = dict(exp_id_range_vs_exp_meta)
         self.torso_label, self.eye_center_label, self.nose_label = (
             str(torso_label),
             str(eye_center_label),
@@ -91,7 +89,7 @@ class NortExperiment(BaseExperiment):
             self.training_object_trials,
             self.novelty_object_trials,
         ) = ([], [], [])
-        for exp_id, exp_meta in self.exp_ids_range_vs_exp_meta.items():
+        for exp_id, exp_meta in self.exp_id_range_vs_exp_meta.items():
             logger.info(f"Category {exp_meta['stage']}; ID {exp_id}")
 
             coordinate_sequence = self.exp_id_vs_coordinate_sequences[exp_id]
@@ -100,15 +98,16 @@ class NortExperiment(BaseExperiment):
                 "recording_resolution": exp_meta["recording_resolution"],
                 "experiment_box_real_length": experiment_box_real_length,
                 "label": exp_id,
+                "func_inspect": self.func_inspect,
             }
             if "guiding_image" in exp_meta:
                 generic_data["guiding_image"] = exp_meta["guiding_image"]
 
-            if isinstance(self.fps, dict):
-                generic_data["fps"] = self.fps[exp_id]
-            elif "fps" in exp_meta:
+            if "fps" in exp_meta:
                 generic_data["fps"] = exp_meta["fps"]
-            elif isinstance(self.fps, (int, float)):
+            elif isinstance(self.fps, dict):
+                generic_data["fps"] = self.fps[exp_id]
+            elif self.fps:  # Fallback FPS value
                 generic_data["fps"] = self.fps
             else:
                 msg = "fps has to be defined inside exp_meta, or in the class"
@@ -132,15 +131,18 @@ class NortExperiment(BaseExperiment):
                 )
 
             elif exp_class == "training" or exp_class == "novelty":
-                assert self.nort_fields
-                fields = self.nort_fields[exp_meta["stage"]][exp_meta["field"]]
+                try:
+                    fields = self.nort_field_vs_apparatus[exp_meta["field"]]
+                except AttributeError as e:
+                    msg = "nort_field_vs_apparatus is not defined, which is required when working with training and/or novelty datasets"
+                    raise AttributeError(msg) from e
 
                 with_object_arguments = {
                     "nort_a": fields.constant_object,
                     "nort_b": (
                         fields.novel_object
-                        if exp_meta["stage"] == "test" or
-                           exp_meta["stage"] == "novelty_observation"
+                        if exp_meta["stage"] == "test"
+                        or exp_meta["stage"] == "novelty_observation"
                         else fields.variable_object
                     ),
                     "nose_label": self.nose_label,
@@ -171,7 +173,8 @@ class NortExperiment(BaseExperiment):
             else:
                 self.experiment_pairs[animal_id] = [exp]
 
-    def export_to_dataframe(self) -> pd.DataFrame:
+    @property
+    def df(self) -> pd.DataFrame:
         """
         Export experimental data to pandas DataFrame
 
@@ -247,3 +250,6 @@ class NortExperiment(BaseExperiment):
             label_vs_data[novelty_experiment.label] = novelty_experiment.get_info()
 
         return to_df(label_vs_data, habituation_rows + object_rows + novelty_rows)
+
+    def __repr__(self):
+        return self.df

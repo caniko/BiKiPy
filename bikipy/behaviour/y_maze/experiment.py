@@ -2,7 +2,6 @@ import itertools as it
 from copy import copy
 from functools import partial
 from logging import getLogger
-
 from math import ceil
 from typing import Any, Dict, Sequence, Union
 

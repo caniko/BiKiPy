@@ -6,8 +6,8 @@ after the respective border class has been updated
 import pickle
 from pathlib import Path
 
-from bikipy.border.base import GenericPolygonalBorder
 from bikipy.behaviour.nort.trial import NortObjectField
+from bikipy.border.base import GenericPolygonalBorder
 
 NORT_EXAMPLE_DIR = Path(".").resolve().parent
 IMAGE_DIR = NORT_EXAMPLE_DIR / "area_images"

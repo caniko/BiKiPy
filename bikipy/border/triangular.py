@@ -62,7 +62,7 @@ class TriangularBorder(GenericPolygonalBorder):
             f"    base_a={self.base_a.tolist()},\n"
             f"    base_b={self.base_b.tolist()},\n"
             f"    apex={self.apex.tolist()},\n"
-            f'    guiding_image="{self.guiding_image}",\n'
+            f'    guiding_image="{self.inspect_image}",\n'
             f'    label="{self.semantic_label}"\n'
             ")"
         )

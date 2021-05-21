@@ -6,7 +6,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-from bikipy.math.geometry import order_parallelogram_corners, expand_parallelogram
+from bikipy.math.geometry import expand_parallelogram, order_parallelogram_corners
 from bikipy.utils.video import get_video_data
 
 logger = getLogger(__name__)
@@ -31,7 +31,7 @@ class Border:
         int_label
         """
 
-        self.guiding_image = guiding_image
+        self.inspect_image = guiding_image
         self.semantic_label = semantic_label
         self.int_label = int_label
 
@@ -55,8 +55,8 @@ class Border:
         if not ax:
             fig, ax = plt.subplots()
 
-        if self.guiding_image is not None:
-            ax.imshow(cv2.imread(str(self.guiding_image)))
+        if self.inspect_image is not None:
+            ax.imshow(cv2.imread(str(self.inspect_image)))
 
         if points is not None:
             points = np.asarray(points)
@@ -229,17 +229,19 @@ class GenericPolygonalBorder(PolygonalBorder, ABC):
         self.number_of_sides = number_of_sides
 
     def __repr__(self):
-        return str({
-            "perimeter_corners": self.perimeter_corners,
-            "guiding_image": self.guiding_image,
-            "label": self.semantic_label
-        })
+        return str(
+            {
+                "perimeter_corners": self.perimeter_corners,
+                "guiding_image": self.inspect_image,
+                "label": self.semantic_label,
+            }
+        )
 
     def __str__(self):
         return (
             f"{self.__class__.__name__}(\n\t"
             f"perimeter_corners={self.perimeter_corners},\n\t"
-            f"guiding_image={self.guiding_image},\n\t"
+            f"guiding_image={self.inspect_image},\n\t"
             f"label={self.semantic_label}\n"
             ")"
         )
@@ -341,7 +343,12 @@ class GenericPolygonalBorder(PolygonalBorder, ABC):
         plt.imshow(img)
 
         perimeter_corners = plt.ginput(n=cls.corners, timeout=0)
-        return cls(perimeter_corners=perimeter_corners, guiding_image=guiding_image, *args, **kwargs)
+        return cls(
+            perimeter_corners=perimeter_corners,
+            guiding_image=guiding_image,
+            *args,
+            **kwargs,
+        )
 
     @classmethod
     def from_video(

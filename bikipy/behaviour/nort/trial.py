@@ -101,6 +101,7 @@ class NortHabituation(BaseTrial):
             self.center_square[-1],
             self.center_square[1],
             self.coordinates_per_frame,
+            inspect_points=self.func_inspect,
         )
         self.periphery_boolean_indexes = np.logical_and(
             np.logical_not(self.center_boolean_indexes),
@@ -186,8 +187,8 @@ class NortHabituation(BaseTrial):
     def plot(self, ax: Any = None):
         if not ax:
             fig, ax = plt.subplots()
-        if self.guiding_image is not None:
-            ax.imshow(self.guiding_image)
+        if self.inspect_image is not None:
+            ax.imshow(self.inspect_image)
         else:
             logger.warning("guiding_image is not defined will plot without")
 
@@ -202,6 +203,7 @@ class NortHabituation(BaseTrial):
 
 
 class NortOpenField(NortHabituation):
+    # alias
     pass
 
 
@@ -282,14 +284,15 @@ class NortObjectTraining(NortHabituation):
             torso,
             self.fps,
             self.max_radians_gaze_and_object,
-            inspection_image=self.guiding_image,
+            inspect=self.func_inspect,
+            inspection_image=self.inspect_image,
         )
 
     def plot(self, ax: Any = None):
         ax = super().plot(ax)
 
-        self.nort_a.plot(ax=ax, include_borders=True)
-        self.nort_b.plot(ax=ax, include_borders=True)
+        self.nort_a.plot(ax=ax)
+        self.nort_b.plot(ax=ax)
 
         return ax
 

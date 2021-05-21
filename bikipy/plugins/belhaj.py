@@ -3,27 +3,29 @@ The following are the functions used to organize data from the Belhaj dataset
 """
 import re
 from pathlib import Path
-from typing import AnyStr, Union
+from typing import AnyStr, Dict, Union
 
 import numpy as np
 from pandas import DataFrame
+
+from bikipy.behaviour.nort.experiment import NortExperiment
+from bikipy.behaviour.nort.trial import NortObjectField
 
 
 def _re_pattern_validator(pattern: re.Pattern):
     return pattern if isinstance(pattern, re.Pattern) else re.compile(pattern)
 
 
-def get_animal_id_vs_exp_ids(info_df: DataFrame, exp_id_pattern: Union[re.Pattern, AnyStr] = r"\d+"):
-    exp_id_pattern = _re_pattern_validator(exp_id_pattern)
-    exp_ids = np.array([int(exp_id_pattern.findall(info)[-1]) for info in info_df["Video_file_name"]])
-    animal_id = np.array(info_df["Animal"])
-
-    result = {}
-    for i in range(int(animal_id.min()), int(animal_id.max() + 1)):
-        loc = np.where(animal_id == i)[0][:2]
-        result[i] = tuple(exp_ids[loc])
-
-    return result
+def get_animal_id_vs_exp_ids(
+    info_df: DataFrame, exp_id_pattern: Union[re.Pattern, AnyStr] = r"\d+"
+):
+    return (
+        info_df[info_df.duplicated("Animal", keep=False)]
+        .groupby("Animal")["Test"]
+        .apply(tuple)
+        .reset_index()
+        .set_index("Animal")["Test"]
+    )
 
 
 def get_exp_id_vs_animal_id(id_exp):
@@ -34,24 +36,60 @@ def get_exp_id_vs_animal_id(id_exp):
     return result
 
 
-def get_animal_id_vs_apparatus(info_df, exp_id_pattern: Union[re.Pattern, AnyStr] = r"\d+"):
+def get_animal_id_vs_apparatus(
+    info_df, exp_id_pattern: Union[re.Pattern, AnyStr] = r"\d+"
+):
     exp_id_pattern = _re_pattern_validator(exp_id_pattern)
     animal_id = np.unique(info_df["Animal"])
     apparatus = info_df["Apparatus"]
 
     return {
         int(i): int(exp_id_pattern.findall(app)[0])
-        for i, app
-        in zip(animal_id, apparatus)
+        for i, app in zip(animal_id, apparatus)
     }
 
 
-def get_exp_id_vs_stage(exp_info_df, exp_id_pattern: Union[re.Pattern, AnyStr] = r"\d+"):
+def get_exp_id_vs_stage(
+    exp_info_df, exp_id_pattern: Union[re.Pattern, AnyStr] = r"\d+"
+):
     exp_id_pattern = _re_pattern_validator(exp_id_pattern)
     result = {}
-    for row in exp_info_df[['Video_file_name', 'Stage']].iterrows():
+    for row in exp_info_df[["Video_file_name", "Stage"]].iterrows():
         exp_idx = int(exp_id_pattern.findall(Path(row[1][0]).stem)[-1])
         stage = Path(row[1][1]).stem.lower()
         result[exp_idx] = stage if stage == "habituation" else stage[-1]
+
+    return result
+
+
+def round_vs_apparatus_to_general_nort_fields(round_vs_field_apparatus: Dict):
+    rounds = tuple(round_vs_field_apparatus.keys())
+    assert len(rounds) == 2  # No novelty -> novelty (two rounds in totalt)
+
+    all_round_fields = [
+        tuple(round_vs_field_apparatus[rem_round].keys()) for rem_round in rounds
+    ]
+    assert all_round_fields.count(all_round_fields[0]) == len(
+        all_round_fields
+    ), "Rounds have different field designations"
+    field_keys = all_round_fields[0]
+
+    result = {}
+    for field_key in field_keys:
+        field_temp_store = {}
+        for rem_round in rounds:
+            exp_name = NortExperiment.trial_label_to_experiment_class_name[rem_round]
+            if exp_name == "training":
+                field_temp_store["constant_object"] = round_vs_field_apparatus[
+                    rem_round
+                ][field_key]["A"]
+                field_temp_store["variable_object"] = round_vs_field_apparatus[
+                    rem_round
+                ][field_key]["B"]
+            elif exp_name == "novelty":
+                field_temp_store["novel_object"] = round_vs_field_apparatus[rem_round][
+                    field_key
+                ]["B"]
+        result[field_key] = NortObjectField(label=field_key, **field_temp_store)
 
     return result

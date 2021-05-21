@@ -20,20 +20,28 @@ def order_parallelogram_corners(perimeter_corners: Sequence):
         if corner in horizontal_side_b:
             assert not down_left
             down_left = perimeter_corners[corner]
-            (down_right,) = perimeter_corners[horizontal_side_b[horizontal_side_b != corner]]
+            (down_right,) = perimeter_corners[
+                horizontal_side_b[horizontal_side_b != corner]
+            ]
 
         elif corner in horizontal_side_a:
             assert not up_left
             up_left = perimeter_corners[corner]
-            (up_right,) = perimeter_corners[horizontal_side_a[horizontal_side_a != corner]]
+            (up_right,) = perimeter_corners[
+                horizontal_side_a[horizontal_side_a != corner]
+            ]
 
     assert np.all((result := np.array((down_left, down_right, up_right, up_left))))
     return result
 
 
-def expand_parallelogram(perimeter_corners: Sequence, offset: SupportsFloat, inspect: bool = False):
+def expand_parallelogram(
+    perimeter_corners: Sequence, offset: SupportsFloat, inspect: bool = False
+):
     offset = float(offset)
-    down_left, down_right, up_left, up_right = order_parallelogram_corners(perimeter_corners)
+    down_left, down_right, up_left, up_right = order_parallelogram_corners(
+        perimeter_corners
+    )
 
     off_up_left = (up_left[0] - offset, up_left[1] + offset)
     off_down_left = (down_left[0] - offset, down_left[1] - offset)
