@@ -44,7 +44,7 @@ def counter_clockwise_angel_2d(start_vector, end_vector) -> np.ndarray:
     np.ndarray
 
     >>> counter_clockwise_angel_2d((1, 0), (0, 1))
-    1.5707963267948966      # pi / 2
+    1.5707963267948966      # pi / 2.
     >>> counter_clockwise_angel_2d((1, 0), (1, 0))
     0.0
     >>> counter_clockwise_angel_2d((1, 0), (-1, 0))

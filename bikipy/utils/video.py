@@ -27,7 +27,7 @@ def get_video_data(video_path, frame_time="middle"):
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     if frame_time == "middle":
-        target_frame = frame_count / 2
+        target_frame = frame_count / 2.0
     elif frame_time == "start" or frame_time == "beginning":
         target_frame = 0
     elif frame_time == "end":

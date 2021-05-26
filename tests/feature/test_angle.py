@@ -9,7 +9,7 @@ from bikipy.feature.angle import (
 from bikipy.math.statistics import feature_scale
 from bikipy.reader.deeplabcut import DeepLabCutReader
 
-HDF_PATH = Path(__file__).parent.parent.resolve() / "example_data/data_for_angle.h5"
+HDF_PATH = Path(__file__).parent.parent.resolve() / "test_data/data_for_angle.h5"
 
 
 def test_compute_angles_from_vectors():

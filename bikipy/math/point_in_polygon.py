@@ -13,7 +13,7 @@ def points_in_parallelogram(
     corner_b: Sequence,
     coordinates: Sequence,
     inspect_points: bool = False,
-) -> Sequence[bool]:
+) -> np.ndarray:
     """
     Algebraic solver for finding points located inside a parallelogram.
 
@@ -68,7 +68,7 @@ def points_in_parallelogram(
             ax.scatter(*point.T)
 
         ax.scatter(*coordinates[result].T)
-        ax.scatter(*coordinates[np.logical_not(result)].T)
+        ax.scatter(*coordinates[~result].T)
         ax.legend(("A", "corner_points", "B", "valid_points", "invalid_points"))
 
         plt.show()

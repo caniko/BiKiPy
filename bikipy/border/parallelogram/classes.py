@@ -71,7 +71,7 @@ class ParallelogramBorder(PolygonalBorder):
             np.asarray(close_corner),
             np.asarray(far_corner),
         )
-        return close_corner + (far_corner - close_corner) / 2.0
+        return close_corner + (far_corner - close_corner) / 20
 
     @staticmethod
     def sort_vectors(vectors: Sequence) -> np.ndarray:
@@ -94,7 +94,7 @@ class ParallelogramBorder(PolygonalBorder):
         base = np.asarray(base)
         self.__base = self.sort_vectors(base)
 
-        # self.base_mid = self.base[0] + (self.base[1] - self.base[0]) / 2
+        # self.base_mid = self.base[0] + (self.base[1] - self.base[0]) / 2.
         self.base_mid = self.midpoint(*self.__base)
         self.base_vector = base[1] - base[0]
 
@@ -107,7 +107,7 @@ class ParallelogramBorder(PolygonalBorder):
         apex = np.asarray(apex)
         self.__apex = self.sort_vectors(apex)
 
-        # self.apex_mid = self.apex[0] + (self.apex[1] - self.apex[0]) / 2
+        # self.apex_mid = self.apex[0] + (self.apex[1] - self.apex[0]) / 2.
         self.apex_mid = self.midpoint(*self.__apex)
         self.apex_vector = apex[1] - apex[0]
 
@@ -236,6 +236,10 @@ class ParallelogramBorder(PolygonalBorder):
             (self.base_mid[1], self.apex_mid[1]),
             "-k",
         )
-        plt.legend(("Base", "Apex", "Close Feet", "Far Feet", "Midline"))
+        plt.legend(
+            ("Base", "Apex", "Close Feet", "Far Feet", "Midline"),
+            bbox_to_anchor=(1.04, 0.5),
+            loc="center left",
+        )
 
         return ax

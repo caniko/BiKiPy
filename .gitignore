@@ -203,7 +203,5 @@ modules.xml
 .history
 
 ### Excel
-*.xlsx
-*.ods
 *.ods#
 *.xlsx#

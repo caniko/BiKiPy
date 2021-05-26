@@ -53,13 +53,13 @@ class BaseTrial:
         if movement_feature_point_label:
             # coordinate_sequence must be a reader object, like DeepLabCutReader
             self.movement_feature_point_label = str(movement_feature_point_label)
-            self.coordinate_sequence = coordinate_sequence
+            self.coordinate_sequence: Dict = coordinate_sequence
             self.coordinates_per_frame = self.coordinate_sequence[
                 self.movement_feature_point_label
             ]
         else:
             self.movement_feature_point_label = None
-            self.coordinate_sequence = np.asarray(coordinate_sequence)
+            self.coordinate_sequence: np.ndarray = np.asarray(coordinate_sequence)
             self.coordinates_per_frame = self.coordinate_sequence
 
         self.experiment_seconds = self.coordinates_per_frame.shape[0] / self.fps

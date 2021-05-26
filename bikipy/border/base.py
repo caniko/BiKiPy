@@ -305,7 +305,7 @@ class GenericPolygonalBorder(PolygonalBorder, ABC):
 
             legends.extend(legend)
 
-        plt.legend(legends)
+        plt.legend(legends, bbox_to_anchor=(1.04, 0.5), loc="center left")
         return ax
 
     def _add_label_to_str(self, in_string):

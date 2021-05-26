@@ -17,22 +17,25 @@ from bikipy.plugins.belhaj import (
 )
 from bikipy.utils.video import get_video_data
 
+
 DEEPLABCUT_DIR = Path("/mnt/md0/Projects/Neuroscience/Imen/data/nort")
 ROUND_DIR_NAME = "Round_1"
 
-HABITUATION_DIR = DEEPLABCUT_DIR / "Open-Field" / ROUND_DIR_NAME
-NOVELTY_DIR = DEEPLABCUT_DIR / "Novelty" / ROUND_DIR_NAME
+DLC_HABITUATION_DIR = DEEPLABCUT_DIR / "Open-Field" / ROUND_DIR_NAME
+DLC_NOVELTY_DIR = DEEPLABCUT_DIR / "Novelty" / ROUND_DIR_NAME
 
-ROOT_DIR = Path(".").resolve()
+WORKING_DIR = Path(".").resolve()
+DATA_DIR = WORKING_DIR / "data"
 
 EXP_ID_REGEX_PATTERN = re.compile("\d+")
 
+
 # Set sheet name to 0 for Round_1 and 1 for Round_2
 EXP_INFO = pd.read_excel(
-    str(ROOT_DIR / "nort_round_1.xlsx"), sheet_name=0, engine="openpyxl"
+    str(DATA_DIR / "nort_round_1.xlsx"), sheet_name=0, engine="openpyxl"
 )
 
-with open(ROOT_DIR / "area_images" / "A_annotations.pickle", "rb") as infile:
+with open(DATA_DIR / "area_images" / "A_annotations.pickle", "rb") as infile:
     round_vs_field_apparatus = pickle.load(infile)
 round_keys = [f"round_{num}" for num in range(len(round_vs_field_apparatus))]
 round_vs_field_vs_apparatus = {
@@ -49,14 +52,16 @@ exp_vs_animal = get_exp_id_vs_animal_id(get_animal_id_vs_exp_ids(EXP_INFO))
 
 exp_id_range_vs_exp_meta = {}
 exp_id_vs_coordinate_data_path = {}
-for exp_class, root in zip(("habituation", "novelty"), (HABITUATION_DIR, NOVELTY_DIR)):
+for exp_class, root in zip(
+    ("novelty", "habituation"), (DLC_NOVELTY_DIR, DLC_HABITUATION_DIR)
+):
     for exp_dir in os.listdir(root):
         exp_designation = exp_dir.split("_")[0]
         exp_path = root / exp_dir
         glob_exp_data_path = exp_path / "**" if exp_class == "novelty" else exp_path
 
         exp_id_vs_coordinate_data_path[exp_designation] = {}
-        for data_path in glob(str(glob_exp_data_path / "*.h5")):
+        for data_path in glob(str(glob_exp_data_path / "*.parquet")):
             exp_id = int(EXP_ID_REGEX_PATTERN.findall(Path(data_path).stem)[0])
 
             exp_id_vs_coordinate_data_path[exp_designation][exp_id] = data_path
@@ -74,7 +79,7 @@ for exp_class, root in zip(("habituation", "novelty"), (HABITUATION_DIR, NOVELTY
             }
 
 with pd.ExcelWriter(
-    ROOT_DIR / "nort_analysis.ods", strings_to_formulas=False, strings_to_urls=False
+    WORKING_DIR / "nort_analysis.ods", strings_to_formulas=False, strings_to_urls=False
 ) as writer:
     for exp_designation in exp_id_range_vs_exp_meta:
         NortExperiment(
@@ -85,11 +90,12 @@ with pd.ExcelWriter(
             torso_label="mid-mid-left_ear-right_ear-tail",
             nort_field_vs_apparatus=field_vs_apparatus,
             center_size_real_length=20,
-            max_radians_gaze_and_object=1 / 4 * np.pi,
+            max_radians_gaze_and_object=0.33 * np.pi,
             exp_id_vs_coordinate_data_path=exp_id_vs_coordinate_data_path[
                 exp_designation
             ],
-            func_inspect=True,
+            # func_inspect=True,
+            init_from="parquet",
             midpoint_groups=[
                 ("left_ear", "right_ear"),
                 ("mid-left_ear-right_ear", "tail"),

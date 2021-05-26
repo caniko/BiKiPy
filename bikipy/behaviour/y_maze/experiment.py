@@ -11,7 +11,7 @@ import numpy as np
 from bikipy.behaviour.base import BaseTrial
 from bikipy.behaviour.utils import (
     exclude_value_from_sequence,
-    reduce_repeating_sequences,
+    python_reduce_repeating_sequences,
     unique_with_counts_zipped,
 )
 from bikipy.behaviour.y_maze.utils import mean_intersecting_points_on_borders
@@ -62,9 +62,9 @@ class YMaze(BaseTrial):
             inferior_poly_border_instances=[self.center],
         )
 
-        self.invalid_boolean_indexes = np.logical_not(self.valid_boolean_indexes)
+        self.invalid_boolean_indexes = ~self.valid_boolean_indexes
 
-        self.reduced_alternation_sequence = reduce_repeating_sequences(
+        self.reduced_alternation_sequence = python_reduce_repeating_sequences(
             self.alternation_sequence
         )
         self.reduced_without_center = exclude_value_from_sequence(
@@ -138,7 +138,7 @@ class YMaze(BaseTrial):
             result[label] = counts
 
         total_arm_alternations = np.sum([result[lab] for lab in self._arm_int_labels])
-        minimum_center_entries = ceil(total_arm_alternations / 2)
+        minimum_center_entries = ceil(total_arm_alternations / 2.0)
 
         if not result[self.center.int_label]:
             result[self.center.int_label] = 0

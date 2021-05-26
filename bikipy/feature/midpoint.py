@@ -32,17 +32,18 @@ def compute_midpoint(point_1: Sequence, point_2: Sequence) -> np.ndarray:
     point_2_vector_norms = np.apply_along_axis(np.linalg.norm, 1, point_2)
 
     # Vector location in which the respective vector has a larger size than the other
-    i_greater_ii = point_1_vector_norms >= point_2_vector_norms
+    i_greater_equals_ii = point_1_vector_norms >= point_2_vector_norms
     # Opposite of the preceding
-    ii_greater_i = np.logical_not(i_greater_ii)
+    ii_greater_i = ~i_greater_equals_ii
 
     compute = np.zeros((ii_greater_i.size, 2))
-    compute[i_greater_ii] = (
-        point_2[i_greater_ii] + (point_1[i_greater_ii] - point_2[i_greater_ii]) / 2
+    compute[i_greater_equals_ii] = (
+        point_2[i_greater_equals_ii]
+        + (point_1[i_greater_equals_ii] - point_2[i_greater_equals_ii]) / 2.0
     )
 
     compute[ii_greater_i] = (
-        point_1[ii_greater_i] + (point_2[ii_greater_i] - point_1[ii_greater_i]) / 2
+        point_1[ii_greater_i] + (point_2[ii_greater_i] - point_1[ii_greater_i]) / 2.0
     )
 
     return compute

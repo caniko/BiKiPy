@@ -1,6 +1,5 @@
-from typing import AnyStr, Sequence, Union
+from typing import AnyStr, Sequence, Union, Any
 
-import numpy as np
 import pandas as pd
 
 from bikipy.feature.movement import displacement_per_frame
@@ -12,6 +11,8 @@ class BaseReader:
         df: pd.DataFrame,
         future_scaling: bool = False,
         pixel_resolution: Union[Sequence, None] = None,
+        video_path: Any = None,
+        data_path: Any = None,
         data_label: Union[AnyStr, None] = None,
     ):
         """
@@ -45,8 +46,11 @@ class BaseReader:
             msg = "df has to be a pandas.DataFrame"
             raise AttributeError(msg)
 
-        self.data_label = data_label
         self.future_scaling = future_scaling
+
+        self.video_path = video_path
+        self.data_path = data_path
+        self.data_label = data_label
 
     def __getitem__(self, item):
         pass

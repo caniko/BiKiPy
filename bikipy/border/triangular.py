@@ -69,7 +69,7 @@ class TriangularBorder(GenericPolygonalBorder):
 
     def confined_coordinate_indexes(self, coordinates: Sequence) -> np.ndarray:
         """
-        Indexes of the coordinates that are inside the respective border
+        indices of the coordinates that are inside the respective border
 
         Parameters
         ----------
@@ -78,7 +78,7 @@ class TriangularBorder(GenericPolygonalBorder):
 
         Returns
         -------
-        np.ndarray of all the indexes
+        np.ndarray of all the indices
         """
         coord_x_comp, coord_y_comp = np.asarray(coordinates).T
 

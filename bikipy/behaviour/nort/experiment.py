@@ -3,6 +3,7 @@ from typing import Any, AnyStr, Dict, Sequence, SupportsFloat, Union
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 from bikipy.behaviour.base import BaseExperiment
 from bikipy.behaviour.nort.trial import (
@@ -89,7 +90,7 @@ class NortExperiment(BaseExperiment):
             self.training_object_trials,
             self.novelty_object_trials,
         ) = ([], [], [])
-        for exp_id, exp_meta in self.exp_id_range_vs_exp_meta.items():
+        for exp_id, exp_meta in tqdm(self.exp_id_range_vs_exp_meta.items()):
             logger.info(f"Category {exp_meta['stage']}; ID {exp_id}")
 
             coordinate_sequence = self.exp_id_vs_coordinate_sequences[exp_id]
@@ -193,7 +194,7 @@ class NortExperiment(BaseExperiment):
             data_dict = sort_dict_by_key_value(data_dict)
             return pd.DataFrame(
                 tuple(data_dict.values()),
-                index=tuple(data_dict.keys()),
+                index=pd.Series(data_dict.keys(), name="Test"),
                 columns=feature_order,
             )
 

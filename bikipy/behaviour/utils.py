@@ -39,7 +39,7 @@ def triplet_permutation_vs_base_permutation_dictionary(base_triplets: Sequence):
     }
 
 
-def reduce_repeating_sequences(
+def python_reduce_repeating_sequences(
     str_sequence: Sequence, tolerance: SupportsInt = 6
 ) -> Sequence:
     """
@@ -107,3 +107,10 @@ def reduce_repeating_sequences(
         )
 
     return reduced_str_sequence
+
+
+def reduce_repeating_sequences(array: np.ndarray):
+    array = np.asarray(array)
+    unique, index = np.unique(array, return_index=True)
+
+    result = []

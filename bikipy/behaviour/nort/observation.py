@@ -1,13 +1,12 @@
 """
-Kinematic filters defined in 2D, 3D not supported. The operations
-are memory intensive for large datasets.
+2D kinematic filters, 3D not supported.
 """
 from logging import getLogger
-from typing import Any, Sequence, SupportsFloat, SupportsInt, Union
+from typing import Any, Sequence, SupportsFloat, SupportsInt, Union, Dict, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-from seaborn import set_theme
+import seaborn as sns
 
 from bikipy.border.base import PolygonalBorder
 from bikipy.feature.angle import counter_clockwise_angel_2d
@@ -61,27 +60,24 @@ def location_filter(
             nort_object.perimeter_corners[0],
             nort_object.perimeter_corners[2],
             torso,
-            inspect_points=False,
         )
     )
 
     # Find states where the nose is within border while the torso is not over object
-    result = np.logical_and(nose_within_border, torso_outside_polygon)
+    result = nose_within_border & torso_outside_polygon
 
     if inspection_ax is not None or inspect:
         if inspection_ax is None:
-            set_theme(style="darkgrid")
+            sns.set_theme(style="darkgrid")
             fig, inspection_ax = plt.subplots()
         inspection_ax.set_title("Location filter")
 
         if inspection_image:
             inspection_ax.imshow(read_image(inspection_image))
 
-        not_result = np.logical_not(result)
-        inspection_ax.scatter(*nose[np.logical_and(nose_within_border, not_result)].T)
-        inspection_ax.scatter(
-            *nose[np.logical_and(torso_outside_polygon, not_result)].T
-        )
+        not_result = ~result
+        inspection_ax.scatter(*nose[nose_within_border & not_result].T)
+        inspection_ax.scatter(*nose[torso_outside_polygon & not_result].T)
         inspection_ax.scatter(*nose[result].T)
 
         inspection_ax.legend(
@@ -91,7 +87,11 @@ def location_filter(
         if not inspection_ax:
             plt.show()
 
-    return result
+    return result, {
+        "nose_within_border": nose_within_border,
+        "torso_outside_polygon": torso_outside_polygon,
+        "and": result,
+    }
 
 
 def gaze_direction_filter(
@@ -102,7 +102,7 @@ def gaze_direction_filter(
     inspect: bool = False,
     inspection_image: Any = None,
     inspection_ax: Any = None,
-):
+) -> np.ndarray:
     nose, eye_center = np.asarray(nose), np.asarray(eye_center)
     eye_to_nose_unit = unit_vector(nose - eye_center)
 
@@ -110,9 +110,10 @@ def gaze_direction_filter(
         nort_object.side_vectors, nort_object.perimeter_corners, eye_center
     )
 
-    radians = np.abs(counter_clockwise_angel_2d(closest_side, eye_to_nose_unit) - np.pi)
+    counter_clockwise_rad = counter_clockwise_angel_2d(closest_side, eye_to_nose_unit)
+    clockwise_rad = np.abs(counter_clockwise_rad - 2.0 * np.pi)
 
-    result = radians <= max_radians
+    result = (counter_clockwise_rad <= max_radians) | (clockwise_rad <= max_radians)
 
     if inspection_ax is not None or inspect:
         if inspection_ax is None:
@@ -131,14 +132,17 @@ def gaze_direction_filter(
 
 
 def attention_span_filter(
-    valid_indexes: Sequence[bool], fps: SupportsFloat
+    valid_indexes: Sequence[bool],
+    fps: SupportsFloat,
+    minimum_seconds_observing: SupportsFloat = 0.2,
 ) -> np.ndarray:
     valid_indexes = np.asarray(valid_indexes)
 
     fps = float(fps)
+    minimum_seconds_observing = float(minimum_seconds_observing)
 
-    distraction_tolerance = round(fps / 2)
-    minimum_time_valid_observation = round(fps / 3)
+    distraction_tolerance = round(fps / 2.0)
+    minimum_time_valid_observation = round(minimum_seconds_observing * fps)
 
     length = valid_indexes.shape[0]
     observation_boolean_indexes = np.full(length, False)
@@ -205,7 +209,7 @@ def nort_observation(
     max_radians_gaze_and_object: SupportsFloat = 1 / 4 * np.pi,
     inspect: bool = False,
     inspection_image: Any = None,
-) -> np.ndarray:
+) -> Tuple[np.ndarray, Dict]:
     """
 
     Parameters
@@ -226,7 +230,6 @@ def nort_observation(
         each filter
     inspection_image: Any
 
-
     Returns
     -------
 
@@ -246,16 +249,19 @@ def nort_observation(
     else:
         loc_filter_kwargs, gaze_filter_kwargs = {}, {}
 
-    quasi_observations = np.logical_and(
-        location_filter(nort_object, nose, torso, **loc_filter_kwargs),
-        gaze_direction_filter(
-            nort_object,
-            nose,
-            eye_center,
-            max_radians_gaze_and_object,
-            **gaze_filter_kwargs,
-        ),
+    location_filtered, loc_analytics = location_filter(
+        nort_object, nose, torso, **loc_filter_kwargs
     )
+
+    gaze_filtered = gaze_direction_filter(
+        nort_object,
+        nose,
+        eye_center,
+        max_radians_gaze_and_object,
+        **gaze_filter_kwargs,
+    )
+
+    quasi_observations = location_filtered & gaze_filtered
 
     object_observation = (
         np.full_like(quasi_observations, False)
@@ -279,4 +285,11 @@ def nort_observation(
         plt.tight_layout()
         plt.show()
 
-    return object_observation
+    or_filter = location_filtered | gaze_filtered
+
+    return object_observation, {
+        "location": location_filtered[or_filter],
+        "gaze": gaze_filtered[or_filter],
+        "observation": object_observation[or_filter],
+        "or_filter": or_filter,
+    }

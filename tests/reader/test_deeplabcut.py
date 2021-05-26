@@ -3,7 +3,7 @@ from pathlib import Path
 
 from bikipy.reader.deeplabcut import DeepLabCutReader
 
-EXAMPLES_ROOT = Path(__file__).resolve().parent.parent / "example_data"
+EXAMPLES_ROOT = Path(__file__).resolve().parent.parent / "test_data"
 
 HDF_PATH = EXAMPLES_ROOT / "data_for_angle.h5"
 CSV_PATH = EXAMPLES_ROOT / "test_tracking.csv"

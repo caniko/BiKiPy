@@ -71,7 +71,9 @@ def expand_parallelogram(
                 "off_down_right",
                 "off_up_left",
                 "off_up_right",
-            )
+            ),
+            bbox_to_anchor=(1.04, 0.5),
+            loc="center left",
         )
 
         plt.show()

@@ -1,6 +1,9 @@
 import collections.abc as abc
+import os
+import sys
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
+from pathlib import Path
 from typing import (
     AnyStr,
     Callable,
@@ -10,6 +13,7 @@ from typing import (
     Sequence,
     SupportsFloat,
     Union,
+    Any,
 )
 
 import numpy as np
@@ -65,28 +69,21 @@ class DeepLabCutReader(BaseReader):
         self.x_crop_start = float(x_crop_start)
         if self.x_crop_start:
             for roi in self.regions_of_interest:
-                self.df[(roi, "x")] = self.df[(roi, "x")].map(
-                    lambda x: self.x_crop_start + x
-                )
+                self.df.loc[(roi, "x")] = self.df[(roi, "x")] + self.x_crop_start
 
         self.y_crop_start = float(y_crop_start)
         self.invert_y = invert_y
 
         if self.y_crop_start or self.invert_y:
-            if self.invert_y:
-                if self.y_crop_start:
-                    y_mod = self.vertical_res - self.y_crop_start
-
-                def y_map_func(y):
-                    return y_mod - y
-
+            if self.invert_y and self.y_crop_start:
+                y_add = self.y_crop_start - self.vertical_res
+            elif self.invert_y:
+                y_add = -self.vertical_res
             elif self.y_crop_start:
-
-                def y_map_func(y):
-                    return self.y_crop_start + y
+                y_add = self.y_crop_start
 
             for roi in self.regions_of_interest:
-                self.df[(roi, "y")] = self.df[(roi, "y")].map(y_map_func)
+                self.df.loc[(roi, "y")] = self.df[(roi, "y")] + y_add
 
         if midpoint_groups:
             if isinstance(midpoint_groups, dict):
@@ -192,7 +189,7 @@ class DeepLabCutReader(BaseReader):
             # remove likelihood col
             coordinates = np.delete(self.df[item].values, 2, 1)
             # clean values beneath min likelihood
-            coordinates[np.logical_not(self._valid_point_booleans[item])] = np.nan
+            coordinates[~self._valid_point_booleans[item]] = np.nan
             return coordinates
 
         if isinstance(query, str):
@@ -246,17 +243,22 @@ class DeepLabCutReader(BaseReader):
         from bikipy.utils.video import get_video_data
 
         _frame, horizontal_res, vertical_res, _fps = get_video_data(video_path)
-        kwargs["pixel_resolution"] = (horizontal_res, vertical_res)
+        func_kwargs = {
+            "pixel_resolution": (horizontal_res, vertical_res),
+            "video_path": video_path,
+        }
 
         if "hdf_path" in kwargs:
-            return cls.from_hdf(*args, **kwargs)
+            init_func = cls.from_hdf
         elif "csv_path" in kwargs:
-            return cls.from_csv(*args, **kwargs)
+            init_func = cls.from_csv
         else:
-            return cls(*args, **kwargs)
+            init_func = cls
+
+        return init_func(*args, **kwargs, **func_kwargs)
 
     @classmethod
-    def from_csv(cls, csv_path: AnyStr, *args, **kwargs):
+    def from_csv(cls, csv_path: AnyStr, data_label: Any = None, **kwargs):
         """
         Create a pd.DataFrame from a csv file in DeepLabCut (DLC) format.
 
@@ -266,8 +268,8 @@ class DeepLabCutReader(BaseReader):
         ----------
         csv_path: str
             The path to the csv file that shall be analysed; with or without ".csv" extension
-        args:
-            Arguments for the class init-method
+        data_label : String; optional
+            Label for the data
         kwargs: dict
             Keyword arguments for the class init-method
 
@@ -276,16 +278,17 @@ class DeepLabCutReader(BaseReader):
         __init__ call
         """
 
-        try:
-            df = pd.read_csv(csv_path, **DEEPLABCUT_DF_INIT_KWARGS)
-        except FileNotFoundError:
-            msg = f"csv_path does not exist, {csv_path}"
-            raise ValueError(msg)
-
-        return cls(df, *args, **kwargs)
+        return cls(
+            pd.read_csv(csv_path, **DEEPLABCUT_DF_INIT_KWARGS),
+            data_path=csv_path,
+            data_label=data_label,
+            **kwargs,
+        )
 
     @classmethod
-    def from_hdf(cls, hdf_path: AnyStr, *args, drop_level: bool = True, **kwargs):
+    def from_hdf(
+        cls, hdf_path: AnyStr, data_label: Any = None, drop_level: bool = True, **kwargs
+    ):
         """
         Initialize class using data from a hdf file
 
@@ -295,8 +298,8 @@ class DeepLabCutReader(BaseReader):
         ----------
         hdf_path: str
             The path to the hdf file that shall be analysed
-        args
-            Arguments for the class init-method
+        data_label : String; optional
+            Label for the data
         drop_level: bool
             If True, remove a potentially redundant level in DataFrame
         kwargs: dict
@@ -311,7 +314,35 @@ class DeepLabCutReader(BaseReader):
         if drop_level:
             df = df.droplevel(0, axis=1)
 
-        return cls(df, *args, **kwargs)
+        return cls(df, data_path=hdf_path, data_label=data_label, **kwargs)
+
+    @classmethod
+    def from_parquet(cls, hdf_path: AnyStr, data_label: Any = None, **kwargs):
+        """
+        Initialize class using data from a hdf file
+
+        Note: You should assign a value to object.data_label by including it as a kwarg
+
+        Parameters
+        ----------
+        hdf_path: str
+            The path to the hdf file that shall be analysed
+        data_label : String; optional
+            Label for the data
+        kwargs: dict
+            Keyword arguments for the class init-method
+
+        Returns
+        -------
+        __init__ call
+        """
+
+        return cls(
+            pd.read_parquet(hdf_path),
+            data_path=hdf_path,
+            data_label=data_label,
+            **kwargs,
+        )
 
     @classmethod
     def init_many(
@@ -319,7 +350,7 @@ class DeepLabCutReader(BaseReader):
         file_paths: Union[Sequence, Iterable],
         init_from: AnyStr = "hdf",
         labels: Union[Sequence, Iterable, None] = None,
-        process_pooling: bool = False,
+        force_process_pooling: Union[bool, None] = None,
         **init_kwargs,
     ) -> List:
         """
@@ -333,7 +364,7 @@ class DeepLabCutReader(BaseReader):
             Classmethod label to use for initialization
         labels: tuple-like
             Sequence of labels that will be stored as self.semantic_label in the class instance
-        process_pooling: bool
+        force_process_pooling: bool
             If True, initialize each DeepLabCutReader object with multiprocessing.
             Useful when initialize approximately 20 or more dlc objects
         init_kwargs: dict
@@ -343,7 +374,12 @@ class DeepLabCutReader(BaseReader):
         -------
         List of class objects instantiated with the use of provided data
         """
-        ext_to_method = {"csv": cls.from_csv, "h5": cls.from_hdf, "hdf": cls.from_hdf}
+        ext_to_method = {
+            "csv": cls.from_csv,
+            "parquet": cls.from_parquet,
+            "h5": cls.from_hdf,
+            "hdf": cls.from_hdf,
+        }
         try:
             init_method = ext_to_method[str(init_from).lower()]
         except KeyError:
@@ -352,15 +388,16 @@ class DeepLabCutReader(BaseReader):
 
         kwarg_loaded_init = partial(init_method, **init_kwargs)
 
-        if process_pooling:
-            with ProcessPoolExecutor() as executor:
-                mapped = executor.map(kwarg_loaded_init, file_paths)
-                dlc_objects = [result.result() for result in mapped]
-
+        # Process pooling in windows is subpar and is not supported.
+        if force_process_pooling or (
+            force_process_pooling is not None and sys.platform != "win32"
+        ):
+            args = [file_paths]
             if labels:
-                labels = tuple(labels)
-                for i in range(len(dlc_objects)):
-                    dlc_objects[i].data_label = labels[i]
+                args.append(labels)
+
+            with ProcessPoolExecutor() as executor:
+                dlc_objects = list(executor.map(kwarg_loaded_init, *args))
 
         else:
             dlc_objects = [
@@ -428,3 +465,31 @@ class DeepLabCutReader(BaseReader):
         master: pd.DataFrame, new_data: Dict
     ) -> pd.DataFrame:
         return master.join(pd.DataFrame.from_dict(new_data))
+
+
+def convert_hdf_to_parquet(hdf_paths, delete_hdf: bool = False):
+    """
+    Convert deeplabcut hdf files to parquet format, by replacing the filename suffix
+    with parquet. Thereby, keeping the original path.
+
+    Parameters
+    ----------
+    hdf_paths
+    delete_hdf
+
+    Returns
+    -------
+
+    """
+    hdf_path = Path(hdf_paths)
+    parquet_path = hdf_path.with_suffix(".parquet")
+
+    if not parquet_path.exists():
+        pd.read_hdf(hdf_path, **DEEPLABCUT_DF_INIT_KWARGS).droplevel(
+            0, axis=1
+        ).to_parquet(parquet_path)
+
+    if delete_hdf:
+        os.remove(hdf_path)
+
+    return parquet_path

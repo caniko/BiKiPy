@@ -4,7 +4,7 @@ import numpy as np
 
 from bikipy.utils.video import get_video_data
 
-EXAMPLES_ROOT = Path(__file__).resolve().parent.parent / "example_data"
+EXAMPLES_ROOT = Path(__file__).resolve().parent.parent / "test_data"
 VIDEO_PATH = EXAMPLES_ROOT / "test_video.mp4"
 
 PIXEL_RESOLUTION = (388, 442)

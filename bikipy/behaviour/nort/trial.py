@@ -11,7 +11,7 @@ import numpy as np
 
 from bikipy.behaviour.base import BaseTrial
 from bikipy.behaviour.nort.observation import nort_observation
-from bikipy.behaviour.utils import reduce_repeating_sequences
+from bikipy.behaviour.utils import python_reduce_repeating_sequences
 from bikipy.border.base import GenericPolygonalBorder, PolygonalBorder
 from bikipy.math.point_in_polygon import points_in_parallelogram
 
@@ -64,47 +64,47 @@ class NortHabituation(BaseTrial):
         assert self.experiment_box_real_length > self.center_size_real_length
 
         self.center_box_ratio = (
-            (self.experiment_box_real_length - self.center_size_real_length) / 2
+            (self.experiment_box_real_length - self.center_size_real_length) / 2.0
         ) / self.experiment_box_real_length
         self.one_minus_center_box_ratio = 1 - self.center_box_ratio
 
         x = self.horizontal_resolution * self.center_box_ratio
-        x_rest_half = (self.horizontal_resolution - x) / 2
+        x_rest_half = (self.horizontal_resolution - x) / 2.0
 
         y = self.vertical_resolution * self.center_box_ratio
-        y_rest_half = (self.vertical_resolution - y) / 2
+        y_rest_half = (self.vertical_resolution - y) / 2.0
         if self.horizontal_resolution == self.vertical_resolution:
             self.center_square = (
-                # x_short, y_long
-                (x_rest_half, y_rest_half),
                 # x_short, y_short
+                (x_rest_half, y_rest_half),
+                # x_short, y_long
                 (x_rest_half, self.vertical_resolution - y_rest_half),
-                # x_long, y_short
+                # x_long, y_long
                 (
                     self.horizontal_resolution - x_rest_half,
                     self.vertical_resolution - y_rest_half,
                 ),
-                # x_long, y_long
+                # x_long, y_short
                 (self.horizontal_resolution - x_rest_half, y_rest_half),
             )
         elif self.horizontal_resolution < self.vertical_resolution:
             self.center_square = self.non_square_rectification(
-                y_bias=(self.vertical_resolution - self.horizontal_resolution) / 2
+                y_bias=(self.vertical_resolution - self.horizontal_resolution) / 2.0
             )
         else:
             self.center_square = self.non_square_rectification(
-                x_bias=(self.horizontal_resolution - self.vertical_resolution) / 2
+                x_bias=(self.horizontal_resolution - self.vertical_resolution) / 2.0
             )
 
         self.center_boolean_indexes = points_in_parallelogram(
             self.center_square[0],
-            self.center_square[-1],
+            self.center_square[3],
             self.center_square[1],
             self.coordinates_per_frame,
             inspect_points=self.func_inspect,
         )
         self.periphery_boolean_indexes = np.logical_and(
-            np.logical_not(self.center_boolean_indexes),
+            ~self.center_boolean_indexes,
             np.logical_and(*np.isfinite(self.coordinates_per_frame).T),
         )
 
@@ -118,6 +118,14 @@ class NortHabituation(BaseTrial):
         ) = self.compute_movement_features_over_boolean_index(
             self.center_boolean_indexes
         )
+        if not self.center_displacement or self.center_displacement == 0:
+            self.center_boolean_indexes = points_in_parallelogram(
+                self.center_square[0],
+                self.center_square[3],
+                self.center_square[1],
+                self.coordinates_per_frame,
+                inspect_points=self.func_inspect,
+            )
         (
             self.periphery_displacement,
             self.periphery_mean_speed,
@@ -127,18 +135,23 @@ class NortHabituation(BaseTrial):
         )
 
         self.total_displacement = self.periphery_displacement + self.center_displacement
-        self.mean_speed = (self.center_mean_speed + self.periphery_mean_speed) / 2
+        self.mean_speed = (self.center_mean_speed + self.periphery_mean_speed) / 2.0
         self.mean_acceleration = (
             self.center_mean_acceleration + self.periphery_mean_acceleration
-        ) / 2
+        ) / 2.0
 
-        self.entry_sequence = np.ones_like(self.center_boolean_indexes, dtype=str)
-        self.entry_sequence[self.center_boolean_indexes] = "C"
-        self.entry_sequence[self.periphery_boolean_indexes] = "P"
-        self.entry_sequence = np.array(reduce_repeating_sequences(self.entry_sequence))
+        # 1 is center, 2 is periphery, 0 is invalid aka unknown
+        self.location_sequence = np.zeros_like(
+            self.center_boolean_indexes, dtype=np.uint8
+        )
+        self.location_sequence[self.center_boolean_indexes] = 1
+        self.location_sequence[self.periphery_boolean_indexes] = 2
+        self.location_sequence = np.array(
+            python_reduce_repeating_sequences(self.location_sequence)
+        )
 
-        self.periphery_entries = np.sum(self.entry_sequence == "P")
-        self.center_entries = np.sum(self.entry_sequence == "C")
+        self.center_entries = np.sum(self.location_sequence == 1)
+        self.periphery_entries = np.sum(self.location_sequence == 2)
 
     def non_square_rectification(
         self, x_bias: SupportsFloat = 0.0, y_bias: SupportsFloat = 0.0
@@ -161,10 +174,10 @@ class NortHabituation(BaseTrial):
             y_long = x_long + y_bias
 
         return (
-            (x_short, y_long),
             (x_short, y_short),
-            (x_long, y_short),
+            (x_short, y_long),
             (x_long, y_long),
+            (x_long, y_short),
         )
 
     def get_info(self):
@@ -230,38 +243,46 @@ class NortObjectTraining(NortHabituation):
         )
         self.max_radians_gaze_and_object = float(max_radians_gaze_and_object)
 
-        self.observe_a_per_frame = self.nort_observation(self.nort_a)
-        self.observe_b_per_frame = self.nort_observation(self.nort_b)
-        self.not_observing = np.logical_not(
-            np.logical_or(self.observe_a_per_frame, self.observe_b_per_frame)
+        self.a_observance_per_frame, self.a_observance_analysis = self.nort_observation(
+            self.nort_a
+        )
+        self.b_observance_per_frame, self.b_observance_analysis = self.nort_observation(
+            self.nort_b
+        )
+        self.not_observing = ~(
+            self.a_observance_per_frame | self.b_observance_per_frame
         )
 
-        assert self.observe_a_per_frame.size == self.observe_b_per_frame.size
+        assert self.a_observance_per_frame.size == self.b_observance_per_frame.size
 
         self.observation_sequence = np.zeros_like(
-            self.observe_a_per_frame, dtype=np.str
+            self.a_observance_per_frame, dtype=np.uint8
         )
 
-        self.observation_sequence[self.observe_a_per_frame] = "A"
-        self.observation_sequence[self.observe_b_per_frame] = "B"
-        self.observation_sequence[self.not_observing] = "X"
+        self.observation_sequence[self.a_observance_per_frame] = 1
+        self.observation_sequence[self.b_observance_per_frame] = 2
+        # assert np.all((self.observation_sequence == 0) == self.not_observing)
 
         self.reduced_observation_sequence = np.array(
-            reduce_repeating_sequences(self.observation_sequence)
+            python_reduce_repeating_sequences(self.observation_sequence)
         )
 
-        self.novelty_observation_a = np.sum(self.reduced_observation_sequence == "A")
-        self.novelty_observation_b = np.sum(self.reduced_observation_sequence == "B")
+        self.novelty_observation_a = np.sum(self.reduced_observation_sequence == 1)
+        self.novelty_observation_b = np.sum(self.reduced_observation_sequence == 2)
 
-        self.seconds_spent_a = np.sum(self.observation_sequence == "A") / self.fps
-        self.seconds_spent_b = np.sum(self.observation_sequence == "B") / self.fps
+        self.seconds_spent_a = np.sum(self.observation_sequence == 1) / self.fps
+        self.seconds_spent_b = np.sum(self.observation_sequence == 2) / self.fps
         self.seconds_observing = self.seconds_spent_a + self.seconds_spent_b
 
-        self.object_bias_score = 100 * self.seconds_spent_a / self.seconds_observing
+        self.object_bias_score = (
+            100.0 * self.seconds_spent_a / self.seconds_observing
+            if self.seconds_observing
+            else 0
+        )
 
         assert (
             self.seconds_observing < self.experiment_seconds
-        ), f"not {self.seconds_observing} < {self.experiment_seconds}"
+        ), f"{self.seconds_observing} > {self.experiment_seconds}"
 
     def get_info(self):
         return super().get_info() + [
@@ -301,8 +322,8 @@ class NortNovelObject(NortObjectTraining):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.absolute_discrimination = np.sum(self.observe_b_per_frame) - np.sum(
-            self.observe_a_per_frame
+        self.absolute_discrimination = np.sum(self.b_observance_per_frame) - np.sum(
+            self.a_observance_per_frame
         )
 
         self.discrimination_index = (
