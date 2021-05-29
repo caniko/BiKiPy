@@ -3,7 +3,7 @@ from copy import copy
 from functools import partial
 from logging import getLogger
 from math import ceil
-from typing import Any, Dict, Sequence, Union
+from typing import Any, Sequence, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,7 +15,7 @@ from bikipy.behaviour.utils import (
     unique_with_counts_zipped,
 )
 from bikipy.behaviour.y_maze.utils import mean_intersecting_points_on_borders
-from bikipy.border.base import PolygonalBorder
+from bikipy.perimeter.base import PolygonalPerimeter
 from bikipy.utils.store import translate_keys
 
 INT_TO_SEMANTIC_LABELS = {1: "A", 2: "B", 3: "C", 4: "X"}
@@ -30,8 +30,8 @@ logger = getLogger(__name__)
 class YMaze(BaseTrial):
     def __init__(
         self,
-        arms: Sequence[PolygonalBorder],
-        center: PolygonalBorder,
+        arms: Sequence[PolygonalPerimeter],
+        center: PolygonalPerimeter,
         average_intersections: bool = True,
         *args,
         **kwargs,
@@ -40,9 +40,9 @@ class YMaze(BaseTrial):
         Parameters
         ----------
         arms: Sequence
-            bikipy border objects defining the arms of the y-maze
+            bikipy perimeter objects defining the arms of the y-maze
         center
-            bikipy border object defining the centre of the y-maze
+            bikipy perimeter object defining the centre of the y-maze
         """
 
         super().__init__(*args, **kwargs)
@@ -56,7 +56,7 @@ class YMaze(BaseTrial):
             self.alternation_sequence,
             self.valid_indexes,
             self.valid_boolean_indexes,
-        ) = PolygonalBorder.detect_sequential_border_presence(
+        ) = PolygonalPerimeter.detect_sequential_border_presence(
             self.coordinate_sequence,
             self.arms,
             inferior_poly_border_instances=[self.center],
@@ -104,13 +104,13 @@ class YMaze(BaseTrial):
         ]
 
     @property
-    def seconds_spent_in_areas(self) -> Dict:
+    def seconds_spent_in_areas(self) -> dict:
         """
         The time spent in each area; arms and center
 
         Returns
         -------
-        Dict, area vs time
+        dict, area vs time
         """
 
         result = copy(self._arm_center_label_dict)
@@ -121,13 +121,13 @@ class YMaze(BaseTrial):
         return generic_int_to_semantic_key_translator(result)
 
     @property
-    def area_alternations(self) -> Dict:
+    def area_alternations(self) -> dict:
         """
         The number of alternations to every arm and center
 
         Returns
         -------
-        Dict, arm label vs alternations to arm
+        dict, arm label vs alternations to arm
         """
 
         result = copy(self._arm_center_label_dict)
@@ -153,7 +153,7 @@ class YMaze(BaseTrial):
         return result
 
     @property
-    def triplet_alternation_distribution(self) -> Dict:
+    def triplet_alternation_distribution(self) -> dict:
         """
         Define the triplet alternation distribution.
 
@@ -162,7 +162,7 @@ class YMaze(BaseTrial):
 
         Returns
         -------
-        Dict, triplet vs number of occurrences.
+        dict, triplet vs number of occurrences.
         """
         distribution = copy(self._arm_triplet_dict)
         for i in range(self.sum_of_alternations):

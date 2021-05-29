@@ -1,15 +1,15 @@
 from collections import UserDict
-from typing import Dict, Iterable, SupportsFloat, SupportsInt, Union
+from typing import Iterable, SupportsFloat, SupportsInt, Union
 
 
-def translate_keys(store: Dict, translation: Dict) -> Dict:
+def translate_keys(store: dict, translation: dict) -> dict:
     result = {}
     for key, value in store.items():
         result[translation[key]] = value
     return result
 
 
-def sort_dict_by_key_value(obj: Dict):
+def sort_dict_by_key_value(obj: dict):
     return dict(sorted(obj.items(), key=lambda item: item[0]))
 
 
@@ -43,7 +43,7 @@ class RangeDict(UserDict):
             return super().__getitem__(self.find_range(self.descending, key))
 
     def __setitem__(self, key, value):
-        if not isinstance(key, (int, float)):
+        if not isinstance(key, (float, int)):
             msg = "Keys in RangeDict(s) have to be either integer or float"
             raise TypeError(msg)
 

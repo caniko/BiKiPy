@@ -2,13 +2,13 @@
 2D kinematic filters, 3D not supported.
 """
 from logging import getLogger
-from typing import Any, Sequence, SupportsFloat, SupportsInt, Union, Dict, Tuple
+from typing import Any, Sequence, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from bikipy.border.base import PolygonalBorder
+from bikipy.perimeter.base import PolygonalPerimeter
 from bikipy.feature.angle import counter_clockwise_angel_2d
 from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.math.vector import closest_line_to_point, unit_vector
@@ -19,8 +19,9 @@ logger = getLogger(__name__)
 
 def location_filter(
     nort_object,
-    nose: Sequence[Sequence[SupportsFloat]],
-    torso: Sequence[Sequence[SupportsFloat]],
+    nose: Sequence[Sequence[float]],
+    torso: Sequence[Sequence[float]],
+    perimeter_border_normal_pixel_magnitude: float,
     inspect: bool = False,
     inspection_image: Any = None,
     inspection_ax: Any = None,
@@ -34,6 +35,8 @@ def location_filter(
         Nose cartesian coordinate location sequence
     torso
         Torso (center) cartesian coordinate location sequence
+    perimeter_border_normal_pixel_magnitude
+        The magnitude of the normal between the perimeter and the border given in pixels
     inspect
         If True, generate and view an analytics of the resulting filter
     inspection_image
@@ -45,13 +48,17 @@ def location_filter(
     -------
 
     """
-    # Remove nose points that aren't inside the border
+    # Remove nose points that aren't inside the perimeter
     nose = np.asarray(nose)
 
+    border_corners, border_side_vectors = nort_object.border(
+        perimeter_border_normal_pixel_magnitude
+    )
+
     nose_within_border = points_in_parallelogram(
-        nort_object.border_corners[1],
-        nort_object.border_corners[0],
-        nort_object.border_corners[2],
+        border_corners[1],
+        border_corners[0],
+        border_corners[2],
         nose,
     )
     torso_outside_polygon = np.logical_not(
@@ -63,7 +70,7 @@ def location_filter(
         )
     )
 
-    # Find states where the nose is within border while the torso is not over object
+    # Find states where the nose is within perimeter while the torso is not over object
     result = nose_within_border & torso_outside_polygon
 
     if inspection_ax is not None or inspect:
@@ -96,9 +103,9 @@ def location_filter(
 
 def gaze_direction_filter(
     nort_object,
-    nose: Sequence[Sequence[SupportsFloat]],
-    eye_center: Sequence[Sequence[SupportsFloat]],
-    max_radians: SupportsFloat,
+    nose: Sequence[Sequence[float]],
+    eye_center: Sequence[Sequence[float]],
+    max_radians: float,
     inspect: bool = False,
     inspection_image: Any = None,
     inspection_ax: Any = None,
@@ -133,8 +140,8 @@ def gaze_direction_filter(
 
 def attention_span_filter(
     valid_indexes: Sequence[bool],
-    fps: SupportsFloat,
-    minimum_seconds_observing: SupportsFloat = 0.2,
+    fps: float,
+    minimum_seconds_observing: float = 0.2,
 ) -> np.ndarray:
     valid_indexes = np.asarray(valid_indexes)
 
@@ -201,20 +208,21 @@ def attention_span_filter(
 
 
 def nort_observation(
-    nort_object: PolygonalBorder,
-    eye_center: Sequence[Sequence[SupportsFloat]],
-    nose: Sequence[Sequence[SupportsFloat]],
-    torso: Sequence[Sequence[SupportsFloat]],
-    fps: Union[SupportsInt, SupportsFloat],
-    max_radians_gaze_and_object: SupportsFloat = 1 / 4 * np.pi,
+    nort_object: PolygonalPerimeter,
+    eye_center: Sequence[Sequence[float]],
+    nose: Sequence[Sequence[float]],
+    torso: Sequence[Sequence[float]],
+    fps: float,
+    perimeter_border_normal_pixel_magnitude: float,
+    max_radians_gaze_and_object: float = 1 / 4 * np.pi,
     inspect: bool = False,
     inspection_image: Any = None,
-) -> Tuple[np.ndarray, Dict]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
 
     Parameters
     ----------
-    nort_object: PolygonalBorder
+    nort_object: PolygonalPerimeter
     eye_center: Sequence
         Points across time defining the position between the eyes of the animal
     nose: Sequence
@@ -223,6 +231,8 @@ def nort_observation(
         Points across time defining the central position of the animal torso
     fps: float
         Frames per second in the media used for the respective data source
+    perimeter_border_normal_pixel_magnitude
+        The magnitude of the normal between the perimeter and the border given in pixels
     max_radians_gaze_and_object: float
         Maximum radians between the gaze vector (eye_centre to nose) and object tangent
     inspect: bool
@@ -250,7 +260,7 @@ def nort_observation(
         loc_filter_kwargs, gaze_filter_kwargs = {}, {}
 
     location_filtered, loc_analytics = location_filter(
-        nort_object, nose, torso, **loc_filter_kwargs
+        nort_object, nose, torso, perimeter_border_normal_pixel_magnitude, **loc_filter_kwargs
     )
 
     gaze_filtered = gaze_direction_filter(
@@ -261,12 +271,12 @@ def nort_observation(
         **gaze_filter_kwargs,
     )
 
-    quasi_observations = location_filtered & gaze_filtered
+    semi_true_observations = location_filtered & gaze_filtered
 
     object_observation = (
-        np.full_like(quasi_observations, False)
-        if np.sum(quasi_observations) < fps
-        else np.array(attention_span_filter(quasi_observations, fps))
+        np.full_like(semi_true_observations, False)
+        if np.sum(semi_true_observations) < fps
+        else np.array(attention_span_filter(semi_true_observations, fps))
     )
 
     if inspect:
@@ -276,8 +286,8 @@ def nort_observation(
                 for ax in rows:
                     ax.imshow(inspection_image)
 
-        axes[1][0].set_title("Quasi object observation")
-        axes[1][0].scatter(*nose[quasi_observations].T)
+        axes[1][0].set_title("Semi true object observation")
+        axes[1][0].scatter(*nose[semi_true_observations].T)
 
         axes[1][1].set_title("Object observation")
         axes[1][1].scatter(*nose[object_observation].T)
@@ -285,11 +295,4 @@ def nort_observation(
         plt.tight_layout()
         plt.show()
 
-    or_filter = location_filtered | gaze_filtered
-
-    return object_observation, {
-        "location": location_filtered[or_filter],
-        "gaze": gaze_filtered[or_filter],
-        "observation": object_observation[or_filter],
-        "or_filter": or_filter,
-    }
+    return object_observation, location_filtered, gaze_filtered

@@ -1,11 +1,12 @@
-from typing import Sequence, SupportsFloat, Union
+from collections.abc import Sequence
+from typing import SupportsFloat, Union
 
 import numpy as np
 
-from bikipy.border.base import GenericPolygonalBorder
+from bikipy.perimeter.base import PolygonalPerimeter
 
 
-class TriangularBorder(GenericPolygonalBorder):
+class TriangularPerimeter(PolygonalPerimeter):
     corners = 3
 
     def __init__(
@@ -40,9 +41,9 @@ class TriangularBorder(GenericPolygonalBorder):
         self.base_b = np.asarray(base_b)
         self.apex = np.asarray(apex)
 
-        self.perimeter_corners = (self.base_a, self.base_b, self.apex)
-
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            perimeter_corners=(self.base_a, self.base_b, self.apex), *args, **kwargs
+        )
 
     @property
     def perimeter_corners(self):
@@ -51,7 +52,7 @@ class TriangularBorder(GenericPolygonalBorder):
     @perimeter_corners.setter
     def perimeter_corners(self, perimeter_corners: Sequence):
         if (n := len(perimeter_corners)) != 3:
-            msg = f"Parallelogram border has to have 3 perimeter_corners, got only {n} perimeter_corners"
+            msg = f"Parallelogram perimeter has to have 3 perimeter_corners, got only {n} perimeter_corners"
             raise ValueError(msg)
 
         self.base_a, self.base_b, self.apex = np.asarray(perimeter_corners)
@@ -62,14 +63,14 @@ class TriangularBorder(GenericPolygonalBorder):
             f"    base_a={self.base_a.tolist()},\n"
             f"    base_b={self.base_b.tolist()},\n"
             f"    apex={self.apex.tolist()},\n"
-            f'    guiding_image="{self.inspect_image}",\n'
+            f'    inspect_image="{self.inspect_image}",\n'
             f'    label="{self.semantic_label}"\n'
             ")"
         )
 
     def confined_coordinate_indexes(self, coordinates: Sequence) -> np.ndarray:
         """
-        indices of the coordinates that are inside the respective border
+        indices of the coordinates that are inside the respective perimeter
 
         Parameters
         ----------

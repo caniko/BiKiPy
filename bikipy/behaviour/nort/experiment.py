@@ -1,5 +1,7 @@
+from functools import cached_property
 from logging import getLogger
-from typing import Any, AnyStr, Dict, Sequence, SupportsFloat, Union
+from collections.abc import Sequence, Mapping
+from typing import Union, SupportsFloat
 
 import numpy as np
 import pandas as pd
@@ -7,9 +9,8 @@ from tqdm import tqdm
 
 from bikipy.behaviour.base import BaseExperiment
 from bikipy.behaviour.nort.trial import (
-    NortHabituation,
-    NortNovelObject,
-    NortObjectTraining,
+    NortHabituationTrial,
+    NortObjectField,
 )
 from bikipy.utils.store import sort_dict_by_key_value
 
@@ -40,27 +41,31 @@ class NortExperiment(BaseExperiment):
 
     def __init__(
         self,
-        exp_id_range_vs_exp_meta: Dict,
-        experiment_box_real_length: SupportsFloat,
-        nose_label: AnyStr,
-        eye_center_label: AnyStr,
-        torso_label: AnyStr,
-        nort_field_vs_apparatus: Any = None,
-        center_size_real_length: Union[SupportsFloat, None] = None,
+        exp_id_range_vs_exp_meta: dict,
+        experiment_box_metric_length: SupportsFloat,
+        nose_label: str,
+        eye_center_label: str,
+        torso_label: str,
+        nort_field_vs_apparatus: Mapping[NortObjectField] = None,
+        perimeter_border_normal_metric_magnitude: Union[SupportsFloat, None] = None,
+        center_size_metric_length: Union[SupportsFloat, None] = None,
         max_radians_gaze_and_object: SupportsFloat = 1.0 / 4.0 * np.pi,
         *base_trial_args,
         **base_trial_kwargs,
     ):
         """
+
         Parameters
         ----------
         exp_id_range_vs_exp_meta
-        experiment_box_real_length
-        eye_center_label
-        nort_field_vs_apparatus
+        experiment_box_metric_length
         nose_label
+        eye_center_label
         torso_label
-        center_size_real_length
+        nort_field_vs_apparatus
+        perimeter_border_normal_pixel_magnitude
+            The magnitude of the normal between the perimeter and the border given in meters
+        center_size_metric_length
         max_radians_gaze_and_object
         base_trial_args
         base_trial_kwargs
@@ -75,13 +80,16 @@ class NortExperiment(BaseExperiment):
             str(eye_center_label),
             str(nose_label),
         )
-        self.experiment_box_real_length, self.max_radians_gaze_and_object = (
-            float(experiment_box_real_length),
+        self.experiment_box_metric_length, self.max_radians_gaze_and_object = (
+            float(experiment_box_metric_length),
             float(max_radians_gaze_and_object),
         )
 
-        self.center_size_real_length = (
-            float(center_size_real_length) if center_size_real_length else None
+        self.center_size_metric_length = (
+            float(center_size_metric_length) if center_size_metric_length else None
+        )
+        self.perimeter_border_normal_metric_magnitude = (
+            perimeter_border_normal_metric_magnitude
         )
 
         self.experiment_pairs = {}
@@ -97,12 +105,12 @@ class NortExperiment(BaseExperiment):
 
             generic_data = {
                 "recording_resolution": exp_meta["recording_resolution"],
-                "experiment_box_real_length": experiment_box_real_length,
+                "experiment_box_metric_length": experiment_box_metric_length,
                 "label": exp_id,
                 "func_inspect": self.func_inspect,
             }
-            if "guiding_image" in exp_meta:
-                generic_data["guiding_image"] = exp_meta["guiding_image"]
+            if "inspect_image" in exp_meta:
+                generic_data["inspect_image"] = exp_meta["inspect_image"]
 
             if "fps" in exp_meta:
                 generic_data["fps"] = exp_meta["fps"]
@@ -121,11 +129,11 @@ class NortExperiment(BaseExperiment):
             if exp_class == "habituation":
                 self.habituation_trials.append(
                     (
-                        exp := NortHabituation(
+                        exp := NortHabituationTrial(
                             coordinate_sequence=coordinate_sequence[
                                 self.eye_center_label
                             ],
-                            center_size_real_length=self.center_size_real_length,
+                            center_size_metric_length=self.center_size_metric_length,
                             **generic_data,
                         )
                     )
@@ -133,24 +141,18 @@ class NortExperiment(BaseExperiment):
 
             elif exp_class == "training" or exp_class == "novelty":
                 try:
-                    fields = self.nort_field_vs_apparatus[exp_meta["field"]]
+                    field = self.nort_field_vs_apparatus[exp_meta["field"] - 1]
                 except AttributeError as e:
                     msg = "nort_field_vs_apparatus is not defined, which is required when working with training and/or novelty datasets"
                     raise AttributeError(msg) from e
 
-                with_object_arguments = {
-                    "nort_a": fields.constant_object,
-                    "nort_b": (
-                        fields.novel_object
-                        if exp_meta["stage"] == "test"
-                        or exp_meta["stage"] == "novelty_observation"
-                        else fields.variable_object
-                    ),
+                analysis_keyword_arguments = {
                     "nose_label": self.nose_label,
                     "eye_center_label": self.eye_center_label,
                     "torso_label": self.torso_label,
+                    "perimeter_border_normal_metric_magnitude": self.perimeter_border_normal_metric_magnitude,
                     "max_radians_gaze_and_object": self.max_radians_gaze_and_object,
-                    "center_size_real_length": self.center_size_real_length,
+                    "center_size_metric_length": self.center_size_metric_length,
                     "coordinate_sequence": coordinate_sequence,
                     "movement_feature_point_label": self.eye_center_label,
                     **generic_data,
@@ -158,11 +160,11 @@ class NortExperiment(BaseExperiment):
 
                 if exp_class == "training":
                     self.training_object_trials.append(
-                        (exp := NortObjectTraining(**with_object_arguments))
+                        (exp := field.training(**analysis_keyword_arguments))
                     )
                 else:
                     self.novelty_object_trials.append(
-                        (exp := NortNovelObject(**with_object_arguments))
+                        (exp := field.novelty(**analysis_keyword_arguments))
                     )
 
             else:
@@ -174,7 +176,7 @@ class NortExperiment(BaseExperiment):
             else:
                 self.experiment_pairs[animal_id] = [exp]
 
-    @property
+    @cached_property
     def df(self) -> pd.DataFrame:
         """
         Export experimental data to pandas DataFrame
@@ -186,7 +188,7 @@ class NortExperiment(BaseExperiment):
         DataFrame with the combined experiment attributes of all the YMaze objects
         """
 
-        def to_df(data_dict: Dict, features: Sequence):
+        def to_df(data_dict: dict, features: Sequence):
             feature_order = pd.MultiIndex.from_tuples(
                 features, names=("Feature", "Area")
             )
@@ -209,7 +211,7 @@ class NortExperiment(BaseExperiment):
                 ("Mean acceleration", category),
             )
 
-        habituation_rows = [
+        habituation_columns = [
             *movement_feature("All"),
             *movement_feature("Periphery"),
             *movement_feature("Center"),
@@ -217,13 +219,13 @@ class NortExperiment(BaseExperiment):
             *feature_area("Time spent", ("Periphery", "Center")),
         ]
 
-        object_rows = [
+        object_columns = [
             *feature_area("Observation instances", ("A", "B")),
             *feature_area("Observation time", ("A", "B", "Total")),
             ["Object bias score"],
         ]
 
-        novelty_rows = [
+        novelty_columns = [
             ["Absolute discrimination"],
             ["Discrimination index"],
             ["Novelty preference"],
@@ -232,7 +234,7 @@ class NortExperiment(BaseExperiment):
         label_vs_data = {}
 
         habituation_filler = [
-            "habituation" for _i in range(len(object_rows + novelty_rows))
+            "habituation" for _i in range(len(object_columns + novelty_columns))
         ]
         for nort_habituation in self.habituation_trials:
             label_vs_data[nort_habituation.label] = (
@@ -240,7 +242,7 @@ class NortExperiment(BaseExperiment):
                 *habituation_filler,
             )
 
-        training_filler = ["training" for _i in range(len(novelty_rows))]
+        training_filler = ["training" for _i in range(len(novelty_columns))]
         for training_experiment in self.training_object_trials:
             label_vs_data[training_experiment.label] = (
                 *training_experiment.get_info(),
@@ -250,7 +252,16 @@ class NortExperiment(BaseExperiment):
         for novelty_experiment in self.novelty_object_trials:
             label_vs_data[novelty_experiment.label] = novelty_experiment.get_info()
 
-        return to_df(label_vs_data, habituation_rows + object_rows + novelty_rows)
+        return to_df(
+            label_vs_data, habituation_columns + object_columns + novelty_columns
+        )
+
+    def nort_object_analysis(self):
+        if not self.training_object_trials and not self.novelty_object_trials:
+            logger.warning(
+                "There are neither training or novelty trials in the experiment object, can not analyse"
+            )
+            return None
 
     def __repr__(self):
         return self.df

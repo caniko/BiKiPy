@@ -1,11 +1,11 @@
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
 # TODO: Sanity checks, is the array 2D, etc
 
 
-def unit_vector(row_vectors: np.ndarray, force_1_dim: bool = False) -> np.ndarray:
+def unit_vector(row_vectors: Sequence, force_1_dim: bool = False) -> np.ndarray:
     """
     Computes unit vector, i.e. vector/<norm of the vector>
 

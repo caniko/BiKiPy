@@ -1,16 +1,16 @@
 from collections.abc import Sequence
-from typing import Any, AnyStr, Union
+from typing import Any, Union
 
 import matplotlib.pyplot as plt
 from PIL import Image
 
-from bikipy.border.linear.classes import LineBorder
+from bikipy.perimeter.linear.classes import LinePerimeter
 from bikipy.utils.video import get_video_data
 
 
 def borders_on_image(
     img: Any,
-    orientation: AnyStr,
+    orientation: str,
     resolution: Union[Sequence, None] = None,
 ):
     """
@@ -19,9 +19,9 @@ def borders_on_image(
     Parameters
     ----------
     img
-        object containing the image that will be used to determine the border location
+        object containing the image that will be used to determine the perimeter location
     orientation: str; {"vertical", "horizontal"}
-        The orientation of the border used for analysis
+        The orientation of the perimeter used for analysis
     resolution: Sequence
         The respective resolution of the frame.
 
@@ -38,19 +38,19 @@ def borders_on_image(
 
     plt.title("Greater than border_corners")
     greater_than_borders = [
-        LineBorder(coordinate, orientation, logic=">", resolution=resolution)
+        LinePerimeter(coordinate, orientation, logic=">", resolution=resolution)
         for coordinate in plt.ginput(0, 0)
     ]
     plt.title("Less than border_corners")
     less_than_borders = [
-        LineBorder(coordinate, orientation, logic="<", resolution=resolution)
+        LinePerimeter(coordinate, orientation, logic="<", resolution=resolution)
         for coordinate in plt.ginput(0, 0)
     ]
 
     return greater_than_borders, less_than_borders
 
 
-def draw_on_video_frame(video_path: AnyStr, orientation: AnyStr):
+def draw_on_video_frame(video_path: str, orientation: str):
     """Initialize class using data from a sample video file
 
     Parameters
@@ -65,11 +65,11 @@ def draw_on_video_frame(video_path: AnyStr, orientation: AnyStr):
 
         True: If there is only one video file, it will be selected.
     orientation: str; {"vertical", "horizontal"}
-        The orientation of the border used for analysis
+        The orientation of the perimeter used for analysis
 
     Returns
     -------
-    bikipy.border.linear.draw.borders_on_image call with frame from video
+    bikipy.perimeter.linear.draw.borders_on_image call with frame from video
     """
     frame, x_res, y_res, _fps = get_video_data(video_path)
 

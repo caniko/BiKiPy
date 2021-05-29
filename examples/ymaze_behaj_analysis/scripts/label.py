@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from bikipy.border.parallelogram.classes import ParallelogramBorder
-from bikipy.border.triangular import TriangularBorder
+from bikipy.perimeter.parallelogram.classes import ParallelogramPerimeter
+from bikipy.perimeter.triangular import TriangularPerimeter
 
 ROOT = Path(
     "C:/Users/Can/Projects/Neuroscience/bikipy/examples/data/images/results/phd"
@@ -9,7 +9,7 @@ ROOT = Path(
 IMAGE_B = ROOT / "B"
 path_to_image = IMAGE_B / "after_1.png"
 
-print(ParallelogramBorder(guiding_image=path_to_image, semantic_label="A"))
-print(ParallelogramBorder(guiding_image=path_to_image, semantic_label="B"))
-print(ParallelogramBorder(guiding_image=path_to_image, semantic_label="C"))
-print(TriangularBorder.from_image(guiding_image=path_to_image, semantic_label="X"))
+print(ParallelogramPerimeter(inspect_image=path_to_image, semantic_label="A"))
+print(ParallelogramPerimeter(inspect_image=path_to_image, semantic_label="B"))
+print(ParallelogramPerimeter(inspect_image=path_to_image, semantic_label="C"))
+print(TriangularPerimeter.from_image(inspect_image=path_to_image, semantic_label="X"))

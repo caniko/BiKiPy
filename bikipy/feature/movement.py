@@ -1,5 +1,6 @@
 from logging import getLogger
-from typing import Sequence, SupportsFloat, Union
+from collections.abc import Sequence
+from typing import SupportsFloat, Union
 
 import numpy as np
 from scipy.interpolate import interp1d

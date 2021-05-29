@@ -2,23 +2,25 @@
 Novel Object Recognition test (NORT) class representing a single test.
 These tests can be grouped together to form entire experiments.
 """
-
+from dataclasses import dataclass, field
 from logging import getLogger
-from typing import Any, AnyStr, Sequence, SupportsFloat, SupportsInt, Union
+from pathlib import Path
+from typing import Any, SupportsFloat, Iterable, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+from compress_pickle import compress_pickle
 
 from bikipy.behaviour.base import BaseTrial
 from bikipy.behaviour.nort.observation import nort_observation
 from bikipy.behaviour.utils import python_reduce_repeating_sequences
-from bikipy.border.base import GenericPolygonalBorder, PolygonalBorder
+from bikipy.perimeter.base import PolygonalPerimeter
 from bikipy.math.point_in_polygon import points_in_parallelogram
 
 logger = getLogger(__name__)
 
 
-class NortHabituation(BaseTrial):
+class NortHabituationTrial(BaseTrial):
     """
     NORT experiment without any objects. The purpose of this test is to generate
     reference data for future NORT experiments.
@@ -26,9 +28,9 @@ class NortHabituation(BaseTrial):
 
     def __init__(
         self,
-        recording_resolution: Sequence[SupportsInt],
-        experiment_box_real_length: SupportsFloat,
-        center_size_real_length: SupportsFloat,
+        recording_resolution: Iterable[int],
+        experiment_box_metric_length: SupportsFloat,
+        center_size_metric_length: SupportsFloat,
         *base_experiment_args,
         **base_experiment_kwargs,
     ):
@@ -37,9 +39,9 @@ class NortHabituation(BaseTrial):
         ----------
         recording_resolution: array_like
             Resolution of the video used to record the experiment
-        experiment_box_real_length: float
+        experiment_box_metric_length: float
             Length of the square box in which the experiment is conducted
-        center_size_real_length: float
+        center_size_metric_length: float
             Length of the square box signifying periphery and inner area of the
             square box
         base_experiment_args
@@ -47,12 +49,12 @@ class NortHabituation(BaseTrial):
         base_experiment_kwargs
             Keyword arguments passed to BaseTrial
         """
-        self.experiment_box_real_length = float(experiment_box_real_length)
+        self.experiment_box_metric_length = float(experiment_box_metric_length)
 
         super().__init__(
             *base_experiment_args,
             length_unit_per_pixel=(
-                self.experiment_box_real_length / np.mean(recording_resolution)
+                self.experiment_box_metric_length / min(recording_resolution)
             ),
             recording_resolution=recording_resolution,
             **base_experiment_kwargs,
@@ -60,13 +62,13 @@ class NortHabituation(BaseTrial):
 
         self.total_displacement = np.sum(self.displacement)
 
-        self.center_size_real_length = float(center_size_real_length)
-        assert self.experiment_box_real_length > self.center_size_real_length
+        self.center_size_metric_length = float(center_size_metric_length)
+        assert self.experiment_box_metric_length > self.center_size_metric_length
 
         self.center_box_ratio = (
-            (self.experiment_box_real_length - self.center_size_real_length) / 2.0
-        ) / self.experiment_box_real_length
-        self.one_minus_center_box_ratio = 1 - self.center_box_ratio
+            (self.experiment_box_metric_length - self.center_size_metric_length) / 2.0
+        ) / self.experiment_box_metric_length
+        self.one_minus_center_box_ratio = 1.0 - self.center_box_ratio
 
         x = self.horizontal_resolution * self.center_box_ratio
         x_rest_half = (self.horizontal_resolution - x) / 2.0
@@ -180,8 +182,9 @@ class NortHabituation(BaseTrial):
             (x_long, y_short),
         )
 
-    def get_info(self):
+    def info(self):
         return [
+            self.label,
             self.total_displacement,
             self.mean_speed,
             self.mean_acceleration,
@@ -203,7 +206,7 @@ class NortHabituation(BaseTrial):
         if self.inspect_image is not None:
             ax.imshow(self.inspect_image)
         else:
-            logger.warning("guiding_image is not defined will plot without")
+            logger.warning("inspect_image is not defined will plot without")
 
         for i in range((max := len(self.center_square))):
             next_i = i + 1
@@ -215,19 +218,19 @@ class NortHabituation(BaseTrial):
         return ax
 
 
-class NortOpenField(NortHabituation):
-    # alias
+class NortOpenField(NortHabituationTrial):
     pass
 
 
-class NortObjectTraining(NortHabituation):
+class NortTrainingTrial(NortHabituationTrial):
     def __init__(
         self,
-        nort_a: PolygonalBorder,
-        nort_b: PolygonalBorder,
-        nose_label: AnyStr,
-        eye_center_label: AnyStr,
-        torso_label: AnyStr,
+        nort_a: PolygonalPerimeter,
+        nort_b: PolygonalPerimeter,
+        nose_label: str,
+        eye_center_label: str,
+        torso_label: str,
+        perimeter_border_normal_metric_magnitude: SupportsFloat,
         max_radians_gaze_and_object: SupportsFloat = 1 / 4 * np.pi,
         *nort_habituation_args,
         **nort_habituation_kwargs,
@@ -242,13 +245,24 @@ class NortObjectTraining(NortHabituation):
             str(nose_label),
         )
         self.max_radians_gaze_and_object = float(max_radians_gaze_and_object)
+        self.perimeter_border_normal_metric_magnitude = float(
+            perimeter_border_normal_metric_magnitude
+        )
+        self.perimeter_border_normal_pixel_magnitude = (
+            self.perimeter_border_normal_metric_magnitude / self.length_unit_per_pixel
+        )
 
-        self.a_observance_per_frame, self.a_observance_analysis = self.nort_observation(
-            self.nort_a
-        )
-        self.b_observance_per_frame, self.b_observance_analysis = self.nort_observation(
-            self.nort_b
-        )
+        (
+            self.a_observance_per_frame,
+            self.a_location_filtered,
+            self.a_gaze_filtered,
+        ) = self.nort_observation(self.nort_a)
+        (
+            self.b_observance_per_frame,
+            self.b_location_filtered,
+            self.b_gaze_filtered,
+        ) = self.nort_observation(self.nort_b)
+
         self.not_observing = ~(
             self.a_observance_per_frame | self.b_observance_per_frame
         )
@@ -284,8 +298,8 @@ class NortObjectTraining(NortHabituation):
             self.seconds_observing < self.experiment_seconds
         ), f"{self.seconds_observing} > {self.experiment_seconds}"
 
-    def get_info(self):
-        return super().get_info() + [
+    def info(self):
+        return super().info() + [
             self.novelty_observation_a,
             self.novelty_observation_b,
             self.seconds_spent_a,
@@ -305,6 +319,7 @@ class NortObjectTraining(NortHabituation):
             torso,
             self.fps,
             self.max_radians_gaze_and_object,
+            self.perimeter_border_normal_pixel_magnitude,
             inspect=self.func_inspect,
             inspection_image=self.inspect_image,
         )
@@ -318,7 +333,7 @@ class NortObjectTraining(NortHabituation):
         return ax
 
 
-class NortNovelObject(NortObjectTraining):
+class NortNoveltyTrial(NortTrainingTrial):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -332,91 +347,106 @@ class NortNovelObject(NortObjectTraining):
 
         self.novelty_preference = 100 * self.seconds_spent_b / self.experiment_seconds
 
-    def get_info(self):
-        return super().get_info() + [
+    def info(self):
+        return super().info() + [
             self.absolute_discrimination,
             self.discrimination_index,
             self.novelty_preference,
         ]
 
 
+@dataclass(frozen=True, order=True)
 class NortObjectField:
-    def __init__(
-        self,
-        constant_object: GenericPolygonalBorder,
-        variable_object: GenericPolygonalBorder,
-        novel_object: GenericPolygonalBorder,
-        label: Union[AnyStr, None] = None,
-    ):
-        assert (
-            constant_object.border_distance
-            and variable_object.border_distance
-            and novel_object.border_distance
-        )
+    label: int
+    constant_object_perimeter: PolygonalPerimeter
+    variable_object_perimeter: PolygonalPerimeter
+    novel_object_perimeter: PolygonalPerimeter
+    novelty_constant_object_perimeter: Union[PolygonalPerimeter, None] = None
 
-        self.constant_object = constant_object
-        self.variable_object = variable_object
-        self.novel_object = novel_object
-        self.label = str(label)
+    def __post_init__(self):
+        if self.novelty_constant_object_perimeter:
+            self.constant_object_perimeter.semantic_label = "habituation_constant"
+            self.novelty_constant_object_perimeter.semantic_label = "novelty_constant"
+        else:
+            self.constant_object_perimeter.semantic_label = "constant"
+
+        self.variable_object_perimeter.semantic_label = "variable"
+        self.novel_object_perimeter.semantic_label = "novel"
 
     @classmethod
-    def from_images(
+    def from_images(cls, label: int, habituation_img: Any, novelty_img: Any):
+        polygon_n = 4
+        return cls.from_undefined(
+            label=int(label),
+            habituation_object_perimeter_a=PolygonalPerimeter.from_image(
+                habituation_img, n=polygon_n
+            ),
+            habituation_object_perimeter_b=PolygonalPerimeter.from_image(
+                habituation_img, n=polygon_n
+            ),
+            novel_object_perimeter=PolygonalPerimeter.from_image(
+                novelty_img, n=polygon_n, semantic_label="novel"
+            ),
+        )
+
+    @classmethod
+    def from_undefined(
         cls,
-        habituation_img: Any,
-        novelty_img: Any,
-        border_distance: SupportsFloat,
-        **kwargs,
+        label: int,
+        habituation_object_perimeter_a: PolygonalPerimeter,
+        habituation_object_perimeter_b: PolygonalPerimeter,
+        novel_object_perimeter: PolygonalPerimeter,
+        novelty_constant_object_perimeter: Union[PolygonalPerimeter, None] = None,
     ):
-        GenericPolygonalBorder.corners = 4
-
-        habituation_border_a = GenericPolygonalBorder.from_image(
-            habituation_img, border_distance=border_distance
-        )
-        habituation_border_b = GenericPolygonalBorder.from_image(
-            habituation_img, border_distance=border_distance
-        )
-
-        novel_object = GenericPolygonalBorder.from_image(
-            novelty_img, border_distance=border_distance, semantic_label="novel"
-        )
-
-        if GenericPolygonalBorder.distance_between_two_borders(
-            habituation_border_a, novel_object
-        ) < GenericPolygonalBorder.distance_between_two_borders(
-            habituation_border_b, novel_object
+        if PolygonalPerimeter.distance_between_two_vectors(
+            habituation_object_perimeter_a, novel_object_perimeter
+        ) < PolygonalPerimeter.distance_between_two_vectors(
+            habituation_object_perimeter_b, novel_object_perimeter
         ):
-            constant_border = habituation_border_b
-            variable_border = habituation_border_a
+            constant_object_perimeter = habituation_object_perimeter_b
+            variable_object_perimeter = habituation_object_perimeter_a
         else:
-            constant_border = habituation_border_a
-            variable_border = habituation_border_b
+            constant_object_perimeter = habituation_object_perimeter_a
+            variable_object_perimeter = habituation_object_perimeter_b
 
-        constant_border.semantic_label = "constant"
-        variable_border.semantic_label = "variable"
+        return cls(
+            label,
+            constant_object_perimeter,
+            variable_object_perimeter,
+            novel_object_perimeter,
+            novelty_constant_object_perimeter,
+        )
 
-        return cls(constant_border, variable_border, novel_object, **kwargs)
-
-    def habituation(self, *args, **kwargs):
-        return NortObjectTraining(
-            nort_a=self.constant_object,
-            nort_b=self.variable_object,
+    def training(self, *args, **kwargs) -> NortTrainingTrial:
+        return NortTrainingTrial(
+            nort_a=self.constant_object_perimeter,
+            nort_b=self.variable_object_perimeter,
             *args,
             **kwargs,
         )
 
-    def training(self, *args, **kwargs):
-        return self.habituation(*args, **kwargs)
-
-    def novelty(self, *args, **kwargs):
-        return NortObjectTraining(
-            nort_a=self.constant_object, nort_b=self.novel_object, *args, **kwargs
+    def novelty(self, *args, **kwargs) -> NortTrainingTrial:
+        return NortNoveltyTrial(
+            nort_a=self.novelty_constant_object_perimeter
+            or self.constant_object_perimeter,
+            nort_b=self.novel_object_perimeter,
+            *args,
+            **kwargs,
         )
 
+    def pickle(self, path: Any):
+        name = f"{self.__class__.__name__}_{self.label}"
 
-class NortAnimalData:
-    # TODO: WIP
-    def __init__(self, habituation, novelty, animal_id):
-        self.animal_id = int(animal_id)
+        i = 1
+        while (filepath := Path(path) / (name + ".lz4")).exists():
+            name += f"_{(i := 1 + i)}"
 
-        self.habituation = habituation
-        self.novelty = novelty
+        with open(filepath, "wb") as f:
+            compress_pickle.dump(self, f)
+
+
+@dataclass(frozen=True, order=True)
+class NortTrainingToNovelty:
+    animal_id: int
+    training: NortTrainingTrial = field(compare=False)
+    novelty: NortNoveltyTrial = field(compare=False)

@@ -1,4 +1,4 @@
-from typing import AnyStr, Sequence, Union, Any
+from typing import Any, Sequence, Union
 
 import pandas as pd
 
@@ -13,7 +13,7 @@ class BaseReader:
         pixel_resolution: Union[Sequence, None] = None,
         video_path: Any = None,
         data_path: Any = None,
-        data_label: Union[AnyStr, None] = None,
+        data_label: Union[str, None] = None,
     ):
         """
         Parameters
@@ -35,8 +35,8 @@ class BaseReader:
 
             self.horizontal_res, self.vertical_res = pixel_resolution
             if not (
-                isinstance(self.horizontal_res, (int, float, type(None)))
-                and isinstance(self.vertical_res, (int, float, type(None)))
+                isinstance(self.horizontal_res, (float, int, type(None)))
+                and isinstance(self.vertical_res, (float, int, type(None)))
             ):
                 msg = f"x and y max are integers; not {self.horizontal_res}; {self.vertical_res}"
                 raise AttributeError(msg)
@@ -68,5 +68,5 @@ class BaseReader:
     def regions_of_interest(self) -> tuple:
         return self.items
 
-    def interpolate_item_displacement(self, item: AnyStr):
+    def interpolate_item_displacement(self, item: str):
         return displacement_per_frame(self[str(item)])

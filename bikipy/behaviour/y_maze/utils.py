@@ -9,7 +9,7 @@ def mean_intersecting_points_on_borders(arms, center):
             vectors = np.array(arm.perimeter_corners) - corner
             distance = np.linalg.norm(vectors, axis=1)
 
-            # Find the closest value to the corner in the center border
+            # Find the closest value to the corner in the center perimeter
             closest_side_idx = np.where(np.argsort(distance) == 0)[0][0]
             closest_idxs.append(closest_side_idx)
 

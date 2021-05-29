@@ -1,4 +1,4 @@
-from typing import Sequence
+from collections.abc import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,8 +16,6 @@ def points_in_parallelogram(
 ) -> np.ndarray:
     """
     Algebraic solver for finding points located inside a parallelogram.
-
-
 
     Parameters
     ----------

@@ -3,13 +3,14 @@ The following are the functions used to organize data from the Belhaj dataset
 """
 import re
 from pathlib import Path
-from typing import AnyStr, Dict, Union
+from typing import Union
 
 import numpy as np
 from pandas import DataFrame
 
 from bikipy.behaviour.nort.experiment import NortExperiment
 from bikipy.behaviour.nort.trial import NortObjectField
+from bikipy.perimeter.base import PolygonalPerimeter
 
 
 def _re_pattern_validator(pattern: re.Pattern):
@@ -17,7 +18,7 @@ def _re_pattern_validator(pattern: re.Pattern):
 
 
 def get_animal_id_vs_exp_ids(
-    info_df: DataFrame, exp_id_pattern: Union[re.Pattern, AnyStr] = r"\d+"
+    info_df: DataFrame, exp_id_pattern: Union[re.Pattern, str] = r"\d+"
 ):
     return (
         info_df[info_df.duplicated("Animal", keep=False)]
@@ -37,7 +38,7 @@ def get_exp_id_vs_animal_id(id_exp):
 
 
 def get_animal_id_vs_apparatus(
-    info_df, exp_id_pattern: Union[re.Pattern, AnyStr] = r"\d+"
+    info_df, exp_id_pattern: Union[re.Pattern, str] = r"\d+"
 ):
     exp_id_pattern = _re_pattern_validator(exp_id_pattern)
     animal_id = np.unique(info_df["Animal"])
@@ -49,9 +50,7 @@ def get_animal_id_vs_apparatus(
     }
 
 
-def get_exp_id_vs_stage(
-    exp_info_df, exp_id_pattern: Union[re.Pattern, AnyStr] = r"\d+"
-):
+def get_exp_id_vs_stage(exp_info_df, exp_id_pattern: Union[re.Pattern, str] = r"\d+"):
     exp_id_pattern = _re_pattern_validator(exp_id_pattern)
     result = {}
     for row in exp_info_df[["Video_file_name", "Stage"]].iterrows():
@@ -62,7 +61,9 @@ def get_exp_id_vs_stage(
     return result
 
 
-def round_vs_apparatus_to_general_nort_fields(round_vs_field_apparatus: Dict):
+def round_vs_apparatus_to_general_nort_fields(
+    round_vs_field_apparatus: dict, convert_from_legacy: bool = False
+):
     rounds = tuple(round_vs_field_apparatus.keys())
     assert len(rounds) == 2  # No novelty -> novelty (two rounds in totalt)
 
@@ -74,22 +75,33 @@ def round_vs_apparatus_to_general_nort_fields(round_vs_field_apparatus: Dict):
     ), "Rounds have different field designations"
     field_keys = all_round_fields[0]
 
-    result = {}
+    result = []
     for field_key in field_keys:
         field_temp_store = {}
         for rem_round in rounds:
             exp_name = NortExperiment.trial_label_to_experiment_class_name[rem_round]
             if exp_name == "training":
-                field_temp_store["constant_object"] = round_vs_field_apparatus[
-                    rem_round
-                ][field_key]["A"]
-                field_temp_store["variable_object"] = round_vs_field_apparatus[
+                field_temp_store[
+                    "constant_object_perimeter"
+                ] = round_vs_field_apparatus[rem_round][field_key]["A"]
+                field_temp_store[
+                    "variable_object_perimeter"
+                ] = round_vs_field_apparatus[rem_round][field_key]["B"]
+            elif exp_name == "novelty":
+                field_temp_store["novel_object_perimeter"] = round_vs_field_apparatus[
                     rem_round
                 ][field_key]["B"]
-            elif exp_name == "novelty":
-                field_temp_store["novel_object"] = round_vs_field_apparatus[rem_round][
-                    field_key
-                ]["B"]
-        result[field_key] = NortObjectField(label=field_key, **field_temp_store)
+
+        if convert_from_legacy:
+            for key, field in field_temp_store.items():
+                kwargs = {"perimeter_corners": field.sides}
+                if field.guiding_image:
+                    kwargs["inspect_image"] = field.guiding_image
+                if field.int_label:
+                    kwargs["int_label"] = field.int_label
+
+                field_temp_store[key] = PolygonalPerimeter(**kwargs)
+
+        result.append(NortObjectField(label=field_key, **field_temp_store))
 
     return result

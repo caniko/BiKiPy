@@ -1,11 +1,12 @@
-from typing import AnyStr, Sequence, SupportsFloat, SupportsInt, Union
+from collections.abc import Sequence
+from typing import SupportsFloat, SupportsInt, Union
 
 import numpy as np
 
-from bikipy.border.base import Border
+from bikipy.perimeter.base import Perimeter
 
-# 0: Use the x coordinate(s) as the border
-# 1: Use the y coordinate(s) as the border
+# 0: Use the x coordinate(s) as the perimeter
+# 1: Use the y coordinate(s) as the perimeter
 ORIENTATION_TO_INDEX = {"vertical": 0, "horizontal": 1}
 INDEX_TO_ORIENTATION = {0: "vertical", 1: "horizontal"}
 
@@ -18,20 +19,20 @@ LOGIC_TO_FUNC = {
 }
 
 
-class LineBorder(Border):
+class LinePerimeter(Perimeter):
     def __init__(
         self,
         location: Union[SupportsFloat, SupportsInt],
-        orientation: Union[AnyStr, SupportsInt],
-        logic: AnyStr,
+        orientation: Union[str, SupportsInt],
+        logic: str,
         resolution: Union[SupportsInt, Sequence, None] = None,
         **kwargs,
     ):
         """
         location: int
             The location given in pixels
-        orientation: AnyStr, int
-            A lower and an upper border can be defined.
+        orientation: str, int
+            A lower and an upper perimeter can be defined.
             The border_corners can be oriented both horizontally (horizontal)
             or vertically (vertical). If vertical: lower -> right; upper -> left.
 
@@ -41,9 +42,9 @@ class LineBorder(Border):
             For orientation to function, video_path or greater_than_borders and
             less_than_borders has to be defined.
         logic: {"<", "<=", ">", ">=", "=="}
-            The logic of the border
+            The logic of the perimeter
         resolution: Sequence, int; optional
-            The respective resolution of the frame. Border orient will
+            The respective resolution of the frame. Perimeter orient will
             be used to isolate the correct resolution if both vertical
             and horizontal are provided
         """
@@ -81,7 +82,7 @@ class LineBorder(Border):
 
     @property
     def feat_border(self):
-        """ Feature magnituded border location """
+        """ Feature magnituded perimeter location """
         return self.location / self.resolution[self.orientation]
 
     @property
@@ -91,7 +92,7 @@ class LineBorder(Border):
 
     def __mod__(self, other: Sequence) -> np.ndarray:
         """
-        Compute values that are true to the border logic
+        Compute values that are true to the perimeter logic
 
         other: 1 or 2 dimensional coordinates
         :return:

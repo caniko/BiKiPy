@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import AnyStr, Dict, SupportsFloat, SupportsInt, Union
+from typing import SupportsFloat, SupportsInt, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,8 +8,8 @@ import pandas as pd
 from bikipy.behaviour.base import BaseExperiment
 from bikipy.behaviour.y_maze.experiment import YMaze
 from bikipy.behaviour.y_maze.utils import mean_intersecting_points_on_borders
-from bikipy.border.base import PolygonalBorder
-from bikipy.border.triangular import TriangularBorder
+from bikipy.perimeter.base import PolygonalPerimeter
+from bikipy.perimeter.triangular import TriangularPerimeter
 from bikipy.utils.store import RangeDict
 
 logger = getLogger(__name__)
@@ -18,10 +18,10 @@ logger = getLogger(__name__)
 class YMazeTrial(BaseExperiment):
     def __init__(
         self,
-        exp_id_range_vs_area_sets: Dict[
-            SupportsInt, Dict[AnyStr, Union[PolygonalBorder, TriangularBorder]]
+        exp_id_range_vs_area_sets: dict[
+            SupportsInt, dict[str, Union[PolygonalPerimeter, TriangularPerimeter]]
         ],
-        feature_tracking_point: AnyStr,
+        feature_tracking_point: str,
         center_triangle_meter_width: SupportsFloat,
         *args,
         **kwargs,
@@ -31,7 +31,7 @@ class YMazeTrial(BaseExperiment):
         Parameters
         ----------
         exp_id_range_vs_area_sets
-            Key value pair of experiment ID and border sets
+            Key value pair of experiment ID and perimeter sets
             each depicting the parameters of the experiments within their range.
             The experiment ID range is defined as key : next_key (exp_id:next_exp_id)
 
@@ -66,7 +66,7 @@ class YMazeTrial(BaseExperiment):
 
             if isinstance(self.fps, dict):
                 exp_fps = self.fps[exp_id]
-            elif isinstance(self.fps, (int, float)):
+            elif isinstance(self.fps, (float, int)):
                 exp_fps = self.fps
             else:
                 msg = "fps has to be defined"

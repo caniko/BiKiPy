@@ -3,6 +3,6 @@
 Experiment
     Trials
     Data
-        Border
+        Perimeter
         Images
 """

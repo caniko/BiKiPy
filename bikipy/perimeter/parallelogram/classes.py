@@ -4,8 +4,8 @@ from typing import Any, Sequence, SupportsFloat, SupportsInt, Union
 import matplotlib.pyplot as plt
 import numpy as np
 
-from bikipy.border.base import PolygonalBorder
-from bikipy.border.parallelogram.draw import parallelogram_input
+from bikipy.perimeter.base import PolygonalPerimeter
+from bikipy.perimeter.parallelogram.draw import parallelogram_input
 from bikipy.math.geometry import order_parallelogram_corners
 from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.math.vector import (
@@ -17,12 +17,11 @@ from bikipy.math.vector import (
 logger = getLogger(__name__)
 
 
-class ParallelogramBorder(PolygonalBorder):
+class ParallelogramPerimeter(PolygonalPerimeter):
     def __init__(
         self,
         base: Union[Sequence[SupportsFloat], None] = None,
         apex: Union[Sequence[SupportsFloat], None] = None,
-        perimeter_corners: Union[Sequence[SupportsFloat], None] = None,
         **kwargs,
     ):
         """
@@ -32,24 +31,37 @@ class ParallelogramBorder(PolygonalBorder):
             The coordinates of the perimeter_corners of the base of the parallelogram
         apex: Sequence
             The coordinates of the perimeter_corners of the apex of the parallelogram
-        guiding_image: Path to image
+        inspect_image: Path to image
             Image used for annotating base and apex; apex and base cannot be defined
-            if guiding_image is defined
+            if inspect_image is defined
         """
-        super().__init__(**kwargs)
-
-        if self.inspect_image:
-            base, apex = parallelogram_input(self.inspect_image)
 
         if base and apex:
             self.base, self.apex = np.asarray(base), np.asarray(apex)
-            self.perimeter_corners = np.concatenate((self.base, self.apex))
-        elif perimeter_corners:
-            self.perimeter_corners = np.asarray(perimeter_corners)
+            kwargs["perimeter_corner"] = np.concatenate((self.base, self.apex))
+
+        super().__init__(**kwargs)
+
+        if not (self.base and self.apex) and self.perimeter_corners:
             self.base, self.apex = np.split(self.perimeter_corners, 2)
         else:
-            msg = "No data that can be used for defining perimeter_corners were given"
+            msg = "No data that can be used for defining base and apex were given"
             raise ValueError(msg)
+
+    def __str__(self):
+        return (
+            f"{self.__class__.__name__}(\n\t"
+            f"base={self.base.tolist()},\n\t"
+            f"apex={self.apex.tolist()},\n\t"
+            f'inspect_image="{self.inspect_image}",\n\t'
+            f'label="{self.semantic_label}"\n'
+            ")"
+        )
+
+    @classmethod
+    def from_image(cls, inspect_image: Any, n: int, *args, **kwargs):
+        base, apex = parallelogram_input(inspect_image)
+        return cls(base, apex, inspect_image=inspect_image)
 
     @staticmethod
     def midpoint(
@@ -130,16 +142,6 @@ class ParallelogramBorder(PolygonalBorder):
 
         self.perimeter_corners = (down_left, down_right, up_right, up_left)
 
-    def __repr__(self):
-        return (
-            f"{self.__class__.__name__}(\n"
-            f"    base={self.base.tolist()},\n"
-            f"    apex={self.apex.tolist()},\n"
-            f'    guiding_image="{self.inspect_image}",\n'
-            f'    label="{self.semantic_label}"\n'
-            ")"
-        )
-
     @property
     def midline_vector(self):
         return self.apex_mid - self.base_mid
@@ -209,12 +211,12 @@ class ParallelogramBorder(PolygonalBorder):
     @classmethod
     def many(
         cls,
-        guiding_image: Any,
+        inspect_image: Any,
         n: SupportsInt,
         object_kwargs: Union[Sequence, None] = None,
     ):
         return [
-            cls(guiding_image=guiding_image, **object_kwargs[i]) for i in range(int(n))
+            cls(inspect_image=inspect_image, **object_kwargs[i]) for i in range(int(n))
         ]
 
     def plot(self, *args, **kwargs):

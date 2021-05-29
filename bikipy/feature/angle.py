@@ -1,4 +1,5 @@
-from typing import AnyStr, Sequence, Union
+from collections.abc import Sequence
+from typing import Union
 from warnings import warn
 
 import numpy as np
@@ -71,7 +72,7 @@ def compute_angles_from_vectors(
     row_vectors_point_a: np.ndarray,
     row_vectors_point_b: np.ndarray,
     row_vectors_point_c: np.ndarray,
-    median_points: Union[AnyStr, Sequence, None] = None,
+    median_points: Union[str, Sequence, None] = None,
     feature_scale_data: bool = False,
     feature_scale_min_max: Union[Sequence, None] = None,
     degrees: bool = False,
@@ -149,9 +150,9 @@ def compute_angles_from_vectors(
 
 def dlc_compute_angles_from_vectors(
     df: DataFrameType,
-    point_a_name: AnyStr,
-    point_b_name: AnyStr,
-    point_c_name: AnyStr,
+    point_a_name: str,
+    point_b_name: str,
+    point_c_name: str,
     *args,
     **kwargs,
 ):

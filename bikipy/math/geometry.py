@@ -1,4 +1,5 @@
-from typing import Sequence, SupportsFloat
+from typing import SupportsFloat
+from collections.abc import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,6 +33,7 @@ def order_parallelogram_corners(perimeter_corners: Sequence):
             ]
 
     assert np.all((result := np.array((down_left, down_right, up_right, up_left))))
+
     return result
 
 

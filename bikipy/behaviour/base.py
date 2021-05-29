@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Any, AnyStr, Dict, Sequence, SupportsFloat, SupportsInt, Union
+from typing import Any, Sequence, SupportsFloat, SupportsInt, Union, Iterable
 
 import numpy as np
 import pandas as pd
@@ -17,8 +17,8 @@ class BaseTrial:
         coordinate_sequence: Any,
         fps: SupportsFloat,
         length_unit_per_pixel: SupportsFloat,
-        recording_resolution: Union[Sequence[SupportsInt], None] = None,
-        movement_feature_point_label: Union[AnyStr, None] = None,
+        recording_resolution: Union[Iterable[int], None] = None,
+        movement_feature_point_label: Union[str, None] = None,
         label: Any = None,
         func_inspect: bool = False,
         inspect_image: Any = None,
@@ -53,7 +53,7 @@ class BaseTrial:
         if movement_feature_point_label:
             # coordinate_sequence must be a reader object, like DeepLabCutReader
             self.movement_feature_point_label = str(movement_feature_point_label)
-            self.coordinate_sequence: Dict = coordinate_sequence
+            self.coordinate_sequence: dict = coordinate_sequence
             self.coordinates_per_frame = self.coordinate_sequence[
                 self.movement_feature_point_label
             ]
@@ -118,15 +118,15 @@ class BaseTrial:
 class BaseExperiment:
     def __init__(
         self,
-        exp_id_vs_coordinate_data_path: Dict,
-        fps: Union[Dict, SupportsFloat, None] = None,
-        coordinate_data_format: AnyStr = "deeplabcut",
+        exp_id_vs_coordinate_data_path: dict,
+        fps: Union[dict, SupportsFloat, None] = None,
+        coordinate_data_format: str = "deeplabcut",
         label: Any = None,
         func_inspect: bool = False,
         **data_import_kwargs,
     ):
-        if fps and not isinstance(fps, (int, float, dict)):
-            msg = f"fps has to be int, float or dict, and not {type(fps)}"
+        if fps and not isinstance(fps, (float, int, dict)):
+            msg = f"fps has to be float, int or dict, and not {type(fps)}"
             raise ValueError(msg)
 
         self.exp_id_vs_coordinate_data_path = exp_id_vs_coordinate_data_path

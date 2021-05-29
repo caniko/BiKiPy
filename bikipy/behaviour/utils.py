@@ -1,6 +1,7 @@
 import itertools as it
 from logging import getLogger
-from typing import AnyStr, List, Sequence, SupportsInt
+from collections.abc import Sequence
+from typing import SupportsInt
 
 import numpy as np
 
@@ -15,7 +16,7 @@ def unique_with_counts_zipped(array):
     return zip(*np.unique(array, return_counts=True))
 
 
-def exclude_value_from_sequence(sequence: Sequence, exclude: AnyStr):
+def exclude_value_from_sequence(sequence: Sequence, exclude: str):
     sequence = np.asarray(sequence)
     return sequence[sequence != exclude]
 
@@ -53,7 +54,7 @@ def python_reduce_repeating_sequences(
 
     Returns
     -------
-    List, reduced string sequence; (A, A, A, B, B, C) -> [A, B, C]
+    list, reduced string sequence; (A, A, A, B, B, C) -> [A, B, C]
     """
 
     tolerance = int(tolerance)

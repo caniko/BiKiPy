@@ -1,4 +1,4 @@
-from typing import AnyStr, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 from pandas.core.frame import DataFrame as DataFrameType
@@ -17,7 +17,7 @@ def reduce_likelihoods(df: DataFrameType, regions_of_interest: Sequence) -> floa
     )
 
 
-def get_region_of_interest_data(df: DataFrameType, region_of_interest: AnyStr):
+def get_region_of_interest_data(df: DataFrameType, region_of_interest: str):
     """
     Returns an np.ndarray with the coordinates of region of interest vs frames
 

@@ -4,17 +4,7 @@ import sys
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 from pathlib import Path
-from typing import (
-    AnyStr,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Sequence,
-    SupportsFloat,
-    Union,
-    Any,
-)
+from typing import Any, Callable, Iterable, Sequence, SupportsFloat, Union
 
 import numpy as np
 import pandas as pd
@@ -52,7 +42,7 @@ class DeepLabCutReader(BaseReader):
         Parameters
         ----------
         midpoint_groups : list-like, default None
-            List-like structure of labels that consist of groups that should have their
+            list-like structure of labels that consist of groups that should have their
         min_likelihood : float, default 0.90
             The minimum likelihood the coordinates of the respective row.
             If below the values, the coords are discarded while being replaced
@@ -258,7 +248,7 @@ class DeepLabCutReader(BaseReader):
         return init_func(*args, **kwargs, **func_kwargs)
 
     @classmethod
-    def from_csv(cls, csv_path: AnyStr, data_label: Any = None, **kwargs):
+    def from_csv(cls, csv_path: str, data_label: Any = None, **kwargs):
         """
         Create a pd.DataFrame from a csv file in DeepLabCut (DLC) format.
 
@@ -287,7 +277,7 @@ class DeepLabCutReader(BaseReader):
 
     @classmethod
     def from_hdf(
-        cls, hdf_path: AnyStr, data_label: Any = None, drop_level: bool = True, **kwargs
+        cls, hdf_path: str, data_label: Any = None, drop_level: bool = True, **kwargs
     ):
         """
         Initialize class using data from a hdf file
@@ -317,7 +307,7 @@ class DeepLabCutReader(BaseReader):
         return cls(df, data_path=hdf_path, data_label=data_label, **kwargs)
 
     @classmethod
-    def from_parquet(cls, hdf_path: AnyStr, data_label: Any = None, **kwargs):
+    def from_parquet(cls, hdf_path: str, data_label: Any = None, **kwargs):
         """
         Initialize class using data from a hdf file
 
@@ -348,11 +338,11 @@ class DeepLabCutReader(BaseReader):
     def init_many(
         cls,
         file_paths: Union[Sequence, Iterable],
-        init_from: AnyStr = "hdf",
+        init_from: str = "hdf",
         labels: Union[Sequence, Iterable, None] = None,
         force_process_pooling: Union[bool, None] = None,
         **init_kwargs,
-    ) -> List:
+    ) -> list:
         """
         Create many DeepLabCutReader objects using specified mapping-function
 
@@ -372,7 +362,7 @@ class DeepLabCutReader(BaseReader):
 
         Returns
         -------
-        List of class objects instantiated with the use of provided data
+        list of class objects instantiated with the use of provided data
         """
         ext_to_method = {
             "csv": cls.from_csv,
@@ -390,7 +380,7 @@ class DeepLabCutReader(BaseReader):
 
         # Process pooling in windows is subpar and is not supported.
         if force_process_pooling or (
-            force_process_pooling is not None and sys.platform != "win32"
+            force_process_pooling is None and sys.platform != "win32"
         ):
             args = [file_paths]
             if labels:
@@ -410,11 +400,11 @@ class DeepLabCutReader(BaseReader):
     @staticmethod
     def map_function(
         func: Callable,
-        dlc_df_objs: Dict,
+        dlc_df_objs: dict,
         keep_labels: bool = True,
         manual_labels: Union[Sequence, None] = None,
         **kwargs_for_func,
-    ) -> Dict:
+    ) -> dict:
         """Method for mapping a function to a sequence of class objects
 
         Parameters
@@ -422,7 +412,7 @@ class DeepLabCutReader(BaseReader):
         func: Callable
             A pre-defined function that processes DeepLabCutReader objects
         dlc_df_objs: dict
-            List-like of class objects to have func (a function) mapped to them
+            list-like of class objects to have func (a function) mapped to them
         keep_labels: bool
             If True, the function will store the returned values along with DeepLabCutReader.
             data_label as keys in a dictionary
@@ -462,7 +452,7 @@ class DeepLabCutReader(BaseReader):
 
     @staticmethod
     def add_regions_of_interest_to_df(
-        master: pd.DataFrame, new_data: Dict
+        master: pd.DataFrame, new_data: dict
     ) -> pd.DataFrame:
         return master.join(pd.DataFrame.from_dict(new_data))
 
