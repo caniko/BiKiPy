@@ -98,30 +98,30 @@ class NortHabituationTrial(BaseTrial):
                 x_bias=(self.horizontal_resolution - self.vertical_resolution) / 2.0
             )
 
-        self.center_boolean_indexes = points_in_parallelogram(
+        self.center_boolean_indices = points_in_parallelogram(
             self.center_square[0],
             self.center_square[3],
             self.center_square[1],
             self.coordinates_per_frame,
             inspect_points=self.func_inspect,
         )
-        self.periphery_boolean_indexes = np.logical_and(
-            ~self.center_boolean_indexes,
+        self.periphery_boolean_indices = np.logical_and(
+            ~self.center_boolean_indices,
             np.logical_and(*np.isfinite(self.coordinates_per_frame).T),
         )
 
-        self.seconds_in_center = np.sum(self.center_boolean_indexes) / self.fps
-        self.seconds_in_periphery = np.sum(self.periphery_boolean_indexes) / self.fps
+        self.seconds_in_center = np.sum(self.center_boolean_indices) / self.fps
+        self.seconds_in_periphery = np.sum(self.periphery_boolean_indices) / self.fps
 
         (
             self.center_displacement,
             self.center_mean_speed,
             self.center_mean_acceleration,
         ) = self.compute_movement_features_over_boolean_index(
-            self.center_boolean_indexes
+            self.center_boolean_indices
         )
         if not self.center_displacement or self.center_displacement == 0:
-            self.center_boolean_indexes = points_in_parallelogram(
+            self.center_boolean_indices = points_in_parallelogram(
                 self.center_square[0],
                 self.center_square[3],
                 self.center_square[1],
@@ -133,7 +133,7 @@ class NortHabituationTrial(BaseTrial):
             self.periphery_mean_speed,
             self.periphery_mean_acceleration,
         ) = self.compute_movement_features_over_boolean_index(
-            self.periphery_boolean_indexes
+            self.periphery_boolean_indices
         )
 
         self.total_displacement = self.periphery_displacement + self.center_displacement
@@ -144,10 +144,10 @@ class NortHabituationTrial(BaseTrial):
 
         # 1 is center, 2 is periphery, 0 is invalid aka unknown
         self.location_sequence = np.zeros_like(
-            self.center_boolean_indexes, dtype=np.uint8
+            self.center_boolean_indices, dtype=np.uint8
         )
-        self.location_sequence[self.center_boolean_indexes] = 1
-        self.location_sequence[self.periphery_boolean_indexes] = 2
+        self.location_sequence[self.center_boolean_indices] = 1
+        self.location_sequence[self.periphery_boolean_indices] = 2
         self.location_sequence = np.array(
             python_reduce_repeating_sequences(self.location_sequence)
         )
@@ -184,7 +184,6 @@ class NortHabituationTrial(BaseTrial):
 
     def info(self):
         return [
-            self.label,
             self.total_displacement,
             self.mean_speed,
             self.mean_acceleration,
@@ -281,8 +280,9 @@ class NortTrainingTrial(NortHabituationTrial):
             python_reduce_repeating_sequences(self.observation_sequence)
         )
 
-        self.novelty_observation_a = np.sum(self.reduced_observation_sequence == 1)
-        self.novelty_observation_b = np.sum(self.reduced_observation_sequence == 2)
+        self.observation_a = np.sum(self.reduced_observation_sequence == 1)
+        self.observation_b = np.sum(self.reduced_observation_sequence == 2)
+        self.total_observation = self.observation_a + self.observation_b
 
         self.seconds_spent_a = np.sum(self.observation_sequence == 1) / self.fps
         self.seconds_spent_b = np.sum(self.observation_sequence == 2) / self.fps
@@ -300,8 +300,9 @@ class NortTrainingTrial(NortHabituationTrial):
 
     def info(self):
         return super().info() + [
-            self.novelty_observation_a,
-            self.novelty_observation_b,
+            self.observation_a,
+            self.observation_b,
+            self.total_observation,
             self.seconds_spent_a,
             self.seconds_spent_b,
             self.seconds_observing,

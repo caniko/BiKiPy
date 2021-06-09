@@ -201,7 +201,7 @@ class ParallelogramPerimeter(PolygonalPerimeter):
 
         return np.squeeze(np.hsplit(magnitudes, 2))
 
-    def confined_coordinate_indexes(self, coordinates: Sequence):
+    def confined_coordinate_indices(self, coordinates: Sequence):
         coordinates = np.asarray(coordinates)
 
         return points_in_parallelogram(

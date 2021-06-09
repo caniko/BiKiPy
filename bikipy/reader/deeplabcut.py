@@ -66,9 +66,9 @@ class DeepLabCutReader(BaseReader):
 
         if self.y_crop_start or self.invert_y:
             if self.invert_y and self.y_crop_start:
-                y_add = self.y_crop_start - self.vertical_res
+                y_add = self.y_crop_start - self.res_vertical
             elif self.invert_y:
-                y_add = -self.vertical_res
+                y_add = -self.res_vertical
             elif self.y_crop_start:
                 y_add = self.y_crop_start
 
@@ -144,64 +144,10 @@ class DeepLabCutReader(BaseReader):
                     new_data=midpoint_dict,
                 )
 
-        self._valid_point_booleans = {
+        self.valid_point_boolean_indices = {
             roi: self.df[(roi, "likelihood")].values >= self.min_likelihood
             for roi in self.regions_of_interest
         }
-
-        self._valid_point_indexes = {
-            roi: np.where(self._valid_point_booleans[roi])[0]
-            for roi in self.regions_of_interest
-        }
-
-        self._valid_tails = {
-            item: (
-                self._valid_point_indexes[item][0],
-                self._valid_point_indexes[item][-1],
-            )
-            for item in self.items
-        }
-
-        self.valid_tails_slices = {
-            item: slice(
-                self._valid_point_indexes[item][0], self._valid_point_indexes[item][-1]
-            )
-            for item in self.items
-        }
-
-        self.valid_ratios = {
-            roi: np.sum(self._valid_point_booleans[roi]) / self.df[(roi, "x")].size
-            for roi in self.regions_of_interest
-        }
-
-    def __getitem__(self, query):
-        def isolate_coordinates(item):
-            # remove likelihood col
-            coordinates = np.delete(self.df[item].values, 2, 1)
-            # clean values beneath min likelihood
-            coordinates[~self._valid_point_booleans[item]] = np.nan
-            return coordinates
-
-        if isinstance(query, str):
-            if query not in self.items:
-                msg = f"'{query}' is not in object DataFrame (self.df)"
-                raise AttributeError(msg)
-            return isolate_coordinates(query)[self.valid_tails_slices[query]]
-
-        elif isinstance(query, abc.Sequence):
-            common_slice = self.find_longest_tails(query)
-            return [isolate_coordinates(item)[common_slice] for item in query]
-        else:
-            raise NotImplementedError(f"{type(query)} has no implementation")
-
-    def find_longest_tails(self, items, as_slice: bool = True):
-        left_valid_tails, right_valid_tails = np.array(
-            [self._valid_tails[item] for item in items]
-        ).T
-
-        result = (left_valid_tails.max(), right_valid_tails.min())
-
-        return slice(*result) if as_slice else result
 
     @property
     def frames(self):
@@ -232,9 +178,9 @@ class DeepLabCutReader(BaseReader):
         """
         from bikipy.utils.video import get_video_data
 
-        _frame, horizontal_res, vertical_res, _fps = get_video_data(video_path)
+        _frame, res_horizontal, res_vertical, _fps = get_video_data(video_path)
         func_kwargs = {
-            "pixel_resolution": (horizontal_res, vertical_res),
+            "pixel_resolution": (res_horizontal, res_vertical),
             "video_path": video_path,
         }
 

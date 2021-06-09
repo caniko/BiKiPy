@@ -118,7 +118,7 @@ class BaseTrial:
 class BaseExperiment:
     def __init__(
         self,
-        exp_id_vs_coordinate_data_path: dict,
+        trial_id_vs_coordinate_data_path: dict,
         fps: Union[dict, SupportsFloat, None] = None,
         coordinate_data_format: str = "deeplabcut",
         label: Any = None,
@@ -129,7 +129,7 @@ class BaseExperiment:
             msg = f"fps has to be float, int or dict, and not {type(fps)}"
             raise ValueError(msg)
 
-        self.exp_id_vs_coordinate_data_path = exp_id_vs_coordinate_data_path
+        self.trial_id_vs_coordinate_data_path = trial_id_vs_coordinate_data_path
         self.fps = fps
 
         self.coordinate_data_format = str(coordinate_data_format).lower()
@@ -139,10 +139,10 @@ class BaseExperiment:
             self.exp_id_vs_coordinate_sequences = {
                 exp_id: dlc_obj
                 for exp_id, dlc_obj in zip(
-                    exp_id_vs_coordinate_data_path.keys(),
+                    trial_id_vs_coordinate_data_path.keys(),
                     DeepLabCutReader.init_many(
-                        exp_id_vs_coordinate_data_path.values(),
-                        labels=exp_id_vs_coordinate_data_path.keys(),
+                        trial_id_vs_coordinate_data_path.values(),
+                        labels=trial_id_vs_coordinate_data_path.keys(),
                         **data_import_kwargs,
                     ),
                 )

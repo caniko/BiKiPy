@@ -347,7 +347,7 @@ for subdir in os.listdir(str(DATA_DIR)):
             trial := YMazeTrial(
                 exp_id_range_vs_area_sets=exp_id_range_vs_area_sets,
                 feature_tracking_point="mid-mid-left_ear-right_ear-base_tail",
-                exp_id_vs_coordinate_data_path=exp_id_vs_dlc_path,
+                trial_id_vs_coordinate_data_path=exp_id_vs_dlc_path,
                 fps=exp_id_vs_fps,
                 center_triangle_meter_width=0.08,
                 label=subdir,

@@ -17,9 +17,7 @@ def _re_pattern_validator(pattern: re.Pattern):
     return pattern if isinstance(pattern, re.Pattern) else re.compile(pattern)
 
 
-def get_animal_id_vs_exp_ids(
-    info_df: DataFrame, exp_id_pattern: Union[re.Pattern, str] = r"\d+"
-):
+def get_animal_id_vs_trial_ids(info_df: DataFrame):
     return (
         info_df[info_df.duplicated("Animal", keep=False)]
         .groupby("Animal")["Test"]
@@ -29,7 +27,7 @@ def get_animal_id_vs_exp_ids(
     )
 
 
-def get_exp_id_vs_animal_id(id_exp):
+def get_trial_id_vs_animal_id(id_exp):
     result = {}
     for animal, exps in id_exp.items():
         for exp in exps:
@@ -38,25 +36,27 @@ def get_exp_id_vs_animal_id(id_exp):
 
 
 def get_animal_id_vs_apparatus(
-    info_df, exp_id_pattern: Union[re.Pattern, str] = r"\d+"
+    info_df, trial_id_pattern: Union[re.Pattern, str] = r"\d+"
 ):
-    exp_id_pattern = _re_pattern_validator(exp_id_pattern)
+    trial_id_pattern = _re_pattern_validator(trial_id_pattern)
     animal_id = np.unique(info_df["Animal"])
     apparatus = info_df["Apparatus"]
 
     return {
-        int(i): int(exp_id_pattern.findall(app)[0])
+        int(i): int(trial_id_pattern.findall(app)[0])
         for i, app in zip(animal_id, apparatus)
     }
 
 
-def get_exp_id_vs_stage(exp_info_df, exp_id_pattern: Union[re.Pattern, str] = r"\d+"):
-    exp_id_pattern = _re_pattern_validator(exp_id_pattern)
+def get_trial_id_vs_stage(
+    exp_info_df, trial_id_pattern: Union[re.Pattern, str] = r"\d+"
+):
+    trial_id_pattern = _re_pattern_validator(trial_id_pattern)
     result = {}
     for row in exp_info_df[["Video_file_name", "Stage"]].iterrows():
-        exp_idx = int(exp_id_pattern.findall(Path(row[1][0]).stem)[-1])
+        trial_idx = int(trial_id_pattern.findall(Path(row[1][0]).stem)[-1])
         stage = Path(row[1][1]).stem.lower()
-        result[exp_idx] = stage if stage == "habituation" else stage[-1]
+        result[trial_idx] = stage if stage == "habituation" else stage[-1]
 
     return result
 

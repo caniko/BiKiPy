@@ -51,14 +51,12 @@ def location_filter(
     # Remove nose points that aren't inside the perimeter
     nose = np.asarray(nose)
 
-    border_corners, border_side_vectors = nort_object.border(
-        perimeter_border_normal_pixel_magnitude
-    )
+    nort_object_border = nort_object.border(perimeter_border_normal_pixel_magnitude)
 
     nose_within_border = points_in_parallelogram(
-        border_corners[1],
-        border_corners[0],
-        border_corners[2],
+        nort_object_border.perimeter_corners[1],
+        nort_object_border.perimeter_corners[0],
+        nort_object_border.perimeter_corners[2],
         nose,
     )
     torso_outside_polygon = np.logical_not(
@@ -114,7 +112,7 @@ def gaze_direction_filter(
     eye_to_nose_unit = unit_vector(nose - eye_center)
 
     closest_side, idx = closest_line_to_point(
-        nort_object.side_vectors, nort_object.perimeter_corners, eye_center
+        nort_object.corner_to_corner_vectors, nort_object.perimeter_corners, eye_center
     )
 
     counter_clockwise_rad = counter_clockwise_angel_2d(closest_side, eye_to_nose_unit)
@@ -139,11 +137,11 @@ def gaze_direction_filter(
 
 
 def attention_span_filter(
-    valid_indexes: Sequence[bool],
+    valid_indices: Sequence[bool],
     fps: float,
     minimum_seconds_observing: float = 0.2,
 ) -> np.ndarray:
-    valid_indexes = np.asarray(valid_indexes)
+    valid_indices = np.asarray(valid_indices)
 
     fps = float(fps)
     minimum_seconds_observing = float(minimum_seconds_observing)
@@ -151,13 +149,13 @@ def attention_span_filter(
     distraction_tolerance = round(fps / 2.0)
     minimum_time_valid_observation = round(minimum_seconds_observing * fps)
 
-    length = valid_indexes.shape[0]
-    observation_boolean_indexes = np.full(length, False)
+    length = valid_indices.shape[0]
+    observation_boolean_indices = np.full(length, False)
 
     first_valid_index = None
     i, valid_frames_within_border, true_counter, consecutive_false = 0, 0, 0, 0
     while True:
-        if valid_indexes[i]:
+        if valid_indices[i]:
             true_counter += 1
 
             if consecutive_false:
@@ -172,7 +170,7 @@ def attention_span_filter(
                 if consecutive_false <= distraction_tolerance:
                     consecutive_false += 1
                 else:
-                    observation_boolean_indexes[first_valid_index : i + 1] = True
+                    observation_boolean_indices[first_valid_index : i + 1] = True
                     valid_frames_within_border += true_counter
 
                     consecutive_false, true_counter = 0, 0
@@ -185,7 +183,7 @@ def attention_span_filter(
 
         if i == length:
             if first_valid_index is not None:
-                observation_boolean_indexes[first_valid_index:] = True
+                observation_boolean_indices[first_valid_index:] = True
                 valid_frames_within_border += true_counter
 
             break
@@ -193,18 +191,18 @@ def attention_span_filter(
     if valid_frames_within_border == 0:
         logger.info(f"Subject didn't observe the nort object")
 
-        assert not np.any(observation_boolean_indexes)
-        return observation_boolean_indexes
+        assert not np.any(observation_boolean_indices)
+        return observation_boolean_indices
 
     assert (
-        np.any(observation_boolean_indexes)
-        and np.sum(observation_boolean_indexes) >= minimum_time_valid_observation
+        np.any(observation_boolean_indices)
+        and np.sum(observation_boolean_indices) >= minimum_time_valid_observation
     ), (
-        f"True: {np.sum(observation_boolean_indexes)}; fps: {fps}; "
+        f"True: {np.sum(observation_boolean_indices)}; fps: {fps}; "
         f"Minimum observation frames: {minimum_time_valid_observation}"
     )
 
-    return observation_boolean_indexes
+    return observation_boolean_indices
 
 
 def nort_observation(
@@ -253,14 +251,18 @@ def nort_observation(
     max_radians_gaze_and_object = float(max_radians_gaze_and_object)
 
     if inspect:
-        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 20))
+        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(45, 45))
         loc_filter_kwargs = {"inspection_ax": axes[0][0]}
         gaze_filter_kwargs = {"inspection_ax": axes[0][1]}
     else:
         loc_filter_kwargs, gaze_filter_kwargs = {}, {}
 
     location_filtered, loc_analytics = location_filter(
-        nort_object, nose, torso, perimeter_border_normal_pixel_magnitude, **loc_filter_kwargs
+        nort_object,
+        nose,
+        torso,
+        perimeter_border_normal_pixel_magnitude,
+        **loc_filter_kwargs,
     )
 
     gaze_filtered = gaze_direction_filter(

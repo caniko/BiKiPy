@@ -26,7 +26,7 @@ class NortExperiment(BaseExperiment):
 
     box_area_names = ("Periphery", "Center")
 
-    trial_label_to_experiment_class_name = {
+    trial_label_to_trial_class_name = {
         "habituation": "habituation",
         "open_field": "habituation",
         "1": "training",
@@ -41,7 +41,7 @@ class NortExperiment(BaseExperiment):
 
     def __init__(
         self,
-        exp_id_range_vs_exp_meta: dict,
+        trial_id_range_vs_exp_meta: dict,
         experiment_box_metric_length: SupportsFloat,
         nose_label: str,
         eye_center_label: str,
@@ -49,7 +49,7 @@ class NortExperiment(BaseExperiment):
         nort_field_vs_apparatus: Mapping[NortObjectField] = None,
         perimeter_border_normal_metric_magnitude: Union[SupportsFloat, None] = None,
         center_size_metric_length: Union[SupportsFloat, None] = None,
-        max_radians_gaze_and_object: SupportsFloat = 1.0 / 4.0 * np.pi,
+        max_radians_gaze_and_object: SupportsFloat = 0.25 * np.pi,
         *base_trial_args,
         **base_trial_kwargs,
     ):
@@ -57,7 +57,7 @@ class NortExperiment(BaseExperiment):
 
         Parameters
         ----------
-        exp_id_range_vs_exp_meta
+        trial_id_range_vs_exp_meta
         experiment_box_metric_length
         nose_label
         eye_center_label
@@ -74,7 +74,7 @@ class NortExperiment(BaseExperiment):
 
         self.nort_field_vs_apparatus = nort_field_vs_apparatus
 
-        self.exp_id_range_vs_exp_meta = dict(exp_id_range_vs_exp_meta)
+        self.trial_id_range_vs_exp_meta = dict(trial_id_range_vs_exp_meta)
         self.torso_label, self.eye_center_label, self.nose_label = (
             str(torso_label),
             str(eye_center_label),
@@ -98,7 +98,7 @@ class NortExperiment(BaseExperiment):
             self.training_object_trials,
             self.novelty_object_trials,
         ) = ([], [], [])
-        for exp_id, exp_meta in tqdm(self.exp_id_range_vs_exp_meta.items()):
+        for exp_id, exp_meta in tqdm(self.trial_id_range_vs_exp_meta.items()):
             logger.info(f"Category {exp_meta['stage']}; ID {exp_id}")
 
             coordinate_sequence = self.exp_id_vs_coordinate_sequences[exp_id]
@@ -109,6 +109,8 @@ class NortExperiment(BaseExperiment):
                 "label": exp_id,
                 "func_inspect": self.func_inspect,
             }
+            if "inspect" in exp_meta:
+                generic_data["func_inspect"] = exp_meta["inspect"]
             if "inspect_image" in exp_meta:
                 generic_data["inspect_image"] = exp_meta["inspect_image"]
 
@@ -122,7 +124,7 @@ class NortExperiment(BaseExperiment):
                 msg = "fps has to be defined inside exp_meta, or in the class"
                 raise AttributeError(msg)
 
-            exp_class = self.trial_label_to_experiment_class_name[
+            exp_class = self.trial_label_to_trial_class_name[
                 exp_meta["stage"].lower().replace(" ", "_")
             ]
 
@@ -189,15 +191,11 @@ class NortExperiment(BaseExperiment):
         """
 
         def to_df(data_dict: dict, features: Sequence):
-            feature_order = pd.MultiIndex.from_tuples(
-                features, names=("Feature", "Area")
-            )
-
             data_dict = sort_dict_by_key_value(data_dict)
             return pd.DataFrame(
-                tuple(data_dict.values()),
-                index=pd.Series(data_dict.keys(), name="Test"),
-                columns=feature_order,
+                data_dict.values(),
+                index=pd.Series(data_dict.keys(), name="Test", dtype=np.int16),
+                columns=pd.MultiIndex.from_tuples(features, names=("Feature", "Area")),
             )
 
         def feature_area(feature, areas):
@@ -220,7 +218,7 @@ class NortExperiment(BaseExperiment):
         ]
 
         object_columns = [
-            *feature_area("Observation instances", ("A", "B")),
+            *feature_area("Observation instances", ("A", "B", "Total")),
             *feature_area("Observation time", ("A", "B", "Total")),
             ["Object bias score"],
         ]
@@ -233,24 +231,24 @@ class NortExperiment(BaseExperiment):
 
         label_vs_data = {}
 
-        habituation_filler = [
-            "habituation" for _i in range(len(object_columns + novelty_columns))
-        ]
-        for nort_habituation in self.habituation_trials:
-            label_vs_data[nort_habituation.label] = (
-                *nort_habituation.get_info(),
-                *habituation_filler,
-            )
+        if self.habituation_trials:
+            habituation_filler = [
+                "habituation" for _i in range(len(object_columns + novelty_columns))
+            ]
+            for nort_habituation in self.habituation_trials:
+                label_vs_data[nort_habituation.label] = (
+                    nort_habituation.info() + habituation_filler
+                )
 
-        training_filler = ["training" for _i in range(len(novelty_columns))]
-        for training_experiment in self.training_object_trials:
-            label_vs_data[training_experiment.label] = (
-                *training_experiment.get_info(),
-                *training_filler,
-            )
+        if self.training_object_trials:
+            training_filler = ["training" for _i in range(len(novelty_columns))]
+            for training_trial in self.training_object_trials:
+                label_vs_data[training_trial.label] = (
+                    training_trial.info() + training_filler
+                )
 
-        for novelty_experiment in self.novelty_object_trials:
-            label_vs_data[novelty_experiment.label] = novelty_experiment.get_info()
+        for novelty_trial in self.novelty_object_trials:
+            label_vs_data[novelty_trial.label] = novelty_trial.info()
 
         return to_df(
             label_vs_data, habituation_columns + object_columns + novelty_columns

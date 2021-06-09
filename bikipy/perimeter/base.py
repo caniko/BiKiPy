@@ -13,24 +13,26 @@ from bikipy.utils.video import get_video_data
 logger = getLogger(__name__)
 
 
-@dataclass
 class Perimeter:
-    """
-    Parameters
-    ----------
-    int_label
-        Integer-based label
-
-    semantic_label: Optional, string
-        String based semantic label for the perimeter. Useful during inspection and debuging
-
-    inspect_image: Optional, string
-        Label for the perimeter. Useful for manual audition and testing.
-    """
-
-    int_label: Union[int, None] = field(default=None)
-    semantic_label: Union[str, None] = field(default=None)
-    inspect_image: Union[str, None] = field(default=None, compare=False)
+    def __init__(
+        self,
+        int_label: Union[int, None] = None,
+        semantic_label: Union[str, None] = None,
+        inspect_image: Union[str, None] = None,
+    ):
+        """
+        Parameters
+        ----------
+        int_label
+            Integer-based label
+        semantic_label: Optional, string
+            String based semantic label for the perimeter. Useful during inspection and debuging
+        inspect_image: Optional, string
+            Label for the perimeter. Useful for manual audition and testing.
+        """
+        self.int_label = int_label
+        self.semantic_label = semantic_label
+        self.inspect_image = inspect_image
 
     def plot(self, ax: Any = None, points: Union[Sequence, None] = None):
         """
@@ -41,7 +43,6 @@ class Perimeter:
         ax
             Axes object that the plot will be saved in. A new instance of Axes will be used
             if object returns False.
-
         points
             Sequence of 2D coordinates that will be plotted alongside the perimeter
 
@@ -173,8 +174,8 @@ class PolygonalPerimeter(Perimeter):
         return self.perimeter_corners / self.feature_scale
 
     @property
-    def side_vectors(self):
-        return self._corner_to_corner_vectors(self.perimeter_corners)
+    def corner_to_corner_vectors(self):
+        return self._vectors_from_neighboring_points(self.perimeter_corners)
 
     @staticmethod
     def distance_between_two_vectors(border_a, border_b):
@@ -193,20 +194,20 @@ class PolygonalPerimeter(Perimeter):
         -------
 
         """
-        border_corners = expand_parallelogram(
-            self.perimeter_corners, perimeter_border_normal_pixel_magnitude
+        return self.__class__(
+            expand_parallelogram(
+                self.perimeter_corners, perimeter_border_normal_pixel_magnitude
+            )
         )
-        border_vectors = self._corner_to_corner_vectors(border_corners)
-        return border_corners, border_vectors
 
-    def confined_coordinate_indexes(self, coordinates: Sequence):
+    def confined_coordinate_indices(self, coordinates: Sequence):
         raise NotImplementedError
 
     def confined_coordinates(
         self, coordinates: Sequence, inspect: bool = False
     ) -> np.ndarray:
         """
-        self.confined_coordinate_indexes to fetch confined coordinates within
+        self.confined_coordinate_indices to fetch confined coordinates within
         the respective perimeter
 
         Parameters
@@ -224,7 +225,7 @@ class PolygonalPerimeter(Perimeter):
 
         coordinates = np.asarray(coordinates)
         confined_coordinates = coordinates[
-            self.confined_coordinate_indexes(coordinates)
+            self.confined_coordinate_indices(coordinates)
         ]
         if inspect:
             ax = super().plot()
@@ -280,7 +281,7 @@ class PolygonalPerimeter(Perimeter):
         overlap_locations = {}
 
         for border in border_sequence:
-            confined_coord_booleans_index = border.confined_coordinate_indexes(
+            confined_coord_booleans_index = border.confined_coordinate_indices(
                 coordinates
             )
 
@@ -296,16 +297,20 @@ class PolygonalPerimeter(Perimeter):
 
             presence[confined_coord_booleans_index] = border.int_label
 
-        valid_indexes = np.nonzero(presence)
+        valid_indices = np.nonzero(presence)
         if clean_outliers:
-            presence = presence[valid_indexes]
+            presence = presence[valid_indices]
 
         boolean_array = np.full(coordinates.shape[0], False, dtype=np.bool)
-        boolean_array[valid_indexes] = True
+        boolean_array[valid_indices] = True
 
-        return presence, valid_indexes, boolean_array
+        return presence, valid_indices, boolean_array
 
-    def plot(self, *args, include_borders: bool = False, **kwargs):
+    def plot(
+        self,
+        perimeter_border_normal_pixel_magnitude: Union[int, float, None] = None,
+        **kwargs,
+    ):
         """
         Plot the perimeter_corners defined in the object
 
@@ -313,24 +318,27 @@ class PolygonalPerimeter(Perimeter):
         -------
         matplotlib Axes object with the plot
         """
-        ax = super().plot(*args, **kwargs)
+        ax = super().plot(**kwargs)
 
         legends = []
-        for i in range(len(self.perimeter_corners)):
-            next = 0 if i + 1 == len(self.perimeter_corners) else i + 1
+        for index in range(len(self.perimeter_corners)):
+            following_index = (
+                0 if index + 1 == len(self.perimeter_corners) else index + 1
+            )
 
-            side_a = self.perimeter_corners[i]
-            side_b = self.perimeter_corners[next]
-            ax.plot((side_a[0], side_b[0]), (side_a[1], side_b[1]), "o-")
+            corner_a = self.perimeter_corners[index]
+            corner_b = self.perimeter_corners[following_index]
+            ax.plot((corner_a[0], corner_b[0]), (corner_a[1], corner_b[1]), "o-")
 
-            legend = [self._add_label_to_str(f"side {i}")]
+            legend = [self._add_label_to_str(f"side {index}")]
 
-            if include_borders:
-                border_a = self.border_corners[i]
-                border_b = self.border_corners[next]
+            if perimeter_border_normal_pixel_magnitude:
+                border = self.border(perimeter_border_normal_pixel_magnitude)
+                border_a = border[index]
+                border_b = border[following_index]
                 ax.plot((border_a[0], border_a[1]), (border_b[0], border_b[1]), "o-")
 
-                legend.append(self._add_label_to_str(f"perimeter {i}"))
+                legend.append(self._add_label_to_str(f"perimeter {index}"))
 
             legends.extend(legend)
 
@@ -338,7 +346,7 @@ class PolygonalPerimeter(Perimeter):
         return ax
 
     @staticmethod
-    def _corner_to_corner_vectors(ordered_corners):
+    def _vectors_from_neighboring_points(ordered_corners):
         return (
             *np.diff(ordered_corners, axis=0),
             ordered_corners[0] - ordered_corners[-1],
@@ -354,6 +362,7 @@ class PolygonalPerimeter(Perimeter):
 
 
 class GenericPolygonalBorder(PolygonalPerimeter):
+    # Deprecated.
     @property
     def sides(self):
         return self.__sides

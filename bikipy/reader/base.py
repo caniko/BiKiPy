@@ -1,5 +1,8 @@
+from collections import abc
+from functools import lru_cache
 from typing import Any, Sequence, Union
 
+import numpy as np
 import pandas as pd
 
 from bikipy.feature.movement import displacement_per_frame
@@ -31,14 +34,13 @@ class BaseReader:
 
         if pixel_resolution:
             self.pixel_resolution = pixel_resolution
-            self.resolution = self.pixel_resolution
 
-            self.horizontal_res, self.vertical_res = pixel_resolution
+            self.res_horizontal, self.res_vertical = pixel_resolution
             if not (
-                isinstance(self.horizontal_res, (float, int, type(None)))
-                and isinstance(self.vertical_res, (float, int, type(None)))
+                isinstance(self.res_horizontal, (float, int, type(None)))
+                and isinstance(self.res_vertical, (float, int, type(None)))
             ):
-                msg = f"x and y max are integers; not {self.horizontal_res}; {self.vertical_res}"
+                msg = f"x and y max are integers; not {self.res_horizontal}; {self.res_vertical}"
                 raise AttributeError(msg)
 
         self.df = df
@@ -52,8 +54,80 @@ class BaseReader:
         self.data_path = data_path
         self.data_label = data_label
 
-    def __getitem__(self, item):
-        pass
+        self._valid_point_boolean_indices = None
+        self._valid_point_indices = None
+        self._valid_tails = None
+        self._valid_slices = None
+        self._validity_ratio = None
+
+    def __getitem__(self, query):
+        def isolate_coordinates(item):
+            # remove likelihood col
+            coordinates = np.delete(self.df[item].values, 2, 1)
+            # clean values beneath min likelihood
+            coordinates[~self.valid_point_boolean_indices[item]] = np.nan
+            return coordinates
+
+        if isinstance(query, str):
+            if query not in self.items:
+                msg = f"'{query}' is not in object DataFrame (self.df)"
+                raise AttributeError(msg)
+            return isolate_coordinates(query)[self.valid_slices[query]]
+
+        elif isinstance(query, abc.Iterable):
+            common_slice = self._find_longest_tails(query)
+            return [isolate_coordinates(item)[common_slice] for item in query]
+
+        else:
+            raise NotImplementedError(f"{type(query)} has no implementation")
+
+    @property
+    def valid_point_boolean_indices(self):
+        return self._valid_point_boolean_indices
+
+    @valid_point_boolean_indices.setter
+    def valid_point_boolean_indices(self, boolean_index: Sequence):
+        self._valid_point_boolean_indices = np.asarray(boolean_index, dtype=bool)
+
+        self._valid_point_indices = {
+            roi: np.where(self._valid_point_boolean_indices[roi])[0]
+            for roi in self.regions_of_interest
+        }
+
+        self._valid_tails = {
+            item: (
+                self._valid_point_indices[item][0],
+                self._valid_point_indices[item][-1],
+            )
+            for item in self.items
+        }
+
+        self._valid_slices = {
+            item: slice(
+                self._valid_point_indices[item][0], self._valid_point_indices[item][-1]
+            )
+            for item in self.items
+        }
+
+        self._validity_ratio = {
+            roi: np.sum(self.valid_point_boolean_indices[roi]) / self.df[
+                (roi, "x")].size
+            for roi in self.regions_of_interest
+        }
+
+    @property
+    def valid_slices(self):
+        if not self._valid_slices:
+            msg = "valid_point_boolean_indices has to be defined for the definition of valid_slices"
+            raise AttributeError(msg)
+        return self._valid_slices
+
+    @property
+    def validity_ratio(self):
+        if not self._validity_ratio:
+            msg = "valid_point_boolean_indices has to be defined for the definition of validity_ratio"
+            raise AttributeError(msg)
+        return self._validity_ratio
 
     @property
     def items(self) -> tuple:
@@ -70,3 +144,13 @@ class BaseReader:
 
     def interpolate_item_displacement(self, item: str):
         return displacement_per_frame(self[str(item)])
+
+    @lru_cache
+    def _find_longest_tails(self, items, as_slice: bool = True):
+        left_valid_tails, right_valid_tails = np.array(
+            [self._valid_tails[item] for item in items]
+        ).T
+
+        result = (left_valid_tails.max(), right_valid_tails.min())
+
+        return slice(*result) if as_slice else result

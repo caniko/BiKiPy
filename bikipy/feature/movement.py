@@ -18,7 +18,7 @@ def displacement_per_frame(
     coordinate_sequence = np.asarray(coordinate_sequence)
     magnitudes = np.linalg.norm(coordinate_sequence, axis=1)
 
-    if not np.any((finite_indexes := np.where(np.isfinite(magnitudes))[0])):
+    if not np.any((finite_indices := np.where(np.isfinite(magnitudes))[0])):
         return np.abs(np.diff(magnitudes, axis=0))
 
     logger.debug(
@@ -27,8 +27,8 @@ def displacement_per_frame(
 
     try:
         f = interp1d(
-            finite_indexes,
-            magnitudes[finite_indexes],
+            finite_indices,
+            magnitudes[finite_indices],
             bounds_error=False,
             fill_value="extrapolate",
             copy=False,
@@ -37,8 +37,8 @@ def displacement_per_frame(
     except ValueError:
         try:
             f = interp1d(
-                finite_indexes,
-                magnitudes[finite_indexes],
+                finite_indices,
+                magnitudes[finite_indices],
                 bounds_error=False,
                 fill_value="extrapolate",
                 copy=False,
