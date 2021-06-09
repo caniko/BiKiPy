@@ -109,6 +109,7 @@ class NortExperiment(BaseExperiment):
                 "label": exp_id,
                 "func_inspect": self.func_inspect,
             }
+
             if "inspect" in exp_meta:
                 generic_data["func_inspect"] = exp_meta["inspect"]
             if "inspect_image" in exp_meta:
@@ -116,12 +117,14 @@ class NortExperiment(BaseExperiment):
 
             if "fps" in exp_meta:
                 generic_data["fps"] = exp_meta["fps"]
+            elif hasattr(coordinate_sequence, "fps"):
+                generic_data["fps"] = coordinate_sequence.fps
             elif isinstance(self.fps, dict):
                 generic_data["fps"] = self.fps[exp_id]
             elif self.fps:  # Fallback FPS value
                 generic_data["fps"] = self.fps
             else:
-                msg = "fps has to be defined inside exp_meta, or in the class"
+                msg = "fps has to be defined"
                 raise AttributeError(msg)
 
             exp_class = self.trial_label_to_trial_class_name[

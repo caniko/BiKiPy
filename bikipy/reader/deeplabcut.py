@@ -194,7 +194,7 @@ class DeepLabCutReader(BaseReader):
         return init_func(*args, **kwargs, **func_kwargs)
 
     @classmethod
-    def from_csv(cls, csv_path: str, data_label: Any = None, **kwargs):
+    def from_csv(cls, csv_path: str, **kwargs):
         """
         Create a pd.DataFrame from a csv file in DeepLabCut (DLC) format.
 
@@ -204,8 +204,6 @@ class DeepLabCutReader(BaseReader):
         ----------
         csv_path: str
             The path to the csv file that shall be analysed; with or without ".csv" extension
-        data_label : String; optional
-            Label for the data
         kwargs: dict
             Keyword arguments for the class init-method
 
@@ -217,13 +215,12 @@ class DeepLabCutReader(BaseReader):
         return cls(
             pd.read_csv(csv_path, **DEEPLABCUT_DF_INIT_KWARGS),
             data_path=csv_path,
-            data_label=data_label,
             **kwargs,
         )
 
     @classmethod
     def from_hdf(
-        cls, hdf_path: str, data_label: Any = None, drop_level: bool = True, **kwargs
+        cls, hdf_path: str, drop_level: bool = True, **kwargs
     ):
         """
         Initialize class using data from a hdf file
@@ -234,8 +231,6 @@ class DeepLabCutReader(BaseReader):
         ----------
         hdf_path: str
             The path to the hdf file that shall be analysed
-        data_label : String; optional
-            Label for the data
         drop_level: bool
             If True, remove a potentially redundant level in DataFrame
         kwargs: dict
@@ -250,7 +245,7 @@ class DeepLabCutReader(BaseReader):
         if drop_level:
             df = df.droplevel(0, axis=1)
 
-        return cls(df, data_path=hdf_path, data_label=data_label, **kwargs)
+        return cls(df, data_path=hdf_path, **kwargs)
 
     @classmethod
     def from_parquet(cls, hdf_path: str, data_label: Any = None, **kwargs):
@@ -401,6 +396,29 @@ class DeepLabCutReader(BaseReader):
         master: pd.DataFrame, new_data: dict
     ) -> pd.DataFrame:
         return master.join(pd.DataFrame.from_dict(new_data))
+
+    def __getitem__(self, query):
+        def isolate_coordinates(item):
+            # remove likelihood col
+            coordinates = np.delete(self.df[item].values, 2, 1)
+
+            # clean values beneath min likelihood
+            coordinates[~self.valid_point_boolean_indices[item]] = np.nan
+
+            return coordinates
+
+        if isinstance(query, str):
+            if query not in self.items:
+                msg = f"'{query}' is not in object DataFrame (self.df)"
+                raise AttributeError(msg)
+            return isolate_coordinates(query)[self.valid_slices[query]]
+
+        elif isinstance(query, abc.Iterable):
+            common_slice = self._find_longest_tails(query)
+            return [isolate_coordinates(item)[common_slice] for item in query]
+
+        else:
+            raise NotImplementedError(f"{type(query)} has no implementation")
 
 
 def convert_hdf_to_parquet(hdf_paths, delete_hdf: bool = False):

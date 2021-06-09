@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Any, Sequence, SupportsFloat, SupportsInt, Union, Iterable
+from typing import Any, Sequence, SupportsFloat, Union
 
 import numpy as np
 import pandas as pd
@@ -15,9 +15,9 @@ class BaseTrial:
     def __init__(
         self,
         coordinate_sequence: Any,
-        fps: SupportsFloat,
-        length_unit_per_pixel: SupportsFloat,
-        recording_resolution: Union[Iterable[int], None] = None,
+        length_unit_per_pixel: float,
+        fps: Union[float, None] = None,
+        recording_resolution: Union[Sequence[int], None] = None,
         movement_feature_point_label: Union[str, None] = None,
         label: Any = None,
         func_inspect: bool = False,
@@ -35,7 +35,7 @@ class BaseTrial:
         label: Any; optional
         """
 
-        self.fps = float(fps)
+        self.fps = fps
         self.length_unit_per_pixel = float(length_unit_per_pixel)
         self.label = label
         self.func_inspect = func_inspect

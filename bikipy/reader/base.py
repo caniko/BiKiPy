@@ -1,11 +1,10 @@
-from collections import abc
 from functools import lru_cache
 from typing import Any, Sequence, Union
 
 import numpy as np
 import pandas as pd
 
-from bikipy.feature.movement import displacement_per_frame
+from bikipy.utils.video import get_video_data
 
 
 class BaseReader:
@@ -42,6 +41,9 @@ class BaseReader:
             ):
                 msg = f"x and y max are integers; not {self.res_horizontal}; {self.res_vertical}"
                 raise AttributeError(msg)
+        elif video_path:
+            _, self.res_horizontal, self.res_vertical, self.fps = get_video_data(data_path)
+            self.pixel_resolution = (self.res_horizontal, self.res_vertical)
 
         self.df = df
         if not isinstance(df, pd.DataFrame):
@@ -59,27 +61,6 @@ class BaseReader:
         self._valid_tails = None
         self._valid_slices = None
         self._validity_ratio = None
-
-    def __getitem__(self, query):
-        def isolate_coordinates(item):
-            # remove likelihood col
-            coordinates = np.delete(self.df[item].values, 2, 1)
-            # clean values beneath min likelihood
-            coordinates[~self.valid_point_boolean_indices[item]] = np.nan
-            return coordinates
-
-        if isinstance(query, str):
-            if query not in self.items:
-                msg = f"'{query}' is not in object DataFrame (self.df)"
-                raise AttributeError(msg)
-            return isolate_coordinates(query)[self.valid_slices[query]]
-
-        elif isinstance(query, abc.Iterable):
-            common_slice = self._find_longest_tails(query)
-            return [isolate_coordinates(item)[common_slice] for item in query]
-
-        else:
-            raise NotImplementedError(f"{type(query)} has no implementation")
 
     @property
     def valid_point_boolean_indices(self):
@@ -141,9 +122,6 @@ class BaseReader:
     @property
     def regions_of_interest(self) -> tuple:
         return self.items
-
-    def interpolate_item_displacement(self, item: str):
-        return displacement_per_frame(self[str(item)])
 
     @lru_cache
     def _find_longest_tails(self, items, as_slice: bool = True):

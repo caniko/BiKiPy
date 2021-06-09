@@ -1,9 +1,10 @@
 from pathlib import Path
+from typing import Union
 
 import cv2
 
 
-def get_video_data(video_path, frame_time="middle"):
+def get_video_data(video_path, frame_time: Union[str, int, None] = None):
     """
     Get a frame from a given relative location, and resolution info of video
 
@@ -26,20 +27,31 @@ def get_video_data(video_path, frame_time="middle"):
     cap = cv2.VideoCapture(str(video_path))
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    if frame_time == "middle":
-        target_frame = frame_count / 2.0
-    elif frame_time == "start" or frame_time == "beginning":
-        target_frame = 0
-    elif frame_time == "end":
-        target_frame = frame_count
+    msg = f"frame_time can only be defined as halfway, start, end, or integer; " \
+          f"not {type(frame_time)}"
+    if frame_time:
+        if isinstance(frame_time, str):
+            if frame_time == "middle":
+                target_frame_index = round(frame_count / 2.0)
+            elif frame_time == "start" or frame_time == "beginning":
+                target_frame_index = 0
+            elif frame_time == "end":
+                target_frame_index = frame_count
+            else:
+                raise ValueError(msg)
+
+        elif isinstance(frame_time, int):
+            target_frame_index = frame_time
+
+        else:
+            raise ValueError(msg)
+
+        cap.set(1, target_frame_index - 1)
+        res, frame = cap.read()
+
+        assert res, f"Could not extract frame from media, {video_path}"
     else:
-        msg = f"frame_time can only be halfway; start; end,\n" f"and not {frame_time}"
-        raise ValueError(msg)
-
-    cap.set(1, target_frame - 1)
-
-    res, frame = cap.read()
-    assert res, f"Could not extract frame from media, {video_path}"
+        frame = None
 
     return (
         frame,
