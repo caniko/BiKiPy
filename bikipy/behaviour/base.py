@@ -4,7 +4,7 @@ from typing import Any, Sequence, SupportsFloat, Union
 import numpy as np
 import pandas as pd
 
-from bikipy.feature import movement
+from bikipy.feature import motion
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.misc import resolve_stem_in_filepath
 
@@ -64,7 +64,7 @@ class BaseTrial:
 
         self.experiment_seconds = self.coordinates_per_frame.shape[0] / self.fps
 
-        self.displacement_per_frame = movement.displacement_per_frame(
+        self.displacement_per_frame = motion.displacement_per_frame(
             self.coordinates_per_frame
         )
         self.acceleration_per_frame = np.abs(
@@ -75,9 +75,9 @@ class BaseTrial:
             self.displacement,
             self.mean_speed,
             self.mean_acceleration,
-        ) = movement.displacement_mean_speed_acceleration(
+        ) = np.array(motion.displacement_mean_speed_acceleration(
             self.coordinates_per_frame, self.fps, self.length_unit_per_pixel
-        )
+        ))
 
     def compute_movement_features_over_boolean_index(
         self, boolean_index: Sequence[bool]
@@ -104,7 +104,7 @@ class BaseTrial:
         displacements = np.concatenate(displacements)
         accelerations = np.concatenate(accelerations)
 
-        unit_converter = movement.units_pixels_per_second_frame(
+        unit_converter = motion.units_pixels_per_second_frame(
             self.length_unit_per_pixel, self.fps
         )
 
