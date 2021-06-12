@@ -1,13 +1,14 @@
-from dataclasses import dataclass, field
 from functools import cached_property, lru_cache
 from logging import getLogger
-from typing import Any, Sequence, SupportsFloat, SupportsInt, Union
+from pathlib import PurePath
+from typing import Any, Sequence, Union
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
 from bikipy.math.geometry import expand_parallelogram, order_parallelogram_corners
+from bikipy.utils.misc import read_image
 from bikipy.utils.video import get_video_data
 
 logger = getLogger(__name__)
@@ -18,7 +19,7 @@ class Perimeter:
         self,
         int_label: Union[int, None] = None,
         semantic_label: Union[str, None] = None,
-        inspect_image: Union[str, None] = None,
+        inspect_image: Union[str, PurePath, np.ndarray, None] = None,
     ):
         """
         Parameters
@@ -30,9 +31,21 @@ class Perimeter:
         inspect_image: Optional, string
             Label for the perimeter. Useful for manual audition and testing.
         """
-        self.int_label = int_label
-        self.semantic_label = semantic_label
-        self.inspect_image = inspect_image
+        self.int_label = int(int_label) if int_label else None
+        self.semantic_label = str(semantic_label) if semantic_label else None
+
+        if inspect_image:
+            self.inspect_image = inspect_image
+        else:
+            self._inspect_image = None
+
+    @property
+    def inspect_image(self):
+        return self._inspect_image
+
+    @inspect_image.setter
+    def inspect_image(self, value):
+        self._inspect_image = read_image(value, 0)
 
     def plot(self, ax: Any = None, points: Union[Sequence, None] = None):
         """
@@ -67,13 +80,21 @@ class Perimeter:
 
         return ax
 
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}\n\t"
+            f"ID={self.int_label}; label={self.semantic_label}\n\t"
+            f"inspect_image={self.inspect_image is not None}\n\t"
+            f"label={self.semantic_label}"
+        )
+
 
 class PolygonalPerimeter(Perimeter):
     def __init__(
         self,
-        perimeter_corners: Sequence[Sequence[SupportsFloat]],
-        perimeter_border_normal_metric_magnitude: Union[SupportsFloat, None] = None,
-        feature_scale: Union[Sequence[SupportsFloat], None] = None,
+        perimeter_corners: Sequence[Sequence[float]],
+        perimeter_border_normal_metric_magnitude: Union[float, None] = None,
+        feature_scale: Union[Sequence[float], None] = None,
         *args,
         **kwargs,
     ):
@@ -153,7 +174,7 @@ class PolygonalPerimeter(Perimeter):
         return self._perimeter_corners
 
     @perimeter_corners.setter
-    def perimeter_corners(self, corners: Sequence[Sequence[SupportsFloat]]):
+    def perimeter_corners(self, corners: Sequence[Sequence[float]]):
         corners = np.asarray(corners)
         if (number_of_sides := corners.shape[0]) == 4:
             self._perimeter_corners = order_parallelogram_corners(corners)
@@ -230,6 +251,7 @@ class PolygonalPerimeter(Perimeter):
         if inspect:
             ax = super().plot()
             ax.scatter(confined_coordinates.T[0], confined_coordinates.T[1], marker="x")
+            ax.set_tittle("Confined coordinates")
             plt.show()
 
         return confined_coordinates
@@ -237,7 +259,7 @@ class PolygonalPerimeter(Perimeter):
     @classmethod
     def detect_sequential_border_presence(
         cls,
-        coordinates: Sequence[Sequence[SupportsFloat]],
+        coordinates: Sequence[Sequence[float]],
         superior_poly_border_instances: Union[Sequence, None],
         inferior_poly_border_instances: Union[Sequence, None] = None,
         clean_outliers: bool = True,
@@ -308,7 +330,7 @@ class PolygonalPerimeter(Perimeter):
 
     def plot(
         self,
-        perimeter_border_normal_pixel_magnitude: Union[int, float, None] = None,
+        perimeter_border_normal_pixel_magnitude: Union[float, int, None] = None,
         **kwargs,
     ):
         """
@@ -359,6 +381,9 @@ class PolygonalPerimeter(Perimeter):
             return f"{self.int_label} {in_string}"
 
         return in_string
+
+    def __repr__(self):
+        return super().__repr__() + f"\n\tperimeter_corners={self.perimeter_corners}"
 
 
 class GenericPolygonalBorder(PolygonalPerimeter):

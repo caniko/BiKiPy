@@ -75,10 +75,10 @@ def location_filter(
         if inspection_ax is None:
             sns.set_theme(style="darkgrid")
             fig, inspection_ax = plt.subplots()
-        inspection_ax.set_title("Location filter")
+            inspection_ax.set_title("Location filter")
 
         if inspection_image:
-            inspection_ax.imshow(read_image(inspection_image))
+            inspection_ax.imshow(read_image(inspection_image), cmap='gray', vmin=0, vmax=255)
 
         not_result = ~result
         inspection_ax.scatter(*nose[nose_within_border & not_result].T)
@@ -128,7 +128,7 @@ def gaze_direction_filter(
         inspection_ax.scatter(*nose[result].T)
 
         if inspection_image:
-            inspection_ax.imshow(read_image(inspection_image))
+            inspection_ax.imshow(read_image(inspection_image), cmap='gray', vmin=0, vmax=255)
 
         if not inspection_ax:
             plt.show()
@@ -185,7 +185,6 @@ def attention_span_filter(
             if first_valid_index is not None:
                 observation_boolean_indices[first_valid_index:] = True
                 valid_frames_within_border += true_counter
-
             break
 
     if valid_frames_within_border == 0:
@@ -212,7 +211,7 @@ def nort_observation(
     torso: Sequence[Sequence[float]],
     fps: float,
     perimeter_border_normal_pixel_magnitude: float,
-    max_radians_gaze_and_object: float = 1 / 4 * np.pi,
+    max_radians_gaze_and_object: float = 1 / 3 * np.pi,
     inspect: bool = False,
     inspection_image: Any = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -286,7 +285,7 @@ def nort_observation(
             inspection_image = read_image(inspection_image)
             for rows in axes:
                 for ax in rows:
-                    ax.imshow(inspection_image)
+                    ax.imshow(inspection_image, cmap='gray', vmin=0, vmax=255)
 
         axes[1][0].set_title("Semi true object observation")
         axes[1][0].scatter(*nose[semi_true_observations].T)

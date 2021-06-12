@@ -66,6 +66,7 @@ def points_in_parallelogram(
         ax.scatter(*coordinates[result].T)
         ax.scatter(*coordinates[~result].T)
         ax.legend(("A", "corner_points", "B", "valid_points", "invalid_points"))
+        ax.set_title("Point in parallelogram")
 
         plt.show()
 

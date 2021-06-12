@@ -60,7 +60,7 @@ class YMazeTrial(BaseExperiment):
         self.y_maze_experiments = []
         for exp_id, coordinate_sequence in self.exp_id_vs_coordinate_sequences.items():
             experiment_area_set = self.exp_id_range_vs_area_sets[exp_id]
-            length_unit_per_pixel = self.center_triangle_meter_width / np.linalg.norm(
+            unit_per_pixel = self.center_triangle_meter_width / np.linalg.norm(
                 experiment_area_set["center"][0] - experiment_area_set["center"][1]
             )
 
@@ -81,7 +81,7 @@ class YMazeTrial(BaseExperiment):
                         self.feature_tracking_point
                     ],
                     fps=exp_fps,
-                    length_unit_per_pixel=length_unit_per_pixel,
+                    unit_per_pixel=unit_per_pixel,
                     label=exp_id,
                 )
             )
@@ -151,9 +151,9 @@ class YMazeTrial(BaseExperiment):
         index_vs_data = {}
         for y_maze in self.y_maze_experiments:
             index_vs_data[y_maze.semantic_label] = (
-                y_maze.displacement,
-                y_maze.mean_speed,
-                y_maze.mean_acceleration,
+                y_maze.total_displacement,
+                y_maze.median_speed,
+                y_maze.median_acceleration,
                 y_maze.spontaneous_alternations,
                 *tuple(y_maze.seconds_spent_in_areas.values()),
                 *tuple(y_maze.area_alternations.values()),

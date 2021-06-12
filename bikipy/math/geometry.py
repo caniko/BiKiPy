@@ -78,6 +78,7 @@ def expand_parallelogram(
             loc="center left",
         )
 
+        plt.title("Parallelogram expansion")
         plt.show()
 
     return off_down_left, off_down_right, off_up_left, off_up_right

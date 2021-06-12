@@ -48,14 +48,9 @@ class ParallelogramPerimeter(PolygonalPerimeter):
             msg = "No data that can be used for defining base and apex were given"
             raise ValueError(msg)
 
-    def __str__(self):
-        return (
-            f"{self.__class__.__name__}(\n\t"
-            f"base={self.base.tolist()},\n\t"
-            f"apex={self.apex.tolist()},\n\t"
-            f'inspect_image="{self.inspect_image}",\n\t'
-            f'label="{self.semantic_label}"\n'
-            ")"
+    def __repr__(self):
+        return super().__repr__() + (
+            f"\n\tbase={self.base.tolist()},\n\t" f"apex={self.apex.tolist()},\n\t"
         )
 
     @classmethod

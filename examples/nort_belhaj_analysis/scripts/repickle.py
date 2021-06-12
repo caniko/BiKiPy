@@ -43,7 +43,6 @@ def renamed_load(file_obj):
 
 def deserialise_generic(obj):
     return {
-        "inspect_image": obj.guiding_image,
         "perimeter_corners": obj.sides,
     }
 
@@ -56,13 +55,16 @@ for annotation_obj_path in B_PICKLE_PATHS:
         gen_poly_seq[i] = NortObjectField(
             label=int(gen_poly.label),
             constant_object_perimeter=PolygonalPerimeter(
-                **deserialise_generic(gen_poly.constant_object)
+                inspect_image=annotation_obj_path.parent / f"training_{i+1}.png",
+                **deserialise_generic(gen_poly.constant_object),
             ),
             variable_object_perimeter=PolygonalPerimeter(
-                **deserialise_generic(gen_poly.variable_object)
+                inspect_image=annotation_obj_path.parent / f"training_{i+1}.png",
+                **deserialise_generic(gen_poly.variable_object),
             ),
             novel_object_perimeter=PolygonalPerimeter(
-                **deserialise_generic(gen_poly.novel_object)
+                inspect_image=annotation_obj_path.parent / f"novel_{i+1}.png",
+                **deserialise_generic(gen_poly.novel_object),
             ),
         )
 
@@ -82,6 +84,22 @@ round_vs_field_vs_apparatus = {
     for rem_round, field_apparatus in zip(round_keys, round_vs_field_apparatus.values())
 }
 
-for (key, value), path in zip(round_vs_field_vs_apparatus.items(), NEW_A_PICKLE_PATHS):
+for (round_number, apparatuses), path in zip(
+    round_vs_field_vs_apparatus.items(), NEW_A_PICKLE_PATHS
+):
+    for app_id, apparatus in enumerate(apparatuses):
+        apparatuses[app_id].constant_object_perimeter.inspect_image = (
+            path.parent / f"training_{apparatus.label}.png"
+        )
+        apparatuses[app_id].variable_object_perimeter.inspect_image = (
+            path.parent / f"training_{apparatus.label}.png"
+        )
+        apparatuses[app_id].novel_object_perimeter.inspect_image = (
+            path.parent / f"novel_{apparatus.label}.png"
+        )
+        if apparatuses[app_id].novelty_constant_object_perimeter:
+            apparatuses[app_id].novelty_constant_object_perimeter.inspect_image = (
+                path.parent / f"novel_{apparatus.label}.png"
+            )
     with open(path, "wb") as outfile:
-        pickle.dump(value, outfile)
+        pickle.dump(apparatuses, outfile)

@@ -79,7 +79,7 @@ def round_vs_apparatus_to_general_nort_fields(
     for field_key in field_keys:
         field_temp_store = {}
         for rem_round in rounds:
-            exp_name = NortExperiment.trial_label_to_experiment_class_name[rem_round]
+            exp_name = NortExperiment.trial_label_to_trial_class_name[rem_round]
             if exp_name == "training":
                 field_temp_store[
                     "constant_object_perimeter"

@@ -144,7 +144,7 @@ class DeepLabCutReader(BaseReader):
                     new_data=midpoint_dict,
                 )
 
-        self.valid_point_boolean_indices = {
+        self.region_of_interest_vs_boolean_index = {
             roi: self.df[(roi, "likelihood")].values >= self.min_likelihood
             for roi in self.regions_of_interest
         }
@@ -219,9 +219,7 @@ class DeepLabCutReader(BaseReader):
         )
 
     @classmethod
-    def from_hdf(
-        cls, hdf_path: str, drop_level: bool = True, **kwargs
-    ):
+    def from_hdf(cls, hdf_path: str, drop_level: bool = True, **kwargs):
         """
         Initialize class using data from a hdf file
 
@@ -403,7 +401,7 @@ class DeepLabCutReader(BaseReader):
             coordinates = np.delete(self.df[item].values, 2, 1)
 
             # clean values beneath min likelihood
-            coordinates[~self.valid_point_boolean_indices[item]] = np.nan
+            coordinates[~self.region_of_interest_vs_boolean_index[item]] = np.nan
 
             return coordinates
 

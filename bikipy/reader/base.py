@@ -42,7 +42,9 @@ class BaseReader:
                 msg = f"x and y max are integers; not {self.res_horizontal}; {self.res_vertical}"
                 raise AttributeError(msg)
         elif video_path:
-            _, self.res_horizontal, self.res_vertical, self.fps = get_video_data(data_path)
+            _, self.res_horizontal, self.res_vertical, self.fps = get_video_data(
+                data_path
+            )
             self.pixel_resolution = (self.res_horizontal, self.res_vertical)
 
         self.df = df
@@ -56,22 +58,22 @@ class BaseReader:
         self.data_path = data_path
         self.data_label = data_label
 
-        self._valid_point_boolean_indices = None
+        self._region_of_interest_vs_boolean_index = None
         self._valid_point_indices = None
         self._valid_tails = None
         self._valid_slices = None
         self._validity_ratio = None
 
     @property
-    def valid_point_boolean_indices(self):
-        return self._valid_point_boolean_indices
+    def region_of_interest_vs_boolean_index(self):
+        return self._region_of_interest_vs_boolean_index
 
-    @valid_point_boolean_indices.setter
-    def valid_point_boolean_indices(self, boolean_index: Sequence):
-        self._valid_point_boolean_indices = np.asarray(boolean_index, dtype=bool)
+    @region_of_interest_vs_boolean_index.setter
+    def region_of_interest_vs_boolean_index(self, value: dict):
+        self._region_of_interest_vs_boolean_index = dict(value)
 
         self._valid_point_indices = {
-            roi: np.where(self._valid_point_boolean_indices[roi])[0]
+            roi: np.where(self.region_of_interest_vs_boolean_index[roi])[0]
             for roi in self.regions_of_interest
         }
 
@@ -91,22 +93,22 @@ class BaseReader:
         }
 
         self._validity_ratio = {
-            roi: np.sum(self.valid_point_boolean_indices[roi]) / self.df[
-                (roi, "x")].size
+            roi: np.sum(self.region_of_interest_vs_boolean_index[roi])
+            / self.df[(roi, "x")].size
             for roi in self.regions_of_interest
         }
 
     @property
     def valid_slices(self):
         if not self._valid_slices:
-            msg = "valid_point_boolean_indices has to be defined for the definition of valid_slices"
+            msg = "region_of_interest_vs_boolean_index has to be defined for the definition of valid_slices"
             raise AttributeError(msg)
         return self._valid_slices
 
     @property
     def validity_ratio(self):
         if not self._validity_ratio:
-            msg = "valid_point_boolean_indices has to be defined for the definition of validity_ratio"
+            msg = "region_of_interest_vs_boolean_index has to be defined for the definition of validity_ratio"
             raise AttributeError(msg)
         return self._validity_ratio
 

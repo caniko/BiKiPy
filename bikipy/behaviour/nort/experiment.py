@@ -208,8 +208,8 @@ class NortExperiment(BaseExperiment):
             category = str(category)
             return (
                 ("Displacement", category),
-                ("Mean speed", category),
-                ("Mean acceleration", category),
+                ("Median speed", category),
+                ("Median acceleration", category),
             )
 
         habituation_columns = [

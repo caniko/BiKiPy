@@ -83,7 +83,8 @@ with pd.ExcelWriter(
                 "animal_id": (animal_id := exp_vs_animal[trial_id]),
                 "inspect": False,
             }
-            if trial_id == 82:
+
+            if trial_id == 56:
                 trial_id_range_vs_exp_meta[trial_id]["inspect"] = True
 
             if stage != "habituation":
@@ -100,7 +101,7 @@ with pd.ExcelWriter(
             nort_field_vs_apparatus=nort_field_vs_apparatus,
             perimeter_border_normal_metric_magnitude=0.06,
             center_size_metric_length=0.2,
-            max_radians_gaze_and_object=0.33 * np.pi,
+            max_radians_gaze_and_object=0.333333 * np.pi,
             trial_id_vs_coordinate_data_path=trial_id_vs_coordinate_data_path,
             # func_inspect=True,
             init_from="parquet",

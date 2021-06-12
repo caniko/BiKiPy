@@ -1,10 +1,10 @@
 from logging import getLogger
-from typing import Any, Sequence, SupportsFloat, Union
+from typing import Any, Sequence, Iterable, Union
 
 import numpy as np
 import pandas as pd
 
-from bikipy.feature import motion
+from bikipy.feature.motion import total_displacement_median_speed_acceleration
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.misc import resolve_stem_in_filepath
 
@@ -15,9 +15,9 @@ class BaseTrial:
     def __init__(
         self,
         coordinate_sequence: Any,
-        length_unit_per_pixel: float,
+        unit_per_pixel: float,
         fps: Union[float, None] = None,
-        recording_resolution: Union[Sequence[int], None] = None,
+        recording_resolution: Union[Iterable[int], None] = None,
         movement_feature_point_label: Union[str, None] = None,
         label: Any = None,
         func_inspect: bool = False,
@@ -28,15 +28,15 @@ class BaseTrial:
         ----------
         coordinate_sequence: Sequence
             The coordinates of the subject across the frames in the video recording
-        fps: SupportsFloat
+        fps: float
             Number of frames per second
-        length_unit_per_pixel: SupportsFloat
+        unit_per_pixel: float
             Number defining the number of pixels that goes into one centimeter
         label: Any; optional
         """
 
         self.fps = fps
-        self.length_unit_per_pixel = float(length_unit_per_pixel)
+        self.unit_per_pixel = float(unit_per_pixel)
         self.label = label
         self.func_inspect = func_inspect
         self.inspect_image = inspect_image
@@ -64,54 +64,12 @@ class BaseTrial:
 
         self.experiment_seconds = self.coordinates_per_frame.shape[0] / self.fps
 
-        self.displacement_per_frame = motion.displacement_per_frame(
-            self.coordinates_per_frame
-        )
-        self.acceleration_per_frame = np.abs(
-            np.diff(self.displacement_per_frame, axis=0)
-        )
-
         (
-            self.displacement,
-            self.mean_speed,
-            self.mean_acceleration,
-        ) = np.array(motion.displacement_mean_speed_acceleration(
-            self.coordinates_per_frame, self.fps, self.length_unit_per_pixel
-        ))
-
-    def compute_movement_features_over_boolean_index(
-        self, boolean_index: Sequence[bool]
-    ):
-        boolean_index = np.asarray(boolean_index)
-
-        start = None
-        displacements, accelerations = [], []
-        for i, b_idx in enumerate(boolean_index):
-            if b_idx and start is None:
-                start = i
-            elif not b_idx and start is not None:
-                if i - start <= self.fps / 3:
-                    continue
-
-                displacements.append(self.displacement_per_frame[start : i - 1])
-                accelerations.append(self.acceleration_per_frame[start : i - 2])
-
-                start = None
-
-        if not displacements:
-            return 0, 0, 0
-
-        displacements = np.concatenate(displacements)
-        accelerations = np.concatenate(accelerations)
-
-        unit_converter = motion.units_pixels_per_second_frame(
-            self.length_unit_per_pixel, self.fps
-        )
-
-        return (
-            np.sum(displacements) * self.length_unit_per_pixel,  # total_displacement
-            np.mean(displacements) * unit_converter,  # average speed
-            np.mean(accelerations) * unit_converter,  # average acceleration
+            self.total_displacement,
+            self.median_speed,
+            self.median_acceleration,
+        ) = total_displacement_median_speed_acceleration(
+            self.coordinates_per_frame, self.unit_per_pixel, self.fps
         )
 
 
@@ -119,7 +77,7 @@ class BaseExperiment:
     def __init__(
         self,
         trial_id_vs_coordinate_data_path: dict,
-        fps: Union[dict, SupportsFloat, None] = None,
+        fps: Union[dict, float, None] = None,
         coordinate_data_format: str = "deeplabcut",
         label: Any = None,
         func_inspect: bool = False,

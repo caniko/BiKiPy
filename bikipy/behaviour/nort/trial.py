@@ -14,6 +14,7 @@ from compress_pickle import compress_pickle
 from bikipy.behaviour.base import BaseTrial
 from bikipy.behaviour.nort.observation import nort_observation
 from bikipy.behaviour.utils import python_reduce_repeating_sequences
+from bikipy.feature.motion import total_displacement_median_speed_acceleration
 from bikipy.perimeter.base import PolygonalPerimeter
 from bikipy.math.point_in_polygon import points_in_parallelogram
 
@@ -53,14 +54,12 @@ class NortHabituationTrial(BaseTrial):
 
         super().__init__(
             *base_experiment_args,
-            length_unit_per_pixel=(
+            unit_per_pixel=(
                 self.experiment_box_metric_length / min(recording_resolution)
             ),
             recording_resolution=recording_resolution,
             **base_experiment_kwargs,
         )
-
-        self.total_displacement = np.sum(self.displacement)
 
         self.center_size_metric_length = float(center_size_metric_length)
         assert self.experiment_box_metric_length > self.center_size_metric_length
@@ -114,13 +113,15 @@ class NortHabituationTrial(BaseTrial):
         self.seconds_in_periphery = np.sum(self.periphery_boolean_indices) / self.fps
 
         (
-            self.center_displacement,
-            self.center_mean_speed,
-            self.center_mean_acceleration,
-        ) = self.compute_movement_features_over_boolean_index(
-            self.center_boolean_indices
+            self.center_total_displacement,
+            self.center_median_speed,
+            self.center_median_acceleration,
+        ) = total_displacement_median_speed_acceleration(
+            self.coordinates_per_frame[self.center_boolean_indices],
+            self.unit_per_pixel,
+            self.fps,
         )
-        if not self.center_displacement or self.center_displacement == 0:
+        if not self.center_total_displacement or self.center_total_displacement == 0:
             self.center_boolean_indices = points_in_parallelogram(
                 self.center_square[0],
                 self.center_square[3],
@@ -129,18 +130,14 @@ class NortHabituationTrial(BaseTrial):
                 inspect_points=self.func_inspect,
             )
         (
-            self.periphery_displacement,
-            self.periphery_mean_speed,
-            self.periphery_mean_acceleration,
-        ) = self.compute_movement_features_over_boolean_index(
-            self.periphery_boolean_indices
+            self.periphery_total_displacement,
+            self.periphery_median_speed,
+            self.periphery_median_acceleration,
+        ) = total_displacement_median_speed_acceleration(
+            self.coordinates_per_frame[self.periphery_boolean_indices],
+            self.unit_per_pixel,
+            self.fps,
         )
-
-        self.total_displacement = self.periphery_displacement + self.center_displacement
-        self.mean_speed = (self.center_mean_speed + self.periphery_mean_speed) / 2.0
-        self.mean_acceleration = (
-            self.center_mean_acceleration + self.periphery_mean_acceleration
-        ) / 2.0
 
         # 1 is center, 2 is periphery, 0 is invalid aka unknown
         self.location_sequence = np.zeros_like(
@@ -155,9 +152,7 @@ class NortHabituationTrial(BaseTrial):
         self.center_entries = np.sum(self.location_sequence == 1)
         self.periphery_entries = np.sum(self.location_sequence == 2)
 
-    def non_square_rectification(
-        self, x_bias: SupportsFloat = 0.0, y_bias: SupportsFloat = 0.0
-    ):
+    def non_square_rectification(self, x_bias: float = 0.0, y_bias: float = 0.0):
         if (x_bias := float(x_bias)) and (y_bias := float(y_bias)):
             raise ValueError
 
@@ -185,14 +180,14 @@ class NortHabituationTrial(BaseTrial):
     def info(self):
         return [
             self.total_displacement,
-            self.mean_speed,
-            self.mean_acceleration,
-            self.periphery_displacement,
-            self.periphery_mean_speed,
-            self.periphery_mean_acceleration,
-            self.center_displacement,
-            self.center_mean_speed,
-            self.center_mean_acceleration,
+            self.median_speed,
+            self.median_acceleration,
+            self.periphery_total_displacement,
+            self.periphery_median_speed,
+            self.periphery_median_acceleration,
+            self.center_total_displacement,
+            self.center_median_speed,
+            self.center_median_acceleration,
             self.periphery_entries,
             self.center_entries,
             self.seconds_in_periphery,
@@ -207,11 +202,11 @@ class NortHabituationTrial(BaseTrial):
         else:
             logger.warning("inspect_image is not defined will plot without")
 
-        for i in range((max := len(self.center_square))):
+        for i in range((length := len(self.center_square))):
             next_i = i + 1
             ax.plot(
                 self.center_square[i],
-                self.center_square[next_i if next_i != max else 0],
+                self.center_square[next_i if next_i != length else 0],
             )
 
         return ax
@@ -248,7 +243,7 @@ class NortTrainingTrial(NortHabituationTrial):
             perimeter_border_normal_metric_magnitude
         )
         self.perimeter_border_normal_pixel_magnitude = (
-            self.perimeter_border_normal_metric_magnitude / self.length_unit_per_pixel
+            self.perimeter_border_normal_metric_magnitude / self.unit_per_pixel
         )
 
         (
@@ -362,7 +357,7 @@ class NortObjectField:
     constant_object_perimeter: PolygonalPerimeter
     variable_object_perimeter: PolygonalPerimeter
     novel_object_perimeter: PolygonalPerimeter
-    novelty_constant_object_perimeter: Union[PolygonalPerimeter, None] = None
+    novelty_constant_object_perimeter: Union[PolygonalPerimeter, None] = field(default=None)
 
     def __post_init__(self):
         if self.novelty_constant_object_perimeter:
@@ -422,6 +417,7 @@ class NortObjectField:
         return NortTrainingTrial(
             nort_a=self.constant_object_perimeter,
             nort_b=self.variable_object_perimeter,
+            inspect_image=self.constant_object_perimeter.inspect_image,
             *args,
             **kwargs,
         )
@@ -431,6 +427,7 @@ class NortObjectField:
             nort_a=self.novelty_constant_object_perimeter
             or self.constant_object_perimeter,
             nort_b=self.novel_object_perimeter,
+            inspect_image=self.novel_object_perimeter.inspect_image,
             *args,
             **kwargs,
         )

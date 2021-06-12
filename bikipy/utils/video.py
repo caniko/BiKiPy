@@ -22,16 +22,16 @@ def get_video_data(video_path, frame_time: Union[str, int, None] = None):
     video_path = Path(video_path).resolve()
     assert video_path.exists()
 
-    frame_time = frame_time.lower()
-
     cap = cv2.VideoCapture(str(video_path))
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    msg = f"frame_time can only be defined as halfway, start, end, or integer; " \
-          f"not {type(frame_time)}"
+    msg = (
+        f"frame_time can only be defined as halfway, start, end, or integer; "
+        f"not {type(frame_time)}"
+    )
     if frame_time:
         if isinstance(frame_time, str):
-            if frame_time == "middle":
+            if (frame_time := frame_time.lower()) == "middle":
                 target_frame_index = round(frame_count / 2.0)
             elif frame_time == "start" or frame_time == "beginning":
                 target_frame_index = 0
@@ -39,10 +39,8 @@ def get_video_data(video_path, frame_time: Union[str, int, None] = None):
                 target_frame_index = frame_count
             else:
                 raise ValueError(msg)
-
         elif isinstance(frame_time, int):
             target_frame_index = frame_time
-
         else:
             raise ValueError(msg)
 
