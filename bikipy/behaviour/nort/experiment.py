@@ -1,17 +1,14 @@
+from collections.abc import Mapping, Sequence
 from functools import cached_property
 from logging import getLogger
-from collections.abc import Sequence, Mapping
-from typing import Union, SupportsFloat
+from typing import SupportsFloat, Union
 
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
 from bikipy.behaviour.base import BaseExperiment
-from bikipy.behaviour.nort.trial import (
-    NortHabituationTrial,
-    NortObjectField,
-)
+from bikipy.behaviour.nort.trial import NortHabituationTrial, NortObjectField
 from bikipy.utils.store import sort_dict_by_key_value
 
 logger = getLogger(__name__)
@@ -207,9 +204,9 @@ class NortExperiment(BaseExperiment):
         def movement_feature(category):
             category = str(category)
             return (
-                ("Displacement", category),
-                ("Median speed", category),
-                ("Median acceleration", category),
+                (category, "Displacement"),
+                (category, "Median speed"),
+                (category, "Median acceleration"),
             )
 
         habituation_columns = [

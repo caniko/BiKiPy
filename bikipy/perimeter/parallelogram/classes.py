@@ -4,8 +4,6 @@ from typing import Any, Sequence, SupportsFloat, SupportsInt, Union
 import matplotlib.pyplot as plt
 import numpy as np
 
-from bikipy.perimeter.base import PolygonalPerimeter
-from bikipy.perimeter.parallelogram.draw import parallelogram_input
 from bikipy.math.geometry import order_parallelogram_corners
 from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.math.vector import (
@@ -13,6 +11,8 @@ from bikipy.math.vector import (
     orthogonal_unit_vector,
     unit_vector,
 )
+from bikipy.perimeter.base import PolygonalPerimeter
+from bikipy.perimeter.parallelogram.draw import parallelogram_input
 
 logger = getLogger(__name__)
 

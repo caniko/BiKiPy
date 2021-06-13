@@ -1,5 +1,6 @@
-from logging import getLogger
 from collections.abc import Sequence
+from logging import getLogger
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -9,7 +10,9 @@ from bikipy.math.calculus import absolute_derivative
 logger = getLogger(__name__)
 
 
-def units_pixels_per_second_frame(units_per_pixel: float, fps: float):
+def units_pixels_per_second_frame(
+    units_per_pixel: Union[float, int], fps: Union[float, int]
+):
     return units_per_pixel * fps
 
 
@@ -25,12 +28,15 @@ def displacement_per_frame(
     ----------
     coordinate_sequence
         The respective coordinate sequence
+    interpolation_method
 
     Returns
     -------
     np.ndarray with pixel displacement per frame
     """
-    if np.all((magnitudes := np.linalg.norm(coordinate_sequence, axis=1))):
+    if not np.any(np.isnan((
+        magnitudes := np.linalg.norm(coordinate_sequence, axis=1))
+    )):
         return absolute_derivative(magnitudes)
 
     logger.debug(
@@ -75,3 +81,37 @@ def total_displacement_median_speed_acceleration(
         )
     else:
         return 0, 0, 0
+
+
+class Motion:
+    def __init__(
+        self,
+        coordinate_sequence: Sequence[Sequence[float]],
+        unit_per_pixel: float,
+        fps: float,
+    ):
+        self.metric_displacement_per_frame = (
+            displacement_per_frame(coordinate_sequence) * unit_per_pixel
+        )
+
+        self.total_displacement = np.nansum(self.metric_displacement_per_frame)
+        if self.total_displacement:
+            self.speed = absolute_derivative(
+                self.metric_displacement_per_frame) * fps
+            self.median_speed = np.nanmedian(self.speed)
+
+            self.acceleration = absolute_derivative(self.speed)
+            self.median_acceleration = np.nanmedian(self.acceleration)
+        else:
+            self.speed = None
+            self.median_speed = None
+
+            self.acceleration = None
+            self.median_acceleration = None
+
+    def to_list(self):
+        return [
+            self.total_displacement,
+            self.median_speed,
+            self.median_acceleration,
+        ]

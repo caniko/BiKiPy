@@ -1,6 +1,6 @@
 import itertools as it
-from logging import getLogger
 from collections.abc import Sequence
+from logging import getLogger
 from typing import SupportsInt
 
 import numpy as np
@@ -108,10 +108,3 @@ def python_reduce_repeating_sequences(
         )
 
     return reduced_str_sequence
-
-
-def reduce_repeating_sequences(array: np.ndarray):
-    array = np.asarray(array)
-    unique, index = np.unique(array, return_index=True)
-
-    result = []

@@ -5,7 +5,7 @@ These tests can be grouped together to form entire experiments.
 from dataclasses import dataclass, field
 from logging import getLogger
 from pathlib import Path
-from typing import Any, SupportsFloat, Iterable, Union
+from typing import Any, Iterable, SupportsFloat, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,9 +14,9 @@ from compress_pickle import compress_pickle
 from bikipy.behaviour.base import BaseTrial
 from bikipy.behaviour.nort.observation import nort_observation
 from bikipy.behaviour.utils import python_reduce_repeating_sequences
-from bikipy.feature.motion import total_displacement_median_speed_acceleration
-from bikipy.perimeter.base import PolygonalPerimeter
+from bikipy.feature.motion import Motion, total_displacement_median_speed_acceleration
 from bikipy.math.point_in_polygon import points_in_parallelogram
+from bikipy.perimeter.base import PolygonalPerimeter
 
 logger = getLogger(__name__)
 
@@ -104,36 +104,17 @@ class NortHabituationTrial(BaseTrial):
             self.coordinates_per_frame,
             inspect_points=self.func_inspect,
         )
-        self.periphery_boolean_indices = np.logical_and(
-            ~self.center_boolean_indices,
-            np.logical_and(*np.isfinite(self.coordinates_per_frame).T),
-        )
+        self.periphery_boolean_indices = ~self.center_boolean_indices
 
-        self.seconds_in_center = np.sum(self.center_boolean_indices) / self.fps
-        self.seconds_in_periphery = np.sum(self.periphery_boolean_indices) / self.fps
+        self.seconds_on_center = np.sum(self.center_boolean_indices) / self.fps
+        self.seconds_on_periphery = np.sum(self.periphery_boolean_indices) / self.fps
 
-        (
-            self.center_total_displacement,
-            self.center_median_speed,
-            self.center_median_acceleration,
-        ) = total_displacement_median_speed_acceleration(
+        self.center_motion = Motion(
             self.coordinates_per_frame[self.center_boolean_indices],
             self.unit_per_pixel,
             self.fps,
         )
-        if not self.center_total_displacement or self.center_total_displacement == 0:
-            self.center_boolean_indices = points_in_parallelogram(
-                self.center_square[0],
-                self.center_square[3],
-                self.center_square[1],
-                self.coordinates_per_frame,
-                inspect_points=self.func_inspect,
-            )
-        (
-            self.periphery_total_displacement,
-            self.periphery_median_speed,
-            self.periphery_median_acceleration,
-        ) = total_displacement_median_speed_acceleration(
+        self.periphery_motion = Motion(
             self.coordinates_per_frame[self.periphery_boolean_indices],
             self.unit_per_pixel,
             self.fps,
@@ -178,20 +159,15 @@ class NortHabituationTrial(BaseTrial):
         )
 
     def info(self):
-        return [
-            self.total_displacement,
-            self.median_speed,
-            self.median_acceleration,
-            self.periphery_total_displacement,
-            self.periphery_median_speed,
-            self.periphery_median_acceleration,
-            self.center_total_displacement,
-            self.center_median_speed,
-            self.center_median_acceleration,
+        return (
+            self.motion.to_list()
+            + self.periphery_motion.to_list()
+            + self.center_motion.to_list()
+        ) + [
             self.periphery_entries,
             self.center_entries,
-            self.seconds_in_periphery,
-            self.seconds_in_center,
+            self.seconds_on_periphery,
+            self.seconds_on_center,
         ]
 
     def plot(self, ax: Any = None):
@@ -314,10 +290,9 @@ class NortTrainingTrial(NortHabituationTrial):
             nose,
             torso,
             self.fps,
-            self.max_radians_gaze_and_object,
             self.perimeter_border_normal_pixel_magnitude,
+            self.max_radians_gaze_and_object,
             inspect=self.func_inspect,
-            inspection_image=self.inspect_image,
         )
 
     def plot(self, ax: Any = None):
@@ -357,12 +332,14 @@ class NortObjectField:
     constant_object_perimeter: PolygonalPerimeter
     variable_object_perimeter: PolygonalPerimeter
     novel_object_perimeter: PolygonalPerimeter
-    novelty_constant_object_perimeter: Union[PolygonalPerimeter, None] = field(default=None)
+    novelty_constant_object_perimeter: Union[PolygonalPerimeter, None] = field(
+        default=None
+    )
 
     def __post_init__(self):
         if self.novelty_constant_object_perimeter:
-            self.constant_object_perimeter.semantic_label = "habituation_constant"
-            self.novelty_constant_object_perimeter.semantic_label = "novelty_constant"
+            self.constant_object_perimeter.semantic_label = "training_constant"
+            self.novelty_constant_object_perimeter.semantic_label = "novel_constant"
         else:
             self.constant_object_perimeter.semantic_label = "constant"
 
@@ -381,7 +358,7 @@ class NortObjectField:
                 habituation_img, n=polygon_n
             ),
             novel_object_perimeter=PolygonalPerimeter.from_image(
-                novelty_img, n=polygon_n, semantic_label="novel"
+                novelty_img, n=polygon_n
             ),
         )
 
@@ -392,7 +369,6 @@ class NortObjectField:
         habituation_object_perimeter_a: PolygonalPerimeter,
         habituation_object_perimeter_b: PolygonalPerimeter,
         novel_object_perimeter: PolygonalPerimeter,
-        novelty_constant_object_perimeter: Union[PolygonalPerimeter, None] = None,
     ):
         if PolygonalPerimeter.distance_between_two_vectors(
             habituation_object_perimeter_a, novel_object_perimeter
@@ -410,7 +386,6 @@ class NortObjectField:
             constant_object_perimeter,
             variable_object_perimeter,
             novel_object_perimeter,
-            novelty_constant_object_perimeter,
         )
 
     def training(self, *args, **kwargs) -> NortTrainingTrial:
@@ -441,10 +416,3 @@ class NortObjectField:
 
         with open(filepath, "wb") as f:
             compress_pickle.dump(self, f)
-
-
-@dataclass(frozen=True, order=True)
-class NortTrainingToNovelty:
-    animal_id: int
-    training: NortTrainingTrial = field(compare=False)
-    novelty: NortNoveltyTrial = field(compare=False)

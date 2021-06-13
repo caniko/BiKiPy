@@ -1,10 +1,11 @@
+from functools import lru_cache
 from logging import getLogger
-from typing import Any, Sequence, Iterable, Union
+from typing import Any, Iterable, Sequence, Union
 
 import numpy as np
 import pandas as pd
 
-from bikipy.feature.motion import total_displacement_median_speed_acceleration
+from bikipy.feature.motion import Motion, total_displacement_median_speed_acceleration
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.misc import resolve_stem_in_filepath
 
@@ -64,13 +65,36 @@ class BaseTrial:
 
         self.experiment_seconds = self.coordinates_per_frame.shape[0] / self.fps
 
-        (
-            self.total_displacement,
-            self.median_speed,
-            self.median_acceleration,
-        ) = total_displacement_median_speed_acceleration(
-            self.coordinates_per_frame, self.unit_per_pixel, self.fps
-        )
+        self.motion = Motion(self.coordinates_per_frame, self.unit_per_pixel, self.fps)
+
+    @lru_cache
+    def freezing_time(self, *displacements, second_threshold: float = 1.0, metric_displacement_threshold: float = 0.005):
+        def thresh_cumsum(displacement_per_frame):
+            result = np.zeros_like(displacement_per_frame, dtype=bool)
+
+            start, end = 0, frame_threshold
+            while True:
+                cumulative = np.sum(displacement_per_frame[start:end])
+                if cumulative > metric_displacement_threshold:
+                    if end - start > frame_threshold:
+                        result[start:end] = True
+                        start = end + 1
+                        end += frame_threshold
+                    else:
+                        start += 1
+                        end += 1
+                else:
+                    end += 1
+
+                if result.shape[0] <= end:
+                    break
+
+            return result
+
+        frame_threshold = round(second_threshold * self.fps)
+        thresholded = map(thresh_cumsum, displacements)
+
+        return
 
 
 class BaseExperiment:
@@ -108,13 +132,3 @@ class BaseExperiment:
         else:
             msg = f"{self.coordinate_data_format} as a format for data ingestion has no implementation"
             raise NotImplemented(msg)
-
-    def to_ods(self, filepath: Any) -> None:
-        filepath = resolve_stem_in_filepath(filepath)
-        result = dict(self.export_to_dataframe())
-
-        with pd.ExcelWriter(filepath) as writer:
-            for time, trial in result.items():
-                trial.to_excel(writer, sheet_name=time)
-
-        logger.info(f"ODS file saved to: {filepath}")

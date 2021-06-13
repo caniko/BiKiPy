@@ -151,9 +151,9 @@ class YMazeTrial(BaseExperiment):
         index_vs_data = {}
         for y_maze in self.y_maze_experiments:
             index_vs_data[y_maze.semantic_label] = (
-                y_maze.total_displacement,
-                y_maze.median_speed,
-                y_maze.median_acceleration,
+                y_maze.motion.total_displacement,
+                y_maze.motion.median_speed,
+                y_maze.motion.median_acceleration,
                 y_maze.spontaneous_alternations,
                 *tuple(y_maze.seconds_spent_in_areas.values()),
                 *tuple(y_maze.area_alternations.values()),

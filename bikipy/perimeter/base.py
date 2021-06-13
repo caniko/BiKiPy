@@ -34,7 +34,7 @@ class Perimeter:
         self.int_label = int(int_label) if int_label else None
         self.semantic_label = str(semantic_label) if semantic_label else None
 
-        if inspect_image:
+        if inspect_image is not None:
             self.inspect_image = inspect_image
         else:
             self._inspect_image = None
@@ -67,7 +67,7 @@ class Perimeter:
             fig, ax = plt.subplots()
 
         if self.inspect_image is not None:
-            ax.imshow(cv2.imread(str(self.inspect_image)))
+            ax.imshow(read_image(self.inspect_image), cmap="gray", vmin=0, vmax=255)
 
         if points is not None:
             points = np.asarray(points)
@@ -93,7 +93,6 @@ class PolygonalPerimeter(Perimeter):
     def __init__(
         self,
         perimeter_corners: Sequence[Sequence[float]],
-        perimeter_border_normal_metric_magnitude: Union[float, None] = None,
         feature_scale: Union[Sequence[float], None] = None,
         *args,
         **kwargs,
@@ -104,14 +103,6 @@ class PolygonalPerimeter(Perimeter):
         self.feature_scale = feature_scale or None
 
         self.centroid = np.mean(perimeter_corners, axis=1)
-
-        if perimeter_border_normal_metric_magnitude:
-            self.perimeter_border_normal_metric_magnitude = (
-                perimeter_border_normal_metric_magnitude
-            )
-        else:
-            self._perimeter_border_normal_metric_magnitude = None
-            self._border_corners = None
 
     def __getitem__(self, item: int):
         return self.perimeter_corners[item]
@@ -203,7 +194,10 @@ class PolygonalPerimeter(Perimeter):
         return np.linalg.norm(border_a.centroid - border_b.centroid)
 
     @lru_cache
-    def border(self, perimeter_border_normal_pixel_magnitude: Union[float, int]):
+    def border(
+        self,
+        perimeter_border_normal_pixel_magnitude: Union[float, int],
+    ):
         """
 
         Parameters
@@ -215,11 +209,14 @@ class PolygonalPerimeter(Perimeter):
         -------
 
         """
-        return self.__class__(
+        border_obj = self.__class__(
             expand_parallelogram(
                 self.perimeter_corners, perimeter_border_normal_pixel_magnitude
-            )
+            ),
+            inspect_image=self.inspect_image,
         )
+
+        return border_obj
 
     def confined_coordinate_indices(self, coordinates: Sequence):
         raise NotImplementedError

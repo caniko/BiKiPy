@@ -37,7 +37,7 @@ META_DATA = DATA_DIR / "nort_round_1.xlsx"
 # META_DATA = DATA_DIR / "nort_round_2.xlsx"
 
 
-EXP_ID_REGEX_PATTERN = re.compile("\d+")
+EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
 
 with pd.ExcelWriter(
@@ -84,9 +84,6 @@ with pd.ExcelWriter(
                 "inspect": False,
             }
 
-            if trial_id == 56:
-                trial_id_range_vs_exp_meta[trial_id]["inspect"] = True
-
             if stage != "habituation":
                 trial_id_range_vs_exp_meta[trial_id]["field"] = animal_id_vs_app[
                     animal_id
@@ -99,9 +96,9 @@ with pd.ExcelWriter(
             eye_center_label="mid-left_ear-right_ear",
             torso_label="mid-mid-left_ear-right_ear-tail",
             nort_field_vs_apparatus=nort_field_vs_apparatus,
-            perimeter_border_normal_metric_magnitude=0.06,
+            perimeter_border_normal_metric_magnitude=0.04,
             center_size_metric_length=0.2,
-            max_radians_gaze_and_object=0.333333 * np.pi,
+            max_radians_gaze_and_object=0.25 * np.pi,
             trial_id_vs_coordinate_data_path=trial_id_vs_coordinate_data_path,
             # func_inspect=True,
             init_from="parquet",

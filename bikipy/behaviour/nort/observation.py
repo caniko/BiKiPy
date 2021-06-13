@@ -1,17 +1,19 @@
 """
 2D kinematic filters, 3D not supported.
 """
+import os
 from logging import getLogger
-from typing import Any, Sequence, Tuple
+from pathlib import Path, PurePath
+from typing import Any, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from bikipy.perimeter.base import PolygonalPerimeter
 from bikipy.feature.angle import counter_clockwise_angel_2d
 from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.math.vector import closest_line_to_point, unit_vector
+from bikipy.perimeter.base import PolygonalPerimeter
 from bikipy.utils.misc import read_image
 
 logger = getLogger(__name__)
@@ -23,7 +25,6 @@ def location_filter(
     torso: Sequence[Sequence[float]],
     perimeter_border_normal_pixel_magnitude: float,
     inspect: bool = False,
-    inspection_image: Any = None,
     inspection_ax: Any = None,
 ) -> Sequence[bool]:
     """
@@ -74,20 +75,19 @@ def location_filter(
     if inspection_ax is not None or inspect:
         if inspection_ax is None:
             sns.set_theme(style="darkgrid")
-            fig, inspection_ax = plt.subplots()
-            inspection_ax.set_title("Location filter")
+            fig, ax = plt.subplots()
+        else:
+            ax = inspection_ax
 
-        if inspection_image:
-            inspection_ax.imshow(read_image(inspection_image), cmap='gray', vmin=0, vmax=255)
+        ax.set_title("Location filter")
+        nort_object.plot(ax=ax)
 
         not_result = ~result
-        inspection_ax.scatter(*nose[nose_within_border & not_result].T)
-        inspection_ax.scatter(*nose[torso_outside_polygon & not_result].T)
-        inspection_ax.scatter(*nose[result].T)
+        ax.scatter(*nose[nose_within_border & not_result].T)
+        ax.scatter(*nose[torso_outside_polygon & not_result].T)
+        ax.scatter(*nose[result].T)
 
-        inspection_ax.legend(
-            ("Nose valid, invalid torso", "Torso valid, invalid nose", "Valid")
-        )
+        ax.legend(("Nose valid, invalid torso", "Torso valid, invalid nose", "Valid"))
 
         if not inspection_ax:
             plt.show()
@@ -105,7 +105,6 @@ def gaze_direction_filter(
     eye_center: Sequence[Sequence[float]],
     max_radians: float,
     inspect: bool = False,
-    inspection_image: Any = None,
     inspection_ax: Any = None,
 ) -> np.ndarray:
     nose, eye_center = np.asarray(nose), np.asarray(eye_center)
@@ -122,15 +121,17 @@ def gaze_direction_filter(
 
     if inspection_ax is not None or inspect:
         if inspection_ax is None:
-            fig, inspection_ax = plt.subplots()
-        inspection_ax.set_title("Gaze direction filter")
+            sns.set_theme(style="darkgrid")
+            fig, ax = plt.subplots()
+        else:
+            ax = inspection_ax
 
-        inspection_ax.scatter(*nose[result].T)
+        ax.set_title("Gaze direction filter")
+        nort_object.plot(ax=ax)
 
-        if inspection_image:
-            inspection_ax.imshow(read_image(inspection_image), cmap='gray', vmin=0, vmax=255)
+        ax.scatter(*nose[result].T)
 
-        if not inspection_ax:
+        if not ax:
             plt.show()
 
     return result
@@ -212,8 +213,7 @@ def nort_observation(
     fps: float,
     perimeter_border_normal_pixel_magnitude: float,
     max_radians_gaze_and_object: float = 1 / 3 * np.pi,
-    inspect: bool = False,
-    inspection_image: Any = None,
+    inspect: Union[bool, str, PurePath] = False,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
 
@@ -235,7 +235,6 @@ def nort_observation(
     inspect: bool
         If True, will generate and show and inspection figure for the inspection of
         each filter
-    inspection_image: Any
 
     Returns
     -------
@@ -250,7 +249,7 @@ def nort_observation(
     max_radians_gaze_and_object = float(max_radians_gaze_and_object)
 
     if inspect:
-        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(45, 45))
+        fig, axes = plt.subplots(nrows=2, ncols=2)
         loc_filter_kwargs = {"inspection_ax": axes[0][0]}
         gaze_filter_kwargs = {"inspection_ax": axes[0][1]}
     else:
@@ -281,11 +280,9 @@ def nort_observation(
     )
 
     if inspect:
-        if inspection_image is not None:
-            inspection_image = read_image(inspection_image)
-            for rows in axes:
-                for ax in rows:
-                    ax.imshow(inspection_image, cmap='gray', vmin=0, vmax=255)
+        for rows in axes:
+            for ax in rows:
+                nort_object.plot(perimeter_border_normal_pixel_magnitude, ax=ax)
 
         axes[1][0].set_title("Semi true object observation")
         axes[1][0].scatter(*nose[semi_true_observations].T)
@@ -294,6 +291,12 @@ def nort_observation(
         axes[1][1].scatter(*nose[object_observation].T)
 
         plt.tight_layout()
-        plt.show()
+        if isinstance(inspect, bool):
+            plt.show()
+        elif isinstance(inspect, str) or isinstance(inspect, PurePath):
+            inspect = Path(inspect).resolve()
+            if not inspect.parent.exists():
+                os.mkdir(inspect.parent)
+            plt.savefig(inspect.with_suffix(".jpg"))
 
     return object_observation, location_filtered, gaze_filtered
