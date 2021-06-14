@@ -67,35 +67,6 @@ class BaseTrial:
 
         self.motion = Motion(self.coordinates_per_frame, self.unit_per_pixel, self.fps)
 
-    @lru_cache
-    def freezing_time(self, *displacements, second_threshold: float = 1.0, metric_displacement_threshold: float = 0.005):
-        def thresh_cumsum(displacement_per_frame):
-            result = np.zeros_like(displacement_per_frame, dtype=bool)
-
-            start, end = 0, frame_threshold
-            while True:
-                cumulative = np.sum(displacement_per_frame[start:end])
-                if cumulative > metric_displacement_threshold:
-                    if end - start > frame_threshold:
-                        result[start:end] = True
-                        start = end + 1
-                        end += frame_threshold
-                    else:
-                        start += 1
-                        end += 1
-                else:
-                    end += 1
-
-                if result.shape[0] <= end:
-                    break
-
-            return result
-
-        frame_threshold = round(second_threshold * self.fps)
-        thresholded = map(thresh_cumsum, displacements)
-
-        return
-
 
 class BaseExperiment:
     def __init__(

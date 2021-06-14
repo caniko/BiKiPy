@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from logging import getLogger
-from typing import Union
+from typing import Union, Iterable
 
 import numpy as np
 import pandas as pd
@@ -34,9 +34,9 @@ def displacement_per_frame(
     -------
     np.ndarray with pixel displacement per frame
     """
-    if not np.any(np.isnan((
-        magnitudes := np.linalg.norm(coordinate_sequence, axis=1))
-    )):
+    if not np.any(
+        np.isnan((magnitudes := np.linalg.norm(coordinate_sequence, axis=1)))
+    ):
         return absolute_derivative(magnitudes)
 
     logger.debug(
@@ -96,8 +96,7 @@ class Motion:
 
         self.total_displacement = np.nansum(self.metric_displacement_per_frame)
         if self.total_displacement:
-            self.speed = absolute_derivative(
-                self.metric_displacement_per_frame) * fps
+            self.speed = absolute_derivative(self.metric_displacement_per_frame) * fps
             self.median_speed = np.nanmedian(self.speed)
 
             self.acceleration = absolute_derivative(self.speed)
@@ -115,3 +114,75 @@ class Motion:
             self.median_speed,
             self.median_acceleration,
         ]
+
+
+def freezing_time(
+    fps: Union[float, int],
+    *displacements: Iterable[np.ndarray],
+    second_threshold: float = 1.0,
+    metric_displacement_threshold: float = 0.005,
+):
+    """
+    Compute the time the rigid body has been frozen or "standing still" throughout
+    the trial
+
+    Given that the body is immobile up to a certain tolerance,
+    defined by metric_displacement_threshold, for longer than second_threshold
+
+    Parameters
+    ----------
+    fps
+    displacements
+    second_threshold
+    metric_displacement_threshold
+
+    Returns
+    -------
+
+    """
+    frame_threshold = round(second_threshold * fps)
+
+    discrete_thresholding = []
+    for displacement in displacements:
+        displacement = np.asanyarray(displacement)
+        result = np.zeros(displacement.shape[0], dtype=bool)
+
+        start, end = 0, frame_threshold
+        while end < result.size:
+            """
+            Do-while loop-like; stops when end is larger than result length.
+            frame_threshold is utilized implicitly; the difference between
+            end and start can never be lower than the frame_threshold
+            """
+            range_sum = np.sum(displacement[start:end])
+            if range_sum <= metric_displacement_threshold:
+                while end < result.size:
+                    range_sum += displacement[end]
+                    end += 1
+
+                    if range_sum > metric_displacement_threshold:
+                        result[start:end] = True
+                        break
+
+                start = end
+                end += frame_threshold
+            else:
+                start += 1
+                end += 1
+
+        discrete_thresholding.append(result)
+
+    logical_and_thresholding = np.logical_and.reduce(discrete_thresholding)
+
+    # start = 0
+    # while True:
+    #     if logical_and_thresholding[start]:
+    #         end = start + 1
+    #         while not logical_and_thresholding[end]:
+    #             end += 1
+    #         if end - start < frame_threshold:
+    #             logical_and_thresholding[start:end] = False
+    #     else:
+    #         start += 1
+
+    return np.sum(logical_and_thresholding) / fps
