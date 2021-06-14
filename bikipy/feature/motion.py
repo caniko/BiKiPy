@@ -123,11 +123,16 @@ def freezing_time(
     metric_displacement_threshold: float = 0.005,
 ):
     """
-    Compute the time the rigid body has been frozen or "standing still" throughout
+    Compute the time the rigid body has been frozen or "stood still" throughout
     the trial
 
-    Given that the body is immobile up to a certain tolerance,
+    Formal definition: Given that the body is immobile up to a certain tolerance,
     defined by metric_displacement_threshold, for longer than second_threshold
+
+    Method:
+        1. Filter each node in the rigid body discretely with both thresholds
+        2. Perform logical AND operation on the result from the nodes
+        3. Filter the result from 2. with respect to the frame threshold
 
     Parameters
     ----------
