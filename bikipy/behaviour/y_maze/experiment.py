@@ -11,7 +11,7 @@ import numpy as np
 from bikipy.behaviour.base import BaseTrial
 from bikipy.behaviour.utils import (
     exclude_value_from_sequence,
-    python_reduce_repeating_sequences,
+    reduce_repeating_sequences,
     unique_with_counts_zipped,
 )
 from bikipy.behaviour.y_maze.utils import mean_intersecting_points_on_borders
@@ -64,7 +64,7 @@ class YMaze(BaseTrial):
 
         self.invalid_boolean_indices = ~self.valid_boolean_indices
 
-        self.reduced_alternation_sequence = python_reduce_repeating_sequences(
+        self.reduced_alternation_sequence = reduce_repeating_sequences(
             self.alternation_sequence
         )
         self.reduced_without_center = exclude_value_from_sequence(

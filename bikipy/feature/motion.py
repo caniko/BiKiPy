@@ -17,7 +17,9 @@ def units_pixels_per_second_frame(
 
 
 def displacement_per_frame(
-    coordinate_sequence: Sequence[Sequence[float]], interpolation_method: str = "akima"
+    coordinate_sequence: Sequence[Sequence[float]],
+    interpolation_method: str = "akima",
+    remove_tails: bool = False,
 ) -> np.ndarray:
     """
     Compute the absolute displacement of the given point from its coordinates across frames.
@@ -29,14 +31,13 @@ def displacement_per_frame(
     coordinate_sequence
         The respective coordinate sequence
     interpolation_method
+    remove_tails
 
     Returns
     -------
     np.ndarray with pixel displacement per frame
     """
-    if not np.any(
-        np.isnan((magnitudes := np.linalg.norm(coordinate_sequence, axis=1)))
-    ):
+    if np.all(np.isnan((magnitudes := np.linalg.norm(coordinate_sequence, axis=1)))):
         return absolute_derivative(magnitudes)
 
     logger.debug(
@@ -47,10 +48,11 @@ def displacement_per_frame(
     magnitudes_series.interpolate(
         method=interpolation_method,
         limit_direction="both",
-        limit_area="inside",
+        limit_area="inside" if remove_tails else None,
         inplace=True,
     )
-    magnitudes_series.dropna(inplace=True)
+    if remove_tails:
+        magnitudes_series.dropna(inplace=True)
 
     return absolute_derivative(magnitudes_series.values)
 
@@ -118,7 +120,7 @@ class Motion:
 
 def freezing_time(
     fps: Union[float, int],
-    *displacements: Iterable[np.ndarray],
+    displacements: Iterable[np.ndarray],
     second_threshold: float = 1.0,
     metric_displacement_threshold: float = 0.005,
 ):
@@ -132,7 +134,11 @@ def freezing_time(
     Method:
         1. Filter each node in the rigid body discretely with both thresholds
         2. Perform logical AND operation on the result from the nodes
-        3. Filter the result from 2. with respect to the frame threshold
+
+        Some of the freeze epochs may be orphaned as they below the time threshold
+        after the AND operation, which is why a last step is necessary.
+
+        3. Filter the result from 2. with respect to the time/frame/second threshold
 
     Parameters
     ----------
@@ -177,17 +183,21 @@ def freezing_time(
 
         discrete_thresholding.append(result)
 
-    logical_and_thresholding = np.logical_and.reduce(discrete_thresholding)
+    logical_and_thresholding = np.logical_and.reduce(np.array(discrete_thresholding))
 
-    # start = 0
-    # while True:
-    #     if logical_and_thresholding[start]:
-    #         end = start + 1
-    #         while not logical_and_thresholding[end]:
-    #             end += 1
-    #         if end - start < frame_threshold:
-    #             logical_and_thresholding[start:end] = False
-    #     else:
-    #         start += 1
+    start = 0
+    while start < logical_and_thresholding.size:
+        if logical_and_thresholding[start]:
+            end = start + 1
+            while logical_and_thresholding[end] and end < logical_and_thresholding.size:
+                end += 1
 
-    return np.sum(logical_and_thresholding) / fps
+            if end - start < frame_threshold:
+                logical_and_thresholding[start : end + 1] = False
+            if end < logical_and_thresholding.size:
+                break
+            start = end + 1
+        else:
+            start += 1
+
+    return logical_and_thresholding

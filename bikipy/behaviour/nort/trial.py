@@ -3,189 +3,29 @@ Novel Object Recognition test (NORT) class representing a single test.
 These tests can be grouped together to form entire experiments.
 """
 from dataclasses import dataclass, field
+from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Iterable, SupportsFloat, Union
+from typing import Any, SupportsFloat, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 from compress_pickle import compress_pickle
 
-from bikipy.behaviour.base import BaseTrial
+from bikipy.behaviour.square import SquareEnclosedTrial
 from bikipy.behaviour.nort.observation import nort_observation
-from bikipy.behaviour.utils import python_reduce_repeating_sequences
-from bikipy.feature.motion import Motion, total_displacement_median_speed_acceleration
-from bikipy.math.point_in_polygon import points_in_parallelogram
+from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.perimeter.base import PolygonalPerimeter
 
 logger = getLogger(__name__)
 
 
-class NortHabituationTrial(BaseTrial):
+class NortHabituationTrial(SquareEnclosedTrial):
     """
     NORT experiment without any objects. The purpose of this test is to generate
     reference data for future NORT experiments.
     """
 
-    def __init__(
-        self,
-        recording_resolution: Iterable[int],
-        experiment_box_metric_length: SupportsFloat,
-        center_size_metric_length: SupportsFloat,
-        *base_experiment_args,
-        **base_experiment_kwargs,
-    ):
-        """
-        Parameters
-        ----------
-        recording_resolution: array_like
-            Resolution of the video used to record the experiment
-        experiment_box_metric_length: float
-            Length of the square box in which the experiment is conducted
-        center_size_metric_length: float
-            Length of the square box signifying periphery and inner area of the
-            square box
-        base_experiment_args
-            Arguments passed to BaseTrial
-        base_experiment_kwargs
-            Keyword arguments passed to BaseTrial
-        """
-        self.experiment_box_metric_length = float(experiment_box_metric_length)
-
-        super().__init__(
-            *base_experiment_args,
-            unit_per_pixel=(
-                self.experiment_box_metric_length / min(recording_resolution)
-            ),
-            recording_resolution=recording_resolution,
-            **base_experiment_kwargs,
-        )
-
-        self.center_size_metric_length = float(center_size_metric_length)
-        assert self.experiment_box_metric_length > self.center_size_metric_length
-
-        self.center_box_ratio = (
-            (self.experiment_box_metric_length - self.center_size_metric_length) / 2.0
-        ) / self.experiment_box_metric_length
-        self.one_minus_center_box_ratio = 1.0 - self.center_box_ratio
-
-        x = self.horizontal_resolution * self.center_box_ratio
-        x_rest_half = (self.horizontal_resolution - x) / 2.0
-
-        y = self.vertical_resolution * self.center_box_ratio
-        y_rest_half = (self.vertical_resolution - y) / 2.0
-        if self.horizontal_resolution == self.vertical_resolution:
-            self.center_square = (
-                # x_short, y_short
-                (x_rest_half, y_rest_half),
-                # x_short, y_long
-                (x_rest_half, self.vertical_resolution - y_rest_half),
-                # x_long, y_long
-                (
-                    self.horizontal_resolution - x_rest_half,
-                    self.vertical_resolution - y_rest_half,
-                ),
-                # x_long, y_short
-                (self.horizontal_resolution - x_rest_half, y_rest_half),
-            )
-        elif self.horizontal_resolution < self.vertical_resolution:
-            self.center_square = self.non_square_rectification(
-                y_bias=(self.vertical_resolution - self.horizontal_resolution) / 2.0
-            )
-        else:
-            self.center_square = self.non_square_rectification(
-                x_bias=(self.horizontal_resolution - self.vertical_resolution) / 2.0
-            )
-
-        self.center_boolean_indices = points_in_parallelogram(
-            self.center_square[0],
-            self.center_square[3],
-            self.center_square[1],
-            self.coordinates_per_frame,
-            inspect_points=self.func_inspect,
-        )
-        self.periphery_boolean_indices = ~self.center_boolean_indices
-
-        self.seconds_on_center = np.sum(self.center_boolean_indices) / self.fps
-        self.seconds_on_periphery = np.sum(self.periphery_boolean_indices) / self.fps
-
-        self.center_motion = Motion(
-            self.coordinates_per_frame[self.center_boolean_indices],
-            self.unit_per_pixel,
-            self.fps,
-        )
-        self.periphery_motion = Motion(
-            self.coordinates_per_frame[self.periphery_boolean_indices],
-            self.unit_per_pixel,
-            self.fps,
-        )
-
-        # 1 is center, 2 is periphery, 0 is invalid aka unknown
-        self.location_sequence = np.zeros_like(
-            self.center_boolean_indices, dtype=np.uint8
-        )
-        self.location_sequence[self.center_boolean_indices] = 1
-        self.location_sequence[self.periphery_boolean_indices] = 2
-        self.location_sequence = np.array(
-            python_reduce_repeating_sequences(self.location_sequence)
-        )
-
-        self.center_entries = np.sum(self.location_sequence == 1)
-        self.periphery_entries = np.sum(self.location_sequence == 2)
-
-    def non_square_rectification(self, x_bias: float = 0.0, y_bias: float = 0.0):
-        if (x_bias := float(x_bias)) and (y_bias := float(y_bias)):
-            raise ValueError
-
-        if x_bias:
-            y_short = self.vertical_resolution * self.center_box_ratio
-            y_long = self.vertical_resolution * self.one_minus_center_box_ratio
-
-            x_short = y_short + x_bias
-            x_long = y_long + x_bias
-
-        else:
-            x_short = self.horizontal_resolution * self.center_box_ratio
-            x_long = self.horizontal_resolution * self.one_minus_center_box_ratio
-
-            y_short = x_short + y_bias
-            y_long = x_long + y_bias
-
-        return (
-            (x_short, y_short),
-            (x_short, y_long),
-            (x_long, y_long),
-            (x_long, y_short),
-        )
-
-    def info(self):
-        return (
-            self.motion.to_list()
-            + self.periphery_motion.to_list()
-            + self.center_motion.to_list()
-        ) + [
-            self.periphery_entries,
-            self.center_entries,
-            self.seconds_on_periphery,
-            self.seconds_on_center,
-        ]
-
-    def plot(self, ax: Any = None):
-        if not ax:
-            fig, ax = plt.subplots()
-        if self.inspect_image is not None:
-            ax.imshow(self.inspect_image)
-        else:
-            logger.warning("inspect_image is not defined will plot without")
-
-        for i in range((length := len(self.center_square))):
-            next_i = i + 1
-            ax.plot(
-                self.center_square[i],
-                self.center_square[next_i if next_i != length else 0],
-            )
-
-        return ax
+    pass
 
 
 class NortOpenField(NortHabituationTrial):
@@ -248,7 +88,9 @@ class NortTrainingTrial(NortHabituationTrial):
         # assert np.all((self.observation_sequence == 0) == self.not_observing)
 
         self.reduced_observation_sequence = np.array(
-            python_reduce_repeating_sequences(self.observation_sequence)
+            reduce_repeating_sequences(
+                self.observation_sequence, frame_tolerance=self._frame_tolerance
+            )
         )
 
         self.observation_a = np.sum(self.reduced_observation_sequence == 1)
@@ -269,8 +111,9 @@ class NortTrainingTrial(NortHabituationTrial):
             self.seconds_observing < self.experiment_seconds
         ), f"{self.seconds_observing} > {self.experiment_seconds}"
 
+    @property
     def info(self):
-        return super().info() + [
+        return super().info + [
             self.observation_a,
             self.observation_b,
             self.total_observation,
@@ -318,8 +161,9 @@ class NortNoveltyTrial(NortTrainingTrial):
 
         self.novelty_preference = 100 * self.seconds_spent_b / self.experiment_seconds
 
+    @property
     def info(self):
-        return super().info() + [
+        return super().info + [
             self.absolute_discrimination,
             self.discrimination_index,
             self.novelty_preference,

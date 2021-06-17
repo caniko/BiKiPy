@@ -1,25 +1,26 @@
-from functools import lru_cache
+from functools import cached_property
 from logging import getLogger
-from typing import Any, Iterable, Sequence, Union
+from typing import Any, Sequence, Union
 
 import numpy as np
-import pandas as pd
 
-from bikipy.feature.motion import Motion, total_displacement_median_speed_acceleration
+from bikipy.feature.motion import Motion, freezing_time, displacement_per_frame
 from bikipy.reader.deeplabcut import DeepLabCutReader
-from bikipy.utils.misc import resolve_stem_in_filepath
 
 logger = getLogger(__name__)
 
 
 class BaseTrial:
+    second_tolerance = 0.35
+
     def __init__(
         self,
         coordinate_sequence: Any,
         unit_per_pixel: float,
-        fps: Union[float, None] = None,
-        recording_resolution: Union[Iterable[int], None] = None,
+        rigid_nodes_freezing: Union[Sequence[Union[str, int]], None] = None,
+        recording_resolution: Union[Sequence[int], None] = None,
         movement_feature_point_label: Union[str, None] = None,
+        fps: Union[float, None] = None,
         label: Any = None,
         func_inspect: bool = False,
         inspect_image: Any = None,
@@ -51,21 +52,57 @@ class BaseTrial:
                 self.vertical_resolution,
             )
 
-        if movement_feature_point_label:
-            # coordinate_sequence must be a reader object, like DeepLabCutReader
-            self.movement_feature_point_label = str(movement_feature_point_label)
-            self.coordinate_sequence: dict = coordinate_sequence
-            self.coordinates_per_frame = self.coordinate_sequence[
-                self.movement_feature_point_label
-            ]
-        else:
-            self.movement_feature_point_label = None
-            self.coordinate_sequence: np.ndarray = np.asarray(coordinate_sequence)
-            self.coordinates_per_frame = self.coordinate_sequence
+        # coordinate_sequence must be a reader object, like DeepLabCutReader
+        self.movement_feature_point_label = str(movement_feature_point_label)
+        self.coordinate_sequence: dict = coordinate_sequence
+        self.coordinates_per_frame = self.coordinate_sequence[
+            self.movement_feature_point_label
+        ]
 
         self.experiment_seconds = self.coordinates_per_frame.shape[0] / self.fps
 
         self.motion = Motion(self.coordinates_per_frame, self.unit_per_pixel, self.fps)
+
+        self._rigid_nodes_freezing = None
+        self._frozen_boolean_indices = None
+        if rigid_nodes_freezing:
+            self.rigid_nodes_freezing = rigid_nodes_freezing
+
+    @cached_property
+    def _frame_tolerance(self):
+        return round(self.second_tolerance * self.fps)
+
+    @property
+    def rigid_nodes_freezing(self):
+        return self._rigid_nodes_freezing
+
+    @rigid_nodes_freezing.setter
+    def rigid_nodes_freezing(self, value: Sequence):
+        self._rigid_nodes_freezing = value
+        if not value:
+            return
+
+        self._frozen_boolean_indices = freezing_time(
+            self.fps,
+            (
+                displacement_per_frame(coordinate_sequence, remove_tails=False)
+                * self.unit_per_pixel
+                for coordinate_sequence in self.coordinate_sequence[
+                    self.rigid_nodes_freezing
+                ]
+            ),
+        )
+
+    @property
+    def frozen_boolean_indices(self):
+        if self._frozen_boolean_indices is None:
+            msg = "rigid_nodes_freezing has to be defined in order to compute frozen time data"
+            raise AttributeError(msg)
+        return self._frozen_boolean_indices
+
+    @cached_property
+    def total_freezing_time(self):
+        return np.sum(self.frozen_boolean_indices) / self.fps
 
 
 class BaseExperiment:

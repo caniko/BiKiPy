@@ -39,13 +39,13 @@ class NortExperiment(BaseExperiment):
     def __init__(
         self,
         trial_id_range_vs_exp_meta: dict,
-        experiment_box_metric_length: SupportsFloat,
+        metric_resolution: SupportsFloat,
         nose_label: str,
         eye_center_label: str,
         torso_label: str,
         nort_field_vs_apparatus: Mapping[NortObjectField] = None,
         perimeter_border_normal_metric_magnitude: Union[SupportsFloat, None] = None,
-        center_size_metric_length: Union[SupportsFloat, None] = None,
+        center_metric_length: Union[SupportsFloat, None] = None,
         max_radians_gaze_and_object: SupportsFloat = 0.25 * np.pi,
         *base_trial_args,
         **base_trial_kwargs,
@@ -55,14 +55,14 @@ class NortExperiment(BaseExperiment):
         Parameters
         ----------
         trial_id_range_vs_exp_meta
-        experiment_box_metric_length
+        metric_resolution
         nose_label
         eye_center_label
         torso_label
         nort_field_vs_apparatus
         perimeter_border_normal_pixel_magnitude
             The magnitude of the normal between the perimeter and the border given in meters
-        center_size_metric_length
+        center_metric_length
         max_radians_gaze_and_object
         base_trial_args
         base_trial_kwargs
@@ -77,13 +77,13 @@ class NortExperiment(BaseExperiment):
             str(eye_center_label),
             str(nose_label),
         )
-        self.experiment_box_metric_length, self.max_radians_gaze_and_object = (
-            float(experiment_box_metric_length),
+        self.metric_resolution, self.max_radians_gaze_and_object = (
+            float(metric_resolution),
             float(max_radians_gaze_and_object),
         )
 
-        self.center_size_metric_length = (
-            float(center_size_metric_length) if center_size_metric_length else None
+        self.center_metric_length = (
+            float(center_metric_length) if center_metric_length else None
         )
         self.perimeter_border_normal_metric_magnitude = (
             perimeter_border_normal_metric_magnitude
@@ -101,10 +101,13 @@ class NortExperiment(BaseExperiment):
             coordinate_sequence = self.exp_id_vs_coordinate_sequences[exp_id]
 
             generic_data = {
+                "coordinate_sequence": coordinate_sequence,
+                "movement_feature_point_label": self.eye_center_label,
                 "recording_resolution": exp_meta["recording_resolution"],
-                "experiment_box_metric_length": experiment_box_metric_length,
+                "metric_resolution": metric_resolution,
                 "label": exp_id,
                 "func_inspect": self.func_inspect,
+                "rigid_nodes_freezing": (self.eye_center_label, self.torso_label),
             }
 
             if "inspect" in exp_meta:
@@ -132,10 +135,7 @@ class NortExperiment(BaseExperiment):
                 self.habituation_trials.append(
                     (
                         exp := NortHabituationTrial(
-                            coordinate_sequence=coordinate_sequence[
-                                self.eye_center_label
-                            ],
-                            center_size_metric_length=self.center_size_metric_length,
+                            center_metric_length=self.center_metric_length,
                             **generic_data,
                         )
                     )
@@ -154,9 +154,7 @@ class NortExperiment(BaseExperiment):
                     "torso_label": self.torso_label,
                     "perimeter_border_normal_metric_magnitude": self.perimeter_border_normal_metric_magnitude,
                     "max_radians_gaze_and_object": self.max_radians_gaze_and_object,
-                    "center_size_metric_length": self.center_size_metric_length,
-                    "coordinate_sequence": coordinate_sequence,
-                    "movement_feature_point_label": self.eye_center_label,
+                    "center_metric_length": self.center_metric_length,
                     **generic_data,
                 }
 
@@ -213,8 +211,9 @@ class NortExperiment(BaseExperiment):
             *movement_feature("All"),
             *movement_feature("Periphery"),
             *movement_feature("Center"),
-            *feature_area("Entries", ("Periphery", "Center")),
+            *feature_area("Freezing time", ("Total", "Periphery", "Center")),
             *feature_area("Time spent", ("Periphery", "Center")),
+            *feature_area("Entries", ("Periphery", "Center")),
         ]
 
         object_columns = [
@@ -233,22 +232,22 @@ class NortExperiment(BaseExperiment):
 
         if self.habituation_trials:
             habituation_filler = [
-                "habituation" for _i in range(len(object_columns + novelty_columns))
+                np.nan for _i in range(len(object_columns + novelty_columns))
             ]
             for nort_habituation in self.habituation_trials:
                 label_vs_data[nort_habituation.label] = (
-                    nort_habituation.info() + habituation_filler
+                    nort_habituation.info + habituation_filler
                 )
 
         if self.training_object_trials:
-            training_filler = ["training" for _i in range(len(novelty_columns))]
+            training_filler = [np.nan for _i in range(len(novelty_columns))]
             for training_trial in self.training_object_trials:
                 label_vs_data[training_trial.label] = (
-                    training_trial.info() + training_filler
+                    training_trial.info + training_filler
                 )
 
         for novelty_trial in self.novelty_object_trials:
-            label_vs_data[novelty_trial.label] = novelty_trial.info()
+            label_vs_data[novelty_trial.label] = novelty_trial.info
 
         return to_df(
             label_vs_data, habituation_columns + object_columns + novelty_columns

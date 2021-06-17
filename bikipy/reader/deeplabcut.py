@@ -397,11 +397,8 @@ class DeepLabCutReader(BaseReader):
 
     def __getitem__(self, query):
         def isolate_coordinates(item):
-            # remove likelihood col
+            # remove likelihood column
             coordinates = np.delete(self.df[item].values, 2, 1)
-
-            # clean values beneath min likelihood
-            coordinates[~self.region_of_interest_vs_boolean_index[item]] = np.nan
 
             return coordinates
 
@@ -409,11 +406,11 @@ class DeepLabCutReader(BaseReader):
             if query not in self.items:
                 msg = f"'{query}' is not in object DataFrame (self.df)"
                 raise AttributeError(msg)
-            return isolate_coordinates(query)[self.valid_slices[query]]
+            return isolate_coordinates(query)
 
         elif isinstance(query, abc.Iterable):
-            common_slice = self._find_longest_tails(query)
-            return [isolate_coordinates(item)[common_slice] for item in query]
+            # common_slice = self._find_longest_tails(query)
+            return [isolate_coordinates(item) for item in query]
 
         else:
             raise NotImplementedError(f"{type(query)} has no implementation")

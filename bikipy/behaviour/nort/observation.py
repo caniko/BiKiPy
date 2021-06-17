@@ -28,6 +28,9 @@ def location_filter(
     inspection_ax: Any = None,
 ) -> Sequence[bool]:
     """
+    Filter with basis in proximity rules to NORT object.
+
+    The nose has to be in front of object, while the torso is outside of the object.
 
     Parameters
     ----------
@@ -40,8 +43,6 @@ def location_filter(
         The magnitude of the normal between the perimeter and the border given in pixels
     inspect
         If True, generate and view an analytics of the resulting filter
-    inspection_image
-        Image from the experiment recording used as background in inspection
     inspection_ax
         matplotlib Axes that the inspection plots will (optionally) be saved in
 
@@ -87,7 +88,11 @@ def location_filter(
         ax.scatter(*nose[torso_outside_polygon & not_result].T)
         ax.scatter(*nose[result].T)
 
-        ax.legend(("Nose valid, invalid torso", "Torso valid, invalid nose", "Valid"))
+        ax.legend(
+            ("Nose valid, invalid torso", "Torso valid, invalid nose", "Valid"),
+            bbox_to_anchor=(1.04, 0.5),
+            loc="center left",
+        )
 
         if not inspection_ax:
             plt.show()
@@ -151,7 +156,7 @@ def attention_span_filter(
     minimum_time_valid_observation = round(minimum_seconds_observing * fps)
 
     length = valid_indices.shape[0]
-    observation_boolean_indices = np.full(length, False)
+    observation_boolean_indices = np.zeros(length, dtype=bool)
 
     first_valid_index = None
     i, valid_frames_within_border, true_counter, consecutive_false = 0, 0, 0, 0
@@ -212,7 +217,7 @@ def nort_observation(
     torso: Sequence[Sequence[float]],
     fps: float,
     perimeter_border_normal_pixel_magnitude: float,
-    max_radians_gaze_and_object: float = 1 / 3 * np.pi,
+    max_radians_gaze_and_object: float = 0.25 * np.pi,
     inspect: Union[bool, str, PurePath] = False,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -249,7 +254,16 @@ def nort_observation(
     max_radians_gaze_and_object = float(max_radians_gaze_and_object)
 
     if inspect:
-        fig, axes = plt.subplots(nrows=2, ncols=2)
+        if nort_object.inspect_image is not None:
+            x, y = nort_object.inspect_image.shape
+            fig, axes = plt.subplots(
+                nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0)
+            )
+        else:
+            fig, axes = plt.subplots(nrows=2, ncols=2)
+        fig.gca().invert_yaxis()
+        fig.suptitle("Observation cumulative filtration analysis")
+
         loc_filter_kwargs = {"inspection_ax": axes[0][0]}
         gaze_filter_kwargs = {"inspection_ax": axes[0][1]}
     else:
@@ -285,10 +299,10 @@ def nort_observation(
                 nort_object.plot(perimeter_border_normal_pixel_magnitude, ax=ax)
 
         axes[1][0].set_title("Semi true object observation")
-        axes[1][0].scatter(*nose[semi_true_observations].T)
+        axes[1][0].scatter(*nose[semi_true_observations].T, alpha=0.65)
 
         axes[1][1].set_title("Object observation")
-        axes[1][1].scatter(*nose[object_observation].T)
+        axes[1][1].scatter(*nose[object_observation].T, alpha=0.65)
 
         plt.tight_layout()
         if isinstance(inspect, bool):

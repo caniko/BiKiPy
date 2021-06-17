@@ -88,16 +88,18 @@ with pd.ExcelWriter(
                 trial_id_range_vs_exp_meta[trial_id]["field"] = animal_id_vs_app[
                     animal_id
                 ]
+            if trial_id == 117:
+                trial_id_range_vs_exp_meta[trial_id]["inspect"] = True
 
         NortExperiment(
             trial_id_range_vs_exp_meta=trial_id_range_vs_exp_meta,
-            experiment_box_metric_length=0.4,
+            metric_resolution=0.4,
             nose_label="nose",
             eye_center_label="mid-left_ear-right_ear",
             torso_label="mid-mid-left_ear-right_ear-tail",
             nort_field_vs_apparatus=nort_field_vs_apparatus,
             perimeter_border_normal_metric_magnitude=0.04,
-            center_size_metric_length=0.2,
+            center_metric_length=0.2,
             max_radians_gaze_and_object=0.25 * np.pi,
             trial_id_vs_coordinate_data_path=trial_id_vs_coordinate_data_path,
             # func_inspect=True,

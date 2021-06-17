@@ -8,7 +8,9 @@ Behavioral research doesn't have any centralised methods for standardization, wh
 - Provide a traditional full stack for the analysis of these experiments.
 
 ## reader
-Data can be loaded with an instance of the `reader.base.BaseReader`. `reader.DeepLabCutReader`, inherits from `BaseReader`, and provides abstractions for 2D [DeepLabCut](https://github.com/DeepLabCut/DeepLabCut) data; state of the art package that can perform markerless tracking (2021).
+Data can be loaded with an instance of the `reader.base.BaseReader`. `reader.DeepLabCutReader`, inherits from `BaseReader`, and provides abstractions for 2D [DeepLabCut](https://github.com/DeepLabCut/DeepLabCut) data; state-of-the-art package that can perform marker-less tracking (2021).
 
 ## behavior
-Analysis pipelines for supported experiment designs can be found under `experiment` in their respective module in the `behavior` submodule.
+Analysis pipelines for supported experiment designs can be found under `experiment` in their respective module in the `behavior` submodule. Implementations of these experiments are split into trials and experiments. This structure ensures that trials that belong to one group (experiment), can acquire cross-trial constants directly from its respective experiment object.
+
+Common analytical methods are available in the classes located in `behaviour.base`. These include both experiments and trials.
