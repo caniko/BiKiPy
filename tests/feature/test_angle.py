@@ -53,7 +53,7 @@ def test_compute_angles_from_vectors():
     ), tail_base_tip_no_nan
 
 
-def test_clockwise_2d():
+def test_counterclockwise_2d():
     point_1 = ((0, 0), (0, 0), (0, 0))
     point_2 = ((1, 0), (1, 0), (1, 0))
     point_3 = ((2, 0), (1, 1), (1, -1))

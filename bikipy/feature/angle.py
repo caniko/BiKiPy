@@ -28,22 +28,22 @@ def _find_median_vector(row_vectors: np.ndarray) -> np.ndarray:
     return np.array([np.median(component) for component in row_vectors.T])
 
 
-def clockwise_angel_2d(start_vector: Sequence, end_vector: Sequence) -> np.ndarray:
+def counterclockwise_angel_2d(start_vector: Sequence, end_vector: Sequence) -> np.ndarray:
     """
-    Computes the clockwise angle, [0, 2pi], from start to end in radians
+    Computes the counterclockwise angle, [0, 2pi], from start to end in radians
 
-    :param start_vector: Array of row vectors in which "the clock starts turning", clockwise
+    :param start_vector: Array of row vectors in which "the clock starts turning", counterclockwise
     :param end_vector: Array of row vectors in which the clock stops
     :type start_vector: np.ndarray
     :type end_vector: np.ndarray
-    :return: Clockwise angle between start and end vector per frame
+    :return: counterclockwise angle between start and end vector per frame
     :rtype: np.ndarray
 
-    >>> clockwise_angel_2d((1, 0), (0, 1))
+    >>> counterclockwise_angel_2d((1, 0), (0, 1))
     1.5707963267948966      # pi / 2.
-    >>> clockwise_angel_2d((1, 0), (1, 0))
+    >>> counterclockwise_angel_2d((1, 0), (1, 0))
     0.0
-    >>> clockwise_angel_2d((1, 0), (-1, 0))
+    >>> counterclockwise_angel_2d((1, 0), (-1, 0))
     3.141592653589793       # pi
     """
 
@@ -53,21 +53,24 @@ def clockwise_angel_2d(start_vector: Sequence, end_vector: Sequence) -> np.ndarr
     # Compute determinants and store them in a vertical stack
     determinants = np.array(
         [
-            np.linalg.det(np.vstack((start_unit_vector[i], end_unit_vector[i])))
+            np.linalg.det(np.vstack((end_unit_vector[i], start_unit_vector[i])))
             for i in range(len(start_unit_vector))
         ]
     )
 
-    dot_prod = dot_prod_along_axis_1(start_unit_vector, end_unit_vector)
+    dot_prod = dot_prod_along_axis_1(end_unit_vector, start_unit_vector)
 
-    return np.pi - np.arctan2(determinants, dot_prod)
+    return np.pi + np.arctan2(determinants, dot_prod)
 
 
 def inner_angle(a_vector: Sequence, b_vector: Sequence) -> np.ndarray:
     """
     Computes the inner angle between two vectors, a and b, in radians
 
-    :param a_vector: Array of row vectors in which "the clock starts turning" counter clockwise
+    .. math::
+        \theta = \cos^{-1} \Big( \frac{\mathbf{a} \cdot \mathbf{b}}{|\mathbf{a}||\mathbf{b}|} \Big)
+
+    :param a_vector: Array of row vectors in which "the clock starts turning" counter counterclockwise
     :param b_vector: Array of row vectors in which the clock stops
     :type a_vector: np.ndarray
     :type b_vector: np.ndarray
@@ -102,7 +105,7 @@ def compute_angles_from_vectors(
     :param row_vectors_point_b: Array of row vectors that is the joint between the two other groups of vectors
     :param row_vectors_point_c: Array of row vectors
     :param median_points: Anchor one or several points to their respective median. Information about median computation in _find_median_vector()
-    :param method: The method for computing angle, supported methods are inner; clockwise.
+    :param method: The method for computing angle, supported methods are inner; counterclockwise.
     :param degrees: If True, convert resulting angle data to degrees
     :type row_vectors_point_a: np.ndarray
     :type row_vectors_point_b: np.ndarray
@@ -197,4 +200,4 @@ def dlc_compute_angles_from_vectors(
     }
 
 
-ANGLE_METHOD_TO_FUNC = {"inner": inner_angle, "clockwise": clockwise_angel_2d}
+ANGLE_METHOD_TO_FUNC = {"inner": inner_angle, "counterclockwise": counterclockwise_angel_2d}

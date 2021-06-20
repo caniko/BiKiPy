@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from bikipy.feature.angle import clockwise_angel_2d, inner_angle
+from bikipy.feature.angle import counterclockwise_angel_2d, inner_angle
+from bikipy.feature.motion import attention_per_frame
 from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.math.vector import closest_line_to_point, unit_vector
 from bikipy.perimeter.base import PolygonalPerimeter
@@ -153,74 +154,6 @@ def gaze_direction_filter(
     return result
 
 
-def attention_span_filter(
-    valid_indices: Sequence[bool],
-    fps: float,
-    minimum_seconds_observing: float = 0.2,
-) -> np.ndarray:
-    valid_indices = np.asarray(valid_indices)
-
-    fps = float(fps)
-    minimum_seconds_observing = float(minimum_seconds_observing)
-
-    distraction_tolerance = round(fps / 2.0)
-    minimum_time_valid_observation = round(minimum_seconds_observing * fps)
-
-    length = valid_indices.shape[0]
-    observation_boolean_indices = np.zeros(length, dtype=bool)
-
-    first_valid_index = None
-    i, valid_frames_within_border, true_counter, consecutive_false = 0, 0, 0, 0
-    while True:
-        if valid_indices[i]:
-            true_counter += 1
-
-            if consecutive_false:
-                true_counter += consecutive_false - 1  # make up for the previous += 1
-                consecutive_false = 0
-
-            if true_counter == minimum_time_valid_observation:
-                first_valid_index = i - minimum_time_valid_observation + 1
-
-        else:
-            if first_valid_index is not None:
-                if consecutive_false <= distraction_tolerance:
-                    consecutive_false += 1
-                else:
-                    observation_boolean_indices[first_valid_index : i + 1] = True
-                    valid_frames_within_border += true_counter
-
-                    consecutive_false, true_counter = 0, 0
-                    first_valid_index = None
-
-            else:
-                true_counter = 0
-
-        i += 1
-
-        if i == length:
-            if first_valid_index is not None:
-                observation_boolean_indices[first_valid_index:] = True
-                valid_frames_within_border += true_counter
-            break
-
-    if valid_frames_within_border == 0:
-        logger.info(f"Subject didn't observe the nort object")
-
-        assert not np.any(observation_boolean_indices)
-        return observation_boolean_indices
-
-    assert (
-        np.any(observation_boolean_indices)
-        and np.sum(observation_boolean_indices) >= minimum_time_valid_observation
-    ), (
-        f"True: {np.sum(observation_boolean_indices)}; fps: {fps}; "
-        f"Minimum observation frames: {minimum_time_valid_observation}"
-    )
-
-    return observation_boolean_indices
-
-
 def nort_observation(
     nort_object: PolygonalPerimeter,
     eye_center: Sequence[Sequence[float]],
@@ -301,7 +234,7 @@ def nort_observation(
     object_observation = (
         np.zeros_like(semi_true_observations, dtype=bool)
         if np.sum(semi_true_observations) < fps
-        else np.array(attention_span_filter(semi_true_observations, fps))
+        else np.array(attention_per_frame(semi_true_observations, fps))
     )
 
     if inspect:

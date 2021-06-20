@@ -6,7 +6,9 @@
 Welcome to BiKiPy's documentation!
 ==================================
 
-Behavioral kinematics_ Python, or BiKiPy, is a data analysis platform. The submodules compartmentalize different steps of the analysis. :code:`reader` for ingesting data, :code:`behavior` for analysis. Some of the abstractions have been extracted from the :code:`behavior` submodule, and placed in a categorical submodule, such as :code:`math` and :code:`utils`, to ensure usability across analysis pipelines that are and will be discretely designed. The :code:`perimeter` submodule, defines classes for enclosed areas or perimeters.
+Behavioral kinematics_ Python, or BiKiPy, is a data analysis platform. The submodules compartmentalize different steps of the analysis. :code:`reader` for ingesting data, :code:`behavior` for analysis.
+
+Some of the analysis functions have been placed in auxiliary subpackages that are defined categorically such as :code:`bikipy.math` and :code:`bikipy.utils`, to ensure accessibility across analysis pipelines that are implemented discretely. The :code:`bikipy.perimeter` submodule, defines classes for enclosed areas or perimeters.
 
 Motivation
 ----------

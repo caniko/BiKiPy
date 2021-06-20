@@ -201,3 +201,83 @@ def freezing_time(
             start += 1
 
     return logical_and_thresholding
+
+
+def attention_per_frame(
+    valid_indices: Sequence[bool],
+    fps: float,
+    minimum_seconds_observing: float = 0.2,
+) -> np.ndarray:
+    """
+    Compute the attentiveness of the boolean array.
+
+    The boolean array should reflect instances of observation in binary, True or False.
+
+
+
+    :param valid_indices:
+    :param fps:
+    :param minimum_seconds_observing:
+    :return:
+    """
+    valid_indices = np.asarray(valid_indices)
+
+    fps = float(fps)
+    minimum_seconds_observing = float(minimum_seconds_observing)
+
+    distraction_tolerance = round(fps / 2.0)
+    minimum_time_valid_observation = round(minimum_seconds_observing * fps)
+
+    length = valid_indices.shape[0]
+    observation_boolean_indices = np.zeros(length, dtype=bool)
+
+    first_valid_index = None
+    i, valid_frames_within_border, true_counter, consecutive_false = 0, 0, 0, 0
+    while True:
+        if valid_indices[i]:
+            true_counter += 1
+
+            if consecutive_false:
+                true_counter += consecutive_false - 1  # make up for the previous += 1
+                consecutive_false = 0
+
+            if true_counter == minimum_time_valid_observation:
+                first_valid_index = i - minimum_time_valid_observation + 1
+
+        else:
+            if first_valid_index is not None:
+                if consecutive_false <= distraction_tolerance:
+                    consecutive_false += 1
+                else:
+                    observation_boolean_indices[first_valid_index : i + 1] = True
+                    valid_frames_within_border += true_counter
+
+                    consecutive_false, true_counter = 0, 0
+                    first_valid_index = None
+
+            else:
+                true_counter = 0
+
+        i += 1
+
+        if i == length:
+            if first_valid_index is not None:
+                observation_boolean_indices[first_valid_index:] = True
+                valid_frames_within_border += true_counter
+            break
+
+    if valid_frames_within_border == 0:
+        logger.info(f"Subject didn't observe the nort object")
+
+        assert not np.any(observation_boolean_indices)
+        return observation_boolean_indices
+
+    assert (
+        np.any(observation_boolean_indices)
+        and np.sum(observation_boolean_indices) >= minimum_time_valid_observation
+    ), (
+        f"True: {np.sum(observation_boolean_indices)}; fps: {fps}; "
+        f"Minimum observation frames: {minimum_time_valid_observation}"
+    )
+
+    return observation_boolean_indices
