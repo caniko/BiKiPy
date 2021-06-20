@@ -355,13 +355,13 @@ class PolygonalPerimeter(Perimeter):
                 border = self.border(perimeter_border_normal_pixel_magnitude)
                 border_a = border[index]
                 border_b = border[following_index]
-                ax.plot((border_a[0], border_a[1]), (border_b[0], border_b[1]), "o-")
+                ax.plot((border_a[0], border_b[0]), (border_a[1], border_b[1]), "o-")
 
                 legend.append(self._add_label_to_str(f"perimeter {index}"))
 
             legends.extend(legend)
 
-        plt.legend(legends, bbox_to_anchor=(1.04, 0.5), loc="center left")
+        # plt.legend(legends, bbox_to_anchor=(1.04, 0.5), loc="center left")
         return ax
 
     @staticmethod

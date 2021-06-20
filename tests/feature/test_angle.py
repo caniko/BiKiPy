@@ -68,12 +68,6 @@ def test_clockwise_2d():
     result = compute_angles_from_vectors(point_3, point_2, point_1)
     np.testing.assert_allclose(result, 2 * np.pi - answers), result
 
-    feature_scaled_answers = feature_scale(answers)
-    result = compute_angles_from_vectors(
-        point_1, point_2, point_3, feature_scale_data=True
-    )
-    np.testing.assert_allclose(result, feature_scaled_answers), result
-
     answers_in_deg = answers * 180 / np.pi
     result = compute_angles_from_vectors(point_1, point_2, point_3, degrees=True)
     np.testing.assert_allclose(result, answers_in_deg), result

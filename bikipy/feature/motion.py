@@ -155,7 +155,7 @@ def freezing_time(
 
     discrete_thresholding = []
     for displacement in displacements:
-        displacement = np.asanyarray(displacement)
+        displacement = np.asarray(displacement)
         result = np.zeros(displacement.shape[0], dtype=bool)
 
         start, end = 0, frame_threshold

@@ -5,7 +5,6 @@ from warnings import warn
 import numpy as np
 from pandas.core.frame import DataFrame as DataFrameType
 
-from bikipy.math.statistics import feature_scale
 from bikipy.math.vector import dot_prod_along_axis_1, unit_vector
 
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}
@@ -29,26 +28,22 @@ def _find_median_vector(row_vectors: np.ndarray) -> np.ndarray:
     return np.array([np.median(component) for component in row_vectors.T])
 
 
-def counter_clockwise_angel_2d(start_vector, end_vector) -> np.ndarray:
+def clockwise_angel_2d(start_vector: Sequence, end_vector: Sequence) -> np.ndarray:
     """
-    Computes the clockwise inner_angle in radians between two vectors
+    Computes the clockwise angle, [0, 2pi], from start to end in radians
 
-    Parameters
-    ----------
-    start_vector: np.ndarray
-        Array of row vectors in which "the clock starts turning" counter clockwise
-    end_vector: np.ndarray
-        Array of row vectors in which the clock stops
+    :param start_vector: Array of row vectors in which "the clock starts turning", clockwise
+    :param end_vector: Array of row vectors in which the clock stops
+    :type start_vector: np.ndarray
+    :type end_vector: np.ndarray
+    :return: Clockwise angle between start and end vector per frame
+    :rtype: np.ndarray
 
-    Returns
-    -------
-    np.ndarray
-
-    >>> counter_clockwise_angel_2d((1, 0), (0, 1))
+    >>> clockwise_angel_2d((1, 0), (0, 1))
     1.5707963267948966      # pi / 2.
-    >>> counter_clockwise_angel_2d((1, 0), (1, 0))
+    >>> clockwise_angel_2d((1, 0), (1, 0))
     0.0
-    >>> counter_clockwise_angel_2d((1, 0), (-1, 0))
+    >>> clockwise_angel_2d((1, 0), (-1, 0))
     3.141592653589793       # pi
     """
 
@@ -68,38 +63,55 @@ def counter_clockwise_angel_2d(start_vector, end_vector) -> np.ndarray:
     return np.pi - np.arctan2(determinants, dot_prod)
 
 
+def inner_angle(a_vector: Sequence, b_vector: Sequence) -> np.ndarray:
+    """
+    Computes the inner angle between two vectors, a and b, in radians
+
+    :param a_vector: Array of row vectors in which "the clock starts turning" counter clockwise
+    :param b_vector: Array of row vectors in which the clock stops
+    :type a_vector: np.ndarray
+    :type b_vector: np.ndarray
+    :return: Inner angle between a and b vector per frame
+    :rtype: np.ndarray
+    """
+    a_unit_vector = unit_vector(a_vector, force_1_dim=True)
+    b_unit_vector = unit_vector(b_vector, force_1_dim=True)
+
+    return np.arccos(
+        dot_prod_along_axis_1(a_unit_vector, b_unit_vector)
+        / (
+            np.linalg.norm(a_unit_vector, axis=1)
+            * np.linalg.norm(b_unit_vector, axis=1)
+        )
+    )
+
+
 def compute_angles_from_vectors(
     row_vectors_point_a: np.ndarray,
     row_vectors_point_b: np.ndarray,
     row_vectors_point_c: np.ndarray,
     median_points: Union[str, Sequence, None] = None,
-    feature_scale_data: bool = False,
-    feature_scale_min_max: Union[Sequence, None] = None,
+    method: str = "inner",
     degrees: bool = False,
 ):
     """
+
     Computes the angle between three groups of vectors
 
-    Parameters
-    ----------
-    row_vectors_point_a: np.ndarray
-        Array of row vectors
-    row_vectors_point_b: np.ndarray
-        Array of row vectors that is the joint between the two other groups of vectors
-    row_vectors_point_c: np.ndarray
-        Array of row vectors
-    median_points: str, list; optional
-        Anchor one or several row vectors to their respective median. Information about median computation in _find_median_vector()
-    feature_scale_data: bool; default False
-        If True, data will be scaled based on minimum and maximum of data
-    feature_scale_min_max: iterable(min, max); default None
-        Optional override of minimum and maximum used for feature scaling
-    degrees: bool; default False
-        If True, convert resulting angle data to degrees
-
-    Returns
-    -------
-    np.ndarray
+    :param row_vectors_point_a: Array of row vectors
+    :param row_vectors_point_b: Array of row vectors that is the joint between the two other groups of vectors
+    :param row_vectors_point_c: Array of row vectors
+    :param median_points: Anchor one or several points to their respective median. Information about median computation in _find_median_vector()
+    :param method: The method for computing angle, supported methods are inner; clockwise.
+    :param degrees: If True, convert resulting angle data to degrees
+    :type row_vectors_point_a: np.ndarray
+    :type row_vectors_point_b: np.ndarray
+    :type row_vectors_point_c: np.ndarray
+    :type median_points: Iterable, str
+    :type method: str
+    :type degrees: bool
+    :return: Angle per frame
+    :rtype: np.ndarray
     """
 
     points = [
@@ -111,12 +123,10 @@ def compute_angles_from_vectors(
         warn("At least one of the arrays consists solely of NaN (Not a Number) objects")
         return np.full((points[0].size,), np.nan)
 
-    if not median_points:
-        pass
-    elif isinstance(median_points, str):
+    if isinstance(median_points, str):
         index = POINT_NAME_TO_INDEX[median_points]
         points[index] = _find_median_vector(points[index])
-    else:
+    elif median_points:
         try:
             for label in median_points:
                 index = POINT_NAME_TO_INDEX[label]
@@ -128,21 +138,15 @@ def compute_angles_from_vectors(
             msg = "median_points has to be list, string or None"
             raise ValueError(msg) from e
 
-    computation = counter_clockwise_angel_2d(
-        points[1] - points[0], points[2] - points[1]  # AB Vector  # BC Vector
-    )
+    try:
+        computation = ANGLE_METHOD_TO_FUNC[method.lower()](
+            points[1] - points[0], points[2] - points[1]  # AB Vector  # BC Vector
+        )
+    except KeyError as e:
+        msg = f"{method} is not a supported method. Supported methods are {ANGLE_METHOD_TO_FUNC.keys()}"
+        raise ValueError(msg) from e
 
-    if feature_scale_data:
-        if feature_scale_min_max:
-            try:
-                computation = feature_scale(computation, *feature_scale_min_max)
-            except TypeError as e:
-                msg = "feature_scale_data must either be (min, max) or bool"
-                raise ValueError(msg) from e
-        else:
-            computation = feature_scale(computation)
-
-    elif degrees:
+    if degrees:
         computation = np.rad2deg(computation)
 
     return computation
@@ -191,3 +195,6 @@ def dlc_compute_angles_from_vectors(
         "Angle": compute_angles_from_vectors(*point_set, *args, **kwargs),
         "Likelihood": likelihood,
     }
+
+
+ANGLE_METHOD_TO_FUNC = {"inner": inner_angle, "clockwise": clockwise_angel_2d}

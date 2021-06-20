@@ -84,13 +84,13 @@ class BaseTrial:
 
         self._frozen_boolean_indices = freezing_time(
             self.fps,
-            (
+            [
                 displacement_per_frame(coordinate_sequence, remove_tails=False)
                 * self.unit_per_pixel
                 for coordinate_sequence in self.coordinate_sequence[
                     self.rigid_nodes_freezing
                 ]
-            ),
+            ],
         )
 
     @property

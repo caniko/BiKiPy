@@ -3,7 +3,6 @@ Novel Object Recognition test (NORT) class representing a single test.
 These tests can be grouped together to form entire experiments.
 """
 from dataclasses import dataclass, field
-from functools import cached_property
 from logging import getLogger
 from pathlib import Path
 from typing import Any, SupportsFloat, Union

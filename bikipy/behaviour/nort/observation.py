@@ -10,13 +10,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from bikipy.feature.angle import counter_clockwise_angel_2d
+from bikipy.feature.angle import clockwise_angel_2d, inner_angle
 from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.math.vector import closest_line_to_point, unit_vector
 from bikipy.perimeter.base import PolygonalPerimeter
 from bikipy.utils.misc import read_image
 
 logger = getLogger(__name__)
+SCATTER_ALPHA = 0.6
 
 
 def location_filter(
@@ -84,14 +85,20 @@ def location_filter(
         nort_object.plot(ax=ax)
 
         not_result = ~result
-        ax.scatter(*nose[nose_within_border & not_result].T)
-        ax.scatter(*nose[torso_outside_polygon & not_result].T)
-        ax.scatter(*nose[result].T)
+        ax.scatter(
+            *nose[nose_within_border & not_result].T,
+            alpha=SCATTER_ALPHA,
+            label="Nose valid, invalid torso",
+        )
+        ax.scatter(
+            *nose[torso_outside_polygon & not_result].T,
+            alpha=SCATTER_ALPHA,
+            label="Torso valid, invalid nose",
+        )
+        ax.scatter(*nose[result].T, alpha=SCATTER_ALPHA, label="Valid")
 
         ax.legend(
-            ("Nose valid, invalid torso", "Torso valid, invalid nose", "Valid"),
-            bbox_to_anchor=(1.04, 0.5),
-            loc="center left",
+            loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=3
         )
 
         if not inspection_ax:
@@ -119,10 +126,9 @@ def gaze_direction_filter(
         nort_object.corner_to_corner_vectors, nort_object.perimeter_corners, eye_center
     )
 
-    counter_clockwise_rad = counter_clockwise_angel_2d(closest_side, eye_to_nose_unit)
-    clockwise_rad = np.abs(counter_clockwise_rad - 2.0 * np.pi)
+    inner_angles = inner_angle(closest_side, eye_to_nose_unit)
 
-    result = (counter_clockwise_rad <= max_radians) | (clockwise_rad <= max_radians)
+    result = inner_angles <= max_radians
 
     if inspection_ax is not None or inspect:
         if inspection_ax is None:
@@ -134,7 +140,12 @@ def gaze_direction_filter(
         ax.set_title("Gaze direction filter")
         nort_object.plot(ax=ax)
 
-        ax.scatter(*nose[result].T)
+        ax.scatter(*nose[result].T, alpha=SCATTER_ALPHA, label="Valid")
+        ax.scatter(*nose[~result].T, alpha=SCATTER_ALPHA, label="Invalid")
+
+        ax.legend(
+            loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=2
+        )
 
         if not ax:
             plt.show()
@@ -288,7 +299,7 @@ def nort_observation(
     semi_true_observations = location_filtered & gaze_filtered
 
     object_observation = (
-        np.full_like(semi_true_observations, False)
+        np.zeros_like(semi_true_observations, dtype=bool)
         if np.sum(semi_true_observations) < fps
         else np.array(attention_span_filter(semi_true_observations, fps))
     )
@@ -298,11 +309,11 @@ def nort_observation(
             for ax in rows:
                 nort_object.plot(perimeter_border_normal_pixel_magnitude, ax=ax)
 
-        axes[1][0].set_title("Semi true object observation")
-        axes[1][0].scatter(*nose[semi_true_observations].T, alpha=0.65)
+        axes[1][0].set_title("location_filtered & gaze_filtered")
+        axes[1][0].scatter(*nose[semi_true_observations].T, alpha=SCATTER_ALPHA)
 
         axes[1][1].set_title("Object observation")
-        axes[1][1].scatter(*nose[object_observation].T, alpha=0.65)
+        axes[1][1].scatter(*nose[object_observation].T, alpha=SCATTER_ALPHA)
 
         plt.tight_layout()
         if isinstance(inspect, bool):
