@@ -128,8 +128,8 @@ class NortTrainingTrial(NortHabituationTrial):
         ]
         return nort_observation(
             nort_object,
-            eye,
             nose,
+            eye,
             torso,
             self.fps,
             self.perimeter_border_normal_pixel_magnitude,

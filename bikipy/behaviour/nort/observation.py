@@ -22,7 +22,7 @@ SCATTER_ALPHA = 0.6
 
 
 def location_filter(
-    nort_object,
+    nort_object: PolygonalPerimeter,
     nose: Sequence[Sequence[float]],
     torso: Sequence[Sequence[float]],
     perimeter_border_normal_pixel_magnitude: float,
@@ -113,7 +113,7 @@ def location_filter(
 
 
 def gaze_direction_filter(
-    nort_object,
+    nort_object: PolygonalPerimeter,
     nose: Sequence[Sequence[float]],
     eye_center: Sequence[Sequence[float]],
     max_radians: float,
@@ -156,8 +156,8 @@ def gaze_direction_filter(
 
 def nort_observation(
     nort_object: PolygonalPerimeter,
-    eye_center: Sequence[Sequence[float]],
     nose: Sequence[Sequence[float]],
+    eye_center: Sequence[Sequence[float]],
     torso: Sequence[Sequence[float]],
     fps: float,
     perimeter_border_normal_pixel_magnitude: float,

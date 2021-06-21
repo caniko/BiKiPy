@@ -46,16 +46,20 @@ def points_in_parallelogram(
     c_coord_vectors = coordinates - ab_mid_corner
 
     ca_cc_dot = dot_prod_along_axis_1(c_coord_vectors, ca_vector)
-    ca_cc_dot_booleans = np.logical_and(
-        ca_cc_dot > 0, ca_cc_dot < np.linalg.norm(ca_vector) ** 2
-    )
-
     cb_cc_dot = dot_prod_along_axis_1(c_coord_vectors, cb_vector)
-    cb_cc_dot_booleans = np.logical_and(
-        cb_cc_dot > 0, cb_cc_dot < np.linalg.norm(cb_vector) ** 2
-    )
 
-    result = np.logical_and(ca_cc_dot_booleans, cb_cc_dot_booleans)
+    if np.isclose(np.dot(ca_vector, cb_vector), 0.0):
+        ca_cc_dot_booleans = np.logical_and(
+            ca_cc_dot > 0, ca_cc_dot < np.linalg.norm(ca_vector) ** 2
+        )
+
+        cb_cc_dot_booleans = np.logical_and(
+            cb_cc_dot > 0, cb_cc_dot < np.linalg.norm(cb_vector) ** 2
+        )
+
+        result = np.logical_and(ca_cc_dot_booleans, cb_cc_dot_booleans)
+    else:
+        pass
 
     if inspect_points:
         set_theme(style="darkgrid")
