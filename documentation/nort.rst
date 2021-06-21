@@ -37,9 +37,12 @@ The functions combines three filters to achieve the result:
 
 Location filter
 ---------------
-The location filter currently only supports rectangular objects; moreover, information on potential implementations_ can be found on wikipedia.
+The location filter returns a boolean index where the given index stores the boolean of the point being contained by the respective nort object. There is only support for parallelograms. The theory behind the function with regards to parallelograms_ were derived from math stack exchange.
 
-For objects that are parallelograms, the dot product
+Gaze filter
+-----------
+The gaze filter computes the inner angle between :code:`nose` and :code:`eye_center`. Read more about inner angle on :ref:`features.angle`.
 
 
+.. _parallelograms: https://math.stackexchange.com/a/2643651/604035
 .. _implementations: https://en.wikipedia.org/wiki/Point_in_polygon

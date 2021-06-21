@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from seaborn import set_theme
 
-from bikipy.math.vector import dot_prod_along_axis_1
+from bikipy.math.vector import dot_prod_along_axis_1, orthogonal_unit_vector
 
 
 def points_in_parallelogram(
@@ -17,17 +17,18 @@ def points_in_parallelogram(
     """
     Algebraic solver for finding points located inside a parallelogram.
 
-    Parameters
-    ----------
-    ab_mid_corner
-    corner_a
-    corner_b
-    coordinates
-    inspect_points
-
-    Returns
-    -------
-
+    :param ab_mid_corner:
+    :param corner_a:
+    :param corner_b:
+    :param coordinates:
+    :param inspect_points:
+    :type ab_mid_corner: np.ndarray
+    :type corner_a: np.ndarray
+    :type corner_b: np.ndarray
+    :type coordinates: np.ndarray
+    :type inspect_points: bool
+    :return:
+    :rtype np.ndarray
     """
     ab_mid_corner, corner_a, corner_b, coordinates = (
         np.asarray(ab_mid_corner),
@@ -45,21 +46,39 @@ def points_in_parallelogram(
     cb_vector = corner_b - ab_mid_corner
     c_coord_vectors = coordinates - ab_mid_corner
 
-    ca_cc_dot = dot_prod_along_axis_1(c_coord_vectors, ca_vector)
-    cb_cc_dot = dot_prod_along_axis_1(c_coord_vectors, cb_vector)
-
     if np.isclose(np.dot(ca_vector, cb_vector), 0.0):
+        # Rectangle
+        ca_cc_dot = dot_prod_along_axis_1(c_coord_vectors, ca_vector)
+        cb_cc_dot = dot_prod_along_axis_1(c_coord_vectors, cb_vector)
+
         ca_cc_dot_booleans = np.logical_and(
-            ca_cc_dot > 0, ca_cc_dot < np.linalg.norm(ca_vector) ** 2
+            0 < ca_cc_dot, ca_cc_dot < np.linalg.norm(ca_vector) ** 2
         )
 
         cb_cc_dot_booleans = np.logical_and(
-            cb_cc_dot > 0, cb_cc_dot < np.linalg.norm(cb_vector) ** 2
+            0 < cb_cc_dot, cb_cc_dot < np.linalg.norm(cb_vector) ** 2
         )
 
-        result = np.logical_and(ca_cc_dot_booleans, cb_cc_dot_booleans)
+        result = ca_cc_dot_booleans & cb_cc_dot_booleans
     else:
-        pass
+        # Parallelogram
+        orthogonal_ca_vector = orthogonal_unit_vector(ca_vector)
+        orthogonal_cb_vector = orthogonal_unit_vector(cb_vector)
+
+        normalised_oca = np.sign(np.dot(orthogonal_ca_vector, cb_vector)) * orthogonal_ca_vector
+        normalised_ocb = np.sign(np.dot(orthogonal_cb_vector, ca_vector)) * orthogonal_cb_vector
+
+        oca_cc_dot = dot_prod_along_axis_1(normalised_oca, c_coord_vectors)
+        orthogonal_a_bool = np.logical_and(
+            0 <= oca_cc_dot, oca_cc_dot <= np.dot(normalised_oca, cb_vector)
+        )
+
+        ocb_cc_dot = dot_prod_along_axis_1(normalised_ocb, c_coord_vectors)
+        orthogonal_b_bool = np.logical_and(
+            0 <= ocb_cc_dot, ocb_cc_dot <= np.dot(normalised_ocb, ca_vector)
+        )
+
+        result = orthogonal_a_bool & orthogonal_b_bool
 
     if inspect_points:
         set_theme(style="darkgrid")

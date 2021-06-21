@@ -88,7 +88,7 @@ with pd.ExcelWriter(
                 trial_id_range_vs_exp_meta[trial_id]["field"] = animal_id_vs_app[
                     animal_id
                 ]
-            if trial_id == 58:
+            if trial_id == 127:
                 trial_id_range_vs_exp_meta[trial_id]["inspect"] = True
 
         NortExperiment(
