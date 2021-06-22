@@ -42,8 +42,7 @@ Most applications should use the :code:`bikipy.features.motion.Motion` class to 
 
 Before computing the displacement, the coordinates have their magnitude or `Euclidean norm`_ computed. Any values that are missing, defined as :code:`np.nan`, are interpolated with the akima_ method. The prepared data is then used to compute the features!
 
-The following values are computed by taking the finite derivative:
-Displacement:
+The following values are computed by taking the finite derivative; with the values from the preceding order. Displacement:
 .. math::
     s_{n} = p_{n+1} - p_{n}
 
@@ -56,6 +55,8 @@ Acceleration:
     a_{n} = v_{n+1} - v_{n}
 
 Where :math:`p` is position; :math:`s` is displacement; :math:`v` is speed; :math:`a` is acceleration.
+
+The motion class also stores the attribute referred to as :code:`freezing_time`, which is the number of seconds the animal remained immobile; derived from displacement.
 
 
 Psycho
