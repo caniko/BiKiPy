@@ -17,7 +17,7 @@ def attention_per_frame(
     minimum_seconds_attention to be fulfilled before accepting the sequence as attention.
 
     :param boolean_index:
-    :param fps: Frames per second of the recording used to generate the data in boolean_index
+    :param fps: Frames per second (fps) of the recording used to generate the data in boolean_index
     :param minimum_seconds_attention: Minimum number of seconds that the sequence has to be True
     for it to be defined as an attention sequence. Sequences that fall short of this lowpass filter
     will be converted to False.

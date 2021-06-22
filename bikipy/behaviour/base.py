@@ -4,7 +4,7 @@ from typing import Any, Sequence, Union
 
 import numpy as np
 
-from bikipy.feature.motion import Motion, freezing_time, displacement_per_frame
+from bikipy.feature.motion import Motion, freezing_time, displacement_by_frame
 from bikipy.reader.deeplabcut import DeepLabCutReader
 
 logger = getLogger(__name__)
@@ -85,7 +85,7 @@ class BaseTrial:
         self._frozen_boolean_index = freezing_time(
             self.fps,
             [
-                displacement_per_frame(coordinate_sequence, remove_tails=False)
+                displacement_by_frame(coordinate_sequence, remove_tails=False)
                 * self.unit_per_pixel
                 for coordinate_sequence in self.coordinate_sequence[
                     self.rigid_nodes_freezing

@@ -185,9 +185,6 @@ class SquareEnclosedTrial(BaseTrial):
     @property
     def feature_info(self):
         return [
-            self.total_freezing_time,
-            self.center_freezing_time,
-            self.periphery_freezing_time,
             self.seconds_on_periphery,
             self.seconds_on_center,
             self.periphery_entries,

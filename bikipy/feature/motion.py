@@ -16,7 +16,7 @@ def units_pixels_per_second_frame(
     return units_per_pixel * fps
 
 
-def displacement_per_frame(
+def displacement_by_frame(
     coordinate_sequence: Sequence[Sequence[float]],
     interpolation_method: str = "akima",
     remove_tails: bool = False,
@@ -74,7 +74,7 @@ def total_displacement_median_speed_acceleration(
     -------
     (total displacement, speed per frame, acceleration per frame)
     """
-    displacement = displacement_per_frame(coordinate_sequence) * unit_per_pixel
+    displacement = displacement_by_frame(coordinate_sequence) * unit_per_pixel
     if np.any(displacement):
         return (
             np.sum(displacement),
@@ -85,76 +85,44 @@ def total_displacement_median_speed_acceleration(
         return 0, 0, 0
 
 
-class Motion:
-    def __init__(
-        self,
-        coordinate_sequence: Sequence[Sequence[float]],
-        unit_per_pixel: float,
-        fps: float,
-    ):
-        self.metric_displacement_per_frame = (
-            displacement_per_frame(coordinate_sequence) * unit_per_pixel
-        )
-
-        self.total_displacement = np.nansum(self.metric_displacement_per_frame)
-        if self.total_displacement:
-            self.speed = absolute_derivative(self.metric_displacement_per_frame) * fps
-            self.median_speed = np.nanmedian(self.speed)
-
-            self.acceleration = absolute_derivative(self.speed)
-            self.median_acceleration = np.nanmedian(self.acceleration)
-        else:
-            self.speed = None
-            self.median_speed = None
-
-            self.acceleration = None
-            self.median_acceleration = None
-
-    def to_list(self):
-        return [
-            self.total_displacement,
-            self.median_speed,
-            self.median_acceleration,
-        ]
-
-
-def freezing_time(
+def frozen_frames(
     fps: Union[float, int],
-    displacements: Iterable[np.ndarray],
+    displacement: Iterable[np.ndarray],
     second_threshold: float = 1.0,
     metric_displacement_threshold: float = 0.005,
 ):
     """
     Compute the time the rigid body has been frozen or "stood still" throughout
-    the trial
+    the trial. The acceleration at these frames should be close to zero.
 
     Formal definition: Given that the body is immobile up to a certain tolerance,
-    defined by metric_displacement_threshold, for longer than second_threshold
+    defined by metric_displacement_threshold, for longer than the defined second threshold
+    define the respective sequence as frozen. True = Frozen; False = Mobile
 
     Method:
-        1. Filter each node in the rigid body discretely with both thresholds
-        2. Perform logical AND operation on the result from the nodes
+        #. Filter each node in the rigid body discretely with both thresholds
+        #. Perform logical AND operation on the result from the nodes
 
-        Some of the freeze epochs may be orphaned as they below the time threshold
-        after the AND operation, which is why a last step is necessary.
+        Some of the freeze epochs may be orphaned as they are below the time threshold
+        after the AND operation, which is why a last step is necessary:
 
-        3. Filter the result from 2. with respect to the time/frame/second threshold
+        #. Filter the result from 2. with respect to the time/frame/second threshold
 
-    Parameters
-    ----------
-    fps
-    displacements
-    second_threshold
-    metric_displacement_threshold
-
-    Returns
-    -------
-
+    :param fps: Frames per second (fps) of the video the data was collected from
+    :param displacement: 
+    :param second_threshold: 
+    :param metric_displacement_threshold: 
+    :type fps: float
+    :type displacement: np.ndarray
+    :type second_threshold: float
+    :type metric_displacement_threshold: float 
+    :return: Boolean index storing the freezing state of the animal across frames
+    :rtype: np.ndarray 
     """
     frame_threshold = round(second_threshold * fps)
 
     discrete_thresholding = []
-    for displacement in displacements:
+    for displacement in displacement:
         displacement = np.asarray(displacement)
         result = np.zeros(displacement.shape[0], dtype=bool)
 
@@ -201,3 +169,45 @@ def freezing_time(
             start += 1
 
     return logical_and_thresholding
+
+
+class Motion:
+    def __init__(
+        self,
+        coordinate_sequence: Sequence[Sequence[float]],
+        unit_per_pixel: float,
+        fps: float,
+    ):
+        self.fps = fps
+
+        self.metric_displacement_by_frame = (
+            displacement_by_frame(coordinate_sequence) * unit_per_pixel
+        )
+
+        self.total_displacement = np.nansum(self.metric_displacement_by_frame)
+        if self.total_displacement:
+            self.speed = absolute_derivative(self.metric_displacement_by_frame) * self.fps
+            self.median_speed = np.nanmedian(self.speed)
+
+            self.frozen_frames = frozen_frames(self.fps, self.metric_displacement_by_frame)
+            self.freezing_time = np.nansum(self.frozen_frames) / self.fps
+
+            self.acceleration = absolute_derivative(self.speed)
+            self.median_acceleration = np.nanmedian(self.acceleration)
+        else:
+            self.speed = None
+            self.median_speed = None
+
+            self.frozen_frames = None
+            self.freezing_time = None
+
+            self.acceleration = None
+            self.median_acceleration = None
+
+    def to_list(self):
+        return [
+            self.total_displacement,
+            self.median_speed,
+            self.median_acceleration,
+            self.freezing_time
+        ]

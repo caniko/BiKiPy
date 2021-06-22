@@ -36,7 +36,14 @@ The midpoints are computed with the use of the midpoint between two vectors equa
 
 Motion
 ======
-The motion subpackage computes displacement, speed, acceleration, and freeze time. Displacement is computed by the finite derivative of position:
+The motion subpackage computes motion related features.
+
+Most applications should use the :code:`bikipy.features.motion.Motion` class to compute and store these features.
+
+Before computing the displacement, the coordinates have their magnitude or `Euclidean norm`_ computed. Any values that are missing, defined as :code:`np.nan`, are interpolated with the akima_ method. The prepared data is then used to compute the features!
+
+The following values are computed by taking the finite derivative:
+Displacement:
 .. math::
     s_{n} = p_{n+1} - p_{n}
 
@@ -53,9 +60,13 @@ Where :math:`p` is position; :math:`s` is displacement; :math:`v` is speed; :mat
 
 Psycho
 ======
+The psycho(logy) package stores function related to psychological phenomena that occur during the experiment.
+
 
 
 
 .. _NumPy: https://en.wikipedia.org/wiki/NumPy
 .. _Numba: https://en.wikipedia.org/wiki/Numba
 .. _atan2: https://en.wikipedia.org/wiki/Atan2
+.. _Euclidean norm: https://en.wikipedia.org/wiki/Euclidean_space#Euclidean_norm
+.. _akima: https://en.wikipedia.org/wiki/Akima_spline

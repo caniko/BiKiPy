@@ -176,7 +176,7 @@ def nort_observation(
     torso: Sequence
         Points across time defining the central position of the animal torso
     fps: float
-        Frames per second in the media used for the respective data source
+        Frames per second (fps) of the video the data was collected from
     perimeter_border_normal_pixel_magnitude
         The magnitude of the normal between the perimeter and the border given in pixels
     max_radians_gaze_and_object: float
