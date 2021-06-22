@@ -55,14 +55,14 @@ class YMaze(BaseTrial):
         (
             self.alternation_sequence,
             self.valid_indices,
-            self.valid_boolean_indices,
+            self.valid_boolean_index,
         ) = PolygonalPerimeter.detect_sequential_border_presence(
             self.coordinate_sequence,
             self.arms,
             inferior_poly_border_instances=[self.center],
         )
 
-        self.invalid_boolean_indices = ~self.valid_boolean_indices
+        self.invalid_boolean_index = ~self.valid_boolean_index
 
         self.reduced_alternation_sequence = reduce_repeating_sequences(
             self.alternation_sequence
@@ -235,9 +235,9 @@ class YMaze(BaseTrial):
             points=(
                 points
                 or self.coordinate_sequence[
-                    self.invalid_boolean_indices
+                    self.invalid_boolean_index
                     if invalid
-                    else self.valid_boolean_indices
+                    else self.valid_boolean_index
                 ]
             ),
         )

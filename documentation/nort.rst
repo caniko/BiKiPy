@@ -43,6 +43,10 @@ Gaze filter
 -----------
 The gaze filter computes the inner angle between :code:`nose` and :code:`eye_center`. Read more about inner angle on :ref:`features.angle`.
 
+Attention filter
+----------------
+
+
 
 .. _parallelograms: https://math.stackexchange.com/a/2643651/604035
 .. _implementations: https://en.wikipedia.org/wiki/Point_in_polygon

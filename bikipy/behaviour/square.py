@@ -45,35 +45,35 @@ class SquareEnclosedTrial(BaseTrial):
 
         assert self.metric_resolution > self.center_metric_length
 
-        self.center_boolean_indices = points_in_parallelogram(
+        self.center_boolean_index = points_in_parallelogram(
             self.center_square_corners[0],
             self.center_square_corners[3],
             self.center_square_corners[1],
             self.coordinates_per_frame,
             inspect_points=self.func_inspect,
         )
-        self.periphery_boolean_indices = ~self.center_boolean_indices
+        self.periphery_boolean_index = ~self.center_boolean_index
 
-        self.seconds_on_center = np.sum(self.center_boolean_indices) / self.fps
-        self.seconds_on_periphery = np.sum(self.periphery_boolean_indices) / self.fps
+        self.seconds_on_center = np.sum(self.center_boolean_index) / self.fps
+        self.seconds_on_periphery = np.sum(self.periphery_boolean_index) / self.fps
 
         self.center_motion = Motion(
-            self.coordinates_per_frame[self.center_boolean_indices],
+            self.coordinates_per_frame[self.center_boolean_index],
             self.unit_per_pixel,
             self.fps,
         )
         self.periphery_motion = Motion(
-            self.coordinates_per_frame[self.periphery_boolean_indices],
+            self.coordinates_per_frame[self.periphery_boolean_index],
             self.unit_per_pixel,
             self.fps,
         )
 
         # 1 is center, 2 is periphery, 0 is invalid aka unknown
         self.location_sequence = np.zeros_like(
-            self.center_boolean_indices, dtype=np.uint8
+            self.center_boolean_index, dtype=np.uint8
         )
-        self.location_sequence[self.center_boolean_indices] = 1
-        self.location_sequence[self.periphery_boolean_indices] = 2
+        self.location_sequence[self.center_boolean_index] = 1
+        self.location_sequence[self.periphery_boolean_index] = 2
         self.location_sequence = np.array(
             reduce_repeating_sequences(
                 self.location_sequence, frame_tolerance=self._frame_tolerance
@@ -146,14 +146,14 @@ class SquareEnclosedTrial(BaseTrial):
     @cached_property
     def center_freezing_time(self):
         return (
-            np.sum(self.frozen_boolean_indices & self.center_boolean_indices[1:])
+            np.sum(self.frozen_boolean_index & self.center_boolean_index[1:])
             / self.fps
         )
 
     @cached_property
     def periphery_freezing_time(self):
         return (
-            np.sum(self.frozen_boolean_indices & self.periphery_boolean_indices[1:])
+            np.sum(self.frozen_boolean_index & self.periphery_boolean_index[1:])
             / self.fps
         )
 

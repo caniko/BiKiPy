@@ -64,7 +64,7 @@ class BaseTrial:
         self.motion = Motion(self.coordinates_per_frame, self.unit_per_pixel, self.fps)
 
         self._rigid_nodes_freezing = None
-        self._frozen_boolean_indices = None
+        self._frozen_boolean_index = None
         if rigid_nodes_freezing:
             self.rigid_nodes_freezing = rigid_nodes_freezing
 
@@ -82,7 +82,7 @@ class BaseTrial:
         if not value:
             return
 
-        self._frozen_boolean_indices = freezing_time(
+        self._frozen_boolean_index = freezing_time(
             self.fps,
             [
                 displacement_per_frame(coordinate_sequence, remove_tails=False)
@@ -94,15 +94,15 @@ class BaseTrial:
         )
 
     @property
-    def frozen_boolean_indices(self):
-        if self._frozen_boolean_indices is None:
+    def frozen_boolean_index(self):
+        if self._frozen_boolean_index is None:
             msg = "rigid_nodes_freezing has to be defined in order to compute frozen time data"
             raise AttributeError(msg)
-        return self._frozen_boolean_indices
+        return self._frozen_boolean_index
 
     @cached_property
     def total_freezing_time(self):
-        return np.sum(self.frozen_boolean_indices) / self.fps
+        return np.sum(self.frozen_boolean_index) / self.fps
 
 
 class BaseExperiment:

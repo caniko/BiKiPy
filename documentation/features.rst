@@ -31,6 +31,8 @@ The midpoints are computed with the use of the midpoint between two vectors equa
 .. math::
     midpoint = \frac{\mathbf{b} - \mathbf{a}}{2}
 
+.. note::
+    This module supports
 
 Motion
 ======
@@ -47,6 +49,11 @@ Acceleration:
     a_{n} = v_{n+1} - v_{n}
 
 Where :math:`p` is position; :math:`s` is displacement; :math:`v` is speed; :math:`a` is acceleration.
+
+
+Psycho
+======
+
 
 
 .. _NumPy: https://en.wikipedia.org/wiki/NumPy
