@@ -109,6 +109,8 @@ class BaseExperiment:
     def __init__(
         self,
         trial_id_vs_coordinate_data_path: dict,
+        trial_id_range_vs_exp_meta: dict,
+        metric_resolution: Union[Sequence[float], float, None] = None,
         fps: Union[dict, float, None] = None,
         coordinate_data_format: str = "deeplabcut",
         label: Any = None,

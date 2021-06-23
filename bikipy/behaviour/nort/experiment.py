@@ -38,8 +38,6 @@ class NortExperiment(BaseExperiment):
 
     def __init__(
         self,
-        trial_id_range_vs_exp_meta: dict,
-        metric_resolution: SupportsFloat,
         nose_label: str,
         eye_center_label: str,
         torso_label: str,
@@ -54,8 +52,6 @@ class NortExperiment(BaseExperiment):
 
         Parameters
         ----------
-        trial_id_range_vs_exp_meta
-        metric_resolution
         nose_label
         eye_center_label
         torso_label
@@ -77,10 +73,7 @@ class NortExperiment(BaseExperiment):
             str(eye_center_label),
             str(nose_label),
         )
-        self.metric_resolution, self.maximum_radians_inter_gaze_perimeter = (
-            float(metric_resolution),
-            float(maximum_radians_inter_gaze_perimeter),
-        )
+        self.maximum_radians_inter_gaze_perimeter = float(maximum_radians_inter_gaze_perimeter)
 
         self.center_metric_length = (
             float(center_metric_length) if center_metric_length else None
@@ -104,7 +97,7 @@ class NortExperiment(BaseExperiment):
                 "coordinate_sequence": coordinate_sequence,
                 "movement_feature_point_label": self.eye_center_label,
                 "recording_resolution": exp_meta["recording_resolution"],
-                "metric_resolution": metric_resolution,
+                "metric_resolution": self.metric_resolution,
                 "label": exp_id,
                 "func_inspect": self.func_inspect,
                 "rigid_nodes_freezing": (self.eye_center_label, self.torso_label),
