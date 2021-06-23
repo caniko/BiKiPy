@@ -1,0 +1,341 @@
+"""
+2D kinematic filters, 3D not supported.
+"""
+import os
+from logging import getLogger
+from pathlib import Path, PurePath
+from typing import Any, Sequence, Tuple, Union
+
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+
+from bikipy.feature.angle import inner_angle
+from bikipy.math.point_in_polygon import points_in_parallelogram
+from bikipy.math.vector import closest_line_to_point, unit_vector
+from bikipy.perimeter.base import PolygonalPerimeter
+
+
+SCATTER_ALPHA = 0.55
+logger = getLogger(__name__)
+
+
+def proximity_filter(
+    polygonal_perimeter: PolygonalPerimeter,
+    nose: Sequence[Sequence[float]],
+    center_of_mass: Sequence[Sequence[float]],
+    perimeter_border_normal_pixel_magnitude: float,
+    inspect: bool = False,
+    inspection_ax: Any = None,
+) -> Sequence[bool]:
+    """
+    Filter with respect to proximity rules. (1) The nose has to be in front of perimeter, but inside the border;
+    (2) the center_of_mass is outside of the perimeter.
+
+    Parameters
+    ----------
+    polygonal_perimeter
+    nose
+        Cartesian coordinates of the nose
+    center_of_mass
+        Cartesian coordinates of the center of mass
+    perimeter_border_normal_pixel_magnitude
+        The magnitude of the normal between the perimeter and the border given in pixels
+    inspect
+        If True, generate and view an analytics of the resulting filter
+    inspection_ax
+        matplotlib Axes that the inspection plots will (optionally) be saved in
+
+    Returns
+    -------
+
+    """
+    # Remove nose points that aren't inside the perimeter
+    nose = np.asarray(nose)
+
+    polygonal_perimeter_border = polygonal_perimeter.border(perimeter_border_normal_pixel_magnitude)
+
+    nose_within_border = points_in_parallelogram(
+        polygonal_perimeter_border.perimeter_corners[1],
+        polygonal_perimeter_border.perimeter_corners[0],
+        polygonal_perimeter_border.perimeter_corners[2],
+        nose,
+    )
+    center_of_mass_outside_polygon = np.logical_not(
+        points_in_parallelogram(
+            polygonal_perimeter.perimeter_corners[1],
+            polygonal_perimeter.perimeter_corners[0],
+            polygonal_perimeter.perimeter_corners[2],
+            center_of_mass,
+        )
+    )
+
+    # Find states where the nose is within perimeter while the center_of_mass is not over perimeter
+    result = nose_within_border & center_of_mass_outside_polygon
+
+    if inspection_ax is not None or inspect:
+        if inspection_ax is None:
+            sns.set_theme(style="darkgrid")
+            fig, ax = plt.subplots()
+        else:
+            ax = inspection_ax
+
+        ax.set_title("Location filter")
+        polygonal_perimeter.plot(ax=ax)
+
+        not_result = ~result
+        ax.scatter(
+            *nose[nose_within_border & not_result].T,
+            alpha=SCATTER_ALPHA,
+            label="Nose valid, invalid center_of_mass",
+        )
+        ax.scatter(
+            *nose[center_of_mass_outside_polygon & not_result].T,
+            alpha=SCATTER_ALPHA,
+            label="Center of mass valid, invalid nose",
+        )
+        ax.scatter(*nose[result].T, alpha=SCATTER_ALPHA, label="Valid")
+
+        ax.legend(
+            loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=3
+        )
+
+        if not inspection_ax:
+            plt.show()
+
+    return result, {
+        "nose_within_border": nose_within_border,
+        "center_of_mass_outside_polygon": center_of_mass_outside_polygon,
+        "and": result,
+    }
+
+
+def gaze_direction_filter(
+    polygonal_perimeter: PolygonalPerimeter,
+    nose: Sequence[Sequence[float]],
+    eye_center: Sequence[Sequence[float]],
+    max_radians: float,
+    inspect: bool = False,
+    inspection_ax: Any = None,
+) -> np.ndarray:
+    nose, eye_center = np.asarray(nose), np.asarray(eye_center)
+    eye_to_nose_unit = unit_vector(nose - eye_center)
+
+    closest_side, idx = closest_line_to_point(
+        polygonal_perimeter.corner_to_corner_vectors, polygonal_perimeter.perimeter_corners, eye_center
+    )
+
+    inner_angles = inner_angle(closest_side, eye_to_nose_unit)
+
+    result = inner_angles <= max_radians
+
+    if inspection_ax is not None or inspect:
+        if inspection_ax is None:
+            sns.set_theme(style="darkgrid")
+            fig, ax = plt.subplots()
+        else:
+            ax = inspection_ax
+
+        ax.set_title("Gaze direction filter")
+        polygonal_perimeter.plot(ax=ax)
+
+        ax.scatter(*nose[result].T, alpha=SCATTER_ALPHA, label="Valid")
+        ax.scatter(*nose[~result].T, alpha=SCATTER_ALPHA, label="Invalid")
+
+        ax.legend(
+            loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=2
+        )
+
+        if not ax:
+            plt.show()
+
+    return result
+
+
+def attention_filter(
+    boolean_index: Sequence[bool],
+    fps: float,
+    minimum_seconds_attention: float = 0.2,
+) -> np.ndarray:
+    """
+    Filters boolean_index with respect to attention. The filter tolerates distraction, and requires
+    minimum_seconds_attention to be fulfilled before accepting the sequence as attention.
+
+    :param boolean_index:
+    :param fps: Frames per second (fps) of the recording used to generate the data in boolean_index
+    :param minimum_seconds_attention: Minimum number of seconds that the sequence has to be True
+    for it to be defined as an attention sequence. Filtered sequences will be converted to False.
+    :type boolean_index: np.ndarray
+    :type fps: float
+    :type minimum_seconds_attention: float
+    :return: Boolean index filtered with respect to attention
+    :rtype np.ndarray
+    """
+    boolean_index = np.asarray(boolean_index)
+
+    fps = float(fps)
+    minimum_seconds_attention = float(minimum_seconds_attention)
+
+    distraction_tolerance = round(fps / 2.0)
+    minimum_time_valid_observation = round(minimum_seconds_attention * fps)
+
+    length = boolean_index.shape[0]
+    attention_boolean_index = np.zeros(length, dtype=bool)
+
+    first_valid_index = None
+    i, valid_frames_within_border, true_counter, consecutive_false = 0, 0, 0, 0
+    while True:
+        if boolean_index[i]:
+            true_counter += 1
+
+            if consecutive_false:
+                true_counter += consecutive_false - 1  # make up for the previous += 1
+                consecutive_false = 0
+
+            if true_counter == minimum_time_valid_observation:
+                # The first valid index is the index of the first True, i.e. when true_counter was 1
+                first_valid_index = i - minimum_time_valid_observation + 1
+
+        else:
+            if first_valid_index is not None:
+                if consecutive_false <= distraction_tolerance:
+                    consecutive_false += 1
+                else:
+                    attention_boolean_index[first_valid_index : i + 1] = True
+                    valid_frames_within_border += true_counter
+
+                    consecutive_false, true_counter = 0, 0
+                    first_valid_index = None
+
+            else:
+                true_counter = 0
+
+        i += 1
+
+        if i == length:
+            if first_valid_index is not None:
+                attention_boolean_index[first_valid_index:] = True
+                valid_frames_within_border += true_counter
+            break
+
+    if valid_frames_within_border == 0:
+        logger.info(f"Subject didn't observe the polygonal perimeter")
+
+        assert not np.any(attention_boolean_index)
+        return attention_boolean_index
+
+    assert (
+        np.any(attention_boolean_index)
+        and np.sum(attention_boolean_index) >= minimum_time_valid_observation
+    ), (
+        f"True: {np.sum(attention_boolean_index)}; fps: {fps}; "
+        f"Minimum observation frames: {minimum_time_valid_observation}"
+    )
+
+    return attention_boolean_index
+
+
+def polygonal_perimeter_observation(
+    polygonal_perimeter: PolygonalPerimeter,
+    nose: Sequence[Sequence[float]],
+    eye_center: Sequence[Sequence[float]],
+    center_of_mass: Sequence[Sequence[float]],
+    fps: float,
+    perimeter_border_normal_pixel_magnitude: float,
+    maximum_radians_inter_gaze_perimeter: float = 0.25 * np.pi,
+    inspect: Union[bool, str, PurePath] = False,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+
+    Parameters
+    ----------
+    polygonal_perimeter: PolygonalPerimeter
+    eye_center: Sequence
+        Points across time defining the position between the eyes of the animal
+    nose: Sequence
+        Points across time defining the position of the animal nose
+    center_of_mass: Sequence
+        Points across time defining the central position of the animal center_of_mass
+    fps: float
+        Frames per second (fps) of the video the data was collected from
+    perimeter_border_normal_pixel_magnitude
+        The magnitude of the normal between the perimeter and the border given in pixels
+    maximum_radians_inter_gaze_perimeter: float
+        Maximum radians between the gaze vector (eye_centre to nose) and perimeter tangent
+    inspect: bool
+        If True, will generate and show and inspection figure for the inspection of
+        each filter
+
+    Returns
+    -------
+
+    """
+    eye_center, nose, center_of_mass = (
+        np.asarray(eye_center),
+        np.asarray(nose),
+        np.asarray(center_of_mass),
+    )
+    fps = float(fps)
+    maximum_radians_inter_gaze_perimeter = float(maximum_radians_inter_gaze_perimeter)
+
+    if inspect:
+        if polygonal_perimeter.inspect_image is not None:
+            x, y = polygonal_perimeter.inspect_image.shape
+            fig, axes = plt.subplots(
+                nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0)
+            )
+        else:
+            fig, axes = plt.subplots(nrows=2, ncols=2)
+        fig.gca().invert_yaxis()
+        fig.suptitle("Observation cumulative filtration analysis")
+
+        loc_filter_kwargs = {"inspection_ax": axes[0][0]}
+        gaze_filter_kwargs = {"inspection_ax": axes[0][1]}
+    else:
+        loc_filter_kwargs, gaze_filter_kwargs = {}, {}
+
+    location_filtered, loc_analytics = proximity_filter(
+        polygonal_perimeter,
+        nose,
+        center_of_mass,
+        perimeter_border_normal_pixel_magnitude,
+        **loc_filter_kwargs,
+    )
+
+    gaze_filtered = gaze_direction_filter(
+        polygonal_perimeter,
+        nose,
+        eye_center,
+        maximum_radians_inter_gaze_perimeter,
+        **gaze_filter_kwargs,
+    )
+
+    semi_true_observations = location_filtered & gaze_filtered
+
+    perimeter_observation = (
+        np.zeros_like(semi_true_observations, dtype=bool)
+        if np.sum(semi_true_observations) < fps
+        else np.array(attention_filter(semi_true_observations, fps))
+    )
+
+    if inspect:
+        for rows in axes:
+            for ax in rows:
+                polygonal_perimeter.plot(perimeter_border_normal_pixel_magnitude, ax=ax)
+
+        axes[1][0].set_title("location_filtered & gaze_filtered")
+        axes[1][0].scatter(*nose[semi_true_observations].T, alpha=SCATTER_ALPHA)
+
+        axes[1][1].set_title("Perimeter observation")
+        axes[1][1].scatter(*nose[perimeter_observation].T, alpha=SCATTER_ALPHA)
+
+        plt.tight_layout()
+        if isinstance(inspect, bool):
+            plt.show()
+        elif isinstance(inspect, str) or isinstance(inspect, PurePath):
+            inspect = Path(inspect).resolve()
+            if not inspect.parent.exists():
+                os.mkdir(inspect.parent)
+            plt.savefig(inspect.with_suffix(".jpg"))
+
+    return perimeter_observation, location_filtered, gaze_filtered

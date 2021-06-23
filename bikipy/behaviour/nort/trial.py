@@ -11,7 +11,7 @@ import numpy as np
 from compress_pickle import compress_pickle
 
 from bikipy.behaviour.square import SquareEnclosedTrial
-from bikipy.behaviour.nort.observation import nort_observation
+from bikipy.feature.observation import polygonal_perimeter_observation
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.perimeter.base import PolygonalPerimeter
 
@@ -40,7 +40,7 @@ class NortTrainingTrial(NortHabituationTrial):
         eye_center_label: str,
         torso_label: str,
         perimeter_border_normal_metric_magnitude: SupportsFloat,
-        max_radians_gaze_and_object: SupportsFloat = 1 / 4 * np.pi,
+        maximum_radians_inter_gaze_perimeter: SupportsFloat = 1 / 4 * np.pi,
         *nort_habituation_args,
         **nort_habituation_kwargs,
     ):
@@ -53,7 +53,7 @@ class NortTrainingTrial(NortHabituationTrial):
             str(eye_center_label),
             str(nose_label),
         )
-        self.max_radians_gaze_and_object = float(max_radians_gaze_and_object)
+        self.maximum_radians_inter_gaze_perimeter = float(maximum_radians_inter_gaze_perimeter)
         self.perimeter_border_normal_metric_magnitude = float(
             perimeter_border_normal_metric_magnitude
         )
@@ -126,14 +126,14 @@ class NortTrainingTrial(NortHabituationTrial):
         eye, nose, torso = self.coordinate_sequence[
             self.eye_center_label, self.nose_label, self.torso_label
         ]
-        return nort_observation(
+        return polygonal_perimeter_observation(
             nort_object,
             nose,
             eye,
             torso,
             self.fps,
             self.perimeter_border_normal_pixel_magnitude,
-            self.max_radians_gaze_and_object,
+            self.maximum_radians_inter_gaze_perimeter,
             inspect=self.func_inspect,
         )
 

@@ -46,7 +46,7 @@ class NortExperiment(BaseExperiment):
         nort_field_vs_apparatus: Mapping[NortObjectField] = None,
         perimeter_border_normal_metric_magnitude: Union[SupportsFloat, None] = None,
         center_metric_length: Union[SupportsFloat, None] = None,
-        max_radians_gaze_and_object: SupportsFloat = 0.25 * np.pi,
+        maximum_radians_inter_gaze_perimeter: SupportsFloat = 0.25 * np.pi,
         *base_trial_args,
         **base_trial_kwargs,
     ):
@@ -63,7 +63,7 @@ class NortExperiment(BaseExperiment):
         perimeter_border_normal_pixel_magnitude
             The magnitude of the normal between the perimeter and the border given in meters
         center_metric_length
-        max_radians_gaze_and_object
+        maximum_radians_inter_gaze_perimeter
         base_trial_args
         base_trial_kwargs
         """
@@ -77,9 +77,9 @@ class NortExperiment(BaseExperiment):
             str(eye_center_label),
             str(nose_label),
         )
-        self.metric_resolution, self.max_radians_gaze_and_object = (
+        self.metric_resolution, self.maximum_radians_inter_gaze_perimeter = (
             float(metric_resolution),
-            float(max_radians_gaze_and_object),
+            float(maximum_radians_inter_gaze_perimeter),
         )
 
         self.center_metric_length = (
@@ -153,7 +153,7 @@ class NortExperiment(BaseExperiment):
                     "eye_center_label": self.eye_center_label,
                     "torso_label": self.torso_label,
                     "perimeter_border_normal_metric_magnitude": self.perimeter_border_normal_metric_magnitude,
-                    "max_radians_gaze_and_object": self.max_radians_gaze_and_object,
+                    "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
                     "center_metric_length": self.center_metric_length,
                     **generic_data,
                 }

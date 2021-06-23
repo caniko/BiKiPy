@@ -6,7 +6,7 @@
 Welcome to BiKiPy's documentation!
 ==================================
 
-Behavioral kinematics_ Python, or BiKiPy, is a data analysis platform. The submodules compartmentalize different steps of the analysis. :code:`reader` for ingesting data, :code:`behavior` for analysis.
+Behavioral kinematics_ Python, or BiKiPy (pronounced like bee-key-py), is a data analysis platform. The submodules compartmentalize different steps of the analysis. :code:`bikipy.reader` for ingesting data, :code:`bikipy.behavior` for analysis.
 
 Some of the analysis functions have been placed in auxiliary subpackages that are defined categorically such as :code:`bikipy.math` and :code:`bikipy.utils`, to ensure accessibility across analysis pipelines that are implemented discretely. The :code:`bikipy.perimeter` submodule, defines classes for enclosed areas or perimeters.
 
@@ -25,7 +25,7 @@ Data can be loaded with an instance of the :code:`reader.base.BaseReader`. :code
 
 behavior
 --------
-Analysis pipelines for supported experiment designs can be found under :code:`experiment` in their respective module in the :code:`behavior` submodule. Implementations of these experiments are split into trials and experiments. This structure ensures that trials that belong to one group (experiment), can acquire cross-trial constants directly from its respective experiment object.
+Analysis pipelines for supported experiment designs can be found under :code:`experiment` in their respective submodule. Implementations of these experiments are split into trials and experiments. This structure ensures that trials that belong to one group (experiment), can acquire cross-trial constants directly from its respective experiment object.
 
 Common analytical methods are available in the classes located in :code:`behaviour.base`. These include both experiments and trials.
 
@@ -33,6 +33,9 @@ Common analytical methods are available in the classes located in :code:`behavio
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+
+   features
+   behaviour/index.rst
 
 Indices and tables
 ==================

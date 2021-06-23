@@ -1,3 +1,5 @@
+.. _behaviour_nort:
+
 =============================
 Novel object recognition test
 =============================
@@ -25,13 +27,13 @@ Each object must have their number of observation instances across frames determ
      - Frames per second (fps) of the trial video recording
    * - perimeter_border_normal_pixel_magnitude
      - The normal pixel distance between the border and the respective object
-   * - max_radians_gaze_and_object
+   * - maximum_radians_inter_gaze_perimeter
      - Maximum radians between the gaze vector (eye_centre to nose) and object tangent
    * - inspect (default :code:`False`)
      - If :code:`True`, will generate and show and inspection figure for the inspection of each filter
 
 The functions combines three filters to achieve the result:
-    #. :code:`location_filter` the nose must be between the border and the object, AND the torso must be outside of the object area.
+    #. :code:`proximity_filter` the nose must be between the border and the object, AND the torso must be outside of the object area.
     #. :code:`gaze_direction_filter`
     #. :code:`object_observation`
 
@@ -41,7 +43,7 @@ The location filter returns a boolean index where the given index stores the boo
 
 Gaze filter
 -----------
-The gaze filter computes the inner angle between :code:`nose` and :code:`eye_center`. Read more about inner angle on :ref:`features.angle`.
+The gaze filter computes the inner :ref:`` between :code:`nose` and :code:`eye_center`.
 
 Attention filter
 ----------------

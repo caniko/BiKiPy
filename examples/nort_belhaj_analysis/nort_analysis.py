@@ -100,7 +100,7 @@ with pd.ExcelWriter(
             nort_field_vs_apparatus=nort_field_vs_apparatus,
             perimeter_border_normal_metric_magnitude=0.04,
             center_metric_length=0.2,
-            max_radians_gaze_and_object=0.5 * np.pi,
+            maximum_radians_inter_gaze_perimeter=0.5 * np.pi,
             trial_id_vs_coordinate_data_path=trial_id_vs_coordinate_data_path,
             # func_inspect=True,
             init_from="parquet",

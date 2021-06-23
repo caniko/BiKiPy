@@ -2,6 +2,11 @@ Behaviour
 =========
 The :code:`bikipy.behaviour` package stores the implementations of currently supported experiment types. The reader can expect to find documentation about their use here, but also what is expected from future documentations in the case they are added in this section.
 
+.. toctree::
+   :caption: Experiments:
+
+   nort.rst
+
 Purpose and requirements
 ------------------------
 The reader will initially be presented with the purpose of the experiment, and what is required to implement the infrastructure, and conduct the experiment. The timeline of habituation and/or training must be outlined, and the experiment itself explained. Controls should also be outlined. Additionally, key information that must be mentioned are:
