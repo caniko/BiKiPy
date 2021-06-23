@@ -11,11 +11,15 @@ Angle
 =====
 The angle between key parts of the animal body can be used to track functions such as balance and states of focus. Moreover, there are two methods for computing the angle.
 
+Inner angle
+-----------
 :code:`feature.angle.inner_angle` computes the inner angle between two vectors that intersect. The solution is based on the definition of the dot product:
 
 .. math::
     \theta = \cos^{-1} \bigg( \frac{\mathbf{a} \cdot \mathbf{b}}{|\mathbf{a}||\mathbf{b}|} \bigg); \quad \theta \in [0, \pi]
 
+Clockwise angle
+---------------
 :code:`feature.angle.counterclockwise_angel_2d` computes the angle in the counterclockwise direction, using the definition of the determinant and the dot product along with the atan2_ function:
 
 .. math::
@@ -40,30 +44,31 @@ The motion subpackage computes motion related features.
 
 Most applications should use the :code:`bikipy.features.motion.Motion` class to compute and store these features.
 
-Before computing the displacement, the coordinates have their magnitude or `Euclidean norm`_ computed. Any values that are missing, defined as :code:`np.nan`, are interpolated with the akima_ method. The prepared data is then used to compute the features!
+Before computing the displacement, the coordinates have their magnitude or `Euclidean norm`_ computed. Any values that are missing, defined as :code:`np.nan`, are interpolated with the akima_ method. The finite derivative is taken of the prepared displacement data, the resulting data is speed; the finite derivative of speed is acceleration:
 
-The following values are computed by taking the finite derivative; with the values from the preceding order. Displacement:
 .. math::
-    s_{n} = p_{n+1} - p_{n}
+    s_{n} = p_{n+1} - p_{n}; /quad m /in [0, f-1]
 
 Speed:
 .. math::
-    v_{n} = s_{n+1} - s_{n}
+    v_{m} = s_{m+1} - s_{m}; /quad m /in [0, n-1]
 
 Acceleration:
 .. math::
-    a_{n} = v_{n+1} - v_{n}
+    a_{l} = v_{l+1} - v_{l}; /quad l /in [0, m-1]
 
-Where :math:`p` is position; :math:`s` is displacement; :math:`v` is speed; :math:`a` is acceleration.
+Where :math:`p` is position; :math:`s` is displacement; :math:`v` is speed; :math:`a` is acceleration; :math:`f` is the number of frames in the video recording.
 
 The motion class also stores the attribute referred to as :code:`freezing_time`, which is the number of seconds the animal remained immobile; derived from displacement.
 
 
 Psycho
 ======
-The psycho(logy) package stores function related to psychological phenomena that occur during the experiment.
+The psycho(logy) package stores functions related to psychological phenomena that occur during the experiment. These functions are very dependent on other features because of their abstract nature.
 
-
+Attention
+---------
+The attention of the animal
 
 
 .. _NumPy: https://en.wikipedia.org/wiki/NumPy
