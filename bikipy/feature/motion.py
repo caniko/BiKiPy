@@ -109,15 +109,15 @@ def frozen_frames(
         #. Filter the result from 2. with respect to the time/frame/second threshold
 
     :param fps: Frames per second (fps) of the video the data was collected from
-    :param displacement: 
-    :param second_threshold: 
-    :param metric_displacement_threshold: 
+    :param displacement:
+    :param second_threshold:
+    :param metric_displacement_threshold:
     :type fps: float
     :type displacement: np.ndarray
     :type second_threshold: float
-    :type metric_displacement_threshold: float 
+    :type metric_displacement_threshold: float
     :return: Boolean index storing the freezing state of the animal across frames
-    :rtype: np.ndarray 
+    :rtype: np.ndarray
     """
     frame_threshold = round(second_threshold * fps)
 
@@ -186,10 +186,14 @@ class Motion:
 
         self.total_displacement = np.nansum(self.metric_displacement_by_frame)
         if self.total_displacement:
-            self.speed = absolute_derivative(self.metric_displacement_by_frame) * self.fps
+            self.speed = (
+                absolute_derivative(self.metric_displacement_by_frame) * self.fps
+            )
             self.median_speed = np.nanmedian(self.speed)
 
-            self.frozen_frames = frozen_frames(self.fps, self.metric_displacement_by_frame)
+            self.frozen_frames = frozen_frames(
+                self.fps, self.metric_displacement_by_frame
+            )
             self.freezing_time = np.nansum(self.frozen_frames) / self.fps
 
             self.acceleration = absolute_derivative(self.speed)
@@ -209,5 +213,5 @@ class Motion:
             self.total_displacement,
             self.median_speed,
             self.median_acceleration,
-            self.freezing_time
+            self.freezing_time,
         ]

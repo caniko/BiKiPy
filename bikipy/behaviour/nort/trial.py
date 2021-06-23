@@ -11,7 +11,7 @@ import numpy as np
 from compress_pickle import compress_pickle
 
 from bikipy.behaviour.square import SquareEnclosedTrial
-from bikipy.feature.observation import polygonal_perimeter_observation
+from bikipy.feature.attention import polygonal_perimeter_attention
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.perimeter.base import PolygonalPerimeter
 
@@ -53,7 +53,9 @@ class NortTrainingTrial(NortHabituationTrial):
             str(eye_center_label),
             str(nose_label),
         )
-        self.maximum_radians_inter_gaze_perimeter = float(maximum_radians_inter_gaze_perimeter)
+        self.maximum_radians_inter_gaze_perimeter = float(
+            maximum_radians_inter_gaze_perimeter
+        )
         self.perimeter_border_normal_metric_magnitude = float(
             perimeter_border_normal_metric_magnitude
         )
@@ -126,7 +128,7 @@ class NortTrainingTrial(NortHabituationTrial):
         eye, nose, torso = self.coordinate_sequence[
             self.eye_center_label, self.nose_label, self.torso_label
         ]
-        return polygonal_perimeter_observation(
+        return polygonal_perimeter_attention(
             nort_object,
             nose,
             eye,

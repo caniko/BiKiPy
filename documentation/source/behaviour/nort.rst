@@ -1,5 +1,3 @@
-.. _behaviour_nort:
-
 =============================
 Novel object recognition test
 =============================
@@ -32,23 +30,4 @@ Each object must have their number of observation instances across frames determ
    * - inspect (default :code:`False`)
      - If :code:`True`, will generate and show and inspection figure for the inspection of each filter
 
-The functions combines three filters to achieve the result:
-    #. :code:`proximity_filter` the nose must be between the border and the object, AND the torso must be outside of the object area.
-    #. :code:`gaze_direction_filter`
-    #. :code:`object_observation`
 
-Location filter
----------------
-The location filter returns a boolean index where the given index stores the boolean of the point being contained by the respective nort object. There is only support for parallelograms. The theory behind the function with regards to parallelograms_ were derived from math stack exchange.
-
-Gaze filter
------------
-The gaze filter computes the inner :ref:`` between :code:`nose` and :code:`eye_center`.
-
-Attention filter
-----------------
-
-
-
-.. _parallelograms: https://math.stackexchange.com/a/2643651/604035
-.. _implementations: https://en.wikipedia.org/wiki/Point_in_polygon

@@ -53,7 +53,9 @@ def proximity_filter(
     # Remove nose points that aren't inside the perimeter
     nose = np.asarray(nose)
 
-    polygonal_perimeter_border = polygonal_perimeter.border(perimeter_border_normal_pixel_magnitude)
+    polygonal_perimeter_border = polygonal_perimeter.border(
+        perimeter_border_normal_pixel_magnitude
+    )
 
     nose_within_border = points_in_parallelogram(
         polygonal_perimeter_border.perimeter_corners[1],
@@ -122,7 +124,9 @@ def gaze_direction_filter(
     eye_to_nose_unit = unit_vector(nose - eye_center)
 
     closest_side, idx = closest_line_to_point(
-        polygonal_perimeter.corner_to_corner_vectors, polygonal_perimeter.perimeter_corners, eye_center
+        polygonal_perimeter.corner_to_corner_vectors,
+        polygonal_perimeter.perimeter_corners,
+        eye_center,
     )
 
     inner_angles = inner_angle(closest_side, eye_to_nose_unit)
@@ -235,7 +239,7 @@ def attention_filter(
     return attention_boolean_index
 
 
-def polygonal_perimeter_observation(
+def polygonal_perimeter_attention(
     polygonal_perimeter: PolygonalPerimeter,
     nose: Sequence[Sequence[float]],
     eye_center: Sequence[Sequence[float]],

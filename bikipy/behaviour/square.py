@@ -146,8 +146,7 @@ class SquareEnclosedTrial(BaseTrial):
     @cached_property
     def center_freezing_time(self):
         return (
-            np.sum(self.frozen_boolean_index & self.center_boolean_index[1:])
-            / self.fps
+            np.sum(self.frozen_boolean_index & self.center_boolean_index[1:]) / self.fps
         )
 
     @cached_property

@@ -28,7 +28,9 @@ def _find_median_vector(row_vectors: np.ndarray) -> np.ndarray:
     return np.array([np.median(component) for component in row_vectors.T])
 
 
-def counterclockwise_angel_2d(start_vector: Sequence, end_vector: Sequence) -> np.ndarray:
+def counterclockwise_angel_2d(
+    start_vector: Sequence, end_vector: Sequence
+) -> np.ndarray:
     """
     Computes the counterclockwise angle, [0, 2pi], from start to end in radians
 
@@ -200,4 +202,7 @@ def dlc_compute_angles_from_vectors(
     }
 
 
-ANGLE_METHOD_TO_FUNC = {"inner": inner_angle, "counterclockwise": counterclockwise_angel_2d}
+ANGLE_METHOD_TO_FUNC = {
+    "inner": inner_angle,
+    "counterclockwise": counterclockwise_angel_2d,
+}

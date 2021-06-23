@@ -235,9 +235,7 @@ class YMaze(BaseTrial):
             points=(
                 points
                 or self.coordinate_sequence[
-                    self.invalid_boolean_index
-                    if invalid
-                    else self.valid_boolean_index
+                    self.invalid_boolean_index if invalid else self.valid_boolean_index
                 ]
             ),
         )

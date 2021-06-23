@@ -3,7 +3,7 @@ Features
 ========
 Features is a subpackage that stores functions for the computation of behavioural features.
 
-.. note:
+.. note::
     Most features are computed on a per video frame basis with the use of :code:`numpy.ndarrays` from the NumPy_ package. The rest of the features are often dependent on the cumulative information, making the use of :code:`numpy.ndarrays` impractical, and have a more pythonic implementation instead; a subset of these are accelerated by Numba_.
 
 
@@ -36,7 +36,7 @@ The midpoints are computed with the use of the midpoint between two vectors equa
     midpoint = \frac{\mathbf{b} - \mathbf{a}}{2}
 
 .. note::
-    This module supports
+    This module supports direct integration into readers that store their primary data as :code:`pandas.DataFrame`.
 
 Motion
 ======
@@ -59,22 +59,18 @@ Acceleration:
 .. math::
     a_{l} = v_{l+1} - v_{l} \quad l \in [0, m-1]
 
-Where :math:`p` is position; :math:`s` is displacement; :math:`v` is speed; :math:`a` is acceleration; :math:`k` is the number of frames in the video recording.
+Where :math:`p` is position; :math:`s` is displacement; :math:`v` is speed; :math:`\mathbf{a}` is acceleration; :math:`k` is the number of frames in the video recording.
 
 The motion class also stores the attribute referred to as :code:`freezing_time`, which is the number of seconds the animal remained immobile; derived from displacement.
 
 
-Observation
-===========
-Observation metrics can be computed and analysed with the functions in :code:`features.observation`. These functions are currently used to compute *attention per frame*.
-
-Proximity filter
-----------------
-The proximity filter
-
 Attention
----------
-The attention of the animal is correlated to the time spent observing an object. Moreover, the observation time, and spontaneous distractions should be taken into account.
+=========
+Consists primarily of :code:`feature.attention.polygonal_perimeter_attention` that computes the attentiveness of the animal with respect to a :code:`PolygonalPerimeter`. To arrive at attention as a *probable* qualia_ at a given video frame, certain conditions need to be met:
+
+#. The nose has to be within the vicinity of the object, while the center_of_mass has to be outside of the confines of the object. The vicinity is defined by a secondary :code:`PolygonalPerimeter` generated with the :code:`PolygonalPerimeter.border` method.
+#. The gaze direction, vector from eye center to nose in rodents for instance, has to be directed at the respective :code:`PolygonalPerimeter`
+#. The two previous conditions need to occur for a given amount of time with some tolerance for distraction.
 
 
 .. _NumPy: https://en.wikipedia.org/wiki/NumPy
@@ -82,3 +78,4 @@ The attention of the animal is correlated to the time spent observing an object.
 .. _atan2: https://en.wikipedia.org/wiki/Atan2
 .. _Euclidean norm: https://en.wikipedia.org/wiki/Euclidean_space#Euclidean_norm
 .. _akima: https://en.wikipedia.org/wiki/Akima_spline
+.. _qualia: https://en.wikipedia.org/wiki/Qualia

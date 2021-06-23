@@ -205,7 +205,7 @@ class NortExperiment(BaseExperiment):
                 (category, "Displacement"),
                 (category, "Median speed"),
                 (category, "Median acceleration"),
-                (category, "Freezing time")
+                (category, "Freezing time"),
             )
 
         habituation_columns = [
