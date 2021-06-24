@@ -42,6 +42,7 @@ isort = "^5.6.4"
 Sphinx = "^4.0.2"
 pylint = "^2.8.3"
 sphinx-material = "^0.0.32"
+jupyter = "^1.0.0"
 
 [tool.poetry.extras]
 jupyter = ["jupyter"]

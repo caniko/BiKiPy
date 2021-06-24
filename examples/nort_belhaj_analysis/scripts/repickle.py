@@ -6,7 +6,7 @@ after the respective perimeter class has been updated
 import pickle
 from pathlib import Path
 
-from bikipy.behaviour.nort.trial import NortObjectField
+from bikipy.behaviour.nort.trial import NortField
 from bikipy.perimeter.base import PolygonalPerimeter
 from bikipy.plugins.belhaj import round_vs_apparatus_to_general_nort_fields
 
@@ -52,7 +52,7 @@ for annotation_obj_path in B_PICKLE_PATHS:
         gen_poly_seq = renamed_load(infile)
 
     for i, gen_poly in enumerate(gen_poly_seq):
-        gen_poly_seq[i] = NortObjectField(
+        gen_poly_seq[i] = NortField(
             label=int(gen_poly.label),
             constant_object_perimeter=PolygonalPerimeter(
                 inspect_image=annotation_obj_path.parent / f"training_{i+1}.png",

@@ -1,5 +1,7 @@
-from functools import lru_cache
-from typing import Any, Sequence, Union
+import sys
+from concurrent.futures import ProcessPoolExecutor
+from functools import lru_cache, partial
+from typing import Any, Sequence, Union, Callable, Iterable
 
 import numpy as np
 import pandas as pd
@@ -15,7 +17,7 @@ class BaseReader:
         pixel_resolution: Union[Sequence, None] = None,
         video_path: Any = None,
         data_path: Any = None,
-        data_label: Union[str, None] = None,
+        label: Union[str, None] = None,
     ):
         """
         Parameters
@@ -27,7 +29,7 @@ class BaseReader:
             True requires x_max and y_max
         pixel_resolution : Sequence
              The resolution of the videos that are being analyzed
-        data_label : String; optional
+        label : String; optional
             Label for the data
         """
 
@@ -56,7 +58,7 @@ class BaseReader:
 
         self.video_path = video_path
         self.data_path = data_path
-        self.data_label = data_label
+        self.label = label
 
         self._region_of_interest_vs_boolean_index = None
         self._valid_point_indices = None
@@ -134,3 +136,69 @@ class BaseReader:
         result = (left_valid_tails.max(), right_valid_tails.min())
 
         return slice(*result) if as_slice else result
+
+    @classmethod
+    def from_parquet(cls, data_path: Any, label: Any = None, **kwargs):
+        """
+        Initialize class using data from a parquet file
+
+        Note: You should assign a value to object.label by including it as a kwarg
+
+        :param data_path: The path to the parquet file that shall be analysed
+        :param label: Label for the data
+        :param kwargs: Keyword arguments for the class init-method
+        :type data_path: Any
+        :type label: str
+        :return: BaseReader instance
+        """
+
+        return cls(
+            pd.read_parquet(data_path),
+            data_path=data_path,
+            label=label,
+            **kwargs,
+        )
+
+    @classmethod
+    def init_many_mapper(
+        cls,
+        init_method: Callable,
+        data_path: Iterable[Any],
+        labels: Iterable[str],
+        force_process_pooling: Union[bool, None] = None,
+        **init_kwargs,
+    ) -> tuple:
+        """
+        Create many BaseReader instances using specified mapping-function for initialization
+
+        :param init_method: Most often a classmethod that calls the init method after importing the data from specific
+            data format
+        :param data_path: Path to the data that will imported
+        :param labels: labels of the data
+        :param force_process_pooling: If True, initialize each DeepLabCutReader object with multiprocessing.
+            Useful when initialize approximately 20 or more dlc objects
+        :param init_kwargs: Keyword arguments for the class init-method
+        :type init_method: Callable
+        :type data_path: Iterable[Any]
+        :type labels: Iterable[str]
+        :type force_process_pooling: bool
+        :type init_kwargs: dict
+        :return: Objects instanced from the respective class with the provided data
+        :rtype: tuple
+        """
+        kwarg_loaded_init = partial(init_method, **init_kwargs)
+
+        # Process pooling in windows is subpar and is not supported.
+        if force_process_pooling or (
+            force_process_pooling is None and sys.platform != "win32"
+        ):
+            with ProcessPoolExecutor() as executor:
+                dlc_objects = executor.map(kwarg_loaded_init, data_path, labels)
+
+        else:
+            dlc_objects = (
+                kwarg_loaded_init(data_path, label=label)
+                for data_path, label in zip(data_path, labels)
+            )
+
+        return tuple(dlc_objects)

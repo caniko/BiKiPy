@@ -2,12 +2,78 @@ from functools import cached_property
 from logging import getLogger
 from typing import Any, Sequence, Union
 
+from tqdm import tqdm
 import numpy as np
 
-from bikipy.feature.motion import Motion, freezing_time, displacement_by_frame
+from bikipy.feature.motion import Motion, frozen_frames, displacement_by_frame
 from bikipy.reader.deeplabcut import DeepLabCutReader
+from bikipy.utils.store import RangeDict
 
 logger = getLogger(__name__)
+
+
+class BaseExperiment:
+    def __init__(
+        self,
+        metric_resolution: Union[float, Sequence[float]],
+        trial_id_vs_data: dict,
+        trial_id_range_vs_data: Union[dict, None] = None,
+        fps: Union[dict, float, None] = None,
+        coordinate_data_format: str = "deeplabcut",
+        label: Any = None,
+        func_inspect: bool = False,
+        **data_import_kwargs,
+    ):
+        self.trial_id_vs_data = dict(trial_id_vs_data)
+        self._trial_ids_iterable = self.trial_id_vs_data.keys()
+        self.trial_ids = tuple(self._trial_ids_iterable)
+
+        self.trial_id_range_vs_data = (
+            RangeDict(trial_id_range_vs_data) if trial_id_range_vs_data else None
+        )
+        self.metric_resolution = metric_resolution
+
+        self.fps = fps
+        if fps and not isinstance(fps, (float, int, dict)):
+            msg = f"fps has to be float, int or dict, and not {type(fps)}"
+            raise ValueError(msg)
+
+        self.coordinate_data_format = str(coordinate_data_format).lower()
+        self.label, self.func_inspect = label, func_inspect
+
+        if self.coordinate_data_format == "deeplabcut":
+            self.exp_id_vs_coordinate_sequences = {
+                exp_id: dlc_obj
+                for exp_id, dlc_obj in zip(
+                    self._trial_ids_iterable,
+                    DeepLabCutReader.init_many(
+                        (
+                            data["coordinate_data_path"]
+                            for data in self.trial_id_vs_data.values()
+                        ),
+                        labels=self.trial_id_vs_data.keys(),
+                        **data_import_kwargs,
+                    ),
+                )
+            }
+        else:
+            msg = f"{self.coordinate_data_format} as a format for data ingestion has no implementation"
+            raise NotImplemented(msg)
+
+    def __getitem__(self, item):
+        if self.trial_id_range_vs_data:
+            return {**self.trial_id_vs_data[item], **self.trial_id_range_vs_data[item]}
+        else:
+            return self.trial_id_vs_data[item]
+
+    @cached_property
+    def length(self):
+        return len(self.trial_ids)
+
+    def exp_id_data_tqdm(self):
+        return tqdm(
+            ((exp_id, self[exp_id]) for exp_id in self.trial_ids), total=self.length
+        )
 
 
 class BaseTrial:
@@ -15,7 +81,7 @@ class BaseTrial:
 
     def __init__(
         self,
-        coordinate_sequence: Any,
+        coordinate_sequence: dict,
         unit_per_pixel: float,
         rigid_nodes_freezing: Union[Sequence[Union[str, int]], None] = None,
         recording_resolution: Union[Sequence[int], None] = None,
@@ -26,15 +92,24 @@ class BaseTrial:
         inspect_image: Any = None,
     ):
         """
-        Parameters
-        ----------
-        coordinate_sequence: Sequence
-            The coordinates of the subject across the frames in the video recording
-        fps: float
-            Number of frames per second
-        unit_per_pixel: float
-            Number defining the number of pixels that goes into one centimeter
-        label: Any; optional
+        :param coordinate_sequence: The coordinates of the subject across the frames in the video recording
+        :param unit_per_pixel: Number defining the number of pixels that goes into one centimeter
+        :param rigid_nodes_freezing: Nodes that should remain during freeze/immobility, most often due to fear.
+        :param recording_resolution: Video resolution
+        :param movement_feature_point_label: Label of the node that will be used to track general animal movement
+        :param fps: Frames per second of video
+        :param label: Experiment label
+        :param func_inspect: If True, will generate inspection figures from functions that have support
+        :param inspect_image: Image used for inspection
+        :type coordinate_sequence: dict
+        :type unit_per_pixel: float
+        :type rigid_nodes_freezing: Sequence[Union[str, int]] (optional)
+        :type recording_resolution: Sequence[int] (optional)
+        :type movement_feature_point_label: str (optional)
+        :type fps: float (optional)
+        :type label: Any
+        :type func_inspect: bool
+        :type inspect_image: Any
         """
 
         self.fps = fps
@@ -54,7 +129,7 @@ class BaseTrial:
 
         # coordinate_sequence must be a reader object, like DeepLabCutReader
         self.movement_feature_point_label = str(movement_feature_point_label)
-        self.coordinate_sequence: dict = coordinate_sequence
+        self.coordinate_sequence = dict(coordinate_sequence)
         self.coordinates_per_frame = self.coordinate_sequence[
             self.movement_feature_point_label
         ]
@@ -82,7 +157,7 @@ class BaseTrial:
         if not value:
             return
 
-        self._frozen_boolean_index = freezing_time(
+        self._frozen_boolean_index = frozen_frames(
             self.fps,
             [
                 displacement_by_frame(coordinate_sequence, remove_tails=False)
@@ -101,42 +176,5 @@ class BaseTrial:
         return self._frozen_boolean_index
 
     @cached_property
-    def total_freezing_time(self):
+    def total_frozen_frames(self):
         return np.sum(self.frozen_boolean_index) / self.fps
-
-
-class BaseExperiment:
-    def __init__(
-        self,
-        trial_id_vs_coordinate_data_path: dict,
-        fps: Union[dict, float, None] = None,
-        coordinate_data_format: str = "deeplabcut",
-        label: Any = None,
-        func_inspect: bool = False,
-        **data_import_kwargs,
-    ):
-        if fps and not isinstance(fps, (float, int, dict)):
-            msg = f"fps has to be float, int or dict, and not {type(fps)}"
-            raise ValueError(msg)
-
-        self.trial_id_vs_coordinate_data_path = trial_id_vs_coordinate_data_path
-        self.fps = fps
-
-        self.coordinate_data_format = str(coordinate_data_format).lower()
-        self.label, self.func_inspect = label, func_inspect
-
-        if self.coordinate_data_format == "deeplabcut":
-            self.exp_id_vs_coordinate_sequences = {
-                exp_id: dlc_obj
-                for exp_id, dlc_obj in zip(
-                    trial_id_vs_coordinate_data_path.keys(),
-                    DeepLabCutReader.init_many(
-                        trial_id_vs_coordinate_data_path.values(),
-                        labels=trial_id_vs_coordinate_data_path.keys(),
-                        **data_import_kwargs,
-                    ),
-                )
-            }
-        else:
-            msg = f"{self.coordinate_data_format} as a format for data ingestion has no implementation"
-            raise NotImplemented(msg)

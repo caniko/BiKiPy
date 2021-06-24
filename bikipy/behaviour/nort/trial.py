@@ -172,7 +172,7 @@ class NortNoveltyTrial(NortTrainingTrial):
 
 
 @dataclass(frozen=True, order=True)
-class NortObjectField:
+class NortField:
     label: int
     constant_object_perimeter: PolygonalPerimeter
     variable_object_perimeter: PolygonalPerimeter

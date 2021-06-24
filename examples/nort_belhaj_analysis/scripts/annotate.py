@@ -1,24 +1,18 @@
 import pickle
-from glob import glob
+from glob import glob, iglob
 from pathlib import Path
 
-from bikipy.behaviour.nort.trial import NortObjectField
-
-ROOT = Path("C:/Users/Can/Projects/Neuroscience/bikipy/examples/data")
-IMG_ROOT = ROOT / "images" / "nort_belhaj_analysis" / "A"
-
-T1 = IMG_ROOT / "before"
-T2 = IMG_ROOT / "after"
+from bikipy.behaviour.nort.trial import NortField
 
 
-nort_fields = []
+ROOT = Path(".").resolve().parent / "data" / "area_images"
 
-
-for i, (habit, novelty) in enumerate(
-    zip(glob(str(T2 / "habit*")), glob(str(T2 / "novel*"))), start=1
-):
-    nort_fields.append(NortObjectField.from_images(habit, novelty, label=i))
-
-
-with open(ROOT / "b2_labels.pickle", "wb") as outpickle:
-    pickle.dump(nort_fields, outpickle)
+for directory in iglob(ROOT / "**", recursive=True):
+    nort_fields = [
+        NortField.from_images(i, habit, novelty)
+        for i, (habit, novelty) in enumerate(
+            zip(glob(str(directory / "habit*")), glob(str(directory / "novel*"))), start=1
+        )
+    ]
+    with open(ROOT / directory / f"{directory.stem}_labels.pickle", "wb") as out_pickle:
+        pickle.dump(nort_fields, out_pickle)

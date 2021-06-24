@@ -36,7 +36,7 @@ The midpoints are computed with the use of the midpoint between two vectors equa
     midpoint = \frac{\mathbf{b} - \mathbf{a}}{2}
 
 .. note::
-    This module supports direct integration into readers that store their primary data as :code:`pandas.DataFrame`.
+    This module supports direct integration into readers that store their primary data as :code:`pandas.DataFrame`, see :code:`feature.midpoint.compute_from_dlc_df`.
 
 Motion
 ======
@@ -44,7 +44,7 @@ The motion subpackage computes motion related features.
 
 Most applications should use the :code:`features.motion.Motion` class to compute and store these features.
 
-Before computing the displacement, the coordinates have their magnitude or `Euclidean norm`_ computed. Any values that are missing, defined as :code:`np.nan`, are interpolated with the akima_ method. The finite derivative is taken of the prepared displacement data, the resulting data is speed; the finite derivative of speed is acceleration:
+Before computing the displacement, the coordinates have their magnitude or `Euclidean norm`_ computed. Any values that are missing, defined as :code:`np.nan`, are interpolated with the akima_ method. The `finite difference`_ of the prepared displacement data, the resulting data is speed; the finite difference of speed is acceleration:
 
 .. math::
     s_{n} = p_{n+1} - p_{n} \quad m \in [0, k-1]
@@ -78,4 +78,5 @@ Consists primarily of :code:`feature.attention.polygonal_perimeter_attention` th
 .. _atan2: https://en.wikipedia.org/wiki/Atan2
 .. _Euclidean norm: https://en.wikipedia.org/wiki/Euclidean_space#Euclidean_norm
 .. _akima: https://en.wikipedia.org/wiki/Akima_spline
+.. _finite difference: https://en.wikipedia.org/wiki/Finite_difference
 .. _qualia: https://en.wikipedia.org/wiki/Qualia

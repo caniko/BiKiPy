@@ -53,7 +53,7 @@ with pd.ExcelWriter(
         date = experiment_dir.name.split("_")[1]
 
         with open(pickle_path, "rb") as infile:
-            nort_field_vs_apparatus = pickle.load(infile)
+            nort_field_vs_nort_field_object = pickle.load(infile)
 
         exp_metadata_df = pd.read_excel(
             META_DATA, sheet_name=round_number, engine="openpyxl"
@@ -67,16 +67,16 @@ with pd.ExcelWriter(
         exp_vs_animal = get_trial_id_vs_animal_id(animal_id_vs_trial_ids)
 
         data = None
-        trial_id_range_vs_exp_meta, trial_id_vs_coordinate_data_path = {}, {}
-        for data_path in glob(str(experiment_dir / "**" / "*.parquet")):
-            trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(data_path).stem)[0])
-            trial_id_vs_coordinate_data_path[trial_id] = data_path
+        trial_id_range_vs_exp_meta = {}
+        for video_path, data_path in zip(
+            glob(str(experiment_dir / "**" / "*.mp4")),
+            glob(str(experiment_dir / "**" / "*.parquet")),
+        ):
+            trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(video_path).stem)[0])
 
-        for data_path in glob(str(experiment_dir / "**" / "*.mp4")):
-            trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(data_path).stem)[0])
-
-            _, width, height, fps = get_video_data(data_path)
-            trial_id_range_vs_exp_meta[trial_id] = {
+            _, width, height, fps = get_video_data(video_path)
+            trial_data = {
+                "coordinate_data_path": data_path,
                 "stage": (stage := trial_id_vs_stage[trial_id]),
                 "recording_resolution": (width, height),
                 "fps": fps,
@@ -85,11 +85,11 @@ with pd.ExcelWriter(
             }
 
             if stage != "habituation":
-                trial_id_range_vs_exp_meta[trial_id]["field"] = animal_id_vs_app[
-                    animal_id
-                ]
+                trial_data["field"] = animal_id_vs_app[animal_id]
             if trial_id == 127:
-                trial_id_range_vs_exp_meta[trial_id]["inspect"] = True
+                trial_data["inspect"] = True
+
+            trial_id_range_vs_exp_meta[trial_id] = trial_data
 
         NortExperiment(
             trial_id_range_vs_exp_meta=trial_id_range_vs_exp_meta,
@@ -97,11 +97,10 @@ with pd.ExcelWriter(
             nose_label="nose",
             eye_center_label="mid-left_ear-right_ear",
             torso_label="mid-mid-left_ear-right_ear-tail",
-            nort_field_vs_apparatus=nort_field_vs_apparatus,
+            nort_field_vs_nort_field_object=nort_field_vs_nort_field_object,
             perimeter_border_normal_metric_magnitude=0.04,
             center_metric_length=0.2,
-            maximum_radians_inter_gaze_perimeter=0.5 * np.pi,
-            trial_id_vs_coordinate_data_path=trial_id_vs_coordinate_data_path,
+            maximum_radians_inter_gaze_perimeter=0.25 * np.pi,
             # func_inspect=True,
             init_from="parquet",
             midpoint_groups=[

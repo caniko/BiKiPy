@@ -90,7 +90,7 @@ def frozen_frames(
     displacement: Iterable[np.ndarray],
     second_threshold: float = 1.0,
     metric_displacement_threshold: float = 0.005,
-):
+) -> np.ndarray:
     """
     Compute the time the rigid body has been frozen or "stood still" throughout
     the trial. The acceleration at these frames should be close to zero.

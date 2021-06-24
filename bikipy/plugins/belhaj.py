@@ -9,7 +9,7 @@ import numpy as np
 from pandas import DataFrame
 
 from bikipy.behaviour.nort.experiment import NortExperiment
-from bikipy.behaviour.nort.trial import NortObjectField
+from bikipy.behaviour.nort.trial import NortField
 from bikipy.perimeter.base import PolygonalPerimeter
 
 
@@ -102,6 +102,6 @@ def round_vs_apparatus_to_general_nort_fields(
 
                 field_temp_store[key] = PolygonalPerimeter(**kwargs)
 
-        result.append(NortObjectField(label=field_key, **field_temp_store))
+        result.append(NortField(label=field_key, **field_temp_store))
 
     return result

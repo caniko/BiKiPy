@@ -1,14 +1,13 @@
 from collections.abc import Mapping, Sequence
 from functools import cached_property
 from logging import getLogger
-from typing import SupportsFloat, Union
+from typing import Union
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 
 from bikipy.behaviour.base import BaseExperiment
-from bikipy.behaviour.nort.trial import NortHabituationTrial, NortObjectField
+from bikipy.behaviour.nort.trial import NortHabituationTrial, NortField
 from bikipy.utils.store import sort_dict_by_key_value
 
 logger = getLogger(__name__)
@@ -38,48 +37,45 @@ class NortExperiment(BaseExperiment):
 
     def __init__(
         self,
-        trial_id_range_vs_exp_meta: dict,
-        metric_resolution: SupportsFloat,
         nose_label: str,
         eye_center_label: str,
         torso_label: str,
-        nort_field_vs_apparatus: Mapping[NortObjectField] = None,
-        perimeter_border_normal_metric_magnitude: Union[SupportsFloat, None] = None,
-        center_metric_length: Union[SupportsFloat, None] = None,
-        maximum_radians_inter_gaze_perimeter: SupportsFloat = 0.25 * np.pi,
+        nort_field_vs_nort_field_object: Union[Mapping[NortField], None] = None,
+        perimeter_border_normal_metric_magnitude: Union[float, None] = None,
+        center_metric_length: Union[float, None] = None,
+        maximum_radians_inter_gaze_perimeter: float = 0.5 * np.pi,
         *base_trial_args,
         **base_trial_kwargs,
     ):
         """
 
-        Parameters
-        ----------
-        trial_id_range_vs_exp_meta
-        metric_resolution
-        nose_label
-        eye_center_label
-        torso_label
-        nort_field_vs_apparatus
-        perimeter_border_normal_pixel_magnitude
-            The magnitude of the normal between the perimeter and the border given in meters
-        center_metric_length
-        maximum_radians_inter_gaze_perimeter
-        base_trial_args
-        base_trial_kwargs
+        :param nose_label: Label of the nose in the df
+        :param eye_center_label: Label of the eye center in the df
+        :param torso_label: Label of the torso in the df
+        :param nort_field_vs_nort_field_object:
+        :param perimeter_border_normal_metric_magnitude: The magnitude of the normal between the perimeter
+            and the border given in meters
+        :param center_metric_length:
+        :param maximum_radians_inter_gaze_perimeter:
+        :param base_trial_args:
+        :param base_trial_kwargs:
+        :type nose_label: str
+        :type eye_center_label: str
+        :type torso_label: str
+        :type nort_field_vs_nort_field_object: dict
+        :type perimeter_border_normal_metric_magnitude: float
+        :type center_metric_length: float
+        :type maximum_radians_inter_gaze_perimeter: float
         """
         super().__init__(*base_trial_args, **base_trial_kwargs)
 
-        self.nort_field_vs_apparatus = nort_field_vs_apparatus
+        self.nort_field_vs_nort_field_object = nort_field_vs_nort_field_object
 
-        self.trial_id_range_vs_exp_meta = dict(trial_id_range_vs_exp_meta)
         self.torso_label, self.eye_center_label, self.nose_label = (
-            str(torso_label),
-            str(eye_center_label),
-            str(nose_label),
+            str(torso_label), str(eye_center_label), str(nose_label),
         )
-        self.metric_resolution, self.maximum_radians_inter_gaze_perimeter = (
-            float(metric_resolution),
-            float(maximum_radians_inter_gaze_perimeter),
+        self.maximum_radians_inter_gaze_perimeter = float(
+            maximum_radians_inter_gaze_perimeter
         )
 
         self.center_metric_length = (
@@ -95,7 +91,7 @@ class NortExperiment(BaseExperiment):
             self.training_object_trials,
             self.novelty_object_trials,
         ) = ([], [], [])
-        for exp_id, exp_meta in tqdm(self.trial_id_range_vs_exp_meta.items()):
+        for exp_id, exp_meta in self.exp_id_data_tqdm():
             logger.info(f"Category {exp_meta['stage']}; ID {exp_id}")
 
             coordinate_sequence = self.exp_id_vs_coordinate_sequences[exp_id]
@@ -104,7 +100,7 @@ class NortExperiment(BaseExperiment):
                 "coordinate_sequence": coordinate_sequence,
                 "movement_feature_point_label": self.eye_center_label,
                 "recording_resolution": exp_meta["recording_resolution"],
-                "metric_resolution": metric_resolution,
+                "metric_resolution": self.metric_resolution,
                 "label": exp_id,
                 "func_inspect": self.func_inspect,
                 "rigid_nodes_freezing": (self.eye_center_label, self.torso_label),
@@ -143,9 +139,9 @@ class NortExperiment(BaseExperiment):
 
             elif exp_class == "training" or exp_class == "novelty":
                 try:
-                    field = self.nort_field_vs_apparatus[exp_meta["field"] - 1]
+                    field = self.nort_field_vs_nort_field_object[exp_meta["field"] - 1]
                 except AttributeError as e:
-                    msg = "nort_field_vs_apparatus is not defined, which is required when working with training and/or novelty datasets"
+                    msg = "nort_field_vs_nort_field_object is not defined, which is required when working with training and/or novelty datasets"
                     raise AttributeError(msg) from e
 
                 analysis_keyword_arguments = {

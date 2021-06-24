@@ -3,6 +3,10 @@ Novel object recognition test
 =============================
 :code:`bikipy.behaviour.nort` is the submodule that stores the analysis pipeline devised for novel object recognition test.
 
+NORT objects
+============
+The NORT objects need to be annotated, and the annotation data has to be stored as :code:`bikipy.behaviour.nort.trial.NortField` object. The NortField 
+
 Observation
 ===========
 Each object must have their number of observation instances across frames determined in order to determine cases of recognition. :code:`nort_observation` was designed specifically for this problem. It takes the following arguments:

@@ -59,22 +59,17 @@ html_title = project
 html_theme_options = {
     # Set the name of the project to appear in the navigation.
     "nav_title": project,
-
     # Set you GA account ID to enable tracking
     # "google_analytics_account": "UA-XXXXX",
-
     # Specify a base_url used to generate sitemap.xml. If not
     # specified, then no sitemap will be built.
     "base_url": "https://project.github.io/project",
-
     # Set the color and the accent color
     "color_primary": "blue",
     "color_accent": "light-blue",
-
     # Set the repo location to get a badge with stats
     "repo_url": "https://github.com/caniko/BiKiPy",
     "repo_name": project,
-
     # Visible levels of the global TOC; -1 means unlimited
     "globaltoc_depth": 3,
     # If False, expand all TOC entries

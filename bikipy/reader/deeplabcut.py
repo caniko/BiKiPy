@@ -1,8 +1,5 @@
 import collections.abc as abc
 import os
-import sys
-from concurrent.futures import ProcessPoolExecutor
-from functools import partial
 from pathlib import Path
 from typing import Any, Callable, Iterable, Sequence, SupportsFloat, Union
 
@@ -151,157 +148,72 @@ class DeepLabCutReader(BaseReader):
 
     @property
     def frames(self):
-        """
-
-        Returns
-        -------
-        Number of frame in the DeepLabCut experiment, i.e. the maximum index in the DataFrame
-        """
         return self.df.shape[0]
 
     @classmethod
-    def from_video(cls, video_path, *args, **kwargs):
-        """
-        Initialize class using data from a sample video file
-
-        ----------
-        video_path
-            Path to the video file that was used for generating dataset in DeepLabCut
-        args
-            Arguments for the class.__init__
-        kwargs
-            Keyword-arguments for the class.__init__
-
-        Returns
-        -------
-        __init__ call
-        """
-        from bikipy.utils.video import get_video_data
-
-        _frame, res_horizontal, res_vertical, _fps = get_video_data(video_path)
-        func_kwargs = {
-            "pixel_resolution": (res_horizontal, res_vertical),
-            "video_path": video_path,
-        }
-
-        if "hdf_path" in kwargs:
-            init_func = cls.from_hdf
-        elif "csv_path" in kwargs:
-            init_func = cls.from_csv
-        else:
-            init_func = cls
-
-        return init_func(*args, **kwargs, **func_kwargs)
-
-    @classmethod
-    def from_csv(cls, csv_path: str, **kwargs):
+    def from_csv(cls, data_path: Any, label: Any = None, **kwargs):
         """
         Create a pd.DataFrame from a csv file in DeepLabCut (DLC) format.
 
-        Note: You should assign a value to object.data_label by including it as a kwarg
-
-        Parameters
-        ----------
-        csv_path: str
-            The path to the csv file that shall be analysed; with or without ".csv" extension
-        kwargs: dict
-            Keyword arguments for the class init-method
+        Note: You should assign a value to object.label by including it as a kwarg
 
         Returns
         -------
         __init__ call
+
+        :param data_path: The path to the csv file that shall be analysed; with or without ".csv" extension
+        :param label:
+        :param kwargs: Keyword arguments for the class init-method
+        :return:
         """
 
         return cls(
-            pd.read_csv(csv_path, **DEEPLABCUT_DF_INIT_KWARGS),
-            data_path=csv_path,
+            pd.read_csv(data_path, **DEEPLABCUT_DF_INIT_KWARGS),
+            data_path=data_path,
+            label=label,
             **kwargs,
         )
 
     @classmethod
-    def from_hdf(cls, hdf_path: str, drop_level: bool = True, **kwargs):
+    def from_hdf(
+        cls, data_path: Any, label: Any = None, drop_level: bool = True, **kwargs
+    ):
         """
         Initialize class using data from a hdf file
 
-        Note: You should assign a value to object.data_label by including it as a kwarg
+        Note: You should assign a value to object.label by including it as a kwarg
 
-        Parameters
-        ----------
-        hdf_path: str
-            The path to the hdf file that shall be analysed
-        drop_level: bool
-            If True, remove a potentially redundant level in DataFrame
-        kwargs: dict
-            Keyword arguments for the class init-method
-
-        Returns
-        -------
-        __init__ call
+        :param data_path: The path to the hdf file that shall be analysed
+        :param label: Label for the data
+        :param drop_level: If True, remove a potentially redundant level in DataFrame
+        :param kwargs: Keyword arguments for the class init-method
+        :type data_path: Any
+        :type drop_level: bool
+        :type label: str
+        :return: DeepLabCutReader instance
         """
 
-        df = pd.read_hdf(hdf_path, **DEEPLABCUT_DF_INIT_KWARGS)
+        df = pd.read_hdf(data_path, **DEEPLABCUT_DF_INIT_KWARGS)
         if drop_level:
             df = df.droplevel(0, axis=1)
 
-        return cls(df, data_path=hdf_path, **kwargs)
-
-    @classmethod
-    def from_parquet(cls, hdf_path: str, data_label: Any = None, **kwargs):
-        """
-        Initialize class using data from a hdf file
-
-        Note: You should assign a value to object.data_label by including it as a kwarg
-
-        Parameters
-        ----------
-        hdf_path: str
-            The path to the hdf file that shall be analysed
-        data_label : String; optional
-            Label for the data
-        kwargs: dict
-            Keyword arguments for the class init-method
-
-        Returns
-        -------
-        __init__ call
-        """
-
-        return cls(
-            pd.read_parquet(hdf_path),
-            data_path=hdf_path,
-            data_label=data_label,
-            **kwargs,
-        )
+        return cls(df, data_path=data_path, label=label, **kwargs)
 
     @classmethod
     def init_many(
         cls,
-        file_paths: Union[Sequence, Iterable],
+        *init_many_mapper_args,
         init_from: str = "hdf",
-        labels: Union[Sequence, Iterable, None] = None,
-        force_process_pooling: Union[bool, None] = None,
-        **init_kwargs,
-    ) -> list:
+        **init_many_mapper_kwargs,
+    ) -> tuple:
         """
         Create many DeepLabCutReader objects using specified mapping-function
 
-        Parameters
-        ----------
-        file_paths: Iterable
-            Path to the data sources that will be used to generate class instance
-        init_from: str
-            Classmethod label to use for initialization
-        labels: tuple-like
-            Sequence of labels that will be stored as self.semantic_label in the class instance
-        force_process_pooling: bool
-            If True, initialize each DeepLabCutReader object with multiprocessing.
-            Useful when initialize approximately 20 or more dlc objects
-        init_kwargs: dict
-            Keyword arguments for the class init-method
-
-        Returns
-        -------
-        list of class objects instantiated with the use of provided data
+        :param init_from: Classmethod label to use for initialization
+        :param init_many_mapper_kwargs: kwargs for init_many_mapper
+        :type init_from: dict
+        :return: Objects instanced from the respective class with the provided data
+        :rtype: tuple
         """
         ext_to_method = {
             "csv": cls.from_csv,
@@ -309,32 +221,11 @@ class DeepLabCutReader(BaseReader):
             "h5": cls.from_hdf,
             "hdf": cls.from_hdf,
         }
-        try:
-            init_method = ext_to_method[str(init_from).lower()]
-        except KeyError:
-            msg = "This file type has no init function implementation, currently"
-            raise ValueError(msg)
-
-        kwarg_loaded_init = partial(init_method, **init_kwargs)
-
-        # Process pooling in windows is subpar and is not supported.
-        if force_process_pooling or (
-            force_process_pooling is None and sys.platform != "win32"
-        ):
-            args = [file_paths]
-            if labels:
-                args.append(labels)
-
-            with ProcessPoolExecutor() as executor:
-                dlc_objects = list(executor.map(kwarg_loaded_init, *args))
-
-        else:
-            dlc_objects = [
-                kwarg_loaded_init(file_path, data_label=label)
-                for file_path, label in zip(file_paths, labels)
-            ]
-
-        return dlc_objects
+        return cls.init_many_mapper(
+            ext_to_method[init_from.lower()],
+            *init_many_mapper_args,
+            **init_many_mapper_kwargs,
+        )
 
     @staticmethod
     def map_function(
@@ -354,7 +245,7 @@ class DeepLabCutReader(BaseReader):
             list-like of class objects to have func (a function) mapped to them
         keep_labels: bool
             If True, the function will store the returned values along with DeepLabCutReader.
-            data_label as keys in a dictionary
+            label as keys in a dictionary
         manual_labels: tuple-like; optional
             Must have length equal to number of DeepLabCutReader objects in dlc_df_objs.
             Will create a dictionary where values will be correlated based on indexed.
@@ -370,15 +261,15 @@ class DeepLabCutReader(BaseReader):
 
         if not manual_labels:
             if keep_labels:
-                if not all([dlcDF_obj.data_label for dlcDF_obj in dlc_df_objs]):
+                if not all([dlcDF_obj.label for dlcDF_obj in dlc_df_objs]):
                     msg = (
                         "At least one of the DeepLabCutReader objects "
-                        "have no data_label, keep label should be set to False"
+                        "have no label, keep label should be set to False"
                     )
                     raise ValueError(msg)
 
                 return {
-                    dlcDF_obj.data_label: func(dlcDF_obj.df, **kwargs_for_func)
+                    dlcDF_obj.label: func(dlcDF_obj.df, **kwargs_for_func)
                     for dlcDF_obj in dlc_df_objs
                 }
             else:
@@ -416,29 +307,29 @@ class DeepLabCutReader(BaseReader):
             raise NotImplementedError(f"{type(query)} has no implementation")
 
 
-def convert_hdf_to_parquet(hdf_paths, delete_hdf: bool = False):
+def convert_hdf_to_parquet(data_paths, delete_hdf: bool = False):
     """
     Convert deeplabcut hdf files to parquet format, by replacing the filename suffix
     with parquet. Thereby, keeping the original path.
 
     Parameters
     ----------
-    hdf_paths
+    data_paths
     delete_hdf
 
     Returns
     -------
 
     """
-    hdf_path = Path(hdf_paths)
-    parquet_path = hdf_path.with_suffix(".parquet")
+    data_path = Path(data_paths)
+    parquet_path = data_path.with_suffix(".parquet")
 
     if not parquet_path.exists():
-        pd.read_hdf(hdf_path, **DEEPLABCUT_DF_INIT_KWARGS).droplevel(
+        pd.read_hdf(data_path, **DEEPLABCUT_DF_INIT_KWARGS).droplevel(
             0, axis=1
         ).to_parquet(parquet_path)
 
     if delete_hdf:
-        os.remove(hdf_path)
+        os.remove(data_path)
 
     return parquet_path
