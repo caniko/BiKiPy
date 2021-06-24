@@ -17,16 +17,16 @@ Let :math:`ABCD` be our parallelogram, :math:`A` the origin of our coordinate sy
 All :math:`p` satisfying
 
 .. math::
-    0 \le \mathbf{a''} \cdot p \le \mathbf{a''} \cdot \mathbf{b}     \tag1
+    0 \le \mathbf{a''} \cdot p \le \mathbf{a''} \cdot \mathbf{b}
 
 lie in the area between the parallel line segments :math:`AB` and :math:`CD`, and the :math:`p` satisfying
 
 .. math::
-    0 \le \mathbf{b''} \cdot p \le \mathbf{b''} \cdot \mathbf{a}     \tag2
+    0 \le \mathbf{b''} \cdot p \le \mathbf{b''} \cdot \mathbf{a}
 
 lie in the area between the line segments :math:`AD` and :math:`BC`.
 
-Both (1) and (2) together are the criterion for ":math:`p` is inside the parallelogram".
+The two equalities put together are the criterion for :math:`p` being in the area spanned by the parallelogram.
 
 Rectangle
 ---------

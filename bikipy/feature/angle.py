@@ -98,9 +98,8 @@ def compute_angles_from_vectors(
     median_points: Union[str, Sequence, None] = None,
     method: str = "inner",
     degrees: bool = False,
-):
+) -> np.ndarray:
     """
-
     Computes the angle between three groups of vectors
 
     :param row_vectors_point_a: Array of row vectors
@@ -164,28 +163,22 @@ def dlc_compute_angles_from_vectors(
     point_c_name: str,
     *args,
     **kwargs,
-):
+) -> dict:
     """
-    compute_angles_from_vectors wrapper for DataFrames generated from DeepLabCut 2d result files
+    compute_angles_from_vectors wrapper for pandas.DataFrames generated from DeepLabCut 2d result files
 
-    Parameters
-    ----------
-    df: DataFrame
-        Data from DeepLabCut ingested as a pd.DataFrame
-    point_a_name: str
-        Name of vector group
-    point_b_name: str
-        Name of the vector that is the joint between the two other groups
-    point_c_name: str
-        Name of vector group
-    args
-        Arguments for compute_angles_from_vectors
-    kwargs
-        Keyword arguments for compute_angles_from_vectors
-
-    Returns
-    -------
-    dict: {Angle, Likelihood}
+    :param df: Data from DeepLabCut ingested as a pd.DataFrame
+    :param point_a_name: Name of vector group
+    :param point_b_name: Name of the vector that is the joint between the two other groups
+    :param point_c_name: Name of vector group
+    :param args: Arguments for compute_angles_from_vectors
+    :param kwargs: Keyword arguments for compute_angles_from_vectors
+    :type df: pd.DataFrame
+    :type point_a_name: str
+    :type point_b_name: str
+    :type point_c_name: str
+    :return: {Angle: Likelihood}
+    :rtype: dict
     """
     from bikipy.utils.deeplabcut import get_region_of_interest_data, reduce_likelihoods
 

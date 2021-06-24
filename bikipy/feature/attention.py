@@ -32,26 +32,24 @@ def proximity_filter(
     Filter with respect to proximity rules. (1) The nose has to be in front of perimeter, but inside the border;
     (2) the center_of_mass is outside of the perimeter.
 
-    Parameters
-    ----------
-    polygonal_perimeter
-    nose
-        Cartesian coordinates of the nose
-    center_of_mass
-        Cartesian coordinates of the center of mass
-    perimeter_border_normal_pixel_magnitude
-        The magnitude of the normal between the perimeter and the border given in pixels
-    inspect
-        If True, generate and view an analytics of the resulting filter
-    inspection_ax
-        matplotlib Axes that the inspection plots will (optionally) be saved in
-
-    Returns
-    -------
-
+    :param polygonal_perimeter:
+    :param nose: Cartesian coordinates of the nose
+    :param center_of_mass: Cartesian coordinates of the center of mass
+    :param perimeter_border_normal_pixel_magnitude: The magnitude of the normal between the perimeter and the border given in pixels
+    :param inspect: If True, generate and view an analytics of the resulting filter
+    :param inspection_ax: matplotlib Axes that the inspection plots will (optionally) be saved in
+    :type polygonal_perimeter: PolygonalPerimeter
+    :type nose: np.ndarray
+    :type center_of_mass: np.ndarray
+    :type perimeter_border_normal_pixel_magnitude: float
+    :type inspect: bool
+    :type inspection_ax: Any
+    :return:
+    :rtype: np.ndarray
     """
     # Remove nose points that aren't inside the perimeter
     nose = np.asarray(nose)
+    center_of_mass = np.asarray(center_of_mass)
 
     polygonal_perimeter_border = polygonal_perimeter.border(
         perimeter_border_normal_pixel_magnitude

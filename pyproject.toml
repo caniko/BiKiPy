@@ -43,6 +43,7 @@ Sphinx = "^4.0.2"
 pylint = "^2.8.3"
 sphinx-material = "^0.0.32"
 jupyter = "^1.0.0"
+sphinx-autoapi = "^1.8.1"
 
 [tool.poetry.extras]
 jupyter = ["jupyter"]

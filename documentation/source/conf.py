@@ -29,7 +29,10 @@ author = "Can H. Tartanoglu"
 # ones.
 extensions = [
     "sphinx.ext.autosectionlabel",
+    "autoapi.extension"
 ]
+
+autoapi_dirs = ['../../bikipy']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
