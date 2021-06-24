@@ -20,14 +20,9 @@ The reader will initially be presented with the purpose of the experiment, and w
 
 Variables
 ---------
-Firstly, all variables that are required for the experiment are outlined, and explained. Variables that are common across trials are described first followed by variables that are dynamic across trials. Otherwise the variables are sorted alphabetically.
+All variables that are required for the experiment are outlined, and explained. Variables that are common across trials are described first followed by variables that are dynamic across trials. Otherwise the variables are sorted alphabetically.
 
 
 Analysis theory
 ---------------
-The logical and mathematical theory used for analysis must be outlined preferably by referencing the existing functions in the .
-
-.. note::
-    Analysis functions that are exclusive to the experiment module must argue that exclusivity explicitly.
-
-Moreover, the documentation should be concise, and not include any topics that are foundational to the theory; the reader can read these foundational subjects elsewhere. Potentially, hyperlinks to videos or pages.
+The logical and mathematical theory used for analysis must be outlined preferably by referencing the existing functions in the

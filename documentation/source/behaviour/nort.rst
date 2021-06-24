@@ -5,13 +5,13 @@ Novel object recognition test
 
 NORT objects
 ============
-The NORT objects need to be annotated, and the annotation data has to be stored as :code:`bikipy.behaviour.nort.trial.NortField` object. The NortField 
+The NORT objects need to be annotated, and the annotation data has to be stored as :code:`bikipy.behaviour.nort.trial.NortField` object. The NortField
 
-Observation
-===========
-Each object must have their number of observation instances across frames determined in order to determine cases of recognition. :code:`nort_observation` was designed specifically for this problem. It takes the following arguments:
+Experiment function
+===================
+The NORT experiment workflow is stored in the :code:`behaviour.nort.experiment.NortExperiment`
 
-.. list-table::
+.. list-table:: Variables
    :widths: auto
    :header-rows: 1
 
