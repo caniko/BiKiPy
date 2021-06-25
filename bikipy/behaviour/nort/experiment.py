@@ -72,7 +72,9 @@ class NortExperiment(BaseExperiment):
         self.nort_field_vs_nort_field_object = nort_field_vs_nort_field_object
 
         self.torso_label, self.eye_center_label, self.nose_label = (
-            str(torso_label), str(eye_center_label), str(nose_label),
+            str(torso_label),
+            str(eye_center_label),
+            str(nose_label),
         )
         self.maximum_radians_inter_gaze_perimeter = float(
             maximum_radians_inter_gaze_perimeter
