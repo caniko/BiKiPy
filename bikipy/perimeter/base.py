@@ -1,3 +1,4 @@
+import json
 from functools import cached_property, lru_cache
 from logging import getLogger
 from pathlib import PurePath
@@ -6,6 +7,7 @@ from typing import Any, Sequence, Union
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+from shapely.geometry import Point, Polygon
 
 from bikipy.math.geometry import expand_parallelogram, order_parallelogram_corners
 from bikipy.utils.misc import read_image
@@ -22,15 +24,14 @@ class Perimeter:
         inspect_image: Union[str, PurePath, np.ndarray, None] = None,
     ):
         """
-        Parameters
-        ----------
-        int_label
-            Integer-based label
-        semantic_label: Optional, string
-            String based semantic label for the perimeter. Useful during inspection and debuging
-        inspect_image: Optional, string
-            Label for the perimeter. Useful for manual audition and testing.
+        :param int_label: Integer label
+        :param semantic_label: String/semantic label. Useful during inspection and debuging
+        :param inspect_image: Label for the perimeter. Useful for manual audition and testing.
+        :type int_label: int
+        :type semantic_label: str
+        :type inspect_image: Any
         """
+
         self.int_label = int(int_label) if int_label else None
         self.semantic_label = str(semantic_label) if semantic_label else None
 
@@ -108,6 +109,20 @@ class PolygonalPerimeter(Perimeter):
         return self.perimeter_corners[item]
 
     @classmethod
+    def init_polygon(cls, perimeter_corners, **kwargs):
+        perimeter_corners = np.asarray(perimeter_corners)
+        if (number_of_sides := perimeter_corners.shape[0]) == 3:
+            from bikipy.perimeter.triangular import TriangularPerimeter
+
+            return TriangularPerimeter(perimeter_corners=perimeter_corners, **kwargs)
+        elif number_of_sides == 4:
+            from bikipy.perimeter.parallelogram.classes import ParallelogramPerimeter
+
+            return ParallelogramPerimeter(perimeter_corners=perimeter_corners, **kwargs)
+        else:
+            return cls(perimeter_corners=perimeter_corners, **kwargs)
+
+    @classmethod
     def from_image(cls, inspect_image: Any, n: int, *args, **kwargs):
         """
         Define the corners of a polygon with a guiding image
@@ -131,7 +146,7 @@ class PolygonalPerimeter(Perimeter):
         plt.imshow(img)
 
         perimeter_corners = plt.ginput(n=n, timeout=0)
-        return cls(
+        return cls.init_polygon(
             perimeter_corners=perimeter_corners,
             inspect_image=inspect_image,
             *args,
@@ -160,6 +175,25 @@ class PolygonalPerimeter(Perimeter):
 
         return cls.from_image(frame, *args, feature_scale=(x_res, y_res), **kwargs)
 
+    @classmethod
+    def from_coco(cls, coco_path: Any, *args, **kwargs):
+        with json.load(coco_path) as coco:
+            annotations = coco["annotations"]
+
+        results = []
+        for annotation in annotations:
+            segmentation = annotation["segmentation"]
+            results.append(
+                cls.init_polygon(
+                    [  # perimeter_corners
+                        (segmentation[i], segmentation[i + 1])
+                        for i in range(0, len(segmentation) - 1, 2)
+                    ],
+                    *args,
+                    *kwargs,
+                )
+            )
+
     @property
     def perimeter_corners(self):
         return self._perimeter_corners
@@ -167,16 +201,9 @@ class PolygonalPerimeter(Perimeter):
     @perimeter_corners.setter
     def perimeter_corners(self, corners: Sequence[Sequence[float]]):
         corners = np.asarray(corners)
-        if (number_of_sides := corners.shape[0]) == 4:
-            self._perimeter_corners = order_parallelogram_corners(corners)
-        else:
-            logger.warning(
-                f"Number of corners, {number_of_sides}, not supported."
-                f"The object methods may not work as intended."
-            )
-            self._perimeter_corners = corners
 
-        self.number_of_sides = number_of_sides
+        self._perimeter_corners = order_parallelogram_corners(corners)
+        self.number_of_sides = corners.shape[0]
 
     @cached_property
     def feat_scaled_sides(self):
@@ -199,15 +226,9 @@ class PolygonalPerimeter(Perimeter):
         perimeter_border_normal_pixel_magnitude: Union[float, int],
     ):
         """
-
-        Parameters
-        ----------
-        perimeter_border_normal_pixel_magnitude
-            The magnitude of the normal between the perimeter and the border given in pixels
-
-        Returns
-        -------
-
+        :param perimeter_border_normal_pixel_magnitude: The magnitude of the normal between
+            the perimeter and the border given in pixels
+        :return:
         """
         border_obj = self.__class__(
             expand_parallelogram(
@@ -219,7 +240,12 @@ class PolygonalPerimeter(Perimeter):
         return border_obj
 
     def confined_coordinate_indices(self, coordinates: Sequence):
-        raise NotImplementedError
+        assert self.number_of_sides > 4
+
+        polygon = Polygon(self.perimeter_corners)
+        return np.array(
+            [polygon.contains(Point(coordinate)) for coordinate in coordinates]
+        )
 
     def confined_coordinates(
         self, coordinates: Sequence, inspect: bool = False

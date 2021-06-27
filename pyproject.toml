@@ -34,22 +34,21 @@ compress-pickle = {extras = ["lz4"], version = "^2.0.1"}
 
 jupyter = { version = "^1.0.0", optional = true }
 jupyterthemes = { version = "^0.20.0", optional = true }
-labelImg = { version = "^1.8.5", optional = true }
+Shapely = "^1.7.1"
 
 [tool.poetry.dev-dependencies]
-black = {extras = ["d"], version = "^20.8b1"}
+black = {extras = ["d"], version = ">=21.6b0"}
+isort = "^5.6.4"
 pytest = "^5.4.3"
 commitizen = "^1.23.0"
 pre-commit = "^2.5.1"
-isort = "^5.6.4"
-Sphinx = "^4.0.2"
 pylint = "^2.8.3"
+Sphinx = "^4.0.2"
 sphinx-material = "^0.0.32"
 sphinx-autoapi = "^1.8.1"
 
 [tool.poetry.extras]
-annotate = ["labelImg"]
-jupyter = ["jupyter", "jupyterthemes", "labelImg"]
+jupyter = ["jupyter", "jupyterthemes"]
 
 [tool.isort]
 profile = "black"

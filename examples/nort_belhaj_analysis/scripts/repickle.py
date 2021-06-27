@@ -34,6 +34,9 @@ class RenameUnpickler(pickle.Unpickler):
             renamed_module = "bikipy.behaviour.nort.trial"
         elif "bikipy.border" in module:
             renamed_module = module.replace("bikipy.border", "bikipy.perimeter")
+
+        if name == "NortObjectField":
+            name = "NortField"
         return super(RenameUnpickler, self).find_class(renamed_module, name)
 
 
@@ -54,15 +57,15 @@ for annotation_obj_path in B_PICKLE_PATHS:
     for i, gen_poly in enumerate(gen_poly_seq):
         gen_poly_seq[i] = NortField(
             label=int(gen_poly.label),
-            constant_object_perimeter=PolygonalPerimeter(
+            constant_object_perimeter=PolygonalPerimeter.init_polygon(
                 inspect_image=annotation_obj_path.parent / f"training_{i+1}.png",
                 **deserialise_generic(gen_poly.constant_object),
             ),
-            variable_object_perimeter=PolygonalPerimeter(
+            variable_object_perimeter=PolygonalPerimeter.init_polygon(
                 inspect_image=annotation_obj_path.parent / f"training_{i+1}.png",
                 **deserialise_generic(gen_poly.variable_object),
             ),
-            novel_object_perimeter=PolygonalPerimeter(
+            novel_object_perimeter=PolygonalPerimeter.init_polygon(
                 inspect_image=annotation_obj_path.parent / f"novel_{i+1}.png",
                 **deserialise_generic(gen_poly.novel_object),
             ),

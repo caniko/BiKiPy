@@ -129,7 +129,7 @@ class BaseTrial:
 
         # coordinate_sequence must be a reader object, like DeepLabCutReader
         self.movement_feature_point_label = str(movement_feature_point_label)
-        self.coordinate_sequence = dict(coordinate_sequence)
+        self.coordinate_sequence = coordinate_sequence
         self.coordinates_per_frame = self.coordinate_sequence[
             self.movement_feature_point_label
         ]

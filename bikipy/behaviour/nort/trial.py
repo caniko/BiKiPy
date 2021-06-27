@@ -180,6 +180,7 @@ class NortField:
     novelty_constant_object_perimeter: Union[PolygonalPerimeter, None] = field(
         default=None
     )
+    habituation_img: Any = field(init=False, compare=False, default=None)
 
     def __post_init__(self):
         if self.novelty_constant_object_perimeter:
@@ -190,6 +191,11 @@ class NortField:
 
         self.variable_object_perimeter.semantic_label = "variable"
         self.novel_object_perimeter.semantic_label = "novel"
+
+        if self.habituation_img:
+            self.constant_object_perimeter.inspect_image = self.habituation_img
+            self.variable_object_perimeter.inspect_image = self.habituation_img
+            self.novelty_constant_object_perimeter.inspect_image = self.habituation_img
 
     @classmethod
     def from_images(cls, label: int, habituation_img: Any, novelty_img: Any):

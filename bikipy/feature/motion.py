@@ -87,7 +87,7 @@ def total_displacement_median_speed_acceleration(
 
 def frozen_frames(
     fps: Union[float, int],
-    displacement: Iterable[np.ndarray],
+    rigid_body_node_displacements: Iterable[np.ndarray],
     second_threshold: float = 1.0,
     metric_displacement_threshold: float = 0.005,
 ) -> np.ndarray:
@@ -109,11 +109,11 @@ def frozen_frames(
         #. Filter the result from 2. with respect to the time/frame/second threshold
 
     :param fps: Frames per second (fps) of the video the data was collected from
-    :param displacement:
+    :param rigid_body_node_displacements:
     :param second_threshold:
     :param metric_displacement_threshold:
     :type fps: float
-    :type displacement: np.ndarray
+    :type rigid_body_node_displacements: np.ndarray
     :type second_threshold: float
     :type metric_displacement_threshold: float
     :return: Boolean index storing the freezing state of the animal across frames
@@ -122,7 +122,7 @@ def frozen_frames(
     frame_threshold = round(second_threshold * fps)
 
     discrete_thresholding = []
-    for displacement in displacement:
+    for displacement in rigid_body_node_displacements:
         displacement = np.asarray(displacement)
         result = np.zeros(displacement.shape[0], dtype=bool)
 
@@ -192,7 +192,7 @@ class Motion:
             self.median_speed = np.nanmedian(self.speed)
 
             self.frozen_frames = frozen_frames(
-                self.fps, self.metric_displacement_by_frame
+                self.fps, (self.metric_displacement_by_frame,)
             )
             self.freezing_time = np.nansum(self.frozen_frames) / self.fps
 

@@ -22,6 +22,7 @@ class ParallelogramPerimeter(PolygonalPerimeter):
         self,
         base: Union[Sequence[SupportsFloat], None] = None,
         apex: Union[Sequence[SupportsFloat], None] = None,
+        *args,
         **kwargs,
     ):
         """
@@ -36,11 +37,11 @@ class ParallelogramPerimeter(PolygonalPerimeter):
             if inspect_image is defined
         """
 
-        if base and apex:
+        if base is not None and apex is not None:
             self.base, self.apex = np.asarray(base), np.asarray(apex)
-            kwargs["perimeter_corner"] = np.concatenate((self.base, self.apex))
+            kwargs["perimeter_corners"] = np.concatenate((self.base, self.apex))
 
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
 
         if not (self.base and self.apex) and self.perimeter_corners:
             self.base, self.apex = np.split(self.perimeter_corners, 2)
@@ -94,16 +95,16 @@ class ParallelogramPerimeter(PolygonalPerimeter):
 
     @property
     def base(self):
-        return self.__base
+        return self._base
 
     @base.setter
-    def base(self, base: Sequence):
-        base = np.asarray(base)
-        self.__base = self.sort_vectors(base)
+    def base(self, value: Sequence):
+        value = np.asarray(value)
+        self._base = self.sort_vectors(value)
 
         # self.base_mid = self.base[0] + (self.base[1] - self.base[0]) / 2.
-        self.base_mid = self.midpoint(*self.__base)
-        self.base_vector = base[1] - base[0]
+        self.base_mid = self.midpoint(*self._base)
+        self.base_vector = value[1] - value[0]
 
     @property
     def apex(self):

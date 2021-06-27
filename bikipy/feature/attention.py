@@ -11,7 +11,6 @@ import numpy as np
 import seaborn as sns
 
 from bikipy.feature.angle import inner_angle
-from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.math.vector import closest_line_to_point, unit_vector
 from bikipy.perimeter.base import PolygonalPerimeter
 
@@ -55,19 +54,9 @@ def proximity_filter(
         perimeter_border_normal_pixel_magnitude
     )
 
-    nose_within_border = points_in_parallelogram(
-        polygonal_perimeter_border.perimeter_corners[1],
-        polygonal_perimeter_border.perimeter_corners[0],
-        polygonal_perimeter_border.perimeter_corners[2],
-        nose,
-    )
-    center_of_mass_outside_polygon = np.logical_not(
-        points_in_parallelogram(
-            polygonal_perimeter.perimeter_corners[1],
-            polygonal_perimeter.perimeter_corners[0],
-            polygonal_perimeter.perimeter_corners[2],
-            center_of_mass,
-        )
+    nose_within_border = polygonal_perimeter_border.confined_coordinates(nose)
+    center_of_mass_outside_polygon = ~polygonal_perimeter_border.confined_coordinates(
+        center_of_mass
     )
 
     # Find states where the nose is within perimeter while the center_of_mass is not over perimeter

@@ -82,12 +82,12 @@ class LinePerimeter(Perimeter):
 
     @property
     def feat_border(self):
-        """ Feature magnituded perimeter location """
+        """Feature magnituded perimeter location"""
         return self.location / self.resolution[self.orientation]
 
     @property
     def orientation_label(self):
-        """ Given name of orientation """
+        """Given name of orientation"""
         return INDEX_TO_ORIENTATION[self.orientation]
 
     def __mod__(self, other: Sequence) -> np.ndarray:

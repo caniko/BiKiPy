@@ -92,7 +92,7 @@ with pd.ExcelWriter(
             trial_id_range_vs_exp_meta[trial_id] = trial_data
 
         NortExperiment(
-            trial_id_range_vs_exp_meta=trial_id_range_vs_exp_meta,
+            trial_id_vs_data=trial_id_range_vs_exp_meta,
             metric_resolution=0.4,
             nose_label="nose",
             eye_center_label="mid-left_ear-right_ear",
