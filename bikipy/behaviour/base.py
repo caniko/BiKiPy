@@ -8,6 +8,7 @@ import numpy as np
 from bikipy.feature.motion import Motion, frozen_frames, displacement_by_frame
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.store import RangeDict
+from bikipy.utils.video import get_video_data
 
 logger = getLogger(__name__)
 
@@ -84,8 +85,9 @@ class BaseTrial:
         coordinate_sequence: dict,
         unit_per_pixel: float,
         rigid_nodes_freezing: Union[Sequence[Union[str, int]], None] = None,
-        recording_resolution: Union[Sequence[int], None] = None,
         movement_feature_point_label: Union[str, None] = None,
+        video_path: Any = None,
+        recording_resolution: Union[Sequence[int], None] = None,
         fps: Union[float, None] = None,
         label: Any = None,
         func_inspect: bool = False,
@@ -95,8 +97,9 @@ class BaseTrial:
         :param coordinate_sequence: The coordinates of the subject across the frames in the video recording
         :param unit_per_pixel: Number defining the number of pixels that goes into one centimeter
         :param rigid_nodes_freezing: Nodes that should remain during freeze/immobility, most often due to fear.
-        :param recording_resolution: Video resolution
         :param movement_feature_point_label: Label of the node that will be used to track general animal movement
+        :param video_path: Path to trial video recording
+        :param recording_resolution: Video resolution
         :param fps: Frames per second of video
         :param label: Experiment label
         :param func_inspect: If True, will generate inspection figures from functions that have support
@@ -104,21 +107,28 @@ class BaseTrial:
         :type coordinate_sequence: dict
         :type unit_per_pixel: float
         :type rigid_nodes_freezing: Sequence[Union[str, int]] (optional)
-        :type recording_resolution: Sequence[int] (optional)
         :type movement_feature_point_label: str (optional)
+        :type video_path: Any (optional)
+        :type recording_resolution: Sequence[int] (optional)
         :type fps: float (optional)
         :type label: Any
         :type func_inspect: bool
         :type inspect_image: Any
         """
 
-        self.fps = fps
+        if video_path:
+            _frame, x_res, y_res, self.fps = get_video_data(video_path)
+            self.recording_resolution = (x_res, y_res)
+        else:
+            self.recording_resolution = recording_resolution
+            self.fps = fps
+
         self.unit_per_pixel = float(unit_per_pixel)
         self.label = label
         self.func_inspect = func_inspect
         self.inspect_image = inspect_image
 
-        if recording_resolution:
+        if self.recording_resolution:
             assert len(recording_resolution) == 2, recording_resolution
             self.horizontal_resolution = int(recording_resolution[0])
             self.vertical_resolution = int(recording_resolution[1])

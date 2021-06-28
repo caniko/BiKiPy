@@ -109,7 +109,7 @@ class PolygonalPerimeter(Perimeter):
         return self.perimeter_corners[item]
 
     @classmethod
-    def init_polygon(cls, perimeter_corners, **kwargs):
+    def init_polygon(cls, perimeter_corners: Sequence, **kwargs):
         perimeter_corners = np.asarray(perimeter_corners)
         if (number_of_sides := perimeter_corners.shape[0]) == 3:
             from bikipy.perimeter.triangular import TriangularPerimeter
@@ -149,7 +149,6 @@ class PolygonalPerimeter(Perimeter):
         return cls.init_polygon(
             perimeter_corners=perimeter_corners,
             inspect_image=inspect_image,
-            *args,
             **kwargs,
         )
 
@@ -176,23 +175,24 @@ class PolygonalPerimeter(Perimeter):
         return cls.from_image(frame, *args, feature_scale=(x_res, y_res), **kwargs)
 
     @classmethod
-    def from_coco(cls, coco_path: Any, *args, **kwargs):
+    def from_coco(cls, coco_path: Any, **kwargs) -> dict:
         with json.load(coco_path) as coco:
             annotations = coco["annotations"]
 
-        results = []
+        results = {}
         for annotation in annotations:
             segmentation = annotation["segmentation"]
-            results.append(
+            results[annotation["name"].lower()] = (
                 cls.init_polygon(
                     [  # perimeter_corners
                         (segmentation[i], segmentation[i + 1])
                         for i in range(0, len(segmentation) - 1, 2)
                     ],
-                    *args,
                     *kwargs,
                 )
             )
+
+        return results
 
     @property
     def perimeter_corners(self):

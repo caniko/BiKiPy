@@ -14,7 +14,6 @@ from bikipy.plugins.belhaj import (
     get_trial_id_vs_animal_id,
     get_trial_id_vs_stage,
 )
-from bikipy.utils.video import get_video_data
 
 DEEPLABCUT_DIR = Path("/mnt/md0/Projects/Neuroscience/Imen/data/nort")
 
@@ -74,12 +73,10 @@ with pd.ExcelWriter(
         ):
             trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(video_path).stem)[0])
 
-            _, width, height, fps = get_video_data(video_path)
             trial_data = {
                 "coordinate_data_path": data_path,
                 "stage": (stage := trial_id_vs_stage[trial_id]),
-                "recording_resolution": (width, height),
-                "fps": fps,
+                "video_path": video_path,
                 "animal_id": (animal_id := exp_vs_animal[trial_id]),
                 "inspect": False,
             }

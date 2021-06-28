@@ -180,7 +180,7 @@ class NortField:
     novelty_constant_object_perimeter: Union[PolygonalPerimeter, None] = field(
         default=None
     )
-    habituation_img: Any = field(init=False, compare=False, default=None)
+    inspect_image: Any = field(init=False, compare=False, default=None)
 
     def __post_init__(self):
         if self.novelty_constant_object_perimeter:
@@ -192,21 +192,21 @@ class NortField:
         self.variable_object_perimeter.semantic_label = "variable"
         self.novel_object_perimeter.semantic_label = "novel"
 
-        if self.habituation_img:
-            self.constant_object_perimeter.inspect_image = self.habituation_img
-            self.variable_object_perimeter.inspect_image = self.habituation_img
-            self.novelty_constant_object_perimeter.inspect_image = self.habituation_img
+        if self.inspect_image:
+            self.constant_object_perimeter.inspect_image = self.inspect_image
+            self.variable_object_perimeter.inspect_image = self.inspect_image
+            self.novelty_constant_object_perimeter.inspect_image = self.inspect_image
 
     @classmethod
-    def from_images(cls, label: int, habituation_img: Any, novelty_img: Any):
+    def from_images(cls, label: int, inspect_image: Any, novelty_img: Any):
         polygon_n = 4
         return cls.from_undefined(
             label=int(label),
             habituation_object_perimeter_a=PolygonalPerimeter.from_image(
-                habituation_img, n=polygon_n
+                inspect_image, n=polygon_n
             ),
             habituation_object_perimeter_b=PolygonalPerimeter.from_image(
-                habituation_img, n=polygon_n
+                inspect_image, n=polygon_n
             ),
             novel_object_perimeter=PolygonalPerimeter.from_image(
                 novelty_img, n=polygon_n

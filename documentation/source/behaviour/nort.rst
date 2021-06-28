@@ -3,35 +3,19 @@ Novel object recognition test
 =============================
 :code:`bikipy.behaviour.nort` is the submodule that stores the analysis pipeline devised for novel object recognition test.
 
-NORT objects
-============
-The NORT objects need to be annotated, and the annotation data has to be stored as :code:`bikipy.behaviour.nort.trial.NortField` object. The NortField
+The NORT experiment consists of groups of trials with respect to the animal. Each group consists of *habituation*, *training*, *novel (object exposure)*. NORT trials are conducted in a square enclosure, which is the reason behind the trial objects inheriting from :code:`SquareEnclosedTrial`. This allows us to define a center and perimeter within the square enclosure.
 
-Experiment function
-===================
-The NORT experiment workflow is stored in the :code:`behaviour.nort.experiment.NortExperiment`
+Habituation
+===========
+There isn't much to say about habituation as it is simply a semantic class. In other words, it is just an alias to :code:`SquareEnclosedTrial`.
 
-.. list-table:: Variables
-   :widths: auto
-   :header-rows: 1
+Training
+========
+The animal is exposed to two object during training. In these trials, we are interested in how long the animal observes, furthermore, inspects these objects. We do this by applying a perimeter that segments these objects. At this point we are able to pass the necessary data to :code:`features.attention.polygonal_perimeter_attention` to perform the analysis. As a result, we get the boolean index for attention of these objects.
 
-   * - Variable name
-     - Description
-   * - nort_object
-     - The object class must inherit from :code:`bikipy.perimeter.base.PolygonalPerimeter`, more information can be found here.
-   * - nose
-     - Sequence with the coordinates pointing to the location of the **nose** on each video frame during the trial
-   * - eye_center
-     - Sequence with the coordinates pointing to the location of the **eye center** on each video frame during the trial
-   * - torso
-     - Sequence with the coordinates pointing to the location of the **torso** on each video frame during the trial
-   * - fps
-     - Frames per second (fps) of the trial video recording
-   * - perimeter_border_normal_pixel_magnitude
-     - The normal pixel distance between the border and the respective object
-   * - maximum_radians_inter_gaze_perimeter
-     - Maximum radians between the gaze vector (eye_centre to nose) and object tangent
-   * - inspect (default :code:`False`)
-     - If :code:`True`, will generate and show and inspection figure for the inspection of each filter
+.. code-block::
+    seconds_observed = np.sum(boolean_index) / fps
 
-
+Novelty
+=======
+We do the same thing as we did in training, but, this time, one of the objects (the variable object) has been switched out with a new novel object.
