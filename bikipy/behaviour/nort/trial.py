@@ -24,7 +24,7 @@ class NortHabituationTrial(SquareEnclosedTrial):
     reference data for future NORT experiments.
     """
 
-    pass
+    trial_sequence_index = 0
 
 
 class NortOpenField(NortHabituationTrial):
@@ -32,6 +32,8 @@ class NortOpenField(NortHabituationTrial):
 
 
 class NortTrainingTrial(NortHabituationTrial):
+    trial_sequence_index = 1
+
     def __init__(
         self,
         nort_a: PolygonalPerimeter,
@@ -149,6 +151,8 @@ class NortTrainingTrial(NortHabituationTrial):
 
 
 class NortNoveltyTrial(NortTrainingTrial):
+    trial_sequence_index = 2
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

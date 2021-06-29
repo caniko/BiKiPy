@@ -54,7 +54,7 @@ jupyter = ["jupyter", "jupyterthemes"]
 profile = "black"
 
 [tool.black]
-target-version = ['py37']
+target-version = ['py37', 'py38', 'py39']
 include = '\.pyi?$'
 exclude = '''
 (

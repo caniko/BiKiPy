@@ -13,7 +13,17 @@ from bikipy.utils.video import get_video_data
 logger = getLogger(__name__)
 
 
-class BaseExperiment:
+class ExperimentPostInitAnalysisCaller(type):
+    def __call__(cls, *args, **kwargs):
+        obj = type.__call__(cls, *args, **kwargs)
+        # Run analysis after init
+        obj.__analysis__()
+        return obj
+
+
+class BaseExperiment(object, metaclass=ExperimentPostInitAnalysisCaller):
+    trials_are_sequential = False
+
     def __init__(
         self,
         metric_resolution: Union[float, Sequence[float]],
@@ -61,6 +71,24 @@ class BaseExperiment:
             msg = f"{self.coordinate_data_format} as a format for data ingestion has no implementation"
             raise NotImplemented(msg)
 
+    def __analysis__(self):
+        """Ran after __init__"""
+        if self.trials_are_sequential:
+            # TODO: Implement
+            pass
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__) or (
+            self.label is None and other.label is None
+        ):
+            logger.info(
+                f"Can not compare the two Experiment objects "
+                f"as they do not have a label:\n"
+                f"self: {self.label}; other: {other.label}"
+            )
+            return False
+        return self.label == other.label
+
     def __getitem__(self, item):
         if self.trial_id_range_vs_data:
             return {**self.trial_id_vs_data[item], **self.trial_id_range_vs_data[item]}
@@ -78,6 +106,7 @@ class BaseExperiment:
 
 
 class BaseTrial:
+    trial_sequence_index = None
     second_tolerance = 0.35
 
     def __init__(
@@ -152,6 +181,17 @@ class BaseTrial:
         self._frozen_boolean_index = None
         if rigid_nodes_freezing:
             self.rigid_nodes_freezing = rigid_nodes_freezing
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__) or (
+            self.label is None and other.label is None
+        ):
+            logger.info(
+                f"Can not compare the two Trial objects as they do not have a label:\n"
+                f"self: {self.label}; other: {other.label}"
+            )
+            return False
+        return self.label == other.label
 
     @cached_property
     def _frame_tolerance(self):

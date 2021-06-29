@@ -17,6 +17,7 @@ class NortExperiment(BaseExperiment):
     """
     Class for combining several NORT trials under one class for joint analysis
     """
+    trials_are_sequential = True
 
     period_columns = ("T1", "T2", "Total")
 
@@ -169,10 +170,12 @@ class NortExperiment(BaseExperiment):
                 msg = f"{exp_meta['stage']} has no implementation"
                 raise NotImplementedError(msg)
 
+            self.post_init()
+
             if (animal_id := exp_meta["animal_id"]) in self.experiment_pairs:
                 self.experiment_pairs[animal_id].append(exp)
             else:
-                self.experiment_pairs[animal_id] = [exp]
+                self.experiment_pairs[animal_id] = {exp}
 
     @cached_property
     def df(self) -> pd.DataFrame:

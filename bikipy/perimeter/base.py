@@ -182,14 +182,12 @@ class PolygonalPerimeter(Perimeter):
         results = {}
         for annotation in annotations:
             segmentation = annotation["segmentation"]
-            results[annotation["name"].lower()] = (
-                cls.init_polygon(
-                    [  # perimeter_corners
-                        (segmentation[i], segmentation[i + 1])
-                        for i in range(0, len(segmentation) - 1, 2)
-                    ],
-                    *kwargs,
-                )
+            results[annotation["name"].lower()] = cls.init_polygon(
+                [  # perimeter_corners
+                    (segmentation[i], segmentation[i + 1])
+                    for i in range(0, len(segmentation) - 1, 2)
+                ],
+                *kwargs,
             )
 
         return results

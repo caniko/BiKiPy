@@ -16,6 +16,8 @@ The animal is exposed to two object during training. In these trials, we are int
 .. code-block::
     seconds_observed = np.sum(boolean_index) / fps
 
+Each boolean in the :code:`boolean_index` represents one frame.
+
 Novelty
 =======
-We do the same thing as we did in training, but, this time, one of the objects (the variable object) has been switched out with a new novel object.
+We do the same thing as we did in training; moreover, at this instance, one of the objects (the variable object) has been exchanged with a new object. This object is referred, to as the novel object.
