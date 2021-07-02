@@ -237,45 +237,46 @@ class PolygonalPerimeter(Perimeter):
 
         return border_obj
 
-    def confined_coordinate_indices(self, coordinates: Sequence):
+    def polygon_contained_coordinates(
+        self, coordinates: Sequence, inspect: bool = False
+    ):
+        """
+        self.polygon_contained_coordinates to fetch confined coordinates within
+        the respective perimeter
+
+        :param coordinates: Coordinates that will have their confinement tested
+        :param inspect: If True, plot the confined coordinates
+        :type coordinates: np.ndarray
+        :type inspect: bool
+        :return: Coordinates cointain
+        :rtype: np.ndarray
+        """
+        coordinates = np.asarray(coordinates)
+        polygon_contained_coordinates_boolean_index = coordinates[
+            self.polygon_contained_coordinates(coordinates)
+        ]
+        if inspect:
+            ax = super().plot()
+            ax.scatter(
+                polygon_contained_coordinates_boolean_index.T[0],
+                polygon_contained_coordinates_boolean_index.T[1],
+                marker="x",
+            )
+            ax.set_tittle("Confined coordinates")
+            plt.show()
+
+        return polygon_contained_coordinates_boolean_index
+
+    @lru_cache
+    def polygon_contained_coordinates_boolean_index(
+        self, coordinates: Sequence
+    ) -> np.ndarray:
         assert self.number_of_sides > 4
 
         polygon = Polygon(self.perimeter_corners)
         return np.array(
             [polygon.contains(Point(coordinate)) for coordinate in coordinates]
         )
-
-    def confined_coordinates(
-        self, coordinates: Sequence, inspect: bool = False
-    ) -> np.ndarray:
-        """
-        self.confined_coordinate_indices to fetch confined coordinates within
-        the respective perimeter
-
-        Parameters
-        ----------
-        coordinates: Sequence
-            Coordinates that will have their confinement tested
-
-        inspect: bool
-            If True, plot the confined coordinates
-
-        Returns
-        -------
-        np.ndarray, confined coordinates
-        """
-
-        coordinates = np.asarray(coordinates)
-        confined_coordinates = coordinates[
-            self.confined_coordinate_indices(coordinates)
-        ]
-        if inspect:
-            ax = super().plot()
-            ax.scatter(confined_coordinates.T[0], confined_coordinates.T[1], marker="x")
-            ax.set_tittle("Confined coordinates")
-            plt.show()
-
-        return confined_coordinates
 
     @classmethod
     def detect_sequential_border_presence(
@@ -324,7 +325,7 @@ class PolygonalPerimeter(Perimeter):
         overlap_locations = {}
 
         for border in border_sequence:
-            confined_coord_booleans_index = border.confined_coordinate_indices(
+            confined_coord_booleans_index = border.polygon_contained_coordinates(
                 coordinates
             )
 

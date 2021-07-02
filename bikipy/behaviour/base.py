@@ -29,7 +29,6 @@ class BaseExperiment(object, metaclass=ExperimentPostInitAnalysisCaller):
         metric_resolution: Union[float, Sequence[float]],
         trial_id_vs_data: dict,
         trial_id_range_vs_data: Union[dict, None] = None,
-        fps: Union[dict, float, None] = None,
         coordinate_data_format: str = "deeplabcut",
         label: Any = None,
         func_inspect: bool = False,
@@ -43,11 +42,6 @@ class BaseExperiment(object, metaclass=ExperimentPostInitAnalysisCaller):
             RangeDict(trial_id_range_vs_data) if trial_id_range_vs_data else None
         )
         self.metric_resolution = metric_resolution
-
-        self.fps = fps
-        if fps and not isinstance(fps, (float, int, dict)):
-            msg = f"fps has to be float, int or dict, and not {type(fps)}"
-            raise ValueError(msg)
 
         self.coordinate_data_format = str(coordinate_data_format).lower()
         self.label, self.func_inspect = label, func_inspect
@@ -112,59 +106,68 @@ class BaseTrial:
     def __init__(
         self,
         coordinate_sequence: dict,
-        unit_per_pixel: float,
+        video_path: Any,
+        animal_id: Union[int, None] = None,
+        metric_resolution: Union[Union[float, int], list, None] = None,
         rigid_nodes_freezing: Union[Sequence[Union[str, int]], None] = None,
         movement_feature_point_label: Union[str, None] = None,
-        video_path: Any = None,
         recording_resolution: Union[Sequence[int], None] = None,
-        fps: Union[float, None] = None,
         label: Any = None,
         func_inspect: bool = False,
         inspect_image: Any = None,
     ):
         """
         :param coordinate_sequence: The coordinates of the subject across the frames in the video recording
-        :param unit_per_pixel: Number defining the number of pixels that goes into one centimeter
+        :param video_path: Path to trial video recording
+        :param animal_id: The ID of the animal in the trial
+        :param metric_resolution: Length of the square box in which the experiment is conducted
         :param rigid_nodes_freezing: Nodes that should remain during freeze/immobility, most often due to fear.
         :param movement_feature_point_label: Label of the node that will be used to track general animal movement
-        :param video_path: Path to trial video recording
         :param recording_resolution: Video resolution
-        :param fps: Frames per second of video
         :param label: Experiment label
         :param func_inspect: If True, will generate inspection figures from functions that have support
         :param inspect_image: Image used for inspection
         :type coordinate_sequence: dict
-        :type unit_per_pixel: float
+        :type video_path: Any
+        :type metric_resolution: int or float, or [(int, float), (int, float)]
+        :type animal_id: int (optional)
         :type rigid_nodes_freezing: Sequence[Union[str, int]] (optional)
         :type movement_feature_point_label: str (optional)
-        :type video_path: Any (optional)
         :type recording_resolution: Sequence[int] (optional)
-        :type fps: float (optional)
-        :type label: Any
+        :type label: Any (optional)
         :type func_inspect: bool
         :type inspect_image: Any
         """
 
-        if video_path:
-            _frame, x_res, y_res, self.fps = get_video_data(video_path)
-            self.recording_resolution = (x_res, y_res)
-        else:
-            self.recording_resolution = recording_resolution
-            self.fps = fps
-
-        self.unit_per_pixel = float(unit_per_pixel)
-        self.label = label
-        self.func_inspect = func_inspect
-        self.inspect_image = inspect_image
-
-        if self.recording_resolution:
-            assert len(recording_resolution) == 2, recording_resolution
-            self.horizontal_resolution = int(recording_resolution[0])
-            self.vertical_resolution = int(recording_resolution[1])
-            self.recording_resolution = (
+        (
+            _frame,
+            self.horizontal_resolution,
+            self.vertical_resolution,
+            self.fps,
+        ) = get_video_data(video_path)
+        self.recording_resolution = np.array(
+            (
                 self.horizontal_resolution,
                 self.vertical_resolution,
             )
+        )
+
+        self.animal_id = int(animal_id) if animal_id else None
+
+        self.metric_resolution = metric_resolution if metric_resolution else None
+        if self.metric_resolution:
+            if isinstance(self.metric_resolution, (int, float)):
+                self.unit_per_pixel = self.metric_resolution / np.mean(
+                    self.recording_resolution
+                )
+            else:
+                self.unit_per_pixel = (
+                    np.array(self.metric_resolution) / self.recording_resolution
+                )
+
+        self.label = label
+        self.func_inspect = func_inspect
+        self.inspect_image = inspect_image
 
         # coordinate_sequence must be a reader object, like DeepLabCutReader
         self.movement_feature_point_label = str(movement_feature_point_label)

@@ -65,18 +65,20 @@ with pd.ExcelWriter(
         animal_id_vs_trial_ids = get_animal_id_vs_trial_ids(exp_metadata_df)
         exp_vs_animal = get_trial_id_vs_animal_id(animal_id_vs_trial_ids)
 
-        data = None
-        trial_id_range_vs_exp_meta = {}
-        for video_path, data_path in zip(
-            glob(str(experiment_dir / "**" / "*.mp4")),
-            glob(str(experiment_dir / "**" / "*.parquet")),
-        ):
+        trial_id_vs_paths = {}
+        for video_path in glob(str(experiment_dir / "**" / "*.mp4")):
             trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(video_path).stem)[0])
+            trial_id_vs_paths[trial_id] = {"video": video_path}
+        for data_path in glob(str(experiment_dir / "**" / "*.parquet")):
+            trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(data_path).stem)[0])
+            trial_id_vs_paths[trial_id]["data"] = data_path
 
+        trial_id_range_vs_exp_meta = {}
+        for trial_id, paths in trial_id_vs_paths.items():
             trial_data = {
-                "coordinate_data_path": data_path,
+                "coordinate_data_path": paths["data"],
                 "stage": (stage := trial_id_vs_stage[trial_id]),
-                "video_path": video_path,
+                "video_path": paths["video"],
                 "animal_id": (animal_id := exp_vs_animal[trial_id]),
                 "inspect": False,
             }

@@ -175,7 +175,7 @@ class Motion:
     def __init__(
         self,
         coordinate_sequence: Sequence[Sequence[float]],
-        unit_per_pixel: float,
+        unit_per_pixel: Union[float, np.ndarray],
         fps: float,
     ):
         self.fps = fps

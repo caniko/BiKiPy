@@ -1,3 +1,4 @@
+from functools import cached_property
 from logging import getLogger
 from typing import Any, Sequence, SupportsFloat, SupportsInt, Union
 
@@ -20,38 +21,36 @@ logger = getLogger(__name__)
 class ParallelogramPerimeter(PolygonalPerimeter):
     def __init__(
         self,
-        base: Union[Sequence[SupportsFloat], None] = None,
-        apex: Union[Sequence[SupportsFloat], None] = None,
         *args,
         **kwargs,
     ):
-        """
-        Parameters
-        ----------
-        base: Sequence
-            The coordinates of the perimeter_corners of the base of the parallelogram
-        apex: Sequence
-            The coordinates of the perimeter_corners of the apex of the parallelogram
-        inspect_image: Path to image
-            Image used for annotating base and apex; apex and base cannot be defined
-            if inspect_image is defined
-        """
-
-        if base is not None and apex is not None:
-            self.base, self.apex = np.asarray(base), np.asarray(apex)
-            kwargs["perimeter_corners"] = np.concatenate((self.base, self.apex))
-
         super().__init__(*args, **kwargs)
 
-        if not (self.base and self.apex) and self.perimeter_corners:
-            self.base, self.apex = np.split(self.perimeter_corners, 2)
-        else:
-            msg = "No data that can be used for defining base and apex were given"
+        if (n := len(self.perimeter_corners)) != 4:
+            msg = (
+                f"Parallelogram is a polygon in the 4th order, the current polygon"
+                f"is in the {n} order"
+            )
             raise ValueError(msg)
+
+        self.perimeter_corners = order_parallelogram_corners(
+            self.perimeter_corners
+        )
+        self.down_left, self.down_right, self.up_right, self.up_left = self.perimeter_corners
+
+        self.base = (self.down_left, self.down_right)
+        # self.base_mid = self.base[0] + (self.base[1] - self.base[0]) / 2.
+        self.base_mid = self.midpoint(*self.base)
+        self.base_vector = self.down_right - self.down_left
+
+        self.apex = (self.up_left, self.up_right)
+        # self.apex_mid = self.apex[0] + (self.apex[1] - self.apex[0]) / 2.
+        self.apex_mid = self.midpoint(*self.apex)
+        self.apex_vector = self.up_right - self.up_left
 
     def __repr__(self):
         return super().__repr__() + (
-            f"\n\tbase={self.base.tolist()},\n\t" f"apex={self.apex.tolist()},\n\t"
+            f"\n\tbase={self.base},\n\t" f"apex={self.apex},\n\t"
         )
 
     @classmethod
@@ -93,80 +92,35 @@ class ParallelogramPerimeter(PolygonalPerimeter):
         vector_norms = np.argsort(np.linalg.norm(vectors, axis=1))
         return vectors[vector_norms]
 
-    @property
-    def base(self):
-        return self._base
-
-    @base.setter
-    def base(self, value: Sequence):
-        value = np.asarray(value)
-        self._base = self.sort_vectors(value)
-
-        # self.base_mid = self.base[0] + (self.base[1] - self.base[0]) / 2.
-        self.base_mid = self.midpoint(*self._base)
-        self.base_vector = value[1] - value[0]
-
-    @property
-    def apex(self):
-        return self.__apex
-
-    @apex.setter
-    def apex(self, apex: Sequence):
-        apex = np.asarray(apex)
-        self.__apex = self.sort_vectors(apex)
-
-        # self.apex_mid = self.apex[0] + (self.apex[1] - self.apex[0]) / 2.
-        self.apex_mid = self.midpoint(*self.__apex)
-        self.apex_vector = apex[1] - apex[0]
-
-    @property
-    def perimeter_corners(self):
-        return *self.base, *self.apex
-
-    @perimeter_corners.setter
-    def perimeter_corners(self, perimeter_corners: Sequence):
-        if (n := len(perimeter_corners)) != 4:
-            msg = f"Parallelogram border has to have 4 perimeter_corners, got only {n} perimeter_corners"
-            raise ValueError(msg)
-
-        down_left, down_right, up_right, up_left = order_parallelogram_corners(
-            perimeter_corners
-        )
-
-        self.base = (down_left, down_right)
-        self.apex = (up_left, up_right)
-
-        self.perimeter_corners = (down_left, down_right, up_right, up_left)
-
-    @property
+    @cached_property
     def midline_vector(self):
         return self.apex_mid - self.base_mid
 
-    @property
+    @cached_property
     def midline_unit(self):
         return unit_vector(self.midline_vector)
 
-    @property
+    @cached_property
     def midline_unit_orthogonal(self):
         return orthogonal_unit_vector(self.midline_unit)
 
-    @property
+    @cached_property
     def midline_magnitude(self):
         return np.linalg.norm(self.midline_vector)
 
-    @property
+    @cached_property
     def close_to_origin_side_vector(self):
         return self.apex[0] - self.base[0]
 
-    @property
+    @cached_property
     def close_to_origin_side_unit(self):
         return unit_vector(self.close_to_origin_side_vector)
 
-    @property
+    @cached_property
     def far_from_origin_side_vector(self):
         return self.apex[1] - self.base[1]
 
-    @property
+    @cached_property
     def far_from_origin_side_unit(self):
         return unit_vector(self.far_from_origin_side_vector)
 
@@ -197,7 +151,7 @@ class ParallelogramPerimeter(PolygonalPerimeter):
 
         return np.squeeze(np.hsplit(magnitudes, 2))
 
-    def confined_coordinate_indices(self, coordinates: Sequence):
+    def polygon_contained_coordinates_boolean_index(self, coordinates: Sequence):
         coordinates = np.asarray(coordinates)
 
         return points_in_parallelogram(

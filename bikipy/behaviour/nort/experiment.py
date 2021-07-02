@@ -17,6 +17,7 @@ class NortExperiment(BaseExperiment):
     """
     Class for combining several NORT trials under one class for joint analysis
     """
+
     trials_are_sequential = True
 
     period_columns = ("T1", "T2", "Total")
@@ -88,7 +89,7 @@ class NortExperiment(BaseExperiment):
             perimeter_border_normal_metric_magnitude
         )
 
-        self.experiment_pairs = {}
+        self.animal_vs_trials = {}
         (
             self.habituation_trials,
             self.training_object_trials,
@@ -99,32 +100,23 @@ class NortExperiment(BaseExperiment):
 
             coordinate_sequence = self.exp_id_vs_coordinate_sequences[exp_id]
 
-            generic_data = {
+            generic_kwargs = {
+                "video_path": exp_meta["video_path"],
                 "coordinate_sequence": coordinate_sequence,
                 "movement_feature_point_label": self.eye_center_label,
-                "recording_resolution": exp_meta["recording_resolution"],
                 "metric_resolution": self.metric_resolution,
                 "label": exp_id,
                 "func_inspect": self.func_inspect,
                 "rigid_nodes_freezing": (self.eye_center_label, self.torso_label),
             }
 
-            if "inspect" in exp_meta:
-                generic_data["func_inspect"] = exp_meta["inspect"]
-            if "inspect_image" in exp_meta:
-                generic_data["inspect_image"] = exp_meta["inspect_image"]
+            if "animal_id" in exp_meta:
+                generic_kwargs["animal_id"] = exp_meta["animal_id"]
 
-            if "fps" in exp_meta:
-                generic_data["fps"] = exp_meta["fps"]
-            elif hasattr(coordinate_sequence, "fps"):
-                generic_data["fps"] = coordinate_sequence.fps
-            elif isinstance(self.fps, dict):
-                generic_data["fps"] = self.fps[exp_id]
-            elif self.fps:  # Fallback FPS value
-                generic_data["fps"] = self.fps
-            else:
-                msg = "fps has to be defined"
-                raise AttributeError(msg)
+            if "inspect" in exp_meta:
+                generic_kwargs["func_inspect"] = exp_meta["inspect"]
+                if "inspect_image" in exp_meta:
+                    generic_kwargs["inspect_image"] = exp_meta["inspect_image"]
 
             exp_class = self.trial_label_to_trial_class_name[
                 exp_meta["stage"].lower().replace(" ", "_")
@@ -135,7 +127,7 @@ class NortExperiment(BaseExperiment):
                     (
                         exp := NortHabituationTrial(
                             center_metric_length=self.center_metric_length,
-                            **generic_data,
+                            **generic_kwargs,
                         )
                     )
                 )
@@ -154,7 +146,7 @@ class NortExperiment(BaseExperiment):
                     "perimeter_border_normal_metric_magnitude": self.perimeter_border_normal_metric_magnitude,
                     "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
                     "center_metric_length": self.center_metric_length,
-                    **generic_data,
+                    **generic_kwargs,
                 }
 
                 if exp_class == "training":
@@ -170,12 +162,11 @@ class NortExperiment(BaseExperiment):
                 msg = f"{exp_meta['stage']} has no implementation"
                 raise NotImplementedError(msg)
 
-            self.post_init()
-
-            if (animal_id := exp_meta["animal_id"]) in self.experiment_pairs:
-                self.experiment_pairs[animal_id].append(exp)
-            else:
-                self.experiment_pairs[animal_id] = {exp}
+            if "animal_id" in exp_meta:
+                if exp_meta["animal_id"] in self.animal_vs_trials:
+                    self.animal_vs_trials[exp_meta["animal_id"]].append(exp)
+                else:
+                    self.animal_vs_trials[exp_meta["animal_id"]] = [exp]
 
     @cached_property
     def df(self) -> pd.DataFrame:

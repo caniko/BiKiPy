@@ -68,7 +68,7 @@ class TriangularPerimeter(PolygonalPerimeter):
             ")"
         )
 
-    def confined_coordinate_indices(self, coordinates: Sequence) -> np.ndarray:
+    def polygon_contained_coordinates(self, coordinates: Sequence) -> np.ndarray:
         """
         indices of the coordinates that are inside the respective perimeter
 

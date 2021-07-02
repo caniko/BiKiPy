@@ -17,7 +17,6 @@ logger = getLogger(__name__)
 class SquareEnclosedTrial(BaseTrial):
     def __init__(
         self,
-        metric_resolution: Union[Union[float, int], list],
         center_metric_length: Union[float, int],
         **base_trial_kwargs,
     ):
@@ -25,21 +24,14 @@ class SquareEnclosedTrial(BaseTrial):
         Parameters
         ----------
         metric_resolution: float
-            Length of the square box in which the experiment is conducted
+
         center_metric_length: float
             Length of the square box signifying periphery and inner area of the
             square box
         base_trial_kwargs
             Keyword arguments passed to BaseTrial
         """
-        self.metric_resolution = float(metric_resolution)
-        super().__init__(
-            unit_per_pixel=(
-                self.metric_resolution
-                / np.mean(base_trial_kwargs["recording_resolution"])
-            ),
-            **base_trial_kwargs,
-        )
+        super().__init__(**base_trial_kwargs)
 
         self.center_metric_length = float(center_metric_length)
 

@@ -100,7 +100,7 @@ def round_vs_apparatus_to_general_nort_fields(
                 if field.int_label:
                     kwargs["int_label"] = field.int_label
 
-                field_temp_store[key] = PolygonalPerimeter(**kwargs)
+                field_temp_store[key] = PolygonalPerimeter.init_polygon(**kwargs)
 
         result.append(NortField(label=field_key, **field_temp_store))
 
