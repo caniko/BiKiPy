@@ -10,6 +10,7 @@ import numpy as np
 from shapely.geometry import Point, Polygon
 
 from bikipy.math.geometry import expand_parallelogram, order_parallelogram_corners
+from bikipy.math.vector import point_to_line_segment_distance
 from bikipy.utils.misc import read_image
 from bikipy.utils.video import get_video_data
 
@@ -100,13 +101,18 @@ class PolygonalPerimeter(Perimeter):
     ):
         super().__init__(*args, **kwargs)
 
-        self.perimeter_corners = perimeter_corners
-        self.feature_scale = feature_scale or None
+        self.perimeter_corners = np.asarray(perimeter_corners)
 
+        self.number_of_sides = self.perimeter_corners.shape[0]
         self.centroid = np.mean(perimeter_corners, axis=1)
+
+        self.feature_scale = feature_scale or None
 
     def __getitem__(self, item: int):
         return self.perimeter_corners[item]
+
+    def __repr__(self):
+        return super().__repr__() + f"\n\tperimeter_corners={self.perimeter_corners}"
 
     @classmethod
     def init_polygon(cls, perimeter_corners: Sequence, **kwargs):
@@ -192,31 +198,21 @@ class PolygonalPerimeter(Perimeter):
 
         return results
 
-    @property
-    def perimeter_corners(self):
-        return self._perimeter_corners
-
-    @perimeter_corners.setter
-    def perimeter_corners(self, corners: Sequence[Sequence[float]]):
-        corners = np.asarray(corners)
-
-        self._perimeter_corners = order_parallelogram_corners(corners)
-        self.number_of_sides = corners.shape[0]
+    @cached_property
+    def perimeter_vectors(self):
+        return np.diff(
+            self.perimeter_corners[::-1],
+            prepend=self.perimeter_corners[0]
+        )[::-1]
 
     @cached_property
-    def feat_scaled_sides(self):
-        if not self.feature_scale:
-            msg = "Feature scale parameters have not been defined in this instance"
-            raise AttributeError(msg)
-        return self.perimeter_corners / self.feature_scale
-
-    @property
-    def corner_to_corner_vectors(self):
-        return self._vectors_from_neighboring_points(self.perimeter_corners)
-
-    @staticmethod
-    def distance_between_two_vectors(border_a, border_b):
-        return np.linalg.norm(border_a.centroid - border_b.centroid)
+    def line_segment_pairs(self):
+        pairs = [
+            (self.perimeter_corners[i], self.perimeter_corners[i + 1])
+            for i in range(self.number_of_sides - 1)
+        ]
+        pairs.append((self.perimeter_corners[-1], self.perimeter_corners[0]))
+        return pairs
 
     @lru_cache
     def border(
@@ -350,6 +346,13 @@ class PolygonalPerimeter(Perimeter):
 
         return presence, valid_indices, boolean_array
 
+    def closest_side_to_points(self, points: Sequence):
+        return point_to_line_segment_distance(points, self.perimeter_corners)
+
+    @staticmethod
+    def distance_between_two_vectors(border_a, border_b):
+        return np.linalg.norm(border_a.centroid - border_b.centroid)
+
     def plot(
         self,
         perimeter_border_normal_pixel_magnitude: Union[float, int, None] = None,
@@ -389,13 +392,6 @@ class PolygonalPerimeter(Perimeter):
         # plt.legend(legends, bbox_to_anchor=(1.04, 0.5), loc="center left")
         return ax
 
-    @staticmethod
-    def _vectors_from_neighboring_points(ordered_corners):
-        return (
-            *np.diff(ordered_corners, axis=0),
-            ordered_corners[0] - ordered_corners[-1],
-        )
-
     def _add_label_to_str(self, in_string):
         if self.semantic_label:
             return f"{self.semantic_label} {in_string}"
@@ -403,9 +399,6 @@ class PolygonalPerimeter(Perimeter):
             return f"{self.int_label} {in_string}"
 
         return in_string
-
-    def __repr__(self):
-        return super().__repr__() + f"\n\tperimeter_corners={self.perimeter_corners}"
 
 
 class GenericPolygonalBorder(PolygonalPerimeter):

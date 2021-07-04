@@ -83,14 +83,14 @@ class SquareEnclosedTrial(BaseTrial):
 
             if x_bias:
                 y_short = self.vertical_resolution * center_box_ratio
-                y_long = self.vertical_resolution * center_box_ratio_minus_1
+                y_long = self.vertical_resolution * one_minus_center_box_ratio
 
                 x_short = y_short + x_bias
                 x_long = y_long + x_bias
 
             else:
                 x_short = self.horizontal_resolution * center_box_ratio
-                x_long = self.horizontal_resolution * center_box_ratio_minus_1
+                x_long = self.horizontal_resolution * one_minus_center_box_ratio
 
                 y_short = x_short + y_bias
                 y_long = x_long + y_bias
@@ -105,7 +105,7 @@ class SquareEnclosedTrial(BaseTrial):
         center_box_ratio = (
             (self.metric_resolution - self.center_metric_length) / 2.0
         ) / self.metric_resolution
-        center_box_ratio_minus_1 = center_box_ratio - 1
+        one_minus_center_box_ratio = 1.0 - center_box_ratio
 
         x = self.horizontal_resolution * center_box_ratio
         x_rest_half = (self.horizontal_resolution - x) / 2.0

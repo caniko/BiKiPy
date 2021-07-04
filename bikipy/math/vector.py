@@ -112,6 +112,36 @@ def distance_between_line_and_point(*args, **kwargs) -> np.ndarray:
     return normal_from_line_to_point(*args, **kwargs)[1]
 
 
+def point_to_line_segment_distance(points, line_segment):
+    point_x, point_y = np.asarray(points).T
+    segment_start_x, segment_start_y = line_segment[0]
+    segment_end_x, segment_end_y = line_segment[1]
+
+    start_to_point_x = point_x - segment_start_x
+    start_to_point_y = point_y - segment_start_y
+    start_end_x = segment_end_x - segment_start_x
+    start_end_y = segment_end_y - segment_start_y
+
+    dot = start_to_point_x * start_end_x + start_to_point_y * start_end_y
+    len_sq = start_end_x ** 2 + start_end_y ** 2
+
+    param = -1 if len_sq == 0 else dot / len_sq
+
+    if param < 0:
+        xx = segment_start_x
+        yy = segment_start_y
+    elif param > 1:
+        xx = segment_end_x
+        yy = segment_end_y
+    else:
+        xx = segment_start_x + param * start_end_x
+        yy = segment_start_y + param * start_end_y
+
+    dx = point_x - xx
+    dy = point_y - yy
+    return np.sqrt(dx ** 2 + dy ** 2)
+
+
 def closest_line_to_point(
     line_vectors: Sequence, line_starts: Sequence, point: Sequence
 ):

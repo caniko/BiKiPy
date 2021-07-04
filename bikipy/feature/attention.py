@@ -115,7 +115,7 @@ def gaze_direction_filter(
     eye_to_nose_unit = unit_vector(nose - eye_center)
 
     closest_side, idx = closest_line_to_point(
-        polygonal_perimeter.corner_to_corner_vectors,
+        polygonal_perimeter.perimeter_vectors,
         polygonal_perimeter.perimeter_corners,
         eye_center,
     )
