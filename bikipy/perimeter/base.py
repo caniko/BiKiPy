@@ -202,7 +202,8 @@ class PolygonalPerimeter(Perimeter):
     def perimeter_vectors(self):
         return np.diff(
             self.perimeter_corners[::-1],
-            prepend=self.perimeter_corners[0]
+            prepend=[self.perimeter_corners[0]],
+            axis=0
         )[::-1]
 
     @cached_property
@@ -212,7 +213,7 @@ class PolygonalPerimeter(Perimeter):
             for i in range(self.number_of_sides - 1)
         ]
         pairs.append((self.perimeter_corners[-1], self.perimeter_corners[0]))
-        return pairs
+        return np.array(pairs)
 
     @lru_cache
     def border(
@@ -346,8 +347,21 @@ class PolygonalPerimeter(Perimeter):
 
         return presence, valid_indices, boolean_array
 
-    def closest_side_to_points(self, points: Sequence):
-        return point_to_line_segment_distance(points, self.perimeter_corners)
+    def closest_sides_to_points(self, points: Sequence):
+        distance_sets = np.array([
+            point_to_line_segment_distance(points, line_segment_pair)
+            for line_segment_pair in self.line_segment_pairs
+        ]).T
+
+        closest_boolean_index = np.argsort(distance_sets, axis=1) == 0
+        closest_distance = distance_sets[closest_boolean_index]
+
+        closest_index = np.where(closest_boolean_index)[1]
+        closest_vectors = np.zeros((closest_distance.shape[0], 2), dtype=np.float)
+        for i in range(self.number_of_sides):
+            closest_vectors[closest_index == i] = self.perimeter_vectors[i]
+
+        return closest_distance, closest_vectors
 
     @staticmethod
     def distance_between_two_vectors(border_a, border_b):

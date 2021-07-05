@@ -11,7 +11,7 @@ import numpy as np
 import seaborn as sns
 
 from bikipy.feature.angle import inner_angle
-from bikipy.math.vector import closest_line_to_point, unit_vector
+from bikipy.math.vector import unit_vector
 from bikipy.perimeter.base import PolygonalPerimeter
 
 
@@ -114,13 +114,11 @@ def gaze_direction_filter(
     nose, eye_center = np.asarray(nose), np.asarray(eye_center)
     eye_to_nose_unit = unit_vector(nose - eye_center)
 
-    closest_side, idx = closest_line_to_point(
-        polygonal_perimeter.perimeter_vectors,
-        polygonal_perimeter.perimeter_corners,
-        eye_center,
+    _closest_distance, closest_vector = polygonal_perimeter.closest_sides_to_points(
+        eye_center
     )
 
-    inner_angles = inner_angle(closest_side, eye_to_nose_unit)
+    inner_angles = inner_angle(closest_vector, eye_to_nose_unit)
 
     result = inner_angles <= max_radians
 
@@ -181,11 +179,11 @@ def attention_filter(
     i, valid_frames_within_border, true_counter, consecutive_false = 0, 0, 0, 0
     while True:
         if boolean_index[i]:
-            true_counter += 1
-
             if consecutive_false:
-                true_counter += consecutive_false - 1  # make up for the previous += 1
+                true_counter += consecutive_false
                 consecutive_false = 0
+            else:
+                true_counter += 1
 
             if true_counter == minimum_time_valid_observation:
                 # The first valid index is the index of the first True, i.e. when true_counter was 1

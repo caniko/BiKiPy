@@ -125,17 +125,24 @@ def point_to_line_segment_distance(points, line_segment):
     dot = start_to_point_x * start_end_x + start_to_point_y * start_end_y
     len_sq = start_end_x ** 2 + start_end_y ** 2
 
-    param = -1 if len_sq == 0 else dot / len_sq
+    param = np.full_like(dot, -1.0) if len_sq == 0 else dot / len_sq
 
-    if param < 0:
-        xx = segment_start_x
-        yy = segment_start_y
-    elif param > 1:
-        xx = segment_end_x
-        yy = segment_end_y
-    else:
-        xx = segment_start_x + param * start_end_x
-        yy = segment_start_y + param * start_end_y
+    xx = np.zeros_like(param, dtype=np.float)
+    yy = np.zeros_like(param).copy()
+
+    param_less_than_0 = param < 0
+    xx[param_less_than_0] = segment_start_x
+    yy[param_less_than_0] = segment_start_y
+
+    param_more_than_1 = param > 1
+    xx[param_more_than_1] = segment_end_x
+    yy[param_more_than_1] = segment_end_y
+
+    param_between_0_1 = ~param_less_than_0 & ~param_more_than_1
+    if np.any(param_between_0_1):
+        params = param[param_between_0_1]
+        xx[param_between_0_1] = segment_start_x + params * start_end_x
+        yy[param_between_0_1] = segment_start_y + params * start_end_y
 
     dx = point_x - xx
     dy = point_y - yy

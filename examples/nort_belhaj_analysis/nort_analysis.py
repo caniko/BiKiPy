@@ -17,32 +17,32 @@ from bikipy.plugins.belhaj import (
 
 DEEPLABCUT_DIR = Path("/mnt/md0/Projects/Neuroscience/Imen/data/nort")
 
-EXPERIMENT_DIR = DEEPLABCUT_DIR / "Experiment_1"
+EXPERIMENT_DIR = DEEPLABCUT_DIR / "Experiment_2"
 
 WORKING_DIR = Path(".").resolve()
 DATA_DIR = WORKING_DIR / "data"
 IMAGE_DIR = DATA_DIR / "area_images"
 
-PICKLE_PATHS = (
-    IMAGE_DIR / "A1" / "a1_labels_repickled.pickle",
-    IMAGE_DIR / "A2" / "a2_labels_repickled.pickle",
-)
-META_DATA = DATA_DIR / "nort_round_1.xlsx"
-
 # PICKLE_PATHS = (
-#     IMAGE_DIR / "B1" / "b1_labels_repickled.pickle",
-#     IMAGE_DIR / "B2" / "b2_labels_repickled.pickle",
+#     IMAGE_DIR / "A1" / "a1_labels_repickled.pickle",
+#     IMAGE_DIR / "A2" / "a2_labels_repickled.pickle",
 # )
-# META_DATA = DATA_DIR / "nort_round_2.xlsx"
+# META_DATA = DATA_DIR / "nort_round_1.xlsx"
 
+PICKLE_PATHS = (
+    IMAGE_DIR / "B1" / "b1_labels_repickled.pickle",
+    IMAGE_DIR / "B2" / "b2_labels_repickled.pickle",
+)
+META_DATA = DATA_DIR / "nort_round_2.xlsx"
 
 EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
-
 with pd.ExcelWriter(
     WORKING_DIR / "nort_analysis.ods",
-    strings_to_formulas=False,
-    strings_to_urls=False,
+    engine_kwargs={
+        "strings_to_formulas": False,
+        "strings_to_urls": False,
+    }
 ) as writer:
     for round_number, (experiment_dir, pickle_path) in enumerate(
         zip(os.listdir(EXPERIMENT_DIR), PICKLE_PATHS)
@@ -85,8 +85,6 @@ with pd.ExcelWriter(
 
             if stage != "habituation":
                 trial_data["field"] = animal_id_vs_app[animal_id]
-            if trial_id == 127:
-                trial_data["inspect"] = True
 
             trial_id_range_vs_exp_meta[trial_id] = trial_data
 
@@ -97,13 +95,13 @@ with pd.ExcelWriter(
             eye_center_label="mid-left_ear-right_ear",
             torso_label="mid-mid-left_ear-right_ear-tail",
             nort_field_vs_nort_field_object=nort_field_vs_nort_field_object,
-            perimeter_border_normal_metric_magnitude=0.04,
+            perimeter_border_normal_metric_magnitude=0.06,
             center_metric_length=0.2,
             maximum_radians_inter_gaze_perimeter=0.25 * np.pi,
             # func_inspect=True,
             init_from="parquet",
-            midpoint_groups=[
+            midpoint_groups=(
                 ("left_ear", "right_ear"),
                 ("mid-left_ear-right_ear", "tail"),
-            ],
+            ),
         ).df.to_excel(writer, sheet_name=date)
