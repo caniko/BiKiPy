@@ -42,7 +42,7 @@ with pd.ExcelWriter(
     engine_kwargs={
         "strings_to_formulas": False,
         "strings_to_urls": False,
-    }
+    },
 ) as writer:
     for round_number, (experiment_dir, pickle_path) in enumerate(
         zip(os.listdir(EXPERIMENT_DIR), PICKLE_PATHS)

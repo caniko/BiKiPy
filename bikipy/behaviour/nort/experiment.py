@@ -168,6 +168,53 @@ class NortExperiment(BaseExperiment):
                 else:
                     self.animal_vs_trials[exp_meta["animal_id"]] = [exp]
 
+        attention_state_analysis = {
+            "location_gaze_true_observation_false": [],
+            "observation_gaze_true_location_false": [],
+            "observation_location_true_gaze_false": [],
+        }
+        for novelty_trial in self.novelty_object_trials:
+            attention_state_analysis["location_gaze_true_observation_false"].extend(
+                (
+                    novelty_trial.a_location_filtered
+                    & novelty_trial.a_gaze_filtered
+                    & ~novelty_trial.a_observance_per_frame,
+                    #
+                    novelty_trial.b_location_filtered
+                    & novelty_trial.b_gaze_filtered
+                    & ~novelty_trial.b_observance_per_frame,
+                )
+            )
+            attention_state_analysis["observation_gaze_true_location_false"].extend(
+                (
+                    novelty_trial.a_observance_per_frame
+                    & novelty_trial.a_gaze_filtered
+                    & ~novelty_trial.a_location_filtered,
+                    #
+                    novelty_trial.b_observance_per_frame
+                    & novelty_trial.b_gaze_filtered
+                    & ~novelty_trial.b_location_filtered,
+                ),
+            )
+            attention_state_analysis["observation_location_true_gaze_false"].extend(
+                (
+                    novelty_trial.a_observance_per_frame
+                    & novelty_trial.a_location_filtered
+                    & ~novelty_trial.a_gaze_filtered,
+                    #
+                    novelty_trial.b_observance_per_frame
+                    & novelty_trial.b_location_filtered
+                    & ~novelty_trial.b_gaze_filtered,
+                )
+            )
+
+        for label, data_set in attention_state_analysis.items():
+            for idx, data in enumerate(data_set):
+                attention_state_analysis[label][idx] = np.sum(data) / data.size
+
+        attention_state_df = pd.DataFrame.from_dict(attention_state_analysis)
+
+
     @cached_property
     def df(self) -> pd.DataFrame:
         """

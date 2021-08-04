@@ -201,9 +201,7 @@ class PolygonalPerimeter(Perimeter):
     @cached_property
     def perimeter_vectors(self):
         return np.diff(
-            self.perimeter_corners[::-1],
-            prepend=[self.perimeter_corners[0]],
-            axis=0
+            self.perimeter_corners[::-1], prepend=[self.perimeter_corners[0]], axis=0
         )[::-1]
 
     @cached_property
@@ -348,10 +346,12 @@ class PolygonalPerimeter(Perimeter):
         return presence, valid_indices, boolean_array
 
     def closest_sides_to_points(self, points: Sequence):
-        distance_sets = np.array([
-            point_to_line_segment_distance(points, line_segment_pair)
-            for line_segment_pair in self.line_segment_pairs
-        ]).T
+        distance_sets = np.array(
+            [
+                point_to_line_segment_distance(points, line_segment_pair)
+                for line_segment_pair in self.line_segment_pairs
+            ]
+        ).T
 
         closest_boolean_index = np.argsort(distance_sets, axis=1) == 0
         closest_distance = distance_sets[closest_boolean_index]

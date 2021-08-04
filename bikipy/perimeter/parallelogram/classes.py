@@ -33,10 +33,13 @@ class ParallelogramPerimeter(PolygonalPerimeter):
             )
             raise ValueError(msg)
 
-        self.perimeter_corners = order_parallelogram_corners(
-            self.perimeter_corners
-        )
-        self.down_left, self.down_right, self.up_right, self.up_left = self.perimeter_corners
+        self.perimeter_corners = order_parallelogram_corners(self.perimeter_corners)
+        (
+            self.down_left,
+            self.down_right,
+            self.up_right,
+            self.up_left,
+        ) = self.perimeter_corners
 
         self.base = (self.down_left, self.down_right)
         # self.base_mid = self.base[0] + (self.base[1] - self.base[0]) / 2.

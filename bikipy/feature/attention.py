@@ -99,7 +99,6 @@ def proximity_filter(
     return result, {
         "nose_within_border": nose_within_border,
         "center_of_mass_outside_polygon": center_of_mass_outside_polygon,
-        "and": result,
     }
 
 
