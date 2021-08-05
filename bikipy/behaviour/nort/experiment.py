@@ -5,6 +5,8 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+import seaborn as sns
+from matplotlib import pyplot as plt
 
 from bikipy.behaviour.base import BaseExperiment
 from bikipy.behaviour.nort.trial import NortHabituationTrial, NortField
@@ -95,31 +97,31 @@ class NortExperiment(BaseExperiment):
             self.training_object_trials,
             self.novelty_object_trials,
         ) = ([], [], [])
-        for exp_id, exp_meta in self.exp_id_data_tqdm():
-            logger.info(f"Category {exp_meta['stage']}; ID {exp_id}")
+        for trial_id, trial_meta in self.trial_id_data_tqdm():
+            logger.info(f"Category {trial_meta['stage']}; ID {trial_id}")
 
-            coordinate_sequence = self.exp_id_vs_coordinate_sequences[exp_id]
+            coordinate_sequence = self.trial_id_vs_coordinate_sequences[trial_id]
 
             generic_kwargs = {
-                "video_path": exp_meta["video_path"],
+                "video_path": trial_meta["video_path"],
                 "coordinate_sequence": coordinate_sequence,
                 "movement_feature_point_label": self.eye_center_label,
                 "metric_resolution": self.metric_resolution,
-                "label": exp_id,
+                "label": trial_id,
                 "func_inspect": self.func_inspect,
                 "rigid_nodes_freezing": (self.eye_center_label, self.torso_label),
             }
 
-            if "animal_id" in exp_meta:
-                generic_kwargs["animal_id"] = exp_meta["animal_id"]
+            if "animal_id" in trial_meta:
+                generic_kwargs["animal_id"] = trial_meta["animal_id"]
 
-            if "inspect" in exp_meta:
-                generic_kwargs["func_inspect"] = exp_meta["inspect"]
-                if "inspect_image" in exp_meta:
-                    generic_kwargs["inspect_image"] = exp_meta["inspect_image"]
+            if "inspect" in trial_meta:
+                generic_kwargs["func_inspect"] = trial_meta["inspect"]
+                if "inspect_image" in trial_meta:
+                    generic_kwargs["inspect_image"] = trial_meta["inspect_image"]
 
             exp_class = self.trial_label_to_trial_class_name[
-                exp_meta["stage"].lower().replace(" ", "_")
+                trial_meta["stage"].lower().replace(" ", "_")
             ]
 
             if exp_class == "habituation":
@@ -134,7 +136,7 @@ class NortExperiment(BaseExperiment):
 
             elif exp_class == "training" or exp_class == "novelty":
                 try:
-                    field = self.nort_field_vs_nort_field_object[exp_meta["field"] - 1]
+                    field = self.nort_field_vs_nort_field_object[trial_meta["field"] - 1]
                 except AttributeError as e:
                     msg = "nort_field_vs_nort_field_object is not defined, which is required when working with training and/or novelty datasets"
                     raise AttributeError(msg) from e
@@ -159,61 +161,72 @@ class NortExperiment(BaseExperiment):
                     )
 
             else:
-                msg = f"{exp_meta['stage']} has no implementation"
+                msg = f"{trial_meta['stage']} has no implementation"
                 raise NotImplementedError(msg)
 
-            if "animal_id" in exp_meta:
-                if exp_meta["animal_id"] in self.animal_vs_trials:
-                    self.animal_vs_trials[exp_meta["animal_id"]].append(exp)
+            if "animal_id" in trial_meta:
+                if trial_meta["animal_id"] in self.animal_vs_trials:
+                    self.animal_vs_trials[trial_meta["animal_id"]].append(exp)
                 else:
-                    self.animal_vs_trials[exp_meta["animal_id"]] = [exp]
+                    self.animal_vs_trials[trial_meta["animal_id"]] = [exp]
 
-        attention_state_analysis = {
-            "location_gaze_true_observation_false": [],
-            "observation_gaze_true_location_false": [],
-            "observation_location_true_gaze_false": [],
+        self.attention_state_analysis = {
+            "location gaze true observation false": [],
+            "observation gaze true location false": [],
+            "observation location true gaze false": [],
+            "all false": []
         }
         for novelty_trial in self.novelty_object_trials:
-            attention_state_analysis["location_gaze_true_observation_false"].extend(
+            self.attention_state_analysis["location gaze true observation false"].extend(
                 (
                     novelty_trial.a_location_filtered
                     & novelty_trial.a_gaze_filtered
-                    & ~novelty_trial.a_observance_per_frame,
+                    & (not_a_observance_per_frame := ~novelty_trial.a_observance_per_frame),
                     #
                     novelty_trial.b_location_filtered
                     & novelty_trial.b_gaze_filtered
-                    & ~novelty_trial.b_observance_per_frame,
+                    & (not_b_observance_per_frame := ~novelty_trial.b_observance_per_frame),
                 )
             )
-            attention_state_analysis["observation_gaze_true_location_false"].extend(
+            self.attention_state_analysis["observation gaze true location false"].extend(
                 (
                     novelty_trial.a_observance_per_frame
                     & novelty_trial.a_gaze_filtered
-                    & ~novelty_trial.a_location_filtered,
+                    & (not_a_location_filtered := ~novelty_trial.a_location_filtered),
                     #
                     novelty_trial.b_observance_per_frame
                     & novelty_trial.b_gaze_filtered
-                    & ~novelty_trial.b_location_filtered,
+                    & (not_b_location_filtered := ~novelty_trial.b_location_filtered),
                 ),
             )
-            attention_state_analysis["observation_location_true_gaze_false"].extend(
+            self.attention_state_analysis["observation location true gaze false"].extend(
                 (
                     novelty_trial.a_observance_per_frame
                     & novelty_trial.a_location_filtered
-                    & ~novelty_trial.a_gaze_filtered,
+                    & (not_a_gaze_filtered := ~novelty_trial.a_gaze_filtered),
                     #
                     novelty_trial.b_observance_per_frame
                     & novelty_trial.b_location_filtered
-                    & ~novelty_trial.b_gaze_filtered,
+                    & (not_b_gaze_filtered := ~novelty_trial.b_gaze_filtered),
+                )
+            )
+            self.attention_state_analysis["all false"].extend(
+                (
+                    not_a_observance_per_frame & not_a_location_filtered & not_a_gaze_filtered,
+                    not_b_observance_per_frame & not_b_location_filtered & not_b_gaze_filtered
                 )
             )
 
-        for label, data_set in attention_state_analysis.items():
+        result = []
+        for label, data_set in self.attention_state_analysis.items():
             for idx, data in enumerate(data_set):
-                attention_state_analysis[label][idx] = np.sum(data) / data.size
+                analysis = np.sum(data) / data.size
+                self.attention_state_analysis[label][idx] = analysis
+                result.append((analysis, label))
 
-        attention_state_df = pd.DataFrame.from_dict(attention_state_analysis)
-
+        attention_state_df = pd.DataFrame(result, columns=("Ratio", "Comparison"))
+        sns.displot(attention_state_df, x="Ratio", hue="Comparison", multiple="dodge")
+        plt.show()
 
     @cached_property
     def df(self) -> pd.DataFrame:

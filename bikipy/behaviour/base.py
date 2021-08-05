@@ -1,5 +1,7 @@
+import os
 from functools import cached_property
 from logging import getLogger
+from pathlib import PurePath, Path
 from typing import Any, Sequence, Union
 
 from tqdm import tqdm
@@ -31,7 +33,7 @@ class BaseExperiment(object, metaclass=ExperimentPostInitAnalysisCaller):
         trial_id_range_vs_data: Union[dict, None] = None,
         coordinate_data_format: str = "deeplabcut",
         label: Any = None,
-        func_inspect: bool = False,
+        func_inspect: Union[bool, str, PurePath] = False,
         **data_import_kwargs,
     ):
         self.trial_id_vs_data = dict(trial_id_vs_data)
@@ -44,10 +46,15 @@ class BaseExperiment(object, metaclass=ExperimentPostInitAnalysisCaller):
         self.metric_resolution = metric_resolution
 
         self.coordinate_data_format = str(coordinate_data_format).lower()
-        self.label, self.func_inspect = label, func_inspect
+        self.label = label
+        if isinstance(func_inspect, bool):
+            self.func_inspect = func_inspect
+        elif isinstance(func_inspect, str) or isinstance(func_inspect, PurePath):
+            self.func_inspect = func_inspect / f"Experiment_{self.label}_inspect"
+            os.mkdir(self.func_inspect)
 
         if self.coordinate_data_format == "deeplabcut":
-            self.exp_id_vs_coordinate_sequences = {
+            self.trial_id_vs_coordinate_sequences = {
                 exp_id: dlc_obj
                 for exp_id, dlc_obj in zip(
                     self._trial_ids_iterable,
@@ -93,9 +100,9 @@ class BaseExperiment(object, metaclass=ExperimentPostInitAnalysisCaller):
     def length(self):
         return len(self.trial_ids)
 
-    def exp_id_data_tqdm(self):
+    def trial_id_data_tqdm(self):
         return tqdm(
-            ((exp_id, self[exp_id]) for exp_id in self.trial_ids), total=self.length
+            ((trial_id, self[trial_id]) for trial_id in self.trial_ids), total=self.length
         )
 
 
@@ -106,14 +113,15 @@ class BaseTrial:
     def __init__(
         self,
         coordinate_sequence: dict,
-        video_path: Any,
         animal_id: Union[int, None] = None,
         metric_resolution: Union[Union[float, int], list, None] = None,
         rigid_nodes_freezing: Union[Sequence[Union[str, int]], None] = None,
         movement_feature_point_label: Union[str, None] = None,
+        video_path: Any = None,
         recording_resolution: Union[Sequence[int], None] = None,
+        fps: Union[float, int, None] = None,
         label: Any = None,
-        func_inspect: bool = False,
+        func_inspect: Union[bool, str, PurePath] = False,
         inspect_image: Any = None,
     ):
         """
@@ -139,18 +147,27 @@ class BaseTrial:
         :type inspect_image: Any
         """
 
-        (
-            _frame,
-            self.horizontal_resolution,
-            self.vertical_resolution,
-            self.fps,
-        ) = get_video_data(video_path)
-        self.recording_resolution = np.array(
+        if video_path:
             (
+                _frame,
                 self.horizontal_resolution,
                 self.vertical_resolution,
+                self.fps,
+            ) = get_video_data(video_path)
+            self.recording_resolution = np.array(
+                (
+                    self.horizontal_resolution,
+                    self.vertical_resolution,
+                )
             )
-        )
+        elif recording_resolution and fps:
+            self.recording_resolution = recording_resolution
+            self.horizontal_resolution, self.vertical_resolution = recording_resolution
+            self.fps = fps
+        else:
+            msg = "Either the path to the trial path or" \
+                  "the specific recording_resolution and fps needs to provided"
+            raise ValueError(msg)
 
         self.animal_id = int(animal_id) if animal_id else None
 
@@ -195,6 +212,12 @@ class BaseTrial:
             )
             return False
         return self.label == other.label
+
+    @property
+    def inspect_image_path(self):
+        if isinstance(self.func_inspect, str) or isinstance(self.func_inspect, PurePath):
+            return Path(self.func_inspect) / self.label
+        return self.func_inspect    # return the bool in any case
 
     @cached_property
     def _frame_tolerance(self):
