@@ -33,6 +33,7 @@ class BaseExperiment(object, metaclass=ExperimentPostInitAnalysisCaller):
         trial_id_range_vs_data: Union[dict, None] = None,
         coordinate_data_format: str = "deeplabcut",
         label: Any = None,
+        timestamp: Any = None,
         func_inspect: Union[bool, str, PurePath] = False,
         **data_import_kwargs,
     ):
@@ -72,6 +73,8 @@ class BaseExperiment(object, metaclass=ExperimentPostInitAnalysisCaller):
             msg = f"{self.coordinate_data_format} as a format for data ingestion has no implementation"
             raise NotImplemented(msg)
 
+        self.timestamp = timestamp
+
     def __analysis__(self):
         """Ran after __init__"""
         if self.trials_are_sequential:
@@ -102,7 +105,8 @@ class BaseExperiment(object, metaclass=ExperimentPostInitAnalysisCaller):
 
     def trial_id_data_tqdm(self):
         return tqdm(
-            ((trial_id, self[trial_id]) for trial_id in self.trial_ids), total=self.length
+            ((trial_id, self[trial_id]) for trial_id in self.trial_ids),
+            total=self.length,
         )
 
 
@@ -165,8 +169,10 @@ class BaseTrial:
             self.horizontal_resolution, self.vertical_resolution = recording_resolution
             self.fps = fps
         else:
-            msg = "Either the path to the trial path or" \
-                  "the specific recording_resolution and fps needs to provided"
+            msg = (
+                "Either the path to the trial path or"
+                "the specific recording_resolution and fps needs to provided"
+            )
             raise ValueError(msg)
 
         self.animal_id = int(animal_id) if animal_id else None
@@ -215,9 +221,11 @@ class BaseTrial:
 
     @property
     def inspect_image_path(self):
-        if isinstance(self.func_inspect, str) or isinstance(self.func_inspect, PurePath):
+        if isinstance(self.func_inspect, str) or isinstance(
+            self.func_inspect, PurePath
+        ):
             return Path(self.func_inspect) / self.label
-        return self.func_inspect    # return the bool in any case
+        return self.func_inspect  # return the bool in any case
 
     @cached_property
     def _frame_tolerance(self):

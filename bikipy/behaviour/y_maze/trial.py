@@ -58,7 +58,10 @@ class YMazeTrial(BaseExperiment):
             self.plot()
 
         self.y_maze_experiments = []
-        for exp_id, coordinate_sequence in self.trial_id_vs_coordinate_sequences.items():
+        for (
+            exp_id,
+            coordinate_sequence,
+        ) in self.trial_id_vs_coordinate_sequences.items():
             experiment_area_set = self.exp_id_range_vs_area_sets[exp_id]
             unit_per_pixel = self.center_triangle_meter_width / np.linalg.norm(
                 experiment_area_set["center"][0] - experiment_area_set["center"][1]

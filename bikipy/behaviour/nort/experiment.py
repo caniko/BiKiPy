@@ -136,7 +136,9 @@ class NortExperiment(BaseExperiment):
 
             elif exp_class == "training" or exp_class == "novelty":
                 try:
-                    field = self.nort_field_vs_nort_field_object[trial_meta["field"] - 1]
+                    field = self.nort_field_vs_nort_field_object[
+                        trial_meta["field"] - 1
+                    ]
                 except AttributeError as e:
                     msg = "nort_field_vs_nort_field_object is not defined, which is required when working with training and/or novelty datasets"
                     raise AttributeError(msg) from e
@@ -169,64 +171,6 @@ class NortExperiment(BaseExperiment):
                     self.animal_vs_trials[trial_meta["animal_id"]].append(exp)
                 else:
                     self.animal_vs_trials[trial_meta["animal_id"]] = [exp]
-
-        self.attention_state_analysis = {
-            "location gaze true observation false": [],
-            "observation gaze true location false": [],
-            "observation location true gaze false": [],
-            "all false": []
-        }
-        for novelty_trial in self.novelty_object_trials:
-            self.attention_state_analysis["location gaze true observation false"].extend(
-                (
-                    novelty_trial.a_location_filtered
-                    & novelty_trial.a_gaze_filtered
-                    & (not_a_observance_per_frame := ~novelty_trial.a_observance_per_frame),
-                    #
-                    novelty_trial.b_location_filtered
-                    & novelty_trial.b_gaze_filtered
-                    & (not_b_observance_per_frame := ~novelty_trial.b_observance_per_frame),
-                )
-            )
-            self.attention_state_analysis["observation gaze true location false"].extend(
-                (
-                    novelty_trial.a_observance_per_frame
-                    & novelty_trial.a_gaze_filtered
-                    & (not_a_location_filtered := ~novelty_trial.a_location_filtered),
-                    #
-                    novelty_trial.b_observance_per_frame
-                    & novelty_trial.b_gaze_filtered
-                    & (not_b_location_filtered := ~novelty_trial.b_location_filtered),
-                ),
-            )
-            self.attention_state_analysis["observation location true gaze false"].extend(
-                (
-                    novelty_trial.a_observance_per_frame
-                    & novelty_trial.a_location_filtered
-                    & (not_a_gaze_filtered := ~novelty_trial.a_gaze_filtered),
-                    #
-                    novelty_trial.b_observance_per_frame
-                    & novelty_trial.b_location_filtered
-                    & (not_b_gaze_filtered := ~novelty_trial.b_gaze_filtered),
-                )
-            )
-            self.attention_state_analysis["all false"].extend(
-                (
-                    not_a_observance_per_frame & not_a_location_filtered & not_a_gaze_filtered,
-                    not_b_observance_per_frame & not_b_location_filtered & not_b_gaze_filtered
-                )
-            )
-
-        result = []
-        for label, data_set in self.attention_state_analysis.items():
-            for idx, data in enumerate(data_set):
-                analysis = np.sum(data) / data.size
-                self.attention_state_analysis[label][idx] = analysis
-                result.append((analysis, label))
-
-        attention_state_df = pd.DataFrame(result, columns=("Ratio", "Comparison"))
-        sns.displot(attention_state_df, x="Ratio", hue="Comparison", multiple="dodge")
-        plt.show()
 
     @cached_property
     def df(self) -> pd.DataFrame:
@@ -311,6 +255,88 @@ class NortExperiment(BaseExperiment):
                 "There are neither training or novelty trials in the experiment object, can not analyse"
             )
             return None
+
+    @property
+    def attention_state_distribution(self):
+        attention_state_analysis = {
+            "location gaze true observation false": [],
+            "observation gaze true location false": [],
+            "observation location true gaze false": [],
+            "location true gaze false": [],
+            "gaze true location false": [],
+            "all false": [],
+        }
+        for novelty_trial in self.novelty_object_trials:
+            attention_state_analysis["location gaze true observation false"].extend(
+                (
+                    novelty_trial.a_location_filtered
+                    & novelty_trial.a_gaze_filtered
+                    & (
+                        not_a_observance_per_frame := ~novelty_trial.a_observance_per_frame
+                    ),
+                    #
+                    novelty_trial.b_location_filtered
+                    & novelty_trial.b_gaze_filtered
+                    & (
+                        not_b_observance_per_frame := ~novelty_trial.b_observance_per_frame
+                    ),
+                )
+            )
+            attention_state_analysis["observation gaze true location false"].extend(
+                (
+                    novelty_trial.a_observance_per_frame
+                    & novelty_trial.a_gaze_filtered
+                    & (not_a_location_filtered := ~novelty_trial.a_location_filtered),
+                    #
+                    novelty_trial.b_observance_per_frame
+                    & novelty_trial.b_gaze_filtered
+                    & (not_b_location_filtered := ~novelty_trial.b_location_filtered),
+                ),
+            )
+            attention_state_analysis["observation location true gaze false"].extend(
+                (
+                    novelty_trial.a_observance_per_frame
+                    & novelty_trial.a_location_filtered
+                    & (not_a_gaze_filtered := ~novelty_trial.a_gaze_filtered),
+                    #
+                    novelty_trial.b_observance_per_frame
+                    & novelty_trial.b_location_filtered
+                    & (not_b_gaze_filtered := ~novelty_trial.b_gaze_filtered),
+                )
+            )
+            attention_state_analysis["location true gaze false"].extend(
+                (
+                    novelty_trial.a_location_filtered & not_a_gaze_filtered,
+                    novelty_trial.b_location_filtered & not_b_gaze_filtered,
+                )
+            )
+            attention_state_analysis["gaze true location false"].extend(
+                (
+                    novelty_trial.a_gaze_filtered & not_a_location_filtered,
+                    novelty_trial.b_gaze_filtered & not_b_location_filtered,
+                ),
+            )
+
+        result = []
+        for label, data_set in attention_state_analysis.items():
+            for idx, data in enumerate(data_set):
+                analysis = np.sum(data) / data.size
+                attention_state_analysis[label][idx] = analysis
+                result.append((analysis, label))
+
+        return pd.DataFrame(result, columns=("Ratio", "Comparison"))
+
+    def plot_attention_state_distribution(self, bins=13, **sns_displot_kwargs):
+        sns.set_theme(style="whitegrid")
+        sns.displot(
+            self.attention_state_distribution,
+            x="Ratio",
+            hue="Comparison",
+            multiple="stack",
+            bins=bins,
+            **sns_displot_kwargs
+        )
+        plt.show()
 
     def __repr__(self):
         return self.df
