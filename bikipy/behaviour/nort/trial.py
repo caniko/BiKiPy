@@ -11,8 +11,8 @@ import numpy as np
 from compress_pickle import compress_pickle
 
 from bikipy.behaviour.square import SquareEnclosedTrial
-from bikipy.feature.attention import polygonal_perimeter_attention
 from bikipy.behaviour.utils import reduce_repeating_sequences
+from bikipy.feature.attention import polygonal_perimeter_attention
 from bikipy.perimeter.base import PolygonalPerimeter
 
 logger = getLogger(__name__)

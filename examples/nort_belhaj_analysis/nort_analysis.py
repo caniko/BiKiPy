@@ -1,7 +1,7 @@
+import datetime
 import os
 import pickle
 import re
-import datetime
 from glob import glob
 from pathlib import Path
 
@@ -58,9 +58,7 @@ for round_number, (experiment_dir, pickle_path) in enumerate(
         META_DATA, sheet_name=round_number, engine="openpyxl"
     )
 
-    animal_id_vs_app = get_animal_id_vs_apparatus(
-        exp_metadata_df, EXP_ID_REGEX_PATTERN
-    )
+    animal_id_vs_app = get_animal_id_vs_apparatus(exp_metadata_df, EXP_ID_REGEX_PATTERN)
     trial_id_vs_stage = get_trial_id_vs_stage(exp_metadata_df, EXP_ID_REGEX_PATTERN)
     animal_id_vs_trial_ids = get_animal_id_vs_trial_ids(exp_metadata_df)
     exp_vs_animal = get_trial_id_vs_animal_id(animal_id_vs_trial_ids)
@@ -104,7 +102,7 @@ for round_number, (experiment_dir, pickle_path) in enumerate(
             ("left_ear", "right_ear"),
             ("mid-left_ear-right_ear", "tail"),
         ),
-        timestamp=date
+        timestamp=date,
     )
 
     experiment.plot_attention_state_distribution()

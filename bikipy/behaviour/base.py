@@ -1,13 +1,13 @@
 import os
 from functools import cached_property
 from logging import getLogger
-from pathlib import PurePath, Path
+from pathlib import Path, PurePath
 from typing import Any, Sequence, Union
 
-from tqdm import tqdm
 import numpy as np
+from tqdm import tqdm
 
-from bikipy.feature.motion import Motion, frozen_frames, displacement_by_frame
+from bikipy.feature.motion import Motion, displacement_by_frame, frozen_frames
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.store import RangeDict
 from bikipy.utils.video import get_video_data

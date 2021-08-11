@@ -9,7 +9,7 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 
 from bikipy.behaviour.base import BaseExperiment
-from bikipy.behaviour.nort.trial import NortHabituationTrial, NortField
+from bikipy.behaviour.nort.trial import NortField, NortHabituationTrial
 from bikipy.utils.store import sort_dict_by_key_value
 
 logger = getLogger(__name__)
@@ -334,7 +334,7 @@ class NortExperiment(BaseExperiment):
             hue="Comparison",
             multiple="stack",
             bins=bins,
-            **sns_displot_kwargs
+            **sns_displot_kwargs,
         )
         plt.show()
 

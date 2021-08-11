@@ -14,7 +14,6 @@ from bikipy.feature.angle import inner_angle
 from bikipy.math.vector import unit_vector
 from bikipy.perimeter.base import PolygonalPerimeter
 
-
 SCATTER_ALPHA = 0.55
 logger = getLogger(__name__)
 

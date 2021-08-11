@@ -2,7 +2,7 @@
 Note that points in this context is the location of a region of interest across time.
 """
 from collections.abc import Sequence
-from typing import SupportsFloat, Sized, Iterable, Union
+from typing import Iterable, Sized, SupportsFloat, Union
 
 import numpy as np
 

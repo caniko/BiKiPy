@@ -1,6 +1,6 @@
 from functools import cached_property
 from logging import getLogger
-from typing import Union, Any
+from typing import Any, Union
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -9,7 +9,6 @@ from bikipy.behaviour.base import BaseTrial
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.motion import Motion
 from bikipy.math.point_in_polygon import points_in_parallelogram
-
 
 logger = getLogger(__name__)
 

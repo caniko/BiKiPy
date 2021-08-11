@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from logging import getLogger
-from typing import Union, Iterable
+from typing import Iterable, Union
 
 import numpy as np
 import pandas as pd

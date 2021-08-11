@@ -4,7 +4,6 @@ from pathlib import Path
 
 from bikipy.behaviour.nort.trial import NortField
 
-
 ROOT = Path(".").resolve().parent / "data" / "area_images"
 
 for directory in iglob(ROOT / "**", recursive=True):

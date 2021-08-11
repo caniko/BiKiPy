@@ -1,7 +1,7 @@
 import itertools as it
 from collections.abc import Sequence
 from logging import getLogger
-from typing import Union, Any, Iterable
+from typing import Any, Iterable, Union, Optional
 
 import numpy as np
 from numba import njit
@@ -42,7 +42,7 @@ def reduce_repeating_sequences(
     repeating_sequence: Sequence,
     frame_tolerance: Any,
     connector_element: Union[Any, None] = None,
-) -> np.ndarray:
+) -> list[Optional[Any]]:
     """
     Reduce consecutive sub-sequences in string sequence
 

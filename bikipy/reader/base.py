@@ -1,7 +1,7 @@
 import sys
 from concurrent.futures import ProcessPoolExecutor
 from functools import lru_cache, partial
-from typing import Any, Sequence, Union, Callable, Iterable
+from typing import Any, Callable, Iterable, Sequence, Union
 
 import numpy as np
 import pandas as pd
