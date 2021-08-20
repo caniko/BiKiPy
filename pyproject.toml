@@ -36,6 +36,7 @@ compress-pickle = {extras = ["lz4"], version = "^2.0.1"}
 jupyter = { version = "^1.0.0", optional = true }
 jupyterthemes = { version = "^0.20.0", optional = true }
 statsmodels = "^0.12.2"
+h5py = "^3.3.0"
 
 [tool.poetry.dev-dependencies]
 black = {extras = ["d"], version = "*"}

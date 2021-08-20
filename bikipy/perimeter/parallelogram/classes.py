@@ -19,11 +19,7 @@ logger = getLogger(__name__)
 
 
 class ParallelogramPerimeter(PolygonalPerimeter):
-    def __init__(
-        self,
-        *args,
-        **kwargs,
-    ):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         if (n := len(self.perimeter_corners)) != 4:

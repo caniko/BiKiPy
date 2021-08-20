@@ -420,3 +420,39 @@ class GenericPolygonalBorder(PolygonalPerimeter):
     @property
     def sides(self):
         return self.__sides
+
+
+class CombinedPolygonalPerimeter(Perimeter):
+    def __init__(
+        self,
+        rectangles: Sequence[PolygonalPerimeter],
+        restrict_zones: Union[Sequence[PolygonalPerimeter], None] = None,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+
+        self.rectangles = rectangles
+        self.restrict_zones = restrict_zones
+
+    def contained_coordinates(self, coordinates: Sequence):
+        present = np.any(
+            [
+                rectangle.polygon_contained_coordinates(coordinates)
+                for rectangle in self.rectangles
+            ]
+        )
+        if self.restrict_zones:
+            present = present & ~np.any(
+                [
+                    rectangle.polygon_contained_coordinates(coordinates)
+                    for rectangle in self.restrict_zones
+                ]
+            )
+
+        return present
+
+
+class Perimeter2D(PolygonalPerimeter, CombinedPolygonalPerimeter):
+    """Used for type hints"""
+
+    pass
