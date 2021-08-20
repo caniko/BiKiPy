@@ -105,10 +105,14 @@ for round_number, (experiment_dir, pickle_path) in enumerate(
         timestamp=date,
     )
 
-    experiment.plot_attention_state_distribution()
-    experiment.df.to_parquet(RESULT_DIR / f"exp_{experiment.timestamp}.parquet")
+    concatenated = pd.concat(
+        [experiment.df, exp_metadata_df.set_index("Test")], axis=1, sort=True
+    )
 
-    experiments.append(experiment)
+    experiment.plot_attention_state_distribution()
+    concatenated.to_parquet(RESULT_DIR / f"exp_{experiment.timestamp}.parquet")
+
+    experiments.append(concatenated)
 
 
 with pd.ExcelWriter(
@@ -119,4 +123,4 @@ with pd.ExcelWriter(
     },
 ) as writer:
     for experiment in experiments:
-        experiment.df.to_excel(writer, sheet_name=str(experiment.timestamp))
+        experiment.to_excel(writer, sheet_name=str(experiment.timestamp))
