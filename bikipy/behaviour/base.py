@@ -5,6 +5,7 @@ from pathlib import Path, PurePath
 from typing import Any, Sequence, Union
 
 import numpy as np
+from numba import jit
 from tqdm import tqdm
 
 from bikipy.feature.motion import Motion, displacement_by_frame, frozen_frames
@@ -203,6 +204,8 @@ class BaseTrial:
 
         self.motion = Motion(self.coordinates_per_frame, self.unit_per_pixel, self.fps)
 
+        self.perimeters = None
+
         self._rigid_nodes_freezing = None
         self._frozen_boolean_index = None
         if rigid_nodes_freezing:
@@ -262,3 +265,37 @@ class BaseTrial:
     @cached_property
     def total_frozen_frames(self):
         return np.sum(self.frozen_boolean_index) / self.fps
+
+    @jit
+    def detect_confined_perimeter(self, coordinate: np.array):
+        """
+        This function is used to determine current location of subject.
+
+        Useful in live applications
+
+        :param coordinate:
+        :return:
+        """
+
+        coordinate = np.expand_dims(coordinate, 0)
+        for label, perimeter in self.int_id_vs_perimeter.items():
+            if perimeter.coordinate_confinement_boolean_index(coordinate):
+                return label
+        return None
+
+    def _validate_perimeters_object(self):
+        if not self.perimeters:
+            msg = "perimeters is not defined as an object variable, which is required for int_id_vs_perimeters"
+            raise AttributeError(msg)
+
+    @cached_property
+    def perimeter_label_vs_int_id(self):
+        self._validate_perimeters_object()
+        return {label: i for i, label in enumerate(self.perimeters.keys(), start=1)}
+
+    @cached_property
+    def int_id_vs_perimeter(self):
+        self._validate_perimeters_object()
+        return {
+            i: self.perimeters[label] for i, label in self.perimeter_label_vs_int_id
+        }
