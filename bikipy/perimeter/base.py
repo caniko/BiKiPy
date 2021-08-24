@@ -7,6 +7,7 @@ from typing import Any, Sequence, Union
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+from numba import jit
 from shapely.geometry import Point, Polygon
 
 from bikipy.math.geometry import expand_parallelogram, order_parallelogram_corners
@@ -232,11 +233,9 @@ class PolygonalPerimeter(Perimeter):
 
         return border_obj
 
-    def polygon_contained_coordinates(
-        self, coordinates: Sequence, inspect: bool = False
-    ):
+    def confined_coordinates(self, coordinates: Sequence, inspect: bool = False):
         """
-        self.polygon_contained_coordinates to fetch confined coordinates within
+        self.confined_coordinates to fetch confined coordinates within
         the respective perimeter
 
         :param coordinates: Coordinates that will have their confinement tested
@@ -247,25 +246,24 @@ class PolygonalPerimeter(Perimeter):
         :rtype: np.ndarray
         """
         coordinates = np.asarray(coordinates)
-        polygon_contained_coordinates_boolean_index = coordinates[
-            self.polygon_contained_coordinates(coordinates)
+        coordinate_confinement_boolean_index = coordinates[
+            self.coordinate_confinement_boolean_index(coordinates)
         ]
         if inspect:
             ax = super().plot()
             ax.scatter(
-                polygon_contained_coordinates_boolean_index.T[0],
-                polygon_contained_coordinates_boolean_index.T[1],
+                coordinate_confinement_boolean_index.T[0],
+                coordinate_confinement_boolean_index.T[1],
                 marker="x",
             )
             ax.set_tittle("Confined coordinates")
             plt.show()
 
-        return polygon_contained_coordinates_boolean_index
+        return coordinate_confinement_boolean_index
 
     @lru_cache
-    def polygon_contained_coordinates_boolean_index(
-        self, coordinates: Sequence
-    ) -> np.ndarray:
+    @jit
+    def coordinate_confinement_boolean_index(self, coordinates: Sequence) -> np.ndarray:
         assert self.number_of_sides > 4
 
         polygon = Polygon(self.perimeter_corners)
@@ -320,7 +318,7 @@ class PolygonalPerimeter(Perimeter):
         overlap_locations = {}
 
         for border in border_sequence:
-            confined_coord_booleans_index = border.polygon_contained_coordinates(
+            confined_coord_booleans_index = border.coordinate_confinement_boolean_index(
                 coordinates
             )
 
@@ -437,18 +435,17 @@ class CombinedPolygonalPerimeter(Perimeter):
     def contained_coordinates(self, coordinates: Sequence):
         present = np.any(
             [
-                rectangle.polygon_contained_coordinates(coordinates)
+                rectangle.coordinate_confinement_boolean_index(coordinates)
                 for rectangle in self.rectangles
             ]
         )
         if self.restrict_zones:
             present = present & ~np.any(
                 [
-                    rectangle.polygon_contained_coordinates(coordinates)
+                    rectangle.coordinate_confinement_boolean_index(coordinates)
                     for rectangle in self.restrict_zones
                 ]
             )
-
         return present
 
 

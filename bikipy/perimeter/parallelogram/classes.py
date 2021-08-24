@@ -150,7 +150,7 @@ class ParallelogramPerimeter(PolygonalPerimeter):
 
         return np.squeeze(np.hsplit(magnitudes, 2))
 
-    def polygon_contained_coordinates_boolean_index(self, coordinates: Sequence):
+    def coordinate_confinement_boolean_index(self, coordinates: Sequence):
         coordinates = np.asarray(coordinates)
 
         return points_in_parallelogram(

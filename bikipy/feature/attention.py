@@ -54,12 +54,10 @@ def proximity_filter(
     )
 
     nose_within_border = (
-        polygonal_perimeter_border.polygon_contained_coordinates_boolean_index(nose)
+        polygonal_perimeter_border.coordinate_confinement_boolean_index(nose)
     )
     center_of_mass_outside_polygon = (
-        ~polygonal_perimeter_border.polygon_contained_coordinates_boolean_index(
-            center_of_mass
-        )
+        ~polygonal_perimeter_border.coordinate_confinement_boolean_index(center_of_mass)
     )
 
     # Find states where the nose is within perimeter while the center_of_mass is not over perimeter

@@ -2,11 +2,13 @@ from collections.abc import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numba import jit
 from seaborn import set_theme
 
 from bikipy.math.vector import dot_prod_along_axis_1, orthogonal_unit_vector
 
 
+@jit
 def points_in_parallelogram(
     ab_mid_corner: Sequence,
     corner_a: Sequence,
