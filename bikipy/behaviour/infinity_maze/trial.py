@@ -1,65 +1,76 @@
+from collections import Sequence as collections_Sequence
+from functools import cached_property
+from typing import Sequence, Union
+
 import numpy as np
 
-try:
-    import keyboard
-    import zmq
-    import zmq.asyncio
-except ImportError as e:
-    msg = "You need to install BiKiPy[live] to use the infinity maze module"
-    raise ImportError(msg) from e
-
-from bikipy.behaviour.base import BaseTrial
+from bikipy.behaviour.live import LiveTrial
 from bikipy.perimeter.base import Perimeter2D
 
 
-class InfinityMaze(BaseTrial):
+class InfinityMaze(LiveTrial):
     def __init__(
         self,
         delay_perimeter: Perimeter2D,
-        stem_perimeter: Perimeter2D,
         choice_perimeter: Perimeter2D,
-        reward_perimeter_left: Perimeter2D,
-        reward_perimeter_right: Perimeter2D,
-        return_perimeter: Perimeter2D,
-        live: bool = False,
+        reward_left_perimeter: Perimeter2D,
+        reward_right_perimeter: Perimeter2D,
+        return_left_perimeter: Perimeter2D,
+        return_right_perimeter: Perimeter2D,
+        delay_timings: Sequence[Union[float, int]],
+        delay_timings_trial_count: Union[Union[float, int], Sequence[Union[float, int]]],
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
         self.delay_perimeter = delay_perimeter
-        self.stem_perimeter = stem_perimeter
         self.choice_perimeter = choice_perimeter
-        self.reward_perimeter_left = reward_perimeter_left
-        self.reward_perimeter_right = reward_perimeter_right
-        self.return_perimeter = return_perimeter
+        self.reward_left_perimeter = reward_left_perimeter
+        self.reward_right_perimeter = reward_right_perimeter
+        self.return_left_perimeter = return_left_perimeter
+        self.return_right_perimeter = return_right_perimeter
 
         self.perimeters = {
             "delay": self.delay_perimeter,
-            "stem": self.stem_perimeter,
             "choice": self.choice_perimeter,
-            "reward_left": self.reward_perimeter_left,
-            "reward_right": self.reward_perimeter_right,
-            "return": self.return_perimeter
+            "reward_left": self.reward_left_perimeter,
+            "reward_right": self.reward_right_perimeter,
+            "return_left_perimeter": self.return_left_perimeter,
+            "return_right_perimeter": self.return_right_perimeter,
         }
 
-        self.live = live
-        self.zmq_context = zmq.asyncio.Context() if self.live else None
+        self.start_point = "delay"
+        self.left_loop = np.array(
+            (self.start_point, "choice", "reward_left", "return_left")
+        )
+        self.right_loop = np.array(
+            (self.start_point, "choice", "reward_right", "return_right")
+        )
 
-        self.coordinate_sequence = None
-
-    async def localize(self):
-        if not self.live:
-            msg = "live was not set to True during initialisation"
+        self.delay_timings = delay_timings
+        if isinstance(delay_timings_trial_count, collections_Sequence):
+            self.delay_timings_trial_count = tuple(delay_timings_trial_count)
+            assert len(self.delay_timings_trial_count) == len(self.delay_timings)
+            assert all(
+                isinstance(timing, (float, int))
+                for timing in self.delay_timings_trial_count
+            )
+        elif isinstance(delay_timings_trial_count, (float, int)):
+            self.delay_timings_trial_count = tuple(
+                delay_timings_trial_count for _ in range(len(delay_timings))
+            )
+        else:
+            msg = f"delay_timings_trial_count has to be a sequence of numbers or number"
             raise ValueError(msg)
 
-        socket = self.zmq_context.socket(zmq.PULL)
-        socket.bind("tcp://*:5555")
+    def _localize_loop_func(location: np.ndarray):
+        pass
 
-        coordinate_sequence = []
-        while True:
-            message = await socket.recv_string()
+    @cached_property
+    def _left_loop_int_ids(self):
+        return self._perimeter_label_sequence_to_int_id(self.left_loop)
 
-            location = self.detect_confined_perimeter(
-                np.array(message.split(" "), dtype=np.float32)
-            )
+    @cached_property
+    def _right_loop_int_ids(self):
+        return self._perimeter_label_sequence_to_int_id(self.right_loop)

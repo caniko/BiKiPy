@@ -68,7 +68,9 @@ class TriangularPerimeter(PolygonalPerimeter):
             ")"
         )
 
-    def coordinate_confinement_boolean_index(self, coordinates: np.ndarray) -> np.ndarray:
+    def coordinate_confinement_boolean_index(
+        self, coordinates: np.ndarray
+    ) -> np.ndarray:
         """
         indices of the coordinates that are inside the respective perimeter
 

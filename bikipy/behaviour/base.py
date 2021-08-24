@@ -2,7 +2,7 @@ import os
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import Any, Sequence, Union
+from typing import Any, Sequence, Union, Iterable
 
 import numpy as np
 from numba import jit
@@ -142,7 +142,7 @@ class BaseTrial:
         :param inspect_image: Image used for inspection
         :type coordinate_sequence: dict
         :type video_path: Any
-        :type metric_resolution: int or float, or [(int, float), (int, float)]
+        :type metric_resolution: int or float, or [(float, int), (float, int)]
         :type animal_id: int (optional)
         :type rigid_nodes_freezing: Sequence[Union[str, int]] (optional)
         :type movement_feature_point_label: str (optional)
@@ -180,7 +180,7 @@ class BaseTrial:
 
         self.metric_resolution = metric_resolution if metric_resolution else None
         if self.metric_resolution:
-            if isinstance(self.metric_resolution, (int, float)):
+            if isinstance(self.metric_resolution, (float, int)):
                 self.unit_per_pixel = self.metric_resolution / np.mean(
                     self.recording_resolution
                 )
@@ -204,7 +204,10 @@ class BaseTrial:
 
         self.motion = Motion(self.coordinates_per_frame, self.unit_per_pixel, self.fps)
 
+        # Variables for trials with zones, see doc for more info.
         self.perimeters = None
+        self.trial_start_perimeter = None
+        # ========================= ========================= =========================
 
         self._rigid_nodes_freezing = None
         self._frozen_boolean_index = None
@@ -278,10 +281,9 @@ class BaseTrial:
         """
 
         coordinate = np.expand_dims(coordinate, 0)
-        for label, perimeter in self.int_id_vs_perimeter.items():
+        for label, perimeter in self._int_id_vs_perimeter.items():
             if perimeter.coordinate_confinement_boolean_index(coordinate):
                 return label
-        return None
 
     def _validate_perimeters_object(self):
         if not self.perimeters:
@@ -289,13 +291,20 @@ class BaseTrial:
             raise AttributeError(msg)
 
     @cached_property
-    def perimeter_label_vs_int_id(self):
+    def _perimeter_label_vs_int_id(self):
         self._validate_perimeters_object()
         return {label: i for i, label in enumerate(self.perimeters.keys(), start=1)}
 
     @cached_property
-    def int_id_vs_perimeter(self):
+    def _int_id_vs_perimeter(self):
         self._validate_perimeters_object()
         return {
-            i: self.perimeters[label] for i, label in self.perimeter_label_vs_int_id
+            i: self.perimeters[label] for i, label in self._perimeter_label_vs_int_id
         }
+
+    @property
+    def _start_int_id(self):
+        return self._perimeter_label_vs_int_id[self.trial_start_perimeter]
+
+    def _perimeter_label_sequence_to_int_id(self, label_sequence: Iterable) -> tuple:
+        return tuple(self._perimeter_label_vs_int_id[label] for label in label_sequence)

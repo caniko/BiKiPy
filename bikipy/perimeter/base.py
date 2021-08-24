@@ -233,9 +233,7 @@ class PolygonalPerimeter(Perimeter):
 
         return border_obj
 
-    def confined_coordinates(
-        self, coordinates: Sequence, inspect: bool = False
-    ):
+    def confined_coordinates(self, coordinates: Sequence, inspect: bool = False):
         """
         self.confined_coordinates to fetch confined coordinates within
         the respective perimeter
@@ -265,9 +263,7 @@ class PolygonalPerimeter(Perimeter):
 
     @lru_cache
     @jit
-    def coordinate_confinement_boolean_index(
-        self, coordinates: Sequence
-    ) -> np.ndarray:
+    def coordinate_confinement_boolean_index(self, coordinates: Sequence) -> np.ndarray:
         assert self.number_of_sides > 4
 
         polygon = Polygon(self.perimeter_corners)
