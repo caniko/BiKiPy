@@ -18,7 +18,9 @@ class InfinityMaze(LiveTrial):
         return_left_perimeter: Perimeter2D,
         return_right_perimeter: Perimeter2D,
         delay_timings: Sequence[Union[float, int]],
-        delay_timings_trial_count: Union[Union[float, int], Sequence[Union[float, int]]],
+        delay_timings_trial_count: Union[
+            Union[float, int], Sequence[Union[float, int]]
+        ],
         *args,
         **kwargs,
     ):

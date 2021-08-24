@@ -215,13 +215,13 @@ class NortExperiment(BaseExperiment):
         object_columns = [
             *feature_area("Observation instances", ("A", "B", "Total")),
             *feature_area("Observation time", ("A", "B", "Total")),
-            ["Object bias score"],
+            ("Object bias score", "Total"),
         ]
 
         novelty_columns = [
-            ["Absolute discrimination"],
-            ["Discrimination index"],
-            ["Novelty preference"],
+            ("Absolute discrimination", "Total"),
+            ("Discrimination index", "Total"),
+            ("Novelty preference", "Total"),
         ]
 
         label_vs_data = {}

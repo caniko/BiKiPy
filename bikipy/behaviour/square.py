@@ -94,11 +94,13 @@ class SquareEnclosedTrial(BaseTrial):
                 y_short = x_short + y_bias
                 y_long = x_long + y_bias
 
-            return (
-                (x_short, y_short),
-                (x_short, y_long),
-                (x_long, y_long),
-                (x_long, y_short),
+            return np.array(
+                (
+                    (x_short, y_short),
+                    (x_short, y_long),
+                    (x_long, y_long),
+                    (x_long, y_short),
+                )
             )
 
         center_box_ratio = (
@@ -112,23 +114,27 @@ class SquareEnclosedTrial(BaseTrial):
         y = self.vertical_resolution * center_box_ratio
         y_rest_half = (self.vertical_resolution - y) / 2.0
         if self.horizontal_resolution == self.vertical_resolution:
-            return (
-                # x_short, y_short
-                (x_rest_half, y_rest_half),
-                # x_short, y_long
-                (x_rest_half, self.vertical_resolution - y_rest_half),
-                # x_long, y_long
+            return np.array(
                 (
-                    self.horizontal_resolution - x_rest_half,
-                    self.vertical_resolution - y_rest_half,
-                ),
-                # x_long, y_short
-                (self.horizontal_resolution - x_rest_half, y_rest_half),
+                    # x_short, y_short
+                    (x_rest_half, y_rest_half),
+                    # x_short, y_long
+                    (x_rest_half, self.vertical_resolution - y_rest_half),
+                    # x_long, y_long
+                    (
+                        self.horizontal_resolution - x_rest_half,
+                        self.vertical_resolution - y_rest_half,
+                    ),
+                    # x_long, y_short
+                    (self.horizontal_resolution - x_rest_half, y_rest_half),
+                )
             )
+
         elif self.horizontal_resolution < self.vertical_resolution:
             return non_square_rectification(
                 y_bias=(self.vertical_resolution - self.horizontal_resolution) / 2.0
             )
+
         else:
             return non_square_rectification(
                 x_bias=(self.horizontal_resolution - self.vertical_resolution) / 2.0

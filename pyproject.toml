@@ -19,10 +19,12 @@ opencv-python = "^4.2.0"
 Shapely = "^1.7.1"
 numba = "^0.53.1"
 
+statsmodels = "^0.12.2"
 pandas = "^1.0.5"
 tables = "^3.6.1"
+
+pyarrow = "^5.0.0"
 h5py = "^3.3.0"
-pyarrow = "^4.0.0"
 openpyxl = "^3.0.5"
 odfpy = "^1.4.1"
 
@@ -38,7 +40,6 @@ pyzmq = {version = "^22.2.1", optional = true }
 
 jupyter = { version = "^1.0.0", optional = true }
 jupyterthemes = { version = "^0.20.0", optional = true }
-keyboard = {version = "^0.13.5", optional = true}
 
 [tool.poetry.dev-dependencies]
 black = {extras = ["d"], version = "*"}
