@@ -199,8 +199,8 @@ class NortExperiment(BaseExperiment):
             category = str(category)
             return (
                 (category, "Displacement"),
-                (category, "Median speed"),
-                (category, "Median acceleration"),
+                (category, "Median_speed"),
+                (category, "Median_acceleration"),
                 (category, "Freezing time"),
             )
 
@@ -208,20 +208,20 @@ class NortExperiment(BaseExperiment):
             *movement_feature("All"),
             *movement_feature("Periphery"),
             *movement_feature("Center"),
-            *feature_area("Time spent", ("Periphery", "Center")),
+            *feature_area("Time_spent", ("Periphery", "Center")),
             *feature_area("Entries", ("Periphery", "Center")),
         ]
 
         object_columns = [
-            *feature_area("Observation instances", ("A", "B", "Total")),
-            *feature_area("Observation time", ("A", "B", "Total")),
-            ("Object bias score", "Total"),
+            *feature_area("Observation_instances", ("A", "B", "Total")),
+            *feature_area("Observation_time", ("A", "B", "Total")),
+            ("Object_bias_score", "Total"),
         ]
 
         novelty_columns = [
-            ("Absolute discrimination", "Total"),
-            ("Discrimination index", "Total"),
-            ("Novelty preference", "Total"),
+            ("Absolute_discrimination", "Total"),
+            ("Discrimination_index", "Total"),
+            ("Novelty_preference", "Total"),
         ]
 
         label_vs_data = {}
@@ -259,61 +259,61 @@ class NortExperiment(BaseExperiment):
     @property
     def attention_state_distribution(self):
         attention_state_analysis = {
-            "location gaze true observation false": [],
-            "observation gaze true location false": [],
-            "observation location true gaze false": [],
-            "location true gaze false": [],
-            "gaze true location false": [],
+            "proximity&gaze true observation false": [],
+            "observation&gaze true proximity false": [],
+            "observation&proximity true gaze false": [],
+            "proximity true gaze false": [],
+            "gaze true proximity false": [],
             "all false": [],
         }
         for novelty_trial in self.novelty_object_trials:
-            attention_state_analysis["location gaze true observation false"].extend(
+            attention_state_analysis["proximity gaze true observation false"].extend(
                 (
-                    novelty_trial.a_location_filtered
+                    novelty_trial.a_proximity_filtered
                     & novelty_trial.a_gaze_filtered
                     & (
                         not_a_observance_per_frame := ~novelty_trial.a_observance_per_frame
                     ),
                     #
-                    novelty_trial.b_location_filtered
+                    novelty_trial.b_proximity_filtered
                     & novelty_trial.b_gaze_filtered
                     & (
                         not_b_observance_per_frame := ~novelty_trial.b_observance_per_frame
                     ),
                 )
             )
-            attention_state_analysis["observation gaze true location false"].extend(
+            attention_state_analysis["observation gaze true proximity false"].extend(
                 (
                     novelty_trial.a_observance_per_frame
                     & novelty_trial.a_gaze_filtered
-                    & (not_a_location_filtered := ~novelty_trial.a_location_filtered),
+                    & (not_a_proximity_filtered := ~novelty_trial.a_proximity_filtered),
                     #
                     novelty_trial.b_observance_per_frame
                     & novelty_trial.b_gaze_filtered
-                    & (not_b_location_filtered := ~novelty_trial.b_location_filtered),
+                    & (not_b_proximity_filtered := ~novelty_trial.b_proximity_filtered),
                 ),
             )
-            attention_state_analysis["observation location true gaze false"].extend(
+            attention_state_analysis["observation proximity true gaze false"].extend(
                 (
                     novelty_trial.a_observance_per_frame
-                    & novelty_trial.a_location_filtered
+                    & novelty_trial.a_proximity_filtered
                     & (not_a_gaze_filtered := ~novelty_trial.a_gaze_filtered),
                     #
                     novelty_trial.b_observance_per_frame
-                    & novelty_trial.b_location_filtered
+                    & novelty_trial.b_proximity_filtered
                     & (not_b_gaze_filtered := ~novelty_trial.b_gaze_filtered),
                 )
             )
-            attention_state_analysis["location true gaze false"].extend(
+            attention_state_analysis["proximity true gaze false"].extend(
                 (
-                    novelty_trial.a_location_filtered & not_a_gaze_filtered,
-                    novelty_trial.b_location_filtered & not_b_gaze_filtered,
+                    novelty_trial.a_proximity_filtered & not_a_gaze_filtered,
+                    novelty_trial.b_proximity_filtered & not_b_gaze_filtered,
                 )
             )
-            attention_state_analysis["gaze true location false"].extend(
+            attention_state_analysis["gaze true proximity false"].extend(
                 (
-                    novelty_trial.a_gaze_filtered & not_a_location_filtered,
-                    novelty_trial.b_gaze_filtered & not_b_location_filtered,
+                    novelty_trial.a_gaze_filtered & not_a_proximity_filtered,
+                    novelty_trial.b_gaze_filtered & not_b_proximity_filtered,
                 ),
             )
 
@@ -337,6 +337,16 @@ class NortExperiment(BaseExperiment):
             **sns_displot_kwargs,
         )
         plt.show()
+        sns.displot(
+            self.attention_state_distribution,
+            x="Ratio",
+            hue="Comparison",
+            multiple="stack",
+            bins=bins,
+            **sns_displot_kwargs,
+        )
+        plt.show()
+
 
     def __repr__(self):
         return self.df
