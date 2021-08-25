@@ -1,7 +1,7 @@
 import itertools as it
 from collections.abc import Sequence
 from logging import getLogger
-from typing import Any, Iterable, Union, Optional
+from typing import Any, Iterable, Optional, Union
 
 import numpy as np
 from numba import njit

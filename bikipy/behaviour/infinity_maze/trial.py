@@ -1,11 +1,14 @@
 from collections import Sequence as collections_Sequence
 from functools import cached_property
+from logging import getLogger
 from typing import Sequence, Union
 
 import numpy as np
 
 from bikipy.behaviour.live import LiveTrial
 from bikipy.perimeter.base import Perimeter2D
+
+logger = getLogger(__name__)
 
 
 class InfinityMaze(LiveTrial):
@@ -18,9 +21,7 @@ class InfinityMaze(LiveTrial):
         return_left_perimeter: Perimeter2D,
         return_right_perimeter: Perimeter2D,
         delay_timings: Sequence[Union[float, int]],
-        delay_timings_trial_count: Union[
-            Union[float, int], Sequence[Union[float, int]]
-        ],
+        delay_timings_trial_count: Union[int, Sequence[int]],
         *args,
         **kwargs,
     ):
@@ -66,8 +67,17 @@ class InfinityMaze(LiveTrial):
             msg = f"delay_timings_trial_count has to be a sequence of numbers or number"
             raise ValueError(msg)
 
-    def _localize_loop_func(location: np.ndarray):
-        pass
+        self.last_location = None
+        self.node_sequence = []
+
+    async def localize_loop_func(self, location: int):
+        if location == self.last_location or not location:
+            return
+        if location == self._perimeter_label_vs_int_id["delay"]:
+
+        self.node_sequence.append(location)
+
+        self.last_location = location
 
     @cached_property
     def _left_loop_int_ids(self):

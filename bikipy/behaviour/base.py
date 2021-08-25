@@ -2,10 +2,9 @@ import os
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import Any, Sequence, Union, Iterable
+from typing import Any, Iterable, Sequence, Union
 
 import numpy as np
-from numba import jit
 from tqdm import tqdm
 
 from bikipy.feature.motion import Motion, displacement_by_frame, frozen_frames
@@ -269,7 +268,6 @@ class BaseTrial:
     def total_frozen_frames(self):
         return np.sum(self.frozen_boolean_index) / self.fps
 
-    @jit
     def detect_confined_perimeter(self, coordinate: np.array):
         """
         This function is used to determine current location of subject.
@@ -284,6 +282,7 @@ class BaseTrial:
         for label, perimeter in self._int_id_vs_perimeter.items():
             if perimeter.coordinate_confinement_boolean_index(coordinate):
                 return label
+            logger.warning(f"location could not be determined")
 
     def _validate_perimeters_object(self):
         if not self.perimeters:
