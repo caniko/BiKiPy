@@ -24,7 +24,9 @@ class LiveTrial(BaseTrial):
         self.zmq_context = zmq.asyncio.Context()
         self.countdown_timings = []
 
-    async def localize(self, delimiter: str = " ", socket_address: str = "tcp://*:5555"):
+    async def localize(
+        self, delimiter: str = " ", socket_address: str = "tcp://*:5555"
+    ):
         socket = self.zmq_context.socket(zmq.PULL)
         socket.bind(str(socket_address))
 

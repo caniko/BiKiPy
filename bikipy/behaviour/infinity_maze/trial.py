@@ -74,10 +74,14 @@ class InfinityMaze(LiveTrial):
         self.bad_loop_record = {}
 
         self._loop_number = 0
-        self._loop_number_vs_delay_time = RangeDict({
-            i: delay_time for i, delay_time in
-            zip(self.delay_timings_trial_count, self.delay_timings)
-        })
+        self._loop_number_vs_delay_time = RangeDict(
+            {
+                i: delay_time
+                for i, delay_time in zip(
+                    self.delay_timings_trial_count, self.delay_timings
+                )
+            }
+        )
         self._bad_turn_counter = 0
         self._last_loop = None
         self._received_reward = False
@@ -117,7 +121,10 @@ class InfinityMaze(LiveTrial):
                 self._delay_countdown_task = asyncio.create_task(
                     self.countdown(self._loop_number_vs_delay_time[self._loop_number])
                 )
-        elif location == self._perimeter_label_vs_int_id["entry"] and not self._delay_countdown_task.done():
+        elif (
+            location == self._perimeter_label_vs_int_id["entry"]
+            and not self._delay_countdown_task.done()
+        ):
             self._delay_countdown_task.cancel()
 
         self.node_sequence.append(location)
