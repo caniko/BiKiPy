@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import SupportsFloat, SupportsInt, Union
+from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,7 +7,6 @@ import pandas as pd
 
 from bikipy.behaviour.base import BaseExperiment
 from bikipy.behaviour.y_maze.experiment import YMaze
-from bikipy.behaviour.y_maze.utils import mean_intersecting_points_on_borders
 from bikipy.perimeter.base import PolygonalPerimeter
 from bikipy.perimeter.triangular import TriangularPerimeter
 from bikipy.utils.store import RangeDict

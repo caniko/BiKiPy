@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import SupportsFloat, SupportsInt, Union
+from typing import Union
 
 import numpy as np
 
@@ -22,7 +22,7 @@ LOGIC_TO_FUNC = {
 class LinePerimeter(Perimeter):
     def __init__(
         self,
-        location: Union[SupportsFloat, SupportsInt],
+        location: Union[float, int],
         orientation: Union[str, SupportsInt],
         logic: str,
         resolution: Union[SupportsInt, Sequence, None] = None,

@@ -295,6 +295,11 @@ class BaseTrial:
         return {label: i for i, label in enumerate(self.perimeters.keys(), start=1)}
 
     @cached_property
+    def _int_id_vs_perimeter_label(self):
+        self._validate_perimeters_object()
+        return {i: label for i, label in enumerate(self.perimeters.keys(), start=1)}
+
+    @cached_property
     def _int_id_vs_perimeter(self):
         self._validate_perimeters_object()
         return {

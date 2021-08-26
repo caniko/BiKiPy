@@ -1,5 +1,6 @@
 from collections import UserDict
-from typing import Iterable, SupportsFloat, SupportsInt, Union
+from functools import lru_cache
+from typing import Iterable, Union, Any
 
 
 def translate_keys(store: dict, translation: dict) -> dict:
@@ -21,14 +22,12 @@ class RangeDict(UserDict):
     Useful when working with data that is generalised for a given range of values.
     """
 
-    def __init__(self, class_dict, **kwargs):
-
+    def __init__(self, class_dict: dict, **kwargs):
         self.descending = sorted(class_dict, reverse=True)
-
         super().__init__(class_dict, **kwargs)
 
     @staticmethod
-    def find_range(sequence: Iterable, value: Union[SupportsFloat, SupportsInt]):
+    def find_range(sequence: Iterable, value: Union[float, int]):
         for number in sequence:
             if number <= value:
                 return number
@@ -36,13 +35,14 @@ class RangeDict(UserDict):
         msg = f"Provided key is less than the first key in the RangeDict; {value}"
         raise KeyError(msg)
 
-    def __getitem__(self, key: Union[SupportsFloat, SupportsInt]):
+    @lru_cache
+    def __getitem__(self, key: Union[float, int]):
         try:
             return super().__getitem__(key)
         except KeyError:
             return super().__getitem__(self.find_range(self.descending, key))
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: Union[float, int], value: Any):
         if not isinstance(key, (float, int)):
             msg = "Keys in RangeDict(s) have to be either integer or float"
             raise TypeError(msg)

@@ -1,6 +1,6 @@
 from functools import cached_property
 from logging import getLogger
-from typing import Any, Sequence, SupportsFloat, SupportsInt, Union
+from typing import Any, Sequence, Union
 
 import matplotlib.pyplot as plt
 import numpy as np

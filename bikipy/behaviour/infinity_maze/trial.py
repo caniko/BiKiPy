@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from collections import Sequence as collections_Sequence
 from functools import cached_property
 from logging import getLogger
@@ -7,6 +9,7 @@ import numpy as np
 
 from bikipy.behaviour.live import LiveTrial
 from bikipy.perimeter.base import Perimeter2D
+from bikipy.utils.store import RangeDict
 
 logger = getLogger(__name__)
 
@@ -69,15 +72,66 @@ class InfinityMaze(LiveTrial):
 
         self.last_location = None
         self.node_sequence = []
+        self.bad_loop_record = {}
+
+        self._loop_number = 0
+        self._loop_number_vs_delay_time = RangeDict({
+            i: delay_time for i, delay_time in
+            zip(self.delay_timings_trial_count, self.delay_timings)
+        })
+        self._bad_turn_counter = 0
+        self._last_loop = None
+        self._received_reward = False
+        self._delay_countdown_task = None
+
+    async def countdown(self, seconds: int = 10):
+        await super().countdown(seconds)
+        self._loop_number += 1
 
     async def localize_loop_func(self, location: int):
         if location == self.last_location or not location:
             return
-        if location == self._perimeter_label_vs_int_id["delay"]:
+
+        location_string = self._int_id_vs_perimeter_label[location]
+
+        if "reward" in location_string:
+            if self._last_loop:
+                if "reward_left" == self.last_location:
+                    if "right" == self._last_loop:
+                        self.reward()
+                    else:
+                        self.record_bad_loop(
+                            f"Made left turn {self._bad_turn_counter} after the initial left turn"
+                        )
+                else:
+                    if "left" == self._last_loop:
+                        self.reward()
+                    else:
+                        self.record_bad_loop(
+                            f"Made right turn {self._bad_turn_counter} after the initial right turn"
+                        )
+            else:
+                self.reward()
+
+        if self._delay_countdown_task is None or self._delay_countdown_task.done():
+            if location == self._perimeter_label_vs_int_id["delay"]:
+                self._delay_countdown_task = asyncio.create_task(
+                    self.countdown(self._loop_number_vs_delay_time[self._loop_number])
+                )
+        elif location == self._perimeter_label_vs_int_id["entry"] and not self._delay_countdown_task.done():
+            self._delay_countdown_task.cancel()
 
         self.node_sequence.append(location)
-
         self.last_location = location
+
+    def reward(self):
+        self._bad_turn_counter = 0
+        # TODO: Arduino connection
+        return
+
+    def record_bad_loop(self, reason: str):
+        logger.debug(reason)
+        self.bad_loop_record[self._loop_number] = reason
 
     @cached_property
     def _left_loop_int_ids(self):
