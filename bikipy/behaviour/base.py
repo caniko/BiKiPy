@@ -272,8 +272,6 @@ class BaseTrial:
         """
         This function is used to determine current location of subject.
 
-        Useful in live applications
-
         :param coordinate:
         :return:
         """
