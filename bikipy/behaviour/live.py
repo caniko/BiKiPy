@@ -25,7 +25,10 @@ class LiveTrial(BaseTrial):
         self.countdown_timings = []
 
     async def localize(
-        self, delimiter: str = " ", socket_address: str = "tcp://*:5555"
+        self,
+        data_separator_delimiter: str = ",",
+        data_delimiter: str = " ",
+        socket_address: str = "tcp://*:5555",
     ):
         socket = self.zmq_context.socket(zmq.PULL)
         socket.bind(str(socket_address))
@@ -34,10 +37,16 @@ class LiveTrial(BaseTrial):
             while True:
                 message = await socket.recv_string()
 
+                coordinate_str, timestamp_str = message.split(data_separator_delimiter)
+
                 location = self.detect_confined_perimeter(
-                    np.array(message.split(delimiter), dtype=np.float32)
+                    np.array(coordinate_str.split(data_delimiter), dtype=np.float32)
                 )
-                asyncio.create_task(self.localize_loop_func(location))
+                asyncio.create_task(
+                    self.localize_loop_func(
+                        location, datetime(*timestamp_str.split(data_delimiter))
+                    )
+                )
         except KeyboardInterrupt:
             socket.close()
 
@@ -52,5 +61,5 @@ class LiveTrial(BaseTrial):
         )
         self.countdown_timings.append((start, stop, total_time))
 
-    async def localize_loop_func(self, location: int):
+    async def localize_loop_func(self, location: int, timestamp: datetime):
         raise NotImplementedError

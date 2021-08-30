@@ -5,16 +5,6 @@ from seaborn import set_theme
 from bikipy.math.vector import dot_prod_along_axis_1, orthogonal_unit_vector
 
 
-def _main(
-    ab_mid_corner: np.ndarray,
-    corner_a: np.ndarray,
-    corner_b: np.ndarray,
-    coordinates: np.ndarray,
-) -> np.ndarray:
-
-    return result
-
-
 def points_in_parallelogram(
     ab_mid_corner: np.ndarray,
     corner_a: np.ndarray,

@@ -95,11 +95,13 @@ class InfinityMaze(LiveTrial):
         regression_seconds_tolerance_decimal = regression_seconds_tolerance % 1.0
         self._regression_seconds_tolerance = datetime.time(
             second=floor(regression_seconds_tolerance),
-            microsecond=regression_seconds_tolerance_decimal * 10**6
+            microsecond=regression_seconds_tolerance_decimal * 10 ** 6,
         )
 
         self.regression_data = []
         self.quasi_regression_data = []
+
+        self.reward_data = []
 
         self.regression_instance_tolerance = int(regression_instance_tolerance)
         self._sequential_regressions = 0
@@ -122,25 +124,32 @@ class InfinityMaze(LiveTrial):
         self._current_sequence = []
         self._loop_number += 1
 
-    async def localize_loop_func(self, location: int):
+    async def localize_loop_func(self, location: int, timestamp: datetime.datetime):
         if location == self._last_location:
-            if self._regressing and self._regression_start_timestamp >= self.regression_buffer:
+            if (
+                self._regressing
+                and self._regression_start_timestamp >= self.regression_buffer
+            ):
                 self._regressing = False
                 self._regressed = True
             return
 
         if self._regressing:
-            self.quasi_regression_data.append((
-                self._regression_start_timestamp,
-                datetime.datetime.now() - self._regression_start_timestamp
-            ))
+            self.quasi_regression_data.append(
+                (
+                    self._regression_start_timestamp,
+                    timestamp - self._regression_start_timestamp,
+                )
+            )
             self._regressing = False
             self._regression_start_timestamp = None
         elif self._regressed:
-            self.regression_data.append((
-                self._regression_start_timestamp,
-                datetime.datetime.now() - self._regression_start_timestamp
-            ))
+            self.regression_data.append(
+                (
+                    self._regression_start_timestamp,
+                    timestamp - self._regression_start_timestamp,
+                )
+            )
             self._regressed = False
             self._sequential_regressions += 1
 
@@ -153,25 +162,33 @@ class InfinityMaze(LiveTrial):
                 self._delay_countdown_task.cancel()
         elif location in self._current_sequence:
             self._regressing = True
-            self._regression_start_timestamp = datetime.datetime.now()
+            self._regression_start_timestamp = timestamp
         elif "reward" in location_string:
-            if self._last_loop:
+            if self._received_reward:
+                self.record_bad_loop(
+                    "The animal regressed to the other reward site after getting a reward"
+                )
+            elif self._last_loop:
                 if "reward_left" == location_string:
                     if "right" == self._last_loop:
-                        self.reward()
+                        self.reward("left")
                     else:
                         self.record_bad_loop(
                             f"Made left turn {self._bad_turn_counter} after the initial left turn"
                         )
+
                 else:  # same as `elif "reward_right" == location_string:`
                     if "left" == self._last_loop:
-                        self.reward()
+                        self.reward("right")
                     else:
                         self.record_bad_loop(
                             f"Made right turn {self._bad_turn_counter} after the initial right turn"
                         )
+                    self._last_loop = "right"
             else:
-                self.reward()
+                self._last_loop = location_string.split("_")[1]
+                logger.info(f"First reward is being delivered on the {self._last_loop}")
+                self.reward(self._last_loop)
 
         self._last_location = location_string
         self._last_node = location_string
@@ -180,10 +197,15 @@ class InfinityMaze(LiveTrial):
         if location:
             self._current_sequence.append(location)
 
-    def reward(self):
+    def reward(self, direction: str):
+        logger.debug(f"Dropping reward on {direction}")
         self._bad_turn_counter = 0
+        self._received_reward = True
+
         # TODO: Arduino connection
-        return
+
+        self.reward_data.append((direction, datetime.datetime.now()))
+        logger.debug(f"Reward on {direction} was successful")
 
     def record_bad_loop(self, reason: str):
         logger.debug(reason)
