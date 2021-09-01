@@ -113,16 +113,13 @@ class InfinityMaze(LiveTrial):
         self._last_node = None
         self._current_sequence = []
 
-        self._loop_number = 0
         self._bad_turn_counter = 0
+        self._current_loop_is_bad = False
+
+        self._loop_number = 0
         self._last_loop = None
         self._received_reward = False
         self._delay_countdown_task = None
-
-    async def countdown(self, seconds: int = 10):
-        await super().countdown(seconds)
-        self._current_sequence = []
-        self._loop_number += 1
 
     async def localize_loop_func(self, location: int, timestamp: datetime.datetime):
         if location == self._last_location:
@@ -163,7 +160,7 @@ class InfinityMaze(LiveTrial):
         elif location in self._current_sequence:
             self._regressing = True
             self._regression_start_timestamp = timestamp
-        elif "reward" in location_string:
+        elif "reward" in location_string and not self._current_loop_is_bad:
             if self._received_reward:
                 self.record_bad_loop(
                     "The animal regressed to the other reward site after getting a reward"
@@ -197,6 +194,12 @@ class InfinityMaze(LiveTrial):
         if location:
             self._current_sequence.append(location)
 
+    async def countdown(self, seconds: int = 10):
+        await super().countdown(seconds)
+        self._current_sequence = []
+        self._current_loop_is_bad = False
+        self._loop_number += 1
+
     def reward(self, direction: str):
         logger.debug(f"Dropping reward on {direction}")
         self._bad_turn_counter = 0
@@ -209,6 +212,7 @@ class InfinityMaze(LiveTrial):
 
     def record_bad_loop(self, reason: str):
         logger.debug(reason)
+        self._current_loop_is_bad = True
         self.bad_loop_record[self._loop_number] = reason
 
     @cached_property

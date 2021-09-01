@@ -10,7 +10,7 @@ import numpy as np
 from numba import jit
 from shapely.geometry import Point, Polygon
 
-from bikipy.math.geometry import expand_parallelogram, order_parallelogram_corners
+from bikipy.math.geometry import expand_parallelogram
 from bikipy.math.vector import point_to_line_segment_distance
 from bikipy.utils.misc import read_image
 from bikipy.utils.video import get_video_data
@@ -37,10 +37,7 @@ class Perimeter:
         self.int_label = int(int_label) if int_label else None
         self.semantic_label = str(semantic_label) if semantic_label else None
 
-        if inspect_image is not None:
-            self.inspect_image = inspect_image
-        else:
-            self._inspect_image = None
+        self._inspect_image = None
 
     @property
     def inspect_image(self):
@@ -48,7 +45,7 @@ class Perimeter:
 
     @inspect_image.setter
     def inspect_image(self, value):
-        self._inspect_image = read_image(value, 0)
+        self._inspect_image = read_image(value, 0) if value else None
 
     def plot(self, ax: Any = None, points: Union[Sequence, None] = None):
         """
@@ -194,7 +191,7 @@ class PolygonalPerimeter(Perimeter):
                     (segmentation[i], segmentation[i + 1])
                     for i in range(0, len(segmentation) - 1, 2)
                 ],
-                *kwargs,
+                **kwargs,
             )
 
         return results
