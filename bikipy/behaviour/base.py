@@ -116,7 +116,7 @@ class BaseTrial:
 
     def __init__(
         self,
-        coordinate_sequence: dict,
+        coordinate_sequence: Union[dict, None] = None,
         animal_id: Union[int, None] = None,
         metric_resolution: Union[Union[float, int], list, None] = None,
         rigid_nodes_freezing: Union[Sequence[Union[str, int]], None] = None,

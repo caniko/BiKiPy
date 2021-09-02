@@ -180,13 +180,24 @@ class PolygonalPerimeter(Perimeter):
 
     @classmethod
     def from_coco(cls, coco_path: Any, **kwargs) -> dict:
-        with json.load(coco_path) as coco:
-            annotations = coco["annotations"]
+        with open(coco_path, "rb") as in_json:
+            coco = json.load(in_json)
+
+        # The coco annotations are not sorted with respect to the category IDs
+        coco["annotations"] = sorted(
+            coco["annotations"], key=lambda dictionary: dictionary["category_id"]
+        )
+
+        # We don't need to do this, but better to be on the safe side
+        coco["categories"] = sorted(
+            coco["categories"], key=lambda dictionary: dictionary["id"]
+        )
 
         results = {}
-        for annotation in annotations:
-            segmentation = annotation["segmentation"]
-            results[annotation["name"].lower()] = cls.init_polygon(
+        for annotation, category in zip(coco["annotations"], coco["categories"]):
+            assert int(annotation["category_id"]) == int(category["id"]), f"{annotation['category_id']} != {category['id']}"
+            segmentation = annotation["segmentation"][0]
+            results[category["name"].lower()] = cls.init_polygon(
                 [  # perimeter_corners
                     (segmentation[i], segmentation[i + 1])
                     for i in range(0, len(segmentation) - 1, 2)
@@ -446,7 +457,4 @@ class CombinedPolygonalPerimeter(Perimeter):
         return present
 
 
-class Perimeter2D(PolygonalPerimeter, CombinedPolygonalPerimeter):
-    """Used for type hints"""
-
-    pass
+Perimeter2D = Union[PolygonalPerimeter, CombinedPolygonalPerimeter]

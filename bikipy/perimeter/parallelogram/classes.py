@@ -59,7 +59,7 @@ class ParallelogramPerimeter(PolygonalPerimeter):
 
     @staticmethod
     def midpoint(
-        close_corner: Sequence[SupportsFloat], far_corner: Sequence[SupportsFloat]
+        close_corner: Sequence[float], far_corner: Sequence[float]
     ) -> np.ndarray:
         """
         Find the midpoint of the parallelogram
@@ -161,7 +161,7 @@ class ParallelogramPerimeter(PolygonalPerimeter):
     def many(
         cls,
         inspect_image: Any,
-        n: SupportsInt,
+        n: int,
         object_kwargs: Union[Sequence, None] = None,
     ):
         return [

@@ -20,13 +20,13 @@ class InfinityMaze(LiveTrial):
 
     def __init__(
         self,
-        delay_perimeter: Perimeter2D,
-        choice_perimeter: Perimeter2D,
-        reward_left_perimeter: Perimeter2D,
-        reward_right_perimeter: Perimeter2D,
-        return_left_perimeter: Perimeter2D,
-        return_right_perimeter: Perimeter2D,
-        delay_perimeter_perimeter: Perimeter2D,
+        choice: Perimeter2D,
+        reward_left: Perimeter2D,
+        reward_right: Perimeter2D,
+        return_left: Perimeter2D,
+        return_right: Perimeter2D,
+        delay_entry: Perimeter2D,
+        delay: Perimeter2D,
         delay_timings: Sequence[Union[float, int]],
         delay_timings_trial_count: Union[int, Sequence[int]],
         regression_seconds_tolerance: Union[float, int] = 1.5,
@@ -36,25 +36,23 @@ class InfinityMaze(LiveTrial):
     ):
         super().__init__(*args, **kwargs)
 
-        self.delay_perimeter = delay_perimeter
-        self.choice_perimeter = choice_perimeter
-        self.reward_left_perimeter = reward_left_perimeter
-        self.reward_right_perimeter = reward_right_perimeter
-        self.return_left_perimeter = return_left_perimeter
-        self.return_right_perimeter = return_right_perimeter
-        self.delay_entry_perimeter = delay_perimeter_perimeter
+        self.choice = choice
+        self.reward_left = reward_left
+        self.reward_right = reward_right
+        self.return_left = return_left
+        self.return_right = return_right
+        self.delay_entry = delay_entry
+        self.delay = delay
 
         self.perimeters = {
-            "delay": self.delay_perimeter,
-            "choice": self.choice_perimeter,
-            "reward_left": self.reward_left_perimeter,
-            "reward_right": self.reward_right_perimeter,
-            "return_left": self.return_left_perimeter,
-            "return_right": self.return_right_perimeter,
-            "delay_entry": self.delay_entry_perimeter,
+            "choice": self.choice,
+            "reward_left": self.reward_left,
+            "reward_right": self.reward_right,
+            "return_left": self.return_left,
+            "return_right": self.return_right,
+            "delay_entry": self.delay_entry,
+            "delay": self.delay
         }
-
-        assert all(isinstance(obj, Perimeter2D) for obj in self.perimeters.values())
 
         self.start_point = "delay"
         self.left_loop = np.array(
@@ -95,7 +93,7 @@ class InfinityMaze(LiveTrial):
         regression_seconds_tolerance_decimal = regression_seconds_tolerance % 1.0
         self._regression_seconds_tolerance = datetime.time(
             second=floor(regression_seconds_tolerance),
-            microsecond=regression_seconds_tolerance_decimal * 10 ** 6,
+            microsecond=round(regression_seconds_tolerance_decimal * 10 ** 6),
         )
 
         self.regression_data = []

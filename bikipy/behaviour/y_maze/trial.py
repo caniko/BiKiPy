@@ -18,7 +18,7 @@ class YMazeTrial(BaseExperiment):
     def __init__(
         self,
         exp_id_range_vs_area_sets: dict[
-            SupportsInt, dict[str, Union[PolygonalPerimeter, TriangularPerimeter]]
+            int, dict[str, Union[PolygonalPerimeter, TriangularPerimeter]]
         ],
         feature_tracking_point: str,
         center_triangle_meter_width: SupportsFloat,

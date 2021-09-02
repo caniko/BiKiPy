@@ -23,9 +23,9 @@ class LinePerimeter(Perimeter):
     def __init__(
         self,
         location: Union[float, int],
-        orientation: Union[str, SupportsInt],
+        orientation: Union[str, int],
         logic: str,
-        resolution: Union[SupportsInt, Sequence, None] = None,
+        resolution: Union[int, Sequence, None] = None,
         **kwargs,
     ):
         """
