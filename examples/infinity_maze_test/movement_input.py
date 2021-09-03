@@ -7,11 +7,11 @@ import matplotlib.pyplot as plt
 
 def onclick(event):
     ix, iy = event.xdata, event.ydata
-    string_coords = f"{ix} {iy}"
+    string_coords = f"{ix} {iy},{datetime.now()}"
     print(f"x = {ix}, y = {iy}")
 
     socket.send(bytes(string_coords, "utf-8"))
-    return (string_coords, str(datetime.now())).join(",")
+    return string_coords
 
 
 context = zmq.Context()

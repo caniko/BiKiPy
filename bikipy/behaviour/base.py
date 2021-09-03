@@ -301,7 +301,8 @@ class BaseTrial:
     def _int_id_vs_perimeter(self):
         self._validate_perimeters_object()
         return {
-            i: self.perimeters[label] for i, label in self._perimeter_label_vs_int_id
+            int_id: self.perimeters[label] for label, int_id
+            in self._perimeter_label_vs_int_id.items()
         }
 
     @property

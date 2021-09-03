@@ -37,7 +37,7 @@ class Perimeter:
         self.int_label = int(int_label) if int_label else None
         self.semantic_label = str(semantic_label) if semantic_label else None
 
-        self._inspect_image = None
+        self.inspect_image = inspect_image
 
     @property
     def inspect_image(self):
@@ -47,7 +47,7 @@ class Perimeter:
     def inspect_image(self, value):
         self._inspect_image = read_image(value, 0) if value else None
 
-    def plot(self, ax: Any = None, points: Union[Sequence, None] = None):
+    def plot(self, ax: Any = None, points: Union[Sequence, None] = None, **kwargs):
         """
         Plot the perimeter using matplotlib. Optionally, plot points alongside the perimeter
 
@@ -66,7 +66,7 @@ class Perimeter:
         if not ax:
             fig, ax = plt.subplots()
 
-        if self.inspect_image is not None:
+        if self.inspect_image:
             ax.imshow(read_image(self.inspect_image), cmap="gray", vmin=0, vmax=255)
 
         if points is not None:
@@ -258,7 +258,7 @@ class PolygonalPerimeter(Perimeter):
             self.coordinate_confinement_boolean_index(coordinates)
         ]
         if inspect:
-            ax = super().plot()
+            ax = self.plot_self()
             ax.scatter(
                 coordinate_confinement_boolean_index.T[0],
                 coordinate_confinement_boolean_index.T[1],
@@ -373,19 +373,46 @@ class PolygonalPerimeter(Perimeter):
     def distance_between_two_vectors(border_a, border_b):
         return np.linalg.norm(border_a.centroid - border_b.centroid)
 
-    def plot(
-        self,
-        perimeter_border_normal_pixel_magnitude: Union[float, int, None] = None,
-        **kwargs,
-    ):
+    def plot_self(self, plot_kwargs: Union[dict, None] = None, perimeter_plot_kwargs: Union[dict, None] = None):
         """
-        Plot the perimeter_corners defined in the object
+        Plot the perimeter_corners defined in the object, along with
 
         Returns
         -------
         matplotlib Axes object with the plot
         """
-        ax = super().plot(**kwargs)
+        plot_kwargs = plot_kwargs or {}
+        ax = super().plot(**plot_kwargs)
+
+        perimeter_plot_kwargs = perimeter_plot_kwargs or {}
+        self.plot_perimeter(ax=ax, **perimeter_plot_kwargs)
+        return ax
+
+    @classmethod
+    def plot_perimeters(cls, perimeters: Sequence, inspect_image: Any = None, perimeter_plot_kwargs: Union[dict, None] = None):
+        fig, ax = plt.subplots()
+        if not inspect_image and all(
+            perimeters[0].inspect_image == perimeter.inspect_image
+            for perimeter in perimeters
+        ):
+            inspect_image = perimeters[0].inspect_image
+
+        if inspect_image:
+            ax.imshow(read_image(inspect_image), cmap="gray", vmin=0, vmax=255)
+
+        perimeter_plot_kwargs = perimeter_plot_kwargs or {}
+        for perimeter in perimeters:
+            perimeter.plot_perimeter(ax=ax, **perimeter_plot_kwargs)
+
+    def plot_perimeter(
+        self,
+        perimeter_border_normal_pixel_magnitude: Union[float, int, None] = None,
+        ax: Any = None,
+        include_geometric_legend: bool = False,
+        color: Any = None
+    ):
+        if not ax:
+            fig, ax = plt.subplots()
 
         legends = []
         for index in range(len(self.perimeter_corners)):
@@ -395,21 +422,29 @@ class PolygonalPerimeter(Perimeter):
 
             corner_a = self.perimeter_corners[index]
             corner_b = self.perimeter_corners[following_index]
-            ax.plot((corner_a[0], corner_b[0]), (corner_a[1], corner_b[1]), "o-")
-
-            legend = [self._add_label_to_str(f"side {index}")]
+            ax.plot(
+                (corner_a[0], corner_b[0]), (corner_a[1], corner_b[1]),
+                "o-",
+                label=self.semantic_label,
+                color=color
+            )
 
             if perimeter_border_normal_pixel_magnitude:
                 border = self.border(perimeter_border_normal_pixel_magnitude)
                 border_a = border[index]
                 border_b = border[following_index]
-                ax.plot((border_a[0], border_b[0]), (border_a[1], border_b[1]), "o-")
+                ax.plot(
+                    (border_a[0], border_b[0]), (border_a[1], border_b[1]),
+                    "o-",
+                    color=color
+                )
 
-                legend.append(self._add_label_to_str(f"perimeter {index}"))
+            if include_geometric_legend:
+                legend = [self._add_label_to_str(f"side {index}")]
+                if perimeter_border_normal_pixel_magnitude:
+                    legend.append(self._add_label_to_str(f"perimeter {index}"))
+                plt.legend(legends, bbox_to_anchor=(1.04, 0.5), loc="center left")
 
-            legends.extend(legend)
-
-        # plt.legend(legends, bbox_to_anchor=(1.04, 0.5), loc="center left")
         return ax
 
     def _add_label_to_str(self, in_string):

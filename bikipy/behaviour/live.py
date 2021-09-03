@@ -52,7 +52,8 @@ class LiveTrial(BaseTrial):
                     f"Location: {location}"
                 )
                 await self.localize_loop_func(
-                    location, datetime(*timestamp_str.split(data_delimiter))
+                    location,
+                    datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S.%f")
                 )
         except KeyboardInterrupt:
             request_save = input(
