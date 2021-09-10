@@ -148,7 +148,8 @@ class InfinityMaze(LiveTrial):
             self._regressed = False
             self._sequential_regressions += 1
 
-        if "delay" == (location_string := self._int_id_vs_perimeter_label[location]):
+        location_string = self._int_id_vs_perimeter_label[location] if location else None
+        if "delay" == location_string:
             self._delay_countdown_task = asyncio.create_task(
                 self.countdown(self._loop_number_vs_delay_time[self._loop_number])
             )

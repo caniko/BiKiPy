@@ -2,7 +2,8 @@ from datetime import datetime
 
 import zmq
 import cv2
-import matplotlib.pyplot as plt
+
+from bikipy.perimeter.base import PolygonalPerimeter
 
 
 def onclick(event):
@@ -21,7 +22,12 @@ print("Connecting to hello world server…")
 socket = context.socket(zmq.PUSH)
 socket.connect("tcp://localhost:5555")
 
-fig, ax = plt.subplots()
+perimeters = PolygonalPerimeter.from_coco(
+    "./coco_annotations_2021-09-01-02-19-41.json",
+    inspect_image="./maze_example.png"
+)
+
+fig, ax = PolygonalPerimeter.plot_perimeters(tuple(perimeters.values()))
 ax.imshow(cv2.imread("maze_example.png"))
 
 cid = fig.canvas.mpl_connect("button_press_event", onclick)

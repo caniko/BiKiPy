@@ -204,7 +204,7 @@ class BaseTrial:
         self.motion = Motion(self.coordinates_per_frame, self.unit_per_pixel, self.fps)
 
         # Variables for trials with zones, see doc for more info.
-        self.perimeters = None
+        self._perimeters = None
         self.trial_start_perimeter = None
         # ========================= ========================= =========================
 
@@ -287,15 +287,28 @@ class BaseTrial:
             msg = "perimeters is not defined as an object variable, which is required for int_id_vs_perimeters"
             raise AttributeError(msg)
 
+    @property
+    def perimeters(self):
+        return self._perimeters
+
+    @perimeters.setter
+    def perimeters(self, perimeters_dict: dict):
+        assert isinstance(perimeters_dict, dict)
+        if all(value is not None for value in perimeters_dict.values()):
+            msg = "perimeters can not map to None, this will be added automatically; " \
+                  "0 -> None "
+            raise ValueError(msg)
+        self._perimeters = {None: None, **perimeters_dict}
+
     @cached_property
     def _perimeter_label_vs_int_id(self):
         self._validate_perimeters_object()
-        return {label: i for i, label in enumerate(self.perimeters.keys(), start=1)}
+        return {label: i for i, label in enumerate(self.perimeters.keys())}
 
     @cached_property
     def _int_id_vs_perimeter_label(self):
         self._validate_perimeters_object()
-        return {i: label for i, label in enumerate(self.perimeters.keys(), start=1)}
+        return {i: label for i, label in enumerate(self.perimeters.keys())}
 
     @cached_property
     def _int_id_vs_perimeter(self):

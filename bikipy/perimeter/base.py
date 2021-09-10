@@ -392,17 +392,19 @@ class PolygonalPerimeter(Perimeter):
     def plot_perimeters(cls, perimeters: Sequence, inspect_image: Any = None, perimeter_plot_kwargs: Union[dict, None] = None):
         fig, ax = plt.subplots()
         if not inspect_image and all(
-            perimeters[0].inspect_image == perimeter.inspect_image
+            np.all(perimeters[0].inspect_image == perimeter.inspect_image)
             for perimeter in perimeters
         ):
             inspect_image = perimeters[0].inspect_image
 
-        if inspect_image:
+        if inspect_image is not None:
             ax.imshow(read_image(inspect_image), cmap="gray", vmin=0, vmax=255)
 
         perimeter_plot_kwargs = perimeter_plot_kwargs or {}
         for perimeter in perimeters:
             perimeter.plot_perimeter(ax=ax, **perimeter_plot_kwargs)
+
+        return fig, ax
 
     def plot_perimeter(
         self,
