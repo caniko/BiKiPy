@@ -195,7 +195,9 @@ class PolygonalPerimeter(Perimeter):
 
         results = {}
         for annotation, category in zip(coco["annotations"], coco["categories"]):
-            assert int(annotation["category_id"]) == int(category["id"]), f"{annotation['category_id']} != {category['id']}"
+            assert int(annotation["category_id"]) == int(
+                category["id"]
+            ), f"{annotation['category_id']} != {category['id']}"
             segmentation = annotation["segmentation"][0]
             results[category["name"].lower()] = cls.init_polygon(
                 [  # perimeter_corners
@@ -373,7 +375,11 @@ class PolygonalPerimeter(Perimeter):
     def distance_between_two_vectors(border_a, border_b):
         return np.linalg.norm(border_a.centroid - border_b.centroid)
 
-    def plot_self(self, plot_kwargs: Union[dict, None] = None, perimeter_plot_kwargs: Union[dict, None] = None):
+    def plot_self(
+        self,
+        plot_kwargs: Union[dict, None] = None,
+        perimeter_plot_kwargs: Union[dict, None] = None,
+    ):
         """
         Plot the perimeter_corners defined in the object, along with
 
@@ -389,7 +395,12 @@ class PolygonalPerimeter(Perimeter):
         return ax
 
     @classmethod
-    def plot_perimeters(cls, perimeters: Sequence, inspect_image: Any = None, perimeter_plot_kwargs: Union[dict, None] = None):
+    def plot_perimeters(
+        cls,
+        perimeters: Sequence,
+        inspect_image: Any = None,
+        perimeter_plot_kwargs: Union[dict, None] = None,
+    ):
         fig, ax = plt.subplots()
         if not inspect_image and all(
             np.all(perimeters[0].inspect_image == perimeter.inspect_image)
@@ -411,7 +422,7 @@ class PolygonalPerimeter(Perimeter):
         perimeter_border_normal_pixel_magnitude: Union[float, int, None] = None,
         ax: Any = None,
         include_geometric_legend: bool = False,
-        color: Any = None
+        color: Any = None,
     ):
         if not ax:
             fig, ax = plt.subplots()
@@ -425,10 +436,11 @@ class PolygonalPerimeter(Perimeter):
             corner_a = self.perimeter_corners[index]
             corner_b = self.perimeter_corners[following_index]
             ax.plot(
-                (corner_a[0], corner_b[0]), (corner_a[1], corner_b[1]),
+                (corner_a[0], corner_b[0]),
+                (corner_a[1], corner_b[1]),
                 "o-",
                 label=self.semantic_label,
-                color=color
+                color=color,
             )
 
             if perimeter_border_normal_pixel_magnitude:
@@ -436,9 +448,10 @@ class PolygonalPerimeter(Perimeter):
                 border_a = border[index]
                 border_b = border[following_index]
                 ax.plot(
-                    (border_a[0], border_b[0]), (border_a[1], border_b[1]),
+                    (border_a[0], border_b[0]),
+                    (border_a[1], border_b[1]),
                     "o-",
-                    color=color
+                    color=color,
                 )
 
             if include_geometric_legend:

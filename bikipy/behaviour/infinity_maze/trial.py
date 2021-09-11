@@ -1,12 +1,9 @@
 import asyncio
-from collections import Sequence as collections_Sequence
 import datetime
-from functools import cached_property
+from collections import Sequence as collections_Sequence
 from logging import getLogger
 from math import floor
 from typing import Sequence, Union
-
-import numpy as np
 
 from bikipy.behaviour.live import LiveTrial
 from bikipy.perimeter.base import Perimeter2D
@@ -51,16 +48,8 @@ class InfinityMaze(LiveTrial):
             "return_left": self.return_left,
             "return_right": self.return_right,
             "delay_entry": self.delay_entry,
-            "delay": self.delay
+            "delay": self.delay,
         }
-
-        self.start_point = "delay"
-        self.left_loop = np.array(
-            (self.start_point, "choice", "reward_left", "return_left")
-        )
-        self.right_loop = np.array(
-            (self.start_point, "choice", "reward_right", "return_right")
-        )
 
         self.delay_timings = delay_timings
         if isinstance(delay_timings_trial_count, collections_Sequence):
@@ -87,7 +76,8 @@ class InfinityMaze(LiveTrial):
                 for i, delay_time in zip(
                     self.delay_timings_trial_count, self.delay_timings
                 )
-            }
+            },
+            allow_less_than_first_key=0
         )
 
         regression_seconds_tolerance_decimal = regression_seconds_tolerance % 1.0
@@ -107,7 +97,7 @@ class InfinityMaze(LiveTrial):
         self._regressed = False
         self._regression_start_timestamp = None
 
-        self._last_location = None
+        self._last_location_id = None
         self._last_node = None
         self._current_sequence = []
 
@@ -119,8 +109,8 @@ class InfinityMaze(LiveTrial):
         self._received_reward = False
         self._delay_countdown_task = None
 
-    async def localize_loop_func(self, location: int, timestamp: datetime.datetime):
-        if location == self._last_location:
+    def localize_loop_func(self, location: int, timestamp: datetime.datetime):
+        if location == self._last_location_id:
             if (
                 self._regressing
                 and self._regression_start_timestamp >= self.regression_buffer
@@ -148,8 +138,12 @@ class InfinityMaze(LiveTrial):
             self._regressed = False
             self._sequential_regressions += 1
 
-        location_string = self._int_id_vs_perimeter_label[location] if location else None
-        if "delay" == location_string:
+        location_string = (
+            self._int_id_vs_perimeter_label[location] if location else None
+        )
+        if location_string is None:
+            pass
+        elif "delay" == location_string:
             self._delay_countdown_task = asyncio.create_task(
                 self.countdown(self._loop_number_vs_delay_time[self._loop_number])
             )
@@ -186,7 +180,7 @@ class InfinityMaze(LiveTrial):
                 logger.info(f"First reward is being delivered on the {self._last_loop}")
                 self.reward(self._last_loop)
 
-        self._last_location = location_string
+        self._last_location_id = location
         self._last_node = location_string
 
         self.node_sequence.append(location)
@@ -213,11 +207,3 @@ class InfinityMaze(LiveTrial):
         logger.debug(reason)
         self._current_loop_is_bad = True
         self.bad_loop_record[self._loop_number] = reason
-
-    @cached_property
-    def _left_loop_int_ids(self):
-        return self._perimeter_label_sequence_to_int_id(self.left_loop)
-
-    @cached_property
-    def _right_loop_int_ids(self):
-        return self._perimeter_label_sequence_to_int_id(self.right_loop)

@@ -1,5 +1,5 @@
 import os
-from functools import cached_property
+from functools import cached_property, lru_cache
 from logging import getLogger
 from pathlib import Path, PurePath
 from typing import Any, Iterable, Sequence, Union
@@ -15,15 +15,44 @@ from bikipy.utils.video import get_video_data
 logger = getLogger(__name__)
 
 
-class ExperimentPostInitAnalysisCaller(type):
-    def __call__(cls, *args, **kwargs):
-        obj = type.__call__(cls, *args, **kwargs)
-        # Run analysis after init
-        obj.__analysis__()
-        return obj
+class Behaviour:
+    @property
+    def __hash_key(self):
+        raise NotImplemented
+
+    def __hash__(self):
+        return sum(hash(key) for key in self.__hash_key)
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__hash_key == other.__hash_key
+        return self.__hash_key == other
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    @staticmethod
+    def _assert_timestamp_attribute(obj):
+        assert hasattr(obj, "timestamp")
+
+    def __lt__(self, other):
+        self._assert_timestamp_attribute(other)
+        return self.timestamp < other.timestamp
+
+    def __le__(self, other):
+        self._assert_timestamp_attribute(other)
+        return self.timestamp <= other.timestamp
+
+    def __gt__(self, other):
+        self._assert_timestamp_attribute(other)
+        return self.timestamp > other.timestamp
+
+    def __ge__(self, other):
+        self._assert_timestamp_attribute(other)
+        return self.timestamp >= other.timestamp
 
 
-class BaseExperiment(object, metaclass=ExperimentPostInitAnalysisCaller):
+class BaseExperiment(Behaviour):
     trials_are_sequential = False
 
     def __init__(
@@ -75,23 +104,9 @@ class BaseExperiment(object, metaclass=ExperimentPostInitAnalysisCaller):
 
         self.timestamp = timestamp
 
-    def __analysis__(self):
-        """Ran after __init__"""
-        if self.trials_are_sequential:
-            # TODO: Implement
-            pass
-
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__) or (
-            self.label is None and other.label is None
-        ):
-            logger.info(
-                f"Can not compare the two Experiment objects "
-                f"as they do not have a label:\n"
-                f"self: {self.label}; other: {other.label}"
-            )
-            return False
-        return self.label == other.label
+    @property
+    def __hash_key(self):
+        return self.trial_id_vs_data
 
     def __getitem__(self, item):
         if self.trial_id_range_vs_data:
@@ -110,7 +125,7 @@ class BaseExperiment(object, metaclass=ExperimentPostInitAnalysisCaller):
         )
 
 
-class BaseTrial:
+class BaseTrial(Behaviour):
     trial_sequence_index = None
     second_tolerance = 0.35
 
@@ -204,7 +219,7 @@ class BaseTrial:
         self.motion = Motion(self.coordinates_per_frame, self.unit_per_pixel, self.fps)
 
         # Variables for trials with zones, see doc for more info.
-        self._perimeters = None
+        self.perimeters = None
         self.trial_start_perimeter = None
         # ========================= ========================= =========================
 
@@ -213,16 +228,9 @@ class BaseTrial:
         if rigid_nodes_freezing:
             self.rigid_nodes_freezing = rigid_nodes_freezing
 
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__) or (
-            self.label is None and other.label is None
-        ):
-            logger.info(
-                f"Can not compare the two Trial objects as they do not have a label:\n"
-                f"self: {self.label}; other: {other.label}"
-            )
-            return False
-        return self.label == other.label
+    @property
+    def __hash_key(self):
+        return self.coordinates_per_frame, self.fps, self.metric_resolution
 
     @property
     def inspect_image_path(self):
@@ -277,45 +285,32 @@ class BaseTrial:
         """
 
         coordinate = np.expand_dims(coordinate, 0)
-        for label, perimeter in self._int_id_vs_perimeter.items():
+        for label, perimeter in self.int_id_vs_perimeter.items():
             if perimeter.coordinate_confinement_boolean_index(coordinate):
+                logger.info(f"Location: {label}, {coordinate}")
                 return label
-            logger.warning(f"location could not be determined")
+        logger.debug(f"Location could not be determined, {coordinate}")
 
     def _validate_perimeters_object(self):
         if not self.perimeters:
-            msg = "perimeters is not defined as an object variable, which is required for int_id_vs_perimeters"
+            msg = "perimeters is not defined as an object variable, which is required for int_id_vs_perimeter"
             raise AttributeError(msg)
-
-    @property
-    def perimeters(self):
-        return self._perimeters
-
-    @perimeters.setter
-    def perimeters(self, perimeters_dict: dict):
-        assert isinstance(perimeters_dict, dict)
-        if all(value is not None for value in perimeters_dict.values()):
-            msg = "perimeters can not map to None, this will be added automatically; " \
-                  "0 -> None "
-            raise ValueError(msg)
-        self._perimeters = {None: None, **perimeters_dict}
 
     @cached_property
     def _perimeter_label_vs_int_id(self):
         self._validate_perimeters_object()
-        return {label: i for i, label in enumerate(self.perimeters.keys())}
+        return {label: i for i, label in enumerate(self.perimeters.keys(), start=1)}
 
     @cached_property
     def _int_id_vs_perimeter_label(self):
         self._validate_perimeters_object()
-        return {i: label for i, label in enumerate(self.perimeters.keys())}
+        return {i: label for i, label in enumerate(self.perimeters.keys(), start=1)}
 
     @cached_property
-    def _int_id_vs_perimeter(self):
+    def int_id_vs_perimeter(self):
         self._validate_perimeters_object()
         return {
-            int_id: self.perimeters[label] for label, int_id
-            in self._perimeter_label_vs_int_id.items()
+            i: perimter for i, perimter in enumerate(self.perimeters.values(), start=1)
         }
 
     @property

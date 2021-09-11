@@ -29,11 +29,21 @@ class LiveTrial(BaseTrial):
         self._socket = self._zmq_context.socket(zmq.PULL)
         self._socket.bind(str(socket_address))
 
-    async def live_localize(
+    def application(self):
+        event_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(event_loop)
+        event_loop.run_until_complete(self.localization_loop())
+
+        request_save = input(
+            "Would you like to save the results from the experiment? Y/n\n"
+        ).lower()
+        if not request_save or request_save == "y":
+            self.save()
+
+    async def localization_loop(
         self,
         data_separator_delimiter: str = ",",
         data_delimiter: str = " ",
-
     ):
         self.generate_zmq_context()
 
@@ -43,6 +53,9 @@ class LiveTrial(BaseTrial):
 
                 coordinate_str, timestamp_str = message.split(data_separator_delimiter)
 
+                if "None" in coordinate_str:
+                    continue
+
                 location = self.detect_confined_perimeter(
                     np.array(coordinate_str.split(data_delimiter), dtype=np.float32)
                 )
@@ -51,16 +64,9 @@ class LiveTrial(BaseTrial):
                     f"Timestamp: {timestamp_str}\n"
                     f"Location: {location}"
                 )
-                await self.localize_loop_func(
-                    location,
-                    datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S.%f")
+                self.localize_loop_func(
+                    location, datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S.%f")
                 )
-        except KeyboardInterrupt:
-            request_save = input(
-                "Would you like to save the results from the experiment? Y/n\n"
-            ).lower()
-            if not request_save or request_save == "y":
-                self.save()
         finally:
             self._socket.close()
 
@@ -75,5 +81,5 @@ class LiveTrial(BaseTrial):
         )
         self.countdown_timings.append((start, stop, total_time))
 
-    async def localize_loop_func(self, location: int, timestamp: datetime):
+    def localize_loop_func(self, location: int, timestamp: datetime):
         raise NotImplementedError
