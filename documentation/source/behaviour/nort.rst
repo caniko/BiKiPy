@@ -20,4 +20,4 @@ Each boolean in the :code:`boolean_index` represents one frame.
 
 Novelty
 =======
-We do the same thing as we did in training; moreover, at this instance, one of the objects (the variable object) has been exchanged with a new object. This object is referred, to as the novel object.
+We do the same thing as we did in training; moreover, at this instance, one of the objects (the variable object) has been exchanged with a new object, the novel object.

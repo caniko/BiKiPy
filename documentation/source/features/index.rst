@@ -66,7 +66,7 @@ The motion class also stores the attribute referred to as :code:`freezing_time`,
 
 Attention
 =========
-Consists primarily of :code:`feature.attention.polygonal_perimeter_attention` that computes the attentiveness of the animal with respect to a :code:`PolygonalPerimeter`. To arrive at attention as a *probable* qualia_ at a given video frame, certain conditions need to be met:
+Consists primarily of :code:`feature.attention.polygonal_perimeter_attention` that computes the attentiveness of the animal towards an area defined by :code:`PolygonalPerimeter`. To arrive at attention as a *probable* qualia_ at a given video frame, certain conditions has to be fullfilled:
 
 #. The nose has to be within the vicinity of the object, while the center_of_mass has to be outside of the confines of the object. The vicinity is defined by a secondary :code:`PolygonalPerimeter` generated with the :code:`PolygonalPerimeter.border` method.
 #. The gaze direction, vector from eye center to nose in rodents for instance, has to be directed at the respective :code:`PolygonalPerimeter`
