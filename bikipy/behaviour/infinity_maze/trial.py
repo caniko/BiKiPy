@@ -77,7 +77,7 @@ class InfinityMaze(LiveTrial):
                     self.delay_timings_trial_count, self.delay_timings
                 )
             },
-            allow_less_than_first_key=0
+            allow_less_than_first_key=0,
         )
 
         regression_seconds_tolerance_decimal = regression_seconds_tolerance % 1.0

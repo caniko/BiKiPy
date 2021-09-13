@@ -1,9 +1,12 @@
+import datetime
 import os
-from functools import cached_property, lru_cache
+from functools import cached_property
 from logging import getLogger
 from pathlib import Path, PurePath
 from typing import Any, Iterable, Sequence, Union
 
+import compress_pickle
+import cv2
 import numpy as np
 from tqdm import tqdm
 
@@ -16,6 +19,28 @@ logger = getLogger(__name__)
 
 
 class Behaviour:
+    category = None
+
+    def __init__(
+        self,
+        label: Any = None,
+        timestamp: Any = None,
+        save_root: Union[PurePath, str, None] = None,
+        _live: bool = False,
+    ):
+        self.label = label
+        self.timestamp = timestamp or datetime.datetime.now()
+        self.save_root = Path(save_root) if save_root else None
+
+        self._live = _live
+
+    def save(self, save_root: Union[PurePath, str, None] = None):
+        save_root = Path(save_root or self.save_root)
+        assert save_root
+        compress_pickle.dump(
+            self, save_root / f"pickle_{self.category}_{self.timestamp}.lzma"
+        )
+
     @property
     def __hash_key(self):
         raise NotImplemented
@@ -53,6 +78,7 @@ class Behaviour:
 
 
 class BaseExperiment(Behaviour):
+    category = "experiment"
     trials_are_sequential = False
 
     def __init__(
@@ -61,11 +87,11 @@ class BaseExperiment(Behaviour):
         trial_id_vs_data: dict,
         trial_id_range_vs_data: Union[dict, None] = None,
         coordinate_data_format: str = "deeplabcut",
-        label: Any = None,
-        timestamp: Any = None,
-        func_inspect: Union[bool, str, PurePath] = False,
-        **data_import_kwargs,
+        inspection_figure_save_root: Union[bool, str, PurePath] = False,
+        data_import_kwargs: Union[dict, None] = None,
+        **kwargs,
     ):
+        super().__init__(**kwargs)
         self.trial_id_vs_data = dict(trial_id_vs_data)
         self._trial_ids_iterable = self.trial_id_vs_data.keys()
         self.trial_ids = tuple(self._trial_ids_iterable)
@@ -76,12 +102,15 @@ class BaseExperiment(Behaviour):
         self.metric_resolution = metric_resolution
 
         self.coordinate_data_format = str(coordinate_data_format).lower()
-        self.label = label
-        if isinstance(func_inspect, bool):
-            self.func_inspect = func_inspect
-        elif isinstance(func_inspect, str) or isinstance(func_inspect, PurePath):
-            self.func_inspect = func_inspect / f"Experiment_{self.label}_inspect"
-            os.mkdir(self.func_inspect)
+        if isinstance(inspection_figure_save_root, bool):
+            self.inspection_figure_save_root = inspection_figure_save_root
+        elif isinstance(inspection_figure_save_root, str) or isinstance(
+            inspection_figure_save_root, PurePath
+        ):
+            self.inspection_figure_save_root = (
+                inspection_figure_save_root / f"Experiment_{self.label}_inspect"
+            )
+            os.mkdir(self.inspection_figure_save_root)
 
         if self.coordinate_data_format == "deeplabcut":
             self.trial_id_vs_coordinate_sequences = {
@@ -101,8 +130,6 @@ class BaseExperiment(Behaviour):
         else:
             msg = f"{self.coordinate_data_format} as a format for data ingestion has no implementation"
             raise NotImplemented(msg)
-
-        self.timestamp = timestamp
 
     @property
     def __hash_key(self):
@@ -126,6 +153,8 @@ class BaseExperiment(Behaviour):
 
 
 class BaseTrial(Behaviour):
+    category = "trial"
+
     trial_sequence_index = None
     second_tolerance = 0.35
 
@@ -139,9 +168,9 @@ class BaseTrial(Behaviour):
         video_path: Any = None,
         recording_resolution: Union[Sequence[int], None] = None,
         fps: Union[float, int, None] = None,
-        label: Any = None,
-        func_inspect: Union[bool, str, PurePath] = False,
+        inspection_figure_save_root: Union[PurePath, str, None] = None,
         inspect_image: Any = None,
+        **kwargs,
     ):
         """
         :param coordinate_sequence: The coordinates of the subject across the frames in the video recording
@@ -152,8 +181,9 @@ class BaseTrial(Behaviour):
         :param movement_feature_point_label: Label of the node that will be used to track general animal movement
         :param recording_resolution: Video resolution
         :param label: Experiment label
-        :param func_inspect: If True, will generate inspection figures from functions that have support
+        :param inspection_figure_save_root: Path to save figures for inspection of results
         :param inspect_image: Image used for inspection
+
         :type coordinate_sequence: dict
         :type video_path: Any
         :type metric_resolution: int or float, or [(float, int), (float, int)]
@@ -162,11 +192,16 @@ class BaseTrial(Behaviour):
         :type movement_feature_point_label: str (optional)
         :type recording_resolution: Sequence[int] (optional)
         :type label: Any (optional)
-        :type func_inspect: bool
+        :type inspection_figure_save_root: bool
         :type inspect_image: Any
         """
 
-        if video_path:
+        super().__init__(**kwargs)
+
+        self.inspect_image = inspect_image
+        self.video_path = video_path
+
+        if self.video_path:
             (
                 _frame,
                 self.horizontal_resolution,
@@ -180,13 +215,21 @@ class BaseTrial(Behaviour):
                 )
             )
         elif recording_resolution and fps:
+            self.fps = fps
             self.recording_resolution = recording_resolution
             self.horizontal_resolution, self.vertical_resolution = recording_resolution
+        elif self.inspect_image and fps:
             self.fps = fps
+            self.vertical_resolution, self.horizontal_resolution = cv2.imread(
+                self.inspect_image
+            ).shape[:-1]
         else:
             msg = (
-                "Either the path to the trial path or"
-                "the specific recording_resolution and fps needs to provided"
+                "recording_resolution and fps could not be defined."
+                "One of the following compbinations must be provided:\n"
+                "\t1. Trial video path\n"
+                "\t2. recording_resolution and frame per second (fps)\n"
+                "\t3. inspect_image and frame per second (fps)"
             )
             raise ValueError(msg)
 
@@ -203,20 +246,17 @@ class BaseTrial(Behaviour):
                     np.array(self.metric_resolution) / self.recording_resolution
                 )
 
-        self.label = label
-        self.func_inspect = func_inspect
-        self.inspect_image = inspect_image
+        self.inspection_figure_save_root = inspection_figure_save_root
 
-        # coordinate_sequence must be a reader object, like DeepLabCutReader
-        self.movement_feature_point_label = str(movement_feature_point_label)
-        self.coordinate_sequence = coordinate_sequence
-        self.coordinates_per_frame = self.coordinate_sequence[
-            self.movement_feature_point_label
-        ]
+        if not self._live:
+            # coordinate_sequence must be a reader object, like DeepLabCutReader
+            self.movement_feature_point_label = str(movement_feature_point_label)
+            self.coordinate_sequence = coordinate_sequence
+            self.coordinates_per_frame = self.coordinate_sequence[
+                self.movement_feature_point_label
+            ]
 
-        self.experiment_seconds = self.coordinates_per_frame.shape[0] / self.fps
-
-        self.motion = Motion(self.coordinates_per_frame, self.unit_per_pixel, self.fps)
+            self.experiment_seconds = self.coordinates_per_frame.shape[0] / self.fps
 
         # Variables for trials with zones, see doc for more info.
         self.perimeters = None
@@ -228,17 +268,23 @@ class BaseTrial(Behaviour):
         if rigid_nodes_freezing:
             self.rigid_nodes_freezing = rigid_nodes_freezing
 
+    @cached_property
+    def motion(self):
+        return Motion(
+            self.coordinates_per_frame, self.unit_per_pixel, self.fps
+        )
+
     @property
     def __hash_key(self):
         return self.coordinates_per_frame, self.fps, self.metric_resolution
 
     @property
     def inspect_image_path(self):
-        if isinstance(self.func_inspect, str) or isinstance(
-            self.func_inspect, PurePath
+        if isinstance(self.inspection_figure_save_root, str) or isinstance(
+            self.inspection_figure_save_root, PurePath
         ):
-            return Path(self.func_inspect) / self.label
-        return self.func_inspect  # return the bool in any case
+            return Path(self.inspection_figure_save_root) / self.label
+        return self.inspection_figure_save_root  # return the bool in any case
 
     @cached_property
     def _frame_tolerance(self):
@@ -250,10 +296,10 @@ class BaseTrial(Behaviour):
 
     @rigid_nodes_freezing.setter
     def rigid_nodes_freezing(self, value: Sequence):
-        self._rigid_nodes_freezing = value
         if not value:
             return
 
+        self._rigid_nodes_freezing = value
         self._frozen_boolean_index = frozen_frames(
             self.fps,
             [

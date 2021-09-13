@@ -138,7 +138,7 @@ class NortTrainingTrial(NortHabituationTrial):
             self.fps,
             self.perimeter_border_normal_pixel_magnitude,
             self.maximum_radians_inter_gaze_perimeter,
-            inspect=self.func_inspect,
+            inspect=self.inspection_figure_save_root,
         )
 
     def plot(self, ax: Any = None):
