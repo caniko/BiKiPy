@@ -24,8 +24,8 @@ socket.connect("tcp://localhost:5555")
 perimeters = PolygonalPerimeter.from_coco(
     "./coco_annotations_2021-09-01-02-19-41.json", inspect_image="./maze_example.png"
 )
-
-fig, ax = PolygonalPerimeter.plot_perimeters(tuple(perimeters.values()))
+fig, ax = plt.subplots()
+PolygonalPerimeter.plot_perimeters(tuple(perimeters.values()), ax=ax)
 
 cid = fig.canvas.mpl_connect("button_press_event", onclick)
 plt.show()

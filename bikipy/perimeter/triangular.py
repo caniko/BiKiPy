@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import SupportsFloat, Union
+from typing import Union
 
 import numpy as np
 
@@ -11,10 +11,10 @@ class TriangularPerimeter(PolygonalPerimeter):
 
     def __init__(
         self,
-        base_a: Union[Sequence[SupportsFloat], None] = None,
-        base_b: Union[Sequence[SupportsFloat], None] = None,
-        apex: Union[Sequence[SupportsFloat], None] = None,
-        perimeter_corners: Union[Sequence[Sequence[SupportsFloat]]] = None,
+        base_a: Union[Sequence[float], None] = None,
+        base_b: Union[Sequence[float], None] = None,
+        apex: Union[Sequence[float], None] = None,
+        perimeter_corners: Union[Sequence[Sequence[float]]] = None,
         *args,
         **kwargs,
     ):

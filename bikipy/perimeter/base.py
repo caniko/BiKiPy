@@ -45,7 +45,7 @@ class Perimeter:
 
     @inspect_image.setter
     def inspect_image(self, value):
-        self._inspect_image = read_image(value, 0) if value else None
+        self._inspect_image = read_image(value, 0) if value is not None else None
 
     def plot(self, ax: Any = None, points: Union[Sequence, None] = None, **kwargs):
         """
@@ -66,7 +66,7 @@ class Perimeter:
         if not ax:
             fig, ax = plt.subplots()
 
-        if self.inspect_image:
+        if self.inspect_image is not None:
             ax.imshow(read_image(self.inspect_image), cmap="gray", vmin=0, vmax=255)
 
         if points is not None:
@@ -398,10 +398,13 @@ class PolygonalPerimeter(Perimeter):
     def plot_perimeters(
         cls,
         perimeters: Sequence,
+        ax: Any = None,
         inspect_image: Any = None,
         perimeter_plot_kwargs: Union[dict, None] = None,
     ):
-        fig, ax = plt.subplots()
+        if not ax:
+            _fig, ax = plt.subplots()
+
         if not inspect_image and all(
             np.all(perimeters[0].inspect_image == perimeter.inspect_image)
             for perimeter in perimeters
@@ -415,7 +418,7 @@ class PolygonalPerimeter(Perimeter):
         for perimeter in perimeters:
             perimeter.plot_perimeter(ax=ax, **perimeter_plot_kwargs)
 
-        return fig, ax
+        return ax
 
     def plot_perimeter(
         self,

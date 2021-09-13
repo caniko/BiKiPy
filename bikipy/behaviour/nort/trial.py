@@ -5,7 +5,7 @@ These tests can be grouped together to form entire experiments.
 from dataclasses import dataclass, field
 from logging import getLogger
 from pathlib import Path
-from typing import Any, SupportsFloat, Union
+from typing import Any, Union
 
 import numpy as np
 from compress_pickle import compress_pickle
@@ -41,8 +41,8 @@ class NortTrainingTrial(NortHabituationTrial):
         nose_label: str,
         eye_center_label: str,
         torso_label: str,
-        perimeter_border_normal_metric_magnitude: SupportsFloat,
-        maximum_radians_inter_gaze_perimeter: SupportsFloat = 1 / 4 * np.pi,
+        perimeter_border_normal_metric_magnitude: float,
+        maximum_radians_inter_gaze_perimeter: float = 1 / 4 * np.pi,
         *nort_habituation_args,
         **nort_habituation_kwargs,
     ):
@@ -67,12 +67,12 @@ class NortTrainingTrial(NortHabituationTrial):
 
         (
             self.a_observance_per_frame,
-            self.a_location_filtered,
+            self.a_proximity_filtered,
             self.a_gaze_filtered,
         ) = self.nort_observation(self.nort_a)
         (
             self.b_observance_per_frame,
-            self.b_location_filtered,
+            self.b_proximity_filtered,
             self.b_gaze_filtered,
         ) = self.nort_observation(self.nort_b)
 
@@ -138,7 +138,7 @@ class NortTrainingTrial(NortHabituationTrial):
             self.fps,
             self.perimeter_border_normal_pixel_magnitude,
             self.maximum_radians_inter_gaze_perimeter,
-            inspect=self.inspection_figure_save_root,
+            inspect=True,
         )
 
     def plot(self, ax: Any = None):

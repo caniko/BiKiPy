@@ -267,7 +267,7 @@ class NortExperiment(BaseExperiment):
             "all false": [],
         }
         for novelty_trial in self.novelty_object_trials:
-            attention_state_analysis["proximity gaze true observation false"].extend(
+            attention_state_analysis["proximity&gaze true observation false"].extend(
                 (
                     novelty_trial.a_proximity_filtered
                     & novelty_trial.a_gaze_filtered
@@ -282,7 +282,7 @@ class NortExperiment(BaseExperiment):
                     ),
                 )
             )
-            attention_state_analysis["observation gaze true proximity false"].extend(
+            attention_state_analysis["observation&gaze true proximity false"].extend(
                 (
                     novelty_trial.a_observance_per_frame
                     & novelty_trial.a_gaze_filtered
@@ -293,7 +293,7 @@ class NortExperiment(BaseExperiment):
                     & (not_b_proximity_filtered := ~novelty_trial.b_proximity_filtered),
                 ),
             )
-            attention_state_analysis["observation proximity true gaze false"].extend(
+            attention_state_analysis["observation&proximity true gaze false"].extend(
                 (
                     novelty_trial.a_observance_per_frame
                     & novelty_trial.a_proximity_filtered

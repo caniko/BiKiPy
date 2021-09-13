@@ -1,4 +1,4 @@
-from typing import Any, SupportsFloat
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -30,7 +30,7 @@ def parallelogram_input(img: Any, invert_y: bool = False):
         b_mid = line_seg_b[0] + (line_seg_b[1] - line_seg_b[0]) / 2.0
         ax.plot((a_mid[0], b_mid[0]), (a_mid[1], b_mid[1]), "-k")
 
-    def draw_line(start_x: SupportsFloat, start_y: SupportsFloat):
+    def draw_line(start_x: float, start_y: float):
         """
         function to draw lines - from matplotlib examples.  Note you don't need
         to keep a reference to the lines drawn, so I've removed the class as it

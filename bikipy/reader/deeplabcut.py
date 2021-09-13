@@ -2,7 +2,7 @@ import collections.abc as abc
 import glob
 import os
 from pathlib import Path
-from typing import Any, Callable, Iterable, Sequence, SupportsFloat, Union
+from typing import Any, Callable, Iterable, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -30,9 +30,9 @@ class DeepLabCutReader(BaseReader):
         self,
         *args,
         midpoint_groups: Union[Iterable, None] = None,
-        min_likelihood: SupportsFloat = 0.80,
-        x_crop_start: SupportsFloat = 0.0,
-        y_crop_start: SupportsFloat = 0.0,
+        min_likelihood: float = 0.80,
+        x_crop_start: float = 0.0,
+        y_crop_start: float = 0.0,
         invert_y: bool = False,
         **kwargs,
     ):

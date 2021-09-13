@@ -57,7 +57,7 @@ def proximity_filter(
         polygonal_perimeter_border.coordinate_confinement_boolean_index(nose)
     )
     center_of_mass_outside_polygon = (
-        ~polygonal_perimeter_border.coordinate_confinement_boolean_index(center_of_mass)
+        ~polygonal_perimeter.coordinate_confinement_boolean_index(center_of_mass)
     )
 
     # Find states where the nose is within perimeter while the center_of_mass is not over perimeter
@@ -144,7 +144,7 @@ def gaze_direction_filter(
 def attention_filter(
     boolean_index: Sequence[bool],
     fps: float,
-    minimum_seconds_attention: float = 0.2,
+    minimum_seconds_attention: float = 0.5,
 ) -> np.ndarray:
     """
     Filters boolean_index with respect to attention. The filter tolerates distraction, and requires
@@ -160,6 +160,7 @@ def attention_filter(
     :return: Boolean index filtered with respect to attention
     :rtype np.ndarray
     """
+
     boolean_index = np.asarray(boolean_index)
 
     fps = float(fps)
@@ -268,13 +269,14 @@ def polygonal_perimeter_attention(
     maximum_radians_inter_gaze_perimeter = float(maximum_radians_inter_gaze_perimeter)
 
     if inspect:
-        if polygonal_perimeter.inspect_image is not None:
+        if polygonal_perimeter.inspect_image is None:
+            fig, axes = plt.subplots(nrows=2, ncols=2)
+        else:
             x, y = polygonal_perimeter.inspect_image.shape
             fig, axes = plt.subplots(
                 nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0)
             )
-        else:
-            fig, axes = plt.subplots(nrows=2, ncols=2)
+
         fig.gca().invert_yaxis()
         fig.suptitle("Observation cumulative filtration analysis")
 
@@ -286,7 +288,7 @@ def polygonal_perimeter_attention(
     location_filtered, loc_analytics = proximity_filter(
         polygonal_perimeter,
         nose,
-        center_of_mass,
+        eye_center,
         perimeter_border_normal_pixel_magnitude,
         **loc_filter_kwargs,
     )
@@ -310,7 +312,13 @@ def polygonal_perimeter_attention(
     if inspect:
         for rows in axes:
             for ax in rows:
-                polygonal_perimeter.plot(perimeter_border_normal_pixel_magnitude, ax=ax)
+                polygonal_perimeter.plot_self(
+                    plot_kwargs={"ax": ax},
+                    perimeter_plot_kwargs={
+                        "perimeter_border_normal_pixel_magnitude":
+                            perimeter_border_normal_pixel_magnitude
+                    }
+                )
 
         axes[1][0].set_title("location_filtered & gaze_filtered")
         axes[1][0].scatter(*nose[semi_true_observations].T, alpha=SCATTER_ALPHA)

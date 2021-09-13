@@ -21,7 +21,7 @@ class YMazeTrial(BaseExperiment):
             int, dict[str, Union[PolygonalPerimeter, TriangularPerimeter]]
         ],
         feature_tracking_point: str,
-        center_triangle_meter_width: SupportsFloat,
+        center_triangle_meter_width: float,
         *args,
         **kwargs,
     ):
