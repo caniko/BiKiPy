@@ -24,15 +24,15 @@ class RangeDict(UserDict):
 
     def __init__(
         self,
-        class_dict: dict,
+        class_dict: Union[dict, None] = None,
         allow_less_than_first_key: Union[float, int, bool] = False,
         **kwargs,
     ):
         if not isinstance(allow_less_than_first_key, (bool, int, float)):
             msg = "allow_less_than_first_key can either be bool, int, or float"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
-        self.descending = sorted(class_dict, reverse=True)
+        self.descending = sorted(class_dict, reverse=True) if class_dict else {}
         self.allow_less_than_first_key = allow_less_than_first_key
 
         super().__init__(class_dict, **kwargs)

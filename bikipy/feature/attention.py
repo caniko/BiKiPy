@@ -315,9 +315,8 @@ def polygonal_perimeter_attention(
                 polygonal_perimeter.plot_self(
                     plot_kwargs={"ax": ax},
                     perimeter_plot_kwargs={
-                        "perimeter_border_normal_pixel_magnitude":
-                            perimeter_border_normal_pixel_magnitude
-                    }
+                        "perimeter_border_normal_pixel_magnitude": perimeter_border_normal_pixel_magnitude
+                    },
                 )
 
         axes[1][0].set_title("location_filtered & gaze_filtered")

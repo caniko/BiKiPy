@@ -1,13 +1,11 @@
 import asyncio
 import datetime
-from collections import Sequence as collections_Sequence
 from logging import getLogger
 from math import floor
-from typing import Sequence, Union
+from typing import Union
 
 from bikipy.behaviour.live import LiveTrial
 from bikipy.perimeter.base import Perimeter2D
-from bikipy.utils.store import RangeDict
 
 logger = getLogger(__name__)
 
@@ -23,9 +21,7 @@ class InfinityMaze(LiveTrial):
         return_left: Perimeter2D,
         return_right: Perimeter2D,
         delay_entry: Perimeter2D,
-        delay: Perimeter2D,
-        delay_timings: Sequence[Union[float, int]],
-        delay_timings_trial_count: Union[int, Sequence[int]],
+        delay_zone: Perimeter2D,
         regression_seconds_tolerance: Union[float, int] = 1.5,
         regression_instance_tolerance: int = 3,
         *args,
@@ -39,7 +35,7 @@ class InfinityMaze(LiveTrial):
         self.return_left = return_left
         self.return_right = return_right
         self.delay_entry = delay_entry
-        self.delay = delay
+        self.delay_zone = delay_zone
 
         self.perimeters = {
             "choice": self.choice,
@@ -48,37 +44,8 @@ class InfinityMaze(LiveTrial):
             "return_left": self.return_left,
             "return_right": self.return_right,
             "delay_entry": self.delay_entry,
-            "delay": self.delay,
+            "delay_zone": self.delay_zone,
         }
-
-        self.delay_timings = delay_timings
-        if isinstance(delay_timings_trial_count, collections_Sequence):
-            self.delay_timings_trial_count = tuple(delay_timings_trial_count)
-            assert len(self.delay_timings_trial_count) == len(self.delay_timings)
-            assert all(
-                isinstance(timing, (float, int))
-                for timing in self.delay_timings_trial_count
-            )
-        elif isinstance(delay_timings_trial_count, (float, int)):
-            self.delay_timings_trial_count = tuple(
-                delay_timings_trial_count for _ in range(len(delay_timings))
-            )
-        else:
-            msg = f"delay_timings_trial_count has to be a sequence of numbers or number"
-            raise ValueError(msg)
-
-        self.node_sequence = []
-        self.bad_loop_record = {}
-
-        self._loop_number_vs_delay_time = RangeDict(
-            {
-                i: delay_time
-                for i, delay_time in zip(
-                    self.delay_timings_trial_count, self.delay_timings
-                )
-            },
-            allow_less_than_first_key=0,
-        )
 
         regression_seconds_tolerance_decimal = regression_seconds_tolerance % 1.0
         self._regression_seconds_tolerance = datetime.time(
@@ -143,12 +110,12 @@ class InfinityMaze(LiveTrial):
         )
         if location_string is None:
             pass
-        elif "delay" == location_string:
+        elif "delay_zone" == location_string:
             self._delay_countdown_task = asyncio.create_task(
                 self.countdown(self._loop_number_vs_delay_time[self._loop_number])
             )
         elif "delay_entry" == location_string:
-            if self._last_node == "delay":
+            if self._last_node == "delay_zone":
                 self._delay_countdown_task.cancel()
         elif location in self._current_sequence:
             self._regressing = True

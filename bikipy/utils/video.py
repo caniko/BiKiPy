@@ -42,7 +42,7 @@ def get_video_data(video_path, frame_time: Union[str, int, None] = None):
         elif isinstance(frame_time, int):
             target_frame_index = frame_time
         else:
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         cap.set(1, target_frame_index - 1)
         res, frame = cap.read()

@@ -140,7 +140,7 @@ def compute_angles_from_vectors(
             raise KeyError(msg) from e
         except TypeError as e:
             msg = "median_points has to be list, string or None"
-            raise ValueError(msg) from e
+            raise TypeError(msg) from e
 
     try:
         computation = ANGLE_METHOD_TO_FUNC[method.lower()](

@@ -102,7 +102,7 @@ for round_number, (experiment_dir, pickle_path) in enumerate(
             "midpoint_groups": (
                 ("left_ear", "right_ear"),
                 ("mid-left_ear-right_ear", "tail"),
-            )
+            ),
         },
         timestamp=date,
     )

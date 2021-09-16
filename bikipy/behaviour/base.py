@@ -270,9 +270,7 @@ class BaseTrial(Behaviour):
 
     @cached_property
     def motion(self):
-        return Motion(
-            self.coordinates_per_frame, self.unit_per_pixel, self.fps
-        )
+        return Motion(self.coordinates_per_frame, self.unit_per_pixel, self.fps)
 
     @property
     def __hash_key(self):

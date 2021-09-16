@@ -1,8 +1,9 @@
 import json
+import statistics
 from functools import cached_property, lru_cache
 from logging import getLogger
 from pathlib import PurePath
-from typing import Any, Sequence, Union
+from typing import Any, Sequence, Union, Iterable
 
 import cv2
 import matplotlib.pyplot as plt
@@ -94,6 +95,7 @@ class PolygonalPerimeter(Perimeter):
         self,
         perimeter_corners: Sequence[Sequence[float]],
         feature_scale: Union[Sequence[float], None] = None,
+        reference_point: Union[np.ndarray, bool] = False,
         *args,
         **kwargs,
     ):
@@ -102,9 +104,16 @@ class PolygonalPerimeter(Perimeter):
         self.perimeter_corners = np.asarray(perimeter_corners)
 
         self.number_of_sides = self.perimeter_corners.shape[0]
-        self.centroid = np.mean(perimeter_corners, axis=1)
 
         self.feature_scale = feature_scale or None
+
+        if isinstance(reference_point, np.ndarray):
+            self.reference_point = reference_point
+        elif reference_point:
+            if self.inspect_image is None:
+                msg = "inspect_image needs to be defined to annotate reference_point"
+                raise ValueError(msg)
+            self.reference_point = _define_reference_point(self.inspect_image)
 
     def __getitem__(self, item: int):
         return self.perimeter_corners[item]
@@ -134,7 +143,7 @@ class PolygonalPerimeter(Perimeter):
         Parameters
         ----------
         inspect_image
-            Either path to image or PIL.Image object with opened image inside
+            Either path to image or image in numpy array
         n
             The number of sides on the polygon. Each side has to be annotated
 
@@ -142,16 +151,15 @@ class PolygonalPerimeter(Perimeter):
         -------
         list with pixel coordinates of the polygon corners
         """
+        logger.debug("Generating PolygonalPerimeter from image data")
 
-        if isinstance(inspect_image, np.ndarray):
-            img = inspect_image
-        else:
-            img = cv2.imread(str(inspect_image))
-        plt.imshow(img)
+        plt.imshow(
+            inspect_image if isinstance(inspect_image, np.ndarray)
+            else cv2.imread(str(inspect_image))
+        )
 
-        perimeter_corners = plt.ginput(n=n, timeout=0)
         return cls.init_polygon(
-            perimeter_corners=perimeter_corners,
+            perimeter_corners=plt.ginput(n=n, timeout=0),
             inspect_image=inspect_image,
             **kwargs,
         )
@@ -173,13 +181,21 @@ class PolygonalPerimeter(Perimeter):
         -------
         bikipy.perimeter.polygon.polygon_corners_on_image call with frame from video
         """
+        logger.debug("Generating PolygonalPerimeter from video data")
 
         frame, x_res, y_res, _fps = get_video_data(video_path, frame_time)
 
         return cls.from_image(frame, *args, feature_scale=(x_res, y_res), **kwargs)
 
     @classmethod
-    def from_coco(cls, coco_path: Any, **kwargs) -> dict:
+    def from_coco(
+        cls,
+        coco_path: Any,
+        reference_point_annotation: bool = False,
+        **kwargs
+    ) -> dict:
+        logger.debug("Generating PolygonalPerimeter from coco data")
+
         with open(coco_path, "rb") as in_json:
             coco = json.load(in_json)
 
@@ -193,17 +209,27 @@ class PolygonalPerimeter(Perimeter):
             coco["categories"], key=lambda dictionary: dictionary["id"]
         )
 
+        if reference_point_annotation:
+            if "inspect_image" not in kwargs:
+                msg = "inspect_image is not defined"
+                raise ValueError(msg)
+            reference_point = _define_reference_point(kwargs["inspect_image"])
+        else:
+            reference_point = False
+
         results = {}
         for annotation, category in zip(coco["annotations"], coco["categories"]):
             assert int(annotation["category_id"]) == int(
                 category["id"]
             ), f"{annotation['category_id']} != {category['id']}"
+
             segmentation = annotation["segmentation"][0]
             results[category["name"].lower()] = cls.init_polygon(
                 [  # perimeter_corners
                     (segmentation[i], segmentation[i + 1])
                     for i in range(0, len(segmentation) - 1, 2)
                 ],
+                reference_point=reference_point,
                 **kwargs,
             )
 
@@ -223,6 +249,10 @@ class PolygonalPerimeter(Perimeter):
         ]
         pairs.append((self.perimeter_corners[-1], self.perimeter_corners[0]))
         return np.array(pairs)
+
+    @cached_property
+    def centroid(self):
+        return np.mean(self.perimeter_corners, axis=1)
 
     @lru_cache
     def border(
@@ -405,11 +435,18 @@ class PolygonalPerimeter(Perimeter):
         if not ax:
             _fig, ax = plt.subplots()
 
-        if not inspect_image and all(
-            np.all(perimeters[0].inspect_image == perimeter.inspect_image)
-            for perimeter in perimeters
-        ):
-            inspect_image = perimeters[0].inspect_image
+        if inspect_image is None:
+            potential_inspect_image = None
+            for perimeter in perimeters:
+                if perimeter.inspect_image:
+                    potential_inspect_image = perimeter.inspect_image
+                    break
+            if potential_inspect_image and all(
+                not perimeter.inspect_image
+                or np.all(perimeters[0].inspect_image == perimeter.inspect_image)
+                for perimeter in perimeters
+            ):
+                inspect_image = perimeters[0].inspect_image
 
         if inspect_image is not None:
             ax.imshow(read_image(inspect_image), cmap="gray", vmin=0, vmax=255)
@@ -470,7 +507,6 @@ class PolygonalPerimeter(Perimeter):
             return f"{self.semantic_label} {in_string}"
         if self.int_label:
             return f"{self.int_label} {in_string}"
-
         return in_string
 
 
@@ -481,33 +517,83 @@ class GenericPolygonalBorder(PolygonalPerimeter):
         return self.__sides
 
 
-class CombinedPolygonalPerimeter(Perimeter):
+class PolygonalPerimeterSet(Perimeter):
     def __init__(
         self,
-        rectangles: Sequence[PolygonalPerimeter],
-        restrict_zones: Union[Sequence[PolygonalPerimeter], None] = None,
+        perimeters: Sequence[PolygonalPerimeter],
+        restricted_perimeters: Union[Sequence[PolygonalPerimeter], None] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
 
-        self.rectangles = rectangles
-        self.restrict_zones = restrict_zones
+        assert all(
+            isinstance(perimeter, PolygonalPerimeter) for perimeter in perimeters
+        )
 
-    def contained_coordinates(self, coordinates: Sequence):
+        self.perimeters = perimeters
+        self.restricted_perimeters = restricted_perimeters
+
+    def combined_contained_coordinates(self, coordinates: Sequence):
         present = np.any(
             [
                 rectangle.coordinate_confinement_boolean_index(coordinates)
-                for rectangle in self.rectangles
+                for rectangle in self.perimeters
             ]
         )
-        if self.restrict_zones:
+        if self.restricted_perimeters:
             present = present & ~np.any(
                 [
                     rectangle.coordinate_confinement_boolean_index(coordinates)
-                    for rectangle in self.restrict_zones
+                    for rectangle in self.restricted_perimeters
                 ]
             )
         return present
 
+    def reposition_with_reference_delta(self, image: Any = None, new_reference_point: Union[np.ndarray, None] = None):
+        if not (image or new_reference_point):
 
-Perimeter2D = Union[PolygonalPerimeter, CombinedPolygonalPerimeter]
+        if new_reference_point:
+            pass
+        elif image:
+            new_reference_point = _define_reference_point(image)
+        else:
+            msg = "Either image or new_reference_point has to be exclusively defined"
+            raise ValueError(msg)
+        delta = self.reference_point - new_reference_point
+
+    @property
+    def reference_point(self):
+        if all(
+            np.all(self._all_perimeters[0].reference_point == perimeter.reference_point)
+            for perimeter in self._all_perimeters
+        ):
+            return self._all_perimeters[0].reference_point
+        logger.info(
+            f"reference_point variance: {self._reference_point_variance}"
+        )
+        return statistics.mean(
+            perimeter.reference_point for perimeter in self._all_perimeters
+        )
+
+    @property
+    def _reference_point_variance(self):
+        return statistics.variance(perimeter.reference_point for perimeter in self._all_perimeters)
+
+    def plot(self, **kwargs):
+        ax = super().plot(**kwargs)
+        return PolygonalPerimeter.plot_perimeters(self.perimeters, ax)
+
+    @cached_property
+    def _all_perimeters(self):
+        return *self.perimeters, *self.restricted_perimeters
+
+Perimeter2D = Union[PolygonalPerimeter, PolygonalPerimeterSet]
+
+
+def _define_reference_point(image: Any):
+    plt.imshow(
+        image if isinstance(image, np.ndarray)
+        else cv2.imread(str(image))
+    )
+    plt.title("Please click on the reference point")
+    return np.array(plt.ginput(n=1, timeout=0)[0])

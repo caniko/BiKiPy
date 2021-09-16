@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from functools import cached_property
 from typing import Union
 
 import numpy as np
@@ -45,18 +46,6 @@ class TriangularPerimeter(PolygonalPerimeter):
             perimeter_corners=(self.base_a, self.base_b, self.apex), *args, **kwargs
         )
 
-    @property
-    def perimeter_corners(self):
-        return self.base_a, self.base_b, self.apex
-
-    @perimeter_corners.setter
-    def perimeter_corners(self, perimeter_corners: Sequence):
-        if (n := len(perimeter_corners)) != 3:
-            msg = f"Parallelogram perimeter has to have 3 perimeter_corners, got only {n} perimeter_corners"
-            raise ValueError(msg)
-
-        self.base_a, self.base_b, self.apex = np.asarray(perimeter_corners)
-
     def __repr__(self):
         return (
             f"{self.__class__.__name__}(\n"
@@ -98,4 +87,11 @@ class TriangularPerimeter(PolygonalPerimeter):
         return np.logical_or(
             np.logical_and(c1 > 0, np.logical_and(c2 > 0, c3 > 0)),
             np.logical_and(c1 < 0, np.logical_and(c2 < 0, c3 < 0)),
+        )
+
+    @cached_property
+    def edge_midpoints(self):
+        return (
+            self.perimeter_corners
+            + np.diff(self.perimeter_corners, append=self.base_a) / 2.0
         )

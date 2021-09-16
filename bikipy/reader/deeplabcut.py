@@ -265,7 +265,7 @@ class DeepLabCutReader(BaseReader):
                 if not all([dlcDF_obj.label for dlcDF_obj in dlc_df_objs]):
                     msg = (
                         "At least one of the DeepLabCutReader objects "
-                        "have no label, keep label should be set to False"
+                        "has no label, keep label should be set to False"
                     )
                     raise ValueError(msg)
 

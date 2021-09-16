@@ -55,7 +55,9 @@ class LinePerimeter(Perimeter):
         elif isinstance(orientation, int):
             self.orientation = orientation
         else:
-            msg = f"orientation has to be either string or support integer, and not {type(orientation)}"
+            msg = (
+                f"orientation has to be either str or int, and not {type(orientation)}"
+            )
             raise TypeError(msg)
 
         try:

@@ -1,13 +1,16 @@
 import asyncio
+from collections import Sequence as collections_Sequence
 from datetime import datetime
 from logging import getLogger
 from pathlib import PurePath
 from types import Union
+from typing import Sequence
 
 import numpy as np
 from tqdm import tqdm
 
 from bikipy.behaviour.base import BaseTrial
+from bikipy.utils.store import RangeDict
 
 try:
     import zmq
@@ -24,11 +27,47 @@ logger = getLogger(__name__)
 
 
 class LiveTrial(BaseTrial):
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        *args,
+        delay_timings: Sequence[Union[float, int]],
+        delay_timings_trial_count: Union[int, Sequence[int]],
+        **kwargs,
+    ):
         super().__init__(*args, _live=True, **kwargs)
         if not hasattr(self, "save_root"):
             msg = "save_root must be defined for saving the trial data after conclusion"
             raise ValueError(msg)
+
+        self.delay_timings = delay_timings
+        if isinstance(delay_timings_trial_count, collections_Sequence):
+            self.delay_timings_trial_count = tuple(delay_timings_trial_count)
+            assert len(self.delay_timings_trial_count) == len(self.delay_timings)
+            assert all(
+                isinstance(timing, (float, int))
+                for timing in self.delay_timings_trial_count
+            )
+        elif isinstance(delay_timings_trial_count, (float, int)):
+            self.delay_timings_trial_count = tuple(
+                delay_timings_trial_count for _ in range(len(self.delay_timings))
+            )
+
+        self.node_sequence = []
+        self.bad_loop_record = {}
+
+        self._loop_number_vs_delay_time = (
+            RangeDict(
+                {
+                    i: delay_time
+                    for i, delay_time in zip(
+                        self.delay_timings_trial_count, self.delay_timings
+                    )
+                },
+                allow_less_than_first_key=0,
+            )
+            if delay_timings
+            else {}
+        )
 
         self.countdown_timings = []
 
