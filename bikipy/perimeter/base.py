@@ -550,8 +550,6 @@ class PolygonalPerimeterSet(Perimeter):
         return present
 
     def reposition_with_reference_delta(self, image: Any = None, new_reference_point: Union[np.ndarray, None] = None):
-        if not (image or new_reference_point):
-
         if new_reference_point:
             pass
         elif image:
