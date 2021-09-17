@@ -108,7 +108,7 @@ class NortExperiment(BaseExperiment):
                 "movement_feature_point_label": self.eye_center_label,
                 "metric_resolution": self.metric_resolution,
                 "label": trial_id,
-                "inspection_figure_save_root": self.inspection_figure_save_root,
+                "inspection_figure_save": self.inspection_figure_save,
                 "rigid_nodes_freezing": (self.eye_center_label, self.torso_label),
             }
 
@@ -116,7 +116,7 @@ class NortExperiment(BaseExperiment):
                 generic_kwargs["animal_id"] = trial_meta["animal_id"]
 
             if "inspect" in trial_meta:
-                generic_kwargs["inspection_figure_save_root"] = trial_meta["inspect"]
+                generic_kwargs["inspection_figure_save"] = trial_meta["inspect"]
                 if "inspect_image" in trial_meta:
                     generic_kwargs["inspect_image"] = trial_meta["inspect_image"]
 

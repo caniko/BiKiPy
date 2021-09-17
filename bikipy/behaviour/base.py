@@ -87,7 +87,7 @@ class BaseExperiment(Behaviour):
         trial_id_vs_data: dict,
         trial_id_range_vs_data: Union[dict, None] = None,
         coordinate_data_format: str = "deeplabcut",
-        inspection_figure_save_root: Union[bool, str, PurePath] = False,
+        inspection_figure_save: Union[bool, str, PurePath] = False,
         data_import_kwargs: Union[dict, None] = None,
         **kwargs,
     ):
@@ -102,15 +102,15 @@ class BaseExperiment(Behaviour):
         self.metric_resolution = metric_resolution
 
         self.coordinate_data_format = str(coordinate_data_format).lower()
-        if isinstance(inspection_figure_save_root, bool):
-            self.inspection_figure_save_root = inspection_figure_save_root
-        elif isinstance(inspection_figure_save_root, str) or isinstance(
-            inspection_figure_save_root, PurePath
+        if isinstance(inspection_figure_save, bool):
+            self.inspection_figure_save = inspection_figure_save
+        elif isinstance(inspection_figure_save, str) or isinstance(
+            inspection_figure_save, PurePath
         ):
-            self.inspection_figure_save_root = (
-                inspection_figure_save_root / f"Experiment_{self.label}_inspect"
+            self.inspection_figure_save = (
+                inspection_figure_save / f"Experiment_{self.label}_inspect"
             )
-            os.mkdir(self.inspection_figure_save_root)
+            os.mkdir(self.inspection_figure_save)
 
         if self.coordinate_data_format == "deeplabcut":
             self.trial_id_vs_coordinate_sequences = {
@@ -168,7 +168,7 @@ class BaseTrial(Behaviour):
         video_path: Any = None,
         recording_resolution: Union[Sequence[int], None] = None,
         fps: Union[float, int, None] = None,
-        inspection_figure_save_root: Union[PurePath, str, None] = None,
+        inspection_figure_save: Union[PurePath, str, bool] = False,
         inspect_image: Any = None,
         **kwargs,
     ):
@@ -181,7 +181,7 @@ class BaseTrial(Behaviour):
         :param movement_feature_point_label: Label of the node that will be used to track general animal movement
         :param recording_resolution: Video resolution
         :param label: Experiment label
-        :param inspection_figure_save_root: Path to save figures for inspection of results
+        :param inspection_figure_save: Path to save figures for inspection of results
         :param inspect_image: Image used for inspection
 
         :type coordinate_sequence: dict
@@ -192,7 +192,7 @@ class BaseTrial(Behaviour):
         :type movement_feature_point_label: str (optional)
         :type recording_resolution: Sequence[int] (optional)
         :type label: Any (optional)
-        :type inspection_figure_save_root: bool
+        :type inspection_figure_save: bool
         :type inspect_image: Any
         """
 
@@ -246,7 +246,7 @@ class BaseTrial(Behaviour):
                     np.array(self.metric_resolution) / self.recording_resolution
                 )
 
-        self.inspection_figure_save_root = inspection_figure_save_root
+        self.inspection_figure_save = inspection_figure_save
 
         if not self._live:
             # coordinate_sequence must be a reader object, like DeepLabCutReader
@@ -278,11 +278,11 @@ class BaseTrial(Behaviour):
 
     @property
     def inspect_image_path(self):
-        if isinstance(self.inspection_figure_save_root, str) or isinstance(
-            self.inspection_figure_save_root, PurePath
+        if isinstance(self.inspection_figure_save, str) or isinstance(
+            self.inspection_figure_save, PurePath
         ):
-            return Path(self.inspection_figure_save_root) / self.label
-        return self.inspection_figure_save_root  # return the bool in any case
+            return Path(self.inspection_figure_save) / self.label
+        return self.inspection_figure_save  # return the bool in any case
 
     @cached_property
     def _frame_tolerance(self):
@@ -354,7 +354,8 @@ class BaseTrial(Behaviour):
     def int_id_vs_perimeter(self):
         self._validate_perimeters_object()
         return {
-            i: perimter for i, perimter in enumerate(self.perimeters.values(), start=1)
+            i: perimeter
+            for i, perimeter in enumerate(self.perimeters.values(), start=1)
         }
 
     @property

@@ -53,7 +53,7 @@ class YMazeTrial(BaseExperiment):
         self.feature_tracking_point = str(feature_tracking_point)
         self.center_triangle_meter_width = float(center_triangle_meter_width)
 
-        if self.inspection_figure_save_root:
+        if self.inspection_figure_save:
             self.plot()
 
         self.y_maze_experiments = []

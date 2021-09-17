@@ -1,3 +1,4 @@
+import copy
 import json
 import statistics
 from functools import cached_property, lru_cache
@@ -110,8 +111,10 @@ class PolygonalPerimeter(Perimeter):
         if isinstance(reference_point, np.ndarray):
             self.reference_point = reference_point
         elif reference_point:
+            logger.info("Defining reference point using inspect_image")
             if self.inspect_image is None:
                 msg = "inspect_image needs to be defined to annotate reference_point"
+                logger.error(msg)
                 raise ValueError(msg)
             self.reference_point = _define_reference_point(self.inspect_image)
 
@@ -154,7 +157,8 @@ class PolygonalPerimeter(Perimeter):
         logger.debug("Generating PolygonalPerimeter from image data")
 
         plt.imshow(
-            inspect_image if isinstance(inspect_image, np.ndarray)
+            inspect_image
+            if isinstance(inspect_image, np.ndarray)
             else cv2.imread(str(inspect_image))
         )
 
@@ -189,10 +193,7 @@ class PolygonalPerimeter(Perimeter):
 
     @classmethod
     def from_coco(
-        cls,
-        coco_path: Any,
-        reference_point_annotation: bool = False,
-        **kwargs
+        cls, coco_path: Any, reference_point_annotation: bool = False, **kwargs
     ) -> dict:
         logger.debug("Generating PolygonalPerimeter from coco data")
 
@@ -234,6 +235,13 @@ class PolygonalPerimeter(Perimeter):
             )
 
         return results
+
+    def reposition(self, *args, **kwargs):
+        new_reference_point = _get_new_reference_point(*args, **kwargs)
+        re_mapped = copy.copy(self)
+        re_mapped.perimeter_corners += new_reference_point - self.reference_point
+        re_mapped.reference_point = new_reference_point
+        return re_mapped
 
     @cached_property
     def perimeter_vectors(self):
@@ -549,35 +557,44 @@ class PolygonalPerimeterSet(Perimeter):
             )
         return present
 
-    def reposition_with_reference_delta(self, image: Any = None, new_reference_point: Union[np.ndarray, None] = None):
-        if not (image or new_reference_point):
+    def change_reference(self, *args, **kwargs):
+        new_reference_point = _get_new_reference_point(*args, **kwargs)
 
-        if new_reference_point:
-            pass
-        elif image:
-            new_reference_point = _define_reference_point(image)
-        else:
-            msg = "Either image or new_reference_point has to be exclusively defined"
-            raise ValueError(msg)
-        delta = self.reference_point - new_reference_point
+        for perimeter in self.perimeters:
+            perimeter.reference_point = new_reference_point
+        for perimeter in self.restricted_perimeters:
+            perimeter.reference_point = new_reference_point
 
-    @property
-    def reference_point(self):
-        if all(
-            np.all(self._all_perimeters[0].reference_point == perimeter.reference_point)
-            for perimeter in self._all_perimeters
+    def reposition_with_reference_delta(self, *args, **kwargs):
+        new_reference_point = _get_new_reference_point(*args, **kwargs)
+
+        old_reference_points = []
+        kwargs = {}
+        for variable_name, perimeter_set in zip(
+            ("perimeters", "restricted_perimeters"),
+            (self.perimeters, self.restricted_perimeters),
         ):
-            return self._all_perimeters[0].reference_point
-        logger.info(
-            f"reference_point variance: {self._reference_point_variance}"
-        )
-        return statistics.mean(
-            perimeter.reference_point for perimeter in self._all_perimeters
-        )
+            kwargs[variable_name] = []
+            for perimeter in perimeter_set:
+                old_reference_points.append(perimeter.reference_point)
+                kwargs[variable_name].append(perimeter.reposition(new_reference_point))
+        if any(
+            np.any(old_reference_points[0] != reference_point)
+            for reference_point in old_reference_points
+        ):
+            msg = (
+                "The reference points are not identical, make sure the reference points are the same."
+                "Use PolygonalPerimeterSet.change_reference to change all reference points to identical"
+            )
+            raise ValueError(msg)
+
+        return self.__class__(**kwargs)
 
     @property
     def _reference_point_variance(self):
-        return statistics.variance(perimeter.reference_point for perimeter in self._all_perimeters)
+        return statistics.variance(
+            perimeter.reference_point for perimeter in self._all_perimeters
+        )
 
     def plot(self, **kwargs):
         ax = super().plot(**kwargs)
@@ -587,13 +604,22 @@ class PolygonalPerimeterSet(Perimeter):
     def _all_perimeters(self):
         return *self.perimeters, *self.restricted_perimeters
 
+
 Perimeter2D = Union[PolygonalPerimeter, PolygonalPerimeterSet]
 
 
-def _define_reference_point(image: Any):
-    plt.imshow(
-        image if isinstance(image, np.ndarray)
-        else cv2.imread(str(image))
+def _get_new_reference_point(
+    image: Any = None, new_reference_point: Union[np.ndarray, None] = None
+):
+    if new_reference_point and image or not (new_reference_point or image):
+        msg = "Either image or new_reference_point needs to be defined."
+        raise ValueError(msg)
+    return (
+        new_reference_point if new_reference_point else _define_reference_point(image)
     )
+
+
+def _define_reference_point(image: Any):
+    plt.imshow(image if isinstance(image, np.ndarray) else cv2.imread(str(image)))
     plt.title("Please click on the reference point")
     return np.array(plt.ginput(n=1, timeout=0)[0])

@@ -96,7 +96,7 @@ for round_number, (experiment_dir, pickle_path) in enumerate(
         perimeter_border_normal_metric_magnitude=0.06,
         center_metric_length=0.2,
         maximum_radians_inter_gaze_perimeter=0.33 * np.pi,
-        inspection_figure_save_root=True,
+        # inspection_figure_save=True,
         data_import_kwargs={
             "init_from": "parquet",
             "midpoint_groups": (
