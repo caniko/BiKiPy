@@ -72,6 +72,7 @@ class LiveTrial(BaseTrial):
         self.live_expose_metrics = []
         self.countdown_timings = []
 
+        self._counting_down = False
         self._zmq_context = None
         self._socket = None
 
@@ -128,11 +129,13 @@ class LiveTrial(BaseTrial):
             self._socket.close()
 
     async def countdown(self, seconds: int = 10):
-        start = datetime.now()
         logger.debug(f"Starting countdown timer for {self}")
+
+        start = datetime.now()
         for _ in tqdm(range(seconds)):
             await asyncio.sleep(1.0)
         stop = datetime.now()
+
         logger.debug(
             f"Countdown was finalised. Number of seconds {(total_time := stop - start)}"
         )
