@@ -583,8 +583,10 @@ class PolygonalPerimeterSet(Perimeter):
             for reference_point in old_reference_points
         ):
             msg = (
-                "The reference points are not identical, make sure the reference points are the same."
-                "Use PolygonalPerimeterSet.change_reference to change all reference points to identical"
+                "The reference points are not identical, make sure the reference "
+                "points are the same. "
+                "Use PolygonalPerimeterSet.change_reference to change all reference "
+                "points to identical "
             )
             raise ValueError(msg)
 

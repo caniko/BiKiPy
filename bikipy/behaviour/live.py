@@ -69,6 +69,7 @@ class LiveTrial(BaseTrial):
             else {}
         )
 
+        self.live_expose_metrics = []
         self.countdown_timings = []
 
         self._zmq_context = None
