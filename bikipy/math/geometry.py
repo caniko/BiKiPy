@@ -23,14 +23,12 @@ def order_parallelogram_corners(perimeter_corners: Sequence, y_inverted: bool = 
     down_left, down_right, up_left, up_right = None, None, None, None
     for corner in vertical_side_a:
         if corner in horizontal_side_b:
-            assert not down_left
             down_left = perimeter_corners[corner]
             (down_right,) = perimeter_corners[
                 horizontal_side_b[horizontal_side_b != corner]
             ]
 
         elif corner in horizontal_side_a:
-            assert not up_left
             up_left = perimeter_corners[corner]
             (up_right,) = perimeter_corners[
                 horizontal_side_a[horizontal_side_a != corner]

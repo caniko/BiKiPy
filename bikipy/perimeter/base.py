@@ -94,7 +94,7 @@ class Perimeter:
 class PolygonalPerimeter(Perimeter):
     def __init__(
         self,
-        perimeter_corners: Sequence[Sequence[float]],
+        corners: Sequence[Sequence[float]],
         feature_scale: Union[Sequence[float], None] = None,
         reference_point: Union[np.ndarray, bool] = False,
         *args,
@@ -102,9 +102,9 @@ class PolygonalPerimeter(Perimeter):
     ):
         super().__init__(*args, **kwargs)
 
-        self.perimeter_corners = np.asarray(perimeter_corners)
+        self.corners = np.asarray(corners)
 
-        self.number_of_sides = self.perimeter_corners.shape[0]
+        self.number_of_sides = self.corners.shape[0]
 
         self.feature_scale = feature_scale or None
 
@@ -119,24 +119,24 @@ class PolygonalPerimeter(Perimeter):
             self.reference_point = _define_reference_point(self.inspect_image)
 
     def __getitem__(self, item: int):
-        return self.perimeter_corners[item]
+        return self.corners[item]
 
     def __repr__(self):
-        return super().__repr__() + f"\n\tperimeter_corners={self.perimeter_corners}"
+        return super().__repr__() + f"\n\tcorners={self.corners}"
 
     @classmethod
-    def init_polygon(cls, perimeter_corners: Sequence, **kwargs):
-        perimeter_corners = np.asarray(perimeter_corners)
-        if (number_of_sides := perimeter_corners.shape[0]) == 3:
+    def init_polygon(cls, corners: Sequence, **kwargs):
+        corners = np.asarray(corners)
+        if (number_of_sides := corners.shape[0]) == 3:
             from bikipy.perimeter.triangular import TriangularPerimeter
 
-            return TriangularPerimeter(perimeter_corners=perimeter_corners, **kwargs)
+            return TriangularPerimeter(corners=corners, **kwargs)
         elif number_of_sides == 4:
             from bikipy.perimeter.parallelogram.classes import ParallelogramPerimeter
 
-            return ParallelogramPerimeter(perimeter_corners=perimeter_corners, **kwargs)
+            return ParallelogramPerimeter(corners=corners, **kwargs)
         else:
-            return cls(perimeter_corners=perimeter_corners, **kwargs)
+            return cls(corners=corners, **kwargs)
 
     @classmethod
     def from_image(cls, inspect_image: Any, n: int, *args, **kwargs):
@@ -163,7 +163,7 @@ class PolygonalPerimeter(Perimeter):
         )
 
         return cls.init_polygon(
-            perimeter_corners=plt.ginput(n=n, timeout=0),
+            corners=plt.ginput(n=n, timeout=0),
             inspect_image=inspect_image,
             **kwargs,
         )
@@ -193,8 +193,12 @@ class PolygonalPerimeter(Perimeter):
 
     @classmethod
     def from_coco(
-        cls, coco_path: Any, reference_point_annotation: bool = False, **kwargs
-    ) -> dict:
+        cls,
+        coco_path: Any,
+        reference_point_annotation: bool = False,
+        single_obj_return: bool = False,
+        **kwargs,
+    ) -> Union[dict, Perimeter]:
         logger.debug("Generating PolygonalPerimeter from coco data")
 
         with open(coco_path, "rb") as in_json:
@@ -226,7 +230,7 @@ class PolygonalPerimeter(Perimeter):
 
             segmentation = annotation["segmentation"][0]
             results[category["name"].lower()] = cls.init_polygon(
-                [  # perimeter_corners
+                [  # corners
                     (segmentation[i], segmentation[i + 1])
                     for i in range(0, len(segmentation) - 1, 2)
                 ],
@@ -234,33 +238,36 @@ class PolygonalPerimeter(Perimeter):
                 **kwargs,
             )
 
+        if single_obj_return:
+            assert len(results) == 1, f"More than one item in coco set, {len(results)}"
+            return results.popitem()[1]
         return results
 
     def reposition(self, *args, **kwargs):
         new_reference_point = _get_new_reference_point(*args, **kwargs)
         re_mapped = copy.copy(self)
-        re_mapped.perimeter_corners += new_reference_point - self.reference_point
+        re_mapped.corners += new_reference_point - self.reference_point
         re_mapped.reference_point = new_reference_point
         return re_mapped
 
     @cached_property
     def perimeter_vectors(self):
         return np.diff(
-            self.perimeter_corners[::-1], prepend=[self.perimeter_corners[0]], axis=0
+            self.corners[::-1], prepend=[self.corners[0]], axis=0
         )[::-1]
 
     @cached_property
     def line_segment_pairs(self):
         pairs = [
-            (self.perimeter_corners[i], self.perimeter_corners[i + 1])
+            (self.corners[i], self.corners[i + 1])
             for i in range(self.number_of_sides - 1)
         ]
-        pairs.append((self.perimeter_corners[-1], self.perimeter_corners[0]))
+        pairs.append((self.corners[-1], self.corners[0]))
         return np.array(pairs)
 
     @cached_property
     def centroid(self):
-        return np.mean(self.perimeter_corners, axis=1)
+        return np.mean(self.corners, axis=1)
 
     @lru_cache
     def border(
@@ -274,7 +281,7 @@ class PolygonalPerimeter(Perimeter):
         """
         border_obj = self.__class__(
             expand_parallelogram(
-                self.perimeter_corners, perimeter_border_normal_pixel_magnitude
+                self.corners, perimeter_border_normal_pixel_magnitude
             ),
             inspect_image=self.inspect_image,
         )
@@ -314,7 +321,7 @@ class PolygonalPerimeter(Perimeter):
     def coordinate_confinement_boolean_index(self, coordinates: Sequence) -> np.ndarray:
         assert self.number_of_sides > 4
 
-        polygon = Polygon(self.perimeter_corners)
+        polygon = Polygon(self.corners)
         return np.array(
             [polygon.contains(Point(coordinate)) for coordinate in coordinates]
         )
@@ -419,7 +426,7 @@ class PolygonalPerimeter(Perimeter):
         perimeter_plot_kwargs: Union[dict, None] = None,
     ):
         """
-        Plot the perimeter_corners defined in the object, along with
+        Plot the corners defined in the object, along with
 
         Returns
         -------
@@ -476,13 +483,13 @@ class PolygonalPerimeter(Perimeter):
             fig, ax = plt.subplots()
 
         legends = []
-        for index in range(len(self.perimeter_corners)):
+        for index in range(len(self.corners)):
             following_index = (
-                0 if index + 1 == len(self.perimeter_corners) else index + 1
+                0 if index + 1 == len(self.corners) else index + 1
             )
 
-            corner_a = self.perimeter_corners[index]
-            corner_b = self.perimeter_corners[following_index]
+            corner_a = self.corners[index]
+            corner_b = self.corners[following_index]
             ax.plot(
                 (corner_a[0], corner_b[0]),
                 (corner_a[1], corner_b[1]),
@@ -509,6 +516,22 @@ class PolygonalPerimeter(Perimeter):
                 plt.legend(legends, bbox_to_anchor=(1.04, 0.5), loc="center left")
 
         return ax
+
+    @cached_property
+    def linked_corners(self):
+        return np.append(
+            self.corners, np.expand_dims(self.corners[0], 0), axis=0
+        )
+
+    @cached_property
+    def edge_midpoints(self):
+        return (
+            self.corners + np.diff(self.linked_corners, axis=0) / 2.0
+        )
+
+    @cached_property
+    def edge_midpoint_scalars(self):
+        return np.linalg.norm(self.edge_midpoints, axis=1)
 
     def _add_label_to_str(self, in_string):
         if self.semantic_label:

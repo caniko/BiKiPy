@@ -94,7 +94,7 @@ def round_vs_apparatus_to_general_nort_fields(
 
         if convert_from_legacy:
             for key, field in field_temp_store.items():
-                kwargs = {"perimeter_corners": field.sides}
+                kwargs = {"corners": field.sides}
                 if field.guiding_image:
                     kwargs["inspect_image"] = field.guiding_image
                 if field.int_label:

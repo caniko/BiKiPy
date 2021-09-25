@@ -22,20 +22,20 @@ class ParallelogramPerimeter(PolygonalPerimeter):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if (n := len(self.perimeter_corners)) != 4:
+        if (n := len(self.corners)) != 4:
             msg = (
                 f"Parallelogram is a polygon in the 4th order, the current polygon"
                 f"is in the {n} order"
             )
             raise ValueError(msg)
 
-        self.perimeter_corners = order_parallelogram_corners(self.perimeter_corners)
+        self.corners = order_parallelogram_corners(self.corners)
         (
             self.down_left,
             self.down_right,
             self.up_right,
             self.up_left,
-        ) = self.perimeter_corners
+        ) = self.corners
 
         self.base = (self.down_left, self.down_right)
         # self.base_mid = self.base[0] + (self.base[1] - self.base[0]) / 2.
