@@ -199,3 +199,7 @@ ANGLE_METHOD_TO_FUNC = {
     "inner": inner_angle,
     "counterclockwise": counterclockwise_angel_2d,
 }
+
+
+if __name__ == "__main__":
+    print(np.rad2deg(inner_angle((1, 1), (2, 0))))

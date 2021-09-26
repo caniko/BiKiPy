@@ -3,40 +3,17 @@ from collections.abc import Sequence
 import matplotlib.pyplot as plt
 import numpy as np
 
+from bikipy.feature.angle import inner_angle
 
-def order_parallelogram_corners(perimeter_corners: Sequence, y_inverted: bool = True):
+
+def order_parallelogram_corners(perimeter_corners: Sequence):
     perimeter_corners = np.asarray(perimeter_corners)
-    argsorted_x, argsorted_y = np.argsort(perimeter_corners.T, axis=1)
+    centroid = np.mean(perimeter_corners, axis=0)
 
-    if y_inverted:
-        # argsort in descending order:
-        # Source: https://stackoverflow.com/a/16486305/9793651
-        argsorted_y = (-perimeter_corners.T[1]).argsort()
+    centroid_corner_vectors = perimeter_corners - centroid
+    angles = inner_angle(centroid_corner_vectors, (-1.0, 0.0))
 
-    # Order corners with respect to perimeter
-    vertical_side_a = argsorted_x[:2]
-    # vertical_side_b = argsorted_x[2:]
-
-    horizontal_side_a = argsorted_y[2:]
-    horizontal_side_b = argsorted_y[:2]
-
-    down_left, down_right, up_left, up_right = None, None, None, None
-    for corner in vertical_side_a:
-        if corner in horizontal_side_b:
-            down_left = perimeter_corners[corner]
-            (down_right,) = perimeter_corners[
-                horizontal_side_b[horizontal_side_b != corner]
-            ]
-
-        elif corner in horizontal_side_a:
-            up_left = perimeter_corners[corner]
-            (up_right,) = perimeter_corners[
-                horizontal_side_a[horizontal_side_a != corner]
-            ]
-
-    assert np.all((result := np.array((down_left, down_right, up_right, up_left))))
-
-    return result
+    return perimeter_corners[np.argsort(angles)]
 
 
 def expand_parallelogram(
