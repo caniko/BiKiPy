@@ -3,6 +3,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 
 from bikipy.perimeter import TriangularPerimeter, ParallelogramPerimeter
 from bikipy.perimeter.base import PolygonalPerimeter
@@ -31,27 +32,63 @@ def generate_radial_arm_maze_arm_perimeters(
     line_dataset = csv_array.T[1:5].T.astype(np.float)
     lines = [np.array_split(line, 2) for line in line_dataset]
 
-    line_midpoints = [np.mean(lines[i], axis=0) for i in range(number_of_arms)]
-    midpoint_scalars = np.linalg.norm(line_midpoints, axis=1)
+    line_midpoints = np.array(
+        [np.mean(lines[i], axis=0) for i in range(number_of_arms)]
+    )
 
     paired, arm_perimeters = [], []
-    for line_index, midpoint_scalar in enumerate(midpoint_scalars):
+    for line_index, line_midpoint in enumerate(line_midpoints):
         line_pair_index = np.where(
-            np.argsort(midpoint_scalar - center_object.edge_midpoint_scalars) == 0
+            np.argsort(np.linalg.norm(line_midpoint - center_object.edge_midpoints, axis=1))
+            == 0
         )[0][0]
+
+        fig, ax = plt.subplots()
+        ax.scatter(*np.concatenate(
+                    (
+                        center_object.linked_corners[
+                            line_pair_index : line_pair_index + 2
+                        ],
+                        lines[line_index],
+                    )
+                ).T)
+        ax = center_object.plot_perimeter(ax=ax)
+        plt.plot()
+
         assert line_pair_index not in paired
+
         paired.append(line_pair_index)
         arm_perimeters.append(
             ParallelogramPerimeter(
-                np.concatenate((center_object.linked_corners[line_pair_index:line_pair_index+2], lines[line_index])),
-                semantic_label=labels[line_index]
+                np.concatenate(
+                    (
+                        center_object.linked_corners[
+                            line_pair_index : line_pair_index + 2
+                        ],
+                        lines[line_index],
+                    )
+                ),
+                semantic_label=labels[line_index],
             )
         )
-    print(paired)
+
+    return arm_perimeters
 
 
 if __name__ == "__main__":
-    generate_radial_arm_maze_arm_perimeters(
-        line_csv_path="/home/can/Software_Projects/BiKiPy/examples/ymaze_behaj_analysis/area_images/phd/A/coco_line_labels.csv",
-        center_coco_path="/home/can/Software_Projects/BiKiPy/examples/ymaze_behaj_analysis/area_images/phd/A/coco_triangle.json",
+    from pathlib import Path
+
+    ROOT = (
+        Path("C:\\Users\\Can\\Projects\\BiKiPy")
+        / "examples"
+        / "ymaze_behaj_analysis"
+        / "area_images"
+        / "phd"
+        / "A"
     )
+
+    a = generate_radial_arm_maze_arm_perimeters(
+        line_csv_path=ROOT / "coco_line_labels.csv",
+        center_coco_path=ROOT / "coco_triangle.json",
+    )
+    PolygonalPerimeter.plot_perimeters(a, inspect_image=ROOT / "after_1_phd.png")

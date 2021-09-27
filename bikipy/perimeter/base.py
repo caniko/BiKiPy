@@ -4,7 +4,7 @@ import statistics
 from functools import cached_property, lru_cache
 from logging import getLogger
 from pathlib import PurePath
-from typing import Any, Sequence, Union, Iterable
+from typing import Any, Sequence, Union
 
 import cv2
 import matplotlib.pyplot as plt
@@ -26,6 +26,7 @@ class Perimeter:
         int_label: Union[int, None] = None,
         semantic_label: Union[str, None] = None,
         inspect_image: Union[str, PurePath, np.ndarray, None] = None,
+        resolution: Union[Sequence, None] = None
     ):
         """
         :param int_label: Integer label
@@ -38,8 +39,6 @@ class Perimeter:
 
         self.int_label = int(int_label) if int_label else None
         self.semantic_label = str(semantic_label) if semantic_label else None
-
-        self.inspect_image = inspect_image
 
     @property
     def inspect_image(self):
@@ -252,9 +251,7 @@ class PolygonalPerimeter(Perimeter):
 
     @cached_property
     def perimeter_vectors(self):
-        return np.diff(
-            self.corners[::-1], prepend=[self.corners[0]], axis=0
-        )[::-1]
+        return np.diff(self.corners[::-1], prepend=[self.corners[0]], axis=0)[::-1]
 
     @cached_property
     def line_segment_pairs(self):
@@ -280,9 +277,7 @@ class PolygonalPerimeter(Perimeter):
         :return:
         """
         border_obj = self.__class__(
-            expand_parallelogram(
-                self.corners, perimeter_border_normal_pixel_magnitude
-            ),
+            expand_parallelogram(self.corners, perimeter_border_normal_pixel_magnitude),
             inspect_image=self.inspect_image,
         )
 
@@ -484,9 +479,7 @@ class PolygonalPerimeter(Perimeter):
 
         legends = []
         for index in range(len(self.corners)):
-            following_index = (
-                0 if index + 1 == len(self.corners) else index + 1
-            )
+            following_index = 0 if index + 1 == len(self.corners) else index + 1
 
             corner_a = self.corners[index]
             corner_b = self.corners[following_index]
@@ -497,6 +490,7 @@ class PolygonalPerimeter(Perimeter):
                 label=self.semantic_label,
                 color=color,
             )
+            ax.scatter(*self.edge_midpoints[index])
 
             if perimeter_border_normal_pixel_magnitude:
                 border = self.border(perimeter_border_normal_pixel_magnitude)
@@ -510,28 +504,34 @@ class PolygonalPerimeter(Perimeter):
                 )
 
             if include_geometric_legend:
-                legend = [self._add_label_to_str(f"side {index}")]
+                legend = [self._add_label_to_str(f"side {index}"), self._add_label_to_str(f"midpoint {index}")]
                 if perimeter_border_normal_pixel_magnitude:
                     legend.append(self._add_label_to_str(f"perimeter {index}"))
-                plt.legend(legends, bbox_to_anchor=(1.04, 0.5), loc="center left")
+
+        plt.legend(legends, bbox_to_anchor=(1.04, 0.5), loc="center left")
 
         return ax
 
     @cached_property
     def linked_corners(self):
-        return np.append(
-            self.corners, np.expand_dims(self.corners[0], 0), axis=0
-        )
+        return np.append(self.corners, np.expand_dims(self.corners[0], 0), axis=0)
 
     @cached_property
     def edge_midpoints(self):
-        return (
-            self.corners + np.diff(self.linked_corners, axis=0) / 2.0
-        )
+        return self.corners + np.diff(self.linked_corners, axis=0) / 2.0
 
     @cached_property
-    def edge_midpoint_scalars(self):
-        return np.linalg.norm(self.edge_midpoints, axis=1)
+    def y_flipped_edge_midpoints(self):
+        # self.edge_midpoints.T[1].max()) is the maximum y value
+        return np.array((0.0, self.corners_y_max)) - self.edge_midpoints
+
+    @cached_property
+    def y_flipped_edge_midpoint_scalars(self):
+        return np.linalg.norm(self.y_flipped_edge_midpoints, axis=1)
+
+    @cached_property
+    def corners_y_max(self):
+        return self.corners.T[1].max()
 
     def _add_label_to_str(self, in_string):
         if self.semantic_label:

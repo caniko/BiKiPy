@@ -42,9 +42,7 @@ class TriangularPerimeter(PolygonalPerimeter):
         self.base_b = np.asarray(base_b)
         self.apex = np.asarray(apex)
 
-        super().__init__(
-            corners=(self.base_a, self.base_b, self.apex), *args, **kwargs
-        )
+        super().__init__(corners=(self.base_a, self.base_b, self.apex), *args, **kwargs)
 
     def __repr__(self):
         return (
