@@ -5,7 +5,7 @@ from typing import Any, Sequence, Union
 import matplotlib.pyplot as plt
 import numpy as np
 
-from bikipy.math.geometry import order_parallelogram_corners
+from bikipy.math.geometry import order_polygon_corners
 from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.math.vector import (
     normal_from_line_to_point,
@@ -29,7 +29,7 @@ class ParallelogramPerimeter(PolygonalPerimeter):
             )
             raise ValueError(msg)
 
-        self.corners = order_parallelogram_corners(self.corners)
+        self.corners = order_polygon_corners(self.corners)
         (
             self.down_left,
             self.down_right,
@@ -168,7 +168,7 @@ class ParallelogramPerimeter(PolygonalPerimeter):
             cls(inspect_image=inspect_image, **object_kwargs[i]) for i in range(int(n))
         ]
 
-    def plot(self, *args, **kwargs):
+    def plot_parallelogram_labels(self, *args, **kwargs):
         ax = super().plot(*args, **kwargs)
 
         ax.plot(

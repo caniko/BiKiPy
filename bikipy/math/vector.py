@@ -125,7 +125,7 @@ def point_to_line_segment_distance(points, line_segment):
 
     param = np.full_like(dot, -1.0) if len_sq == 0 else dot / len_sq
 
-    xx = np.zeros_like(param, dtype=np.float)
+    xx = np.zeros_like(param, dtype=np.float32)
     yy = np.zeros_like(param).copy()
 
     param_less_than_0 = param < 0

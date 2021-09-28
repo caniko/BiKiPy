@@ -4,16 +4,32 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from bikipy.feature.angle import inner_angle
+from bikipy.math.vector import intersection_between_two_lines
 
 
-def order_parallelogram_corners(perimeter_corners: Sequence):
+def order_polygon_corners(perimeter_corners: Sequence, are_linked: bool = True, inspect: bool = False):
     perimeter_corners = np.asarray(perimeter_corners)
     centroid = np.mean(perimeter_corners, axis=0)
 
     centroid_corner_vectors = perimeter_corners - centroid
     angles = inner_angle(centroid_corner_vectors, (-1.0, 0.0))
+    argsorted_angles = np.argsort(angles)
 
-    return perimeter_corners[np.argsort(angles)]
+    if are_linked:
+        start_index = np.where(argsorted_angles == 0)[0][0]
+        result = (*perimeter_corners[start_index:], *perimeter_corners[:start_index])
+        if any(
+            intersection_between_two_lines()
+        )
+    else:
+        result = perimeter_corners[argsorted_angles]
+
+    if inspect:
+        plt.scatter(*result.T)
+        plt.legend(range(1, len(perimeter_corners) + 1))
+        plt.show()
+
+    return result
 
 
 def expand_parallelogram(
@@ -23,7 +39,7 @@ def expand_parallelogram(
     inspect: bool = False,
 ):
     offset = float(offset)
-    down_left, down_right, up_right, up_left = order_parallelogram_corners(
+    down_left, down_right, up_right, up_left = order_polygon_corners(
         perimeter_corners
     )
 

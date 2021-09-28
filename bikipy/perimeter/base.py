@@ -26,7 +26,6 @@ class Perimeter:
         int_label: Union[int, None] = None,
         semantic_label: Union[str, None] = None,
         inspect_image: Union[str, PurePath, np.ndarray, None] = None,
-        resolution: Union[Sequence, None] = None
     ):
         """
         :param int_label: Integer label
@@ -39,6 +38,8 @@ class Perimeter:
 
         self.int_label = int(int_label) if int_label else None
         self.semantic_label = str(semantic_label) if semantic_label else None
+
+        self.inspect_image = inspect_image
 
     @property
     def inspect_image(self):
@@ -405,7 +406,7 @@ class PolygonalPerimeter(Perimeter):
         closest_distance = distance_sets[closest_boolean_index]
 
         closest_index = np.where(closest_boolean_index)[1]
-        closest_vectors = np.zeros((closest_distance.shape[0], 2), dtype=np.float)
+        closest_vectors = np.zeros((closest_distance.shape[0], 2), dtype=np.float32)
         for i in range(self.number_of_sides):
             closest_vectors[closest_index == i] = self.perimeter_vectors[i]
 
@@ -446,17 +447,21 @@ class PolygonalPerimeter(Perimeter):
             _fig, ax = plt.subplots()
 
         if inspect_image is None:
-            potential_inspect_image = None
-            for perimeter in perimeters:
-                if perimeter.inspect_image:
+            for i, perimeter in enumerate(perimeters):
+                if isinstance(perimeter.inspect_image, np.ndarray):
                     potential_inspect_image = perimeter.inspect_image
+                    if i == len(perimeters) - 1 or all(
+                        perimeter.inspect_image is None
+                        or np.all(potential_inspect_image == perimeter.inspect_image)
+                        for perimeter in perimeters[i+1:]
+                    ):
+                        """
+                        Old premature optimisation, DON'T DO THIS AGAIN.
+                        Use the found image if and only if it is identical
+                        to other inspect_images in the rest of the perimeter objects
+                        """
+                        inspect_image = potential_inspect_image
                     break
-            if potential_inspect_image and all(
-                not perimeter.inspect_image
-                or np.all(perimeters[0].inspect_image == perimeter.inspect_image)
-                for perimeter in perimeters
-            ):
-                inspect_image = perimeters[0].inspect_image
 
         if inspect_image is not None:
             ax.imshow(read_image(inspect_image), cmap="gray", vmin=0, vmax=255)
@@ -504,7 +509,10 @@ class PolygonalPerimeter(Perimeter):
                 )
 
             if include_geometric_legend:
-                legend = [self._add_label_to_str(f"side {index}"), self._add_label_to_str(f"midpoint {index}")]
+                legend = [
+                    self._add_label_to_str(f"side {index}"),
+                    self._add_label_to_str(f"midpoint {index}"),
+                ]
                 if perimeter_border_normal_pixel_magnitude:
                     legend.append(self._add_label_to_str(f"perimeter {index}"))
 
