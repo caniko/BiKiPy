@@ -68,8 +68,8 @@ def counterclockwise_angel_2d(
         ]
     )
 
-    dot_prod = dot_prod_along_axis_1(end_vector, start_vector)
-    return np.arctan2(determinants, dot_prod)
+    dot_products = dot_prod_along_axis_1(end_vector, start_vector)
+    return np.arctan2(determinants, dot_products)
 
 
 def inner_angle(a_vector: Sequence, b_vector: Sequence) -> np.ndarray:
@@ -210,5 +210,5 @@ ANGLE_METHOD_TO_FUNC = {
 
 if __name__ == "__main__":
     print((np.rad2deg(counterclockwise_angel_2d(
-        (0, 1.0), ((0, -5), (1, -5), (20, 5), (-5, 1))
+        ((0, -5), (1, -5), (20, 5), (-5, 1)), (0, 1.0)
     ))))
