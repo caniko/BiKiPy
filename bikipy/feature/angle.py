@@ -29,7 +29,8 @@ def _find_median_vector(row_vectors: np.ndarray) -> np.ndarray:
 
 
 def counterclockwise_angel_2d(
-    start_vector: Sequence, end_vector: Sequence
+    start_vector: Sequence,
+    end_vector: Sequence,
 ) -> np.ndarray:
     """
     Computes the counterclockwise angle, [0, 2pi], from start to end in radians
@@ -49,20 +50,26 @@ def counterclockwise_angel_2d(
     3.141592653589793       # pi
     """
 
-    start_unit_vector = unit_vector(start_vector, force_1_dim=True)
-    end_unit_vector = unit_vector(end_vector, force_1_dim=True)
+    start_vector = unit_vector(start_vector, force_1_dim=True)
+    end_vector = unit_vector(end_vector, force_1_dim=True)
 
     # Compute determinants and store them in a vertical stack
     determinants = np.array(
         [
-            np.linalg.det(np.vstack((end_unit_vector[i], start_unit_vector[i])))
-            for i in range(len(start_unit_vector))
+            np.linalg.det(
+                np.vstack(
+                    (
+                        (end_vector if len(end_vector) == 1 else end_vector[i]),
+                        (start_vector if len(start_vector) == 1 else start_vector[i]),
+                    )
+                )
+            )
+            for i in range(len(start_vector))
         ]
     )
 
-    dot_prod = dot_prod_along_axis_1(end_unit_vector, start_unit_vector)
-
-    return np.pi + np.arctan2(determinants, dot_prod)
+    dot_prod = dot_prod_along_axis_1(end_vector, start_vector)
+    return np.arctan2(determinants, dot_prod)
 
 
 def inner_angle(a_vector: Sequence, b_vector: Sequence) -> np.ndarray:
@@ -202,4 +209,6 @@ ANGLE_METHOD_TO_FUNC = {
 
 
 if __name__ == "__main__":
-    print(np.rad2deg(inner_angle((1, 1), (2, 0))))
+    print((np.rad2deg(counterclockwise_angel_2d(
+        (0, 1.0), ((0, -5), (1, -5), (20, 5), (-5, 1))
+    ))))

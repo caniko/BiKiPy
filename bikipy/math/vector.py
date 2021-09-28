@@ -1,6 +1,8 @@
 from collections.abc import Sequence
+from typing import Union
 
 import numpy as np
+from numpy.linalg import LinAlgError
 
 
 def unit_vector(row_vectors: Sequence, force_1_dim: bool = False) -> np.ndarray:
@@ -163,10 +165,12 @@ def intersection_between_two_lines(
     vector_b: Sequence,
     vector_a_start: Sequence,
     vector_b_start: Sequence,
-) -> np.ndarray:
+) -> Union[np.ndarray, bool]:
     """
     Compute the intersection between two lines designated by a starting point
     and a direction/unit vector
+
+    returns False if no intersection
 
     FIXME: Does not work when the intersection is on (0, 0); very rare case
 
@@ -192,4 +196,7 @@ def intersection_between_two_lines(
             (vector_b_start[1] - vector_a_start[1],),
         )
     )
-    return np.linalg.solve(rhs, lhs).T[0]
+    try:
+        return np.linalg.solve(rhs, lhs).T[0]
+    except LinAlgError:
+        return False

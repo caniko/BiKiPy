@@ -453,7 +453,7 @@ class PolygonalPerimeter(Perimeter):
                     if i == len(perimeters) - 1 or all(
                         perimeter.inspect_image is None
                         or np.all(potential_inspect_image == perimeter.inspect_image)
-                        for perimeter in perimeters[i+1:]
+                        for perimeter in perimeters[i + 1 :]
                     ):
                         """
                         Old premature optimisation, DON'T DO THIS AGAIN.

@@ -63,7 +63,7 @@ def generate_radial_arm_maze_arm_perimeters(
             ParallelogramPerimeter(
                 arm_perimeter,
                 semantic_label=labels[line_index],
-                inspect_image=inspect_image
+                inspect_image=inspect_image,
             )
         )
 
@@ -75,8 +75,8 @@ if __name__ == "__main__":
 
     ROOT = (
         Path(
-            # "C:\\Users\\Can\\Projects\\BiKiPy"
-            "/home/can/Software_Projects/BiKiPy"
+            "C:\\Users\\Can\\Projects\\BiKiPy"
+            # "/home/can/Software_Projects/BiKiPy"
         )
         / "examples"
         / "ymaze_behaj_analysis"
@@ -89,9 +89,8 @@ if __name__ == "__main__":
     a = generate_radial_arm_maze_arm_perimeters(
         line_csv_path=ROOT / "coco_line_labels.csv",
         center_coco_path=ROOT / "coco_triangle.json",
-        inspect_image=img
+        inspect_image=img,
     )
     PolygonalPerimeter.plot_perimeters(a)
     # a[0].plot_parallelogram_labels()
     plt.show()
-

@@ -1,32 +1,57 @@
+import itertools
 from collections.abc import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from bikipy.feature.angle import inner_angle
+from bikipy.feature.angle import counterclockwise_angel_2d
 from bikipy.math.vector import intersection_between_two_lines
 
 
-def order_polygon_corners(perimeter_corners: Sequence, are_linked: bool = True, inspect: bool = False):
+def order_polygon_corners(
+    perimeter_corners: Sequence, are_linked: bool = True, inspect: bool = True
+):
     perimeter_corners = np.asarray(perimeter_corners)
     centroid = np.mean(perimeter_corners, axis=0)
 
     centroid_corner_vectors = perimeter_corners - centroid
-    angles = inner_angle(centroid_corner_vectors, (-1.0, 0.0))
+    angles = counterclockwise_angel_2d((0.0, -1.0), centroid_corner_vectors)
     argsorted_angles = np.argsort(angles)
 
     if are_linked:
         start_index = np.where(argsorted_angles == 0)[0][0]
         result = (*perimeter_corners[start_index:], *perimeter_corners[:start_index])
-        if any(
-            intersection_between_two_lines()
-        )
+
+        if inspect:
+            ordered_centroid_corner_vectors = (*centroid_corner_vectors[start_index:],
+                       *centroid_corner_vectors[:start_index])
+
+        # # (start point, line_vector)
+        # result_line_segments = zip(
+        #     result, np.diff(np.append(result, np.expand_dims(result[0], 0), axis=0), axis=0)
+        # )
+        # if any(
+        #     np.any(intersection_between_two_lines(
+        #         line_a_vector,
+        #         line_b_vector,
+        #         line_a_start,
+        #         line_b_start
+        #     ))
+        #     for (line_a_start, line_a_vector), (line_b_start, line_b_vector)
+        #     in itertools.permutations(result_line_segments, 2)
+        # ):
+        #     result = (*perimeter_corners[start_index::-1], *perimeter_corners[:start_index:-1])
     else:
         result = perimeter_corners[argsorted_angles]
 
     if inspect:
-        plt.scatter(*result.T)
-        plt.legend(range(1, len(perimeter_corners) + 1))
+        fig, ax = plt.subplots()
+        for point in result:
+            ax.scatter(*point)
+        legend = [f"result_{i}" for i in range(1, len(perimeter_corners) + 1)]
+        for point in ordered_centroid_corner_vectors:
+            ax.scatter(*point)
+        plt.legend(legend + [f"centroid_corner vector {i}" for i in range(1, len(perimeter_corners) + 1)])
         plt.show()
 
     return result
@@ -39,9 +64,7 @@ def expand_parallelogram(
     inspect: bool = False,
 ):
     offset = float(offset)
-    down_left, down_right, up_right, up_left = order_polygon_corners(
-        perimeter_corners
-    )
+    down_left, down_right, up_right, up_left = order_polygon_corners(perimeter_corners)
 
     x_offset = offset
     y_offset = -offset if y_inverted else offset
