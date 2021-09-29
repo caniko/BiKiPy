@@ -68,29 +68,3 @@ def generate_radial_arm_maze_arm_perimeters(
         )
 
     return arm_perimeters
-
-
-if __name__ == "__main__":
-    from pathlib import Path
-
-    ROOT = (
-        Path(
-            "C:\\Users\\Can\\Projects\\BiKiPy"
-            # "/home/can/Software_Projects/BiKiPy"
-        )
-        / "examples"
-        / "ymaze_behaj_analysis"
-        / "area_images"
-        / "phd"
-        / "A"
-    )
-
-    img = ROOT / "after_1_phd.png"
-    a = generate_radial_arm_maze_arm_perimeters(
-        line_csv_path=ROOT / "coco_line_labels.csv",
-        center_coco_path=ROOT / "coco_triangle.json",
-        inspect_image=img,
-    )
-    PolygonalPerimeter.plot_perimeters(a)
-    # a[0].plot_parallelogram_labels()
-    plt.show()

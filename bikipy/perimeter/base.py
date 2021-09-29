@@ -647,9 +647,7 @@ def _get_new_reference_point(
     if new_reference_point and image or not (new_reference_point or image):
         msg = "Either image or new_reference_point needs to be defined."
         raise ValueError(msg)
-    return (
-        new_reference_point if new_reference_point else _define_reference_point(image)
-    )
+    return new_reference_point or _define_reference_point(image)
 
 
 def _define_reference_point(image: Any):

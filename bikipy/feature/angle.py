@@ -47,11 +47,17 @@ def counterclockwise_angel_2d(
     >>> counterclockwise_angel_2d((1, 0), (1, 0))
     0.0
     >>> counterclockwise_angel_2d((1, 0), (-1, 0))
-    3.141592653589793       # pi
-    """
+    3.141592653589793       # pi    """
 
     start_vector = unit_vector(start_vector, force_1_dim=True)
     end_vector = unit_vector(end_vector, force_1_dim=True)
+
+    length_start = len(start_vector)
+    length_end = len(end_vector)
+    if length_end != length_start and not (length_end == 1 or length_start == 1):
+        msg = f"start and vector can either be constant, or have the same length. " \
+              f"start = {length_start}, end = {length_end}"
+        raise ValueError(msg)
 
     # Compute determinants and store them in a vertical stack
     determinants = np.array(
@@ -59,17 +65,19 @@ def counterclockwise_angel_2d(
             np.linalg.det(
                 np.vstack(
                     (
-                        (end_vector if len(end_vector) == 1 else end_vector[i]),
-                        (start_vector if len(start_vector) == 1 else start_vector[i]),
+                        (end_vector if length_end == 1 else end_vector[i]),
+                        (start_vector if length_start == 1 else start_vector[i]),
                     )
                 )
             )
-            for i in range(len(start_vector))
+            for i in range(max(length_start, length_end))
         ]
     )
 
     dot_products = dot_prod_along_axis_1(end_vector, start_vector)
-    return np.arctan2(determinants, dot_products)
+    angles = np.arctan2(np.abs(determinants), dot_products)
+    angles[determinants < 0.0] = 2.0 * np.pi - angles[determinants < 0.0]
+    return angles
 
 
 def inner_angle(a_vector: Sequence, b_vector: Sequence) -> np.ndarray:
@@ -206,9 +214,3 @@ ANGLE_METHOD_TO_FUNC = {
     "inner": inner_angle,
     "counterclockwise": counterclockwise_angel_2d,
 }
-
-
-if __name__ == "__main__":
-    print((np.rad2deg(counterclockwise_angel_2d(
-        ((0, -5), (1, -5), (20, 5), (-5, 1)), (0, 1.0)
-    ))))
