@@ -5,47 +5,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from bikipy.feature.angle import counterclockwise_angel_2d
-from bikipy.math.vector import intersection_between_two_lines
 
 
-def order_polygon_corners(
-    perimeter_corners: Sequence, are_linked: bool = True, inspect: bool = False
-):
+def order_polygon_corners(perimeter_corners: Sequence, inspect: bool = False):
     perimeter_corners = np.asarray(perimeter_corners)
     centroid = np.mean(perimeter_corners, axis=0)
 
     centroid_corner_vectors = perimeter_corners - centroid
-    angles = counterclockwise_angel_2d(centroid_corner_vectors, (-1.0, 0.0))
-    argsorted_angles = np.argsort(angles)
-
-    result = perimeter_corners[argsorted_angles]
-
-    # start_index = np.where(argsorted_angles == 0)[0][0]
-    # result = (*perimeter_corners[start_index:], *perimeter_corners[:start_index])
-    #
-    # if inspect:
-    #     ordered_centroid_corner_vectors = (*centroid_corner_vectors[start_index:],
-    #                *centroid_corner_vectors[:start_index])
-    #
-    # # (start point, line_vector)
-    # result_line_segments = zip(
-    #     result, np.diff(np.append(result, np.expand_dims(result[0], 0), axis=0), axis=0)
-    # )
-    # if any(
-    #     np.any(intersection_between_two_lines(
-    #         line_a_vector,
-    #         line_b_vector,
-    #         line_a_start,
-    #         line_b_start
-    #     ))
-    #     for (line_a_start, line_a_vector), (line_b_start, line_b_vector)
-    #     in itertools.permutations(result_line_segments, 2)
-    # ):
-    #     result = (*perimeter_corners[start_index::-1], *perimeter_corners[:start_index:-1])
-    # for a in perimeter_corners:
-    #     plt.scatter(*a.T)
-    # plt.legend(["down_left", "down_right", "up_right", "up_left"])
-    # plt.show()
+    result = perimeter_corners[argsort_counterclockwise(centroid_corner_vectors)]
 
     if inspect:
         fig, ax = plt.subplots()
@@ -55,6 +22,10 @@ def order_polygon_corners(
         plt.show()
 
     return result
+
+
+def argsort_counterclockwise(sequece: Sequence):
+    return np.argsort(counterclockwise_angel_2d(sequece, (-1.0, 0.0)))
 
 
 def expand_parallelogram(

@@ -47,7 +47,7 @@ def counterclockwise_angel_2d(
     >>> counterclockwise_angel_2d((1, 0), (1, 0))
     0.0
     >>> counterclockwise_angel_2d((1, 0), (-1, 0))
-    3.141592653589793       # pi    """
+    3.141592653589793       # pi"""
 
     start_vector = unit_vector(start_vector, force_1_dim=True)
     end_vector = unit_vector(end_vector, force_1_dim=True)
@@ -55,8 +55,10 @@ def counterclockwise_angel_2d(
     length_start = len(start_vector)
     length_end = len(end_vector)
     if length_end != length_start and not (length_end == 1 or length_start == 1):
-        msg = f"start and vector can either be constant, or have the same length. " \
-              f"start = {length_start}, end = {length_end}"
+        msg = (
+            f"start and vector can either be constant, or have the same length. "
+            f"start = {length_start}, end = {length_end}"
+        )
         raise ValueError(msg)
 
     # Compute determinants and store them in a vertical stack

@@ -7,6 +7,7 @@ import pandas as pd
 
 from bikipy.behaviour.y_maze.trial import YMazeTrial
 from bikipy.perimeter.parallelogram.classes import ParallelogramPerimeter
+from bikipy.perimeter.radial_arm_maze import generate_radial_arm_maze_arm_perimeters
 from bikipy.perimeter.triangular import TriangularPerimeter
 from bikipy.utils.video import get_video_data
 
@@ -20,61 +21,25 @@ REPO_PATH = Path("C:/Users/Can/Projects/Neuroscience/bikipy")
 IMAGE_ROOT = REPO_PATH / "examples/data/images/results/phd"
 RESULT_PATH = REPO_PATH / "examples/data/results/results"
 
+IMAGE_A = IMAGE_ROOT / "A"
+
+# 07.06.2020
+first_annotation = generate_radial_arm_maze_arm_perimeters(
+    line_csv_path=IMAGE_ROOT / "coco_line_labels.csv",
+    center_coco_path=IMAGE_ROOT / "coco_triangle.json",
+    inspect_image=IMAGE_A / "before_1_phd.png",
+    label="before_1"
+)
+first_annotation.reference_point = 
+
 exp_id_vs_areas = {
-    "07.06.2020 (1A)": {},
+    "07.06.2020 (1A)": {
+        1: first_annotation,
+        32: first_annotation
+    },
     "26.08.2020 (2A)": {},
     "31.08.2020 (1B)": {},
     "25.11.2020 (2B)": {},
-}
-
-IMAGE_A = IMAGE_ROOT / "A"
-inspect_image = IMAGE_A / "before_1_phd.png"
-exp_id_vs_areas["07.06.2020 (1A)"][1] = {
-    "arms": [
-        ParallelogramPerimeter(
-            base=[
-                [308.9593407405159, 193.11825000362762],
-                [287.30500545447586, 236.4269205757078],
-            ],
-            apex=[
-                [176.22595780600852, 118.83962548259478],
-                [151.93274437947562, 159.54717230543366],
-            ],
-            inspect_image=inspect_image,
-            semantic_label="A",
-        ),
-        ParallelogramPerimeter(
-            base=[
-                [310.16190043086186, 193.75141770204982],
-                [332.955937574062, 235.5404857979167],
-            ],
-            apex=[
-                [437.4286078137291, 115.2386230976939],
-                [461.4889803537737, 153.8618527014496],
-            ],
-            inspect_image=inspect_image,
-            semantic_label="B",
-        ),
-        ParallelogramPerimeter(
-            base=[
-                [287.52247603020544, 235.89313914308434],
-                [334.5558421452106, 235.20147199433427],
-            ],
-            apex=[
-                [291.67247892270586, 395.66825050435193],
-                [338.01417788896094, 392.2099147606016],
-            ],
-            inspect_image=inspect_image,
-            semantic_label="C",
-        ),
-    ],
-    "center": TriangularPerimeter(
-        base_a=[287.47034955838177, 235.30709279213306],
-        base_b=[334.81540956166964, 235.30709279213306],
-        apex=[309.7081807720473, 195.8528761227265],
-        inspect_image=inspect_image,
-        semantic_label="X",
-    ),
 }
 
 inspect_image = IMAGE_A / "before_32_phd.png"

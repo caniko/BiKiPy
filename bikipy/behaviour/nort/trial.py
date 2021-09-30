@@ -225,9 +225,9 @@ class NortField:
         habituation_object_perimeter_b: PolygonalPerimeter,
         novel_object_perimeter: PolygonalPerimeter,
     ):
-        if PolygonalPerimeter.distance_between_two_vectors(
+        if PolygonalPerimeter.distance_between_two_perimeters(
             habituation_object_perimeter_a, novel_object_perimeter
-        ) < PolygonalPerimeter.distance_between_two_vectors(
+        ) < PolygonalPerimeter.distance_between_two_perimeters(
             habituation_object_perimeter_b, novel_object_perimeter
         ):
             constant_object_perimeter = habituation_object_perimeter_b
