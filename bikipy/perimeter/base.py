@@ -5,6 +5,7 @@ from functools import cached_property, lru_cache
 from logging import getLogger
 from pathlib import PurePath, Path
 from typing import Any, Sequence, Union
+from collections.abc import Sequence as CollectionsSequence
 
 import cv2
 import matplotlib.pyplot as plt
@@ -26,6 +27,7 @@ class Perimeter:
         self,
         int_label: Union[int, None] = None,
         semantic_label: Union[str, None] = None,
+        group_label: Union[str, None] = None,
         reference_point: Union[np.ndarray, Sequence[float], None] = None,
         inspect_image: Union[str, PurePath, np.ndarray, None] = None,
     ):
@@ -40,6 +42,7 @@ class Perimeter:
 
         self.int_label = int(int_label) if int_label else None
         self.semantic_label = str(semantic_label) if semantic_label else None
+        self.group_label = str(group_label) if group_label else None
 
         self.inspect_image = inspect_image
         self._reference_point = None
@@ -51,8 +54,10 @@ class Perimeter:
         return self._inspect_image
 
     @inspect_image.setter
-    def inspect_image(self, value):
-        if not isinstance(value, np.ndarray):
+    def inspect_image(self, value: Union[np.ndarray, Sequence, PurePath, str]):
+        if value is not None and not isinstance(
+            value, (np.ndarray, CollectionsSequence)
+        ):
             if (value := Path(value)).exists():
                 self.inspect_image_path = value
                 return
@@ -69,7 +74,7 @@ class Perimeter:
         return self._inspect_image_path
 
     @inspect_image_path.setter
-    def inspect_image_path(self, value: Union[PurePath, str]):
+    def inspect_image_path(self, value: Path_typing):
         if not (value := Path(value)).exists():
             msg = (
                 f"Failed to read inspect_image, the provided path does not exist.\n"
@@ -118,12 +123,13 @@ class Perimeter:
 
     @reference_point.setter
     def reference_point(self, value):
+        if not np.any(value):
+            return
         value = np.asarray(value, dtype=np.float32)
-        if value is not None and self._reference_point is not None:
+        if np.any(self._reference_point):
             if np.all(self._reference_point == value):
                 logger.info("The provided reference_point is identical to the current")
-            else:
-                self.change_reference_function(value)
+            self.change_reference_function(value)
         self._reference_point = value
 
     def change_reference_function(self, new_reference: np.ndarray):
@@ -143,29 +149,51 @@ class Perimeter:
         plt.title("Please click on the reference_point point")
         return np.array(plt.ginput(n=1, timeout=0)[0])
 
-    def change_reference_with_coco(self, coco_path: Union[PurePath, str], image_root: Union[PurePath, str, None] = None):
+    def change_reference_with_coco(
+        self,
+        coco_path: Path_typing,
+        image_root: Path_typing_kwarg = None,
+    ):
         def get_reference_point_from_array(array: np.ndarray):
             return array[1:3]
 
-        if not self.reference_point:
-            msg = "The current object has no defined reference_point"
+        if image_root and not (image_root := Path(image_root)).exists():
+            msg = "image_root is not an existing directory"
             raise AttributeError(msg)
 
-        csv_array = pd.read_csv(
-            coco_path,
-            header=None,
-            # names=["x1", "y1", "x2", "y2", "filename", "img_x", "img_y"],
-        ).to_numpy()
 
-        if (number_of_references := len(csv_array)) == 1:
-            return get_reference_point_from_array(csv_array)
-        elif number_of_references > 1:
+        number_of_references = len(csv_array)
+
+        if number_of_references == 1:
+            self.reference_point = get_reference_point_from_array(csv_array)
+            if image_root:
+                self.inspect_image_path = image_root / self.inspect_image_path.stem
+            return
+
+        if number_of_references > 1:
+            self_reference_index = None
+            if self.reference_point is None:
+                try:
+                    self_reference_index = np.where(
+                        csv_array.T[3] == self.inspect_image_path.stem
+                    )[0][0]
+                except IndexError:
+                    msg = "The current object has no defined reference_point, "
+                    raise AttributeError(msg)
+
+            self.reference_point = get_reference_point_from_array(
+                csv_array[self_reference_index]
+            )
             result = []
-            for row in csv_array:
+            for i, row in enumerate(csv_array):
+                if i == self_reference_index:
+                    continue
                 new = copy.deepcopy(self)
-                new.reference_point = get_reference_point_from_array(row)
-                new.inspect_image
+                if image_root:
+                    new.inspect_image = image_root / row[3]
+                self.reference_point = get_reference_point_from_array(row)
                 result.append(new)
+            return result
         else:
             msg = f"The path in coco_path yields an empty dataset"
             raise ValueError(msg)
@@ -270,6 +298,7 @@ class PolygonalPerimeter(Perimeter):
     def from_coco(
         cls,
         coco_path: Any,
+        reference_point_coco_path: Path_typing_kwarg = None,
         reference_point_annotation: bool = False,
         single_obj_return: bool = False,
         **kwargs,
@@ -289,13 +318,16 @@ class PolygonalPerimeter(Perimeter):
             coco["categories"], key=lambda dictionary: dictionary["id"]
         )
 
+        if reference_point_coco_path:
+            pass
+
         if reference_point_annotation:
             if "inspect_image" not in kwargs:
                 msg = "inspect_image is not defined"
                 raise ValueError(msg)
             reference_point = cls._annotate_reference(kwargs["inspect_image"])
         else:
-            reference_point = False
+            reference_point = None
 
         results = {}
         for annotation, category in zip(coco["annotations"], coco["categories"]):
@@ -652,23 +684,37 @@ class PolygonalPerimeterSet(Perimeter):
         present = np.any(
             [
                 perimeter.coordinate_confinement_boolean_index(coordinates)
-                for perimeter in self._perimeter_iterable
+                for perimeter in self.perimeters
             ]
         )
         if self.restricted_perimeters:
             present = present & ~np.any(
                 [
                     perimeter.coordinate_confinement_boolean_index(coordinates)
-                    for perimeter in self._restricted_perimeters_iterable
+                    for perimeter in self.restricted_perimeters
                 ]
             )
         return present
 
-    def change_reference_function(self, new_reference: np.ndarray):
+    def change_reference_function(self, new_reference: np.ndarray, **kwargs):
+        new_perimeters = []
         for perimeter in self.perimeters:
             perimeter.reference_point = new_reference
-        for perimeter in self.restricted_perimeters:
-            perimeter.reference_point = new_reference
+            new_perimeters.append(perimeter)
+
+        if self.restricted_perimeters:
+            new_restricted_parameters = []
+            for perimeter in self.restricted_perimeters:
+                perimeter.reference_point = new_reference
+                new_restricted_parameters.append(perimeter)
+
+        return self.__class__(
+            perimeters=new_perimeters,
+            restricted_perimeters=(
+                new_restricted_parameters if self.restricted_perimeters else None
+            ),
+            **kwargs
+        )
 
     @property
     def _reference_point_variance(self):
@@ -682,49 +728,18 @@ class PolygonalPerimeterSet(Perimeter):
 
     @cached_property
     def _all_perimeters(self):
-        return *self._perimeter_iterable, *self._restricted_perimeters_iterable
+        return *self.perimeters, *self.restricted_perimeters
 
     @cached_property
     def _perimeter_is_dict(self):
         return isinstance(self.perimeters, dict)
 
-    @cached_property
-    def _perimeter_iterable(self):
-        return self.perimeters.values() if self._perimeter_is_dict else self.perimeters
-
-    @cached_property
-    def _restricted_perimeters_is_dict(self):
-        return isinstance(self.restricted_perimeters, dict)
-
-    @cached_property
-    def _restricted_perimeters_iterable(self):
-        return (
-            self.restricted_perimeters.values()
-            if self._restricted_perimeters_is_dict
-            else self.restricted_perimeters
-        )
-
-    @cached_property
-    def _unified_dict(self):
-        if self._perimeter_is_dict and self._restricted_perimeters_is_dict:
-            return {**self.perimeters, **self.restricted_perimeters}
-        if self._perimeter_is_dict:
-            return self.perimeters
-        if self._restricted_perimeters_is_dict:
-            return self.restricted_perimeters
-        msg = "None of the perimeter datastructures are mappable"
-        raise AttributeError(msg)
-
     @lru_cache
     def __getitem__(self, item: Union[str, int]):
-        try:
-            return self._unified_dict[item]
-        except AttributeError:
-            for perimeter in self._all_perimeters:
-                if perimeter.semantic_label == item or perimeter.int_label == item:
-                    return perimeter
-        msg = f"Item was not found, {item}"
-        raise KeyError(msg)
+        for perimeter in self._all_perimeters:
+            if perimeter.semantic_label == item or perimeter.int_label == item:
+                return perimeter
+        raise KeyError(f"Item was not found, {item}")
 
 
 Perimeter2D = Union[PolygonalPerimeter, PolygonalPerimeterSet]

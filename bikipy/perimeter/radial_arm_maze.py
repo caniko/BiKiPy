@@ -3,25 +3,27 @@ from pathlib import PurePath
 from typing import Union, Any
 
 import numpy as np
-import pandas as pd
 from matplotlib import pyplot as plt
 
 from bikipy.math.geometry import argsort_counterclockwise
 from bikipy.perimeter import ParallelogramPerimeter, TriangularPerimeter
 from bikipy.perimeter.base import PolygonalPerimeter, PolygonalPerimeterSet
+from bikipy.utils.misc import read_makesense_point_csv
+from bikipy.utils.typing import Path_typing
 
 
 def generate_radial_arm_maze_arm_perimeters(
-    line_csv_path: Union[PurePath, str],
-    center_coco_path: Union[PurePath, str, None] = None,
+    line_csv_path: Path_typing,
+    center_coco_path: Path_typing_kwarg = None,
     triangular_center_object: Union[TriangularPerimeter, None] = None,
-    inspect_image: Union[PurePath, str, None] = None,
+    inspect_image: Path_typing_kwarg = None,
     inspect: bool = False,
-    label: Any = None
+    label: Any = None,
 ):
     if triangular_center_object:
         center_object = triangular_center_object
         center_object.semantic_label = "center"
+        center_object.group_label = "center"
     elif center_coco_path:
         if not os.path.exists(center_coco_path):
             msg = f"center_coco_path does not exist, {center_coco_path}"
@@ -33,15 +35,7 @@ def generate_radial_arm_maze_arm_perimeters(
         msg = "Either center_object or center_coco_path has to be defined"
         raise ValueError(msg)
 
-    csv_array = (
-        pd.read_csv(
-            line_csv_path,
-            header=None,
-            # names=["x1", "y1", "x2", "y2", "filename", "img_x", "img_y"],
-        )
-        .to_numpy()
-        .T
-    )
+    csv_array = read_makesense_point_csv(line_csv_path).T
     labels = csv_array[0]
     number_of_arms = len(labels)
     center_object.int_label = number_of_arms + 1
@@ -83,11 +77,9 @@ def generate_radial_arm_maze_arm_perimeters(
                 arm_perimeter,
                 int_label=line_index + 1,
                 semantic_label=labels[line_index],
+                group_label="arm",
                 inspect_image=inspect_image or center_object.inspect_image,
             )
         )
 
-    return PolygonalPerimeterSet(
-        {"arms": arm_perimeters, "center": center_object},
-        semantic_label=label
-    )
+    return PolygonalPerimeterSet((*arm_perimeters, center_object), semantic_label=label)

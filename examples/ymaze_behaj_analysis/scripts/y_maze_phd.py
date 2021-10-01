@@ -9,140 +9,46 @@ from bikipy.behaviour.y_maze.trial import YMazeTrial
 from bikipy.perimeter.parallelogram.classes import ParallelogramPerimeter
 from bikipy.perimeter.radial_arm_maze import generate_radial_arm_maze_arm_perimeters
 from bikipy.perimeter.triangular import TriangularPerimeter
+from bikipy.utils.store import RangeDict
 from bikipy.utils.video import get_video_data
 
 # User defined
 DATASET_LABEL = "phd"
 
-DATA_DIR = Path("C:/Users/Can/Projects/Neuroscience/Imen/data/results/phd")
+DATA_DIR = Path("/mnt/md0/Projects/Neuroscience/Imen/data/y_maze/phd/")
 EXP_ID_REGEX_PATTERN = re.compile("\d+")
 
-REPO_PATH = Path("C:/Users/Can/Projects/Neuroscience/bikipy")
-IMAGE_ROOT = REPO_PATH / "examples/data/images/results/phd"
-RESULT_PATH = REPO_PATH / "examples/data/results/results"
+REPO_PATH = Path("/home/can/Software_Projects/BiKiPy")
+ROOT_YMAZE = REPO_PATH / "examples" / "ymaze_behaj_analysis"
 
-IMAGE_A = IMAGE_ROOT / "A"
+IMAGE_PATH = ROOT_YMAZE / "area_images" / "phd"
+RESULT_PATH = ROOT_YMAZE / "results"
+ANNOTATION_PATH = IMAGE_PATH / "annotation"
 
 # 07.06.2020
 first_annotation = generate_radial_arm_maze_arm_perimeters(
-    line_csv_path=IMAGE_ROOT / "coco_line_labels.csv",
-    center_coco_path=IMAGE_ROOT / "coco_triangle.json",
-    inspect_image=IMAGE_A / "before_1_phd.png",
-    label="before_1"
+    line_csv_path=ANNOTATION_PATH / "coco_line_labels.csv",
+    center_coco_path=ANNOTATION_PATH / "coco_triangle.json",
+    reference_path=ANNOTATION_PATH / "reference.csv",
+    inspect_image=IMAGE_PATH / "a_p1_1_before_1_phd.png",
+    label="a_p1_1",
 )
-first_annotation.reference_point = 
+
+re_referenced = first_annotation.change_reference_with_coco(
+    IMAGE_PATH / "reference_points_2021-09-30-10-12-16.csv", IMAGE_PATH
+)
 
 exp_id_vs_areas = {
     "07.06.2020 (1A)": {
         1: first_annotation,
-        32: first_annotation
+        32: re_referenced[0],
     },
-    "26.08.2020 (2A)": {},
+    "26.08.2020 (2A)": {1: re_referenced[1]},
     "31.08.2020 (1B)": {},
     "25.11.2020 (2B)": {},
 }
 
-inspect_image = IMAGE_A / "before_32_phd.png"
-exp_id_vs_areas["07.06.2020 (1A)"][32] = {
-    "arms": (
-        ParallelogramPerimeter(
-            base=[
-                [309.44300412905403, 194.07402857692392],
-                [288.38603678988756, 236.187963255257],
-            ],
-            apex=[
-                [175.3803120696939, 121.77844071245221],
-                [152.9195469079163, 162.48857756817415],
-            ],
-            inspect_image=inspect_image,
-            semantic_label="A",
-        ),
-        ParallelogramPerimeter(
-            base=[
-                [311.8209525619013, 194.7171785444296],
-                [336.98296504900634, 234.25748388130893],
-            ],
-            apex=[
-                [438.3499296399152, 117.79331179813704],
-                [464.94977141199763, 155.17687320755027],
-            ],
-            inspect_image=inspect_image,
-            semantic_label="B",
-        ),
-        ParallelogramPerimeter(
-            base=[
-                [288.431462397926, 235.8676906087083],
-                [335.2359574417894, 235.8676906087083],
-            ],
-            apex=[
-                [292.14610486172467, 396.3402450448116],
-                [339.6935283983479, 394.11145956653235],
-            ],
-            inspect_image=inspect_image,
-            semantic_label="C",
-        ),
-    ),
-    "center": TriangularPerimeter(
-        base_a=[287.1835791862539, 234.81489706597512],
-        base_b=[335.3210406873076, 234.81489706597512],
-        apex=[309.5923974712272, 194.1470416599126],
-        inspect_image=inspect_image,
-        semantic_label="X",
-    ),
-}
-
-inspect_image = IMAGE_A / "after_1_phd.png"
-exp_id_vs_areas["26.08.2020 (2A)"][1] = {
-    "arms": (
-        ParallelogramPerimeter(
-            base=[
-                [308.19455616608803, 195.86862513168256],
-                [283.84982088825086, 237.3978794291695],
-            ],
-            apex=[
-                [174.29851213798355, 120.68635442071474],
-                [148.52173360850884, 159.35152221492677],
-            ],
-            inspect_image=inspect_image,
-            semantic_label="A",
-        ),
-        ParallelogramPerimeter(
-            base=[
-                [307.06098087637076, 196.75741594708666],
-                [331.03489232273137, 236.46420678012123],
-            ],
-            apex=[
-                [438.9174938313537, 118.84220374641495],
-                [462.14222054501545, 159.2981793121483],
-            ],
-            inspect_image=inspect_image,
-            semantic_label="B",
-        ),
-        ParallelogramPerimeter(
-            base=[
-                [281.60649616867585, 236.4269205757078],
-                [330.61367602655605, 238.7063242900278],
-            ],
-            apex=[
-                [285.0256017401558, 392.5660750066285],
-                [331.75337788371604, 393.7057768637885],
-            ],
-            inspect_image=inspect_image,
-            semantic_label="C",
-        ),
-    ),
-    "center": TriangularPerimeter(
-        base_a=[285.73376623376623, 238.98051948051943],
-        base_b=[329.8896103896104, 237.68181818181813],
-        apex=[306.51298701298697, 194.82467532467524],
-        inspect_image=inspect_image,
-        semantic_label="X",
-    ),
-}
-
-IMAGE_B = IMAGE_ROOT / "B"
-
-inspect_image = IMAGE_B / "before_1.png"
+inspect_image = IMAGE_PATH / "before_1.png"
 exp_id_vs_areas["31.08.2020 (1B)"][1] = {
     "arms": (
         ParallelogramPerimeter(
@@ -191,7 +97,7 @@ exp_id_vs_areas["31.08.2020 (1B)"][1] = {
     ),
 }
 
-inspect_image = IMAGE_B / "before_24.png"
+inspect_image = IMAGE_PATH / "before_24.png"
 exp_id_vs_areas["31.08.2020 (1B)"][23] = {
     "arms": (
         ParallelogramPerimeter(
@@ -240,7 +146,7 @@ exp_id_vs_areas["31.08.2020 (1B)"][23] = {
     ),
 }
 
-inspect_image = IMAGE_B / "after_1.png"
+inspect_image = IMAGE_PATH / "after_1.png"
 exp_id_vs_areas["25.11.2020 (2B)"][1] = {
     "arms": (
         ParallelogramPerimeter(

@@ -25,7 +25,7 @@ class Behaviour:
         self,
         label: Any = None,
         timestamp: Any = None,
-        save_root: Union[PurePath, str, None] = None,
+        save_root: Path_typing_kwarg = None,
         _live: bool = False,
     ):
         self.label = label
@@ -34,7 +34,7 @@ class Behaviour:
 
         self._live = _live
 
-    def save(self, save_root: Union[PurePath, str, None] = None):
+    def save(self, save_root: Path_typing_kwarg = None):
         save_root = Path(save_root or self.save_root)
         assert save_root
         compress_pickle.dump(

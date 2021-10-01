@@ -3,7 +3,10 @@ from pathlib import Path, PurePath
 from typing import Any
 
 import cv2
+import pandas as pd
 from numpy import ndarray
+
+from bikipy.utils.typing import Path_typing
 
 logger = getLogger(__name__)
 
@@ -39,3 +42,11 @@ def read_image(image: Any, imread_flagg: Any = None):
         ), f"image must be either path or np.ndarray, but got:\n{image}"
 
     return image
+
+
+def read_makesense_point_csv(coco_path: Path_typing):
+    return pd.read_csv(
+        coco_path,
+        header=None,
+        # names=["x1", "y1", "x2", "y2", "filename", "img_x", "img_y"],
+    ).to_numpy()
