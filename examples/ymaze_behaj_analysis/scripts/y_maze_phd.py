@@ -27,15 +27,15 @@ ANNOTATION_PATH = IMAGE_PATH / "annotation"
 
 # 07.06.2020
 first_annotation = generate_radial_arm_maze_arm_perimeters(
-    line_csv_path=ANNOTATION_PATH / "coco_line_labels.csv",
-    center_coco_path=ANNOTATION_PATH / "coco_triangle.json",
-    reference_path=ANNOTATION_PATH / "reference.csv",
+    line_csv_path=ANNOTATION_PATH / "lines.csv",
+    center_coco_path=ANNOTATION_PATH / "center.json",
+    reference_point_coco_path=ANNOTATION_PATH / "reference.csv",
     inspect_image=IMAGE_PATH / "a_p1_1_before_1_phd.png",
-    label="a_p1_1",
+    semantic_label="a_p1_1",
 )
 
 re_referenced = first_annotation.change_reference_with_coco(
-    IMAGE_PATH / "reference_points_2021-09-30-10-12-16.csv", IMAGE_PATH
+    IMAGE_PATH / "references.csv", IMAGE_PATH
 )
 
 exp_id_vs_areas = {

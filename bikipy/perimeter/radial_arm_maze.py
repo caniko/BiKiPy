@@ -9,16 +9,15 @@ from bikipy.math.geometry import argsort_counterclockwise
 from bikipy.perimeter import ParallelogramPerimeter, TriangularPerimeter
 from bikipy.perimeter.base import PolygonalPerimeter, PolygonalPerimeterSet
 from bikipy.utils.misc import read_makesense_point_csv
-from bikipy.utils.typing import Path_typing
+from bikipy.utils.typing import Path_typing, Path_typing_kwarg
 
 
 def generate_radial_arm_maze_arm_perimeters(
     line_csv_path: Path_typing,
     center_coco_path: Path_typing_kwarg = None,
     triangular_center_object: Union[TriangularPerimeter, None] = None,
-    inspect_image: Path_typing_kwarg = None,
     inspect: bool = False,
-    label: Any = None,
+    **perimeter_kwargs,
 ):
     if triangular_center_object:
         center_object = triangular_center_object
@@ -78,8 +77,7 @@ def generate_radial_arm_maze_arm_perimeters(
                 int_label=line_index + 1,
                 semantic_label=labels[line_index],
                 group_label="arm",
-                inspect_image=inspect_image or center_object.inspect_image,
             )
         )
 
-    return PolygonalPerimeterSet((*arm_perimeters, center_object), semantic_label=label)
+    return PolygonalPerimeterSet((*arm_perimeters, center_object), **perimeter_kwargs)

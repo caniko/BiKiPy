@@ -1,5 +1,6 @@
 import copy
 import json
+import os.path
 import statistics
 from functools import cached_property, lru_cache
 from logging import getLogger
@@ -16,7 +17,8 @@ from shapely.geometry import Point, Polygon
 
 from bikipy.math.geometry import expand_parallelogram
 from bikipy.math.vector import point_to_line_segment_distance
-from bikipy.utils.misc import read_image
+from bikipy.utils.misc import read_image, read_makesense_point_csv
+from bikipy.utils.typing import Path_typing_kwarg, Path_typing
 from bikipy.utils.video import get_video_data
 
 logger = getLogger(__name__)
@@ -28,8 +30,10 @@ class Perimeter:
         int_label: Union[int, None] = None,
         semantic_label: Union[str, None] = None,
         group_label: Union[str, None] = None,
+        reference_point_coco_path: Path_typing_kwarg = None,
         reference_point: Union[np.ndarray, Sequence[float], None] = None,
         inspect_image: Union[str, PurePath, np.ndarray, None] = None,
+        inspect_image_path: Path_typing_kwarg = None,
     ):
         """
         :param int_label: Integer label
@@ -44,10 +48,11 @@ class Perimeter:
         self.semantic_label = str(semantic_label) if semantic_label else None
         self.group_label = str(group_label) if group_label else None
 
-        self.inspect_image = inspect_image
         self._reference_point = None
         self._inspect_image_path = None
-        self.reference_point = reference_point
+
+        self.inspect_image = inspect_image or inspect_image_path
+        self.reference_point = reference_point or reference_point_coco_path
 
     @property
     def inspect_image(self):
@@ -55,9 +60,7 @@ class Perimeter:
 
     @inspect_image.setter
     def inspect_image(self, value: Union[np.ndarray, Sequence, PurePath, str]):
-        if value is not None and not isinstance(
-            value, (np.ndarray, CollectionsSequence)
-        ):
+        if np.any(value) and not isinstance(value, (np.ndarray, CollectionsSequence)):
             if (value := Path(value)).exists():
                 self.inspect_image_path = value
                 return
@@ -75,7 +78,7 @@ class Perimeter:
 
     @inspect_image_path.setter
     def inspect_image_path(self, value: Path_typing):
-        if not (value := Path(value)).exists():
+        if np.any(value) and not (value := Path(value)).exists():
             msg = (
                 f"Failed to read inspect_image, the provided path does not exist.\n"
                 f"Path: {value}"
@@ -125,6 +128,12 @@ class Perimeter:
     def reference_point(self, value):
         if not np.any(value):
             return
+
+        if isinstance(value, (PurePath, str)):
+            # Notice the genius level of recursion that occurs on the next line.
+            self.reference_point = read_makesense_point_csv(value)[1:3]
+            return
+
         value = np.asarray(value, dtype=np.float32)
         if np.any(self._reference_point):
             if np.all(self._reference_point == value):
@@ -161,7 +170,7 @@ class Perimeter:
             msg = "image_root is not an existing directory"
             raise AttributeError(msg)
 
-
+        csv_array = read_makesense_point_csv(coco_path)
         number_of_references = len(csv_array)
 
         if number_of_references == 1:
@@ -171,22 +180,25 @@ class Perimeter:
             return
 
         if number_of_references > 1:
-            self_reference_index = None
-            if self.reference_point is None:
+            self_reference_row_index = None
+            if not np.any(self.reference_point):
                 try:
-                    self_reference_index = np.where(
+                    self_reference_row_index = np.where(
                         csv_array.T[3] == self.inspect_image_path.stem
                     )[0][0]
-                except IndexError:
-                    msg = "The current object has no defined reference_point, "
-                    raise AttributeError(msg)
+                except IndexError as e:
+                    msg = "The reference object has no reference point, and there is no refrence point " \
+                          "for the inspect_image stored in the coco dataset"
+                    raise ValueError(msg) from e
+                except AttributeError as e:
+                    msg = "inspect_image_path needs to be defined to define a reference point " \
+                          "for the reference object from a coco multi-reference dataset"
+                    raise AttributeError(msg) from e
+                self.reference_point = csv_array[self_reference_row_index][1:3]
 
-            self.reference_point = get_reference_point_from_array(
-                csv_array[self_reference_index]
-            )
             result = []
             for i, row in enumerate(csv_array):
-                if i == self_reference_index:
+                if i == self_reference_row_index:
                     continue
                 new = copy.deepcopy(self)
                 if image_root:
@@ -195,7 +207,7 @@ class Perimeter:
                 result.append(new)
             return result
         else:
-            msg = f"The path in coco_path yields an empty dataset"
+            msg = f"The path in coco_path is an empty dataset"
             raise ValueError(msg)
 
     def __repr__(self):
@@ -319,9 +331,13 @@ class PolygonalPerimeter(Perimeter):
         )
 
         if reference_point_coco_path:
-            pass
-
-        if reference_point_annotation:
+            point_coco_array = read_makesense_point_csv(reference_point_coco_path)
+            if len(point_coco_array) != 1:
+                msg = "There can only be a one point annotation in the provided coco dataset for " \
+                      "the definition of reference_point"
+                raise ValueError(msg)
+            reference_point = point_coco_array[0][1:3]
+        elif reference_point_annotation:
             if "inspect_image" not in kwargs:
                 msg = "inspect_image is not defined"
                 raise ValueError(msg)
@@ -331,10 +347,6 @@ class PolygonalPerimeter(Perimeter):
 
         results = {}
         for annotation, category in zip(coco["annotations"], coco["categories"]):
-            assert int(annotation["category_id"]) == int(
-                category["id"]
-            ), f"{annotation['category_id']} != {category['id']}"
-
             segmentation = annotation["segmentation"][0]
             results[category["name"].lower()] = cls.init_polygon(
                 [  # corners
@@ -713,7 +725,7 @@ class PolygonalPerimeterSet(Perimeter):
             restricted_perimeters=(
                 new_restricted_parameters if self.restricted_perimeters else None
             ),
-            **kwargs
+            **kwargs,
         )
 
     @property

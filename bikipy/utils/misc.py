@@ -3,32 +3,13 @@ from pathlib import Path, PurePath
 from typing import Any
 
 import cv2
+import numpy as np
 import pandas as pd
 from numpy import ndarray
 
 from bikipy.utils.typing import Path_typing
 
 logger = getLogger(__name__)
-
-
-def resolve_stem_in_filepath(filepath: Any):
-    if filepath is None:
-        return
-
-    filepath = Path(filepath).resolve()
-    assert filepath.parent.exists(), filepath
-
-    if filepath.exists():
-        i = 2
-        stem = filepath.stem
-        while not filepath.exists():
-            filepath.with_name(f"{stem}_{i}.ods")
-        logger.warning(
-            f"The file exists, and adding index "
-            f"increment to the new file, {filepath.stem}"
-        )
-
-    return filepath
 
 
 def read_image(image: Any, imread_flagg: Any = None):

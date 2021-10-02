@@ -13,6 +13,7 @@ from tqdm import tqdm
 from bikipy.feature.motion import Motion, displacement_by_frame, frozen_frames
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.store import RangeDict
+from bikipy.utils.typing import Path_typing_kwarg
 from bikipy.utils.video import get_video_data
 
 logger = getLogger(__name__)

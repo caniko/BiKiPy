@@ -1,5 +1,5 @@
 from pathlib import PurePath
-from types import Union
+from typing import Union
 
 
 Path_typing = Union[PurePath, str]
