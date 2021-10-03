@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from bikipy.behaviour.y_maze.trial import YMazeTrial
+from bikipy.behaviour.y_maze.experiment import YMazeTrial
 from bikipy.perimeter.parallelogram.classes import ParallelogramPerimeter
 from bikipy.perimeter.triangular import TriangularPerimeter
 from bikipy.utils.video import get_video_data
@@ -17,10 +17,10 @@ REPO_PATH = Path("C:/Users/Can/Projects/Neuroscience/bikipy")
 IMAGE_ROOT = REPO_PATH / "examples/data/images/results/master's"
 RESULT_PATH = REPO_PATH / "examples/data/results/results"
 
-exp_id_vs_areas = {"before": {}, "after": {}}
+trial_id_vs_areas = {"before": {}, "after": {}}
 
 inspect_image = IMAGE_ROOT / "before_11_masters.png"
-exp_id_vs_areas["before"][11] = {
+trial_id_vs_areas["before"][11] = {
     "arms": [
         ParallelogramPerimeter(
             base=[
@@ -70,7 +70,7 @@ exp_id_vs_areas["before"][11] = {
 
 
 inspect_image = IMAGE_ROOT / "before_45_masters.png"
-exp_id_vs_areas["before"][45] = {
+trial_id_vs_areas["before"][45] = {
     "arms": [
         ParallelogramPerimeter(
             base=[
@@ -120,7 +120,7 @@ exp_id_vs_areas["before"][45] = {
 
 
 inspect_image = IMAGE_ROOT / "before_63_masters.png"
-exp_id_vs_areas["before"][63] = {
+trial_id_vs_areas["before"][63] = {
     "arms": [
         ParallelogramPerimeter(
             base=[
@@ -170,7 +170,7 @@ exp_id_vs_areas["before"][63] = {
 
 
 inspect_image = IMAGE_ROOT / "after_94_masters.png"
-exp_id_vs_areas["after"][94] = {
+trial_id_vs_areas["after"][94] = {
     "arms": [
         ParallelogramPerimeter(
             base=[
@@ -220,7 +220,7 @@ exp_id_vs_areas["after"][94] = {
 
 
 inspect_image = IMAGE_ROOT / "after_140_masters.png"
-exp_id_vs_areas["after"][140] = {
+trial_id_vs_areas["after"][140] = {
     "arms": [
         ParallelogramPerimeter(
             base=[
@@ -273,26 +273,26 @@ for subdir in os.listdir(str(DATA_DIR)):
     print(f"Reading {subdir}")
 
     trial_name = subdir.split("_")[1].lower()
-    exp_id_range_vs_area_sets = exp_id_vs_areas[trial_name]
+    trial_id_range_vs_area_sets = trial_id_vs_areas[trial_name]
 
-    exp_id_vs_dlc_path, exp_id_vs_fps = {}, {}
+    trial_id_vs_dlc_path, trial_id_vs_fps = {}, {}
     for file_path in glob(str(DATA_DIR / subdir / "*.h5")):
-        exp_id = int(EXP_ID_REGEX_PATTERN.findall(Path(file_path).stem)[0])
-        exp_id_vs_dlc_path[exp_id] = file_path
+        trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(file_path).stem)[0])
+        trial_id_vs_dlc_path[trial_id] = file_path
 
     for file_path in glob(str(DATA_DIR / subdir / "*.mp4")):
-        exp_id = int(EXP_ID_REGEX_PATTERN.findall(Path(file_path).stem)[0])
+        trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(file_path).stem)[0])
 
         _, _x, _y, fps = get_video_data(file_path)
-        exp_id_vs_fps[exp_id] = fps
+        trial_id_vs_fps[trial_id] = fps
 
     trial_datas.append(
         (
             trial := YMazeTrial(
-                exp_id_range_vs_area_sets=exp_id_range_vs_area_sets,
+                trial_id_range_vs_area_sets=trial_id_range_vs_area_sets,
                 feature_tracking_point="mid-mid-left_ear-right_ear-base_tail",
-                trial_id_vs_coordinate_data_path=exp_id_vs_dlc_path,
-                fps=exp_id_vs_fps,
+                trial_id_vs_coordinate_data_path=trial_id_vs_dlc_path,
+                fps=trial_id_vs_fps,
                 center_triangle_meter_width=0.08,
                 label=subdir,
                 midpoint_groups=(

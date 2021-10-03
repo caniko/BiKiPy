@@ -1,6 +1,5 @@
 import os.path
-from pathlib import PurePath
-from typing import Union, Any
+from typing import Union
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -21,18 +20,19 @@ def generate_radial_arm_maze_arm_perimeters(
 ):
     if triangular_center_object:
         center_object = triangular_center_object
-        center_object.semantic_label = "center"
-        center_object.group_label = "center"
     elif center_coco_path:
         if not os.path.exists(center_coco_path):
             msg = f"center_coco_path does not exist, {center_coco_path}"
             raise ValueError(msg)
         center_object = triangular_center_object or PolygonalPerimeter.from_coco(
-            center_coco_path, single_obj_return=True, semantic_label="center"
+            center_coco_path, single_obj_return=True
         )
     else:
         msg = "Either center_object or center_coco_path has to be defined"
         raise ValueError(msg)
+
+    center_object.semantic_label = "center"
+    center_object.group_label = "center"
 
     csv_array = read_makesense_point_csv(line_csv_path).T
     labels = csv_array[0]

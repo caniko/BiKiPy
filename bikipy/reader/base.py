@@ -165,7 +165,7 @@ class BaseReader:
         init_method: Callable,
         data_path: Iterable[Any],
         labels: Iterable[str],
-        force_process_pooling: Union[bool, None] = None,
+        enable_process_pooling: bool = True,
         **init_kwargs,
     ) -> tuple:
         """
@@ -175,13 +175,13 @@ class BaseReader:
             data format
         :param data_path: Path to the data that will imported
         :param labels: labels of the data
-        :param force_process_pooling: If True, initialize each DeepLabCutReader object with multiprocessing.
+        :param enable_process_pooling: If True, initialize each DeepLabCutReader object with multiprocessing.
             Useful when initialize approximately 20 or more dlc objects
         :param init_kwargs: Keyword arguments for the class init-method
         :type init_method: Callable
         :type data_path: Iterable[Any]
         :type labels: Iterable[str]
-        :type force_process_pooling: bool
+        :type enable_process_pooling: bool
         :type init_kwargs: dict
         :return: Objects instanced from the respective class with the provided data
         :rtype: tuple
@@ -189,9 +189,7 @@ class BaseReader:
         kwarg_loaded_init = partial(init_method, **init_kwargs)
 
         # Process pooling in windows is subpar and is not supported.
-        if force_process_pooling or (
-            force_process_pooling is None and sys.platform != "win32"
-        ):
+        if enable_process_pooling and sys.platform != "win32":
             with ProcessPoolExecutor() as executor:
                 dlc_objects = executor.map(kwarg_loaded_init, data_path, labels)
 

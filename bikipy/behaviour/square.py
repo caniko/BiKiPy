@@ -50,12 +50,12 @@ class SquareEnclosedTrial(BaseTrial):
 
         self.center_motion = Motion(
             self.coordinates_per_frame[self.center_boolean_index],
-            self.unit_per_pixel,
+            self.units_per_pixel,
             self.fps,
         )
         self.periphery_motion = Motion(
             self.coordinates_per_frame[self.periphery_boolean_index],
-            self.unit_per_pixel,
+            self.units_per_pixel,
             self.fps,
         )
 

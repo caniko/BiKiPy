@@ -100,25 +100,11 @@ class NortExperiment(BaseExperiment):
         for trial_id, trial_meta in self.trial_id_data_tqdm():
             logger.info(f"Category {trial_meta['stage']}; ID {trial_id}")
 
-            coordinate_sequence = self.trial_id_vs_coordinate_sequences[trial_id]
-
             generic_kwargs = {
-                "video_path": trial_meta["video_path"],
-                "coordinate_sequence": coordinate_sequence,
-                "movement_feature_point_label": self.eye_center_label,
-                "metric_resolution": self.metric_resolution,
-                "label": trial_id,
-                "inspection_figure_save": self.inspection_figure_save,
-                "rigid_nodes_freezing": (self.eye_center_label, self.torso_label),
+                **self.generic_trial_kwargs(trial_id),
+                "point_label_for_motion_features": self.eye_center_label,
+                "rigid_nodes_freezing": (self.eye_center_label, self.torso_label)
             }
-
-            if "animal_id" in trial_meta:
-                generic_kwargs["animal_id"] = trial_meta["animal_id"]
-
-            if "inspect" in trial_meta:
-                generic_kwargs["inspection_figure_save"] = trial_meta["inspect"]
-                if "inspect_image" in trial_meta:
-                    generic_kwargs["inspect_image"] = trial_meta["inspect_image"]
 
             exp_class = self.trial_label_to_trial_class_name[
                 trial_meta["stage"].lower().replace(" ", "_")
@@ -181,7 +167,7 @@ class NortExperiment(BaseExperiment):
 
         Returns
         -------
-        DataFrame with the combined experiment attributes of all the YMaze objects
+        DataFrame with the combined experiment attributes of all the YMazeTrial objects
         """
 
         def to_df(data_dict: dict, features: Sequence):

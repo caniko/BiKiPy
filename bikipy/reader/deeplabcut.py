@@ -57,7 +57,7 @@ class DeepLabCutReader(BaseReader):
         self.x_crop_start = float(x_crop_start)
         if self.x_crop_start:
             for roi in self.regions_of_interest:
-                self.df.loc[(roi, "x")] = self.df[(roi, "x")] + self.x_crop_start
+                self.df.loc[:, (roi, "x")] = self.df.loc[:, (roi, "x")] + self.x_crop_start
 
         self.y_crop_start = float(y_crop_start)
         self.invert_y = invert_y
@@ -71,7 +71,7 @@ class DeepLabCutReader(BaseReader):
                 y_add = self.y_crop_start
 
             for roi in self.regions_of_interest:
-                self.df.loc[(roi, "y")] = self.df[(roi, "y")] + y_add
+                self.df.loc[:, (roi, "y")] = self.df.loc[:, (roi, "y")] + y_add
 
         if midpoint_groups:
             if isinstance(midpoint_groups, dict):

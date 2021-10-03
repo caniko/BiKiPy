@@ -1,243 +1,145 @@
-import itertools as it
-from copy import copy
-from functools import partial
 from logging import getLogger
-from math import ceil
-from typing import Any, Sequence, Union
 
 import matplotlib.pyplot as plt
-import numpy as np
+import pandas as pd
 
-from bikipy.behaviour.base import BaseTrial
-from bikipy.behaviour.utils import (
-    exclude_value_from_sequence,
-    reduce_repeating_sequences,
-    unique_with_counts_zipped,
-)
-from bikipy.behaviour.y_maze.utils import mean_intersecting_points_on_borders
-from bikipy.perimeter.base import PolygonalPerimeter
-from bikipy.utils.store import translate_keys
-
-INT_TO_SEMANTIC_LABELS = {1: "A", 2: "B", 3: "C", 4: "X"}
-generic_int_to_semantic_key_translator = partial(
-    translate_keys, translation=INT_TO_SEMANTIC_LABELS
-)
+from bikipy.behaviour.base import BaseExperiment
+from bikipy.behaviour.y_maze.trial import YMazeTrial
 
 
 logger = getLogger(__name__)
 
 
-class YMaze(BaseTrial):
+class YMazeExperiment(BaseExperiment):
     def __init__(
         self,
-        arms: Sequence[PolygonalPerimeter],
-        center: PolygonalPerimeter,
-        average_intersections: bool = True,
+        trial_id_range_vs_perimeter_set: dict[int, dict],
+        center_triangle_meter_width: float,
         *args,
         **kwargs,
     ):
         """
+
         Parameters
         ----------
-        arms: Sequence
-            bikipy perimeter objects defining the arms of the y-maze
-        center
-            bikipy perimeter object defining the centre of the y-maze
+        trial_id_range_vs_perimeter_set
+            Key value pair of experiment ID and perimeter sets
+            each depicting the parameters of the experiments within their range.
+            The experiment ID range is defined as key : next_key (trial_id:next_trial_id)
+
         """
-
-        super().__init__(*args, **kwargs)
-
-        if average_intersections:
-            self.arms, self.center = mean_intersecting_points_on_borders(arms, center)
-        else:
-            self.arms, self.center = arms, center
-
-        (
-            self.alternation_sequence,
-            self.valid_indices,
-            self.valid_boolean_index,
-        ) = PolygonalPerimeter.detect_sequential_border_presence(
-            self.coordinate_sequence,
-            self.arms,
-            inferior_poly_border_instances=[self.center],
+        super().__init__(
+            *args,
+            trial_id_range_vs_common_data=trial_id_range_vs_perimeter_set,
+            **kwargs,
         )
 
-        self.invalid_boolean_index = ~self.valid_boolean_index
+        for area_set in trial_id_range_vs_perimeter_set.values():
+            for i, arm in enumerate(area_set["arm"], start=1):
+                arm.int_label = i
+            area_set["center"][0].int_label = 4
 
-        self.reduced_alternation_sequence = reduce_repeating_sequences(
-            self.alternation_sequence
-        )
-        self.reduced_without_center = exclude_value_from_sequence(
-            self.reduced_alternation_sequence, self.center.int_label
-        )
+        self.trial_id_range_vs_perimeter_sets = self.trial_id_range_vs_common_data
 
-        self.sum_of_alternations = len(self.reduced_without_center) - 2
-        assert self.sum_of_alternations > 0, self.sum_of_alternations
+        self.center_triangle_meter_width = float(center_triangle_meter_width)
 
-        # Data labeling helpers
-        self._arm_int_labels = [arm.int_label for arm in self.arms]
-        self._arm_semantic_labels = [arm.semantic_label for arm in self.arms]
+        if self.inspection_figure_save:
+            self.plot()
 
-        self.arm_center_int_labels = self._arm_int_labels + [self.center.int_label]
-        self._arm_center_label_dict = {area: 0 for area in self.arm_center_int_labels}
+        self.y_maze_experiments = []
+        for trial_id, trial_meta in self.trial_id_data_tqdm():
+            logger.info(f"Trial ID {trial_id}")
 
-        self.arm_center_semantic_labels = self._arm_semantic_labels + [
-            self.center.semantic_label
-        ]
-        self.int_to_semantic_labels = {
-            int_label: semantic_label
-            for int_label, semantic_label in zip(
-                self.arm_center_int_labels, self.arm_center_semantic_labels
+            experiment_area_set = self.trial_id_range_vs_perimeter_sets[trial_id]
+
+            self.y_maze_experiments.append(
+                YMazeTrial(
+                    **self.generic_trial_kwargs(trial_id),
+                    arms=experiment_area_set["arm"],
+                    center=experiment_area_set["center"],
+                )
             )
+
+        self.y_maze_experiments = sorted(
+            self.y_maze_experiments, key=lambda item: item.semantic_label
+        )
+        self.trial_id_vs_y_maze = {
+            y_maze.semantic_label: y_maze for y_maze in self.y_maze_experiments
         }
 
-        self.arm_int_triplets = [
-            triplet for triplet in it.permutations(self._arm_int_labels)
-        ]
-        self._arm_triplet_dict = {arm: 0 for arm in self.arm_int_triplets}
+    def plot(self, *args, **kwargs):
+        previous_id = 0
+        for next_trial_id, y_maze in self.trial_id_vs_y_maze.items():
+            if not ("invalid" in kwargs and kwargs["invalid"]):
+                across_trial_coordinate_sequence = []
+                for trial_id in range(previous_id, next_trial_id + 1):
+                    try:
+                        across_trial_coordinate_sequence.extend(
+                            self.trial_id_vs_coordinate_sequence[trial_id][
+                                self.feature_tracking_point
+                            ]
+                        )
+                    except KeyError:
+                        pass
 
-        self.arm_center_semantic_labels = [arm.semantic_label for arm in self.arms] + [
-            self.center.semantic_label
-        ]
-        self.arm_semantic_triplets = [
-            "".join(triplet) for triplet in it.permutations(self._arm_semantic_labels)
-        ]
+                y_maze.plot(points=across_trial_coordinate_sequence, *args, **kwargs)
+            else:
+                y_maze.plot(*args, **kwargs)
 
-    @property
-    def seconds_spent_in_areas(self) -> dict:
+            plt.show()
+
+            previous_id = next_trial_id + 1
+
+    def export_to_dataframe(self) -> pd.DataFrame:
         """
-        The time spent in each area; arms and center
+        Export experimental data to pandas DataFrame
+
+        Useful for exporting to files such as hdf, xlsx, csv, etc
 
         Returns
         -------
-        dict, area vs time
+        DataFrame with the combined experiment attributes of all the YMazeTrial objects
         """
 
-        result = copy(self._arm_center_label_dict)
-        for label, counts in unique_with_counts_zipped(self.alternation_sequence):
-            assert label in result, f"{label} is not in {tuple(result.keys())})"
-            result[label] = (counts / self.fps) if self.fps else counts
+        def feature_area(feature, arm_center_labels):
+            return tuple([(feature, area) for area in arm_center_labels])
 
-        return generic_int_to_semantic_key_translator(result)
+        def feature_triplet(feature, triplets):
+            return tuple([(feature, area) for area in triplets])
 
-    @property
-    def area_alternations(self) -> dict:
-        """
-        The number of alternations to every arm and center
-
-        Returns
-        -------
-        dict, arm label vs alternations to arm
-        """
-
-        result = copy(self._arm_center_label_dict)
-        for label, counts in unique_with_counts_zipped(
-            self.reduced_alternation_sequence
-        ):
-            assert label in result
-            result[label] = counts
-
-        total_arm_alternations = np.sum([result[lab] for lab in self._arm_int_labels])
-        minimum_center_entries = ceil(total_arm_alternations / 2.0)
-
-        if not result[self.center.int_label]:
-            result[self.center.int_label] = 0
-
-        if result[self.center.int_label] < minimum_center_entries:
-            logger.info(
-                f"{self.center.semantic_label}: The number of alternations to the center, "
-                f"{result[self.center.semantic_label]} can't be less than the "
-                f"ceil of half of the total arm alternations, {minimum_center_entries}"
-            )
-
-        return result
-
-    @property
-    def triplet_alternation_distribution(self) -> dict:
-        """
-        Define the triplet alternation distribution.
-
-        A y-maze has three arms and one center, compute the number of occurrences
-        a given triplet has. There are six possible triplets, six factorial (6!).
-
-        Returns
-        -------
-        dict, triplet vs number of occurrences.
-        """
-        distribution = copy(self._arm_triplet_dict)
-        for i in range(self.sum_of_alternations):
-            current_triplet = (
-                self.reduced_without_center[i],
-                self.reduced_without_center[i + 1],
-                self.reduced_without_center[i + 2],
-            )
-
-            if 1 in current_triplet and 2 in current_triplet and 3 in current_triplet:
-                distribution[current_triplet] += 1
-
-        result = {}
-        for key, value in distribution.items():
-            semantic_key = "".join(
-                [self.int_to_semantic_labels[integer] for integer in key]
-            )
-            result[semantic_key] = value
-
-        return result
-
-    @property
-    def spontaneous_alternations(self) -> float:
-        """
-        Define the number of spontaneous alternations between each y-maze arm
-
-        A y-maze has three arms and one center, compute the number of occurrences
-        triplet with unique arms. There are six possible triplets, six factorial (6!).
-
-        Returns
-        -------
-        float, defining the percentage ratio between triplet consisting of unique arms
-        and sum of all triplet alternations.
-        """
-
-        alternations = 0
-        for i in range(self.sum_of_alternations):
-            current_triplet = (
-                self.reduced_without_center[i],
-                self.reduced_without_center[i + 1],
-                self.reduced_without_center[i + 2],
-            )
-            if 1 in current_triplet and 2 in current_triplet and 3 in current_triplet:
-                alternations += 1
-
-        assert self.sum_of_alternations > 0
-
-        return 100.0 * alternations / self.sum_of_alternations
-
-    def plot(
-        self,
-        ax: Any = None,
-        points: Union[Sequence, None] = None,
-        invalid: bool = False,
-    ):
-        if points and invalid:
-            msg = "points can not be defined while invalid is True"
-            raise ValueError(msg)
-
-        if not ax:
-            fig, ax = plt.subplots()
-
-        for arm in self.arms:
-            arm.plot(ax=ax)
-
-        self.center.plot(
-            include_borders=False,
-            ax=ax,
-            bin=True,
-            points=(
-                points
-                or self.coordinate_sequence[
-                    self.invalid_boolean_index if invalid else self.valid_boolean_index
-                ]
+        first = self.y_maze_experiments[0]
+        feature_order = pd.MultiIndex.from_tuples(
+            (
+                ("Displacement", ""),
+                ("Mean speed", ""),
+                ("Mean acceleration", ""),
+                ("Spontaneous alternations", ""),
+                *feature_area("Seconds in area", first.arm_center_semantic_labels),
+                *feature_area("Area alternations", first.arm_center_semantic_labels),
+                *feature_triplet("Triplet alternation", first.arm_semantic_triplets),
             ),
+            names=("Feature", "Area/Triplet"),
         )
 
-        return ax
+        unit_length = None
+        index_vs_data = {}
+        for y_maze in self.y_maze_experiments:
+            index_vs_data[y_maze.semantic_label] = (
+                y_maze.motion.total_displacement,
+                y_maze.motion.median_speed,
+                y_maze.motion.median_acceleration,
+                y_maze.spontaneous_alternations,
+                *tuple(y_maze.seconds_spent_in_areas.values()),
+                *tuple(y_maze.area_alternations.values()),
+                *tuple(y_maze.triplet_alternation_distribution.values()),
+            )
+            if not unit_length:
+                unit_length = len(index_vs_data[y_maze.semantic_label])
+
+        index_vs_data = dict(sorted(index_vs_data.items(), key=lambda item: item[0]))
+
+        return pd.DataFrame(
+            tuple(index_vs_data.values()),
+            index=tuple(index_vs_data.keys()),
+            columns=feature_order,
+        )

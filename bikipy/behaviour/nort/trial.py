@@ -62,7 +62,7 @@ class NortTrainingTrial(NortHabituationTrial):
             perimeter_border_normal_metric_magnitude
         )
         self.perimeter_border_normal_pixel_magnitude = (
-            self.perimeter_border_normal_metric_magnitude / self.unit_per_pixel
+            self.perimeter_border_normal_metric_magnitude / self.units_per_pixel
         )
 
         (

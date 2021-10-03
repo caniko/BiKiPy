@@ -1,81 +1,82 @@
-import datetime
 import os
-from functools import cached_property
+from functools import cached_property, lru_cache
 from logging import getLogger
 from pathlib import Path, PurePath
 from typing import Any, Iterable, Sequence, Union
 
-import compress_pickle
 import cv2
 import numpy as np
 from tqdm import tqdm
 
+from bikipy._base_class import BikipyBase
 from bikipy.feature.motion import Motion, displacement_by_frame, frozen_frames
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.store import RangeDict
-from bikipy.utils.typing import Path_typing_kwarg
 from bikipy.utils.video import get_video_data
+
 
 logger = getLogger(__name__)
 
 
-class Behaviour:
-    category = None
-
+class Behaviour(BikipyBase):
     def __init__(
         self,
-        label: Any = None,
-        timestamp: Any = None,
-        save_root: Path_typing_kwarg = None,
+        *args,
+        fps: Union[float, int, None] = None,
+        recording_resolution: Union[Sequence[int], None] = None,
+        metric_resolution: Union[Sequence[float], None] = None,
         _live: bool = False,
+        **kwargs,
     ):
-        self.label = label
-        self.timestamp = timestamp or datetime.datetime.now()
-        self.save_root = Path(save_root) if save_root else None
+        super().__init__(*args, **kwargs)
+
+        self.fps = fps
+
+        self.recording_resolution = recording_resolution
+
+        self.metric_resolution = metric_resolution
 
         self._live = _live
 
-    def save(self, save_root: Path_typing_kwarg = None):
-        save_root = Path(save_root or self.save_root)
-        assert save_root
-        compress_pickle.dump(
-            self, save_root / f"pickle_{self.category}_{self.timestamp}.lzma"
-        )
+    @property
+    def recording_resolution(self):
+        return self._recording_resolution
+
+    @recording_resolution.setter
+    def recording_resolution(self, value: Sequence):
+        self._recording_resolution = np.asarray(value, dtype=np.int16) if np.any(value) else None
 
     @property
-    def __hash_key(self):
-        raise NotImplemented
+    def horizontal_resolution(self):
+        try:
+            return self.recording_resolution[0]
+        except TypeError:
+            msg = "recording_resolution needs to be defined to for " \
+                  "the acquisition of horizontal_resolution"
+            raise AttributeError(msg)
 
-    def __hash__(self):
-        return sum(hash(key) for key in self.__hash_key)
+    @property
+    def vertical_resolution(self):
+        try:
+            return self.recording_resolution[1]
+        except TypeError:
+            msg = "recording_resolution needs to be defined to for " \
+                  "the acquisition of vertical_resolution"
+            raise AttributeError(msg)
 
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self.__hash_key == other.__hash_key
-        return self.__hash_key == other
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    @staticmethod
-    def _assert_timestamp_attribute(obj):
-        assert hasattr(obj, "timestamp")
-
-    def __lt__(self, other):
-        self._assert_timestamp_attribute(other)
-        return self.timestamp < other.timestamp
-
-    def __le__(self, other):
-        self._assert_timestamp_attribute(other)
-        return self.timestamp <= other.timestamp
-
-    def __gt__(self, other):
-        self._assert_timestamp_attribute(other)
-        return self.timestamp > other.timestamp
-
-    def __ge__(self, other):
-        self._assert_timestamp_attribute(other)
-        return self.timestamp >= other.timestamp
+    @cached_property
+    def units_per_pixel(self):
+        if not np.any(self.metric_resolution):
+            msg = "metric_resolution attribute needs to be defined to compute units_per_pixel"
+            raise AttributeError(msg)
+        if isinstance(self.metric_resolution, (float, int)):
+            return self.metric_resolution / np.mean(
+                self.recording_resolution
+            )
+        else:
+            return (
+                np.array(self.metric_resolution) / self.recording_resolution
+            )
 
 
 class BaseExperiment(Behaviour):
@@ -84,23 +85,21 @@ class BaseExperiment(Behaviour):
 
     def __init__(
         self,
-        metric_resolution: Union[float, Sequence[float]],
-        trial_id_vs_data: dict,
-        trial_id_range_vs_data: Union[dict, None] = None,
+        trial_id_vs_data: Union[dict, None] = None,
+        trial_id_range_vs_common_data: Union[dict, None] = None,
         coordinate_data_format: str = "deeplabcut",
+        point_label_for_motion_features: Union[str, None] = None,
         inspection_figure_save: Union[bool, str, PurePath] = False,
         data_import_kwargs: Union[dict, None] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.trial_id_vs_data = dict(trial_id_vs_data)
-        self._trial_ids_iterable = self.trial_id_vs_data.keys()
-        self.trial_ids = tuple(self._trial_ids_iterable)
-
-        self.trial_id_range_vs_data = (
-            RangeDict(trial_id_range_vs_data) if trial_id_range_vs_data else None
+        self.trial_id_range_vs_common_data = (
+            RangeDict(trial_id_range_vs_common_data)
+            if trial_id_range_vs_common_data
+            else None
         )
-        self.metric_resolution = metric_resolution
 
         self.coordinate_data_format = str(coordinate_data_format).lower()
         if isinstance(inspection_figure_save, bool):
@@ -114,10 +113,10 @@ class BaseExperiment(Behaviour):
             os.mkdir(self.inspection_figure_save)
 
         if self.coordinate_data_format == "deeplabcut":
-            self.trial_id_vs_coordinate_sequences = {
-                exp_id: dlc_obj
-                for exp_id, dlc_obj in zip(
-                    self._trial_ids_iterable,
+            self.trial_id_vs_coordinate_sequence = {
+                trial_id: dlc_obj
+                for trial_id, dlc_obj in zip(
+                    self._trial_id_iterable,
                     DeepLabCutReader.init_many(
                         (
                             data["coordinate_data_path"]
@@ -133,24 +132,55 @@ class BaseExperiment(Behaviour):
             raise NotImplemented(msg)
 
     @property
-    def __hash_key(self):
+    def _hash_key(self):
         return self.trial_id_vs_data
 
     def __getitem__(self, item):
-        if self.trial_id_range_vs_data:
-            return {**self.trial_id_vs_data[item], **self.trial_id_range_vs_data[item]}
-        else:
+        if not self.trial_id_range_vs_common_data:
             return self.trial_id_vs_data[item]
+        return {
+            **self.trial_id_vs_data[item],
+            **self.trial_id_range_vs_common_data[item],
+        }
+
+    @lru_cache
+    def generic_trial_kwargs(self, trial_id: int):
+        trial_meta = self[trial_id]
+        generic_kwargs = {
+            "label": trial_id,
+            "coordinate_sequence": self.trial_id_vs_coordinate_sequence[trial_id],
+            "video_path": trial_meta["video_path"],
+            "metric_resolution": self.metric_resolution,
+            "inspection_figure_save": self.inspection_figure_save
+        }
+
+        if "animal_id" in trial_meta:
+            generic_kwargs["animal_id"] = trial_meta["animal_id"]
+
+        if "inspect" in trial_meta:
+            generic_kwargs["inspection_figure_save"] = trial_meta["inspect"]
+            if "inspect_image" in trial_meta:
+                generic_kwargs["inspect_image"] = trial_meta["inspect_image"]
+
+        return generic_kwargs
 
     @cached_property
     def length(self):
-        return len(self.trial_ids)
+        return len(self._trial_id_iterable)
+
+    @property
+    def number_of_trials(self):
+        return self.length
 
     def trial_id_data_tqdm(self):
         return tqdm(
-            ((trial_id, self[trial_id]) for trial_id in self.trial_ids),
+            ((trial_id, self[trial_id]) for trial_id in self._trial_id_iterable),
             total=self.length,
         )
+
+    @property
+    def _trial_id_iterable(self):
+        return self.trial_id_vs_data.keys()
 
 
 class BaseTrial(Behaviour):
@@ -163,12 +193,9 @@ class BaseTrial(Behaviour):
         self,
         coordinate_sequence: Union[dict, None] = None,
         animal_id: Union[int, None] = None,
-        metric_resolution: Union[Union[float, int], list, None] = None,
         rigid_nodes_freezing: Union[Sequence[Union[str, int]], None] = None,
-        movement_feature_point_label: Union[str, None] = None,
+        point_label_for_motion_features: Union[str, None] = None,
         video_path: Any = None,
-        recording_resolution: Union[Sequence[int], None] = None,
-        fps: Union[float, int, None] = None,
         inspection_figure_save: Union[PurePath, str, bool] = False,
         inspect_image: Any = None,
         **kwargs,
@@ -179,7 +206,7 @@ class BaseTrial(Behaviour):
         :param animal_id: The ID of the animal in the trial
         :param metric_resolution: Length of the square box in which the experiment is conducted
         :param rigid_nodes_freezing: Nodes that should remain during freeze/immobility, most often due to fear.
-        :param movement_feature_point_label: Label of the node that will be used to track general animal movement
+        :param point_label_for_motion_features: Label of the node that will be used to track general animal movement
         :param recording_resolution: Video resolution
         :param label: Experiment label
         :param inspection_figure_save: Path to save figures for inspection of results
@@ -190,7 +217,7 @@ class BaseTrial(Behaviour):
         :type metric_resolution: int or float, or [(float, int), (float, int)]
         :type animal_id: int (optional)
         :type rigid_nodes_freezing: Sequence[Union[str, int]] (optional)
-        :type movement_feature_point_label: str (optional)
+        :type point_label_for_motion_features: str (optional)
         :type recording_resolution: Sequence[int] (optional)
         :type label: Any (optional)
         :type inspection_figure_save: bool
@@ -199,31 +226,18 @@ class BaseTrial(Behaviour):
 
         super().__init__(**kwargs)
 
-        self.inspect_image = inspect_image
-        self.video_path = video_path
-
-        if self.video_path:
+        if video_path:
             (
                 _frame,
-                self.horizontal_resolution,
-                self.vertical_resolution,
+                horizontal_resolution,
+                vertical_resolution,
                 self.fps,
             ) = get_video_data(video_path)
-            self.recording_resolution = np.array(
-                (
-                    self.horizontal_resolution,
-                    self.vertical_resolution,
-                )
-            )
-        elif recording_resolution and fps:
-            self.fps = fps
-            self.recording_resolution = recording_resolution
-            self.horizontal_resolution, self.vertical_resolution = recording_resolution
-        elif self.inspect_image and fps:
-            self.fps = fps
-            self.vertical_resolution, self.horizontal_resolution = cv2.imread(
-                self.inspect_image
-            ).shape[:-1]
+            self.recording_resolution = horizontal_resolution, vertical_resolution
+        elif self.recording_resolution and self.fps:
+            pass
+        elif inspect_image and self.fps:
+            self.recording_resolution = cv2.imread(inspect_image).shape[:-1]
         else:
             msg = (
                 "recording_resolution and fps could not be defined."
@@ -234,27 +248,18 @@ class BaseTrial(Behaviour):
             )
             raise ValueError(msg)
 
+        self.inspect_image = inspect_image
+        self.video_path = video_path
         self.animal_id = int(animal_id) if animal_id else None
-
-        self.metric_resolution = metric_resolution if metric_resolution else None
-        if self.metric_resolution:
-            if isinstance(self.metric_resolution, (float, int)):
-                self.unit_per_pixel = self.metric_resolution / np.mean(
-                    self.recording_resolution
-                )
-            else:
-                self.unit_per_pixel = (
-                    np.array(self.metric_resolution) / self.recording_resolution
-                )
 
         self.inspection_figure_save = inspection_figure_save
 
         if not self._live:
             # coordinate_sequence must be a reader object, like DeepLabCutReader
-            self.movement_feature_point_label = str(movement_feature_point_label)
+            self.point_label_for_motion_features = str(point_label_for_motion_features)
             self.coordinate_sequence = coordinate_sequence
             self.coordinates_per_frame = self.coordinate_sequence[
-                self.movement_feature_point_label
+                self.point_label_for_motion_features
             ]
 
             self.experiment_seconds = self.coordinates_per_frame.shape[0] / self.fps
@@ -271,11 +276,11 @@ class BaseTrial(Behaviour):
 
     @cached_property
     def motion(self):
-        return Motion(self.coordinates_per_frame, self.unit_per_pixel, self.fps)
+        return Motion(self.coordinates_per_frame, self.units_per_pixel, self.fps)
 
     @property
-    def __hash_key(self):
-        return self.coordinates_per_frame, self.fps, self.metric_resolution
+    def _hash_key(self):
+        return self.coordinates_per_frame
 
     @property
     def inspect_image_path(self):
@@ -303,7 +308,7 @@ class BaseTrial(Behaviour):
             self.fps,
             [
                 displacement_by_frame(coordinate_sequence, remove_tails=False)
-                * self.unit_per_pixel
+                * self.units_per_pixel
                 for coordinate_sequence in self.coordinate_sequence[
                     self.rigid_nodes_freezing
                 ]

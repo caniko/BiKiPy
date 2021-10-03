@@ -1,1 +1,1 @@
-from .experiment import YMaze
+from .trial import YMazeTrial

@@ -130,8 +130,12 @@ class Perimeter:
             return
 
         if isinstance(value, (PurePath, str)):
-            # Notice the genius level of recursion that occurs on the next line.
-            self.reference_point = read_makesense_point_csv(value)[1:3]
+            reference_point_coco_array = read_makesense_point_csv(value)
+            if len(reference_point_coco_array) != 1:
+                raise NotImplemented
+            self._reference_point = np.asarray(
+                reference_point_coco_array[0][1:3], dtype=np.float32
+            )
             return
 
         value = np.asarray(value, dtype=np.float32)
@@ -187,12 +191,16 @@ class Perimeter:
                         csv_array.T[3] == self.inspect_image_path.stem
                     )[0][0]
                 except IndexError as e:
-                    msg = "The reference object has no reference point, and there is no refrence point " \
-                          "for the inspect_image stored in the coco dataset"
+                    msg = (
+                        "The reference object has no reference point, and there is no refrence point "
+                        "for the inspect_image stored in the coco dataset"
+                    )
                     raise ValueError(msg) from e
                 except AttributeError as e:
-                    msg = "inspect_image_path needs to be defined to define a reference point " \
-                          "for the reference object from a coco multi-reference dataset"
+                    msg = (
+                        "inspect_image_path needs to be defined to define a reference point "
+                        "for the reference object from a coco multi-reference dataset"
+                    )
                     raise AttributeError(msg) from e
                 self.reference_point = csv_array[self_reference_row_index][1:3]
 
@@ -333,8 +341,10 @@ class PolygonalPerimeter(Perimeter):
         if reference_point_coco_path:
             point_coco_array = read_makesense_point_csv(reference_point_coco_path)
             if len(point_coco_array) != 1:
-                msg = "There can only be a one point annotation in the provided coco dataset for " \
-                      "the definition of reference_point"
+                msg = (
+                    "There can only be a one point annotation in the provided coco dataset for "
+                    "the definition of reference_point"
+                )
                 raise ValueError(msg)
             reference_point = point_coco_array[0][1:3]
         elif reference_point_annotation:
@@ -692,6 +702,13 @@ class PolygonalPerimeterSet(Perimeter):
         self.perimeters = perimeters
         self.restricted_perimeters = restricted_perimeters
 
+    @lru_cache
+    def __getitem__(self, item: Union[str, int]):
+        for perimeter in self._all_perimeters:
+            if perimeter.semantic_label == item or perimeter.int_label == item:
+                return perimeter
+        raise KeyError(f"Item was not found, {item}")
+
     def combined_contained_coordinates(self, coordinates: Sequence):
         present = np.any(
             [
@@ -728,30 +745,35 @@ class PolygonalPerimeterSet(Perimeter):
             **kwargs,
         )
 
+    def plot(self, **kwargs):
+        ax = super().plot(**kwargs)
+        return PolygonalPerimeter.plot_perimeters(self.perimeters, ax)
+
+    @cached_property
+    def group(self):
+        grouped = {}
+        for perimeter in self._all_perimeters:
+            if (label := perimeter.group_label) not in grouped:
+                grouped[label] = [perimeter]
+            else:
+                grouped[label].append(perimeter)
+        return grouped
+
     @property
     def _reference_point_variance(self):
         return statistics.variance(
             perimeter.reference_point for perimeter in self._all_perimeters
         )
 
-    def plot(self, **kwargs):
-        ax = super().plot(**kwargs)
-        return PolygonalPerimeter.plot_perimeters(self.perimeters, ax)
-
-    @cached_property
-    def _all_perimeters(self):
+    @property
+    def _all_perimeters(self) -> Sequence:
+        if not self.restricted_perimeters:
+            return self.perimeters
         return *self.perimeters, *self.restricted_perimeters
 
-    @cached_property
+    @property
     def _perimeter_is_dict(self):
         return isinstance(self.perimeters, dict)
-
-    @lru_cache
-    def __getitem__(self, item: Union[str, int]):
-        for perimeter in self._all_perimeters:
-            if perimeter.semantic_label == item or perimeter.int_label == item:
-                return perimeter
-        raise KeyError(f"Item was not found, {item}")
 
 
 Perimeter2D = Union[PolygonalPerimeter, PolygonalPerimeterSet]
