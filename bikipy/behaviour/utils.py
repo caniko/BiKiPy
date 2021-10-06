@@ -4,7 +4,7 @@ from logging import getLogger
 from typing import Any, Iterable, Optional, Union
 
 import numpy as np
-from numba import njit
+
 
 logger = getLogger(__name__)
 
@@ -37,7 +37,6 @@ def triplet_permutation_vs_base_permutation_dictionary(base_triplets: Sequence):
     }
 
 
-@njit
 def reduce_repeating_sequences(
     repeating_sequence: Sequence,
     frame_tolerance: Any,
@@ -74,12 +73,12 @@ def reduce_repeating_sequences(
 
     last_index = len(repeating_sequence) - frame_tolerance
     reduced_sequence = [(last_element := repeating_sequence[i])]
-    while i < last_index:
+    while i + frame_tolerance < last_index:
         while True:
             i += 1
             if (
-                last_element != (new_element := repeating_sequence[i])
-                or i == last_index
+                i + frame_tolerance == last_index
+                or last_element != (new_element := repeating_sequence[i])
             ):
                 if (
                     np.mean(repeating_sequence[i : i + frame_tolerance] == new_element)
@@ -90,7 +89,7 @@ def reduce_repeating_sequences(
                     reduced_sequence.append(new_element)
                     last_element = new_element
                     break
-                if i == last_index:
+                if i + frame_tolerance == last_index:
                     break
 
     return reduced_sequence

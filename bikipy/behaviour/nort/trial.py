@@ -39,7 +39,7 @@ class NortTrainingTrial(NortHabituationTrial):
         nort_a: PolygonalPerimeter,
         nort_b: PolygonalPerimeter,
         nose_label: str,
-        eye_center_label: str,
+        center_eye_label: str,
         torso_label: str,
         perimeter_border_normal_metric_magnitude: float,
         maximum_radians_inter_gaze_perimeter: float = 1 / 4 * np.pi,
@@ -50,9 +50,9 @@ class NortTrainingTrial(NortHabituationTrial):
 
         self.nort_a, self.nort_b = nort_a, nort_b
 
-        self.torso_label, self.eye_center_label, self.nose_label = (
+        self.torso_label, self.center_eye_label, self.nose_label = (
             str(torso_label),
-            str(eye_center_label),
+            str(center_eye_label),
             str(nose_label),
         )
         self.maximum_radians_inter_gaze_perimeter = float(
@@ -128,13 +128,12 @@ class NortTrainingTrial(NortHabituationTrial):
 
     def nort_observation(self, nort_object):
         eye, nose, torso = self.coordinate_sequence[
-            self.eye_center_label, self.nose_label, self.torso_label
+            self.center_eye_label, self.nose_label, self.torso_label
         ]
         return polygonal_perimeter_attention(
             nort_object,
             nose,
             eye,
-            torso,
             self.fps,
             self.perimeter_border_normal_pixel_magnitude,
             self.maximum_radians_inter_gaze_perimeter,
@@ -247,7 +246,6 @@ class NortField:
         return NortTrainingTrial(
             nort_a=self.constant_object_perimeter,
             nort_b=self.variable_object_perimeter,
-            inspect_image=self.constant_object_perimeter.inspect_image,
             *args,
             **kwargs,
         )
@@ -257,7 +255,6 @@ class NortField:
             nort_a=self.novelty_constant_object_perimeter
             or self.constant_object_perimeter,
             nort_b=self.novel_object_perimeter,
-            inspect_image=self.novel_object_perimeter.inspect_image,
             *args,
             **kwargs,
         )

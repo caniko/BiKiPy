@@ -1,4 +1,5 @@
 import os
+import datetime
 from functools import cached_property, lru_cache
 from logging import getLogger
 from pathlib import Path, PurePath
@@ -121,13 +122,12 @@ class BaseExperiment(Behaviour):
         self.coordinate_data_format = str(coordinate_data_format).lower()
         if isinstance(inspection_figure_save, bool):
             self.inspection_figure_save = inspection_figure_save
-        elif isinstance(inspection_figure_save, str) or isinstance(
-            inspection_figure_save, PurePath
-        ):
+        elif isinstance(inspection_figure_save, (PurePath, str)):
             self.inspection_figure_save = (
-                inspection_figure_save / f"Experiment_{self.label}_inspect"
+                inspection_figure_save / f"Experiment_{self.timestamp}_inspect"
             )
-            os.mkdir(self.inspection_figure_save)
+            if not inspection_figure_save.exists():
+                os.mkdir(self.inspection_figure_save)
 
         if self.coordinate_data_format == "deeplabcut":
             self.trial_id_vs_coordinate_sequence = {

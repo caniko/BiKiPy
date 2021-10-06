@@ -90,13 +90,13 @@ for round_number, (experiment_dir, pickle_path) in enumerate(
         trial_id_vs_data=trial_id_range_vs_exp_meta,
         metric_resolution=0.4,
         nose_label="nose",
-        eye_center_label="mid-left_ear-right_ear",
+        center_eye_label="mid-left_ear-right_ear",
         torso_label="mid-mid-left_ear-right_ear-tail",
         nort_field_vs_nort_field_object=nort_field_vs_nort_field_object,
         perimeter_border_normal_metric_magnitude=0.06,
         center_metric_length=0.2,
         maximum_radians_inter_gaze_perimeter=0.33 * np.pi,
-        # inspection_figure_save=True,
+        inspection_figure_save=RESULT_DIR / "inspect",
         data_import_kwargs={
             "init_from": "parquet",
             "midpoint_groups": (

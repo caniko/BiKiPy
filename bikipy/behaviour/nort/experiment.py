@@ -42,7 +42,7 @@ class NortExperiment(BaseExperiment):
     def __init__(
         self,
         nose_label: str,
-        eye_center_label: str,
+        center_eye_label: str,
         torso_label: str,
         nort_field_vs_nort_field_object: Union[Mapping[NortField], None] = None,
         perimeter_border_normal_metric_magnitude: Union[float, None] = None,
@@ -54,7 +54,7 @@ class NortExperiment(BaseExperiment):
         """
 
         :param nose_label: Label of the nose in the df
-        :param eye_center_label: Label of the eye center in the df
+        :param center_eye_label: Label of the eye center in the df
         :param torso_label: Label of the torso in the df
         :param nort_field_vs_nort_field_object:
         :param perimeter_border_normal_metric_magnitude: The magnitude of the normal between the perimeter
@@ -64,7 +64,7 @@ class NortExperiment(BaseExperiment):
         :param base_trial_args:
         :param base_trial_kwargs:
         :type nose_label: str
-        :type eye_center_label: str
+        :type center_eye_label: str
         :type torso_label: str
         :type nort_field_vs_nort_field_object: dict
         :type perimeter_border_normal_metric_magnitude: float
@@ -75,13 +75,13 @@ class NortExperiment(BaseExperiment):
 
         self.nort_field_vs_nort_field_object = nort_field_vs_nort_field_object
 
-        self.torso_label, self.eye_center_label, self.nose_label = (
+        self.torso_label, self.center_eye_label, self.nose_label = (
             str(torso_label),
-            str(eye_center_label),
+            str(center_eye_label),
             str(nose_label),
         )
         self.point_label_for_motion_features = (
-            self.point_label_for_motion_features or self.eye_center_label
+            self.point_label_for_motion_features or self.center_eye_label
         )
         self.maximum_radians_inter_gaze_perimeter = float(
             maximum_radians_inter_gaze_perimeter
@@ -106,7 +106,7 @@ class NortExperiment(BaseExperiment):
             generic_kwargs = {
                 **self.generic_trial_kwargs(trial_id),
                 "point_label_for_motion_features": self.point_label_for_motion_features,
-                "rigid_nodes_freezing": (self.eye_center_label, self.torso_label),
+                "rigid_nodes_freezing": (self.center_eye_label, self.torso_label),
             }
 
             exp_class = self.trial_label_to_trial_class_name[
@@ -134,7 +134,7 @@ class NortExperiment(BaseExperiment):
 
                 analysis_keyword_arguments = {
                     "nose_label": self.nose_label,
-                    "eye_center_label": self.eye_center_label,
+                    "center_eye_label": self.center_eye_label,
                     "torso_label": self.torso_label,
                     "perimeter_border_normal_metric_magnitude": self.perimeter_border_normal_metric_magnitude,
                     "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,

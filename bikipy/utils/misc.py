@@ -1,6 +1,7 @@
+import copy
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import Any
+from typing import Any, Union
 
 import cv2
 import pandas as pd
@@ -30,3 +31,15 @@ def read_makesense_point_csv(coco_path: Path_typing):
         header=None,
         # names=["x1", "y1", "x2", "y2", "filename", "img_x", "img_y"],
     ).to_numpy()
+
+
+def seek_next_file_index(filepath: Union[PurePath, str]) -> PurePath:
+    if not (original_filepath := Path(filepath)).exists():
+        return original_filepath
+
+    new_filepath = copy.copy(original_filepath)
+    i = 2
+    while new_filepath.exists():
+        new_filepath = filepath.with_suffix(str(i))
+        i += 1
+    return new_filepath
