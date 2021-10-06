@@ -1,6 +1,6 @@
 import itertools as it
 from copy import copy
-from functools import partial, cached_property
+from functools import cached_property, partial
 from logging import getLogger
 from math import ceil
 from typing import Any, Sequence, Union

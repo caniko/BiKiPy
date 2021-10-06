@@ -15,7 +15,6 @@ from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.store import RangeDict
 from bikipy.utils.video import get_video_data
 
-
 logger = getLogger(__name__)
 
 
@@ -114,7 +113,11 @@ class BaseExperiment(Behaviour):
             else None
         )
 
-        self.point_label_for_motion_features = str(point_label_for_motion_features) if point_label_for_motion_features else None
+        self.point_label_for_motion_features = (
+            str(point_label_for_motion_features)
+            if point_label_for_motion_features
+            else None
+        )
         self.coordinate_data_format = str(coordinate_data_format).lower()
         if isinstance(inspection_figure_save, bool):
             self.inspection_figure_save = inspection_figure_save
@@ -289,9 +292,7 @@ class BaseTrial(Behaviour):
 
     @property
     def coordinates_per_frame(self):
-        return self.coordinate_sequence[
-                self.point_label_for_motion_features
-            ]
+        return self.coordinate_sequence[self.point_label_for_motion_features]
 
     @cached_property
     def experiment_seconds(self):

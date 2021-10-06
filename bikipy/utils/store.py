@@ -1,6 +1,6 @@
 from collections import UserDict
 from functools import cached_property, lru_cache
-from typing import Any, Iterable, Union
+from typing import Any, Union
 
 
 def translate_keys(store: dict, translation: dict) -> dict:

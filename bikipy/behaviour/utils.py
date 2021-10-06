@@ -37,6 +37,7 @@ def triplet_permutation_vs_base_permutation_dictionary(base_triplets: Sequence):
     }
 
 
+@njit
 def reduce_repeating_sequences(
     repeating_sequence: Sequence,
     frame_tolerance: Any,
@@ -63,20 +64,25 @@ def reduce_repeating_sequences(
     repeating_sequence = np.asarray(repeating_sequence)
 
     try:
-        i = np.where(repeating_sequence != repeating_sequence[frame_tolerance])[0][0]
+        i = np.where(repeating_sequence != repeating_sequence[frame_tolerance - 1])[0][
+            0
+        ]
     except IndexError:
-        return [repeating_sequence[0]]
+        # The sequence consists only of one value after index "frame_tolerance - 1"
+        assert len(repeating_sequence) > frame_tolerance - 1
+        return [repeating_sequence[frame_tolerance - 1]]
 
     last_index = len(repeating_sequence) - frame_tolerance
     reduced_sequence = [(last_element := repeating_sequence[i])]
     while i < last_index:
         while True:
             i += 1
-            if last_element != (new_element := repeating_sequence[i]) or i == last_index:
+            if (
+                last_element != (new_element := repeating_sequence[i])
+                or i == last_index
+            ):
                 if (
-                    np.mean(
-                        repeating_sequence[i : i + frame_tolerance] == new_element
-                    )
+                    np.mean(repeating_sequence[i : i + frame_tolerance] == new_element)
                     >= 0.6
                 ):
                     if connector_element and reduced_sequence[-1] != connector_element:

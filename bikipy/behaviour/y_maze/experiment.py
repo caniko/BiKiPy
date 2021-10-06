@@ -7,7 +7,6 @@ import pandas as pd
 from bikipy.behaviour.base import BaseExperiment
 from bikipy.behaviour.y_maze.trial import YMazeTrial
 
-
 logger = getLogger(__name__)
 
 

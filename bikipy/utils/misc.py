@@ -3,7 +3,6 @@ from pathlib import Path, PurePath
 from typing import Any
 
 import cv2
-import numpy as np
 import pandas as pd
 from numpy import ndarray
 

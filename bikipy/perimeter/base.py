@@ -1,11 +1,11 @@
 import copy
 import json
 import statistics
+from collections.abc import Sequence as CollectionsSequence
 from functools import cached_property, lru_cache
 from logging import getLogger
-from pathlib import PurePath, Path
+from pathlib import Path, PurePath
 from typing import Any, Sequence, Union
-from collections.abc import Sequence as CollectionsSequence
 
 import cv2
 import matplotlib.pyplot as plt
@@ -17,7 +17,7 @@ from bikipy._base_class import BikipyBase
 from bikipy.math.geometry import expand_parallelogram, order_polygon_corners
 from bikipy.math.vector import point_to_line_segment_distance
 from bikipy.utils.misc import read_image, read_makesense_point_csv
-from bikipy.utils.typing import Path_typing_kwarg, Path_typing
+from bikipy.utils.typing import Path_typing, Path_typing_kwarg
 from bikipy.utils.video import get_video_data
 
 logger = getLogger(__name__)
@@ -48,7 +48,9 @@ class Perimeter(BikipyBase):
         self._reference_point = None
         self._inspect_image_path = None
 
-        self.inspect_image = inspect_image if np.any(inspect_image) else inspect_image_path
+        self.inspect_image = (
+            inspect_image if np.any(inspect_image) else inspect_image_path
+        )
         self.reference_point = reference_point or reference_point_coco_path
 
     @property
