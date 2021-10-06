@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from bikipy._base_class import BikipyBase
 from bikipy.feature.motion import Motion, displacement_by_frame, frozen_frames
+from bikipy.reader.base import BaseReader
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.store import RangeDict
 from bikipy.utils.video import get_video_data
@@ -25,6 +26,7 @@ class Behaviour(BikipyBase):
         fps: Union[float, int, None] = None,
         recording_resolution: Union[Sequence[int], None] = None,
         metric_resolution: Union[Sequence[float], None] = None,
+        units_per_pixel: Union[float, None] = None,
         _live: bool = False,
         **kwargs,
     ):
@@ -35,6 +37,7 @@ class Behaviour(BikipyBase):
         self.recording_resolution = recording_resolution
 
         self.metric_resolution = metric_resolution
+        self.units_per_pixel = units_per_pixel
 
         self._live = _live
 
@@ -44,15 +47,19 @@ class Behaviour(BikipyBase):
 
     @recording_resolution.setter
     def recording_resolution(self, value: Sequence):
-        self._recording_resolution = np.asarray(value, dtype=np.int16) if np.any(value) else None
+        self._recording_resolution = (
+            np.asarray(value, dtype=np.int16) if np.any(value) else None
+        )
 
     @property
     def horizontal_resolution(self):
         try:
             return self.recording_resolution[0]
         except TypeError:
-            msg = "recording_resolution needs to be defined to for " \
-                  "the acquisition of horizontal_resolution"
+            msg = (
+                "recording_resolution needs to be defined to for "
+                "the acquisition of horizontal_resolution"
+            )
             raise AttributeError(msg)
 
     @property
@@ -60,23 +67,29 @@ class Behaviour(BikipyBase):
         try:
             return self.recording_resolution[1]
         except TypeError:
-            msg = "recording_resolution needs to be defined to for " \
-                  "the acquisition of vertical_resolution"
+            msg = (
+                "recording_resolution needs to be defined to for "
+                "the acquisition of vertical_resolution"
+            )
             raise AttributeError(msg)
 
-    @cached_property
+    @property
     def units_per_pixel(self):
+        return self._user_defined_units_per_pixel or self.computed_units_per_pixel
+
+    @units_per_pixel.setter
+    def units_per_pixel(self, value: Union[float, None]):
+        self._user_defined_units_per_pixel = value
+
+    @cached_property
+    def computed_units_per_pixel(self):
         if not np.any(self.metric_resolution):
             msg = "metric_resolution attribute needs to be defined to compute units_per_pixel"
             raise AttributeError(msg)
         if isinstance(self.metric_resolution, (float, int)):
-            return self.metric_resolution / np.mean(
-                self.recording_resolution
-            )
+            return self.metric_resolution / np.mean(self.recording_resolution)
         else:
-            return (
-                np.array(self.metric_resolution) / self.recording_resolution
-            )
+            return np.array(self.metric_resolution) / self.recording_resolution
 
 
 class BaseExperiment(Behaviour):
@@ -101,6 +114,7 @@ class BaseExperiment(Behaviour):
             else None
         )
 
+        self.point_label_for_motion_features = str(point_label_for_motion_features) if point_label_for_motion_features else None
         self.coordinate_data_format = str(coordinate_data_format).lower()
         if isinstance(inspection_figure_save, bool):
             self.inspection_figure_save = inspection_figure_save
@@ -139,20 +153,24 @@ class BaseExperiment(Behaviour):
         if not self.trial_id_range_vs_common_data:
             return self.trial_id_vs_data[item]
         return {
-            **self.trial_id_vs_data[item],
             **self.trial_id_range_vs_common_data[item],
+            **self.trial_id_vs_data[item],
         }
 
     @lru_cache
     def generic_trial_kwargs(self, trial_id: int):
         trial_meta = self[trial_id]
         generic_kwargs = {
-            "label": trial_id,
+            "int_label": trial_id,
             "coordinate_sequence": self.trial_id_vs_coordinate_sequence[trial_id],
             "video_path": trial_meta["video_path"],
             "metric_resolution": self.metric_resolution,
-            "inspection_figure_save": self.inspection_figure_save
+            "inspection_figure_save": self.inspection_figure_save,
         }
+        try:
+            generic_kwargs["units_per_pixel"] = self.units_per_pixel
+        except TypeError:
+            pass
 
         if "animal_id" in trial_meta:
             generic_kwargs["animal_id"] = trial_meta["animal_id"]
@@ -191,7 +209,7 @@ class BaseTrial(Behaviour):
 
     def __init__(
         self,
-        coordinate_sequence: Union[dict, None] = None,
+        coordinate_sequence: Union[BaseReader, None] = None,
         animal_id: Union[int, None] = None,
         rigid_nodes_freezing: Union[Sequence[Union[str, int]], None] = None,
         point_label_for_motion_features: Union[str, None] = None,
@@ -212,7 +230,7 @@ class BaseTrial(Behaviour):
         :param inspection_figure_save: Path to save figures for inspection of results
         :param inspect_image: Image used for inspection
 
-        :type coordinate_sequence: dict
+        :type coordinate_sequence: BaseReader
         :type video_path: Any
         :type metric_resolution: int or float, or [(float, int), (float, int)]
         :type animal_id: int (optional)
@@ -256,13 +274,8 @@ class BaseTrial(Behaviour):
 
         if not self._live:
             # coordinate_sequence must be a reader object, like DeepLabCutReader
-            self.point_label_for_motion_features = str(point_label_for_motion_features)
+            self.point_label_for_motion_features = point_label_for_motion_features
             self.coordinate_sequence = coordinate_sequence
-            self.coordinates_per_frame = self.coordinate_sequence[
-                self.point_label_for_motion_features
-            ]
-
-            self.experiment_seconds = self.coordinates_per_frame.shape[0] / self.fps
 
         # Variables for trials with zones, see doc for more info.
         self.perimeters = None
@@ -273,6 +286,16 @@ class BaseTrial(Behaviour):
         self._frozen_boolean_index = None
         if rigid_nodes_freezing:
             self.rigid_nodes_freezing = rigid_nodes_freezing
+
+    @property
+    def coordinates_per_frame(self):
+        return self.coordinate_sequence[
+                self.point_label_for_motion_features
+            ]
+
+    @cached_property
+    def experiment_seconds(self):
+        return self.coordinates_per_frame.shape[0] / self.fps
 
     @cached_property
     def motion(self):

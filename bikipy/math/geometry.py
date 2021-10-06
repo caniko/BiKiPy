@@ -24,8 +24,8 @@ def order_polygon_corners(perimeter_corners: Sequence, inspect: bool = False):
     return result
 
 
-def argsort_counterclockwise(sequece: Sequence):
-    return np.argsort(counterclockwise_angel_2d(sequece, (-1.0, 0.0)))
+def argsort_counterclockwise(sequence: Sequence):
+    return np.argsort(counterclockwise_angel_2d((-1.0, 0.0), sequence))
 
 
 def expand_parallelogram(

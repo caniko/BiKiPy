@@ -37,6 +37,7 @@ class RangeDict(UserDict):
 
         super().__init__(class_dict, **kwargs)
 
+    @lru_cache
     def find_key_range(self, value: Union[float, int]):
         for number in self.descending:
             if number <= value:
@@ -52,7 +53,6 @@ class RangeDict(UserDict):
         msg = f"Provided key is less than the first key in the RangeDict; {value}"
         raise KeyError(msg)
 
-    @lru_cache
     def __getitem__(self, key: Union[float, int]):
         try:
             return super().__getitem__(key)

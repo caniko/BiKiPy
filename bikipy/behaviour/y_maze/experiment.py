@@ -1,6 +1,7 @@
 from logging import getLogger
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 from bikipy.behaviour.base import BaseExperiment
@@ -42,6 +43,9 @@ class YMazeExperiment(BaseExperiment):
         self.trial_id_range_vs_perimeter_sets = self.trial_id_range_vs_common_data
 
         self.center_triangle_meter_width = float(center_triangle_meter_width)
+        self.units_per_pixel = (
+            area_set["center"][0].mean_length / self.center_triangle_meter_width
+        )
 
         if self.inspection_figure_save:
             self.plot()
@@ -56,15 +60,16 @@ class YMazeExperiment(BaseExperiment):
                 YMazeTrial(
                     **self.generic_trial_kwargs(trial_id),
                     arms=experiment_area_set["arm"],
-                    center=experiment_area_set["center"],
+                    center=experiment_area_set["center"][0],
+                    point_label_for_motion_features=self.point_label_for_motion_features,
                 )
             )
 
         self.y_maze_experiments = sorted(
-            self.y_maze_experiments, key=lambda item: item.semantic_label
+            self.y_maze_experiments, key=lambda item: item.int_label
         )
         self.trial_id_vs_y_maze = {
-            y_maze.semantic_label: y_maze for y_maze in self.y_maze_experiments
+            y_maze.int_label: y_maze for y_maze in self.y_maze_experiments
         }
 
     def plot(self, *args, **kwargs):
@@ -121,20 +126,20 @@ class YMazeExperiment(BaseExperiment):
             names=("Feature", "Area/Triplet"),
         )
 
-        unit_length = None
         index_vs_data = {}
         for y_maze in self.y_maze_experiments:
-            index_vs_data[y_maze.semantic_label] = (
-                y_maze.motion.total_displacement,
-                y_maze.motion.median_speed,
-                y_maze.motion.median_acceleration,
-                y_maze.spontaneous_alternations,
-                *tuple(y_maze.seconds_spent_in_areas.values()),
-                *tuple(y_maze.area_alternations.values()),
-                *tuple(y_maze.triplet_alternation_distribution.values()),
-            )
-            if not unit_length:
-                unit_length = len(index_vs_data[y_maze.semantic_label])
+            if y_maze.sum_of_alternations < 0:
+                index_vs_data[y_maze.int_label] = np.full(13, np.nan)
+            else:
+                index_vs_data[y_maze.int_label] = (
+                    y_maze.motion.total_displacement,
+                    y_maze.motion.median_speed,
+                    y_maze.motion.median_acceleration,
+                    y_maze.spontaneous_alternations,
+                    *tuple(y_maze.seconds_spent_in_areas.values()),
+                    *tuple(y_maze.area_alternations.values()),
+                    *tuple(y_maze.triplet_alternation_distribution.values()),
+                )
 
         index_vs_data = dict(sorted(index_vs_data.items(), key=lambda item: item[0]))
 

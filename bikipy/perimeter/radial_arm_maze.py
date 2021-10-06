@@ -47,10 +47,7 @@ def generate_radial_arm_maze_arm_perimeters(
     lines = lines[correct_argsort]
     line_midpoints = line_midpoints[correct_argsort]
 
-    if inspect:
-        fig, ax = plt.subplots(len(labels))
-
-    paired, arm_perimeters = [], []
+    arm_perimeters = []
     for line_index, line_midpoint in enumerate(line_midpoints):
         line_pair_index = np.where(
             np.argsort(
@@ -59,18 +56,15 @@ def generate_radial_arm_maze_arm_perimeters(
             == 0
         )[0][0]
 
-        assert line_pair_index not in paired
         arm_perimeter = np.concatenate(
             (
-                center_object.linked_corners[line_pair_index : line_pair_index + 2],
+                center_object.corners[
+                    center_object.linked_polygon_edge_corner_pairs[line_pair_index], :
+                ],
                 lines[line_index],
             )
         )
-        if inspect:
-            ax[line_index].scatter(*arm_perimeter.T)
-            ax[line_index] = center_object.plot_perimeter(ax=ax)
 
-        paired.append(line_pair_index)
         arm_perimeters.append(
             ParallelogramPerimeter(
                 arm_perimeter,
@@ -80,4 +74,16 @@ def generate_radial_arm_maze_arm_perimeters(
             )
         )
 
-    return PolygonalPerimeterSet((*arm_perimeters, center_object), **perimeter_kwargs)
+    perimeters = (*arm_perimeters, center_object)
+    if inspect:
+        fig, ax = plt.subplots(ncols=3)
+        PolygonalPerimeter.plot_perimeters(perimeters, ax=ax[0])
+        for i, (line, center_corner) in enumerate(
+            zip(lines, center_object.corners), start=1
+        ):
+            ax[1].scatter(*line.T, label=f"line_{i}")
+            ax[2].scatter(*center_corner.T, label=f"center_corners_{i}")
+        plt.legend()
+        plt.show()
+
+    return PolygonalPerimeterSet(perimeters, **perimeter_kwargs)

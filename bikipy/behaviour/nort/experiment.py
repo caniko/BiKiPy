@@ -80,6 +80,9 @@ class NortExperiment(BaseExperiment):
             str(eye_center_label),
             str(nose_label),
         )
+        self.point_label_for_motion_features = (
+            self.point_label_for_motion_features or self.eye_center_label
+        )
         self.maximum_radians_inter_gaze_perimeter = float(
             maximum_radians_inter_gaze_perimeter
         )
@@ -102,8 +105,8 @@ class NortExperiment(BaseExperiment):
 
             generic_kwargs = {
                 **self.generic_trial_kwargs(trial_id),
-                "point_label_for_motion_features": self.eye_center_label,
-                "rigid_nodes_freezing": (self.eye_center_label, self.torso_label)
+                "point_label_for_motion_features": self.point_label_for_motion_features,
+                "rigid_nodes_freezing": (self.eye_center_label, self.torso_label),
             }
 
             exp_class = self.trial_label_to_trial_class_name[
@@ -217,19 +220,19 @@ class NortExperiment(BaseExperiment):
                 np.nan for _i in range(len(object_columns + novelty_columns))
             ]
             for nort_habituation in self.habituation_trials:
-                label_vs_data[nort_habituation.label] = (
+                label_vs_data[nort_habituation.int_label] = (
                     nort_habituation.info + habituation_filler
                 )
 
         if self.training_object_trials:
             training_filler = [np.nan for _i in range(len(novelty_columns))]
             for training_trial in self.training_object_trials:
-                label_vs_data[training_trial.label] = (
+                label_vs_data[training_trial.int_label] = (
                     training_trial.info + training_filler
                 )
 
         for novelty_trial in self.novelty_object_trials:
-            label_vs_data[novelty_trial.label] = novelty_trial.info
+            label_vs_data[novelty_trial.int_label] = novelty_trial.info
 
         return to_df(
             label_vs_data, habituation_columns + object_columns + novelty_columns

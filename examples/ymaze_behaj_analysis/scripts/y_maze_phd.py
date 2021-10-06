@@ -28,6 +28,7 @@ first_annotation = generate_radial_arm_maze_arm_perimeters(
     reference_point_coco_path=ANNOTATION_PATH / "reference.csv",
     inspect_image=IMAGE_PATH / "a_p1_1_before_1_phd.png",
     semantic_label="a_p1_1",
+    # inspect=True,
 )
 
 re_referenced = first_annotation.change_reference_with_coco(
@@ -42,7 +43,7 @@ exp_period_vs_perimeter_set = {
 }
 
 experiment_data = []
-for subdir in os.listdir(str(DATA_DIR)):
+for i, subdir in enumerate(os.listdir(str(DATA_DIR)), start=1):
     print(f"Reading {subdir}")
 
     trial_name = subdir.split("_")[1]
@@ -71,7 +72,8 @@ for subdir in os.listdir(str(DATA_DIR)):
                 trial_id_range_vs_perimeter_set=trial_id_range_vs_area_set,
                 point_label_for_motion_features="mid-mid-left_ear-right_ear-base_tail",
                 center_triangle_meter_width=0.08,
-                label=subdir,
+                semantic_label=subdir,
+                int_label=i,
                 data_import_kwargs={
                     "init_from": "hdf",
                     "x_crop_start": 95.0,
@@ -80,8 +82,7 @@ for subdir in os.listdir(str(DATA_DIR)):
                         ("left_ear", "right_ear"),
                         ("mid-left_ear-right_ear", "base_tail"),
                     ),
-                }
-                # debug=True
+                },
             )
         )
     )
@@ -91,6 +92,6 @@ for subdir in os.listdir(str(DATA_DIR)):
 
 with pd.ExcelWriter(RESULT_PATH / "phd.ods") as writer:
     for experiment in experiment_data:
-        print(f"Analysing {experiment.label}")
+        print(f"Analysing {experiment.semantic_label}")
         df = experiment.export_to_dataframe()
-        df.to_excel(writer, sheet_name=experiment.label)
+        df.to_excel(writer, sheet_name=experiment.semantic_label)

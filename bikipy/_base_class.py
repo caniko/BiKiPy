@@ -1,6 +1,6 @@
 import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Union
 
 import compress_pickle
 
@@ -12,12 +12,18 @@ class BikipyBase:
 
     def __init__(
         self,
-        label: Any = None,
+        int_label: Union[int, None] = None,
+        semantic_label: Union[str, None] = None,
+        group_label: Union[str, None] = None,
         timestamp: Any = None,
         save_root: Path_typing_kwarg = None,
     ):
-        self.label = label
         self.timestamp = timestamp or datetime.datetime.now()
+
+        self.int_label = int(int_label) if int_label else None
+        self.semantic_label = str(semantic_label) if semantic_label else None
+        self.group_label = str(group_label) if group_label else None
+
         self.save_root = Path(save_root) if save_root else None
 
     def save(self, save_root: Path_typing_kwarg = None):
@@ -29,7 +35,13 @@ class BikipyBase:
 
     @property
     def _hash_key(self):
-        raise NotImplementedError
+        return (
+            self.int_label,
+            self.semantic_label,
+            self.group_label,
+            self.timestamp,
+            self.category,
+        )
 
     def __hash__(self):
         return sum(hash(key) for key in self._hash_key)
@@ -63,3 +75,7 @@ class BikipyBase:
     def __ge__(self, other):
         self._inquire_timestamp_attribute(other)
         return self.timestamp >= other.timestamp
+
+    @property
+    def best_id(self):
+        return self.semantic_label or self.int_label or None

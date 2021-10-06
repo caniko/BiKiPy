@@ -1,6 +1,6 @@
 import itertools as it
 from copy import copy
-from functools import partial
+from functools import partial, cached_property
 from logging import getLogger
 from math import ceil
 from typing import Any, Sequence, Union
@@ -14,7 +14,6 @@ from bikipy.behaviour.utils import (
     reduce_repeating_sequences,
     unique_with_counts_zipped,
 )
-from bikipy.behaviour.y_maze.utils import mean_intersecting_points_on_borders
 from bikipy.perimeter.base import PolygonalPerimeter
 from bikipy.utils.store import translate_keys
 
@@ -53,7 +52,7 @@ class YMazeTrial(BaseTrial):
             self.valid_indices,
             self.valid_boolean_index,
         ) = PolygonalPerimeter.detect_sequential_border_presence(
-            self.coordinate_sequence,
+            self.coordinates_per_frame,
             self.arms,
             inferior_poly_border_instances=[self.center],
         )
@@ -61,49 +60,60 @@ class YMazeTrial(BaseTrial):
         self.invalid_boolean_index = ~self.valid_boolean_index
 
         self.reduced_alternation_sequence = reduce_repeating_sequences(
-            self.alternation_sequence
+            self.alternation_sequence, round(self.fps / 3.0)
         )
         self.reduced_without_center = exclude_value_from_sequence(
             self.reduced_alternation_sequence, self.center.int_label
         )
 
         self.sum_of_alternations = len(self.reduced_without_center) - 2
-        assert self.sum_of_alternations > 0, self.sum_of_alternations
 
-        # Data labeling helpers
-        self._arm_int_labels = [arm.int_label for arm in self.arms]
-        self._arm_semantic_labels = [arm.semantic_label for arm in self.arms]
-
-        self.arm_center_int_labels = self._arm_int_labels + [self.center.int_label]
-        self._arm_center_label_dict = {area: 0 for area in self.arm_center_int_labels}
-
-        self.arm_center_semantic_labels = self._arm_semantic_labels + [
-            self.center.semantic_label
+        self.arm_int_triplets = [
+            triplet for triplet in it.permutations(self.arm_int_labels)
         ]
-        self.int_to_semantic_labels = {
+        self.arm_semantic_triplets = [
+            triplet for triplet in it.permutations(self.arm_semantic_labels)
+        ]
+
+        self._arm_triplet_dict = {arm: 0 for arm in self.arm_int_triplets}
+        self._arm_center_int_label_to_seconds = {
+            area: 0 for area in self.arm_center_int_labels
+        }
+
+    @property
+    def _hash_key(self):
+        return self.reduced_without_center
+
+    @cached_property
+    def arm_int_labels(self):
+        return [arm.int_label for arm in self.arms]
+
+    @cached_property
+    def arm_int_labels_array(self):
+        return np.array(self.arm_int_labels)
+
+    @cached_property
+    def arm_center_int_labels(self):
+        return self.arm_int_labels + [self.center.int_label]
+
+    @cached_property
+    def arm_semantic_labels(self):
+        return [arm.semantic_label for arm in self.arms]
+
+    @cached_property
+    def arm_center_semantic_labels(self):
+        return self.arm_semantic_labels + [self.center.semantic_label]
+
+    @cached_property
+    def int_to_semantic_labels(self):
+        return {
             int_label: semantic_label
             for int_label, semantic_label in zip(
                 self.arm_center_int_labels, self.arm_center_semantic_labels
             )
         }
 
-        self.arm_int_triplets = [
-            triplet for triplet in it.permutations(self._arm_int_labels)
-        ]
-        self._arm_triplet_dict = {arm: 0 for arm in self.arm_int_triplets}
-
-        self.arm_center_semantic_labels = [arm.semantic_label for arm in self.arms] + [
-            self.center.semantic_label
-        ]
-        self.arm_semantic_triplets = [
-            "".join(triplet) for triplet in it.permutations(self._arm_semantic_labels)
-        ]
-
-    @property
-    def _hash_key(self):
-        return self.reduced_without_center
-
-    @property
+    @cached_property
     def seconds_spent_in_areas(self) -> dict:
         """
         The time spent in each area; arms and center
@@ -113,14 +123,14 @@ class YMazeTrial(BaseTrial):
         dict, area vs time
         """
 
-        result = copy(self._arm_center_label_dict)
+        result = copy(self._arm_center_int_label_to_seconds)
         for label, counts in unique_with_counts_zipped(self.alternation_sequence):
             assert label in result, f"{label} is not in {tuple(result.keys())})"
             result[label] = (counts / self.fps) if self.fps else counts
 
         return generic_int_to_semantic_key_translator(result)
 
-    @property
+    @cached_property
     def area_alternations(self) -> dict:
         """
         The number of alternations to every arm and center
@@ -130,14 +140,14 @@ class YMazeTrial(BaseTrial):
         dict, arm label vs alternations to arm
         """
 
-        result = copy(self._arm_center_label_dict)
+        result = copy(self._arm_center_int_label_to_seconds)
         for label, counts in unique_with_counts_zipped(
             self.reduced_alternation_sequence
         ):
             assert label in result
             result[label] = counts
 
-        total_arm_alternations = np.sum([result[lab] for lab in self._arm_int_labels])
+        total_arm_alternations = np.sum([result[lab] for lab in self.arm_int_labels])
         minimum_center_entries = ceil(total_arm_alternations / 2.0)
 
         if not result[self.center.int_label]:
@@ -145,14 +155,14 @@ class YMazeTrial(BaseTrial):
 
         if result[self.center.int_label] < minimum_center_entries:
             logger.info(
-                f"{self.center.semantic_label}: The number of alternations to the center, "
-                f"{result[self.center.semantic_label]} can't be less than the "
+                f"{self.center.int_label}: The number of alternations to the center, "
+                f"{result[self.center.int_label]} can't be less than the "
                 f"ceil of half of the total arm alternations, {minimum_center_entries}"
             )
 
         return result
 
-    @property
+    @cached_property
     def triplet_alternation_distribution(self) -> dict:
         """
         Define the triplet alternation distribution.
@@ -166,14 +176,9 @@ class YMazeTrial(BaseTrial):
         """
         distribution = copy(self._arm_triplet_dict)
         for i in range(self.sum_of_alternations):
-            current_triplet = (
-                self.reduced_without_center[i],
-                self.reduced_without_center[i + 1],
-                self.reduced_without_center[i + 2],
-            )
-
+            current_triplet = self.reduced_without_center[i : i + 3]
             if 1 in current_triplet and 2 in current_triplet and 3 in current_triplet:
-                distribution[current_triplet] += 1
+                distribution[tuple(current_triplet)] += 1
 
         result = {}
         for key, value in distribution.items():
@@ -184,7 +189,7 @@ class YMazeTrial(BaseTrial):
 
         return result
 
-    @property
+    @cached_property
     def spontaneous_alternations(self) -> float:
         """
         Define the number of spontaneous alternations between each y-maze arm
@@ -198,17 +203,16 @@ class YMazeTrial(BaseTrial):
         and sum of all triplet alternations.
         """
 
+        if self.sum_of_alternations == 0:
+            return 0
+
         alternations = 0
         for i in range(self.sum_of_alternations):
-            current_triplet = (
-                self.reduced_without_center[i],
-                self.reduced_without_center[i + 1],
-                self.reduced_without_center[i + 2],
-            )
+            current_triplet = self.reduced_without_center[i : i + 3]
             if 1 in current_triplet and 2 in current_triplet and 3 in current_triplet:
                 alternations += 1
 
-        assert self.sum_of_alternations > 0
+        assert self.sum_of_alternations > 0, self.sum_of_alternations
 
         return 100.0 * alternations / self.sum_of_alternations
 
@@ -234,7 +238,7 @@ class YMazeTrial(BaseTrial):
             bin=True,
             points=(
                 points
-                or self.coordinate_sequence[
+                or self.coordinates_per_frame[
                     self.invalid_boolean_index if invalid else self.valid_boolean_index
                 ]
             ),
