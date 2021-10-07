@@ -147,14 +147,13 @@ class YMazeTrial(BaseTrial):
             assert label in result
             result[label] = counts
 
-        total_arm_alternations = np.sum([result[lab] for lab in self.arm_int_labels])
-        minimum_center_entries = ceil(total_arm_alternations / 2.0)
-
         if not result[self.center.int_label]:
             result[self.center.int_label] = 0
 
-        if result[self.center.int_label] < minimum_center_entries:
-            logger.info(
+        if result[self.center.int_label] < (
+            minimum_center_entries := ceil(self.sum_of_alternations / 2.0)
+        ):
+            logger.warning(
                 f"{self.center.int_label}: The number of alternations to the center, "
                 f"{result[self.center.int_label]} can't be less than the "
                 f"ceil of half of the total arm alternations, {minimum_center_entries}"

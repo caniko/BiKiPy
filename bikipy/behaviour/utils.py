@@ -76,9 +76,8 @@ def reduce_repeating_sequences(
     while i + frame_tolerance < last_index:
         while True:
             i += 1
-            if (
-                i + frame_tolerance == last_index
-                or last_element != (new_element := repeating_sequence[i])
+            if i + frame_tolerance == last_index or last_element != (
+                new_element := repeating_sequence[i]
             ):
                 if (
                     np.mean(repeating_sequence[i : i + frame_tolerance] == new_element)
