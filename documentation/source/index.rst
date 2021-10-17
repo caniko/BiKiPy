@@ -16,9 +16,9 @@ Overview
 --------
 TLDR_: :code:`bikipy.reader` is used for ingesting data; :code:`bikipy.behavior` for analysis, the remaining submodules consist of auxiliary functions and classes.
 
-The main benefit of BiKiPy is that every discretely implemented pipeline share a common repository of auxiliary functions.
+The main benefit of BiKiPy is that every discretely implemented pipeline share a common repository of auxiliary functions such as functions used to determine metrics of motion.
 
-Many of the analytical pipelines have been placed in auxiliary subpackages that are defined categorically such as :code:`bikipy.math` and :code:`bikipy.utils`, to ensure accessibility across analysis pipelines that are implemented discretely. The :code:`bikipy.perimeter` submodule, defines classes for enclosed areas or perimeters.
+Many of the analytical pipelines have been placed in auxiliary subpackages to ensure accessibility across analysis pipelines that are implemented discretely. These subpackages are defined categorically; for instance, :code:`bikipy.math` stores mathematical code, and :code:`bikipy.utils` stores utility code. The :code:`bikipy.perimeter` submodule, defines classes used for abstracting enclosed areas or perimeters.
 
 reader
 ++++++
@@ -37,6 +37,7 @@ Common analytical methods are available in the classes located in :code:`behavio
 
    behaviour/index.rst
    features/index.rst
+   perimeter.rst
    annotation.rst
    math.rst
 

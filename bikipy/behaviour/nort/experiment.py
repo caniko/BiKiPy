@@ -125,9 +125,7 @@ class NortExperiment(BaseExperiment):
 
             elif exp_class == "training" or exp_class == "novelty":
                 try:
-                    field = self.nort_field_vs_nort_field_object[
-                        trial_meta["field"] - 1
-                    ]
+                    field = self.nort_field_vs_nort_field_object[trial_meta["field"]]
                 except AttributeError as e:
                     msg = "nort_field_vs_nort_field_object is not defined, which is required when working with training and/or novelty datasets"
                     raise AttributeError(msg) from e

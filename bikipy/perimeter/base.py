@@ -49,7 +49,9 @@ class Perimeter(BikipyBase):
         self._inspect_image_path = None
 
         self.inspect_image = (
-            inspect_image if np.any(inspect_image) else inspect_image_path
+            inspect_image
+            if isinstance(inspect_image, np.ndarray)
+            else inspect_image_path
         )
         self.reference_point = reference_point or reference_point_coco_path
 
@@ -143,6 +145,11 @@ class Perimeter(BikipyBase):
                 logger.info("The provided reference_point is identical to the current")
             self.change_reference_function(value)
         self._reference_point = value
+
+    def new_from_reference(self, new_reference: np.ndarray):
+        new = copy.deepcopy(self)
+        new.reference_point = new_reference
+        return new
 
     def change_reference_function(self, new_reference: np.ndarray):
         msg = (
@@ -640,6 +647,7 @@ class PolygonalPerimeter(Perimeter):
     def from_coco(
         cls,
         coco_path: Any,
+        reference_point: Union[Sequence, None] = None,
         reference_point_coco_path: Path_typing_kwarg = None,
         reference_point_annotation: bool = False,
         single_obj_return: bool = False,
@@ -660,31 +668,46 @@ class PolygonalPerimeter(Perimeter):
             coco["categories"], key=lambda dictionary: dictionary["id"]
         )
 
-        if reference_point_coco_path:
+        if np.any(reference_point):
+
+        elif reference_point_coco_path:
             point_coco_array = read_makesense_point_csv(reference_point_coco_path)
             if len(point_coco_array) != 1:
-                msg = (
-                    "There can only be a one point annotation in the provided coco dataset for "
-                    "the definition of reference_point"
-                )
-                raise ValueError(msg)
+                img_name_vs_reference_points = {
+                    point_coco_row[3]: point_coco_row[1:3]
+                    for point_coco_row in point_coco_array
+                }
+                if len(coco["images"]) == 1:
+                    reference_image_name = coco["images"][0]["file_name"]
+                    try:
+                        reference_point = img_name_vs_reference_points[reference_image_name]
+                    except KeyError as e:
+                        msg = "The image used for annotations does not have " \
+                              "a reference point defined in the point coco data"
+                        raise ValueError(msg) from e
+                    reference_polygon = cls.init_polygon(
+                        _coco_polygon_annotation(
+                            coco["annotations"][0]["segmentation"][0]
+                        ),
+                        reference_point=reference_point,
+                        **kwargs,
+                    )
+                    return {
+                        img_name: reference_polygon.new_from_reference(coordinate)
+                        for img_name, coordinate in img_name_vs_reference_points.items()
+                    }
             reference_point = point_coco_array[0][1:3]
+
         elif reference_point_annotation:
             if "inspect_image" not in kwargs:
                 msg = "inspect_image is not defined"
                 raise ValueError(msg)
             reference_point = cls._annotate_reference(kwargs["inspect_image"])
-        else:
-            reference_point = None
 
         results = {}
         for annotation, category in zip(coco["annotations"], coco["categories"]):
-            segmentation = annotation["segmentation"][0]
             results[category["name"].lower()] = cls.init_polygon(
-                [  # corners
-                    (segmentation[i], segmentation[i + 1])
-                    for i in range(0, len(segmentation) - 1, 2)
-                ],
+                _coco_polygon_annotation(annotation["segmentation"][0]),
                 reference_point=reference_point,
                 **kwargs,
             )
@@ -810,3 +833,10 @@ class PolygonalPerimeterSet(Perimeter):
 
 
 Perimeter2D = Union[PolygonalPerimeter, PolygonalPerimeterSet]
+
+
+def _coco_polygon_annotation(flat_annotation_data: Sequence):
+    return [
+        (flat_annotation_data[i], flat_annotation_data[i + 1])
+        for i in range(0, len(flat_annotation_data) - 1, 2)
+    ]

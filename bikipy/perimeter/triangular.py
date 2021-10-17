@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from functools import cached_property
 from typing import Union
 
 import numpy as np

@@ -2,14 +2,13 @@ import asyncio
 from collections import Sequence as collections_Sequence
 from datetime import datetime
 from logging import getLogger
-from pathlib import PurePath
-from types import Union
-from typing import Sequence
+from typing import Sequence, Union
 
 import numpy as np
 from tqdm import tqdm
 
 from bikipy.behaviour.base import BaseTrial
+from bikipy.utils.misc import clear_console
 from bikipy.utils.store import RangeDict
 
 try:
@@ -32,6 +31,7 @@ class LiveTrial(BaseTrial):
         *args,
         delay_timings: Sequence[Union[float, int]],
         delay_timings_trial_count: Union[int, Sequence[int]],
+        total_loops_per_trial: Union[int, None] = None,
         **kwargs,
     ):
         super().__init__(*args, _live=True, **kwargs)
@@ -53,6 +53,8 @@ class LiveTrial(BaseTrial):
             )
 
         self.node_sequence = []
+
+        self.bad_turn_counter = 0
         self.bad_loop_record = {}
 
         self._loop_number_vs_delay_time = (
@@ -68,11 +70,17 @@ class LiveTrial(BaseTrial):
             if delay_timings
             else {}
         )
+        self.total_loops_per_trial = total_loops_per_trial or np.sum(
+            delay_timings_trial_count
+        )
+        self.loop_number = 0
 
         self.live_expose_metrics = []
         self.countdown_timings = []
 
+        self._delay_countdown_task = None
         self._counting_down = False
+
         self._zmq_context = None
         self._socket = None
 
@@ -85,10 +93,12 @@ class LiveTrial(BaseTrial):
         event_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(event_loop)
 
+        event_loop.create_task(self.print_state())
+
         try:
             event_loop.run_until_complete(self.localization_loop())
         except KeyboardInterrupt:
-            logger.info("Localization loop interrupted with keypress")
+            logger.info("Localization loop interrupted with keyboard interrupt")
 
         request_save = input(
             "Would you like to save the results from the experiment? Y/n\n"
@@ -127,6 +137,27 @@ class LiveTrial(BaseTrial):
                 )
         finally:
             self._socket.close()
+
+    @property
+    def state_string(self):
+        return (
+            f"Loop: {self.loop_number}/{self.total_loops_per_trial}; "
+            f"Bad loops: {self.bad_turn_counter}"
+        )
+
+    async def print_state(self, refresh_rate: float = 0.2):
+        while True:
+            if self._delay_countdown_task:
+                await self._delay_countdown_task
+            print(self.state_string, end="\r")
+            await asyncio.sleep(refresh_rate)
+
+    def initiate_countdown(self, seconds: int):
+        self._delay_countdown_task = asyncio.create_task(self.countdown(seconds))
+
+    def stop_countdown_prematurely(self):
+        self._delay_countdown_task.cancel()
+        clear_console()
 
     async def countdown(self, seconds: int = 10):
         logger.debug(f"Starting countdown timer for {self}")

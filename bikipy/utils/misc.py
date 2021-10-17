@@ -43,3 +43,11 @@ def seek_next_file_index(filepath: Union[PurePath, str]) -> PurePath:
         new_filepath = filepath.with_suffix(str(i))
         i += 1
     return new_filepath
+
+
+def clear_console():
+    """
+    https://stackoverflow.com/a/65343640/9793651
+    :return:
+    """
+    print("\033c\033[3J", end="")

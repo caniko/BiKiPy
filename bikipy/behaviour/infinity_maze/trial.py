@@ -59,22 +59,23 @@ class InfinityMaze(LiveTrial):
         self.reward_data = []
 
         self.regression_instance_tolerance = int(regression_instance_tolerance)
+        self.regressed = False
         self._sequential_regressions = 0
         self._regressing = False
-        self._regressed = False
         self._regression_start_timestamp = None
 
         self._last_location_id = None
         self._last_node = None
         self._current_sequence = []
 
-        self._bad_turn_counter = 0
         self._current_loop_is_bad = False
 
-        self._loop_number = 0
         self._last_loop = None
         self._received_reward = False
-        self._delay_countdown_task = None
+
+    @property
+    def state_string(self):
+        return super().state_string + f"; Regressed: {self.regressed}"
 
     def localize_loop_func(self, location: int, timestamp: datetime.datetime):
         if location == self._last_location_id:
@@ -83,7 +84,7 @@ class InfinityMaze(LiveTrial):
                 and self._regression_start_timestamp >= self.regression_buffer
             ):
                 self._regressing = False
-                self._regressed = True
+                self.regressed = True
             return
 
         if self._regressing:
@@ -95,14 +96,14 @@ class InfinityMaze(LiveTrial):
             )
             self._regressing = False
             self._regression_start_timestamp = None
-        elif self._regressed:
+        elif self.regressed:
             self.regression_data.append(
                 (
                     self._regression_start_timestamp,
                     timestamp - self._regression_start_timestamp,
                 )
             )
-            self._regressed = False
+            self.regressed = False
             self._sequential_regressions += 1
 
         location_string = (
@@ -111,12 +112,10 @@ class InfinityMaze(LiveTrial):
         if location_string is None:
             pass
         elif "delay_zone" == location_string:
-            self._delay_countdown_task = asyncio.create_task(
-                self.countdown(self._loop_number_vs_delay_time[self._loop_number])
-            )
+            self.initiate_countdown(self._loop_number_vs_delay_time[self.loop_number])
         elif "delay_entry" == location_string:
             if self._last_node == "delay_zone":
-                self._delay_countdown_task.cancel()
+                self.stop_countdown_prematurely()
         elif location in self._current_sequence:
             self._regressing = True
             self._regression_start_timestamp = timestamp
@@ -131,7 +130,7 @@ class InfinityMaze(LiveTrial):
                         self.reward("left")
                     else:
                         self.record_bad_loop(
-                            f"Made left turn {self._bad_turn_counter} after the initial left turn"
+                            f"Made left turn {self.bad_turn_counter} after the initial left turn"
                         )
 
                 else:  # same as `elif "reward_right" == location_string:`
@@ -139,7 +138,7 @@ class InfinityMaze(LiveTrial):
                         self.reward("right")
                     else:
                         self.record_bad_loop(
-                            f"Made right turn {self._bad_turn_counter} after the initial right turn"
+                            f"Made right turn {self.bad_turn_counter} after the initial right turn"
                         )
                     self._last_loop = "right"
             else:
@@ -158,11 +157,11 @@ class InfinityMaze(LiveTrial):
         await super().countdown(seconds)
         self._current_sequence = []
         self._current_loop_is_bad = False
-        self._loop_number += 1
+        self.loop_number += 1
 
     def reward(self, direction: str):
         logger.debug(f"Dropping reward on {direction}")
-        self._bad_turn_counter = 0
+        self.bad_turn_counter = 0
         self._received_reward = True
 
         # TODO: Arduino connection
@@ -173,4 +172,4 @@ class InfinityMaze(LiveTrial):
     def record_bad_loop(self, reason: str):
         logger.debug(reason)
         self._current_loop_is_bad = True
-        self.bad_loop_record[self._loop_number] = reason
+        self.bad_loop_record[self.loop_number] = reason

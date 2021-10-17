@@ -6,7 +6,8 @@ The :code:`bikipy.behaviour` package stores the implementations of currently sup
 .. toctree::
    :caption: Experiments:
 
-   nort.rst
+   nort/nort.rst
+   radial_maze/y_maze.rst
 
 Purpose and requirements
 ========================
