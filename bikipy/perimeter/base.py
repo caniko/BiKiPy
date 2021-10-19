@@ -206,11 +206,10 @@ class Perimeter(BikipyBase):
                     )
                     raise ValueError(msg)
 
-            return {
-                img_name: self.new_from_reference(reference_point)
-                for img_name, reference_point in img_name_vs_reference_points.items()
-                if self.inspect_image_path.name.lower() != img_name
-            }
+            return [
+                self.new_from_reference(reference_point)
+                for reference_point in img_name_vs_reference_points.values()
+            ]
         else:
             msg = f"The path in coco_path is an empty dataset"
             raise ValueError(msg)
@@ -664,29 +663,30 @@ class PolygonalPerimeter(Perimeter):
             coco["categories"], key=lambda dictionary: dictionary["id"]
         )
 
-        image_name_vs_polygon = {
-            img_metadata["file_name"].split(".")[0].lower(): cls.init_polygon(
+        semantic_label_vs_polygon = {
+            coco["categories"][annotation["category_id"] - 1]["name"]: cls.init_polygon(
                 _coco_polygon_annotation(annotation["segmentation"][0]),
                 inspect_image_path=image_root / img_metadata["file_name"] if image_root else None,
+                semantic_label=coco["categories"][annotation["category_id"] - 1]["name"]
             )
             for img_metadata, annotation in zip(coco["images"], coco["annotations"])
         }
 
         if reference_point_coco_path:
-            image_name_vs_polygon = {
-                img_name: polygon.change_reference_with_coco(
+            semantic_label_vs_polygon = {
+                semantic_label: polygon.change_reference_with_coco(
                     reference_point_coco_path,
                     image_root=image_root
                 )
-                for img_name, polygon in image_name_vs_polygon.items()
+                for semantic_label, polygon in semantic_label_vs_polygon.items()
             }
         if single_obj_return:
             assert (
-                len(image_name_vs_polygon) == 1
-            ), f"More than one item in coco set, {len(image_name_vs_polygon)}"
-            return image_name_vs_polygon.popitem()[1]
+                len(semantic_label_vs_polygon) == 1
+            ), f"More than one item in coco set, {len(semantic_label_vs_polygon)}"
+            return semantic_label_vs_polygon.popitem()[1]
 
-        return image_name_vs_polygon
+        return semantic_label_vs_polygon
 
 
 class GenericPolygonalBorder(PolygonalPerimeter):
