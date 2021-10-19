@@ -131,11 +131,11 @@ class Perimeter(BikipyBase):
             return
 
         if isinstance(value, (PurePath, str)):
-            reference_point_coco_array = read_makesense_point_csv(value)
-            if len(reference_point_coco_array) != 1:
+            reference_reference_coco_array = read_makesense_point_csv(value)
+            if len(reference_reference_coco_array) != 1:
                 raise NotImplemented
             self._reference_point = np.asarray(
-                reference_point_coco_array[0][1:3], dtype=np.float32
+                reference_reference_coco_array[0][1:3], dtype=np.float32
             )
             return
 
@@ -169,60 +169,56 @@ class Perimeter(BikipyBase):
         return np.array(plt.ginput(n=1, timeout=0)[0])
 
     def change_reference_with_coco(
-        self,
-        coco_path: Path_typing,
-        image_root: Path_typing_kwarg = None,
+        self, coco_path: Path_typing, image_root: Path_typing_kwarg = None
     ):
         def get_reference_point_from_array(array: np.ndarray):
-            return array[1:3]
+            return np.array(array[1:3], dtype=float)
 
         if image_root and not (image_root := Path(image_root)).exists():
             msg = "image_root is not an existing directory"
             raise AttributeError(msg)
 
-        csv_array = read_makesense_point_csv(coco_path)
-        number_of_references = len(csv_array)
+        reference_coco_array = read_makesense_point_csv(coco_path)
 
-        if number_of_references == 1:
-            self.reference_point = get_reference_point_from_array(csv_array)
+        if (number_of_references := len(reference_coco_array)) == 1:
+            polygon = copy.deepcopy(self) if self.reference_point else self
+            polygon.reference_point = get_reference_point_from_array(
+                reference_coco_array
+            )
             if image_root:
-                self.inspect_image_path = image_root / self.inspect_image_path.stem
-            return
-
-        if number_of_references > 1:
-            self_reference_row_index = None
+                self.inspect_image_path = image_root / self.inspect_image_path.name
+            return polygon
+        elif number_of_references > 1:
+            img_name_vs_reference_points = {
+                row[3].lower(): get_reference_point_from_array(row)
+                for row in reference_coco_array
+            }
             if not np.any(self.reference_point):
-                try:
-                    self_reference_row_index = np.where(
-                        csv_array.T[3] == self.inspect_image_path.stem
-                    )[0][0]
-                except IndexError as e:
+                for img_name, reference_point in img_name_vs_reference_points.items():
+                    if self.inspect_image_path.name.lower() == img_name:
+                        self.reference_point = reference_point
+                        break
+                if not np.any(self.reference_point):
                     msg = (
-                        "The reference object has no reference point, and there is no refrence point "
-                        "for the inspect_image stored in the coco dataset"
+                        "The reference polygon does not have a defined "
+                        "reference point, the coco_reference dataset does not "
+                        "define a reference point either. Refer to the documentation"
                     )
-                    raise ValueError(msg) from e
-                except AttributeError as e:
-                    msg = (
-                        "inspect_image_path needs to be defined to define a reference point "
-                        "for the reference object from a coco multi-reference dataset"
-                    )
-                    raise AttributeError(msg) from e
-                self.reference_point = csv_array[self_reference_row_index][1:3]
+                    raise ValueError(msg)
 
-            result = []
-            for i, row in enumerate(csv_array):
-                if i == self_reference_row_index:
-                    continue
-                new = copy.deepcopy(self)
-                if image_root:
-                    new.inspect_image = image_root / row[3]
-                self.reference_point = get_reference_point_from_array(row)
-                result.append(new)
-            return result
+            return {
+                img_name: self.new_from_reference(reference_point)
+                for img_name, reference_point in img_name_vs_reference_points.items()
+                if self.inspect_image_path.name.lower() != img_name
+            }
         else:
             msg = f"The path in coco_path is an empty dataset"
             raise ValueError(msg)
+
+    def change_reference(self, new_reference: Sequence):
+        """Function for changing reference and return self in one line"""
+        self.reference_point = new_reference
+        return self
 
     def __repr__(self):
         return (
@@ -647,16 +643,16 @@ class PolygonalPerimeter(Perimeter):
     def from_coco(
         cls,
         coco_path: Any,
-        reference_point: Union[Sequence, None] = None,
         reference_point_coco_path: Path_typing_kwarg = None,
-        reference_point_annotation: bool = False,
+        image_root: Path_typing_kwarg = None,
         single_obj_return: bool = False,
-        **kwargs,
     ) -> Union[dict, Perimeter]:
         logger.debug("Generating PolygonalPerimeter from coco data")
 
         with open(coco_path, "rb") as in_json:
             coco = json.load(in_json)
+
+        assert not image_root or (image_root := Path(image_root)).exists()
 
         # The coco annotations are not sorted with respect to the category IDs
         coco["annotations"] = sorted(
@@ -668,54 +664,29 @@ class PolygonalPerimeter(Perimeter):
             coco["categories"], key=lambda dictionary: dictionary["id"]
         )
 
-        if np.any(reference_point):
-
-        elif reference_point_coco_path:
-            point_coco_array = read_makesense_point_csv(reference_point_coco_path)
-            if len(point_coco_array) != 1:
-                img_name_vs_reference_points = {
-                    point_coco_row[3]: point_coco_row[1:3]
-                    for point_coco_row in point_coco_array
-                }
-                if len(coco["images"]) == 1:
-                    reference_image_name = coco["images"][0]["file_name"]
-                    try:
-                        reference_point = img_name_vs_reference_points[reference_image_name]
-                    except KeyError as e:
-                        msg = "The image used for annotations does not have " \
-                              "a reference point defined in the point coco data"
-                        raise ValueError(msg) from e
-                    reference_polygon = cls.init_polygon(
-                        _coco_polygon_annotation(
-                            coco["annotations"][0]["segmentation"][0]
-                        ),
-                        reference_point=reference_point,
-                        **kwargs,
-                    )
-                    return {
-                        img_name: reference_polygon.new_from_reference(coordinate)
-                        for img_name, coordinate in img_name_vs_reference_points.items()
-                    }
-            reference_point = point_coco_array[0][1:3]
-
-        elif reference_point_annotation:
-            if "inspect_image" not in kwargs:
-                msg = "inspect_image is not defined"
-                raise ValueError(msg)
-            reference_point = cls._annotate_reference(kwargs["inspect_image"])
-
-        results = {}
-        for annotation, category in zip(coco["annotations"], coco["categories"]):
-            results[category["name"].lower()] = cls.init_polygon(
+        image_name_vs_polygon = {
+            img_metadata["file_name"].split(".")[0].lower(): cls.init_polygon(
                 _coco_polygon_annotation(annotation["segmentation"][0]),
-                reference_point=reference_point,
-                **kwargs,
+                inspect_image_path=image_root / img_metadata["file_name"] if image_root else None,
             )
+            for img_metadata, annotation in zip(coco["images"], coco["annotations"])
+        }
 
+        if reference_point_coco_path:
+            image_name_vs_polygon = {
+                img_name: polygon.change_reference_with_coco(
+                    reference_point_coco_path,
+                    image_root=image_root
+                )
+                for img_name, polygon in image_name_vs_polygon.items()
+            }
         if single_obj_return:
-            assert len(results) == 1, f"More than one item in coco set, {len(results)}"
-            return results.popitem()[1]
-        return results
+            assert (
+                len(image_name_vs_polygon) == 1
+            ), f"More than one item in coco set, {len(image_name_vs_polygon)}"
+            return image_name_vs_polygon.popitem()[1]
+
+        return image_name_vs_polygon
 
 
 class GenericPolygonalBorder(PolygonalPerimeter):

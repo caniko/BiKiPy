@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 from bikipy.behaviour.nort.experiment import NortExperiment
+from bikipy.behaviour.nort.trial import NortField
 from bikipy.perimeter.base import PolygonalPerimeter
 from bikipy.plugins.belhaj import (
     get_animal_id_vs_apparatus,
@@ -27,10 +28,23 @@ if not RESULT_DIR.exists():
 
 EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
+nort_field_vs_nort_field_object = {}
 for i in range(1, 5):
-    novel_refs =
-    PolygonalPerimeter.from_coco(
-
+    novel = PolygonalPerimeter.from_coco(
+        IMAGE_DIR / f"novel_{i}.json",
+        IMAGE_DIR / f"references_novel_{i}.csv",
+        image_root=IMAGE_DIR,
+    )
+    training = PolygonalPerimeter.from_coco(
+        IMAGE_DIR / f"training_{i}.json",
+        IMAGE_DIR / f"references_training_{i}.csv",
+        image_root=IMAGE_DIR,
+    )
+    nort_field_vs_nort_field_object[i] = NortField(
+        constant_object_perimeter=training["constant"][i],
+        variable_object_perimeter=training["variable"][i],
+        novel_object_perimeter=novel["novel"][i],
+        novelty_constant_object_perimeter=novel["constant"][i],
     )
 
 experiments = []

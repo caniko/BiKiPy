@@ -29,6 +29,7 @@ def read_makesense_point_csv(coco_path: Path_typing):
     return pd.read_csv(
         coco_path,
         header=None,
+        # dtype={0: str, 1: float, 2: float, 3: str, 4: int, 5: int}
         # names=["x1", "y1", "x2", "y2", "filename", "img_x", "img_y"],
     ).to_numpy()
 

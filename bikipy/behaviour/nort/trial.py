@@ -163,7 +163,7 @@ class NortNoveltyTrial(NortTrainingTrial):
             self.absolute_discrimination / self.experiment_seconds
         )
 
-        self.novelty_preference = 100 * self.seconds_spent_b / self.experiment_seconds
+        self.novelty_preference = 100.0 * self.seconds_spent_b / self.experiment_seconds
 
     @property
     def info(self):
