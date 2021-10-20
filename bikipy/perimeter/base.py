@@ -119,6 +119,8 @@ class Perimeter(BikipyBase):
             ax.imshow(histogram.T, interpolation="sinc")
             ax.plot(*points.T, ".r-")
 
+        ax.set_title(self.best_id)
+
         return ax
 
     @property
@@ -646,6 +648,16 @@ class PolygonalPerimeter(Perimeter):
         image_root: Path_typing_kwarg = None,
         single_obj_return: bool = False,
     ) -> Union[dict, Perimeter]:
+        def get_inspect_img_path(image_id: int):
+            return (
+                image_root / coco["images"][image_id - 1]["file_name"]
+                if image_root
+                else None
+            )
+
+        def get_semantic_label(category_id: int):
+            return coco["categories"][category_id - 1]["name"].lower()
+
         logger.debug("Generating PolygonalPerimeter from coco data")
 
         with open(coco_path, "rb") as in_json:
@@ -664,19 +676,20 @@ class PolygonalPerimeter(Perimeter):
         )
 
         semantic_label_vs_polygon = {
-            coco["categories"][annotation["category_id"] - 1]["name"]: cls.init_polygon(
+            get_semantic_label(annotation["category_id"]): cls.init_polygon(
                 _coco_polygon_annotation(annotation["segmentation"][0]),
-                inspect_image_path=image_root / img_metadata["file_name"] if image_root else None,
-                semantic_label=coco["categories"][annotation["category_id"] - 1]["name"]
+                inspect_image_path=get_inspect_img_path(annotation["image_id"]),
+                semantic_label=coco["categories"][annotation["category_id"] - 1][
+                    "name"
+                ],
             )
-            for img_metadata, annotation in zip(coco["images"], coco["annotations"])
+            for annotation in coco["annotations"]
         }
 
         if reference_point_coco_path:
             semantic_label_vs_polygon = {
                 semantic_label: polygon.change_reference_with_coco(
-                    reference_point_coco_path,
-                    image_root=image_root
+                    reference_point_coco_path, image_root=image_root
                 )
                 for semantic_label, polygon in semantic_label_vs_polygon.items()
             }

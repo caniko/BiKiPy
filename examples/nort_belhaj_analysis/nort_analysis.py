@@ -28,8 +28,13 @@ if not RESULT_DIR.exists():
 
 EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
+TO_SKIP = (
+    [],
+    [103]
+)
+
 nort_field_vs_nort_field_object = {}
-for i in range(1, 5):
+for i, list_idx in zip(range(1, 5), range(4)):
     novel = PolygonalPerimeter.from_coco(
         IMAGE_DIR / f"novel_{i}.json",
         IMAGE_DIR / f"references_novel_{i}.csv",
@@ -41,18 +46,21 @@ for i in range(1, 5):
         image_root=IMAGE_DIR,
     )
     nort_field_vs_nort_field_object[i] = NortField(
-        constant_object_perimeter=training["constant"][i],
-        variable_object_perimeter=training["variable"][i],
-        novel_object_perimeter=novel["novel"][i],
-        novelty_constant_object_perimeter=novel["constant"][i],
+        label=i,
+        constant_object_perimeter=training["constant"][list_idx],
+        variable_object_perimeter=training["variable"][list_idx],
+        novel_object_perimeter=novel["novel"][list_idx],
+        novelty_constant_object_perimeter=novel["constant"][list_idx],
     )
+    # nort_field_vs_nort_field_object[i].plot()
 
 experiments = []
 for round_idx in range(2):
     round_number = round_idx + 1
-    for round_dir_name in os.listdir(DEEPLABCUT_DIR / f"Experiment_{round_number}"):
+    experiment_root_data_path = DEEPLABCUT_DIR / f"Experiment_{round_number}"
+    for round_dir_name in os.listdir(experiment_root_data_path):
         meta_data = DATA_DIR / f"nort_round_{round_number}.xlsx"
-        round_dir_path = DEEPLABCUT_DIR / round_dir_name
+        round_dir_path = experiment_root_data_path / round_dir_name
 
         day, month, year = round_dir_path.name.split("_")[1].split(".")
         date = datetime.date(int(year), int(month), int(day))
@@ -78,6 +86,9 @@ for round_idx in range(2):
 
         trial_id_range_vs_exp_meta = {}
         for trial_id, paths in trial_id_vs_paths.items():
+            if trial_id in TO_SKIP[round_idx]:
+                continue
+
             trial_data = {
                 "coordinate_data_path": paths["data"],
                 "stage": (stage := trial_id_vs_stage[trial_id]),

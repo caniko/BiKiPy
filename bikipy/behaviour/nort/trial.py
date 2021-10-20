@@ -7,6 +7,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, Union
 
+import matplotlib.pyplot as plt
 import numpy as np
 from compress_pickle import compress_pickle
 
@@ -268,3 +269,29 @@ class NortField:
 
         with open(filepath, "wb") as f:
             compress_pickle.dump(self, f)
+
+    @property
+    def perimeter_set(self):
+        result = [
+            self.constant_object_perimeter,
+            self.variable_object_perimeter,
+            self.novel_object_perimeter,
+        ]
+        if self.novelty_constant_object_perimeter:
+            result.append(self.novelty_constant_object_perimeter)
+        return result
+
+    def plot(self):
+        if self.novelty_constant_object_perimeter:
+            fig, axs = plt.subplots(nrows=2, ncols=2)
+        else:
+            fig, axs = plt.subplots(nrows=3)
+        axs = axs.flatten()
+
+        for i, perimeter in enumerate(self.perimeter_set):
+            axs[i] = perimeter.plot_self(plot_kwargs={"ax": axs[i]})
+
+        fig.suptitle(f"Nort field {self.label}")
+
+        plt.tight_layout()
+        plt.show()
