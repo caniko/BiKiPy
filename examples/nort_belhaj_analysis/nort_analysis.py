@@ -28,10 +28,7 @@ if not RESULT_DIR.exists():
 
 EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
-TO_SKIP = (
-    [],
-    [103]
-)
+TO_SKIP = ([], [103])
 
 nort_field_vs_nort_field_object = {}
 for i, list_idx in zip(range(1, 5), range(4)):
@@ -58,15 +55,17 @@ experiments = []
 for round_idx in range(2):
     round_number = round_idx + 1
     experiment_root_data_path = DEEPLABCUT_DIR / f"Experiment_{round_number}"
-    for round_dir_name in os.listdir(experiment_root_data_path):
-        meta_data = DATA_DIR / f"nort_round_{round_number}.xlsx"
-        round_dir_path = experiment_root_data_path / round_dir_name
+    meta_data = DATA_DIR / f"nort_round_{round_number}.xlsx"
+    for round_part_idx, round_part_dir_name in enumerate(
+        os.listdir(experiment_root_data_path)
+    ):
+        round_dir_path = experiment_root_data_path / round_part_dir_name
 
         day, month, year = round_dir_path.name.split("_")[1].split(".")
         date = datetime.date(int(year), int(month), int(day))
 
         exp_metadata_df = pd.read_excel(
-            meta_data, sheet_name=round_idx, engine="openpyxl"
+            meta_data, sheet_name=round_part_idx, engine="openpyxl"
         )
 
         animal_id_vs_app = get_animal_id_vs_apparatus(
