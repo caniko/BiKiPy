@@ -134,5 +134,5 @@ with pd.ExcelWriter(
     },
 ) as writer:
     for experiment in experiments:
-        experiment.df.to_parquet(RESULT_DIR / f"exp_{experiment.timestamp}.parquet")
+        experiment.df.to_parquet(RESULT_DIR / "for_analysis" / f"exp_{experiment.timestamp}.parquet")
         experiment.df.to_excel(writer, sheet_name=str(experiment.timestamp))
