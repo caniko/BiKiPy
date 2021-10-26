@@ -122,7 +122,7 @@ for round_idx in range(2):
             timestamp=date,
         )
 
-        experiment.plot_attention_state_distribution()
+        # experiment.plot_attention_state_distribution()
         experiments.append(experiment)
 
 

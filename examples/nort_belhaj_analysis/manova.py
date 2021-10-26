@@ -2,6 +2,8 @@ from glob import iglob
 from pathlib import Path
 
 import pandas as pd
+from matplotlib import pyplot as plt
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
 from statsmodels.multivariate.manova import MANOVA
 
 WORKING_DIR = Path(".").resolve()
@@ -15,9 +17,9 @@ PARAMETERS_TO_COMPARE = (
     "Displacement",
     "Median_speed",
     "Median_acceleration",
-    # "Discrimination_index",
-    # "Novelty_preference",
-    # "Object_bias_score",
+    "Discrimination_index",     # Novel
+    "Novelty_preference",       # Novel
+    "Object_bias_score",        # Novel
 )
 
 with pd.ExcelWriter(
@@ -49,6 +51,7 @@ with pd.ExcelWriter(
 
         metadata_df = pd.read_excel(DATA_DIR / "nort_round_2.xlsx", index_col="Test")
         concatenated = pd.concat([df_motion, df_nort, metadata_df], axis=1, sort=True)
+        grouped = concatenated.groupby(by=["Stage"])
         for parameter in PARAMETERS_TO_COMPARE:
             print(parameter)
             analyse = MANOVA.from_formula(
@@ -58,3 +61,12 @@ with pd.ExcelWriter(
             analyse.mv_test().summary_frame.to_excel(
                 writer, sheet_name=f"{parameter}_{dataset.stem}"
             )
+
+            # tukey = pairwise_tukeyhsd(endog=voter_age,  # Data
+            #                           groups=voter_race,  # Groups
+            #                           alpha=0.05)  # Significance level
+            #
+            # tukey.plot_simultaneous()  # Plot group confidence intervals
+            # plt.vlines(x=49.57, ymin=-0.5, ymax=4.5, color="red")
+            #
+            # tukey.summary()  # See test summary

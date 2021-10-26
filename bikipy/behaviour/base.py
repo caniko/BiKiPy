@@ -127,7 +127,7 @@ class BaseExperiment(Behaviour):
                 inspection_figure_save / f"Experiment_{self.timestamp}_inspect"
             )
             if not inspection_figure_save.exists():
-                os.mkdir(self.inspection_figure_save)
+                os.makedirs(self.inspection_figure_save)
 
         if self.coordinate_data_format == "deeplabcut":
             self.trial_id_vs_coordinate_sequence = {
@@ -208,6 +208,7 @@ class BaseTrial(Behaviour):
     category = "trial"
 
     trial_sequence_index = None
+    trial_label = None
     second_tolerance = 0.35
 
     def __init__(
@@ -394,3 +395,7 @@ class BaseTrial(Behaviour):
 
     def _perimeter_label_sequence_to_int_id(self, label_sequence: Iterable) -> tuple:
         return tuple(self._perimeter_label_vs_int_id[label] for label in label_sequence)
+
+    @cached_property
+    def info(self):
+        return [self.trial_label] if self.trial_label else []

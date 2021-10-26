@@ -26,6 +26,7 @@ class NortHabituationTrial(SquareEnclosedTrial):
     """
 
     trial_sequence_index = 0
+    trial_label = "habituation"
 
 
 class NortOpenField(NortHabituationTrial):
@@ -34,6 +35,7 @@ class NortOpenField(NortHabituationTrial):
 
 class NortTrainingTrial(NortHabituationTrial):
     trial_sequence_index = 1
+    trial_label = "training"
 
     def __init__(
         self,
@@ -152,6 +154,7 @@ class NortTrainingTrial(NortHabituationTrial):
 
 class NortNoveltyTrial(NortTrainingTrial):
     trial_sequence_index = 2
+    trial_label = "novelty"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

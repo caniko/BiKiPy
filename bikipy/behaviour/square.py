@@ -189,4 +189,4 @@ class SquareEnclosedTrial(BaseTrial):
 
     @property
     def info(self):
-        return self.motion_info + self.feature_info
+        return super().info + self.motion_info + self.feature_info

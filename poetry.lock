@@ -385,6 +385,20 @@ docs = ["furo (>=2021.8.17b43)", "sphinx (>=4.1)", "sphinx-autodoc-typehints (>=
 testing = ["covdefaults (>=1.2.0)", "coverage (>=4)", "pytest (>=4)", "pytest-cov", "pytest-timeout (>=1.4.2)"]
 
 [[package]]
+name = "fletcher"
+version = "0.7.2"
+description = "Pandas ExtensionDType/Array backed by Apache Arrow"
+category = "main"
+optional = false
+python-versions = ">=3"
+
+[package.dependencies]
+numba = ">=0.49"
+pandas = ">=1.0"
+pyarrow = ">=0.17.0"
+six = "*"
+
+[[package]]
 name = "h5py"
 version = "3.4.0"
 description = "Read and write HDF5 files from Python"
@@ -1842,7 +1856,7 @@ live = ["pyzmq"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8.0, <3.10"
-content-hash = "4d95b22d96e57daf85437a379a056d5669bb45b7e925d67b9760e7445f5b6385"
+content-hash = "4cf783da4f500c59328efdbf3611a975b13953286c350c73570485be65d0d0aa"
 
 [metadata.files]
 aiohttp = [
@@ -2086,6 +2100,10 @@ et-xmlfile = [
 filelock = [
     {file = "filelock-3.3.0-py3-none-any.whl", hash = "sha256:bbc6a0382fe8ec4744ecdf6683a2e07f65eb10ff1aff53fc02a202565446cde0"},
     {file = "filelock-3.3.0.tar.gz", hash = "sha256:8c7eab13dc442dc249e95158bcc12dec724465919bdc9831fdbf0660f03d1785"},
+]
+fletcher = [
+    {file = "fletcher-0.7.2-py3-none-any.whl", hash = "sha256:6f4227b48004dce8f7edd09f658395b30b066f6c7f48439a78e370b5c3a30a2e"},
+    {file = "fletcher-0.7.2.tar.gz", hash = "sha256:b646d0a69118ea9f95a62423d139afaa0f404da388bf0106735cfe7d4fb876b6"},
 ]
 h5py = [
     {file = "h5py-3.4.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:aa511bd05a9174c3008becdc93bd5785e254d34a6ab5f0425e6b2fbbc88afa6d"},

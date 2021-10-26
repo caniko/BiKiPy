@@ -6,6 +6,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from fletcher import FletcherContinuousArray
 from matplotlib import pyplot as plt
 
 from bikipy.behaviour.base import BaseExperiment
@@ -170,15 +171,6 @@ class NortExperiment(BaseExperiment):
         -------
         DataFrame with the combined experiment attributes of all the YMazeTrial objects
         """
-
-        def to_df(data_dict: dict, features: Sequence):
-            data_dict = sort_dict_by_key_value(data_dict)
-            return pd.DataFrame(
-                data_dict.values(),
-                index=pd.Series(data_dict.keys(), name="Test", dtype=np.int16),
-                columns=pd.MultiIndex.from_tuples(features, names=("Feature", "Area")),
-            )
-
         def feature_area(feature, areas):
             return tuple([(feature, area) for area in areas])
 
@@ -191,7 +183,8 @@ class NortExperiment(BaseExperiment):
                 (category, "Freezing time"),
             )
 
-        habituation_columns = [
+        base_columns = [
+            ("All", "Stage"),
             *movement_feature("All"),
             *movement_feature("Periphery"),
             *movement_feature("Center"),
@@ -232,9 +225,17 @@ class NortExperiment(BaseExperiment):
         for novelty_trial in self.novelty_object_trials:
             label_vs_data[novelty_trial.int_label] = novelty_trial.info
 
-        return to_df(
-            label_vs_data, habituation_columns + object_columns + novelty_columns
+        data_dict = sort_dict_by_key_value(label_vs_data)
+        df = pd.DataFrame(
+            data_dict.values(),
+            index=pd.Series(data_dict.keys(), name="Test", dtype=np.int16),
+            columns=pd.MultiIndex.from_tuples(
+                base_columns + object_columns + novelty_columns,
+                names=("Feature", "Area")
+            ),
         )
+        df[0] = df[0].astype(FletcherContinuousArray)
+        return df
 
     def nort_object_analysis(self):
         if not self.training_object_trials and not self.novelty_object_trials:
