@@ -1,8 +1,11 @@
+from typing import Union
+
 import matplotlib.pyplot as plt
 import numpy as np
 from seaborn import set_theme
 
 from bikipy.math.vector import dot_prod_along_axis_1, orthogonal_unit_vector
+from bikipy.utils.misc import generic_inspection_finalization
 
 
 def points_in_parallelogram(
@@ -11,6 +14,7 @@ def points_in_parallelogram(
     corner_b: np.ndarray,
     coordinates: np.ndarray,
     inspect_points: bool = False,
+    inspect_function_call_context: Union[str, None] = None
 ) -> np.ndarray:
     """
     Algebraic solver for finding points contained inside the respective parallelogram.
@@ -72,8 +76,12 @@ def points_in_parallelogram(
         ax.scatter(*coordinates[boolean_index].T)
         ax.scatter(*coordinates[~boolean_index].T)
         ax.legend(("A", "corner_points", "B", "valid_points", "invalid_points"))
-        ax.set_title("Point in parallelogram")
+        ax.set_title(
+            f"Point in parallelogram\nContext: {inspect_function_call_context}"
+            if inspect_function_call_context else
+            "Point in parallelogram"
+        )
 
-        plt.show()
+        generic_inspection_finalization(inspect_points, inspect_function_call_context)
 
     return boolean_index

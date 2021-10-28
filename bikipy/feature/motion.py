@@ -208,6 +208,7 @@ class Motion:
             self.acceleration = None
             self.median_acceleration = None
 
+    @property
     def to_list(self):
         return [
             self.total_displacement,
@@ -215,3 +216,7 @@ class Motion:
             self.median_acceleration,
             self.freezing_time,
         ]
+
+    @property
+    def to_series(self):
+        return pd.Series(self.to_list)

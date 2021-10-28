@@ -42,6 +42,7 @@ class SquareEnclosedTrial(BaseTrial):
             self.center_square_corners[1],
             self.coordinates_per_frame,
             inspect_points=self.inspection_figure_save,
+            inspect_function_call_context=self.__class__.__name__
         )
         self.periphery_boolean_index = ~self.center_boolean_index
 

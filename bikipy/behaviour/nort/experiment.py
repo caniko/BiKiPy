@@ -171,30 +171,20 @@ class NortExperiment(BaseExperiment):
         -------
         DataFrame with the combined experiment attributes of all the YMazeTrial objects
         """
-        def feature_area(feature, areas):
-            return tuple([(feature, area) for area in areas])
-
-        def movement_feature(category):
-            category = str(category)
-            return (
-                (category, "Displacement"),
-                (category, "Median_speed"),
-                (category, "Median_acceleration"),
-                (category, "Freezing time"),
-            )
-
         base_columns = [
             ("All", "Stage"),
-            *movement_feature("All"),
-            *movement_feature("Periphery"),
-            *movement_feature("Center"),
-            *feature_area("Time_spent", ("Periphery", "Center")),
-            *feature_area("Entries", ("Periphery", "Center")),
+            *self._motion_2d_multi_indexer("All"),
+            *self._motion_2d_multi_indexer("Periphery"),
+            *self._motion_2d_multi_indexer("Center"),
+            *self._feature_2d_multi_indexer("Time_spent", ("Periphery", "Center")),
+            *self._feature_2d_multi_indexer("Entries", ("Periphery", "Center")),
         ]
 
         object_columns = [
-            *feature_area("Observation_instances", ("A", "B", "Total")),
-            *feature_area("Observation_time", ("A", "B", "Total")),
+            *self._feature_2d_multi_indexer(
+                "Observation_instances", ("A", "B", "Total")
+            ),
+            *self._feature_2d_multi_indexer("Observation_time", ("A", "B", "Total")),
             ("Object_bias_score", "Total"),
         ]
 
@@ -228,10 +218,10 @@ class NortExperiment(BaseExperiment):
         data_dict = sort_dict_by_key_value(label_vs_data)
         df = pd.DataFrame(
             data_dict.values(),
-            index=pd.Series(data_dict.keys(), name="Test", dtype=np.int16),
+            index=self.frame_index,
             columns=pd.MultiIndex.from_tuples(
                 base_columns + object_columns + novelty_columns,
-                names=("Feature", "Area")
+                names=("Feature", "Area"),
             ),
         )
         df[0] = df[0].astype(FletcherContinuousArray)

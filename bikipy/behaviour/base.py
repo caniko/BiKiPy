@@ -7,6 +7,7 @@ from typing import Any, Iterable, Sequence, Union
 
 import cv2
 import numpy as np
+import pandas as pd
 from tqdm import tqdm
 
 from bikipy._base_class import BikipyBase
@@ -202,6 +203,24 @@ class BaseExperiment(Behaviour):
     @property
     def _trial_id_iterable(self):
         return self.trial_id_vs_data.keys()
+
+    @cached_property
+    def frame_index(self):
+        return pd.Series(self._trial_id_iterable, name="Test", dtype=np.int16)
+
+    @staticmethod
+    def _motion_2d_multi_indexer(category: str):
+        category = str(category)
+        return (
+            (category, "Displacement"),
+            (category, "Median_speed"),
+            (category, "Median_acceleration"),
+            (category, "Freezing time"),
+        )
+
+    @staticmethod
+    def _feature_2d_multi_indexer(feature: str, category):
+        return tuple([(feature, category) for category in category])
 
 
 class BaseTrial(Behaviour):

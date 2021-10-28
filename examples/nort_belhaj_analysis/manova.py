@@ -17,9 +17,9 @@ PARAMETERS_TO_COMPARE = (
     "Displacement",
     "Median_speed",
     "Median_acceleration",
-    "Discrimination_index",     # Novel
-    "Novelty_preference",       # Novel
-    "Object_bias_score",        # Novel
+    "Discrimination_index",  # Novel
+    "Novelty_preference",  # Novel
+    "Object_bias_score",  # Novel
 )
 
 with pd.ExcelWriter(
@@ -51,7 +51,13 @@ with pd.ExcelWriter(
 
         metadata_df = pd.read_excel(DATA_DIR / "nort_round_2.xlsx", index_col="Test")
         concatenated = pd.concat([df_motion, df_nort, metadata_df], axis=1, sort=True)
-        grouped = concatenated.groupby(by=["Stage"])
+
+        grouped = concatenated.groupby(by="Stage")
+        dfs = [value[1] for value in grouped]
+        habituation, training, novelty = dfs
+
+        experiments = pd.concat([training, novelty], axis=1, sort=True)
+
         for parameter in PARAMETERS_TO_COMPARE:
             print(parameter)
             analyse = MANOVA.from_formula(

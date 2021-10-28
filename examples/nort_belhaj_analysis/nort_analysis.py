@@ -93,7 +93,7 @@ for round_idx in range(2):
                 "stage": (stage := trial_id_vs_stage[trial_id]),
                 "video_path": paths["video"],
                 "animal_id": (animal_id := exp_vs_animal[trial_id]),
-                "inspect": False,
+                # "inspect": True,
             }
 
             if stage != "habituation":
@@ -134,5 +134,7 @@ with pd.ExcelWriter(
     },
 ) as writer:
     for experiment in experiments:
-        experiment.df.to_parquet(RESULT_DIR / "for_analysis" / f"exp_{experiment.timestamp}.parquet")
+        experiment.df.to_parquet(
+            RESULT_DIR / "for_analysis" / f"exp_{experiment.timestamp}.parquet"
+        )
         experiment.df.to_excel(writer, sheet_name=str(experiment.timestamp))

@@ -1,10 +1,12 @@
 import copy
+import os
 from logging import getLogger
 from pathlib import Path, PurePath
 from typing import Any, Union
 
 import cv2
 import pandas as pd
+from matplotlib import pyplot as plt
 from numpy import ndarray
 
 from bikipy.utils.typing import Path_typing
@@ -34,14 +36,24 @@ def read_makesense_point_csv(coco_path: Path_typing):
     ).to_numpy()
 
 
+def generic_inspection_finalization(inspect, category: str):
+    if isinstance(inspect, bool):
+        plt.show()
+    elif isinstance(inspect, str) or isinstance(inspect, PurePath):
+        inspect = Path(inspect).resolve()
+        if not inspect.parent.exists():
+            os.makedirs(inspect.parent)
+        plt.savefig(seek_next_file_index(inspect / category / f"{category}.jpg"))
+
+
 def seek_next_file_index(filepath: Union[PurePath, str]) -> PurePath:
     if not (original_filepath := Path(filepath)).exists():
-        return original_filepath
+        return original_filepath.with_suffix(f"{1:04d}")
 
     new_filepath = copy.copy(original_filepath)
     i = 2
     while new_filepath.exists():
-        new_filepath = filepath.with_suffix(str(i))
+        new_filepath = filepath.with_suffix(f"{i:04d}")
         i += 1
     return new_filepath
 
