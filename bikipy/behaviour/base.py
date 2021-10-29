@@ -1,5 +1,5 @@
-import os
 import datetime
+import os
 from functools import cached_property, lru_cache
 from logging import getLogger
 from pathlib import Path, PurePath
@@ -37,8 +37,8 @@ class Behaviour(BikipyBase):
 
         self.recording_resolution = recording_resolution
 
-        self.metric_resolution = metric_resolution
-        self.units_per_pixel = units_per_pixel
+        self.metric_resolution = np.array(metric_resolution) if np.any(metric_resolution) else None
+        self.units_per_pixel = float(units_per_pixel) if units_per_pixel else None
 
         self._live = _live
 
@@ -206,7 +206,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def frame_index(self):
-        return pd.Series(self._trial_id_iterable, name="Test", dtype=np.int16)
+        return pd.Series(self._trial_id_iterable, name="Test ID", dtype=np.int16)
 
     @staticmethod
     def _motion_2d_multi_indexer(category: str):
@@ -221,6 +221,18 @@ class BaseExperiment(Behaviour):
     @staticmethod
     def _feature_2d_multi_indexer(feature: str, category):
         return tuple([(feature, category) for category in category])
+
+    @property
+    def instanced_trial_data(self):
+        raise NotImplementedError
+
+    @property
+    def summary_frame(self):
+        return pd.DataFrame(
+            (trial_data.motion.to_list for trial_data in self.instanced_trial_data),
+            columns=self._motion_2d_multi_indexer("All"),
+            index=self.frame_index,
+        )
 
 
 class BaseTrial(Behaviour):

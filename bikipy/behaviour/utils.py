@@ -5,7 +5,6 @@ from typing import Any, Iterable, Optional, Union
 
 import numpy as np
 
-
 logger = getLogger(__name__)
 
 

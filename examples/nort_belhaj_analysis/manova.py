@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pandas as pd
 from matplotlib import pyplot as plt
-from statsmodels.stats.multicomp import pairwise_tukeyhsd
 from statsmodels.multivariate.manova import MANOVA
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
 WORKING_DIR = Path(".").resolve()
 RESULT_DIR = WORKING_DIR / "results"

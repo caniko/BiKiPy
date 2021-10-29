@@ -1,16 +1,32 @@
+from abc import ABC
 from functools import cached_property
 from logging import getLogger
 from typing import Any, Union
 
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 
-from bikipy.behaviour.base import BaseTrial
+from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.motion import Motion
 from bikipy.math.point_in_polygon import points_in_parallelogram
 
 logger = getLogger(__name__)
+
+
+class SquareEnclosedExperiment(BaseExperiment, ABC):
+    def summary_frame(self):
+        base_columns = [
+            *self._motion_2d_multi_indexer("Periphery"),
+            *self._motion_2d_multi_indexer("Center"),
+            *self._feature_2d_multi_indexer("Time_spent", ("Periphery", "Center")),
+            *self._feature_2d_multi_indexer("Entries", ("Periphery", "Center")),
+        ]
+
+        df = pd.DataFrame(
+            self.instanced_trial_data.periphery
+        )
 
 
 class SquareEnclosedTrial(BaseTrial):
@@ -33,47 +49,7 @@ class SquareEnclosedTrial(BaseTrial):
         super().__init__(**base_trial_kwargs)
 
         self.center_metric_length = float(center_metric_length)
-
         assert self.metric_resolution > self.center_metric_length
-
-        self.center_boolean_index = points_in_parallelogram(
-            self.center_square_corners[0],
-            self.center_square_corners[3],
-            self.center_square_corners[1],
-            self.coordinates_per_frame,
-            inspect_points=self.inspection_figure_save,
-            inspect_function_call_context=self.__class__.__name__
-        )
-        self.periphery_boolean_index = ~self.center_boolean_index
-
-        self.seconds_on_center = np.sum(self.center_boolean_index) / self.fps
-        self.seconds_on_periphery = np.sum(self.periphery_boolean_index) / self.fps
-
-        self.center_motion = Motion(
-            self.coordinates_per_frame[self.center_boolean_index],
-            self.units_per_pixel,
-            self.fps,
-        )
-        self.periphery_motion = Motion(
-            self.coordinates_per_frame[self.periphery_boolean_index],
-            self.units_per_pixel,
-            self.fps,
-        )
-
-        # 1 is center, 2 is periphery, 0 is invalid aka unknown
-        self.location_sequence = np.zeros_like(
-            self.center_boolean_index, dtype=np.uint8
-        )
-        self.location_sequence[self.center_boolean_index] = 1
-        self.location_sequence[self.periphery_boolean_index] = 2
-        self.location_sequence = np.array(
-            reduce_repeating_sequences(
-                self.location_sequence, frame_tolerance=self._frame_tolerance
-            )
-        )
-
-        self.center_entries = np.sum(self.location_sequence == 1)
-        self.periphery_entries = np.sum(self.location_sequence == 2)
 
     @cached_property
     def center_square_corners(self):
@@ -140,6 +116,65 @@ class SquareEnclosedTrial(BaseTrial):
             return non_square_rectification(
                 x_bias=(self.horizontal_resolution - self.vertical_resolution) / 2.0
             )
+
+    @cached_property
+    def center_boolean_index(self):
+        return points_in_parallelogram(
+            self.center_square_corners[0],
+            self.center_square_corners[3],
+            self.center_square_corners[1],
+            self.coordinates_per_frame,
+            inspect_points=self.inspection_figure_save,
+            inspect_function_call_context=self.__class__.__name__,
+        )
+
+    @cached_property
+    def periphery_boolean_index(self):
+        return ~self.center_boolean_index
+
+    @cached_property
+    def center_motion(self):
+        return Motion(
+            self.coordinates_per_frame[self.center_boolean_index],
+            self.units_per_pixel,
+            self.fps,
+        )
+
+    @cached_property
+    def periphery_motion(self):
+        return Motion(
+            self.coordinates_per_frame[self.periphery_boolean_index],
+            self.units_per_pixel,
+            self.fps,
+        )
+
+    @cached_property
+    def location_sequence(self):
+        # 1 is center, 2 is periphery, 0 is unknown
+        location_sequence = np.zeros_like(self.center_boolean_index, dtype=np.uint8)
+        location_sequence[self.center_boolean_index] = 1
+        location_sequence[self.periphery_boolean_index] = 2
+        return np.array(
+            reduce_repeating_sequences(
+                location_sequence, frame_tolerance=self._frame_tolerance
+            )
+        )
+
+    @cached_property
+    def center_entries(self):
+        return np.sum(self.location_sequence == 1)
+
+    @cached_property
+    def periphery_entries(self):
+        return np.sum(self.location_sequence == 2)
+
+    @cached_property
+    def seconds_on_center(self):
+        return np.sum(self.center_boolean_index) / self.fps
+
+    @cached_property
+    def seconds_on_periphery(self):
+        return np.sum(self.seconds_on_periphery) / self.fps
 
     @cached_property
     def center_freezing_time(self):
