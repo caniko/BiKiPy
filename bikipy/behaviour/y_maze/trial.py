@@ -14,7 +14,7 @@ from bikipy.behaviour.utils import (
     reduce_repeating_sequences,
     unique_with_counts_zipped,
 )
-from bikipy.perimeter.base import PolygonalPerimeter
+from bikipy.perimeter.base import Perimeter
 from bikipy.utils.store import translate_keys
 
 INT_TO_SEMANTIC_LABELS = {1: "A", 2: "B", 3: "C", 4: "X"}
@@ -29,8 +29,8 @@ logger = getLogger(__name__)
 class YMazeTrial(BaseTrial):
     def __init__(
         self,
-        arms: Sequence[PolygonalPerimeter],
-        center: PolygonalPerimeter,
+        arms: Sequence[Perimeter],
+        center: Perimeter,
         *args,
         **kwargs,
     ):
@@ -51,7 +51,7 @@ class YMazeTrial(BaseTrial):
             self.alternation_sequence,
             self.valid_indices,
             self.valid_boolean_index,
-        ) = PolygonalPerimeter.detect_sequential_border_presence(
+        ) = Perimeter.detect_sequential_border_presence(
             self.coordinates_per_frame,
             self.arms,
             inferior_poly_border_instances=[self.center],
@@ -218,7 +218,7 @@ class YMazeTrial(BaseTrial):
     def plot(
         self,
         ax: Any = None,
-        points: Union[Sequence, None] = None,
+        points: Optional[Sequence] = None,
         invalid: bool = False,
     ):
         if points and invalid:

@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 
 from bikipy.math.geometry import argsort_counterclockwise
 from bikipy.perimeter import ParallelogramPerimeter, TriangularPerimeter
-from bikipy.perimeter.base import PolygonalPerimeter, PolygonalPerimeterSet
+from bikipy.perimeter.base import Perimeter, PerimeterSet
 from bikipy.utils.misc import read_makesense_point_csv
 from bikipy.utils.typing import Path_typing, Path_typing_kwarg
 
@@ -24,7 +24,7 @@ def generate_radial_arm_maze_arm_perimeters(
         if not os.path.exists(center_coco_path):
             msg = f"center_coco_path does not exist, {center_coco_path}"
             raise ValueError(msg)
-        center_object = triangular_center_object or PolygonalPerimeter.from_coco(
+        center_object = triangular_center_object or Perimeter.from_coco(
             center_coco_path, single_obj_return=True
         )
     else:
@@ -77,7 +77,7 @@ def generate_radial_arm_maze_arm_perimeters(
     perimeters = (*arm_perimeters, center_object)
     if inspect:
         fig, ax = plt.subplots(ncols=3)
-        PolygonalPerimeter.plot_perimeters(perimeters, ax=ax[0])
+        Perimeter.plot_perimeters(perimeters, ax=ax[0])
         for i, (line, center_corner) in enumerate(
             zip(lines, center_object.corners), start=1
         ):
@@ -86,4 +86,4 @@ def generate_radial_arm_maze_arm_perimeters(
         plt.legend()
         plt.show()
 
-    return PolygonalPerimeterSet(perimeters, **perimeter_kwargs)
+    return PerimeterSet(perimeters, **perimeter_kwargs)

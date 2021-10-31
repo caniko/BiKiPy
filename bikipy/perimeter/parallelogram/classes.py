@@ -1,61 +1,27 @@
 from functools import cached_property
 from logging import getLogger
-from typing import Any, Sequence, Union
+from typing import Any, Sequence, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from bikipy.math.geometry import order_polygon_corners
 from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.math.vector import (
     normal_from_line_to_point,
     orthogonal_unit_vector,
     unit_vector,
 )
-from bikipy.perimeter.base import PolygonalPerimeter
+from bikipy.perimeter.base import Perimeter
 from bikipy.perimeter.parallelogram.draw import parallelogram_input
 
 logger = getLogger(__name__)
 
 
-class ParallelogramPerimeter(PolygonalPerimeter):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        if (n := len(self.corners)) != 4:
-            msg = (
-                f"Parallelogram is a polygon in the 4th order, the current polygon"
-                f"is in the {n} order"
-            )
-            raise ValueError(msg)
-
-        self.corners = order_polygon_corners(self.corners)
-        (
-            self.down_left,
-            self.down_right,
-            self.up_right,
-            self.up_left,
-        ) = self.corners
-
-        self.base = (self.down_left, self.down_right)
-        # self.base_mid = self.base[0] + (self.base[1] - self.base[0]) / 2.
-        self.base_mid = self.midpoint(*self.base)
-        self.base_vector = self.down_right - self.down_left
-
-        self.apex = (self.up_left, self.up_right)
-        # self.apex_mid = self.apex[0] + (self.apex[1] - self.apex[0]) / 2.
-        self.apex_mid = self.midpoint(*self.apex)
-        self.apex_vector = self.up_right - self.up_left
-
-    def __repr__(self):
-        return super().__repr__() + (
-            f"\n\tbase={self.base},\n\t" f"apex={self.apex},\n\t"
-        )
-
+class ParallelogramPerimeter(Perimeter):
     @classmethod
     def from_image(cls, inspect_image: Any, n: int, *args, **kwargs):
         base, apex = parallelogram_input(inspect_image)
-        return cls(base, apex, inspect_image=inspect_image)
+        return cls(corners=np.array((*base, *apex)), inspect_image=inspect_image)
 
     @staticmethod
     def midpoint(
@@ -77,7 +43,7 @@ class ParallelogramPerimeter(PolygonalPerimeter):
             np.asarray(close_corner),
             np.asarray(far_corner),
         )
-        return close_corner + (far_corner - close_corner) / 20
+        return close_corner + (far_corner - close_corner) / 2.0
 
     @staticmethod
     def sort_vectors(vectors: Sequence) -> np.ndarray:
@@ -91,9 +57,49 @@ class ParallelogramPerimeter(PolygonalPerimeter):
         vector_norms = np.argsort(np.linalg.norm(vectors, axis=1))
         return vectors[vector_norms]
 
+    @property
+    def down_left(self):
+        return self.corners[0]
+
+    @property
+    def down_right(self):
+        return self.corners[1]
+
+    @property
+    def up_right(self):
+        return self.corners[2]
+
+    @property
+    def up_left(self):
+        return self.corners[3]
+
+    @property
+    def base(self):
+        return self.corners[:2]
+
+    @cached_property
+    def base_vector(self):
+        return np.diff(self.base)
+
+    @cached_property
+    def base_mindpoint(self):
+        return self.midpoint(*self.base)
+
+    @property
+    def apex(self):
+        return self.corners[2:]
+
+    @cached_property
+    def apex_vector(self):
+        return np.diff(self.apex)
+
+    @cached_property
+    def apex_mindpoint(self):
+        return self.midpoint(*self.apex)
+
     @cached_property
     def midline_vector(self):
-        return self.apex_mid - self.base_mid
+        return self.apex_mindpoint - self.base_mindpoint
 
     @cached_property
     def midline_unit(self):
@@ -143,7 +149,7 @@ class ParallelogramPerimeter(PolygonalPerimeter):
 
         coordinates = np.asarray(coordinates)
         magnitudes = np.apply_along_axis(
-            lambda x: normal_from_line_to_point(self.midline_unit, self.base_mid, x),
+            lambda x: normal_from_line_to_point(self.midline_unit, self.base_mindpoint, x),
             1,
             coordinates,
         )
@@ -162,7 +168,7 @@ class ParallelogramPerimeter(PolygonalPerimeter):
         cls,
         inspect_image: Any,
         n: int,
-        object_kwargs: Union[Sequence, None] = None,
+        object_kwargs: Optional[Sequence] = None,
     ):
         return [
             cls(inspect_image=inspect_image, **object_kwargs[i]) for i in range(int(n))
@@ -183,8 +189,8 @@ class ParallelogramPerimeter(PolygonalPerimeter):
             (self.base[1][0], self.apex[1][0]),
             (self.base[1][1], self.apex[1][1]),
             "-g",
-            (self.base_mid[0], self.apex_mid[0]),
-            (self.base_mid[1], self.apex_mid[1]),
+            (self.base_mindpoint[0], self.apex_mindpoint[0]),
+            (self.base_mindpoint[1], self.apex_mindpoint[1]),
             "-k",
         )
         plt.legend(

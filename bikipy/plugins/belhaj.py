@@ -10,7 +10,7 @@ from pandas import DataFrame
 
 from bikipy.behaviour.nort.experiment import NortExperiment
 from bikipy.behaviour.nort.trial import NortField
-from bikipy.perimeter.base import PolygonalPerimeter
+from bikipy.perimeter.base import Perimeter
 
 
 def _re_pattern_validator(pattern: re.Pattern):
@@ -100,7 +100,7 @@ def round_vs_apparatus_to_general_nort_fields(
                 if field.int_label:
                     kwargs["int_label"] = field.int_label
 
-                field_temp_store[key] = PolygonalPerimeter.init_polygon(**kwargs)
+                field_temp_store[key] = Perimeter.init_polygon(**kwargs)
 
         result.append(NortField(label=field_key, **field_temp_store))
 

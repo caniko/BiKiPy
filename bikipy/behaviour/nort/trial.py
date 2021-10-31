@@ -14,7 +14,7 @@ from compress_pickle import compress_pickle
 from bikipy.behaviour.square import SquareEnclosedTrial
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.attention import polygonal_perimeter_attention
-from bikipy.perimeter.base import PolygonalPerimeter
+from bikipy.perimeter.base import Perimeter
 
 logger = getLogger(__name__)
 
@@ -25,8 +25,8 @@ class NortHabituationTrial(SquareEnclosedTrial):
     reference data for future NORT experiments.
     """
 
-    trial_sequence_index = 0
-    trial_label = "habituation"
+    _trial_sequence_index = 0
+    _trial_label = "habituation"
 
 
 class NortOpenField(NortHabituationTrial):
@@ -34,13 +34,13 @@ class NortOpenField(NortHabituationTrial):
 
 
 class NortTrainingTrial(NortHabituationTrial):
-    trial_sequence_index = 1
-    trial_label = "training"
+    _trial_sequence_index = 1
+    _trial_label = "training"
 
     def __init__(
         self,
-        nort_a: PolygonalPerimeter,
-        nort_b: PolygonalPerimeter,
+        nort_a: Perimeter,
+        nort_b: Perimeter,
         nose_label: str,
         center_eye_label: str,
         torso_label: str,
@@ -153,8 +153,8 @@ class NortTrainingTrial(NortHabituationTrial):
 
 
 class NortNoveltyTrial(NortTrainingTrial):
-    trial_sequence_index = 2
-    trial_label = "novelty"
+    _trial_sequence_index = 2
+    _trial_label = "novelty"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -181,12 +181,10 @@ class NortNoveltyTrial(NortTrainingTrial):
 @dataclass(frozen=True, order=True)
 class NortField:
     label: int
-    constant_object_perimeter: PolygonalPerimeter
-    variable_object_perimeter: PolygonalPerimeter
-    novel_object_perimeter: PolygonalPerimeter
-    novelty_constant_object_perimeter: Union[PolygonalPerimeter, None] = field(
-        default=None
-    )
+    constant_object_perimeter: Perimeter
+    variable_object_perimeter: Perimeter
+    novel_object_perimeter: Perimeter
+    novelty_constant_object_perimeter: Union[Perimeter, None] = field(default=None)
     inspect_image: Any = field(init=False, compare=False, default=None)
 
     def __post_init__(self):
@@ -209,28 +207,26 @@ class NortField:
         polygon_n = 4
         return cls.from_undefined(
             label=int(label),
-            habituation_object_perimeter_a=PolygonalPerimeter.from_image(
+            habituation_object_perimeter_a=Perimeter.from_image(
                 inspect_image, n=polygon_n
             ),
-            habituation_object_perimeter_b=PolygonalPerimeter.from_image(
+            habituation_object_perimeter_b=Perimeter.from_image(
                 inspect_image, n=polygon_n
             ),
-            novel_object_perimeter=PolygonalPerimeter.from_image(
-                novelty_img, n=polygon_n
-            ),
+            novel_object_perimeter=Perimeter.from_image(novelty_img, n=polygon_n),
         )
 
     @classmethod
     def from_undefined(
         cls,
         label: int,
-        habituation_object_perimeter_a: PolygonalPerimeter,
-        habituation_object_perimeter_b: PolygonalPerimeter,
-        novel_object_perimeter: PolygonalPerimeter,
+        habituation_object_perimeter_a: Perimeter,
+        habituation_object_perimeter_b: Perimeter,
+        novel_object_perimeter: Perimeter,
     ):
-        if PolygonalPerimeter.distance_between_two_perimeters(
+        if Perimeter.distance_between_two_perimeters(
             habituation_object_perimeter_a, novel_object_perimeter
-        ) < PolygonalPerimeter.distance_between_two_perimeters(
+        ) < Perimeter.distance_between_two_perimeters(
             habituation_object_perimeter_b, novel_object_perimeter
         ):
             constant_object_perimeter = habituation_object_perimeter_b

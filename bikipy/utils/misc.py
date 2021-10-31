@@ -5,6 +5,7 @@ from pathlib import Path, PurePath
 from typing import Any, Union
 
 import cv2
+import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import ndarray
@@ -34,6 +35,10 @@ def read_makesense_point_csv(coco_path: Path_typing):
         # dtype={0: str, 1: float, 2: float, 3: str, 4: int, 5: int}
         # names=["x1", "y1", "x2", "y2", "filename", "img_x", "img_y"],
     ).to_numpy()
+
+
+def get_reference_point_from_array(array: np.ndarray):
+    return np.array(array[1:3], dtype=float)
 
 
 def generic_inspection_finalization(inspect, category: str):

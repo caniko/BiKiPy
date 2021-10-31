@@ -24,9 +24,7 @@ class SquareEnclosedExperiment(BaseExperiment, ABC):
             *self._feature_2d_multi_indexer("Entries", ("Periphery", "Center")),
         ]
 
-        df = pd.DataFrame(
-            self.instanced_trial_data.periphery
-        )
+        df = pd.DataFrame(self.instanced_trial_data.periphery)
 
 
 class SquareEnclosedTrial(BaseTrial):

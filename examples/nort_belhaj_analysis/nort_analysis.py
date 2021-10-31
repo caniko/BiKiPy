@@ -9,7 +9,7 @@ import pandas as pd
 
 from bikipy.behaviour.nort.experiment import NortExperiment
 from bikipy.behaviour.nort.trial import NortField
-from bikipy.perimeter.base import PolygonalPerimeter
+from bikipy.perimeter.base import Perimeter
 from bikipy.plugins.belhaj import (
     get_animal_id_vs_apparatus,
     get_animal_id_vs_trial_ids,
@@ -32,12 +32,12 @@ TO_SKIP = ([], [103])
 
 nort_field_vs_nort_field_object = {}
 for i, list_idx in zip(range(1, 5), range(4)):
-    novel = PolygonalPerimeter.from_coco(
+    novel = Perimeter.from_coco(
         IMAGE_DIR / f"novel_{i}.json",
         IMAGE_DIR / f"references_novel_{i}.csv",
         image_root=IMAGE_DIR,
     )
-    training = PolygonalPerimeter.from_coco(
+    training = Perimeter.from_coco(
         IMAGE_DIR / f"training_{i}.json",
         IMAGE_DIR / f"references_training_{i}.csv",
         image_root=IMAGE_DIR,

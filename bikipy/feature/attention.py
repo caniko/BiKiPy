@@ -12,7 +12,7 @@ import seaborn as sns
 
 from bikipy.feature.angle import inner_angle
 from bikipy.math.vector import unit_vector
-from bikipy.perimeter.base import PolygonalPerimeter
+from bikipy.perimeter.base import Perimeter
 from bikipy.utils.misc import seek_next_file_index
 
 SCATTER_ALPHA = 0.55
@@ -20,7 +20,7 @@ logger = getLogger(__name__)
 
 
 def proximity_filter(
-    polygonal_perimeter: PolygonalPerimeter,
+    polygonal_perimeter: Perimeter,
     nose: Sequence[Sequence[float]],
     center_eye: Sequence[Sequence[float]],
     perimeter_border_normal_pixel_magnitude: float,
@@ -37,7 +37,7 @@ def proximity_filter(
     :param perimeter_border_normal_pixel_magnitude: The magnitude of the normal between the perimeter and the border given in pixels
     :param inspect: If True, generate and view an analytics of the resulting filter
     :param inspection_ax: matplotlib Axes that the inspection plots will (optionally) be saved in
-    :type polygonal_perimeter: PolygonalPerimeter
+    :type polygonal_perimeter: Perimeter
     :type nose: np.ndarray
     :type center_eye: np.ndarray
     :type perimeter_border_normal_pixel_magnitude: float
@@ -101,7 +101,7 @@ def proximity_filter(
 
 
 def gaze_direction_filter(
-    polygonal_perimeter: PolygonalPerimeter,
+    polygonal_perimeter: Perimeter,
     nose: Sequence[Sequence[float]],
     center_eye: Sequence[Sequence[float]],
     max_radians: float,
@@ -227,7 +227,7 @@ def attention_filter(
 
 
 def polygonal_perimeter_attention(
-    polygonal_perimeter: PolygonalPerimeter,
+    polygonal_perimeter: Perimeter,
     nose: Sequence[Sequence[float]],
     center_eye: Sequence[Sequence[float]],
     fps: float,
@@ -239,7 +239,7 @@ def polygonal_perimeter_attention(
 
     Parameters
     ----------
-    polygonal_perimeter: PolygonalPerimeter
+    polygonal_perimeter: Perimeter
     center_eye: Sequence
         Points across time defining the position between the eyes of the animal
     nose: Sequence
@@ -320,7 +320,7 @@ def polygonal_perimeter_attention(
         axes[1][0].set_title("location_filtered & gaze_filtered")
         axes[1][0].scatter(*nose[semi_true_observations].T, alpha=SCATTER_ALPHA)
 
-        axes[1][1].set_title("Perimeter observation")
+        axes[1][1].set_title("BasePerimeter observation")
         axes[1][1].scatter(*nose[perimeter_observation].T, alpha=SCATTER_ALPHA)
 
         plt.tight_layout()

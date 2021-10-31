@@ -1,10 +1,11 @@
 import sys
 from concurrent.futures import ProcessPoolExecutor
 from functools import lru_cache, partial
-from typing import Any, Callable, Iterable, Sequence, Union
+from typing import Any, Callable, Generator, Iterable, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
+from pydantic import DirectoryPath
 
 from bikipy.utils.video import get_video_data
 
@@ -14,10 +15,10 @@ class BaseReader:
         self,
         df: pd.DataFrame,
         future_scaling: bool = False,
-        pixel_resolution: Union[Sequence, None] = None,
-        video_path: Any = None,
-        data_path: Any = None,
-        label: Union[str, None] = None,
+        pixel_resolution: Optional[Sequence[int]] = None,
+        video_path: Optional[DirectoryPath] = None,
+        data_path: Optional[DirectoryPath] = None,
+        label: Optional[str] = None,
     ):
         """
         Parameters
@@ -167,7 +168,7 @@ class BaseReader:
         labels: Iterable[str],
         enable_process_pooling: bool = True,
         **init_kwargs,
-    ) -> tuple:
+    ) -> Generator:
         """
         Create many BaseReader instances using specified mapping-function for initialization
 
@@ -191,12 +192,9 @@ class BaseReader:
         # Process pooling in windows is subpar and is not supported.
         if enable_process_pooling and sys.platform != "win32":
             with ProcessPoolExecutor() as executor:
-                dlc_objects = executor.map(kwarg_loaded_init, data_path, labels)
+                for dlc_obj in executor.map(kwarg_loaded_init, data_path, labels):
+                    yield dlc_obj
 
         else:
-            dlc_objects = (
-                kwarg_loaded_init(data_path, label=label)
-                for data_path, label in zip(data_path, labels)
-            )
-
-        return tuple(dlc_objects)
+            for data_path, label in zip(data_path, labels):
+                yield kwarg_loaded_init(data_path, label=label)

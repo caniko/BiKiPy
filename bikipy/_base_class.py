@@ -1,46 +1,41 @@
-import datetime
+from datetime import date, datetime
+from functools import cached_property
 from pathlib import Path
-from typing import Any, Union
+from typing import Optional, Union
 
 import compress_pickle
+from pydantic import BaseModel, DirectoryPath, Field
 
 from bikipy.utils.typing import Path_typing_kwarg
 
 
-class BikipyBase:
-    category = None
+class BikipyBase(BaseModel):
+    int_label: Optional[int] = None
+    semantic_label: Optional[str] = None
+    group_label: Optional[str] = None
+    timestamp: Union[date, datetime] = Field(default_factory=datetime.utcnow)
+    save_root: Optional[DirectoryPath] = None
 
-    def __init__(
-        self,
-        int_label: Union[int, None] = None,
-        semantic_label: Union[str, None] = None,
-        group_label: Union[str, None] = None,
-        timestamp: Any = None,
-        save_root: Path_typing_kwarg = None,
-    ):
-        self.timestamp = timestamp or datetime.datetime.now()
+    _category = None
 
-        self.int_label = int(int_label) if int_label else None
-        self.semantic_label = str(semantic_label) if semantic_label else None
-        self.group_label = str(group_label) if group_label else None
-
-        self.save_root = Path(save_root) if save_root else None
+    class Config:
+        arbitrary_types_allowed = True
+        keep_untouched = (cached_property,)
 
     def save(self, save_root: Path_typing_kwarg = None):
         save_root = Path(save_root or self.save_root)
         assert save_root
         compress_pickle.dump(
-            self, save_root / f"pickle_{self.category}_{self.timestamp}.lzma"
+            self, save_root / f"pickle_{self._category}_{self.timestamp}.lzma"
         )
 
     @property
     def _hash_key(self):
         return (
-            self.int_label,
-            self.semantic_label,
+            self.best_id,
             self.group_label,
             self.timestamp,
-            self.category,
+            self._category,
         )
 
     def __hash__(self):

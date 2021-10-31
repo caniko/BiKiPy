@@ -1,6 +1,6 @@
 from collections import UserDict
 from functools import cached_property, lru_cache
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 
 def translate_keys(store: dict, translation: dict) -> dict:
@@ -24,7 +24,7 @@ class RangeDict(UserDict):
 
     def __init__(
         self,
-        class_dict: Union[dict, None] = None,
+        class_dict: Optional[dict] = None,
         allow_less_than_first_key: Union[float, int, bool] = False,
         **kwargs,
     ):
@@ -32,7 +32,7 @@ class RangeDict(UserDict):
             msg = "allow_less_than_first_key can either be bool, int, or float"
             raise TypeError(msg)
 
-        self.descending = sorted(class_dict, reverse=True) if class_dict else {}
+        self.descending = sorted(dict(class_dict), reverse=True) if class_dict else {}
         self.allow_less_than_first_key = allow_less_than_first_key
 
         super().__init__(class_dict, **kwargs)

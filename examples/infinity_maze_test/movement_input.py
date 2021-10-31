@@ -3,7 +3,7 @@ from datetime import datetime
 import zmq
 from matplotlib import pyplot as plt
 
-from bikipy.perimeter.base import PolygonalPerimeter
+from bikipy.perimeter.base import Perimeter
 
 
 def onclick(event):
@@ -21,11 +21,11 @@ context = zmq.Context()
 socket = context.socket(zmq.PUSH)
 socket.connect("tcp://localhost:5555")
 
-perimeters = PolygonalPerimeter.from_coco(
+perimeters = Perimeter.from_coco(
     "./coco_annotations_2021-09-01-02-19-41.json", inspect_image="./maze_example.png"
 )
 fig, ax = plt.subplots()
-PolygonalPerimeter.plot_perimeters(
+Perimeter.plot_perimeters(
     tuple(perimeters.values()), inspect_image="./maze_example.png", ax=ax
 )
 

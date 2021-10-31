@@ -1,16 +1,16 @@
-from collections.abc import Mapping, Sequence
 from functools import cached_property
 from logging import getLogger
-from typing import Union
+from typing import Optional
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from fletcher import FletcherContinuousArray
 from matplotlib import pyplot as plt
+from pydantic import Field
 
 from bikipy.behaviour.base import BaseExperiment
-from bikipy.behaviour.nort.trial import NortField, NortHabituationTrial
+from bikipy.behaviour.nort.trial import NortHabituationTrial
 from bikipy.utils.store import sort_dict_by_key_value
 
 logger = getLogger(__name__)
@@ -21,13 +21,23 @@ class NortExperiment(BaseExperiment):
     Class for combining several NORT trials under one class for joint analysis
     """
 
-    trials_are_sequential = True
+    nose_label: str = Field(description="Label of the nose in the df")
+    center_eye_label: str = Field(description="Label of the eye center in the df")
+    torso_label: str = Field(description="Label of the torso in the df")
+    nort_field_vs_nort_field_object: Optional[dict] = Field(
+        None, description="Label of the nose in the df"
+    )
+    perimeter_border_normal_metric_magnitude: Optional[float] = Field(
+        None,
+        description="The magnitude of the normal between the perimeter and the border given in meters",
+    )
+    center_metric_length: Optional[float] = None
+    maximum_radians_inter_gaze_perimeter: float = Field(0.5 * np.pi)
 
-    period_columns = ("T1", "T2", "Total")
-
-    box_area_names = ("Periphery", "Center")
-
-    trial_label_to_trial_class_name = {
+    _trials_are_sequential = True
+    _period_columns = ("T1", "T2", "Total")
+    _box_area_names = ("Periphery", "Center")
+    _trial_label_to_trial_class_name = {
         "habituation": "habituation",
         "open_field": "habituation",
         "1": "training",
@@ -40,59 +50,10 @@ class NortExperiment(BaseExperiment):
         "novelty": "novelty",
     }
 
-    def __init__(
-        self,
-        nose_label: str,
-        center_eye_label: str,
-        torso_label: str,
-        nort_field_vs_nort_field_object: Union[Mapping[NortField], None] = None,
-        perimeter_border_normal_metric_magnitude: Union[float, None] = None,
-        center_metric_length: Union[float, None] = None,
-        maximum_radians_inter_gaze_perimeter: float = 0.5 * np.pi,
-        *base_trial_args,
-        **base_trial_kwargs,
-    ):
-        """
-
-        :param nose_label: Label of the nose in the df
-        :param center_eye_label: Label of the eye center in the df
-        :param torso_label: Label of the torso in the df
-        :param nort_field_vs_nort_field_object:
-        :param perimeter_border_normal_metric_magnitude: The magnitude of the normal between the perimeter
-            and the border given in meters
-        :param center_metric_length:
-        :param maximum_radians_inter_gaze_perimeter:
-        :param base_trial_args:
-        :param base_trial_kwargs:
-        :type nose_label: str
-        :type center_eye_label: str
-        :type torso_label: str
-        :type nort_field_vs_nort_field_object: dict
-        :type perimeter_border_normal_metric_magnitude: float
-        :type center_metric_length: float
-        :type maximum_radians_inter_gaze_perimeter: float
-        """
-        super().__init__(*base_trial_args, **base_trial_kwargs)
-
-        self.nort_field_vs_nort_field_object = nort_field_vs_nort_field_object
-
-        self.torso_label, self.center_eye_label, self.nose_label = (
-            str(torso_label),
-            str(center_eye_label),
-            str(nose_label),
-        )
+    def __init__(self, **data):
+        super().__init__(**data)
         self.point_label_for_motion_features = (
             self.point_label_for_motion_features or self.center_eye_label
-        )
-        self.maximum_radians_inter_gaze_perimeter = float(
-            maximum_radians_inter_gaze_perimeter
-        )
-
-        self.center_metric_length = (
-            float(center_metric_length) if center_metric_length else None
-        )
-        self.perimeter_border_normal_metric_magnitude = (
-            perimeter_border_normal_metric_magnitude
         )
 
         self.animal_vs_trials = {}
@@ -110,7 +71,7 @@ class NortExperiment(BaseExperiment):
                 "rigid_nodes_freezing": (self.center_eye_label, self.torso_label),
             }
 
-            exp_class = self.trial_label_to_trial_class_name[
+            exp_class = self._trial_label_to_trial_class_name[
                 trial_meta["stage"].lower().replace(" ", "_")
             ]
 

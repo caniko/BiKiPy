@@ -2,7 +2,7 @@ import asyncio
 from collections import Sequence as collections_Sequence
 from datetime import datetime
 from logging import getLogger
-from typing import Sequence, Union
+from typing import Optional, Sequence, Union
 
 import numpy as np
 from tqdm import tqdm
@@ -30,8 +30,8 @@ class LiveTrial(BaseTrial):
         self,
         *args,
         delay_timings: Sequence[Union[float, int]],
-        delay_timings_trial_count: Union[int, Sequence[int]],
-        total_loops_per_trial: Union[int, None] = None,
+        delay_timings_trial_count: Union[Sequence[int], int],
+        total_loops_per_trial: Optional[int] = None,
         **kwargs,
     ):
         super().__init__(*args, _live=True, **kwargs)

@@ -2,7 +2,7 @@ import collections.abc as abc
 import glob
 import os
 from pathlib import Path
-from typing import Any, Callable, Iterable, Sequence, Union
+from typing import Any, Callable, Generator, Iterable, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -203,18 +203,18 @@ class DeepLabCutReader(BaseReader):
         return cls(df, data_path=data_path, label=label, **kwargs)
 
     @classmethod
-    def init_many(
+    def init_many_map(
         cls,
-        *init_many_mapper_args,
+        *,
         init_from: str = "hdf",
         **init_many_mapper_kwargs,
-    ) -> tuple:
+    ) -> Generator:
         """
         Create many DeepLabCutReader objects using specified mapping-function
 
         :param init_from: Classmethod label to use for initialization
         :param init_many_mapper_kwargs: kwargs for init_many_mapper
-        :type init_from: dict
+        :type init_from: str
         :return: Objects instanced from the respective class with the provided data
         :rtype: tuple
         """
@@ -224,9 +224,9 @@ class DeepLabCutReader(BaseReader):
             "h5": cls.from_hdf,
             "hdf": cls.from_hdf,
         }
+
         return cls.init_many_mapper(
             ext_to_method[init_from.lower()],
-            *init_many_mapper_args,
             **init_many_mapper_kwargs,
         )
 
@@ -235,7 +235,7 @@ class DeepLabCutReader(BaseReader):
         func: Callable,
         dlc_df_objs: dict,
         keep_labels: bool = True,
-        manual_labels: Union[Sequence, None] = None,
+        manual_labels: Optional[Sequence] = None,
         **kwargs_for_func,
     ) -> dict:
         """Method for mapping a function to a sequence of class objects

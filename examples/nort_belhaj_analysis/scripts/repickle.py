@@ -7,7 +7,7 @@ import pickle
 from pathlib import Path
 
 from bikipy.behaviour.nort.trial import NortField
-from bikipy.perimeter.base import PolygonalPerimeter
+from bikipy.perimeter.base import Perimeter
 from bikipy.plugins.belhaj import round_vs_apparatus_to_general_nort_fields
 
 NORT_EXAMPLE_DIR = Path(".").resolve().parent
@@ -57,15 +57,15 @@ for annotation_obj_path in B_PICKLE_PATHS:
     for i, gen_poly in enumerate(gen_poly_seq):
         gen_poly_seq[i] = NortField(
             label=int(gen_poly.label),
-            constant_object_perimeter=PolygonalPerimeter.init_polygon(
+            constant_object_perimeter=Perimeter.init_polygon(
                 inspect_image=annotation_obj_path.parent / f"training_{i+1}.png",
                 **deserialise_generic(gen_poly.constant_object),
             ),
-            variable_object_perimeter=PolygonalPerimeter.init_polygon(
+            variable_object_perimeter=Perimeter.init_polygon(
                 inspect_image=annotation_obj_path.parent / f"training_{i+1}.png",
                 **deserialise_generic(gen_poly.variable_object),
             ),
-            novel_object_perimeter=PolygonalPerimeter.init_polygon(
+            novel_object_perimeter=Perimeter.init_polygon(
                 inspect_image=annotation_obj_path.parent / f"novel_{i+1}.png",
                 **deserialise_generic(gen_poly.novel_object),
             ),

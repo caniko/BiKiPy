@@ -3,56 +3,23 @@ from typing import Union
 
 import numpy as np
 
-from bikipy.perimeter.base import PolygonalPerimeter
+from bikipy.perimeter.base import Perimeter
 
 
-class TriangularPerimeter(PolygonalPerimeter):
-    corners = 3
+class TriangularPerimeter(Perimeter):
+    _corners = 3
 
-    def __init__(
-        self,
-        base_a: Union[Sequence[float], None] = None,
-        base_b: Union[Sequence[float], None] = None,
-        apex: Union[Sequence[float], None] = None,
-        corners: Union[Sequence[Sequence[float]]] = None,
-        *args,
-        **kwargs,
-    ):
-        """
+    @property
+    def base_a(self):
+        return self.corners[0]
 
-        Parameters
-        ----------
-        base_a
-            Coordinates of one of the corners that denote the base of the triangle
-        base_b
-            Coordinates of one of the corners that denote the base of the triangle
-        apex
-            Coordinates of one of the corners that denote the apex of the triangle
-        kwargs
-        """
+    @property
+    def base_b(self):
+        return self.corners[1]
 
-        if isinstance(corners, np.ndarray):
-            base_a, base_b, apex = corners
-        elif not (base_a and base_b and apex):
-            msg = "corners or (base_a, base_b, apex) has to be defined"
-            raise ValueError(msg)
-
-        self.base_a = np.asarray(base_a)
-        self.base_b = np.asarray(base_b)
-        self.apex = np.asarray(apex)
-
-        super().__init__(corners=(self.base_a, self.base_b, self.apex), *args, **kwargs)
-
-    def __repr__(self):
-        return (
-            f"{self.__class__.__name__}(\n"
-            f"    base_a={self.base_a.tolist()},\n"
-            f"    base_b={self.base_b.tolist()},\n"
-            f"    apex={self.apex.tolist()},\n"
-            f'    inspect_image="{self.inspect_image}",\n'
-            f'    label="{self.semantic_label}"\n'
-            ")"
-        )
+    @property
+    def apex(self):
+        return self.corners[2]
 
     def coordinate_confinement_boolean_index(
         self, coordinates: np.ndarray
