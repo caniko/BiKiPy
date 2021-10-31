@@ -62,7 +62,7 @@ class NortExperiment(BaseExperiment):
             self.training_object_trials,
             self.novelty_object_trials,
         ) = ([], [], [])
-        for trial_id, trial_meta in self.trial_id_data_tqdm():
+        for trial_id, trial_meta in self.trial_id_data_tqdm:
             logger.info(f"Category {trial_meta['stage']}; ID {trial_id}")
 
             generic_kwargs = self.generic_trial_kwargs(trial_id)

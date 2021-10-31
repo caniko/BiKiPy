@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 import compress_pickle
-from pydantic import BaseModel, DirectoryPath, Field
+from pydantic import BaseModel, DirectoryPath, Field, Extra
 
 from bikipy.utils.typing import OptionalPathTyping
 
@@ -20,6 +20,7 @@ class BikipyBase(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+        extra = Extra.allow
         keep_untouched = (cached_property,)
 
     def save(self, save_root: OptionalPathTyping = None):

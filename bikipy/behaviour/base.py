@@ -33,7 +33,7 @@ logger = getLogger(__name__)
 class Behaviour(BikipyBase):
     fps: Union[float, int, None] = None
     recording_resolution: Optional[NDArray[Literal["np.int16"]]] = None
-    metric_resolution: Union[NDArray, float, None] = None
+    metric_resolution: Union[np.ndarray, float, None] = None
     manual_units_per_pixel: Optional[float] = None
     _live: bool = Field(False)
 
@@ -114,7 +114,6 @@ class BaseExperiment(Behaviour):
         msg = f"{self.coordinate_data_format} as a format for data ingestion has no implementation"
         raise NotImplemented(msg)
 
-    @lru_cache
     def generic_trial_kwargs(self, trial_id: int):
         trial_meta = self[trial_id]
         generic_kwargs = {
@@ -234,7 +233,7 @@ class BaseTrial(Behaviour):
                 self.fps,
             ) = get_video_data(self.video_path)
             self.recording_resolution = np.array(
-                horizontal_resolution, vertical_resolution, dtype=np.int16
+                (horizontal_resolution, vertical_resolution), dtype=np.int16
             )
         elif self.recording_resolution and self.fps:
             pass
