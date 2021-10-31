@@ -5,8 +5,8 @@ import numpy as np
 from pydantic import BaseModel, FilePath
 from pydantic.fields import ModelField
 
-Path_typing = Union[PurePath, str]
-Path_typing_kwarg = Union[PurePath, str, None]
+PathTyping = Union[PurePath, str]
+OptionalPathTyping = Union[PurePath, str, None]
 
 DType = TypeVar("DType")
 

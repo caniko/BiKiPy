@@ -23,7 +23,7 @@ from bikipy.utils.misc import (
     read_image,
     read_makesense_point_csv,
 )
-from bikipy.utils.typing import Path_typing, Path_typing_kwarg, NDArray
+from bikipy.utils.typing import PathTyping, OptionalPathTyping, NDArray
 from bikipy.utils.video import get_video_data
 
 logger = getLogger(__name__)
@@ -48,7 +48,11 @@ class BasePerimeter(BikipyBase):
         return self.inspect_image_
 
     @inspect_image.setter
-    def inspect_image(self, value: Union[np.ndarray, Sequence, PurePath, str]):
+    def inspect_image(self, value: Union[np.ndarray, PurePath, str, None]):
+        if value is None:
+            # Reset image related variables when None
+            self.inspect_image_path_, self.inspect_image_ = None, None
+            return
         if np.any(value) and not isinstance(value, (np.ndarray, CollectionsSequence)):
             if (value := Path(value)).exists():
                 self.inspect_image_path = value
@@ -69,13 +73,17 @@ class BasePerimeter(BikipyBase):
             msg = (
                 f"The {self.__class__.__name__} object was not defined with "
                 f"an inspect_image_path, but a numpy array with image data."
-                if np.any(self.inspect_image) else
-                f"The {self.__class__.__name__} object has no image definition"
+                if np.any(self.inspect_image)
+                else f"The {self.__class__.__name__} object has no image definition"
             )
             raise AttributeError(msg) from e
 
     @inspect_image_path.setter
-    def inspect_image_path(self, value: Path_typing):
+    def inspect_image_path(self, value: OptionalPathTyping):
+        if value is None:
+            # Reset image related variables when None
+            self.inspect_image_path_, self.inspect_image_ = None, None
+            return
         if np.any(value) and not (value := Path(value)).exists():
             msg = (
                 f"Failed to read inspect_image, the provided path does not exist.\n"
@@ -243,7 +251,12 @@ class Perimeter(BasePerimeter):
 
         return closest_distance, closest_vectors
 
-    def change_reference(self, new_reference: np.ndarray, image_root: Path_typing_kwarg = None):
+    def change_reference(
+        self,
+        new_reference: np.ndarray,
+        new_inspect_image: Optional[np.ndarray] = None,
+        new_inspect_image_path: OptionalPathTyping = None,
+    ):
         assert np.any(self.reference_point)
         if np.all(self.reference_point == new_reference):
             logger.info("The provided reference_point is identical to the current")
@@ -253,24 +266,39 @@ class Perimeter(BasePerimeter):
         new.corners_ += new_reference - new.reference_point
         new.reference_point = new_reference
 
-        if image_root and new.inspect_image_path:
-            new.inspect_image_path_ = image_root / new.inspect_image_path.name
+        if new_inspect_image_path:
+            if not (new_inspect_image_path := Path(new_inspect_image_path)).exists():
+                msg = (
+                    f"new_inspect_image_path, {new_inspect_image_path}, does not exist"
+                )
+                raise AttributeError(msg)
+            new.inspect_image_path_ = new_inspect_image_path        # TODO: removal, waiting for pydantic pr
+            new.inspect_image_ = cv2.imread(new_inspect_image)
+        elif np.any(new_inspect_image):
+            new.inspect_image_ = cv2.imread(new_inspect_image)
+        else:
+            # Reset inspect_image and inspect_image_path
+            # (the setter function resets inspect_image_path)
+            new.inspect_image_path_ = None  # TODO: removal, waiting for pydantic pr
+            new.inspect_image_ = None
 
         return new
 
-    def change_reference_with_coco(self, coco_path: Path_typing, **kwargs):
+    def change_reference_with_coco(self, coco_path: PathTyping, **kwargs):
         coco_array = read_makesense_point_csv(coco_path)
         if len(coco_array) == 1:
-            return self.change_reference(get_reference_point_from_array(coco_array), **kwargs)
+            return self.change_reference(
+                get_reference_point_from_array(coco_array), **kwargs
+            )
         return self.change_reference_with_coco_with_plural_references(
             coco_array=coco_array, **kwargs
         )
 
     def change_reference_with_coco_with_plural_references(
         self,
-        coco_path: Path_typing_kwarg = None,
+        coco_path: OptionalPathTyping = None,
         coco_array: Optional[np.ndarray] = None,
-        **kwargs
+        image_root: OptionalPathTyping = None,
     ):
         if coco_path:
             if np.any(coco_array):
@@ -279,11 +307,11 @@ class Perimeter(BasePerimeter):
             coco_array = get_reference_point_from_array(coco_path)
 
         img_name_vs_reference_points = {
-            row[3].lower(): get_reference_point_from_array(row) for row in coco_array
+            row[3]: get_reference_point_from_array(row) for row in coco_array
         }
         if not np.any(self.reference_point):
             for img_name, reference_point in img_name_vs_reference_points.items():
-                if self.inspect_image_path.name.lower() == img_name:
+                if self.inspect_image_path.name == img_name:
                     self.reference_point = reference_point
                     break
             if not np.any(self.reference_point):
@@ -295,8 +323,11 @@ class Perimeter(BasePerimeter):
                 raise ValueError(msg)
 
         return [
-            self.change_reference(reference_point, **kwargs)
-            for reference_point in img_name_vs_reference_points.values()
+            self.change_reference(
+                reference_point,
+                new_inspect_image_path=image_root / img_name if image_root else None,
+            )
+            for img_name, reference_point in img_name_vs_reference_points.items()
         ]
 
     def change_reference_with_image(self, image: Union[PurePath, str, np.ndarray]):
@@ -606,8 +637,8 @@ class Perimeter(BasePerimeter):
     def from_coco(
         cls,
         coco_path: Any,
-        reference_point_coco_path: Path_typing_kwarg = None,
-        image_root: Path_typing_kwarg = None,
+        reference_point_coco_path: OptionalPathTyping = None,
+        image_root: OptionalPathTyping = None,
         single_obj_return: bool = False,
     ) -> Union[dict, BasePerimeter]:
         def get_inspect_img_path(image_id: int):

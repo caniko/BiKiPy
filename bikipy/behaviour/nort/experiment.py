@@ -65,12 +65,7 @@ class NortExperiment(BaseExperiment):
         for trial_id, trial_meta in self.trial_id_data_tqdm():
             logger.info(f"Category {trial_meta['stage']}; ID {trial_id}")
 
-            generic_kwargs = {
-                **self.generic_trial_kwargs(trial_id),
-                "point_label_for_motion_features": self.point_label_for_motion_features,
-                "rigid_nodes_freezing": (self.center_eye_label, self.torso_label),
-            }
-
+            generic_kwargs = self.generic_trial_kwargs(trial_id)
             exp_class = self._trial_label_to_trial_class_name[
                 trial_meta["stage"].lower().replace(" ", "_")
             ]
@@ -120,6 +115,13 @@ class NortExperiment(BaseExperiment):
                     self.animal_vs_trials[trial_meta["animal_id"]].append(exp)
                 else:
                     self.animal_vs_trials[trial_meta["animal_id"]] = [exp]
+
+    def generic_trial_kwargs(self, trial_id: int):
+        return {
+            **super().generic_trial_kwargs(trial_id),
+            "point_label_for_motion_features": self.point_label_for_motion_features,
+            "rigid_nodes_freezing": (self.center_eye_label, self.torso_label),
+        }
 
     @cached_property
     def df(self) -> pd.DataFrame:

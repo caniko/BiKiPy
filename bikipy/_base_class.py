@@ -6,7 +6,7 @@ from typing import Optional, Union
 import compress_pickle
 from pydantic import BaseModel, DirectoryPath, Field
 
-from bikipy.utils.typing import Path_typing_kwarg
+from bikipy.utils.typing import OptionalPathTyping
 
 
 class BikipyBase(BaseModel):
@@ -22,7 +22,7 @@ class BikipyBase(BaseModel):
         arbitrary_types_allowed = True
         keep_untouched = (cached_property,)
 
-    def save(self, save_root: Path_typing_kwarg = None):
+    def save(self, save_root: OptionalPathTyping = None):
         save_root = Path(save_root or self.save_root)
         assert save_root
         compress_pickle.dump(

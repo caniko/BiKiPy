@@ -149,7 +149,9 @@ class ParallelogramPerimeter(Perimeter):
 
         coordinates = np.asarray(coordinates)
         magnitudes = np.apply_along_axis(
-            lambda x: normal_from_line_to_point(self.midline_unit, self.base_mindpoint, x),
+            lambda x: normal_from_line_to_point(
+                self.midline_unit, self.base_mindpoint, x
+            ),
             1,
             coordinates,
         )

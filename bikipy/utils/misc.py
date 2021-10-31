@@ -10,7 +10,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import ndarray
 
-from bikipy.utils.typing import Path_typing
+from bikipy.utils.typing import PathTyping
 
 logger = getLogger(__name__)
 
@@ -28,7 +28,7 @@ def read_image(image: Any, imread_flagg: Any = None):
     return image
 
 
-def read_makesense_point_csv(coco_path: Path_typing):
+def read_makesense_point_csv(coco_path: PathTyping):
     return pd.read_csv(
         coco_path,
         header=None,
