@@ -51,7 +51,8 @@ def proximity_filter(
     center_eye = np.asarray(center_eye)
 
     polygonal_perimeter_border = polygonal_perimeter.border(
-        perimeter_border_normal_pixel_magnitude
+        self=polygonal_perimeter,       # TODO: Remove after bugfix
+        perimeter_border_normal_pixel_magnitude=perimeter_border_normal_pixel_magnitude
     )
 
     nose_within_border = (
