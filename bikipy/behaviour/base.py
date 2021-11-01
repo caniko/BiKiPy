@@ -16,7 +16,7 @@ from typing import (
 import cv2
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath, Field, FilePath, validator
+from pydantic import DirectoryPath, Field, FilePath
 from tqdm import tqdm
 
 from bikipy._base_class import BikipyBase

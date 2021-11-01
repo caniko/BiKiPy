@@ -1,5 +1,6 @@
 import itertools
 from collections.abc import Sequence
+from functools import lru_cache
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,6 +29,7 @@ def argsort_counterclockwise(sequence: Sequence):
     return np.argsort(counterclockwise_angel_2d((-1.0, 0.0), sequence))
 
 
+@lru_cache
 def expand_parallelogram(
     perimeter_corners: Sequence,
     offset: float,

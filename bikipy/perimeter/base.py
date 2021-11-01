@@ -335,7 +335,6 @@ class Perimeter(BasePerimeter):
         plt.title("Please click on the reference_point point")
         return self.change_reference(np.array(plt.ginput(n=1, timeout=0)[0]))
 
-    @lru_cache
     def border(self, perimeter_border_normal_pixel_magnitude: Union[float, int]):
         """
         :param perimeter_border_normal_pixel_magnitude: The magnitude of the normal between
