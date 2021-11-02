@@ -59,7 +59,7 @@ def displacement_by_frame(
 
 def total_displacement_median_speed_acceleration(
     coordinate_sequence: Sequence[Sequence[float]],
-    units_per_pixel: float,
+    units_per_pixel: Union[Sequence, float],
     fps: float,
 ) -> tuple:
     """
@@ -74,7 +74,11 @@ def total_displacement_median_speed_acceleration(
     -------
     (total displacement, speed per frame, acceleration per frame)
     """
-    displacement = displacement_by_frame(coordinate_sequence) * units_per_pixel
+    displacement = (
+        displacement_by_frame(coordinate_sequence) * units_per_pixel
+        if isinstance(units_per_pixel, float)
+        else displacement_by_frame(coordinate_sequence * np.asarray(units_per_pixel))
+    )
     if np.any(displacement):
         return (
             np.sum(displacement),
@@ -182,6 +186,8 @@ class Motion:
 
         self.metric_displacement_by_frame = (
             displacement_by_frame(coordinate_sequence) * units_per_pixel
+            if isinstance(units_per_pixel, float)
+            else displacement_by_frame(coordinate_sequence * np.asarray(units_per_pixel))
         )
 
         self.total_displacement = np.nansum(self.metric_displacement_by_frame)

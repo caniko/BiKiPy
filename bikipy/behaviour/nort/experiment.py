@@ -187,7 +187,7 @@ class NortExperiment(BaseExperiment):
                 names=("Feature", "Area"),
             ),
         )
-        df[0] = df[0].astype(FletcherContinuousArray)
+        # df[("All", "Stage")] = FletcherContinuousArray(df[("All", "Stage")])
         return df
 
     def nort_object_analysis(self):

@@ -172,7 +172,7 @@ class SquareEnclosedTrial(BaseTrial):
 
     @cached_property
     def seconds_on_periphery(self):
-        return np.sum(self.seconds_on_periphery) / self.fps
+        return np.sum(self.periphery_boolean_index) / self.fps
 
     @cached_property
     def center_freezing_time(self):
@@ -207,9 +207,9 @@ class SquareEnclosedTrial(BaseTrial):
     @property
     def motion_info(self):
         return (
-            self.motion.to_list()
-            + self.periphery_motion.to_list()
-            + self.center_motion.to_list()
+            self.motion.to_list
+            + self.periphery_motion.to_list
+            + self.center_motion.to_list
         )
 
     @property

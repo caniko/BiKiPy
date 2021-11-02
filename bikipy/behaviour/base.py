@@ -1,13 +1,10 @@
 import os
-from functools import cached_property, lru_cache
+from functools import cached_property
 from logging import getLogger
 from pathlib import Path, PurePath
 from typing import (
-    Any,
     Iterable,
     Literal,
-    Mapping,
-    MutableMapping,
     Optional,
     Sequence,
     Union,
@@ -33,9 +30,9 @@ logger = getLogger(__name__)
 class Behaviour(BikipyBase):
     fps: Union[float, int, None] = None
     recording_resolution: Optional[NDArray[Literal["np.int16"]]] = None
-    metric_resolution: Union[np.ndarray, float, None] = None
+    metric_resolution: Union[NDArray, float, None] = None
     manual_units_per_pixel: Optional[float] = None
-    _live: bool = Field(False)
+    _live: bool = False
 
     @property
     def horizontal_resolution(self):
@@ -78,9 +75,9 @@ class BaseExperiment(Behaviour):
     trial_id_vs_data: Optional[dict] = None
     trial_id_range_vs_common_data: Union[RangeDict, dict, None] = None
     point_label_for_motion_features: Optional[str] = None
-    inspection_figure_save: Union[bool, DirectoryPath] = Field(False)
+    inspection_figure_save: Union[bool, DirectoryPath] = False
     data_import_kwargs: Optional[dict] = None
-    coordinate_data_format: Literal["deeplabcut"] = Field("deeplabcut")
+    coordinate_data_format: Literal["deeplabcut"] = "deeplabcut"
 
     @property
     def _hash_key(self):
@@ -204,11 +201,11 @@ class BaseTrial(Behaviour):
         description="The coordinates of the subject across the frames in the video recording"
     )
     animal_id: Optional[int] = Field(description="The ID of the animal in the trial")
-    rigid_nodes_freezing: Optional[Sequence[Union[str, int]]] = Field(
-        description="Nodes that should remain during freeze/immobility, most often due to fear."
-    )
     point_label_for_motion_features: Optional[str] = Field(
         description="Label of the node that will be used to track general animal movement"
+    )
+    rigid_nodes_freezing: Optional[Sequence[Union[str, int]]] = Field(
+        description="Nodes that should remain during freeze/immobility, most often due to fear."
     )
     video_path: Optional[FilePath] = Field(description="Path to trial video recording")
     inspection_figure_save: Union[PurePath, str, bool] = Field(
@@ -282,7 +279,7 @@ class BaseTrial(Behaviour):
 
     @cached_property
     def _frame_tolerance(self):
-        return round(self.second_tolerance * self.fps)
+        return round(self._second_tolerance * self.fps)
 
     @property
     def rigid_nodes_freezing(self):
@@ -363,4 +360,4 @@ class BaseTrial(Behaviour):
 
     @cached_property
     def info(self):
-        return [self.trial_label] if self.trial_label else []
+        return [self._trial_label] if self._trial_label else []

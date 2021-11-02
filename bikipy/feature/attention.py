@@ -20,7 +20,7 @@ logger = getLogger(__name__)
 
 
 def proximity_filter(
-    polygonal_perimeter: Perimeter,
+    perimeter: Perimeter,
     nose: Sequence[Sequence[float]],
     center_eye: Sequence[Sequence[float]],
     perimeter_border_normal_pixel_magnitude: float,
@@ -31,13 +31,13 @@ def proximity_filter(
     Filter with respect to proximity rules. (1) The nose has to be in front of perimeter, but inside the border;
     (2) the center_eye is outside of the perimeter.
 
-    :param polygonal_perimeter:
+    :param perimeter:
     :param nose: Cartesian coordinates of the nose
     :param center_eye: Cartesian coordinates of the center of mass
     :param perimeter_border_normal_pixel_magnitude: The magnitude of the normal between the perimeter and the border given in pixels
     :param inspect: If True, generate and view an analytics of the resulting filter
     :param inspection_ax: matplotlib Axes that the inspection plots will (optionally) be saved in
-    :type polygonal_perimeter: Perimeter
+    :type perimeter: Perimeter
     :type nose: np.ndarray
     :type center_eye: np.ndarray
     :type perimeter_border_normal_pixel_magnitude: float
@@ -50,16 +50,15 @@ def proximity_filter(
     nose = np.asarray(nose)
     center_eye = np.asarray(center_eye)
 
-    polygonal_perimeter_border = polygonal_perimeter.border(
-        self=polygonal_perimeter,       # TODO: Remove after bugfix
+    perimeter_border = perimeter.border(
         perimeter_border_normal_pixel_magnitude=perimeter_border_normal_pixel_magnitude
     )
 
-    nose_within_border = (
-        polygonal_perimeter_border.coordinate_confinement_boolean_index(nose)
+    nose_within_border = perimeter_border.coordinate_confinement_boolean_index(
+        coordinates=nose
     )
-    center_eye_outside_polygon = (
-        ~polygonal_perimeter.coordinate_confinement_boolean_index(center_eye)
+    center_eye_outside_polygon = ~perimeter.coordinate_confinement_boolean_index(
+        center_eye
     )
 
     # Find states where the nose is within perimeter while the center_eye is not over perimeter
@@ -73,7 +72,7 @@ def proximity_filter(
             ax = inspection_ax
 
         ax.set_title("Location filter")
-        polygonal_perimeter.plot(ax=ax)
+        perimeter.plot(ax=ax)
 
         not_result = ~result
         ax.scatter(
@@ -102,7 +101,7 @@ def proximity_filter(
 
 
 def gaze_direction_filter(
-    polygonal_perimeter: Perimeter,
+    perimeter: Perimeter,
     nose: Sequence[Sequence[float]],
     center_eye: Sequence[Sequence[float]],
     max_radians: float,
@@ -112,9 +111,7 @@ def gaze_direction_filter(
     nose, center_eye = np.asarray(nose), np.asarray(center_eye)
     eye_to_nose_unit = unit_vector(nose - center_eye)
 
-    _closest_distance, closest_vector = polygonal_perimeter.closest_sides_to_points(
-        center_eye
-    )
+    _closest_distance, closest_vector = perimeter.closest_sides_to_points(center_eye)
 
     inner_angles = inner_angle(closest_vector, eye_to_nose_unit)
 
@@ -128,7 +125,7 @@ def gaze_direction_filter(
             ax = inspection_ax
 
         ax.set_title("Gaze direction filter")
-        polygonal_perimeter.plot(ax=ax)
+        perimeter.plot(ax=ax)
 
         ax.scatter(*nose[result].T, alpha=SCATTER_ALPHA, label="Valid")
         ax.scatter(*nose[~result].T, alpha=SCATTER_ALPHA, label="Invalid")
@@ -228,7 +225,7 @@ def attention_filter(
 
 
 def polygonal_perimeter_attention(
-    polygonal_perimeter: Perimeter,
+    perimeter: Perimeter,
     nose: Sequence[Sequence[float]],
     center_eye: Sequence[Sequence[float]],
     fps: float,
@@ -240,7 +237,7 @@ def polygonal_perimeter_attention(
 
     Parameters
     ----------
-    polygonal_perimeter: Perimeter
+    perimeter: Perimeter
     center_eye: Sequence
         Points across time defining the position between the eyes of the animal
     nose: Sequence
@@ -268,10 +265,10 @@ def polygonal_perimeter_attention(
     maximum_radians_inter_gaze_perimeter = float(maximum_radians_inter_gaze_perimeter)
 
     if inspect:
-        if polygonal_perimeter.inspect_image is None:
+        if perimeter.inspect_image is None:
             fig, axes = plt.subplots(nrows=2, ncols=2)
         else:
-            x, y = polygonal_perimeter.inspect_image.shape
+            x, y = perimeter.inspect_image.shape
             fig, axes = plt.subplots(
                 nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0)
             )
@@ -285,7 +282,7 @@ def polygonal_perimeter_attention(
         loc_filter_kwargs, gaze_filter_kwargs = {}, {}
 
     location_filtered, loc_analytics = proximity_filter(
-        polygonal_perimeter,
+        perimeter,
         nose,
         center_eye,
         perimeter_border_normal_pixel_magnitude,
@@ -293,7 +290,7 @@ def polygonal_perimeter_attention(
     )
 
     gaze_filtered = gaze_direction_filter(
-        polygonal_perimeter,
+        perimeter,
         nose,
         center_eye,
         maximum_radians_inter_gaze_perimeter,
@@ -311,7 +308,7 @@ def polygonal_perimeter_attention(
     if inspect:
         for rows in axes:
             for ax in rows:
-                polygonal_perimeter.plot_self(
+                perimeter.plot_self(
                     plot_kwargs={"ax": ax},
                     perimeter_plot_kwargs={
                         "perimeter_border_normal_pixel_magnitude": perimeter_border_normal_pixel_magnitude

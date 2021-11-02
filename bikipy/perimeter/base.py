@@ -11,7 +11,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from numba import jit
-from pydantic import Field, FilePath, validator
+from pydantic import FilePath, validator
 from numpy.typing import NDArray as NpNDArray
 from shapely.geometry import Point, Polygon
 
@@ -22,6 +22,7 @@ from bikipy.utils.misc import (
     get_reference_point_from_array,
     read_image,
     read_makesense_point_csv,
+    to_tuple,
 )
 from bikipy.utils.typing import PathTyping, OptionalPathTyping, NDArray
 from bikipy.utils.video import get_video_data
@@ -272,7 +273,9 @@ class Perimeter(BasePerimeter):
                     f"new_inspect_image_path, {new_inspect_image_path}, does not exist"
                 )
                 raise AttributeError(msg)
-            new.inspect_image_path_ = new_inspect_image_path        # TODO: removal, waiting for pydantic pr
+            new.inspect_image_path_ = (
+                new_inspect_image_path  # TODO: removal, waiting for pydantic pr
+            )
             new.inspect_image_ = cv2.imread(new_inspect_image)
         elif np.any(new_inspect_image):
             new.inspect_image_ = cv2.imread(new_inspect_image)
@@ -341,10 +344,18 @@ class Perimeter(BasePerimeter):
             the perimeter and the border given in pixels
         :return:
         """
-        border_obj = self.__class__(
-            expand_parallelogram(self.corners, perimeter_border_normal_pixel_magnitude),
-            inspect_image=self.inspect_image,
-        )
+        if self._polygon_order == 4:
+            from bikipy.perimeter import ParallelogramPerimeter
+
+            border_obj = ParallelogramPerimeter(
+                corners=expand_parallelogram(
+                    to_tuple(self.corners), perimeter_border_normal_pixel_magnitude
+                ),
+                inspect_image=self.inspect_image,
+            )
+        else:
+            msg = f"Polygon order {self._polygon_order} is not supported"
+            raise NotImplementedError(msg)
 
         return border_obj
 
@@ -379,8 +390,6 @@ class Perimeter(BasePerimeter):
 
         return coordinate_confinement_boolean_index
 
-    @lru_cache
-    @jit
     def coordinate_confinement_boolean_index(self, coordinates: Sequence) -> np.ndarray:
         assert self.number_of_corners > 4
 

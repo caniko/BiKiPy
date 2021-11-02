@@ -4,6 +4,7 @@ from typing import Any, Sequence, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.typing import NDArray
 
 from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.math.vector import (
@@ -18,6 +19,8 @@ logger = getLogger(__name__)
 
 
 class ParallelogramPerimeter(Perimeter):
+    _polygon_order = 4
+
     @classmethod
     def from_image(cls, inspect_image: Any, n: int, *args, **kwargs):
         base, apex = parallelogram_input(inspect_image)
@@ -158,7 +161,7 @@ class ParallelogramPerimeter(Perimeter):
 
         return np.squeeze(np.hsplit(magnitudes, 2))
 
-    def coordinate_confinement_boolean_index(self, coordinates: Sequence):
+    def coordinate_confinement_boolean_index(self, coordinates: NDArray):
         coordinates = np.asarray(coordinates)
 
         return points_in_parallelogram(

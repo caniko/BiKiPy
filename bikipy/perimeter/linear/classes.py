@@ -45,6 +45,8 @@ class LinePerimeter(BasePerimeter):
         ),
     )
 
+    _polygon_order = 1
+
     @property
     def feat_border(self):
         """Feature magnituded perimeter location"""

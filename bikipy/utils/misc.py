@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import ndarray
+from numpy.typing import NDArray
 
 from bikipy.utils.typing import PathTyping
 
@@ -45,20 +46,20 @@ def generic_inspection_finalization(inspect, category: str):
     if isinstance(inspect, bool):
         plt.show()
     elif isinstance(inspect, str) or isinstance(inspect, PurePath):
-        inspect = Path(inspect).resolve()
-        if not inspect.parent.exists():
-            os.makedirs(inspect.parent)
-        plt.savefig(seek_next_file_index(inspect / category / f"{category}.jpg"))
+        root = Path(inspect).resolve() / category
+        if not root.exists():
+            os.makedirs(root)
+        plt.savefig(seek_next_file_index(root / f"{category}.jpg"))
 
 
 def seek_next_file_index(filepath: Union[PurePath, str]) -> PurePath:
     if not (original_filepath := Path(filepath)).exists():
-        return original_filepath.with_suffix(f"{1:04d}")
+        return original_filepath.with_stem(f"{1:04d}_{original_filepath.stem}")
 
     new_filepath = copy.copy(original_filepath)
     i = 2
     while new_filepath.exists():
-        new_filepath = filepath.with_suffix(f"{i:04d}")
+        new_filepath = filepath.with_stem(f"{i:04d}_{original_filepath.stem}")
         i += 1
     return new_filepath
 
@@ -69,3 +70,7 @@ def clear_console():
     :return:
     """
     print("\033c\033[3J", end="")
+
+
+def to_tuple(array: NDArray):
+    return tuple(map(tuple, array))

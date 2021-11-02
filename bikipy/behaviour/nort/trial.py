@@ -37,33 +37,16 @@ class NortTrainingTrial(NortHabituationTrial):
     _trial_sequence_index = 1
     _trial_label = "training"
 
-    def __init__(
-        self,
-        nort_a: Perimeter,
-        nort_b: Perimeter,
-        nose_label: str,
-        center_eye_label: str,
-        torso_label: str,
-        perimeter_border_normal_metric_magnitude: float,
-        maximum_radians_inter_gaze_perimeter: float = 1 / 4 * np.pi,
-        *nort_habituation_args,
-        **nort_habituation_kwargs,
-    ):
-        super().__init__(*nort_habituation_args, **nort_habituation_kwargs)
+    nort_a: Perimeter
+    nort_b: Perimeter
+    nose_label: str
+    center_eye_label: str
+    torso_label: str
+    perimeter_border_normal_metric_magnitude: float
+    maximum_radians_inter_gaze_perimeter: float = 1 / 4 * np.pi
 
-        self.nort_a, self.nort_b = nort_a, nort_b
-
-        self.torso_label, self.center_eye_label, self.nose_label = (
-            str(torso_label),
-            str(center_eye_label),
-            str(nose_label),
-        )
-        self.maximum_radians_inter_gaze_perimeter = float(
-            maximum_radians_inter_gaze_perimeter
-        )
-        self.perimeter_border_normal_metric_magnitude = float(
-            perimeter_border_normal_metric_magnitude
-        )
+    def __init__(self, **data):
+        super().__init__(**data)
         self.perimeter_border_normal_pixel_magnitude = (
             self.perimeter_border_normal_metric_magnitude
             / np.mean(self.units_per_pixel)
