@@ -45,6 +45,8 @@ class NortTrainingTrial(NortHabituationTrial):
     perimeter_border_normal_metric_magnitude: float
     maximum_radians_inter_gaze_perimeter: float = 1 / 4 * np.pi
 
+    _minimum_seconds_attention = 0.5
+
     def __init__(self, **data):
         super().__init__(**data)
         self.perimeter_border_normal_pixel_magnitude = (
@@ -77,22 +79,34 @@ class NortTrainingTrial(NortHabituationTrial):
         self.observation_sequence[self.b_observance_per_frame] = 2
         # assert np.all((self.observation_sequence == 0) == self.not_observing)
 
-        self.reduced_observation_sequence = np.array(
-            reduce_repeating_sequences(
-                self.observation_sequence, frame_tolerance=self._frame_tolerance
-            )
+        # self.reduced_observation_sequence = np.array(
+        #     reduce_repeating_sequences(
+        #         self.observation_sequence, frame_tolerance=self._frame_tolerance
+        #     )
+        # )
+
+        self.seconds_spent_observing_a = (
+            np.sum(self.observation_sequence == 1) / self.fps
+        )
+        self.seconds_spent_observing_b = (
+            np.sum(self.observation_sequence == 2) / self.fps
+        )
+        self.seconds_observing = (
+            self.seconds_spent_observing_a + self.seconds_spent_observing_b
         )
 
-        self.observation_a = np.sum(self.reduced_observation_sequence == 1)
-        self.observation_b = np.sum(self.reduced_observation_sequence == 2)
-        self.total_observation = self.observation_a + self.observation_b
-
-        self.seconds_spent_a = np.sum(self.observation_sequence == 1) / self.fps
-        self.seconds_spent_b = np.sum(self.observation_sequence == 2) / self.fps
-        self.seconds_observing = self.seconds_spent_a + self.seconds_spent_b
+        self.observation_instances_a = (
+            self.seconds_spent_observing_a / self._minimum_seconds_attention
+        )
+        self.observation_instances_b = (
+            self.seconds_spent_observing_b / self._minimum_seconds_attention
+        )
+        self.all_observation_instances = (
+            self.observation_instances_a + self.observation_instances_b
+        )
 
         self.object_bias_score = (
-            100.0 * self.seconds_spent_a / self.seconds_observing
+            100.0 * self.seconds_spent_observing_a / self.seconds_observing
             if self.seconds_observing
             else 0
         )
@@ -104,11 +118,11 @@ class NortTrainingTrial(NortHabituationTrial):
     @property
     def info(self):
         return super().info + [
-            self.observation_a,
-            self.observation_b,
-            self.total_observation,
-            self.seconds_spent_a,
-            self.seconds_spent_b,
+            self.observation_instances_a,
+            self.observation_instances_b,
+            self.all_observation_instances,
+            self.seconds_spent_observing_a,
+            self.seconds_spent_observing_b,
             self.seconds_observing,
             self.object_bias_score,
         ]
@@ -124,6 +138,7 @@ class NortTrainingTrial(NortHabituationTrial):
             self.fps,
             self.perimeter_border_normal_pixel_magnitude,
             self.maximum_radians_inter_gaze_perimeter,
+            self._minimum_seconds_attention,
             inspect=self.inspection_figure_save,
         )
 
@@ -151,7 +166,9 @@ class NortNoveltyTrial(NortTrainingTrial):
             self.absolute_discrimination / self.experiment_seconds
         )
 
-        self.novelty_preference = 100.0 * self.seconds_spent_b / self.experiment_seconds
+        self.novelty_preference = (
+            100.0 * self.seconds_spent_observing_b / self.experiment_seconds
+        )
 
     @property
     def info(self):
@@ -226,21 +243,19 @@ class NortField:
             novel_object_perimeter,
         )
 
-    def training(self, *args, **kwargs) -> NortTrainingTrial:
+    def training(self, **data) -> NortTrainingTrial:
         return NortTrainingTrial(
             nort_a=self.constant_object_perimeter,
             nort_b=self.variable_object_perimeter,
-            *args,
-            **kwargs,
+            **data,
         )
 
-    def novelty(self, *args, **kwargs) -> NortTrainingTrial:
+    def novelty(self, **data) -> NortTrainingTrial:
         return NortNoveltyTrial(
             nort_a=self.novelty_constant_object_perimeter
             or self.constant_object_perimeter,
             nort_b=self.novel_object_perimeter,
-            *args,
-            **kwargs,
+            **data,
         )
 
     def pickle(self, path: Any):

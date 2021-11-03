@@ -208,7 +208,7 @@ class BaseTrial(Behaviour):
         description="Nodes that should remain during freeze/immobility, most often due to fear."
     )
     video_path: Optional[FilePath] = Field(description="Path to trial video recording")
-    inspection_figure_save: Union[PurePath, str, bool] = Field(
+    inspection_figure_save: Union[DirectoryPath, bool] = Field(
         description="Path to save figures for inspection of results"
     )
     inspect_image: Optional[FilePath] = Field(description="Image used for inspection")

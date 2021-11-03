@@ -13,14 +13,32 @@ DATA_DIR = WORKING_DIR / "data"
 
 FILE_EXTENSION = "parquet"
 
+MOTION_PARAMETERS = ("Displacement", "Median_speed", "Median_acceleration")
+
 PARAMETERS_TO_COMPARE = (
-    "Displacement",
-    "Median_speed",
-    "Median_acceleration",
     "Discrimination_index",  # Novel
     "Novelty_preference",  # Novel
     "Object_bias_score",  # Novel
 )
+meta_dfs = (
+    pd.read_excel(
+        DATA_DIR / "nort_round_1.xlsx", index_col="Test", sheet_name="NORT_02.06.2020"
+    ),
+    pd.read_excel(
+        DATA_DIR / "nort_round_1.xlsx",
+        index_col="Test",
+        sheet_name="NORT_ 24.08.2020 (after)",
+    ),
+    pd.read_excel(
+        DATA_DIR / "nort_round_2.xlsx", index_col="Test", sheet_name="NORT2_30.08.20"
+    ),
+    pd.read_excel(
+        DATA_DIR / "nort_round_2.xlsx",
+        index_col="Test",
+        sheet_name="NORT2_23.11.2020 (after)",
+    ),
+)
+
 
 with pd.ExcelWriter(
     RESULT_DIR / "manova.xlsx",
@@ -29,12 +47,16 @@ with pd.ExcelWriter(
         "strings_to_urls": False,
     },
 ) as writer:
-    for dataset in iglob(str(RESULT_DIR / "for_analysis" / f"*.{FILE_EXTENSION}")):
+    for i, dataset in enumerate(
+        iglob(str(RESULT_DIR / "for_analysis" / f"*.{FILE_EXTENSION}"))
+    ):
+        print(i)
         dataset = Path(dataset)
 
         df = pd.read_parquet(dataset)
         df_motion = df[
             [
+                ("All", "Stage"),
                 ("All", "Displacement"),
                 ("All", "Median_speed"),
                 ("All", "Median_acceleration"),
@@ -49,12 +71,14 @@ with pd.ExcelWriter(
             ]
         ].droplevel(1, axis=1)
 
-        metadata_df = pd.read_excel(DATA_DIR / "nort_round_2.xlsx", index_col="Test")
+        metadata_df = meta_dfs[i]
+        del metadata_df["Stage"]
         concatenated = pd.concat([df_motion, df_nort, metadata_df], axis=1, sort=True)
+        concatenated = concatenated[~concatenated["Treatment"].isna()]
 
-        grouped = concatenated.groupby(by="Stage")
-        dfs = [value[1] for value in grouped]
-        habituation, training, novelty = dfs
+        habituation = concatenated[concatenated["Stage"] == "habituation"]
+        training = concatenated[concatenated["Stage"] == "training"]
+        novelty = concatenated[concatenated["Stage"] == "novelty"]
 
         experiments = pd.concat([training, novelty], axis=1, sort=True)
 
@@ -62,17 +86,15 @@ with pd.ExcelWriter(
             print(parameter)
             analyse = MANOVA.from_formula(
                 f"C(Sex) + C(HCAR1) + C(VXFAD) + C(Treatment) + C(Group) ~ {parameter}",
-                concatenated,
+                novelty,
             )
             analyse.mv_test().summary_frame.to_excel(
                 writer, sheet_name=f"{parameter}_{dataset.stem}"
             )
-
-            # tukey = pairwise_tukeyhsd(endog=voter_age,  # Data
-            #                           groups=voter_race,  # Groups
-            #                           alpha=0.05)  # Significance level
-            #
-            # tukey.plot_simultaneous()  # Plot group confidence intervals
-            # plt.vlines(x=49.57, ymin=-0.5, ymax=4.5, color="red")
-            #
-            # tukey.summary()  # See test summary
+            for category in ("Sex", "HCAR1", "VXFAD", "Treatment", "Group"):
+                print(category)
+                tukey = pairwise_tukeyhsd(
+                    endog=novelty[parameter],  # Data
+                    groups=novelty[category],  # Groups
+                    alpha=0.05,  # Significance
+                )

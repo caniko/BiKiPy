@@ -143,7 +143,7 @@ def gaze_direction_filter(
 def attention_filter(
     boolean_index: Sequence[bool],
     fps: float,
-    minimum_seconds_attention: float = 0.5,
+    minimum_seconds_attention: float,
 ) -> np.ndarray:
     """
     Filters boolean_index with respect to attention. The filter tolerates distraction, and requires
@@ -231,6 +231,7 @@ def polygonal_perimeter_attention(
     fps: float,
     perimeter_border_normal_pixel_magnitude: float,
     maximum_radians_inter_gaze_perimeter: float = 0.25 * np.pi,
+    minimum_seconds_attention: float = 0.5,
     inspect: Union[bool, str, PurePath] = False,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -302,7 +303,9 @@ def polygonal_perimeter_attention(
     perimeter_observation = (
         np.zeros_like(semi_true_observations, dtype=bool)
         if np.sum(semi_true_observations) < fps
-        else np.array(attention_filter(semi_true_observations, fps))
+        else np.array(
+            attention_filter(semi_true_observations, fps, minimum_seconds_attention)
+        )
     )
 
     if inspect:

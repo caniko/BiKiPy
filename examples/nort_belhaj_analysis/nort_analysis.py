@@ -28,8 +28,6 @@ if not RESULT_DIR.exists():
 
 EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
-TO_SKIP = ([], [103])
-
 nort_field_vs_nort_field_object = {}
 for i, list_idx in zip(range(1, 5), range(4)):
     novel = Perimeter.from_coco(
@@ -85,9 +83,6 @@ for round_idx in range(2):
 
         trial_id_range_vs_exp_meta = {}
         for trial_id, paths in trial_id_vs_paths.items():
-            if trial_id in TO_SKIP[round_idx]:
-                continue
-
             trial_data = {
                 "coordinate_data_path": paths["data"],
                 "stage": (stage := trial_id_vs_stage[trial_id]),
@@ -111,7 +106,7 @@ for round_idx in range(2):
             perimeter_border_normal_metric_magnitude=0.06,
             center_metric_length=0.2,
             maximum_radians_inter_gaze_perimeter=0.33 * np.pi,
-            inspection_figure_save=RESULT_DIR / "inspect",
+            # inspection_figure_save=RESULT_DIR / "inspect",
             data_import_kwargs={
                 "init_from": "parquet",
                 "midpoint_groups": (

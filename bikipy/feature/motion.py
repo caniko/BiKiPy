@@ -187,7 +187,9 @@ class Motion:
         self.metric_displacement_by_frame = (
             displacement_by_frame(coordinate_sequence) * units_per_pixel
             if isinstance(units_per_pixel, float)
-            else displacement_by_frame(coordinate_sequence * np.asarray(units_per_pixel))
+            else displacement_by_frame(
+                coordinate_sequence * np.asarray(units_per_pixel)
+            )
         )
 
         self.total_displacement = np.nansum(self.metric_displacement_by_frame)
