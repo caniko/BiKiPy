@@ -1,10 +1,12 @@
 from glob import iglob
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import pandas as pd
-from matplotlib import pyplot as plt
+import seaborn as sns
 from statsmodels.multivariate.manova import MANOVA
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
+
 
 WORKING_DIR = Path(".").resolve()
 RESULT_DIR = WORKING_DIR / "results"
@@ -75,22 +77,33 @@ with pd.ExcelWriter(
         del metadata_df["Stage"]
         concatenated = pd.concat([df_motion, df_nort, metadata_df], axis=1, sort=True)
         concatenated = concatenated[~concatenated["Treatment"].isna()]
+        concatenated["HCAR1"] = concatenated["HCAR1"].map(lambda x: x.strip())
 
         habituation = concatenated[concatenated["Stage"] == "habituation"]
         training = concatenated[concatenated["Stage"] == "training"]
+
         novelty = concatenated[concatenated["Stage"] == "novelty"]
+        novelty = novelty[~novelty["Novelty_preference"].isna()]
 
         experiments = pd.concat([training, novelty], axis=1, sort=True)
 
         for parameter in PARAMETERS_TO_COMPARE:
             print(parameter)
-            analyse = MANOVA.from_formula(
-                f"C(Sex) + C(HCAR1) + C(VXFAD) + C(Treatment) + C(Group) ~ {parameter}",
-                novelty,
+            # analyse = MANOVA.from_formula(
+            #     f"C(Sex) + C(HCAR1) + C(VXFAD) + C(Treatment) + C(Group) ~ {parameter}",
+            #     novelty,
+            # )
+            # analyse.mv_test().summary_frame.to_excel(
+            #     writer, sheet_name=f"{parameter}_{dataset.stem}"
+            # )
+            g = sns.catplot(
+                x="Group", y=parameter, kind="violin", inner=None, data=novelty
             )
-            analyse.mv_test().summary_frame.to_excel(
-                writer, sheet_name=f"{parameter}_{dataset.stem}"
+            sns.swarmplot(
+                x="Group", y=parameter, color="k", size=3, data=novelty, ax=g.ax
             )
+            plt.savefig(RESULT_DIR / "figures" / f"{dataset.stem}_{i}_{parameter}.png")
+            dfs = []
             for category in ("Sex", "HCAR1", "VXFAD", "Treatment", "Group"):
                 print(category)
                 tukey = pairwise_tukeyhsd(
@@ -98,3 +111,12 @@ with pd.ExcelWriter(
                     groups=novelty[category],  # Groups
                     alpha=0.05,  # Significance
                 )
+                dfs.append(
+                    pd.DataFrame(
+                        data=tukey._results_table.data[1:],
+                        columns=tukey._results_table.data[0],
+                    )
+                )
+            pd.concat(dfs).to_excel(
+                writer, sheet_name=f"{dataset.stem}_{i}_{parameter}"
+            )

@@ -79,11 +79,19 @@ class NortTrainingTrial(NortHabituationTrial):
         self.observation_sequence[self.b_observance_per_frame] = 2
         # assert np.all((self.observation_sequence == 0) == self.not_observing)
 
-        # self.reduced_observation_sequence = np.array(
-        #     reduce_repeating_sequences(
-        #         self.observation_sequence, frame_tolerance=self._frame_tolerance
-        #     )
-        # )
+        self.reduced_observation_sequence = np.array(
+            reduce_repeating_sequences(
+                self.observation_sequence, frame_tolerance=self._frame_tolerance
+            )
+        )
+
+        self.observation_instances_a = np.sum(self.reduced_observation_sequence == 1)
+        self.observation_instances_b = np.sum(self.reduced_observation_sequence == 2)
+        self.all_observation_instances = (
+            self.observation_instances_a + self.observation_instances_b
+        )
+
+        # TODO: No criteria seconds spent
 
         self.seconds_spent_observing_a = (
             np.sum(self.observation_sequence == 1) / self.fps
@@ -93,16 +101,6 @@ class NortTrainingTrial(NortHabituationTrial):
         )
         self.seconds_observing = (
             self.seconds_spent_observing_a + self.seconds_spent_observing_b
-        )
-
-        self.observation_instances_a = (
-            self.seconds_spent_observing_a / self._minimum_seconds_attention
-        )
-        self.observation_instances_b = (
-            self.seconds_spent_observing_b / self._minimum_seconds_attention
-        )
-        self.all_observation_instances = (
-            self.observation_instances_a + self.observation_instances_b
         )
 
         self.object_bias_score = (

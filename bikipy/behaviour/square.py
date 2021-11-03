@@ -1,7 +1,7 @@
 from abc import ABC
 from functools import cached_property
 from logging import getLogger
-from typing import Any, Union
+from typing import Any, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -16,15 +16,20 @@ logger = getLogger(__name__)
 
 
 class SquareEnclosedExperiment(BaseExperiment, ABC):
-    def summary_frame(self):
-        base_columns = [
+    center_metric_length: Optional[float] = None
+
+    @cached_property
+    def base_frame_columns(self):
+        return super().base_frame_columns + [
             *self._motion_2d_multi_indexer("Periphery"),
             *self._motion_2d_multi_indexer("Center"),
             *self._feature_2d_multi_indexer("Time_spent", ("Periphery", "Center")),
             *self._feature_2d_multi_indexer("Entries", ("Periphery", "Center")),
         ]
 
-        df = pd.DataFrame(self.instanced_trial_data.periphery)
+    @cached_property
+    def summary_frame(self):
+        df = self.bikipy_experiment_dataframe(self.instanced_trial_data.periphery)
 
 
 class SquareEnclosedTrial(BaseTrial):

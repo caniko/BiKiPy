@@ -1,5 +1,6 @@
 import os
-from functools import cached_property
+from abc import ABC
+from functools import cached_property, partial
 from logging import getLogger
 from pathlib import Path, PurePath
 from typing import (
@@ -13,7 +14,7 @@ from typing import (
 import cv2
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath, Field, FilePath
+from pydantic import DirectoryPath, Field, FilePath, validator
 from tqdm import tqdm
 
 from bikipy._base_class import BikipyBase
@@ -27,7 +28,7 @@ from bikipy.utils.video import get_video_data
 logger = getLogger(__name__)
 
 
-class Behaviour(BikipyBase):
+class Behaviour(BikipyBase, ABC):
     fps: Union[float, int, None] = None
     recording_resolution: Optional[NDArray[Literal["np.int16"]]] = None
     metric_resolution: Union[NDArray, float, None] = None
@@ -71,7 +72,7 @@ class Behaviour(BikipyBase):
             return np.array(self.metric_resolution) / self.recording_resolution
 
 
-class BaseExperiment(Behaviour):
+class BaseExperiment(Behaviour, ABC):
     trial_id_vs_data: Optional[dict] = None
     trial_id_range_vs_common_data: Union[RangeDict, dict, None] = None
     point_label_for_motion_features: Optional[str] = None
@@ -165,10 +166,6 @@ class BaseExperiment(Behaviour):
     def _trial_id_iterable(self):
         return self.trial_id_vs_data.keys()
 
-    @cached_property
-    def frame_index(self):
-        return pd.Series(self._trial_id_iterable, name="Test ID", dtype=np.int16)
-
     @staticmethod
     def _motion_2d_multi_indexer(category: str):
         _category = str(category)
@@ -184,19 +181,29 @@ class BaseExperiment(Behaviour):
         return tuple([(feature, category) for category in category])
 
     @property
-    def instanced_trial_data(self):
+    def trial_motion_data(self):
         raise NotImplementedError
 
+    @cached_property
+    def base_frame_columns(self):
+        return self._motion_2d_multi_indexer("All")
+
     @property
+    def _frame_index(self):
+        return pd.Series(self._trial_id_iterable, name="Test ID", dtype=np.int16)
+
+    @property
+    def bikipy_experiment_dataframe(self):
+        return partial(pd.DataFrame, columns=self.base_frame_columns, index=self.frame_index)
+
+    @cached_property
     def summary_frame(self):
-        return pd.DataFrame(
+        return self.bikipy_experiment_dataframe(
             (trial_data.motion.to_list for trial_data in self.instanced_trial_data),
-            columns=self._motion_2d_multi_indexer("All"),
-            index=self.frame_index,
         )
 
 
-class BaseTrial(Behaviour):
+class BaseTrial(Behaviour, ABC):
     coordinate_sequence: Optional[BaseReader] = Field(
         description="The coordinates of the subject across the frames in the video recording"
     )
@@ -212,12 +219,18 @@ class BaseTrial(Behaviour):
         description="Path to save figures for inspection of results"
     )
     inspect_image: Optional[FilePath] = Field(description="Image used for inspection")
+    # Variables for trials with zones, see doc for more info.
+    perimeters: Optional[Sequence] = None
+    trial_start_perimeter: Optional[str] = None
 
     _category = "trial"
 
     _trial_sequence_index = None
     _trial_label = None
     _second_tolerance = 0.35
+
+    class Config:
+        fields = {"rigid_nodes_freezing_": "rigid_nodes_freezing"}
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -246,13 +259,6 @@ class BaseTrial(Behaviour):
             )
             raise ValueError(msg)
 
-        # Variables for trials with zones, see doc for more info.
-        self.perimeters = None
-        self.trial_start_perimeter = None
-        # ========================= ========================= =========================
-        self._rigid_nodes_freezing = None
-        self._frozen_boolean_index = None
-
     @property
     def coordinates_per_frame(self):
         return self.coordinate_sequence[self.point_label_for_motion_features]
@@ -274,24 +280,19 @@ class BaseTrial(Behaviour):
         if isinstance(self.inspection_figure_save, str) or isinstance(
             self.inspection_figure_save, PurePath
         ):
-            return Path(self.inspection_figure_save) / self.label
+            return Path(self.inspection_figure_save) / self.best_id
         return self.inspection_figure_save  # return the bool in any case
 
     @cached_property
     def _frame_tolerance(self):
         return round(self._second_tolerance * self.fps)
 
-    @property
-    def rigid_nodes_freezing(self):
-        return self._rigid_nodes_freezing
-
-    @rigid_nodes_freezing.setter
-    def rigid_nodes_freezing(self, value: Sequence):
-        if not value:
-            return
-
-        self._rigid_nodes_freezing = value
-        self._frozen_boolean_index = frozen_frames(
+    @cached_property
+    def frozen_boolean_index(self):
+        if not self.rigid_nodes_freezing:
+            msg = "rigid_nodes_freezing is not defined"
+            raise AttributeError(msg)
+        return frozen_frames(
             self.fps,
             [
                 displacement_by_frame(coordinate_sequence, remove_tails=False)
@@ -301,13 +302,6 @@ class BaseTrial(Behaviour):
                 ]
             ],
         )
-
-    @property
-    def frozen_boolean_index(self):
-        if self._frozen_boolean_index is None:
-            msg = "rigid_nodes_freezing has to be defined in order to compute frozen time data"
-            raise AttributeError(msg)
-        return self._frozen_boolean_index
 
     @cached_property
     def total_frozen_frames(self):

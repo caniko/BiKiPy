@@ -1,3 +1,4 @@
+from abc import ABC
 from datetime import date, datetime
 from functools import cached_property
 from pathlib import Path
@@ -9,7 +10,7 @@ from pydantic import BaseModel, DirectoryPath, Field, Extra
 from bikipy.utils.typing import OptionalPathTyping
 
 
-class BikipyBase(BaseModel):
+class BikipyBase(BaseModel, ABC):
     int_label: Optional[int] = None
     semantic_label: Optional[str] = None
     group_label: Optional[str] = None

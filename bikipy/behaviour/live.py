@@ -1,10 +1,12 @@
 import asyncio
 from collections import Sequence as collections_Sequence
 from datetime import datetime
+from functools import cached_property
 from logging import getLogger
-from typing import Optional, Sequence, Union
+from typing import Optional, Union
 
 import numpy as np
+from pydantic import validator, DirectoryPath
 from tqdm import tqdm
 
 from bikipy.behaviour.base import BaseTrial
@@ -26,53 +28,45 @@ logger = getLogger(__name__)
 
 
 class LiveTrial(BaseTrial):
-    def __init__(
-        self,
-        *args,
-        delay_timings: Sequence[Union[float, int]],
-        delay_timings_trial_count: Union[Sequence[int], int],
-        total_loops_per_trial: Optional[int] = None,
-        **kwargs,
-    ):
-        super().__init__(*args, _live=True, **kwargs)
-        if not hasattr(self, "save_root"):
-            msg = "save_root must be defined for saving the trial data after conclusion"
-            raise ValueError(msg)
+    save_root: DirectoryPath
+    delay_timings: tuple[Union[float, int]]
+    delay_timings_trial_count: Union[tuple[int], int]
+    manual_total_loops_per_trial: Optional[int] = None
 
-        self.delay_timings = delay_timings
+    @validator("delay_timings_trial_count", "delay_timings")
+    def ensure_delay_timings_trial_count_and_delay_timings_have_eq_len(
+        cls, delay_timings_trial_count, delay_timings
+    ):
         if isinstance(delay_timings_trial_count, collections_Sequence):
-            self.delay_timings_trial_count = tuple(delay_timings_trial_count)
-            assert len(self.delay_timings_trial_count) == len(self.delay_timings)
+            assert len(delay_timings_trial_count) == len(delay_timings)
             assert all(
                 isinstance(timing, (float, int))
-                for timing in self.delay_timings_trial_count
+                for timing in delay_timings_trial_count
             )
+            delay_timings_trial_count = tuple(delay_timings_trial_count)
         elif isinstance(delay_timings_trial_count, (float, int)):
-            self.delay_timings_trial_count = tuple(
-                delay_timings_trial_count for _ in range(len(self.delay_timings))
+            delay_timings_trial_count = tuple(
+                delay_timings_trial_count for _ in range(len(delay_timings))
             )
+        return delay_timings_trial_count, delay_timings
 
+    @validator("delay_timings_trial_count", "manual_total_loops_per_trial")
+    def manual_total_loops_per_trial_and_delay_timings_trial_count_are_exclusive(
+        cls, delay_timings_trial_count, manual_total_loops_per_trial
+    ):
+        if manual_total_loops_per_trial and delay_timings_trial_count or not manual_total_loops_per_trial and not delay_timings_trial_count:
+            msg = "manual_total_loops_per_trial and delay_timings_trial_count are " \
+                  "defined required, but exclusive of each other"
+            raise ValueError(msg)
+        return delay_timings_trial_count, manual_total_loops_per_trial
+
+    def __init__(self, **data):
+        super().__init__(**data)
         self.node_sequence = []
 
         self.bad_turn_counter = 0
         self.bad_loop_record = {}
 
-        self._loop_number_vs_delay_time = (
-            RangeDict(
-                {
-                    i: delay_time
-                    for i, delay_time in zip(
-                        self.delay_timings_trial_count, self.delay_timings
-                    )
-                },
-                allow_less_than_first_key=0,
-            )
-            if delay_timings
-            else {}
-        )
-        self.total_loops_per_trial = total_loops_per_trial or np.sum(
-            delay_timings_trial_count
-        )
         self.loop_number = 0
 
         self.live_expose_metrics = []
@@ -83,6 +77,26 @@ class LiveTrial(BaseTrial):
 
         self._zmq_context = None
         self._socket = None
+
+    @cached_property
+    def _loop_number_vs_delay_time(self):
+        return (
+            RangeDict(
+                {
+                    i: delay_time
+                    for i, delay_time in zip(
+                        self.delay_timings_trial_count, self.delay_timings
+                    )
+                },
+                allow_less_than_first_key=0,
+            )
+            if self.delay_timings
+            else {}
+        )
+
+    @cached_property
+    def total_loops_per_trial(self):
+        return self.manual_total_loops_per_trial or np.sum(self.delay_timings_trial_count)
 
     def generate_zmq_context(self, socket_address: str = "tcp://*:5555"):
         self._zmq_context = zmq.asyncio.Context()

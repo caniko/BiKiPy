@@ -11,15 +11,20 @@ from pydantic import Field
 
 from bikipy.behaviour.base import BaseExperiment
 from bikipy.behaviour.nort.trial import NortHabituationTrial
+from bikipy.behaviour.square import SquareEnclosedExperiment
 from bikipy.utils.store import sort_dict_by_key_value
 
 logger = getLogger(__name__)
 
 
-class NortExperiment(BaseExperiment):
+class NortExperiment(SquareEnclosedExperiment):
     """
     Class for combining several NORT trials under one class for joint analysis
     """
+
+    @property
+    def instanced_trial_data(self):
+        pass
 
     nose_label: str = Field(description="Label of the nose in the df")
     center_eye_label: str = Field(description="Label of the eye center in the df")
@@ -31,7 +36,6 @@ class NortExperiment(BaseExperiment):
         None,
         description="The magnitude of the normal between the perimeter and the border given in meters",
     )
-    center_metric_length: Optional[float] = None
     maximum_radians_inter_gaze_perimeter: float = Field(0.5 * np.pi)
 
     _trials_are_sequential = True
