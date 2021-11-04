@@ -185,7 +185,7 @@ class NortExperiment(SquareEnclosedExperiment):
         data_dict = sort_dict_by_key_value(label_vs_data)
         df = pd.DataFrame(
             data_dict.values(),
-            index=self.frame_index,
+            index=self._frame_index,
             columns=pd.MultiIndex.from_tuples(
                 base_columns + object_columns + novelty_columns,
                 names=("Feature", "Area"),
