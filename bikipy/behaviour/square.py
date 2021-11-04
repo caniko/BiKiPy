@@ -1,7 +1,7 @@
 from abc import ABC
 from functools import cached_property
 from logging import getLogger
-from typing import Any, Union, Optional
+from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -29,7 +29,7 @@ class SquareEnclosedExperiment(BaseExperiment, ABC):
 
     @cached_property
     def summary_frame(self):
-        df = self.bikipy_experiment_dataframe(self.instanced_trial_data.periphery)
+        df = self._bikipy_experiment_dataframe(self.instanced_trial_data.periphery)
 
 
 class SquareEnclosedTrial(BaseTrial):

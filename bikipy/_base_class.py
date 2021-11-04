@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 import compress_pickle
-from pydantic import BaseModel, DirectoryPath, Field, Extra
+from pydantic import BaseModel, DirectoryPath, Extra, Field
 
 from bikipy.utils.typing import OptionalPathTyping
 

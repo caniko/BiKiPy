@@ -7,7 +7,6 @@ import seaborn as sns
 from statsmodels.multivariate.manova import MANOVA
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
-
 WORKING_DIR = Path(".").resolve()
 RESULT_DIR = WORKING_DIR / "results"
 

@@ -1,71 +1,41 @@
 import sys
 from concurrent.futures import ProcessPoolExecutor
-from functools import lru_cache, partial
-from typing import Any, Callable, Generator, Iterable, Optional, Sequence, Union
+from functools import lru_cache, partial, cached_property
+from typing import Any, Callable, Generator, Iterable, Optional, Sequence
 
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath
+from pydantic import DirectoryPath, BaseModel, Field, Extra
 
 from bikipy.utils.video import get_video_data
 
 
-class BaseReader:
-    def __init__(
-        self,
-        df: pd.DataFrame,
-        future_scaling: bool = False,
-        pixel_resolution: Optional[Sequence[int]] = None,
-        video_path: Optional[DirectoryPath] = None,
-        data_path: Optional[DirectoryPath] = None,
-        label: Optional[str] = None,
-    ):
-        """
-        Parameters
-        ----------
-        df : pandas.DataFrame
-            Kinematic data in a pd.DataFrame
-        future_scaling : boolean, default False
-            Scales the coordinates with respect to their min and max.
-            True requires x_max and y_max
-        pixel_resolution : Sequence
-             The resolution of the videos that are being analyzed
-        label : String; optional
-            Label for the data
-        """
+class BaseReader(BaseModel):
+    df: pd.DataFrame = Field(description="Kinematic data")
+    future_scaling: bool = Field(None, description="Scales the coordinates with respect to their min and max. True requires x_max and y_max")
+    pixel_resolution: Optional[Sequence[int]] = Field(None, description="The resolution of the videos that are being analyzed")
+    fps: Optional[float] = None
+    video_path: Optional[DirectoryPath] = None
+    data_path: Optional[DirectoryPath] = None
+    label: Optional[str] = None
 
-        if pixel_resolution:
-            self.pixel_resolution = pixel_resolution
+    class Config:
+        extra = Extra.allow
+        keep_untouched = (cached_property,)
 
-            self.res_horizontal, self.res_vertical = pixel_resolution
-            if not (
-                isinstance(self.res_horizontal, (float, int, type(None)))
-                and isinstance(self.res_vertical, (float, int, type(None)))
-            ):
-                msg = f"x and y max are integers; not {self.res_horizontal}; {self.res_vertical}"
-                raise AttributeError(msg)
-        elif video_path:
-            _, self.res_horizontal, self.res_vertical, self.fps = get_video_data(
-                data_path
-            )
-            self.pixel_resolution = (self.res_horizontal, self.res_vertical)
-
-        self.df = df
-        if not isinstance(df, pd.DataFrame):
-            msg = "df has to be a pandas.DataFrame"
-            raise AttributeError(msg)
-
-        self.future_scaling = future_scaling
-
-        self.video_path = video_path
-        self.data_path = data_path
-        self.label = label
+    def __init__(self, **data: Any):
+        super().__init__(**data)
 
         self._region_of_interest_vs_boolean_index = None
         self._valid_point_indices = None
         self._valid_tails = None
         self._valid_slices = None
         self._validity_ratio = None
+
+    @classmethod
+    def with_video_path(cls, video_path, **data):
+        _frame, x_res, y_res, fps = get_video_data(video_path)
+        return cls(pixel_resolution=(x_res, y_res), fps=fps, **data)
 
     @property
     def region_of_interest_vs_boolean_index(self):

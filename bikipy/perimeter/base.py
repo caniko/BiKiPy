@@ -11,8 +11,8 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from numba import jit
-from pydantic import FilePath, validator
 from numpy.typing import NDArray as NpNDArray
+from pydantic import FilePath, validator
 from shapely.geometry import Point, Polygon
 
 from bikipy._base_class import BikipyBase
@@ -24,7 +24,7 @@ from bikipy.utils.misc import (
     read_makesense_point_csv,
     to_tuple,
 )
-from bikipy.utils.typing import PathTyping, OptionalPathTyping, NDArray
+from bikipy.utils.typing import NDArray, OptionalPathTyping, PathTyping
 from bikipy.utils.video import get_video_data
 
 logger = getLogger(__name__)

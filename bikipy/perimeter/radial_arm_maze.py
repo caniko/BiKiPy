@@ -8,7 +8,7 @@ from bikipy.math.geometry import argsort_counterclockwise
 from bikipy.perimeter import ParallelogramPerimeter, TriangularPerimeter
 from bikipy.perimeter.base import Perimeter, PerimeterSet
 from bikipy.utils.misc import read_makesense_point_csv
-from bikipy.utils.typing import PathTyping, OptionalPathTyping
+from bikipy.utils.typing import OptionalPathTyping, PathTyping
 
 
 def generate_radial_arm_maze_arm_perimeters(

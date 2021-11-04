@@ -1,20 +1,15 @@
 import os
+import re
 from abc import ABC
 from functools import cached_property, partial
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import (
-    Iterable,
-    Literal,
-    Optional,
-    Sequence,
-    Union,
-)
+from typing import Iterable, Literal, Optional, Sequence, Union
 
 import cv2
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath, Field, FilePath, validator
+from pydantic import DirectoryPath, Field, FilePath
 from tqdm import tqdm
 
 from bikipy._base_class import BikipyBase
@@ -73,16 +68,15 @@ class Behaviour(BikipyBase, ABC):
 
 
 class BaseExperiment(Behaviour, ABC):
-    trial_id_vs_data: Optional[dict] = None
-    trial_id_range_vs_common_data: Union[RangeDict, dict, None] = None
+    trials: list
     point_label_for_motion_features: Optional[str] = None
     inspection_figure_save: Union[bool, DirectoryPath] = False
-    data_import_kwargs: Optional[dict] = None
-    coordinate_data_format: Literal["deeplabcut"] = "deeplabcut"
+
+    _deeplabcut_trial_id_finder = re.compile(r"\d+")
 
     @property
     def _hash_key(self):
-        return self.trial_id_vs_data
+        return self.trials
 
     def __getitem__(self, item):
         if not self.trial_id_range_vs_common_data:
@@ -92,20 +86,28 @@ class BaseExperiment(Behaviour, ABC):
             **self.trial_id_vs_data[item],
         }
 
-    @cached_property
-    def trial_id_vs_coordinate_sequence(self):
-        if self.coordinate_data_format == "deeplabcut":
+    @classmethod
+    def from_deeplabcut_data(
+        cls,
+        coordinate_data_paths: Sequence,
+        trial_id_range_vs_common_data: Optional[RangeDict] = None,
+        data_import_kwargs: Optional[dict] = None,
+        coordinate_data_format: Literal["deeplabcut"] = "deeplabcut"
+    ):
+        for data_path in coordinate_data_paths:
+            trial_id = int(cls._deeplabcut_trial_id_finder.findall(Path(data_path).stem)[0])
+        if coordinate_data_format == "deeplabcut":
             return {
                 trial_id: dlc_obj
                 for trial_id, dlc_obj in zip(
-                    self._trial_id_iterable,
+                    trial_id_vs_data.keys(),
                     DeepLabCutReader.init_many_map(
                         data_path=(
                             data["coordinate_data_path"]
-                            for data in self.trial_id_vs_data.values()
+                            for data in trial_id_vs_data.values()
                         ),
-                        labels=self.trial_id_vs_data.keys(),
-                        **self.data_import_kwargs,
+                        labels=trial_id_vs_data.keys(),
+                        **data_import_kwargs,
                     ),
                 )
             }
@@ -180,10 +182,6 @@ class BaseExperiment(Behaviour, ABC):
     def _feature_2d_multi_indexer(feature: str, category):
         return tuple([(feature, category) for category in category])
 
-    @property
-    def trial_motion_data(self):
-        raise NotImplementedError
-
     @cached_property
     def base_frame_columns(self):
         return self._motion_2d_multi_indexer("All")
@@ -193,14 +191,20 @@ class BaseExperiment(Behaviour, ABC):
         return pd.Series(self._trial_id_iterable, name="Test ID", dtype=np.int16)
 
     @property
-    def bikipy_experiment_dataframe(self):
-        return partial(pd.DataFrame, columns=self.base_frame_columns, index=self.frame_index)
+    def _bikipy_experiment_dataframe(self):
+        return partial(
+            pd.DataFrame, columns=self.base_frame_columns, index=self.frame_index
+        )
 
     @cached_property
-    def summary_frame(self):
-        return self.bikipy_experiment_dataframe(
-            (trial_data.motion.to_list for trial_data in self.instanced_trial_data),
+    def motion_summary_frame(self):
+        return self._bikipy_experiment_dataframe(
+            (trial.motion.to_list for trial in self.trials),
         )
+
+    @property
+    def df(self):
+        return self.motion_summary_frame
 
 
 class BaseTrial(Behaviour, ABC):

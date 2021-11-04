@@ -6,7 +6,7 @@ from logging import getLogger
 from typing import Optional, Union
 
 import numpy as np
-from pydantic import validator, DirectoryPath
+from pydantic import DirectoryPath, validator
 from tqdm import tqdm
 
 from bikipy.behaviour.base import BaseTrial
@@ -40,8 +40,7 @@ class LiveTrial(BaseTrial):
         if isinstance(delay_timings_trial_count, collections_Sequence):
             assert len(delay_timings_trial_count) == len(delay_timings)
             assert all(
-                isinstance(timing, (float, int))
-                for timing in delay_timings_trial_count
+                isinstance(timing, (float, int)) for timing in delay_timings_trial_count
             )
             delay_timings_trial_count = tuple(delay_timings_trial_count)
         elif isinstance(delay_timings_trial_count, (float, int)):
@@ -54,9 +53,16 @@ class LiveTrial(BaseTrial):
     def manual_total_loops_per_trial_and_delay_timings_trial_count_are_exclusive(
         cls, delay_timings_trial_count, manual_total_loops_per_trial
     ):
-        if manual_total_loops_per_trial and delay_timings_trial_count or not manual_total_loops_per_trial and not delay_timings_trial_count:
-            msg = "manual_total_loops_per_trial and delay_timings_trial_count are " \
-                  "defined required, but exclusive of each other"
+        if (
+            manual_total_loops_per_trial
+            and delay_timings_trial_count
+            or not manual_total_loops_per_trial
+            and not delay_timings_trial_count
+        ):
+            msg = (
+                "manual_total_loops_per_trial and delay_timings_trial_count are "
+                "defined required, but exclusive of each other"
+            )
             raise ValueError(msg)
         return delay_timings_trial_count, manual_total_loops_per_trial
 
@@ -96,7 +102,9 @@ class LiveTrial(BaseTrial):
 
     @cached_property
     def total_loops_per_trial(self):
-        return self.manual_total_loops_per_trial or np.sum(self.delay_timings_trial_count)
+        return self.manual_total_loops_per_trial or np.sum(
+            self.delay_timings_trial_count
+        )
 
     def generate_zmq_context(self, socket_address: str = "tcp://*:5555"):
         self._zmq_context = zmq.asyncio.Context()
