@@ -25,15 +25,16 @@ class DeepLabCutReader(BaseReader):
     """
     Class that stores information about a given experiment conducted with DeepLabCut
     """
+    midpoint_groups: Optional[Iterable] = None
+    min_likelihood: float = 0.80
+    x_crop_start: float = 0.0
+    y_crop_start: float = 0.0
+    invert_y: bool = False
 
     def __init__(
         self,
         *args,
-        midpoint_groups: Union[Iterable, None] = None,
-        min_likelihood: float = 0.80,
-        x_crop_start: float = 0.0,
-        y_crop_start: float = 0.0,
-        invert_y: bool = False,
+
         **kwargs,
     ):
         """

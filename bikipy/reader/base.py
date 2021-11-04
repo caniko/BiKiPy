@@ -5,85 +5,62 @@ from typing import Any, Callable, Generator, Iterable, Optional, Sequence
 
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath, BaseModel, Field, Extra
+from pydantic import BaseModel, Field, Extra
 
 from bikipy.utils.video import get_video_data
 
 
 class BaseReader(BaseModel):
     df: pd.DataFrame = Field(description="Kinematic data")
+    region_of_interest_vs_boolean_index: Optional[dict] = None
     future_scaling: bool = Field(None, description="Scales the coordinates with respect to their min and max. True requires x_max and y_max")
     pixel_resolution: Optional[Sequence[int]] = Field(None, description="The resolution of the videos that are being analyzed")
     fps: Optional[float] = None
-    video_path: Optional[DirectoryPath] = None
-    data_path: Optional[DirectoryPath] = None
     label: Optional[str] = None
 
     class Config:
+        frozen = True
         extra = Extra.allow
         keep_untouched = (cached_property,)
-
-    def __init__(self, **data: Any):
-        super().__init__(**data)
-
-        self._region_of_interest_vs_boolean_index = None
-        self._valid_point_indices = None
-        self._valid_tails = None
-        self._valid_slices = None
-        self._validity_ratio = None
 
     @classmethod
     def with_video_path(cls, video_path, **data):
         _frame, x_res, y_res, fps = get_video_data(video_path)
         return cls(pixel_resolution=(x_res, y_res), fps=fps, **data)
 
-    @property
-    def region_of_interest_vs_boolean_index(self):
-        return self._region_of_interest_vs_boolean_index
-
-    @region_of_interest_vs_boolean_index.setter
-    def region_of_interest_vs_boolean_index(self, value: dict):
-        self._region_of_interest_vs_boolean_index = dict(value)
-
-        self._valid_point_indices = {
+    @cached_property
+    def valid_point_indices(self):
+        return {
             roi: np.where(self.region_of_interest_vs_boolean_index[roi])[0]
             for roi in self.regions_of_interest
         }
 
-        self._valid_tails = {
+    @cached_property
+    def valid_tails(self):
+        return {
             item: (
-                self._valid_point_indices[item][0],
-                self._valid_point_indices[item][-1],
+                self.valid_point_indices[item][0],
+                self.valid_point_indices[item][-1],
             )
             for item in self.items
         }
 
-        self._valid_slices = {
+    @cached_property
+    def valid_slices(self):
+        return {
             item: slice(
-                self._valid_point_indices[item][0], self._valid_point_indices[item][-1]
+                self.valid_point_indices[item][0], self.valid_point_indices[item][-1]
             )
             for item in self.items
         }
 
-        self._validity_ratio = {
+    @cached_property
+    def validity_ratio(self):
+        return {
             roi: np.sum(self.region_of_interest_vs_boolean_index[roi])
             / self.df[(roi, "x")].size
             for roi in self.regions_of_interest
         }
-
-    @property
-    def valid_slices(self):
-        if not self._valid_slices:
-            msg = "region_of_interest_vs_boolean_index has to be defined for the definition of valid_slices"
-            raise AttributeError(msg)
-        return self._valid_slices
-
-    @property
-    def validity_ratio(self):
-        if not self._validity_ratio:
-            msg = "region_of_interest_vs_boolean_index has to be defined for the definition of validity_ratio"
-            raise AttributeError(msg)
-        return self._validity_ratio
 
     @property
     def items(self) -> tuple:
@@ -101,34 +78,12 @@ class BaseReader(BaseModel):
     @lru_cache
     def _find_longest_tails(self, items, as_slice: bool = True):
         left_valid_tails, right_valid_tails = np.array(
-            [self._valid_tails[item] for item in items]
+            [self.valid_tails[item] for item in items]
         ).T
 
         result = (left_valid_tails.max(), right_valid_tails.min())
 
         return slice(*result) if as_slice else result
-
-    @classmethod
-    def from_parquet(cls, data_path: Any, label: Any = None, **kwargs):
-        """
-        Initialize class using data from a parquet file
-
-        Note: You should assign a value to object.label by including it as a kwarg
-
-        :param data_path: The path to the parquet file that shall be analysed
-        :param label: Label for the data
-        :param kwargs: Keyword arguments for the class init-method
-        :type data_path: Any
-        :type label: str
-        :return: BaseReader instance
-        """
-
-        return cls(
-            pd.read_parquet(data_path),
-            data_path=data_path,
-            label=label,
-            **kwargs,
-        )
 
     @classmethod
     def init_many_mapper(
