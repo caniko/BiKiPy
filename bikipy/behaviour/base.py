@@ -23,7 +23,7 @@ from bikipy.utils.video import get_video_data
 logger = getLogger(__name__)
 
 
-LABEL_VS_COORDINATE_DATA_FORMAT = {
+LABEL_VS_DATA_READER = {
     "deeplabcut": DeepLabCutReader
 }
 
@@ -73,7 +73,7 @@ class Behaviour(BikipyBase, ABC):
 
 
 class BaseExperiment(Behaviour, ABC):
-    trials: list
+    readers: list
     point_label_for_motion_features: Optional[str] = None
     inspection_figure_save: Union[bool, DirectoryPath] = False
 
@@ -100,7 +100,7 @@ class BaseExperiment(Behaviour, ABC):
         coordinate_data_format: Literal["deeplabcut"] = "deeplabcut",
     ):
         try:
-            formatter = LABEL_VS_COORDINATE_DATA_FORMAT[coordinate_data_format]
+            reader = LABEL_VS_DATA_READER[coordinate_data_format]
         except KeyError as e:
             msg = f"{coordinate_data_format} as a format for data ingestion has " \
                   f"no implementation"
@@ -110,7 +110,7 @@ class BaseExperiment(Behaviour, ABC):
                 cls._deeplabcut_trial_id_finder.findall(Path(data_path).stem)[0]
             )
             trials = [
-                formatter(df_path=data_path, int_label=trial_id, **data_import_kwargs)
+                reader(df_path=data_path, int_label=trial_id, **data_import_kwargs)
                 for data_path in coordinate_data_paths
             ]
 

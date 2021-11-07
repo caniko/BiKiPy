@@ -2,7 +2,7 @@ import sys
 from abc import ABC
 from concurrent.futures import ProcessPoolExecutor
 from functools import lru_cache, partial, cached_property
-from typing import Any, Callable, Generator, Iterable, Optional
+from typing import Any, Callable, Generator, Iterable, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -42,7 +42,7 @@ class BaseReader(BaseModel, ABC):
             "the bottom-left"
         ),
     )
-    label: Optional[str] = None
+    int_label: Optional[int] = None
 
     class Config:
         frozen = True
