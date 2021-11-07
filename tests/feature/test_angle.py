@@ -15,7 +15,7 @@ HDF_PATH = Path(__file__).parent.parent.resolve() / "test_data/data_for_angle.h5
 def test_compute_angles_from_vectors():
     test_data = DeepLabCutReader.from_hdf(
         HDF_PATH,
-        pixel_resolution=(1280, 720),
+        recording_resolution=(1280, 720),
         midpoint_groups=[("left_ear", "right_ear")],
         future_scaling=False,
         min_likelihood=0.95,

@@ -109,10 +109,8 @@ for round_idx in range(2):
             # inspection_figure_save=RESULT_DIR / "inspect",
             data_import_kwargs={
                 "init_from": "parquet",
-                "midpoint_groups": (
-                    ("left_ear", "right_ear"),
-                    ("mid-left_ear-right_ear", "tail"),
-                ),
+                "midpoint_groups": (("left_ear", "right_ear"),),
+                "recursive_midpoint_groups": (("mid-left_ear-right_ear", "tail"),),
             },
             timestamp=date,
         )

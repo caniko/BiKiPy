@@ -1,13 +1,17 @@
 import collections.abc as abc
-import glob
 import os
+from functools import cached_property
 from pathlib import Path
-from typing import Any, Callable, Generator, Iterable, Optional, Sequence, Union
+from typing import Any, Callable, Generator, Optional, Sequence
 
 import numpy as np
 import pandas as pd
+from pydantic import Field
 
-from bikipy.feature.midpoint import compute_from_dlc_df
+from bikipy.feature.midpoint import (
+    midpoint_deeplabcut_df_computation,
+    recursive_midpoint,
+)
 from bikipy.reader.base import BaseReader
 
 DEEPLABCUT_DF_INIT_KWARGS = {
@@ -25,183 +29,113 @@ class DeepLabCutReader(BaseReader):
     """
     Class that stores information about a given experiment conducted with DeepLabCut
     """
-    midpoint_groups: Optional[Iterable] = None
-    min_likelihood: float = 0.80
-    x_crop_start: float = 0.0
-    y_crop_start: float = 0.0
-    invert_y: bool = False
+    min_likelihood: float = Field(
+        0.80,
+        description=(
+            "The minimum likelihood the coordinates of the respective row. "
+            "If below the values, the coords are discarded while being replaced "
+            "by numpy.NaN"
+        ),
+    )
 
-    def __init__(
-        self,
-        *args,
+    _df_needs_to_be_cleaned = True
 
-        **kwargs,
-    ):
-        """
-        Parameters
-        ----------
-        midpoint_groups : list-like, default None
-            list-like structure of labels that consist of groups that should have their
-        min_likelihood : float, default 0.90
-            The minimum likelihood the coordinates of the respective row.
-            If below the values, the coords are discarded while being replaced
-            by numpy.NaN
-        invert_y : bool, default False
-            Bool if True will invert the y-axis. Useful when the user wants to work in
-            traditional Cartesian coordinate system where the origin is on the bottom-left
-        """
-
-        super().__init__(*args, **kwargs)
-
-        self.min_likelihood = float(min_likelihood)
-
-        self.x_crop_start = float(x_crop_start)
-        if self.x_crop_start:
-            for roi in self.regions_of_interest:
-                self.df.loc[:, (roi, "x")] = (
-                    self.df.loc[:, (roi, "x")] + self.x_crop_start
+    @cached_property
+    def summary_frame(self):
+        result = self.df.copy()
+        if self.x_axis_crop_end_point:
+            for roi in self.tracked_point_labels:
+                result.loc[:, (roi, "x")] = (
+                    result.loc[:, (roi, "x")] + self.x_axis_crop_end_point
                 )
 
-        self.y_crop_start = float(y_crop_start)
-        self.invert_y = invert_y
+        if self.y_add:
+            for roi in self.tracked_point_labels:
+                result.loc[:, (roi, "y")] = result.loc[:, (roi, "y")] + self.y_add
 
-        if self.y_crop_start or self.invert_y:
-            if self.invert_y and self.y_crop_start:
-                y_add = self.y_crop_start - self.res_vertical
-            elif self.invert_y:
-                y_add = -self.res_vertical
-            elif self.y_crop_start:
-                y_add = self.y_crop_start
-
-            for roi in self.regions_of_interest:
-                self.df.loc[:, (roi, "y")] = self.df.loc[:, (roi, "y")] + y_add
-
-        if midpoint_groups:
-            if isinstance(midpoint_groups, dict):
-                midpoint_labels = tuple(midpoint_groups.keys())
-                midpoint_groups = tuple(midpoint_groups.values())
-            else:
-                midpoint_labels = None
-
-            recursive_midpoint_groups, normal_groups = [], []
-            for i, group in enumerate(midpoint_groups):
-                if any("mid" in element for element in group):
-                    recursive_midpoint_groups.append(group)
-                elif any(element in self.regions_of_interest for element in group):
-                    normal_groups.append(group)
+        if self.midpoint_groups:
+            midpoint_data, midpoint_based_midpoints = {}, {}
+            for name, group in self.midpoint_groups.items():
+                if all(component in self.tracked_point_labels for component in group):
+                    group_points = [
+                        self.get_tracking_data(component_name)
+                        for component_name in group
+                    ]
+                    midpoint_x, midpoint_y = recursive_midpoint(group_points).T
+                    midpoint_data[(name, "x")] = midpoint_x
+                    midpoint_data[(name, "y")] = midpoint_y
+                    midpoint_data[(name, "likelihood")] = self.reduce_likelihoods(group)
+                elif all(
+                    component in self.tracked_and_midpoint_labels for component in group
+                ):
+                    midpoint_based_midpoints[name] = group
                 else:
                     msg = (
-                        f"Index {i} in midpoint_groups:"
-                        f"The region of interest names must be referred to with "
-                        f"their names, and be string:\n"
-                        f"group: {group}\nregions_of_interest: {self.regions_of_interest}"
+                        f"Midpoint {name}, cannot be derived as its components are "
+                        f"not defined in the tracked dataset nor in midpoint_groups"
                     )
                     raise ValueError(msg)
 
-            midpoints = compute_from_dlc_df(
-                self.df, point_group_names_set=normal_groups
-            )
+            for name, group in midpoint_based_midpoints.items():
+                group_points = []
+                for component_name in group:
+                    try:
+                        group_points.append(self.get_tracking_data(component_name))
+                    except KeyError:
+                        group_points.append(
+                            np.array(
+                                (
+                                    midpoint_data[(component_name, "x")],
+                                    midpoint_data[(component_name, "y")],
+                                )
+                            ).T
+                        )
+                    midpoint_x, midpoint_y = recursive_midpoint(group_points).T
+                    midpoint_data[(name, "x")] = midpoint_x
+                    midpoint_data[(name, "y")] = midpoint_y
+                    midpoint_data[(name, "likelihood")] = self.reduce_likelihoods(group)
 
-            midpoint_dict = {}
-            for i, (key, data) in enumerate(midpoints.items()):
-                midpoint_name = midpoint_labels[i] if midpoint_labels else key
+            midpoint_df = pd.DataFrame.from_dict(midpoint_data)
+            result = pd.concat((self.raw_df, midpoint_df), axis=1)
 
-                (
-                    midpoint_dict[(midpoint_name, "x")],
-                    midpoint_dict[(midpoint_name, "y")],
-                ) = [
-                    np.hstack(component) for component in np.hsplit(data["midpoint"], 2)
-                ]
-                midpoint_dict[(midpoint_name, "likelihood")] = np.hstack(
-                    data["likelihood"]
-                )
+        return result
 
-            self.df = self.add_regions_of_interest_to_df(
-                master=self.df,
-                new_data=midpoint_dict,
-            )
+    @property
+    def df(self):
+        return self.summary_frame
 
-            if recursive_midpoint_groups:
-                midpoints = compute_from_dlc_df(
-                    self.df, point_group_names_set=recursive_midpoint_groups
-                )
-                midpoint_dict = {}
-                for i, (key, data) in enumerate(midpoints.items()):
-                    midpoint_name = midpoint_labels[i] if midpoint_labels else key
+    @property
+    def tracked_point_labels(self) -> tuple:
+        return tuple(self.raw_df.columns.levels[0])
 
-                    (
-                        midpoint_dict[(midpoint_name, "x")],
-                        midpoint_dict[(midpoint_name, "y")],
-                    ) = [
-                        np.hstack(component)
-                        for component in np.hsplit(data["midpoint"], 2)
-                    ]
-                    midpoint_dict[(midpoint_name, "likelihood")] = np.hstack(
-                        data["likelihood"]
-                    )
+    @cached_property
+    def tracked_and_midpoint_labels(self):
+        return tuple(*self.tracked_point_labels, *self.midpoint_groups.keys())
 
-                self.df = self.add_regions_of_interest_to_df(
-                    master=self.df,
-                    new_data=midpoint_dict,
-                )
-
-        self.region_of_interest_vs_boolean_index = {
+    @cached_property
+    def region_of_interest_vs_boolean_index(self):
+        return {
             roi: self.df[(roi, "likelihood")].values >= self.min_likelihood
-            for roi in self.regions_of_interest
+            for roi in self.tracked_point_labels
         }
 
     @property
     def frames(self):
         return self.df.shape[0]
 
-    @classmethod
-    def from_csv(cls, data_path: Any, label: Any = None, **kwargs):
-        """
-        Create a pd.DataFrame from a csv file in DeepLabCut (DLC) format.
+    @cached_property
+    def raw_df(self):
+        if not self._df_needs_to_be_cleaned:
+            return super().raw_df
 
-        Note: You should assign a value to object.label by including it as a kwarg
-
-        Returns
-        -------
-        __init__ call
-
-        :param data_path: The path to the csv file that shall be analysed; with or without ".csv" extension
-        :param label:
-        :param kwargs: Keyword arguments for the class init-method
-        :return:
-        """
-
-        return cls(
-            pd.read_csv(data_path, **DEEPLABCUT_DF_INIT_KWARGS),
-            data_path=data_path,
-            label=label,
-            **kwargs,
-        )
-
-    @classmethod
-    def from_hdf(
-        cls, data_path: Any, label: Any = None, drop_level: bool = True, **kwargs
-    ):
-        """
-        Initialize class using data from a hdf file
-
-        Note: You should assign a value to object.label by including it as a kwarg
-
-        :param data_path: The path to the hdf file that shall be analysed
-        :param label: Label for the data
-        :param drop_level: If True, remove a potentially redundant level in DataFrame
-        :param kwargs: Keyword arguments for the class init-method
-        :type data_path: Any
-        :type drop_level: bool
-        :type label: str
-        :return: DeepLabCutReader instance
-        """
-
-        df = pd.read_hdf(data_path, **DEEPLABCUT_DF_INIT_KWARGS)
-        if drop_level:
-            df = df.droplevel(0, axis=1)
-
-        return cls(df, data_path=data_path, label=label, **kwargs)
+        if self.df_path.suffix == ".csv":
+            return pd.read_csv(self.df_path, **DEEPLABCUT_DF_INIT_KWARGS)
+        elif self.df_path.suffix == ".h5":
+            return pd.read_hdf(self.df_path, **DEEPLABCUT_DF_INIT_KWARGS).droplevel(0, axis=1)
+        else:
+            # DeepLabCut doesn't support other formats natively, assuming the df data
+            # is clean
+            return super().raw_df
 
     @classmethod
     def init_many_map(
@@ -219,12 +153,6 @@ class DeepLabCutReader(BaseReader):
         :return: Objects instanced from the respective class with the provided data
         :rtype: tuple
         """
-        ext_to_method = {
-            "csv": cls.from_csv,
-            "parquet": cls.from_parquet,
-            "h5": cls.from_hdf,
-            "hdf": cls.from_hdf,
-        }
 
         return cls.init_many_mapper(
             ext_to_method[init_from.lower()],
@@ -284,12 +212,6 @@ class DeepLabCutReader(BaseReader):
                 for label, dlcDF_obj in zip(manual_labels, dlc_df_objs)
             }
 
-    @staticmethod
-    def add_regions_of_interest_to_df(
-        master: pd.DataFrame, new_data: dict
-    ) -> pd.DataFrame:
-        return master.join(pd.DataFrame.from_dict(new_data))
-
     def __getitem__(self, query):
         def isolate_coordinates(item):
             # remove likelihood column
@@ -310,20 +232,34 @@ class DeepLabCutReader(BaseReader):
         else:
             raise NotImplementedError(f"{type(query)} has no implementation")
 
+    def reduce_likelihoods(self, tracked_point_labels: Sequence) -> np.ndarray:
+        """
+        Reduce likelihood values by multiplication; R^n to scalar
+
+        :param tracked_point_labels: Regions of interest of which will have its
+        likelihood values reduced
+        :return: np.ndarray with the reduced likelihood values
+        """
+        return np.multiply.reduce(
+            [
+                self.raw_df.loc[:, [(point, "likelihood")]].values
+                for point in tracked_point_labels
+            ]
+        )
+
+    def get_tracking_data(self, label: str):
+        """Returns an np.ndarray with the coordinates of label"""
+        return self.raw_df.loc[:, [(label, "x"), (label, "y")]].values
+
 
 def convert_hdf_to_parquet(data_paths, delete_hdf: bool = False):
     """
     Convert deeplabcut hdf files to parquet format, by replacing the filename suffix
     with parquet. Thereby, keeping the original path.
 
-    Parameters
-    ----------
-    data_paths
-    delete_hdf
-
-    Returns
-    -------
-
+    :param data_paths:
+    :param delete_hdf:
+    :return:
     """
     data_path = Path(data_paths)
     parquet_path = data_path.with_suffix(".parquet")

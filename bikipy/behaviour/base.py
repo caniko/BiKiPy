@@ -23,6 +23,11 @@ from bikipy.utils.video import get_video_data
 logger = getLogger(__name__)
 
 
+LABEL_VS_COORDINATE_DATA_FORMAT = {
+    "deeplabcut": DeepLabCutReader
+}
+
+
 class Behaviour(BikipyBase, ABC):
     fps: Union[float, int, None] = None
     recording_resolution: Optional[NDArray[Literal["np.int16"]]] = None
@@ -92,27 +97,22 @@ class BaseExperiment(Behaviour, ABC):
         coordinate_data_paths: Sequence,
         trial_id_range_vs_common_data: Optional[RangeDict] = None,
         data_import_kwargs: Optional[dict] = None,
-        coordinate_data_format: Literal["deeplabcut"] = "deeplabcut"
+        coordinate_data_format: Literal["deeplabcut"] = "deeplabcut",
     ):
+        try:
+            formatter = LABEL_VS_COORDINATE_DATA_FORMAT[coordinate_data_format]
+        except KeyError as e:
+            msg = f"{coordinate_data_format} as a format for data ingestion has " \
+                  f"no implementation"
+            raise NotImplemented(msg) from e
         for data_path in coordinate_data_paths:
-            trial_id = int(cls._deeplabcut_trial_id_finder.findall(Path(data_path).stem)[0])
-        if coordinate_data_format == "deeplabcut":
-            return {
-                trial_id: dlc_obj
-                for trial_id, dlc_obj in zip(
-                    trial_id_vs_data.keys(),
-                    DeepLabCutReader.init_many_map(
-                        data_path=(
-                            data["coordinate_data_path"]
-                            for data in trial_id_vs_data.values()
-                        ),
-                        labels=trial_id_vs_data.keys(),
-                        **data_import_kwargs,
-                    ),
-                )
-            }
-        msg = f"{self.coordinate_data_format} as a format for data ingestion has no implementation"
-        raise NotImplemented(msg)
+            trial_id = int(
+                cls._deeplabcut_trial_id_finder.findall(Path(data_path).stem)[0]
+            )
+            trials = [
+                formatter(df_path=data_path, int_label=trial_id, **data_import_kwargs)
+                for data_path in coordinate_data_paths
+            ]
 
     def generic_trial_kwargs(self, trial_id: int):
         trial_meta = self[trial_id]

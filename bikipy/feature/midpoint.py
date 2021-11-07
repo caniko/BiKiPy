@@ -60,9 +60,11 @@ def recursive_midpoint(point_sets: Sequence[np.ndarray]) -> np.ndarray:
     :rtype: np.ndarray
     """
     midpoint = compute_midpoint(point_sets[0], point_sets[1])
-    if len(midpoint) >= 2:
+    try:
         for point_set in point_sets[2:]:
             midpoint = compute_midpoint(midpoint, point_set)
+    except IndexError:
+        pass
 
     return midpoint
 
@@ -95,9 +97,9 @@ def triangulate(point_1: Sequence, point_2: Sequence, point_3: Sequence) -> np.n
     return recursive_midpoint((point_1, point_2, point_3))
 
 
-def compute_from_dlc_df(df, point_group_names_set, min_likelihood: float = None):
-    from bikipy.utils.deeplabcut import get_region_of_interest_data, reduce_likelihoods
-
+def midpoint_deeplabcut_df_computation(
+    df, point_group_names_set, min_likelihood: float = None
+):
     result = {}
     for group_subset_names in point_group_names_set:
         likelihood = reduce_likelihoods(df, group_subset_names)

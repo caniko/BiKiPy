@@ -7,7 +7,7 @@ from PIL import Image
 lines = {1: None, 2: None}
 
 
-def parallelogram_input(img: Any, invert_y: bool = False):
+def parallelogram_input(img: Any, reverse_y_axis: bool = False):
     def generate_parallelogram(line_seg_a, line_seg_b):
         # Sort based on magnitude
         a_argsorted_norms = np.argsort(np.linalg.norm(line_seg_a, axis=1))
@@ -117,7 +117,7 @@ def parallelogram_input(img: Any, invert_y: bool = False):
 
     plt.show()
 
-    if invert_y:
+    if reverse_y_axis:
         for key in lines:
             for i in range(2):
                 lines[key][i][1] = img.size[1] - lines[key][i][1]

@@ -9,7 +9,6 @@ from fletcher import FletcherContinuousArray
 from matplotlib import pyplot as plt
 from pydantic import Field
 
-from bikipy.behaviour.base import BaseExperiment
 from bikipy.behaviour.nort.trial import NortHabituationTrial
 from bikipy.behaviour.square import SquareEnclosedExperiment
 from bikipy.utils.store import sort_dict_by_key_value
@@ -21,10 +20,6 @@ class NortExperiment(SquareEnclosedExperiment):
     """
     Class for combining several NORT trials under one class for joint analysis
     """
-
-    @property
-    def instanced_trial_data(self):
-        pass
 
     nose_label: str = Field(description="Label of the nose in the df")
     center_eye_label: str = Field(description="Label of the eye center in the df")
@@ -119,6 +114,10 @@ class NortExperiment(SquareEnclosedExperiment):
                     self.animal_vs_trials[trial_meta["animal_id"]].append(exp)
                 else:
                     self.animal_vs_trials[trial_meta["animal_id"]] = [exp]
+
+    @property
+    def instanced_trial_data(self):
+        pass
 
     def generic_trial_kwargs(self, trial_id: int):
         return {

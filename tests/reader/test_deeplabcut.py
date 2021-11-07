@@ -24,7 +24,7 @@ def test_deep_lab_cut_reader_from_video():
     assert partial_dlc(csv_path=CSV_PATH)
     assert partial_dlc(hdf_path=HDF_PATH)
 
-    assert partial_dlc(hdf_path=HDF_PATH).pixel_resolution == PIXEL_RESOLUTION
+    assert partial_dlc(hdf_path=HDF_PATH).recording_resolution == PIXEL_RESOLUTION
 
 
 def test_deep_lab_cut_reader_from_csv():

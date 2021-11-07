@@ -76,8 +76,8 @@ for i, subdir in enumerate(os.listdir(str(DATA_DIR)), start=1):
                 int_label=i,
                 data_import_kwargs={
                     "init_from": "hdf",
-                    "x_crop_start": 95.0,
-                    "y_crop_start": 75.0,
+                    "x_axis_crop_end_point": 95.0,
+                    "y_axis_crop_end_point": 75.0,
                     "midpoint_groups": (
                         ("left_ear", "right_ear"),
                         ("mid-left_ear-right_ear", "base_tail"),
