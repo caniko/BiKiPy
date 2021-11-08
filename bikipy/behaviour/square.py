@@ -16,20 +16,33 @@ logger = getLogger(__name__)
 
 
 class SquareEnclosedExperiment(BaseExperiment, ABC):
-    center_metric_length: Optional[float] = None
-
     @cached_property
-    def base_frame_columns(self):
-        return super().base_frame_columns + [
-            *self._motion_2d_multi_indexer("Periphery"),
-            *self._motion_2d_multi_indexer("Center"),
-            *self._feature_2d_multi_indexer("Time_spent", ("Periphery", "Center")),
-            *self._feature_2d_multi_indexer("Entries", ("Periphery", "Center")),
-        ]
-
-    @cached_property
-    def summary_frame(self):
-        df = self._bikipy_experiment_dataframe(self.instanced_trial_data.periphery)
+    def motion_summary_frame(self):
+        periphery_center = ("Periphery", "Center")
+        return pd.concat(
+            (
+                super().motion_summary_frame,
+                pd.DataFrame(
+                    (
+                        trial.center_motion.to_list
+                        + trial.periphery_motion.to_list
+                        + trial.seconds_on_periphery
+                        + trial.seconds_on_center
+                        + trial.periphery_entries
+                        + trial.center_entries
+                        for trial in self.trial_objects
+                    ),
+                    columns=(
+                        *self._motion_2d_multi_indexer("Periphery"),
+                        *self._motion_2d_multi_indexer("Center"),
+                        *self._feature_2d_multi_indexer("Time_spent", periphery_center),
+                        *self._feature_2d_multi_indexer("Entries", periphery_center),
+                    ),
+                    index=self._frame_index,
+                )
+            ),
+            axis=1
+        )
 
 
 class SquareEnclosedTrial(BaseTrial):
@@ -190,6 +203,18 @@ class SquareEnclosedTrial(BaseTrial):
         return (
             np.sum(self.frozen_boolean_index & self.periphery_boolean_index[1:])
             / self.fps
+        )
+
+    # Quadrant functions
+
+    @cached_property
+    def square_center(self):
+        return self.recording_resolution / 2.0
+
+    @cached_property
+    def quadrent_upper_left(self):
+        return (
+
         )
 
     def plot(self, ax: Any = None):

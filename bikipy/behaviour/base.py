@@ -200,29 +200,17 @@ class BaseExperiment(Behaviour, ABC):
     def _feature_2d_multi_indexer(feature: str, category):
         return tuple([(feature, category) for category in category])
 
-    @cached_property
-    def base_frame_columns(self):
-        return self._motion_2d_multi_indexer("All")
-
     @property
     def _frame_index(self):
         return pd.Series(self._trial_id_iterable, name="Test ID", dtype=np.int16)
 
-    @property
-    def _bikipy_experiment_dataframe(self):
-        return partial(
-            pd.DataFrame, columns=self.base_frame_columns, index=self.frame_index
-        )
-
     @cached_property
     def motion_summary_frame(self):
-        return self._bikipy_experiment_dataframe(
+        return pd.DataFrame(
             (trial.motion.to_list for trial in self.trial_objects),
+            columns=self._motion_2d_multi_indexer("All"),
+            index=self._frame_index,
         )
-
-    @property
-    def df(self):
-        return self.motion_summary_frame
 
 
 class BaseTrial(Behaviour, ABC):
