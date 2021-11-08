@@ -450,16 +450,16 @@ class Perimeter(BasePerimeter):
             )
 
             if presence[confined_coord_booleans_index].any():
-                overlap_locations[border.semantic_label] = np.flatnonzero(
+                overlap_locations[border.label] = np.flatnonzero(
                     presence[confined_coord_booleans_index]
                 )
-                presence[overlap_locations[border.semantic_label]] = 0
+                presence[overlap_locations[border.label]] = 0
                 logger.info(
-                    f"BasePerimeter {border.semantic_label} has coordinate overlap with "
-                    f"other border_corners, {overlap_locations[border.semantic_label].size}"
+                    f"BasePerimeter {border.label} has coordinate overlap with "
+                    f"other border_corners, {overlap_locations[border.label].size}"
                 )
 
-            presence[confined_coord_booleans_index] = border.int_label
+            presence[confined_coord_booleans_index] = border.int_id
 
         valid_indices = np.nonzero(presence)
         if clean_outliers:
@@ -550,7 +550,7 @@ class Perimeter(BasePerimeter):
                 (corner_a[0], corner_b[0]),
                 (corner_a[1], corner_b[1]),
                 "o-",
-                label=self.semantic_label,
+                label=self.label,
                 color=color,
             )
             ax.scatter(*self.edge_midpoints[index])
@@ -579,10 +579,10 @@ class Perimeter(BasePerimeter):
         return ax
 
     def _add_label_to_str(self, in_string):
-        if self.semantic_label:
-            return f"{self.semantic_label} {in_string}"
-        if self.int_label:
-            return f"{self.int_label} {in_string}"
+        if self.label:
+            return f"{self.label} {in_string}"
+        if self.int_id:
+            return f"{self.int_id} {in_string}"
         return in_string
 
     @classmethod
@@ -677,19 +677,17 @@ class Perimeter(BasePerimeter):
             get_semantic_label(annotation["category_id"]): cls.init_polygon(
                 _coco_polygon_annotation(annotation["segmentation"][0]),
                 inspect_image_path=get_inspect_img_path(annotation["image_id"]),
-                semantic_label=coco["categories"][annotation["category_id"] - 1][
-                    "name"
-                ],
+                label=coco["categories"][annotation["category_id"] - 1]["name"],
             )
             for annotation in coco["annotations"]
         }
 
         if reference_point_coco_path:
             semantic_label_vs_polygon = {
-                semantic_label: polygon.change_reference_with_coco(
+                label: polygon.change_reference_with_coco(
                     reference_point_coco_path, image_root=image_root
                 )
-                for semantic_label, polygon in semantic_label_vs_polygon.items()
+                for label, polygon in semantic_label_vs_polygon.items()
             }
         if single_obj_return:
             assert (
@@ -717,7 +715,7 @@ class PerimeterSet(BasePerimeter):
     @lru_cache
     def __getitem__(self, item: Union[str, int]):
         for perimeter in self._all_perimeters:
-            if perimeter.semantic_label == item or perimeter.int_label == item:
+            if perimeter.label == item or perimeter.int_id == item:
                 return perimeter
         raise KeyError(f"Item was not found, {item}")
 

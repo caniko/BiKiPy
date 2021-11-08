@@ -27,7 +27,7 @@ first_annotation = generate_radial_arm_maze_arm_perimeters(
     center_coco_path=ANNOTATION_PATH / "center.json",
     reference_point_coco_path=ANNOTATION_PATH / "reference.csv",
     inspect_image=IMAGE_PATH / "a_p1_1_before_1_phd.png",
-    semantic_label="a_p1_1",
+    label="a_p1_1",
     # inspect=True,
 )
 
@@ -72,8 +72,8 @@ for i, subdir in enumerate(os.listdir(str(DATA_DIR)), start=1):
                 trial_id_range_vs_perimeter_set=trial_id_range_vs_area_set,
                 point_label_for_motion_features="mid-mid-left_ear-right_ear-base_tail",
                 center_triangle_meter_width=0.08,
-                semantic_label=subdir,
-                int_label=i,
+                label=subdir,
+                int_id=i,
                 data_import_kwargs={
                     "init_from": "hdf",
                     "x_axis_crop_end_point": 95.0,
@@ -92,6 +92,6 @@ for i, subdir in enumerate(os.listdir(str(DATA_DIR)), start=1):
 
 with pd.ExcelWriter(RESULT_PATH / "phd.ods") as writer:
     for experiment in experiment_data:
-        print(f"Analysing {experiment.semantic_label}")
+        print(f"Analysing {experiment.label}")
         df = experiment.export_to_dataframe()
-        df.to_excel(writer, sheet_name=experiment.semantic_label)
+        df.to_excel(writer, sheet_name=experiment.label)

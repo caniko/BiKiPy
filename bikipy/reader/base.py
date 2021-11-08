@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field, Extra, FilePath, validator
 
+from bikipy._base_class import BikipyBase
 from bikipy.utils.video import get_video_data
 
 
@@ -18,12 +19,14 @@ FILE_EXTENSION_VS_PANDAS_READER = {
 }
 
 
-class BaseReader(BaseModel, ABC):
-    df_path: FilePath = Field(description="Path to kinematic data, that will be "
-                                          "converted to pd.DataFrame")
+class BaseReader(BikipyBase, ABC):
+    df_path: FilePath = Field(
+        description="Path to kinematic data, that will be " "converted to pd.DataFrame"
+    )
     future_scaling: bool = Field(
         None,
-        description="Scales the coordinates with respect to their min and max. True requires x_max and y_max",
+        description="Scales the coordinates with respect to their min and max. "
+        "True requires x_max and y_max",
     )
     video_path: Optional[FilePath] = None
     horizontal_resolution: Optional[int] = None
@@ -42,16 +45,18 @@ class BaseReader(BaseModel, ABC):
             "the bottom-left"
         ),
     )
-    int_label: Optional[int] = None
-
-    class Config:
-        frozen = True
-        extra = Extra.allow
-        keep_untouched = (cached_property,)
 
     @cached_property
     def raw_df(self):
         return FILE_EXTENSION_VS_PANDAS_READER[self.df_path.suffix](self.df_path)
+
+    @cached_property
+    def summary_frame(self):
+        raise NotImplementedError
+
+    @property
+    def df(self):
+        return self.summary_frame
 
     @staticmethod
     def get_info_from_video_path(video_path):
@@ -125,7 +130,7 @@ class BaseReader(BaseModel, ABC):
     def validity_ratio(self):
         return {
             roi: np.sum(self.region_of_interest_vs_boolean_index[roi])
-            / self.raw_df[(roi, "x")].size
+            / len(self.raw_df)
             for roi in self.tracked_point_labels
         }
 

@@ -32,7 +32,7 @@ trial_id_vs_areas["before"][11] = {
                 [120.93677697210052, 144.58991294077043],
             ],
             inspect_image=inspect_image,
-            semantic_label="A",
+            label="A",
         ),
         ParallelogramPerimeter(
             base=[
@@ -44,7 +44,7 @@ trial_id_vs_areas["before"][11] = {
                 [440.33620448840816, 143.39719096049328],
             ],
             inspect_image=inspect_image,
-            semantic_label="B",
+            label="B",
         ),
         ParallelogramPerimeter(
             base=[
@@ -56,7 +56,7 @@ trial_id_vs_areas["before"][11] = {
                 [304.8352836048429, 388.97163068789314],
             ],
             inspect_image=inspect_image,
-            semantic_label="C",
+            label="C",
         ),
     ],
     "center": TriangularPerimeter(
@@ -64,7 +64,7 @@ trial_id_vs_areas["before"][11] = {
         base_b=[304.4131513647642, 223.99627791563267],
         apex=[281.38585607940445, 182.70595533498755],
         inspect_image=inspect_image,
-        semantic_label="X",
+        label="X",
     ),
 }
 
@@ -82,7 +82,7 @@ trial_id_vs_areas["before"][45] = {
                 [122.04823616627507, 138.41256085994735],
             ],
             inspect_image=inspect_image,
-            semantic_label="A",
+            label="A",
         ),
         ParallelogramPerimeter(
             base=[
@@ -94,7 +94,7 @@ trial_id_vs_areas["before"][45] = {
                 [443.4441598853966, 141.83166643142738],
             ],
             inspect_image=inspect_image,
-            semantic_label="B",
+            label="B",
         ),
         ParallelogramPerimeter(
             base=[
@@ -106,7 +106,7 @@ trial_id_vs_areas["before"][45] = {
                 [302.1211295975559, 383.4484601493485],
             ],
             inspect_image=inspect_image,
-            semantic_label="C",
+            label="C",
         ),
     ],
     "center": TriangularPerimeter(
@@ -114,7 +114,7 @@ trial_id_vs_areas["before"][45] = {
         base_b=[304.6483163295394, 220.05882526390275],
         apex=[281.24795069882646, 179.2968980362092],
         inspect_image=inspect_image,
-        semantic_label="X",
+        label="X",
     ),
 }
 
@@ -132,7 +132,7 @@ trial_id_vs_areas["before"][63] = {
                 [122.99790424732295, 141.5064413357117],
             ],
             inspect_image=inspect_image,
-            semantic_label="A",
+            label="A",
         ),
         ParallelogramPerimeter(
             base=[
@@ -144,7 +144,7 @@ trial_id_vs_areas["before"][63] = {
                 [442.8920384627408, 141.50103619982804],
             ],
             inspect_image=inspect_image,
-            semantic_label="B",
+            label="B",
         ),
         ParallelogramPerimeter(
             base=[
@@ -156,7 +156,7 @@ trial_id_vs_areas["before"][63] = {
                 [306.3691248039164, 387.2035957524236],
             ],
             inspect_image=inspect_image,
-            semantic_label="C",
+            label="C",
         ),
     ],
     "center": TriangularPerimeter(
@@ -164,7 +164,7 @@ trial_id_vs_areas["before"][63] = {
         base_b=[306.4937400784737, 223.15255937939912],
         apex=[282.72400934495465, 179.4469254500254],
         inspect_image=inspect_image,
-        semantic_label="X",
+        label="X",
     ),
 }
 
@@ -182,7 +182,7 @@ trial_id_vs_areas["after"][94] = {
                 [126.13880030940723, 143.04208964487884],
             ],
             inspect_image=inspect_image,
-            semantic_label="A",
+            label="A",
         ),
         ParallelogramPerimeter(
             base=[
@@ -194,7 +194,7 @@ trial_id_vs_areas["after"][94] = {
                 [444.34088857929504, 143.61042926184166],
             ],
             inspect_image=inspect_image,
-            semantic_label="B",
+            label="B",
         ),
         ParallelogramPerimeter(
             base=[
@@ -206,7 +206,7 @@ trial_id_vs_areas["after"][94] = {
                 [305.1272743365672, 383.7543167866629],
             ],
             inspect_image=inspect_image,
-            semantic_label="C",
+            label="C",
         ),
     ],
     "center": TriangularPerimeter(
@@ -214,7 +214,7 @@ trial_id_vs_areas["after"][94] = {
         base_b=[306.51298701298697, 223.39610389610385],
         apex=[281.8376623376623, 179.24025974025966],
         inspect_image=inspect_image,
-        semantic_label="X",
+        label="X",
     ),
 }
 
@@ -232,7 +232,7 @@ trial_id_vs_areas["after"][140] = {
                 [126.83522861652372, 140.17127078439125],
             ],
             inspect_image=inspect_image,
-            semantic_label="A",
+            label="A",
         ),
         ParallelogramPerimeter(
             base=[
@@ -244,7 +244,7 @@ trial_id_vs_areas["after"][140] = {
                 [443.48940453089836, 141.22077658692382],
             ],
             inspect_image=inspect_image,
-            semantic_label="B",
+            label="B",
         ),
         ParallelogramPerimeter(
             base=[
@@ -256,7 +256,7 @@ trial_id_vs_areas["after"][140] = {
                 [304.96712211845903, 383.5240864658306],
             ],
             inspect_image=inspect_image,
-            semantic_label="C",
+            label="C",
         ),
     ],
     "center": TriangularPerimeter(
@@ -264,7 +264,7 @@ trial_id_vs_areas["after"][140] = {
         base_b=[307.34229390681, 220.0917132616487],
         apex=[283.1186379928315, 178.25085304659495],
         inspect_image=inspect_image,
-        semantic_label="X",
+        label="X",
     ),
 }
 

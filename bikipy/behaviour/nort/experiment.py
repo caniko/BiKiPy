@@ -167,19 +167,19 @@ class NortExperiment(SquareEnclosedExperiment):
                 np.nan for _i in range(len(object_columns + novelty_columns))
             ]
             for nort_habituation in self.habituation_trials:
-                label_vs_data[nort_habituation.int_label] = (
+                label_vs_data[nort_habituation.int_id] = (
                     nort_habituation.info + habituation_filler
                 )
 
         if self.training_object_trials:
             training_filler = [np.nan for _i in range(len(novelty_columns))]
             for training_trial in self.training_object_trials:
-                label_vs_data[training_trial.int_label] = (
+                label_vs_data[training_trial.int_id] = (
                     training_trial.info + training_filler
                 )
 
         for novelty_trial in self.novelty_object_trials:
-            label_vs_data[novelty_trial.int_label] = novelty_trial.info
+            label_vs_data[novelty_trial.int_id] = novelty_trial.info
 
         data_dict = sort_dict_by_key_value(label_vs_data)
         df = pd.DataFrame(

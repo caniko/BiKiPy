@@ -63,7 +63,7 @@ class YMazeTrial(BaseTrial):
             self.alternation_sequence, round(self.fps / 3.0)
         )
         self.reduced_without_center = exclude_value_from_sequence(
-            self.reduced_alternation_sequence, self.center.int_label
+            self.reduced_alternation_sequence, self.center.int_id
         )
 
         self.sum_of_alternations = len(self.reduced_without_center) - 2
@@ -72,11 +72,11 @@ class YMazeTrial(BaseTrial):
             triplet for triplet in it.permutations(self.arm_int_labels)
         ]
         self.arm_semantic_triplets = [
-            triplet for triplet in it.permutations(self.arm_semantic_labels)
+            triplet for triplet in it.permutations(self.arm_label)
         ]
 
         self._arm_triplet_dict = {arm: 0 for arm in self.arm_int_triplets}
-        self._arm_center_int_label_to_seconds = {
+        self._arm_center_int_id_to_seconds = {
             area: 0 for area in self.arm_center_int_labels
         }
 
@@ -86,7 +86,7 @@ class YMazeTrial(BaseTrial):
 
     @cached_property
     def arm_int_labels(self):
-        return [arm.int_label for arm in self.arms]
+        return [arm.int_id for arm in self.arms]
 
     @cached_property
     def arm_int_labels_array(self):
@@ -94,23 +94,21 @@ class YMazeTrial(BaseTrial):
 
     @cached_property
     def arm_center_int_labels(self):
-        return self.arm_int_labels + [self.center.int_label]
+        return self.arm_int_labels + [self.center.int_id]
 
     @cached_property
-    def arm_semantic_labels(self):
-        return [arm.semantic_label for arm in self.arms]
+    def arm_label(self):
+        return [arm.label for arm in self.arms]
 
     @cached_property
-    def arm_center_semantic_labels(self):
-        return self.arm_semantic_labels + [self.center.semantic_label]
+    def arm_center_label(self):
+        return self.arm_label + [self.center.label]
 
     @cached_property
-    def int_to_semantic_labels(self):
+    def int_to_label(self):
         return {
-            int_label: semantic_label
-            for int_label, semantic_label in zip(
-                self.arm_center_int_labels, self.arm_center_semantic_labels
-            )
+            int_id: label
+            for int_id, label in zip(self.arm_center_int_labels, self.arm_center_label)
         }
 
     @cached_property
@@ -123,7 +121,7 @@ class YMazeTrial(BaseTrial):
         dict, area vs time
         """
 
-        result = copy(self._arm_center_int_label_to_seconds)
+        result = copy(self._arm_center_int_id_to_seconds)
         for label, counts in unique_with_counts_zipped(self.alternation_sequence):
             assert label in result, f"{label} is not in {tuple(result.keys())})"
             result[label] = (counts / self.fps) if self.fps else counts
@@ -140,22 +138,22 @@ class YMazeTrial(BaseTrial):
         dict, arm label vs alternations to arm
         """
 
-        result = copy(self._arm_center_int_label_to_seconds)
+        result = copy(self._arm_center_int_id_to_seconds)
         for label, counts in unique_with_counts_zipped(
             self.reduced_alternation_sequence
         ):
             assert label in result
             result[label] = counts
 
-        if not result[self.center.int_label]:
-            result[self.center.int_label] = 0
+        if not result[self.center.int_id]:
+            result[self.center.int_id] = 0
 
-        if result[self.center.int_label] < (
+        if result[self.center.int_id] < (
             minimum_center_entries := ceil(self.sum_of_alternations / 2.0)
         ):
             logger.warning(
-                f"{self.center.int_label}: The number of alternations to the center, "
-                f"{result[self.center.int_label]} can't be less than the "
+                f"{self.center.int_id}: The number of alternations to the center, "
+                f"{result[self.center.int_id]} can't be less than the "
                 f"ceil of half of the total arm alternations, {minimum_center_entries}"
             )
 
@@ -181,9 +179,7 @@ class YMazeTrial(BaseTrial):
 
         result = {}
         for key, value in distribution.items():
-            semantic_key = "".join(
-                [self.int_to_semantic_labels[integer] for integer in key]
-            )
+            semantic_key = "".join([self.int_to_label[integer] for integer in key])
             result[semantic_key] = value
 
         return result

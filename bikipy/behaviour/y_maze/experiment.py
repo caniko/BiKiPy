@@ -36,8 +36,8 @@ class YMazeExperiment(BaseExperiment):
 
         for area_set in trial_id_range_vs_perimeter_set.values():
             for i, arm in enumerate(area_set["arm"], start=1):
-                arm.int_label = i
-            area_set["center"][0].int_label = 4
+                arm.int_id = i
+            area_set["center"][0].int_id = 4
 
         self.trial_id_range_vs_perimeter_sets = self.trial_id_range_vs_common_data
 
@@ -65,10 +65,10 @@ class YMazeExperiment(BaseExperiment):
             )
 
         self.y_maze_experiments = sorted(
-            self.y_maze_experiments, key=lambda item: item.int_label
+            self.y_maze_experiments, key=lambda item: item.int_id
         )
         self.trial_id_vs_y_maze = {
-            y_maze.int_label: y_maze for y_maze in self.y_maze_experiments
+            y_maze.int_id: y_maze for y_maze in self.y_maze_experiments
         }
 
     def plot(self, *args, **kwargs):
@@ -118,8 +118,8 @@ class YMazeExperiment(BaseExperiment):
                 ("Mean speed", ""),
                 ("Mean acceleration", ""),
                 ("Spontaneous alternations", ""),
-                *feature_area("Seconds in area", first.arm_center_semantic_labels),
-                *feature_area("Area alternations", first.arm_center_semantic_labels),
+                *feature_area("Seconds in area", first.arm_center_label),
+                *feature_area("Area alternations", first.arm_center_label),
                 *feature_triplet("Triplet alternation", first.arm_semantic_triplets),
             ),
             names=("Feature", "Area/Triplet"),
@@ -128,9 +128,9 @@ class YMazeExperiment(BaseExperiment):
         index_vs_data = {}
         for y_maze in self.y_maze_experiments:
             if y_maze.sum_of_alternations < 0:
-                index_vs_data[y_maze.int_label] = np.full(13, np.nan)
+                index_vs_data[y_maze.int_id] = np.full(13, np.nan)
             else:
-                index_vs_data[y_maze.int_label] = (
+                index_vs_data[y_maze.int_id] = (
                     y_maze.motion.total_displacement,
                     y_maze.motion.median_speed,
                     y_maze.motion.median_acceleration,

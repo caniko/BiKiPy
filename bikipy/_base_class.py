@@ -11,8 +11,8 @@ from bikipy.utils.typing import OptionalPathTyping
 
 
 class BikipyBase(BaseModel, ABC):
-    int_label: Optional[int] = None
-    semantic_label: Optional[str] = None
+    int_id: Optional[int] = None
+    label: Optional[str] = None
     group_label: Optional[str] = None
     timestamp: Union[date, datetime] = Field(default_factory=datetime.utcnow)
     save_root: Optional[DirectoryPath] = None
@@ -75,4 +75,4 @@ class BikipyBase(BaseModel, ABC):
 
     @property
     def best_id(self):
-        return self.semantic_label or self.int_label or None
+        return self.label or self.int_id or None

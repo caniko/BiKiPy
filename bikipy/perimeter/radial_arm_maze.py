@@ -31,13 +31,13 @@ def generate_radial_arm_maze_arm_perimeters(
         msg = "Either center_object or center_coco_path has to be defined"
         raise ValueError(msg)
 
-    center_object.semantic_label = "center"
+    center_object.label = "center"
     center_object.group_label = "center"
 
     csv_array = read_makesense_point_csv(line_csv_path).T
     labels = csv_array[0]
     number_of_arms = len(labels)
-    center_object.int_label = number_of_arms + 1
+    center_object.int_id = number_of_arms + 1
 
     line_dataset = csv_array[1:5].T.astype(np.float32)
     lines = np.array([np.array_split(line, 2) for line in line_dataset])
@@ -68,8 +68,8 @@ def generate_radial_arm_maze_arm_perimeters(
         arm_perimeters.append(
             ParallelogramPerimeter(
                 arm_perimeter,
-                int_label=line_index + 1,
-                semantic_label=labels[line_index],
+                int_id=line_index + 1,
+                label=labels[line_index],
                 group_label="arm",
             )
         )

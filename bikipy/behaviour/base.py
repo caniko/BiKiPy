@@ -4,7 +4,7 @@ from abc import ABC
 from functools import cached_property, partial
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import Iterable, Literal, Optional, Sequence, Union
+from typing import Iterable, Literal, Optional, Sequence, Union, Any
 
 import cv2
 import numpy as np
@@ -14,7 +14,6 @@ from tqdm import tqdm
 
 from bikipy._base_class import BikipyBase
 from bikipy.feature.motion import Motion, displacement_by_frame, frozen_frames
-from bikipy.reader.base import BaseReader
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.store import RangeDict
 from bikipy.utils.typing import NDArray
@@ -23,9 +22,7 @@ from bikipy.utils.video import get_video_data
 logger = getLogger(__name__)
 
 
-LABEL_VS_DATA_READER = {
-    "deeplabcut": DeepLabCutReader
-}
+LABEL_VS_DATA_READER = {"deeplabcut": DeepLabCutReader}
 
 
 class Behaviour(BikipyBase, ABC):
@@ -74,51 +71,53 @@ class Behaviour(BikipyBase, ABC):
 
 class BaseExperiment(Behaviour, ABC):
     readers: list
+    trial_id_vs_trial_class: dict
+    trial_id_range_vs_trial_keyword_arguments: Optional[RangeDict] = None
+    common_trial_keyword_arguments: Optional[dict] = None
     point_label_for_motion_features: Optional[str] = None
-    inspection_figure_save: Union[bool, DirectoryPath] = False
+    inspection_figure_save: Union[DirectoryPath, bool] = False
 
+    _enable_process_pooling = True
     _deeplabcut_trial_id_finder = re.compile(r"\d+")
 
-    @property
-    def _hash_key(self):
-        return self.trials
-
-    def __getitem__(self, item):
-        if not self.trial_id_range_vs_common_data:
-            return self.trial_id_vs_data[item]
-        return {
-            **self.trial_id_range_vs_common_data[item],
-            **self.trial_id_vs_data[item],
-        }
+    @staticmethod
+    def _get_reader(coordinate_data_format):
+        try:
+            return LABEL_VS_DATA_READER[coordinate_data_format]
+        except KeyError as e:
+            msg = (
+                f"{coordinate_data_format} as a format for data ingestion has "
+                f"no implementation"
+            )
+            raise NotImplemented(msg) from e
 
     @classmethod
     def from_deeplabcut_data(
         cls,
         coordinate_data_paths: Sequence,
-        trial_id_range_vs_common_data: Optional[RangeDict] = None,
+        experiment_kwargs: dict,
         data_import_kwargs: Optional[dict] = None,
-        coordinate_data_format: Literal["deeplabcut"] = "deeplabcut",
     ):
-        try:
-            reader = LABEL_VS_DATA_READER[coordinate_data_format]
-        except KeyError as e:
-            msg = f"{coordinate_data_format} as a format for data ingestion has " \
-                  f"no implementation"
-            raise NotImplemented(msg) from e
-        for data_path in coordinate_data_paths:
-            trial_id = int(
-                cls._deeplabcut_trial_id_finder.findall(Path(data_path).stem)[0]
-            )
-            trials = [
-                reader(df_path=data_path, int_label=trial_id, **data_import_kwargs)
+        reader = cls._get_reader("deeplabcut")
+        cls(
+            readers=[
+                reader(
+                    df_path=data_path,
+                    int_id=cls._deeplabcut_trial_id_finder.findall(
+                        Path(data_path).stem
+                    )[0],
+                    **data_import_kwargs,
+                )
                 for data_path in coordinate_data_paths
-            ]
+            ],
+            **experiment_kwargs,
+        )
 
-    def generic_trial_kwargs(self, trial_id: int):
+    def trial_keyword_arguments(self, trial_id: int):
         trial_meta = self[trial_id]
         generic_kwargs = {
-            "int_label": trial_id,
-            "coordinate_sequence": self.trial_id_vs_coordinate_sequence[trial_id],
+            "int_id": trial_id,
+            "reader": self.trial_id_vs_reader[trial_id],
             "video_path": trial_meta["video_path"],
             "metric_resolution": self.metric_resolution,
             "inspection_figure_save": self.inspection_figure_save,
@@ -138,6 +137,29 @@ class BaseExperiment(Behaviour, ABC):
 
         return generic_kwargs
 
+    @cached_property
+    def trial_id_vs_reader(self):
+        return {reader.int_id: reader for reader in self.readers}
+
+    @cached_property
+    def trial_objects(self):
+        result = []
+        for reader in self.readers:
+            trial_id = reader.int_id
+            result.append(
+                self.trial_id_vs_trial_class[trial_id](
+                    **self.trial_keyword_arguments(trial_id)
+                )
+            )
+        return result
+
+    @cached_property
+    def trial_id_vs_trial_object(self):
+        return {trial.int_id: trial for trial in self.trial_objects}
+
+    def __getitem__(self, item: int):
+        return self.trial_id_vs_trial_object[item]
+
     @property
     def inspect(self):
         if isinstance(self.inspection_figure_save, bool):
@@ -149,24 +171,20 @@ class BaseExperiment(Behaviour, ABC):
         else:
             raise AttributeError()
 
-    @cached_property
-    def length(self):
-        return len(self._trial_id_iterable)
-
     @property
+    def _trial_id_iterable(self):
+        return self.trial_id_vs_reader.keys()
+
+    @cached_property
     def number_of_trials(self):
-        return self.length
+        return len(self._trial_id_iterable)
 
     @property
     def trial_id_data_tqdm(self):
         return tqdm(
             ((trial_id, self[trial_id]) for trial_id in self._trial_id_iterable),
-            total=self.length,
+            total=self.number_of_trials,
         )
-
-    @property
-    def _trial_id_iterable(self):
-        return self.trial_id_vs_data.keys()
 
     @staticmethod
     def _motion_2d_multi_indexer(category: str):
@@ -199,7 +217,7 @@ class BaseExperiment(Behaviour, ABC):
     @cached_property
     def motion_summary_frame(self):
         return self._bikipy_experiment_dataframe(
-            (trial.motion.to_list for trial in self.trials),
+            (trial.motion.to_list for trial in self.trial_objects),
         )
 
     @property
@@ -208,21 +226,28 @@ class BaseExperiment(Behaviour, ABC):
 
 
 class BaseTrial(Behaviour, ABC):
-    coordinate_sequence: Optional[BaseReader] = Field(
+    reader: Any = Field(
         description="The coordinates of the subject across the frames in the video recording"
     )
-    animal_id: Optional[int] = Field(description="The ID of the animal in the trial")
+    animal_id: Optional[int] = Field(
+        None, description="The ID of the animal in the trial"
+    )
     point_label_for_motion_features: Optional[str] = Field(
         description="Label of the node that will be used to track general animal movement"
     )
     rigid_nodes_freezing: Optional[Sequence[Union[str, int]]] = Field(
-        description="Nodes that should remain during freeze/immobility, most often due to fear."
+        None,
+        description="Nodes that should remain during freeze/immobility, most often due to fear.",
     )
-    video_path: Optional[FilePath] = Field(description="Path to trial video recording")
+    video_path: Optional[FilePath] = Field(
+        None, description="Path to trial video recording"
+    )
     inspection_figure_save: Union[DirectoryPath, bool] = Field(
-        description="Path to save figures for inspection of results"
+        False, description="Path to save figures for inspection of results"
     )
-    inspect_image: Optional[FilePath] = Field(description="Image used for inspection")
+    inspect_image: Optional[FilePath] = Field(
+        None, description="Image used for inspection"
+    )
     # Variables for trials with zones, see doc for more info.
     perimeters: Optional[Sequence] = None
     trial_start_perimeter: Optional[str] = None
@@ -265,7 +290,7 @@ class BaseTrial(Behaviour, ABC):
 
     @property
     def coordinates_per_frame(self):
-        return self.coordinate_sequence[self.point_label_for_motion_features]
+        return self.reader[self.point_label_for_motion_features]
 
     @cached_property
     def experiment_seconds(self):
@@ -299,11 +324,8 @@ class BaseTrial(Behaviour, ABC):
         return frozen_frames(
             self.fps,
             [
-                displacement_by_frame(coordinate_sequence, remove_tails=False)
-                * self.units_per_pixel
-                for coordinate_sequence in self.coordinate_sequence[
-                    self.rigid_nodes_freezing
-                ]
+                displacement_by_frame(reader, remove_tails=False) * self.units_per_pixel
+                for reader in self.reader[self.rigid_nodes_freezing]
             ],
         )
 

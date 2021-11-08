@@ -188,13 +188,13 @@ class NortField:
 
     def __post_init__(self):
         if self.novelty_constant_object_perimeter:
-            self.constant_object_perimeter.semantic_label = "training_constant"
-            self.novelty_constant_object_perimeter.semantic_label = "novel_constant"
+            self.constant_object_perimeter.label = "training_constant"
+            self.novelty_constant_object_perimeter.label = "novel_constant"
         else:
-            self.constant_object_perimeter.semantic_label = "constant"
+            self.constant_object_perimeter.label = "constant"
 
-        self.variable_object_perimeter.semantic_label = "variable"
-        self.novel_object_perimeter.semantic_label = "novel"
+        self.variable_object_perimeter.label = "variable"
+        self.novel_object_perimeter.label = "novel"
 
         if self.inspect_image:
             self.constant_object_perimeter.inspect_image = self.inspect_image

@@ -97,8 +97,8 @@ def round_vs_apparatus_to_general_nort_fields(
                 kwargs = {"corners": field.sides}
                 if field.guiding_image:
                     kwargs["inspect_image"] = field.guiding_image
-                if field.int_label:
-                    kwargs["int_label"] = field.int_label
+                if field.int_id:
+                    kwargs["int_id"] = field.int_id
 
                 field_temp_store[key] = Perimeter.init_polygon(**kwargs)
 
