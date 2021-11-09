@@ -13,7 +13,9 @@ from pydantic import DirectoryPath, Field, FilePath
 from tqdm import tqdm
 
 from bikipy._base_class import BikipyBase
+from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.motion import Motion, displacement_by_frame, frozen_frames
+from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.store import RangeDict
 from bikipy.utils.typing import NDArray
@@ -281,12 +283,26 @@ class BaseTrial(Behaviour, ABC):
         return self.reader[self.point_label_for_motion_features]
 
     @cached_property
+    def number_of_frames(self):
+        return len(self.coordinates_per_frame)
+
+    @cached_property
     def experiment_seconds(self):
         return self.coordinates_per_frame.shape[0] / self.fps
 
     @cached_property
     def motion(self):
-        return Motion(self.coordinates_per_frame, self.units_per_pixel, self.fps)
+        return Motion(
+            self.coordinates_per_frame,
+            self.units_per_pixel,
+            self.fps,
+            label_vs_boolean_index={
+                "quadrant_upper_left": self.quadrant_upper_left_boolean_index,
+                "quadrant_upper_right": self.quadrant_upper_right_boolean_index,
+                "quadrant_down_left": self.quadrant_down_left_boolean_index,
+                "quadrant_down_right": self.quadrant_down_right_boolean_index
+            }
+        )
 
     @property
     def _hash_key(self):
@@ -369,3 +385,134 @@ class BaseTrial(Behaviour, ABC):
     @cached_property
     def info(self):
         return [self._trial_label] if self._trial_label else []
+
+    @cached_property
+    def recording_center_pixel(self):
+        return self.recording_resolution / 2.0
+
+    @cached_property
+    def _zeros_frame_length(self):
+        return np.zeros(self.number_of_frames, dtype=np.uint8)
+
+    @cached_property
+    def location_sequence_quadrant(self):
+        result = self._zeros_frame_length
+
+        result[self.quadrant_upper_left_boolean_index] = 1
+        result[self.quadrant_upper_right_boolean_index] = 2
+        result[self.quadrant_down_left_boolean_index] = 3
+        result[self.quadrant_down_right_boolean_index] = 4
+
+        return reduce_repeating_sequences(result, round(self.fps * 0.35))
+
+    # Quadrant upper left 1
+
+    @cached_property
+    def quadrant_upper_left_boolean_index(self):
+        return points_in_parallelogram(
+            np.array((0.0, 0.0)),
+            np.array((self.recording_center_pixel[0], 0.0)),
+            np.array((0.0, self.recording_center_pixel[1])),
+            self.coordinates_per_frame,
+        )
+
+    @cached_property
+    def quadrant_upper_left_entries(self):
+        return np.sum(self.location_sequence_quadrant == 1)
+
+    @cached_property
+    def seconds_on_quadrant_upper_left(self):
+        return np.sum(self.quadrant_upper_left_boolean_index) / self.fps
+
+    @cached_property
+    def quadrant_upper_left_freezing_time(self):
+        return (
+            np.sum(
+                self.frozen_boolean_index & self.quadrant_upper_left_boolean_index[1:]
+            )
+            / self.fps
+        )
+
+    # Quadrant upper right 2
+
+    @cached_property
+    def quadrant_upper_right_boolean_index(self):
+        return points_in_parallelogram(
+            np.array((self.recording_center_pixel[0], 0.0)),
+            self.recording_center_pixel,
+            np.array((self.horizontal_resolution, 0.0)),
+            self.coordinates_per_frame,
+        )
+
+    @cached_property
+    def quadrant_upper_right_entries(self):
+        return np.sum(self.location_sequence_quadrant == 2)
+
+    @cached_property
+    def seconds_on_quadrant_upper_right(self):
+        return np.sum(self.quadrant_upper_right_boolean_index) / self.fps
+
+    @cached_property
+    def quadrant_upper_right_freezing_time(self):
+        return (
+            np.sum(
+                self.frozen_boolean_index & self.quadrant_upper_right_boolean_index[1:]
+            )
+            / self.fps
+        )
+
+    # Quadrant down left 3
+
+    @cached_property
+    def quadrant_down_left_boolean_index(self):
+        return points_in_parallelogram(
+            np.array((0.0, self.vertical_resolution)),
+            np.array((self.recording_center_pixel[0], self.vertical_resolution)),
+            np.array((0.0, self.recording_center_pixel[1])),
+            self.coordinates_per_frame,
+        )
+
+    @cached_property
+    def quadrant_down_left_entries(self):
+        return np.sum(self.location_sequence_quadrant == 3)
+
+    @cached_property
+    def seconds_on_quadrant_down_left(self):
+        return np.sum(self.quadrant_down_left_boolean_index) / self.fps
+
+    @cached_property
+    def quadrant_down_left_freezing_time(self):
+        return (
+            np.sum(
+                self.frozen_boolean_index & self.quadrant_down_left_boolean_index[1:]
+            )
+            / self.fps
+        )
+
+    # Quadrant down right 4
+
+    @cached_property
+    def quadrant_down_right_boolean_index(self):
+        return points_in_parallelogram(
+            np.array((self.recording_center_pixel[0], self.vertical_resolution)),
+            self.recording_resolution,
+            self.recording_center_pixel,
+            self.coordinates_per_frame,
+        )
+
+    @cached_property
+    def quadrant_down_right_entries(self):
+        return np.sum(self.location_sequence_quadrant == 4)
+
+    @cached_property
+    def seconds_on_quadrant_down_right(self):
+        return np.sum(self.quadrant_down_right_boolean_index) / self.fps
+
+    @cached_property
+    def quadrant_down_right_freezing_time(self):
+        return (
+            np.sum(
+                self.frozen_boolean_index & self.quadrant_down_right_boolean_index[1:]
+            )
+            / self.fps
+        )

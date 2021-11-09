@@ -39,9 +39,9 @@ class SquareEnclosedExperiment(BaseExperiment, ABC):
                         *self._feature_2d_multi_indexer("Entries", periphery_center),
                     ),
                     index=self._frame_index,
-                )
+                ),
             ),
-            axis=1
+            axis=1,
         )
 
 
@@ -133,6 +133,8 @@ class SquareEnclosedTrial(BaseTrial):
                 x_bias=(self.horizontal_resolution - self.vertical_resolution) / 2.0
             )
 
+    # Center Periphery
+
     @cached_property
     def center_boolean_index(self):
         return points_in_parallelogram(
@@ -149,40 +151,27 @@ class SquareEnclosedTrial(BaseTrial):
         return ~self.center_boolean_index
 
     @cached_property
-    def center_motion(self):
-        return Motion(
-            self.coordinates_per_frame[self.center_boolean_index],
-            self.units_per_pixel,
-            self.fps,
-        )
-
-    @cached_property
-    def periphery_motion(self):
-        return Motion(
-            self.coordinates_per_frame[self.periphery_boolean_index],
-            self.units_per_pixel,
-            self.fps,
-        )
-
-    @cached_property
-    def location_sequence(self):
+    def location_sequence_center_periphery(self):
         # 1 is center, 2 is periphery, 0 is unknown
-        location_sequence = np.zeros_like(self.center_boolean_index, dtype=np.uint8)
-        location_sequence[self.center_boolean_index] = 1
-        location_sequence[self.periphery_boolean_index] = 2
+        location_sequence_center_periphery = np.zeros_like(
+            self.center_boolean_index, dtype=np.uint8
+        )
+        location_sequence_center_periphery[self.center_boolean_index] = 1
+        location_sequence_center_periphery[self.periphery_boolean_index] = 2
         return np.array(
             reduce_repeating_sequences(
-                location_sequence, frame_tolerance=self._frame_tolerance
+                location_sequence_center_periphery,
+                frame_tolerance=self._frame_tolerance,
             )
         )
 
     @cached_property
     def center_entries(self):
-        return np.sum(self.location_sequence == 1)
+        return np.sum(self.location_sequence_center_periphery == 1)
 
     @cached_property
     def periphery_entries(self):
-        return np.sum(self.location_sequence == 2)
+        return np.sum(self.location_sequence_center_periphery == 2)
 
     @cached_property
     def seconds_on_center(self):
@@ -203,48 +192,6 @@ class SquareEnclosedTrial(BaseTrial):
         return (
             np.sum(self.frozen_boolean_index & self.periphery_boolean_index[1:])
             / self.fps
-        )
-
-    # Quadrant functions
-
-    @cached_property
-    def square_center(self):
-        return self.recording_resolution / 2.0
-
-    @cached_property
-    def quadrant_upper_left_boolean_index(self):
-        return points_in_parallelogram(
-            np.array((0.0, 0.0)),
-            np.array((self.square_center[0], 0.0)),
-            np.array((0.0, self.square_center[1])),
-            self.coordinates_per_frame
-        )
-
-    @cached_property
-    def quadrant_upper_right_boolean_index(self):
-        return points_in_parallelogram(
-            np.array((self.square_center[0], 0.0)),
-            self.square_center,
-            np.array((self.horizontal_resolution, 0.0)),
-            self.coordinates_per_frame
-        )
-
-    @cached_property
-    def quadrant_down_left_boolean_index(self):
-        return points_in_parallelogram(
-            np.array((0.0, self.vertical_resolution)),
-            np.array((self.square_center[0], self.vertical_resolution)),
-            np.array((0.0, self.square_center[1])),
-            self.coordinates_per_frame
-        )
-
-    @cached_property
-    def quadrant_down_right_boolean_index(self):
-        return points_in_parallelogram(
-            np.array((self.square_center[0], self.vertical_resolution)),
-            self.recording_resolution,
-            self.square_center,
-            self.coordinates_per_frame
         )
 
     def plot(self, ax: Any = None):

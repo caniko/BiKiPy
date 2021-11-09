@@ -260,9 +260,7 @@ class Motion:
     def frozen_frames(self):
         if not self.total_displacement:
             return None
-        return frozen_frames(
-            self.fps, (self.metric_displacement_by_frame,)
-        )
+        return frozen_frames(self.fps, (self.metric_displacement_by_frame,))
 
     @cached_property
     def freezing_time(self):

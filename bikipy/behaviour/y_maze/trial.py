@@ -60,7 +60,7 @@ class YMazeTrial(BaseTrial):
         self.invalid_boolean_index = ~self.valid_boolean_index
 
         self.reduced_alternation_sequence = reduce_repeating_sequences(
-            self.alternation_sequence, round(self.fps / 3.0)
+            self.alternation_sequence, round(self.fps * 0.35)
         )
         self.reduced_without_center = exclude_value_from_sequence(
             self.reduced_alternation_sequence, self.center.int_id

@@ -200,7 +200,7 @@ class NortExperiment(SquareEnclosedExperiment):
             )
             return None
 
-    @property
+    @cached_property
     def attention_state_distribution(self):
         attention_state_analysis = {
             "proximity&gaze true observation false": [],
@@ -215,15 +215,11 @@ class NortExperiment(SquareEnclosedExperiment):
                 (
                     novelty_trial.a_proximity_filtered
                     & novelty_trial.a_gaze_filtered
-                    & (
-                        not_a_observance_per_frame := ~novelty_trial.a_observance_per_frame
-                    ),
+                    & ~novelty_trial.a_observance_per_frame,
                     #
                     novelty_trial.b_proximity_filtered
                     & novelty_trial.b_gaze_filtered
-                    & (
-                        not_b_observance_per_frame := ~novelty_trial.b_observance_per_frame
-                    ),
+                    & ~novelty_trial.b_observance_per_frame,
                 )
             )
             attention_state_analysis["observation&gaze true proximity false"].extend(

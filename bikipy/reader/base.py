@@ -2,11 +2,11 @@ import sys
 from abc import ABC
 from concurrent.futures import ProcessPoolExecutor
 from functools import lru_cache, partial, cached_property
-from typing import Any, Callable, Generator, Iterable, Optional, Union
+from typing import Any, Generator, Iterable, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, Field, Extra, FilePath, validator
+from pydantic import Field, FilePath, validator
 
 from bikipy._base_class import BikipyBase
 from bikipy.utils.video import get_video_data

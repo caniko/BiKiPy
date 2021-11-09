@@ -144,7 +144,7 @@ def attention_filter(
     boolean_index: Sequence[bool],
     fps: float,
     minimum_seconds_attention: float,
-    distraction_tolerance_seconds: float = 0.5
+    distraction_tolerance_seconds: float = 0.5,
 ) -> np.ndarray:
     """
     Filters boolean_index with respect to attention. The filter tolerates distraction, and requires
