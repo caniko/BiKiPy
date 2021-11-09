@@ -44,9 +44,7 @@ class DeepLabCutReader(BaseReader):
     def __getitem__(self, query):
         def isolate_coordinates(item):
             # remove likelihood column
-            coordinates = np.delete(self.summary_frame[item].values, 2, 1)
-
-            return coordinates
+            return np.delete(self.summary_frame[item].values, 2, 1)
 
         if isinstance(query, str):
             if query not in self.tracked_and_midpoint_labels:

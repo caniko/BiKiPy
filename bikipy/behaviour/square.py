@@ -212,9 +212,39 @@ class SquareEnclosedTrial(BaseTrial):
         return self.recording_resolution / 2.0
 
     @cached_property
-    def quadrent_upper_left(self):
-        return (
+    def quadrant_upper_left_boolean_index(self):
+        return points_in_parallelogram(
+            np.array((0.0, 0.0)),
+            np.array((self.square_center[0], 0.0)),
+            np.array((0.0, self.square_center[1])),
+            self.coordinates_per_frame
+        )
 
+    @cached_property
+    def quadrant_upper_right_boolean_index(self):
+        return points_in_parallelogram(
+            np.array((self.square_center[0], 0.0)),
+            self.square_center,
+            np.array((self.horizontal_resolution, 0.0)),
+            self.coordinates_per_frame
+        )
+
+    @cached_property
+    def quadrant_down_left_boolean_index(self):
+        return points_in_parallelogram(
+            np.array((0.0, self.vertical_resolution)),
+            np.array((self.square_center[0], self.vertical_resolution)),
+            np.array((0.0, self.square_center[1])),
+            self.coordinates_per_frame
+        )
+
+    @cached_property
+    def quadrant_down_right_boolean_index(self):
+        return points_in_parallelogram(
+            np.array((self.square_center[0], self.vertical_resolution)),
+            self.recording_resolution,
+            self.square_center,
+            self.coordinates_per_frame
         )
 
     def plot(self, ax: Any = None):

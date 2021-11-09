@@ -74,3 +74,7 @@ def clear_console():
 
 def to_tuple(array: NDArray):
     return tuple(map(tuple, array))
+
+
+def boolean_index_islands(boolean_index: np.ndarray):
+    

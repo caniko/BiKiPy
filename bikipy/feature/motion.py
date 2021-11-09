@@ -1,11 +1,16 @@
 from collections.abc import Sequence
+from functools import cached_property, lru_cache
 from logging import getLogger
-from typing import Iterable, Union
+from typing import Iterable, Union, Optional, Literal
 
 import numpy as np
 import pandas as pd
+from pydantic import validate_arguments
+from pydantic.dataclasses import dataclass
 
+from bikipy.feature.attention import attention_filter
 from bikipy.math.calculus import absolute_derivative
+from bikipy.utils.typing import NDArray
 
 logger = getLogger(__name__)
 
@@ -175,48 +180,109 @@ def frozen_frames(
     return logical_and_thresholding
 
 
+@dataclass
 class Motion:
-    def __init__(
-        self,
-        coordinate_sequence: Sequence[Sequence[float]],
-        units_per_pixel: Union[float, np.ndarray],
-        fps: float,
-    ):
-        self.fps = fps
+    coordinate_sequence: NDArray
+    units_per_pixel: Union[float, NDArray]
+    fps: float
+    label_vs_boolean_index: Optional[dict] = None
 
-        self.metric_displacement_by_frame = (
-            displacement_by_frame(coordinate_sequence) * units_per_pixel
-            if isinstance(units_per_pixel, float)
-            else displacement_by_frame(
-                coordinate_sequence * np.asarray(units_per_pixel)
+    _tracked_values = 4
+
+    @validate_arguments
+    def __setitem__(self, key: str, value: NDArray):
+        assert value.dtype == bool
+        filtered = attention_filter(value, self.fps, 0.0, 0.2)
+        if not np.all(filtered == value):
+            logger.debug(
+                f"The boolean index was filtered:\n"
+                f"Previous True sum: {np.sum(value)}. "
+                f"After filtration: {np.sum(filtered)}"
             )
+        self.label_vs_boolean_index[key] = value
+
+    def motion_object_from_slice(self, coordinate_slice: slice):
+        return self.__class__(
+            self.coordinate_sequence[coordinate_slice], self.units_per_pixel, self.fps
         )
 
-        self.total_displacement = np.nansum(self.metric_displacement_by_frame)
-        if self.total_displacement:
-            self.speed = (
-                absolute_derivative(self.metric_displacement_by_frame) * self.fps
-            )
-            self.median_speed = np.nanmedian(self.speed)
+    @lru_cache
+    def __getitem__(self, item: str):
+        boolean_index = self.label_vs_boolean_index[item]
+        indices = np.where(boolean_index)
 
-            self.frozen_frames = frozen_frames(
-                self.fps, (self.metric_displacement_by_frame,)
-            )
-            self.freezing_time = np.nansum(self.frozen_frames) / self.fps
+        motion_objects = []
+        start, previous = indices[0], indices[0]
+        for i in indices[1:]:
+            if i != previous + 1 and i - start >= self._tracked_values:
+                motion_objects.append(self.motion_object_from_slice(slice(start, i)))
+                start = i
+            previous = i
+        motion_objects.append(self.motion_object_from_slice(slice(start, i)))
 
-            self.acceleration = absolute_derivative(self.speed)
-            self.median_acceleration = np.nanmedian(self.acceleration)
-        else:
-            self.speed = None
-            self.median_speed = None
+        if len(motion_objects) == 1:
+            return motion_objects[0].to_list
 
-            self.frozen_frames = None
-            self.freezing_time = None
+        result = motion_objects[0].to_list
+        for motion_object in motion_objects[1:]:
+            items = motion_object.to_list
+            for i in range(self._tracked_values):
+                result[i] += items[i]
 
-            self.acceleration = None
-            self.median_acceleration = None
+        return result
 
-    @property
+    @cached_property
+    def metric_displacement_by_frame(self):
+        displacement = displacement_by_frame(self.coordinate_sequence)
+        return (
+            displacement * self.units_per_pixel
+            if isinstance(self.units_per_pixel, float)
+            else displacement * np.asarray(self.units_per_pixel)
+        )
+
+    @cached_property
+    def total_displacement(self):
+        return np.nansum(self.metric_displacement_by_frame)
+
+    @cached_property
+    def speed(self):
+        if not self.total_displacement:
+            return None
+        return absolute_derivative(self.metric_displacement_by_frame) * self.fps
+
+    @cached_property
+    def median_speed(self):
+        if not self.total_displacement:
+            return None
+        return np.nanmedian(self.speed)
+
+    @cached_property
+    def frozen_frames(self):
+        if not self.total_displacement:
+            return None
+        return frozen_frames(
+            self.fps, (self.metric_displacement_by_frame,)
+        )
+
+    @cached_property
+    def freezing_time(self):
+        if not self.total_displacement:
+            return None
+        return np.nansum(self.frozen_frames) / self.fps
+
+    @cached_property
+    def acceleration(self):
+        if not self.total_displacement:
+            return None
+        return absolute_derivative(self.speed)
+
+    @cached_property
+    def median_acceleration(self):
+        if not self.total_displacement:
+            return None
+        return np.nanmedian(self.acceleration)
+
+    @cached_property
     def to_list(self):
         return [
             self.total_displacement,
@@ -224,7 +290,3 @@ class Motion:
             self.median_acceleration,
             self.freezing_time,
         ]
-
-    @property
-    def to_series(self):
-        return pd.Series(self.to_list)
