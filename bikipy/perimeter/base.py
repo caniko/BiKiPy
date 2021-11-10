@@ -1,5 +1,6 @@
 import copy
 import json
+import os.path
 import statistics
 from collections.abc import Sequence as CollectionsSequence
 from functools import cached_property, lru_cache
@@ -34,15 +35,12 @@ class BasePerimeter(BikipyBase):
     reference_point_coco_path: Optional[FilePath] = None
     reference_point: Optional[NDArray] = None
     inspect_image_: Union[NDArray, FilePath, None] = None
-    inspect_image_path_: Optional[FilePath] = None
+    image_name: Optional[str] = None
 
     _category = "perimeter"
 
     class Config:
-        fields = {
-            "inspect_image_": "inspect_image",
-            "inspect_image_path_": "inspect_image_path",
-        }
+        fields = {"inspect_image_": "inspect_image"}
 
     @property
     def inspect_image(self):
@@ -52,47 +50,18 @@ class BasePerimeter(BikipyBase):
     def inspect_image(self, value: Union[np.ndarray, PurePath, str, None]):
         if value is None:
             # Reset image related variables when None
-            self.inspect_image_path_, self.inspect_image_ = None, None
-            return
-        if np.any(value) and not isinstance(value, (np.ndarray, CollectionsSequence)):
-            if (value := Path(value)).exists():
-                self.inspect_image_path = value
-                return
+            self.inspect_image_ = None
+        elif isinstance(value, (str, PurePath)) and (path := Path(value)).exists():
+            self.inspect_image_ = read_image(path)
+            self.image_name = path.name
+        elif np.any(value):
+            self.inspect_image_ = value
+        else:
             msg = (
                 "The provided object is not a numpy array; it is not an image."
                 "In case it is a path, it does not exist"
             )
             raise ValueError(msg)
-
-        self.inspect_image_ = value
-
-    @property
-    def inspect_image_path(self):
-        try:
-            return self.inspect_image_path_
-        except AttributeError as e:
-            msg = (
-                f"The {self.__class__.__name__} object was not defined with "
-                f"an inspect_image_path, but a numpy array with image data."
-                if np.any(self.inspect_image)
-                else f"The {self.__class__.__name__} object has no image definition"
-            )
-            raise AttributeError(msg) from e
-
-    @inspect_image_path.setter
-    def inspect_image_path(self, value: OptionalPathTyping):
-        if value is None:
-            # Reset image related variables when None
-            self.inspect_image_path_, self.inspect_image_ = None, None
-            return
-        if np.any(value) and not (value := Path(value)).exists():
-            msg = (
-                f"Failed to read inspect_image, the provided path does not exist.\n"
-                f"Path: {value}"
-            )
-            raise ValueError(msg)
-        self.inspect_image_ = read_image(value, 0)
-        self.inspect_image_path_ = value
 
     def plot(self, ax: Any = None, points: Optional[Sequence] = None):
         """
@@ -273,17 +242,11 @@ class Perimeter(BasePerimeter):
                     f"new_inspect_image_path, {new_inspect_image_path}, does not exist"
                 )
                 raise AttributeError(msg)
-            new.inspect_image_path_ = (
-                new_inspect_image_path  # TODO: removal, waiting for pydantic pr
-            )
-            new.inspect_image_ = cv2.imread(new_inspect_image)
+            new.inspect_image = new_inspect_image_path
         elif np.any(new_inspect_image):
-            new.inspect_image_ = cv2.imread(new_inspect_image)
+            new.inspect_image = new_inspect_image
         else:
-            # Reset inspect_image and inspect_image_path
-            # (the setter function resets inspect_image_path)
-            new.inspect_image_path_ = None  # TODO: removal, waiting for pydantic pr
-            new.inspect_image_ = None
+            new.inspect_image = None
 
         return new
 
@@ -314,7 +277,7 @@ class Perimeter(BasePerimeter):
         }
         if not np.any(self.reference_point):
             for img_name, reference_point in img_name_vs_reference_points.items():
-                if self.inspect_image_path.name == img_name:
+                if self.image_name == img_name:
                     self.reference_point = reference_point
                     break
             if not np.any(self.reference_point):
@@ -511,7 +474,7 @@ class Perimeter(BasePerimeter):
                     if i == len(perimeters) - 1 or all(
                         perimeter.inspect_image is None
                         or np.all(potential_inspect_image == perimeter.inspect_image)
-                        for perimeter in perimeters[i + 1 :]
+                        for perimeter in perimeters[i + 1:]
                     ):
                         """
                         Old premature optimisation, DON'T DO THIS AGAIN.
@@ -646,9 +609,12 @@ class Perimeter(BasePerimeter):
         image_root: OptionalPathTyping = None,
         single_obj_return: bool = False,
     ) -> Union[dict, BasePerimeter]:
-        def get_inspect_img_path(image_id: int):
+        def get_inspect_image_name(image_id: int):
+            return coco["images"][image_id - 1]["file_name"]
+
+        def get_inspect_image_path(image_id: int):
             return (
-                image_root / coco["images"][image_id - 1]["file_name"]
+                image_root / get_inspect_image_name(image_id)
                 if image_root
                 else None
             )
@@ -676,7 +642,8 @@ class Perimeter(BasePerimeter):
         semantic_label_vs_polygon = {
             get_semantic_label(annotation["category_id"]): cls.init_polygon(
                 _coco_polygon_annotation(annotation["segmentation"][0]),
-                inspect_image_path=get_inspect_img_path(annotation["image_id"]),
+                inspect_image=get_inspect_image_path(annotation["image_id"]),
+                image_name=get_inspect_image_name(annotation["image_id"]),
                 label=coco["categories"][annotation["category_id"] - 1]["name"],
             )
             for annotation in coco["annotations"]

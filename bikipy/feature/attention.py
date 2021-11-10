@@ -21,53 +21,55 @@ logger = getLogger(__name__)
 
 def proximity_filter(
     perimeter: Perimeter,
-    nose: Sequence[Sequence[float]],
-    center_eye: Sequence[Sequence[float]],
+    inside_perimeter_border: Sequence[Sequence[float]],
+    outside_perimeter: Sequence[Sequence[float]],
     perimeter_border_normal_pixel_magnitude: float,
     inspect: bool = False,
     inspection_ax: Any = None,
 ) -> Sequence[bool]:
     """
-    Filter with respect to proximity rules. (1) The nose has to be in front of perimeter, but inside the border;
-    (2) the center_eye is outside of the perimeter.
+    Filter with respect to proximity rules. (1) The inside_perimeter_border has to be in front of perimeter, but inside the border;
+    (2) the outside_perimeter is outside of the perimeter.
 
     :param perimeter:
-    :param nose: Cartesian coordinates of the nose
-    :param center_eye: Cartesian coordinates of the center of mass
+    :param inside_perimeter_border: Cartesian coordinates of the inside_perimeter_border
+    :param outside_perimeter: Cartesian coordinates of the center of mass
     :param perimeter_border_normal_pixel_magnitude: The magnitude of the normal between the perimeter and the border given in pixels
     :param inspect: If True, generate and view an analytics of the resulting filter
     :param inspection_ax: matplotlib Axes that the inspection plots will (optionally) be saved in
     :type perimeter: Perimeter
-    :type nose: np.ndarray
-    :type center_eye: np.ndarray
+    :type inside_perimeter_border: np.ndarray
+    :type outside_perimeter: np.ndarray
     :type perimeter_border_normal_pixel_magnitude: float
     :type inspect: bool
     :type inspection_ax: Any
     :return:
     :rtype: np.ndarray
     """
-    # Remove nose points that aren't inside the perimeter
-    nose = np.asarray(nose)
-    center_eye = np.asarray(center_eye)
+    # Remove inside_perimeter_border points that aren't inside the perimeter
+    inside_perimeter_border = np.asarray(inside_perimeter_border)
+    outside_perimeter = np.asarray(outside_perimeter)
 
     perimeter_border = perimeter.border(
         perimeter_border_normal_pixel_magnitude=perimeter_border_normal_pixel_magnitude
     )
 
-    nose_within_border = perimeter_border.coordinate_confinement_boolean_index(
-        coordinates=nose
+    inside_perimeter_border_boolean_index = perimeter_border.coordinate_confinement_boolean_index(
+        coordinates=inside_perimeter_border
     )
-    center_eye_outside_polygon = ~perimeter.coordinate_confinement_boolean_index(
-        center_eye
+    outside_perimeter_boolean_index = ~perimeter.coordinate_confinement_boolean_index(
+        outside_perimeter
     )
 
-    # Find states where the nose is within perimeter while the center_eye is not over perimeter
-    result = nose_within_border & center_eye_outside_polygon
+    # Find states where the inside_perimeter_border is within perimeter while the outside_perimeter is not over perimeter
+    result = inside_perimeter_border_boolean_index & outside_perimeter_boolean_index
 
     if inspection_ax is not None or inspect:
         if inspection_ax is None:
             sns.set_theme(style="darkgrid")
             fig, ax = plt.subplots()
+            if np.any(perimeter.inspect_image):
+                ax.imread(perimeter.inspect_image)
         else:
             ax = inspection_ax
 
@@ -76,16 +78,16 @@ def proximity_filter(
 
         not_result = ~result
         ax.scatter(
-            *nose[nose_within_border & not_result].T,
+            *inside_perimeter_border[inside_perimeter_border_boolean_index & not_result].T,
             alpha=SCATTER_ALPHA,
-            label="Nose valid, invalid center_eye",
+            label="Nose valid, invalid outside_perimeter",
         )
         ax.scatter(
-            *nose[center_eye_outside_polygon & not_result].T,
+            *inside_perimeter_border[outside_perimeter_boolean_index & not_result].T,
             alpha=SCATTER_ALPHA,
-            label="Center of mass valid, invalid nose",
+            label="Center of mass valid, invalid inside_perimeter_border",
         )
-        ax.scatter(*nose[result].T, alpha=SCATTER_ALPHA, label="Valid")
+        ax.scatter(*inside_perimeter_border[result].T, alpha=SCATTER_ALPHA, label="Valid")
 
         ax.legend(
             loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=3
@@ -95,8 +97,8 @@ def proximity_filter(
             plt.show()
 
     return result, {
-        "nose_within_border": nose_within_border,
-        "center_eye_outside_polygon": center_eye_outside_polygon,
+        "inside_perimeter_border_boolean_index": inside_perimeter_border_boolean_index,
+        "outside_perimeter_boolean_index": outside_perimeter_boolean_index,
     }
 
 
