@@ -92,23 +92,12 @@ class BasePerimeter(BikipyBase):
 
 
 class Perimeter(BasePerimeter):
-    corners_: NDArray
+    corners: NDArray
     feature_scale: Optional[NDArray] = None
 
     _polygon_order = None
 
-    class Config:
-        fields = {"corners_": "corners"}
-
-    @property
-    def corners(self):
-        return self.corners_
-
-    @corners.setter
-    def corners(self, value: NpNDArray):
-        self.corners_ = order_polygon_corners(value)
-
-    @validator("corners_")
+    @validator("corners", pre=True)
     def corners_polygon_order_validator(cls, value: NpNDArray):
         if cls._polygon_order and (n := len(value)) != cls._polygon_order:
             msg = (
@@ -116,7 +105,11 @@ class Perimeter(BasePerimeter):
                 f"the current polygon is of the {n}th order"
             )
             raise ValueError(msg)
-        return value
+        return order_polygon_corners(value)
+
+    @cached_property
+    def tuple_corners(self):
+        return to_tuple(self.corners)
 
     @classmethod
     def init_polygon(cls, corners: Sequence, **kwargs):

@@ -185,7 +185,7 @@ class Motion:
     coordinate_sequence: NDArray
     units_per_pixel: Union[float, NDArray]
     fps: float
-    label_vs_boolean_index: Optional[dict] = None
+    label_vs_boolean_index: Optional[dict]
 
     _tracked_values = 4
 

@@ -4,7 +4,7 @@ from bikipy.feature.attention import proximity_filter
 from bikipy.math.geometry import expand_parallelogram
 from bikipy.utils.misc import to_tuple
 
-from tests.test_data.perimeter.get_perimeter import perimeter_object
+from tests.test_data.perimeter.parallelogram.get_perimeter import perimeter_object
 
 
 def test_proximity_filter():
@@ -25,7 +25,6 @@ def test_proximity_filter():
             inside_perimeter_border=coordinates_inside_border,
             outside_perimeter=coordinates_outside_perimeter,
             perimeter_border_normal_pixel_magnitude=perimeter_border_normal_pixel_magnitude,
-            inspect=True
         )[0]
     ), "Coordinates should be in proximity"
 
