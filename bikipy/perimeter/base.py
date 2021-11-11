@@ -34,32 +34,24 @@ logger = getLogger(__name__)
 class BasePerimeter(BikipyBase):
     reference_point_coco_path: Optional[FilePath] = None
     reference_point: Optional[NDArray] = None
-    inspect_image_: Union[NDArray, FilePath, None] = None
+    inspect_image: Optional[NDArray] = None
     image_name: Optional[str] = None
 
     _category = "perimeter"
 
-    class Config:
-        fields = {"inspect_image_": "inspect_image"}
-
-    @property
-    def inspect_image(self):
-        return self.inspect_image_
-
-    @inspect_image.setter
-    def inspect_image(self, value: Union[np.ndarray, PurePath, str, None]):
-        if value is None:
-            # Reset image related variables when None
-            self.inspect_image_ = None
-        elif isinstance(value, (str, PurePath)) and (path := Path(value)).exists():
-            self.inspect_image_ = read_image(path)
-            self.image_name = path.name
-        elif np.any(value):
-            self.inspect_image_ = value
+    @validator("inspect_image", pre=True)
+    def make_sure_image_is_loaded(cls, value):
+        if isinstance(value, (str, PurePath)):
+            if not (path := Path(value)).exists():
+                msg = "The provided path to image for inspection, doesn not exist"
+                raise ValueError(msg)
+            return read_image(path)
+        elif np.any(value) or value is None:
+            return value
         else:
             msg = (
-                "The provided object is not a numpy array; it is not an image."
-                "In case it is a path, it does not exist"
+                "inspect_image:P The provided object is not a numpy array; it is not "
+                "an image."
             )
             raise ValueError(msg)
 
@@ -83,7 +75,7 @@ class BasePerimeter(BikipyBase):
             fig, ax = plt.subplots()
 
         if self.inspect_image is not None:
-            ax.imshow(read_image(self.inspect_image), cmap="gray", vmin=0, vmax=255)
+            ax.imshow(self.inspect_image)
 
         if points is not None:
             points = np.asarray(points)
@@ -474,7 +466,7 @@ class Perimeter(BasePerimeter):
                     if i == len(perimeters) - 1 or all(
                         perimeter.inspect_image is None
                         or np.all(potential_inspect_image == perimeter.inspect_image)
-                        for perimeter in perimeters[i + 1:]
+                        for perimeter in perimeters[i + 1 :]
                     ):
                         """
                         Old premature optimisation, DON'T DO THIS AGAIN.
@@ -613,11 +605,7 @@ class Perimeter(BasePerimeter):
             return coco["images"][image_id - 1]["file_name"]
 
         def get_inspect_image_path(image_id: int):
-            return (
-                image_root / get_inspect_image_name(image_id)
-                if image_root
-                else None
-            )
+            return image_root / get_inspect_image_name(image_id) if image_root else None
 
         def get_semantic_label(category_id: int):
             return coco["categories"][category_id - 1]["name"].lower()

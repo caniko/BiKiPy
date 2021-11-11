@@ -17,7 +17,7 @@ logger = getLogger(__name__)
 
 
 def read_image(image: Any, imread_flagg: Any = None):
-    if isinstance(image, str) or isinstance(image, PurePath):
+    if isinstance(image, (PurePath, str)):
         image_path = Path(image).resolve()
         assert image_path.exists(), image_path
         image = cv2.imread(str(image_path), flags=imread_flagg)

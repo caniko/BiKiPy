@@ -54,14 +54,15 @@ def proximity_filter(
         perimeter_border_normal_pixel_magnitude=perimeter_border_normal_pixel_magnitude
     )
 
-    inside_perimeter_border_boolean_index = perimeter_border.coordinate_confinement_boolean_index(
-        coordinates=inside_perimeter_border
+    inside_perimeter_border_boolean_index = (
+        perimeter_border.coordinate_confinement_boolean_index(
+            coordinates=inside_perimeter_border
+        )
     )
     outside_perimeter_boolean_index = ~perimeter.coordinate_confinement_boolean_index(
         outside_perimeter
     )
 
-    # Find states where the inside_perimeter_border is within perimeter while the outside_perimeter is not over perimeter
     result = inside_perimeter_border_boolean_index & outside_perimeter_boolean_index
 
     if inspection_ax is not None or inspect:
@@ -78,7 +79,9 @@ def proximity_filter(
 
         not_result = ~result
         ax.scatter(
-            *inside_perimeter_border[inside_perimeter_border_boolean_index & not_result].T,
+            *inside_perimeter_border[
+                inside_perimeter_border_boolean_index & not_result
+            ].T,
             alpha=SCATTER_ALPHA,
             label="Nose valid, invalid outside_perimeter",
         )
@@ -87,7 +90,9 @@ def proximity_filter(
             alpha=SCATTER_ALPHA,
             label="Center of mass valid, invalid inside_perimeter_border",
         )
-        ax.scatter(*inside_perimeter_border[result].T, alpha=SCATTER_ALPHA, label="Valid")
+        ax.scatter(
+            *inside_perimeter_border[result].T, alpha=SCATTER_ALPHA, label="Valid"
+        )
 
         ax.legend(
             loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=3

@@ -22,7 +22,7 @@ class ParallelogramPerimeter(Perimeter):
     _polygon_order = 4
 
     @classmethod
-    def from_image(cls, inspect_image: Any, n: int, *args, **kwargs):
+    def from_image(cls, inspect_image: Any, *args, **kwargs):
         base, apex = parallelogram_input(inspect_image)
         return cls(corners=np.array((*base, *apex)), inspect_image=inspect_image)
 

@@ -192,14 +192,10 @@ class Motion:
     @validate_arguments
     def __setitem__(self, key: str, value: NDArray):
         assert value.dtype == bool
-        filtered = attention_filter(value, self.fps, 0.0, 0.2)
-        if not np.all(filtered == value):
-            logger.debug(
-                f"The boolean index was filtered:\n"
-                f"Previous True sum: {np.sum(value)}. "
-                f"After filtration: {np.sum(filtered)}"
-            )
-        self.label_vs_boolean_index[key] = value
+        if self.label_vs_boolean_index is not None:
+            self.label_vs_boolean_index[key] = value
+        else:
+            self.label_vs_boolean_index = {key: value}
 
     def motion_object_from_slice(self, coordinate_slice: slice):
         return self.__class__(
@@ -208,7 +204,7 @@ class Motion:
 
     @lru_cache
     def __getitem__(self, item: str):
-        boolean_index = self.label_vs_boolean_index[item]
+        boolean_index = attention_filter(self.label_vs_boolean_index[item], self.fps, 0.0, 0.2)
         indices = np.where(boolean_index)
 
         motion_objects = []

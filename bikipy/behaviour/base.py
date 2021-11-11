@@ -300,8 +300,8 @@ class BaseTrial(Behaviour, ABC):
                 "quadrant_upper_left": self.quadrant_upper_left_boolean_index,
                 "quadrant_upper_right": self.quadrant_upper_right_boolean_index,
                 "quadrant_down_left": self.quadrant_down_left_boolean_index,
-                "quadrant_down_right": self.quadrant_down_right_boolean_index
-            }
+                "quadrant_down_right": self.quadrant_down_right_boolean_index,
+            },
         )
 
     @property
