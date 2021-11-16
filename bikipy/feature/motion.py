@@ -204,7 +204,9 @@ class Motion:
 
     @lru_cache
     def __getitem__(self, item: str):
-        boolean_index = attention_filter(self.label_vs_boolean_index[item], self.fps, 0.0, 0.2)
+        boolean_index = attention_filter(
+            self.label_vs_boolean_index[item], self.fps, 0.0, 0.2
+        )
         indices = np.where(boolean_index)
 
         motion_objects = []

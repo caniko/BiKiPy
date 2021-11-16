@@ -56,7 +56,7 @@ def proximity_filter(
 
     inside_perimeter_border_boolean_index = (
         perimeter_border.coordinate_confinement_boolean_index(
-            coordinates=inside_perimeter_border
+            coordinates=inside_perimeter_border, inspect=True
         )
     )
     outside_perimeter_boolean_index = ~perimeter.coordinate_confinement_boolean_index(

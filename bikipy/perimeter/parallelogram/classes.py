@@ -161,11 +161,16 @@ class ParallelogramPerimeter(Perimeter):
 
         return np.squeeze(np.hsplit(magnitudes, 2))
 
-    def coordinate_confinement_boolean_index(self, coordinates: NDArray):
-        coordinates = np.asarray(coordinates)
-
+    def coordinate_confinement_boolean_index(
+        self, coordinates: NDArray, *args, **kwargs
+    ):
         return points_in_parallelogram(
-            self.base[0], self.apex[0], self.base[1], coordinates
+            self.corners[3],
+            self.corners[0],
+            self.corners[2],
+            np.asarray(coordinates),
+            *args,
+            **kwargs,
         )
 
     @classmethod

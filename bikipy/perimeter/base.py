@@ -1,23 +1,20 @@
 import copy
 import json
-import os.path
 import statistics
-from collections.abc import Sequence as CollectionsSequence
 from functools import cached_property, lru_cache
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Union, Literal
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from numba import jit
 from numpy.typing import NDArray as NpNDArray
 from pydantic import FilePath, validator
 from shapely.geometry import Point, Polygon
 
 from bikipy._base_class import BikipyBase
-from bikipy.math.geometry import expand_parallelogram, order_polygon_corners
+from bikipy.math.geometry import expand_bikipy_perimeter, order_polygon_corners
 from bikipy.math.vector import point_to_line_segment_distance
 from bikipy.utils.misc import (
     get_reference_point_from_array,
@@ -92,16 +89,17 @@ class BasePerimeter(BikipyBase):
 
 
 class Perimeter(BasePerimeter):
-    corners: NDArray
+    corners: NDArray[Literal[np.float64]]
     feature_scale: Optional[NDArray] = None
 
     _polygon_order = None
 
-    @validator("corners", pre=True)
+    @classmethod
+    @validator("corners")
     def corners_polygon_order_validator(cls, value: NpNDArray):
-        if cls._polygon_order and (n := len(value)) != cls._polygon_order:
+        if cls._polygon_order and (n := len(value)) != int(cls._polygon_order):
             msg = (
-                f"Parallelogram is a polygon in the {cls._polygon_order}th order, "
+                f"The polygon class is in the {cls._polygon_order}th order. However, "
                 f"the current polygon is of the {n}th order"
             )
             raise ValueError(msg)
@@ -218,7 +216,7 @@ class Perimeter(BasePerimeter):
             return self
 
         new = copy.deepcopy(self)
-        new.corners_ += new_reference - new.reference_point
+        new.corners += new_reference - new.reference_point
         new.reference_point = new_reference
 
         if new_inspect_image_path:
@@ -296,8 +294,8 @@ class Perimeter(BasePerimeter):
             from bikipy.perimeter import ParallelogramPerimeter
 
             border_obj = ParallelogramPerimeter(
-                corners=expand_parallelogram(
-                    to_tuple(self.corners), perimeter_border_normal_pixel_magnitude
+                corners=expand_bikipy_perimeter(
+                    self, perimeter_border_normal_pixel_magnitude
                 ),
                 inspect_image=self.inspect_image,
             )

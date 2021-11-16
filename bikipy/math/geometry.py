@@ -30,11 +30,16 @@ def argsort_counterclockwise(sequence: Sequence):
 
 
 @lru_cache
+def expand_bikipy_perimeter(perimeter, *args, **kwargs):
+    return expand_parallelogram(perimeter.corners, *args, **kwargs)
+
+
 def expand_parallelogram(
     perimeter_corners: Sequence,
     offset: float,
     y_inverted: bool = True,
     inspect: bool = False,
+    as_array: bool = False,
 ):
     offset = float(offset)
     down_left, down_right, up_right, up_left = order_polygon_corners(perimeter_corners)
@@ -132,4 +137,5 @@ def expand_parallelogram(
 
         plt.show()
 
-    return off_down_left, off_down_right, off_up_right, off_up_left
+    result = (off_down_left, off_down_right, off_up_right, off_up_left)
+    return np.array(result) if as_array else result

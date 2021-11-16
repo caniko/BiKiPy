@@ -5,7 +5,6 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from fletcher import FletcherContinuousArray
 from matplotlib import pyplot as plt
 from pydantic import Field
 
@@ -21,8 +20,10 @@ class NortExperiment(SquareEnclosedExperiment):
     Class for combining several NORT trials under one class for joint analysis
     """
 
-    nose_label: str = Field(description="Label of the nose in the df")
-    center_eye_label: str = Field(description="Label of the eye center in the df")
+    gaze_travel_direction_point_label: str = Field(
+        description="Label signifying the area where the gaze vector"
+    )
+    gaze_start_point_label: str = Field(description="Label of the eye center in the df")
     torso_label: str = Field(description="Label of the torso in the df")
     nort_field_vs_nort_field_object: Optional[dict] = Field(
         None, description="Label of the nose in the df"
@@ -32,11 +33,7 @@ class NortExperiment(SquareEnclosedExperiment):
         description="The magnitude of the normal between the perimeter and the border given in meters",
     )
     maximum_radians_inter_gaze_perimeter: float = Field(0.5 * np.pi)
-
-    _trials_are_sequential = True
-    _period_columns = ("T1", "T2", "Total")
-    _box_area_names = ("Periphery", "Center")
-    _trial_label_to_trial_class_name = {
+    trial_label_to_trial_class_name: dict = {
         "habituation": "habituation",
         "open_field": "habituation",
         "1": "training",
@@ -49,82 +46,20 @@ class NortExperiment(SquareEnclosedExperiment):
         "novelty": "novelty",
     }
 
-    def __init__(self, **data):
-        super().__init__(**data)
-        self.point_label_for_motion_features = (
-            self.point_label_for_motion_features or self.center_eye_label
-        )
+    _trials_are_sequential: bool = True
+    _period_columns = ("T1", "T2", "Total")
 
-        self.animal_vs_trials = {}
-        (
-            self.habituation_trials,
-            self.training_object_trials,
-            self.novelty_object_trials,
-        ) = ([], [], [])
-        for trial_id, trial_meta in self.trial_id_data_tqdm:
-            logger.info(f"Category {trial_meta['stage']}; ID {trial_id}")
-
-            generic_kwargs = self.generic_trial_kwargs(trial_id)
-            exp_class = self._trial_label_to_trial_class_name[
-                trial_meta["stage"].lower().replace(" ", "_")
-            ]
-
-            if exp_class == "habituation":
-                self.habituation_trials.append(
-                    (
-                        exp := NortHabituationTrial(
-                            center_metric_length=self.center_metric_length,
-                            **generic_kwargs,
-                        )
-                    )
-                )
-
-            elif exp_class == "training" or exp_class == "novelty":
-                try:
-                    field = self.nort_field_vs_nort_field_object[trial_meta["field"]]
-                except AttributeError as e:
-                    msg = "nort_field_vs_nort_field_object is not defined, which is required when working with training and/or novelty datasets"
-                    raise AttributeError(msg) from e
-
-                analysis_keyword_arguments = {
-                    "nose_label": self.nose_label,
-                    "center_eye_label": self.center_eye_label,
-                    "torso_label": self.torso_label,
-                    "perimeter_border_normal_metric_magnitude": self.perimeter_border_normal_metric_magnitude,
-                    "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
-                    "center_metric_length": self.center_metric_length,
-                    **generic_kwargs,
-                }
-
-                if exp_class == "training":
-                    self.training_object_trials.append(
-                        (exp := field.training(**analysis_keyword_arguments))
-                    )
-                else:
-                    self.novelty_object_trials.append(
-                        (exp := field.novelty(**analysis_keyword_arguments))
-                    )
-
-            else:
-                msg = f"{trial_meta['stage']} has no implementation"
-                raise NotImplementedError(msg)
-
-            if "animal_id" in trial_meta:
-                if trial_meta["animal_id"] in self.animal_vs_trials:
-                    self.animal_vs_trials[trial_meta["animal_id"]].append(exp)
-                else:
-                    self.animal_vs_trials[trial_meta["animal_id"]] = [exp]
-
-    @property
-    def instanced_trial_data(self):
-        pass
-
-    def generic_trial_kwargs(self, trial_id: int):
-        return {
-            **super().generic_trial_kwargs(trial_id),
-            "point_label_for_motion_features": self.point_label_for_motion_features,
-            "rigid_nodes_freezing": (self.center_eye_label, self.torso_label),
-        }
+    def trial_keyword_arguments(self, trial_id: int) -> dict:
+        generic = super().trial_keyword_arguments(trial_id)
+        if self.trial_label_to_trial_class_name[generic["stage"]] != "habituation":
+            return {
+                **generic,
+                "gaze_travel_direction_point_label": self.gaze_travel_direction_point_label,
+                "gaze_start_point_label": self.gaze_start_point_label,
+                "perimeter_border_normal_metric_magnitude": self.perimeter_border_normal_metric_magnitude,
+                "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
+            }
+        return generic
 
     @cached_property
     def df(self) -> pd.DataFrame:

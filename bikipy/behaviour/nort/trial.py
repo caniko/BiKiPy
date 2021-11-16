@@ -39,8 +39,8 @@ class NortTrainingTrial(NortHabituationTrial):
 
     nort_a: Perimeter
     nort_b: Perimeter
-    nose_label: str
-    center_eye_label: str
+    gaze_travel_direction_point_label: str
+    gaze_start_point_label: str
     torso_label: str
     perimeter_border_normal_metric_magnitude: float
     maximum_radians_inter_gaze_perimeter: float = 1 / 4 * np.pi
@@ -127,7 +127,9 @@ class NortTrainingTrial(NortHabituationTrial):
 
     def nort_observation(self, nort_object):
         eye, nose, torso = self.coordinate_sequence[
-            self.center_eye_label, self.nose_label, self.torso_label
+            self.gaze_start_point_label,
+            self.gaze_travel_direction_point_label,
+            self.torso_label,
         ]
         return polygonal_perimeter_attention(
             nort_object,

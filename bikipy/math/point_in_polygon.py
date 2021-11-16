@@ -13,7 +13,7 @@ def points_in_parallelogram(
     corner_a: np.ndarray,
     corner_b: np.ndarray,
     coordinates: np.ndarray,
-    inspect_points: bool = False,
+    inspect: bool = False,
     inspect_function_call_context: Optional[str] = None,
 ) -> np.ndarray:
     """
@@ -25,13 +25,13 @@ def points_in_parallelogram(
     :param corner_a:
     :param corner_b:
     :param coordinates:
-    :param inspect_points:
+    :param inspect:
     :param inspect_function_call_context:
     :type ab_mid_corner: np.ndarray
     :type corner_a: np.ndarray
     :type corner_b: np.ndarray
     :type coordinates: np.ndarray
-    :type inspect_points: bool
+    :type inspect: bool
     :type inspect_function_call_context: str
     :return:
     :rtype np.ndarray
@@ -69,21 +69,22 @@ def points_in_parallelogram(
 
     boolean_index = orthogonal_oca_bool & orthogonal_ocb_bool
 
-    if inspect_points:
+    if inspect:
         set_theme(style="darkgrid")
         fig, ax = plt.subplots()
-        for point in (corner_a, ab_mid_corner, corner_b):
-            ax.scatter(*point.T)
+
+        ax.plot(*np.array((corner_a, ab_mid_corner)).T)
+        ax.plot(*np.array((corner_b, ab_mid_corner)).T)
 
         ax.scatter(*coordinates[boolean_index].T)
         ax.scatter(*coordinates[~boolean_index].T)
-        ax.legend(("A", "corner_points", "B", "valid_points", "invalid_points"))
+        ax.legend(("A", "B", "valid_points", "invalid_points"))
         ax.set_title(
             f"Point in parallelogram\nContext: {inspect_function_call_context}"
             if inspect_function_call_context
             else "Point in parallelogram"
         )
 
-        generic_inspection_finalization(inspect_points, inspect_function_call_context)
+        generic_inspection_finalization(inspect, inspect_function_call_context)
 
     return boolean_index

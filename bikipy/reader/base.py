@@ -2,13 +2,14 @@ import sys
 from abc import ABC
 from concurrent.futures import ProcessPoolExecutor
 from functools import lru_cache, partial, cached_property
-from typing import Any, Generator, Iterable, Optional
+from typing import Any, Generator, Iterable, Optional, Literal
 
 import numpy as np
 import pandas as pd
-from pydantic import Field, FilePath, validator
+from pydantic import Field, FilePath
 
 from bikipy._base_class import BikipyBase
+from bikipy.utils.typing import NDArray
 from bikipy.utils.video import get_video_data
 
 
@@ -29,9 +30,8 @@ class BaseReader(BikipyBase, ABC):
         "True requires x_max and y_max",
     )
     video_path: Optional[FilePath] = None
-    horizontal_resolution: Optional[int] = None
-    vertical_resolution: Optional[int] = None
-    fps: Optional[float] = None
+    manual_recording_resolution: Optional[NDArray[Literal[np.int16]]] = None
+    manual_fps: Optional[float] = None
     midpoint_groups: Optional[dict] = Field(
         None, description="labels that consist of groups that should have their"
     )
@@ -45,6 +45,41 @@ class BaseReader(BikipyBase, ABC):
             "the bottom-left"
         ),
     )
+
+    @cached_property
+    def _video_metadata(self) -> tuple:
+        error_msg = (
+            "Either video_path or video metadata needs to be exclusively " "defined."
+        )
+        if np.any(self.manual_recording_resolution) and self.manual_fps:
+            if self.video_path:
+                raise ValueError(error_msg)
+            fps = self.manual_fps
+            recording_resolution = self.manual_recording_resolution
+        elif self.video_path:
+            _frame, horizontal_resolution, vertical_resolution, fps = get_video_data(
+                self.video_path
+            )
+            recording_resolution = (horizontal_resolution, vertical_resolution)
+        else:
+            raise ValueError(error_msg)
+        return np.array(recording_resolution, dtype=np.int16), fps
+
+    @property
+    def recording_resolution(self) -> np.ndarray:
+        return self._video_metadata[0]
+
+    @property
+    def horizontal_resolution(self):
+        return self.recording_resolution[0]
+
+    @property
+    def vertical_resolution(self):
+        return self.recording_resolution[1]
+
+    @property
+    def fps(self):
+        return self._video_metadata[1]
 
     @cached_property
     def raw_df(self):
@@ -65,21 +100,6 @@ class BaseReader(BikipyBase, ABC):
             "recording_resolution": (x_res, y_res),
             "fps": fps,
         }
-
-    @validator(
-        "video_path", "horizontal_resolution", "vertical_resolution", "fps", pre=True
-    )
-    def get_video_data(
-        cls, video_path, horizontal_resolution, vertical_resolution, fps
-    ):
-        if video_path:
-            if horizontal_resolution or vertical_resolution or fps:
-                msg = "Either video_path or video metadata needs to be exclusively defined"
-                raise ValueError(msg)
-            _frame, horizontal_resolution, vertical_resolution, fps = get_video_data(
-                video_path
-            )
-        return video_path, horizontal_resolution, vertical_resolution, fps
 
     @property
     def recording_resolution(self):

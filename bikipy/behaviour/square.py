@@ -1,4 +1,3 @@
-from abc import ABC
 from functools import cached_property
 from logging import getLogger
 from typing import Any, Optional, Union
@@ -9,13 +8,22 @@ from matplotlib import pyplot as plt
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.feature.motion import Motion
 from bikipy.math.point_in_polygon import points_in_parallelogram
 
 logger = getLogger(__name__)
 
 
-class SquareEnclosedExperiment(BaseExperiment, ABC):
+class SquareEnclosedExperiment(BaseExperiment):
+    global_center_metric_length: Optional[float]
+
+    def trial_keyword_arguments(self, trial_id: int) -> dict:
+        generic = super().trial_keyword_arguments(trial_id)
+
+        if self.global_center_metric_length:
+            generic["center_metric_length"] = self.global_center_metric_length
+
+        return generic
+
     @cached_property
     def motion_summary_frame(self):
         periphery_center = ("Periphery", "Center")
@@ -142,7 +150,7 @@ class SquareEnclosedTrial(BaseTrial):
             self.center_square_corners[3],
             self.center_square_corners[1],
             self.coordinates_per_frame,
-            inspect_points=self.inspection_figure_save,
+            inspect=self.inspection_figure_save,
             inspect_function_call_context=self.__class__.__name__,
         )
 

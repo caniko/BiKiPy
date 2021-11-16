@@ -96,21 +96,23 @@ for round_idx in range(2):
 
             trial_id_range_vs_exp_meta[trial_id] = trial_data
 
-        experiment = NortExperiment(
+        experiment = NortExperiment.from_deeplabcut_data(
             trial_id_vs_data=trial_id_range_vs_exp_meta,
             metric_resolution=0.4,
-            nose_label="nose",
-            center_eye_label="mid-left_ear-right_ear",
+            gaze_travel_direction_point_label="nose",
+            gaze_start_point_label="mid-left_ear-right_ear",
             torso_label="mid-mid-left_ear-right_ear-tail",
             nort_field_vs_nort_field_object=nort_field_vs_nort_field_object,
             perimeter_border_normal_metric_magnitude=0.03,
-            center_metric_length=0.2,
+            global_center_metric_length=0.2,
             maximum_radians_inter_gaze_perimeter=np.deg2rad(75.0),
             # inspection_figure_save=RESULT_DIR / "inspect",
             data_import_kwargs={
                 "init_from": "parquet",
-                "midpoint_groups": (("left_ear", "right_ear"),),
-                "recursive_midpoint_groups": (("mid-left_ear-right_ear", "tail"),),
+                "midpoint_groups": {
+                    "center_eye": ("left_ear", "right_ear"),
+                    "torso": ("center_eye", "tail"),
+                },
             },
             timestamp=date,
         )

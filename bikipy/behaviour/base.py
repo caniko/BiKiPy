@@ -1,15 +1,16 @@
 import os
 import re
 from abc import ABC
-from functools import cached_property, partial
+from copy import copy
+from functools import cached_property
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import Iterable, Literal, Optional, Sequence, Union, Any
+from typing import Iterable, Literal, Optional, Sequence, Union, Any, Callable
 
 import cv2
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath, Field, FilePath
+from pydantic import DirectoryPath, Field, FilePath, validator
 from tqdm import tqdm
 
 from bikipy._base_class import BikipyBase
@@ -72,12 +73,14 @@ class Behaviour(BikipyBase, ABC):
 
 
 class BaseExperiment(Behaviour, ABC):
-    readers: list
     trial_id_vs_trial_class: dict
-    trial_id_range_vs_trial_keyword_arguments: Optional[RangeDict] = None
-    common_trial_keyword_arguments: Optional[dict] = None
     point_label_for_motion_features: Optional[str] = None
+    trial_id_vs_keyword_arguments: Optional[dict] = None
+    trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
+    common_trial_keyword_arguments: Optional[dict] = None
+    data_import_kwargs: Optional[dict] = None
     inspection_figure_save: Union[DirectoryPath, bool] = False
+    data_format_label: Literal["deeplabcut"] = "deeplabcut"
 
     _enable_process_pooling = True
     _deeplabcut_trial_id_finder = re.compile(r"\d+")
@@ -93,58 +96,40 @@ class BaseExperiment(Behaviour, ABC):
             )
             raise NotImplemented(msg) from e
 
-    @classmethod
-    def from_deeplabcut_data(
-        cls,
-        coordinate_data_paths: Sequence,
-        experiment_kwargs: dict,
-        data_import_kwargs: Optional[dict] = None,
-    ):
-        reader = cls._get_reader("deeplabcut")
-        cls(
-            readers=[
-                reader(
-                    df_path=data_path,
-                    int_id=cls._deeplabcut_trial_id_finder.findall(
-                        Path(data_path).stem
-                    )[0],
-                    **data_import_kwargs,
-                )
-                for data_path in coordinate_data_paths
-            ],
-            **experiment_kwargs,
+    @cached_property
+    def readers(self):
+        reader = self._get_reader(self.data_format_label)
+        return tuple(
+            reader(
+                df_path=data_path,
+                int_id=self._deeplabcut_trial_id_finder.findall(Path(data_path).stem)[
+                    0
+                ],
+                **self.data_import_kwargs,
+            )
+            for data_path in self.coordinate_data_paths
         )
 
-    def trial_keyword_arguments(self, trial_id: int):
-        trial_meta = self[trial_id]
-        generic_kwargs = {
-            "int_id": trial_id,
-            "reader": self.trial_id_vs_reader[trial_id],
-            "video_path": trial_meta["video_path"],
-            "metric_resolution": self.metric_resolution,
-            "inspection_figure_save": self.inspection_figure_save,
-        }
-        try:
-            generic_kwargs["units_per_pixel"] = self.units_per_pixel
-        except TypeError:
-            pass
+    def trial_keyword_arguments(self, trial_id: int) -> dict:
+        """
+        Function useful for customizing initiation parameters for trial objects
 
-        if "animal_id" in trial_meta:
-            generic_kwargs["animal_id"] = trial_meta["animal_id"]
-
-        if "inspect" in trial_meta:
-            generic_kwargs["inspection_figure_save"] = trial_meta["inspect"]
-            if "inspect_image" in trial_meta:
-                generic_kwargs["inspect_image"] = trial_meta["inspect_image"]
-
-        return generic_kwargs
+        :param trial_id: Respective trial ID
+        :return:
+        """
+        result = (
+            copy(self.common_trial_keyword_arguments)
+            if self.common_trial_keyword_arguments
+            else {}
+        )
+        if self.trial_id_vs_keyword_arguments:
+            result.update(self.trial_id_vs_keyword_arguments[trial_id])
+        if self.trial_id_range_vs_keyword_arguments:
+            result.update(self.trial_id_range_vs_keyword_arguments[trial_id])
+        return result
 
     @cached_property
-    def trial_id_vs_reader(self):
-        return {reader.int_id: reader for reader in self.readers}
-
-    @cached_property
-    def trial_objects(self):
+    def trial_objects(self) -> list:
         result = []
         for reader in self.readers:
             trial_id = reader.int_id
@@ -156,8 +141,18 @@ class BaseExperiment(Behaviour, ABC):
         return result
 
     @cached_property
-    def trial_id_vs_trial_object(self):
+    def trial_id_vs_trial_object(self) -> dict:
         return {trial.int_id: trial for trial in self.trial_objects}
+
+    @cached_property
+    def animal_id_vs_trial_objects(self) -> dict:
+        result = {}
+        for trial in self.trial_objects:
+            if trial.animal_id in result:
+                result[trial.animal_id].append(trial)
+            else:
+                result[trial.animal_id] = [trial]
+        return result
 
     def __getitem__(self, item: int):
         return self.trial_id_vs_trial_object[item]
@@ -175,7 +170,7 @@ class BaseExperiment(Behaviour, ABC):
 
     @property
     def _trial_id_iterable(self):
-        return self.trial_id_vs_reader.keys()
+        return self.trial_id_vs_trial_object.keys()
 
     @cached_property
     def number_of_trials(self):

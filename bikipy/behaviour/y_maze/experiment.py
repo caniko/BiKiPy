@@ -57,7 +57,7 @@ class YMazeExperiment(BaseExperiment):
 
             self.y_maze_experiments.append(
                 YMazeTrial(
-                    **self.generic_trial_kwargs(trial_id),
+                    **self.trial_keyword_arguments(trial_id),
                     arms=experiment_area_set["arm"],
                     center=experiment_area_set["center"][0],
                     point_label_for_motion_features=self.point_label_for_motion_features,

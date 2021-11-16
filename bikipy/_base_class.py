@@ -20,6 +20,7 @@ class BikipyBase(BaseModel, ABC):
     _category = None
 
     class Config:
+        underscore_attrs_are_private = True
         arbitrary_types_allowed = True
         extra = Extra.allow
         keep_untouched = (cached_property,)
