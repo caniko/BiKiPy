@@ -4,7 +4,7 @@ import statistics
 from functools import cached_property, lru_cache
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import Any, Optional, Sequence, Union, Literal
+from typing import Any, Literal, Optional, Sequence, Union
 
 import cv2
 import matplotlib.pyplot as plt

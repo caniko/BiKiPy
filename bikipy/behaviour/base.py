@@ -5,22 +5,20 @@ from copy import copy
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import Iterable, Literal, Optional, Sequence, Union, Any, Callable
+from typing import Any, Iterable, Literal, Optional, Sequence, Union
 
-import cv2
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath, Field, FilePath, validator
+from pydantic import DirectoryPath, Field, FilePath
 from tqdm import tqdm
 
-from bikipy._base_class import BikipyBase
+from bikipy._base_class import BikipyBase, VideoMetaDataMixin
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.feature.motion import Motion, displacement_by_frame, frozen_frames
+from bikipy.feature.motion import Motion, merge_motion_islands
 from bikipy.math.point_in_polygon import points_in_parallelogram
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.store import RangeDict
 from bikipy.utils.typing import NDArray
-from bikipy.utils.video import get_video_data
 
 logger = getLogger(__name__)
 
@@ -210,7 +208,7 @@ class BaseExperiment(Behaviour, ABC):
         )
 
 
-class BaseTrial(Behaviour, ABC):
+class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
     reader: Any = Field(
         description="The coordinates of the subject across the frames in the video recording"
     )
@@ -223,9 +221,6 @@ class BaseTrial(Behaviour, ABC):
     rigid_nodes_freezing: Optional[Sequence[Union[str, int]]] = Field(
         None,
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
-    )
-    video_path: Optional[FilePath] = Field(
-        None, description="Path to trial video recording"
     )
     inspection_figure_save: Union[DirectoryPath, bool] = Field(
         False, description="Path to save figures for inspection of results"
@@ -243,65 +238,17 @@ class BaseTrial(Behaviour, ABC):
     _trial_label = None
     _second_tolerance = 0.35
 
-    class Config:
-        fields = {"rigid_nodes_freezing_": "rigid_nodes_freezing"}
-
-    def __init__(self, **data):
-        super().__init__(**data)
-
-        if self.video_path:
-            (
-                _frame,
-                horizontal_resolution,
-                vertical_resolution,
-                self.fps,
-            ) = get_video_data(self.video_path)
-            self.recording_resolution = np.array(
-                (horizontal_resolution, vertical_resolution), dtype=np.int16
-            )
-        elif self.recording_resolution and self.fps:
-            pass
-        elif self.inspect_image and self.fps:
-            self.recording_resolution = cv2.imread(self.inspect_image).shape[:-1]
-        else:
-            msg = (
-                "recording_resolution and fps could not be defined."
-                "One of the following compbinations must be provided:\n"
-                "\t1. Trial video path\n"
-                "\t2. recording_resolution and frame per second (fps)\n"
-                "\t3. inspect_image and frame per second (fps)"
-            )
-            raise ValueError(msg)
-
     @property
-    def coordinates_per_frame(self):
+    def coordinates_per_frame(self) -> np.ndarray:
         return self.reader[self.point_label_for_motion_features]
 
     @cached_property
-    def number_of_frames(self):
+    def number_of_frames(self) -> int:
         return len(self.coordinates_per_frame)
 
     @cached_property
-    def experiment_seconds(self):
+    def experiment_seconds(self) -> int:
         return self.coordinates_per_frame.shape[0] / self.fps
-
-    @cached_property
-    def motion(self):
-        return Motion(
-            self.coordinates_per_frame,
-            self.units_per_pixel,
-            self.fps,
-            label_vs_boolean_index={
-                "quadrant_upper_left": self.quadrant_upper_left_boolean_index,
-                "quadrant_upper_right": self.quadrant_upper_right_boolean_index,
-                "quadrant_down_left": self.quadrant_down_left_boolean_index,
-                "quadrant_down_right": self.quadrant_down_right_boolean_index,
-            },
-        )
-
-    @property
-    def _hash_key(self):
-        return self.coordinates_per_frame
 
     @property
     def inspect_image_path(self):
@@ -312,25 +259,29 @@ class BaseTrial(Behaviour, ABC):
         return self.inspection_figure_save  # return the bool in any case
 
     @cached_property
-    def _frame_tolerance(self):
-        return round(self._second_tolerance * self.fps)
+    def info(self):
+        return [self._trial_label] if self._trial_label else []
 
     @cached_property
-    def frozen_boolean_index(self):
-        if not self.rigid_nodes_freezing:
-            msg = "rigid_nodes_freezing is not defined"
-            raise AttributeError(msg)
-        return frozen_frames(
-            self.fps,
-            [
-                displacement_by_frame(reader, remove_tails=False) * self.units_per_pixel
-                for reader in self.reader[self.rigid_nodes_freezing]
-            ],
-        )
+    def recording_center_pixel(self) -> np.ndarray:
+        return self.recording_resolution / 2.0
 
     @cached_property
-    def total_frozen_frames(self):
-        return np.sum(self.frozen_boolean_index) / self.fps
+    def location_sequence_quadrant(self) -> np.ndarray:
+        result = self._zeros_based_on_frame_length
+
+        result[self.quadrant_upper_left_boolean_index] = 1
+        result[self.quadrant_upper_right_boolean_index] = 2
+        result[self.quadrant_down_left_boolean_index] = 3
+        result[self.quadrant_down_right_boolean_index] = 4
+
+        return reduce_repeating_sequences(result, round(self.fps * 0.35))
+
+    @cached_property
+    def motion(self):
+        return Motion(self.coordinates_per_frame, self.units_per_pixel, self.fps)
+
+    # Perimeter
 
     def detect_confined_perimeter(self, coordinate: np.array):
         """
@@ -347,6 +298,14 @@ class BaseTrial(Behaviour, ABC):
                 return label
         logger.debug(f"Location could not be determined, {coordinate}")
 
+    @cached_property
+    def int_id_vs_perimeter(self):
+        self._validate_perimeters_object()
+        return {
+            i: perimeter
+            for i, perimeter in enumerate(self.perimeters.values(), start=1)
+        }
+
     def _validate_perimeters_object(self):
         if not self.perimeters:
             msg = "perimeters is not defined as an object variable, which is required for int_id_vs_perimeter"
@@ -362,14 +321,6 @@ class BaseTrial(Behaviour, ABC):
         self._validate_perimeters_object()
         return {i: label for i, label in enumerate(self.perimeters.keys(), start=1)}
 
-    @cached_property
-    def int_id_vs_perimeter(self):
-        self._validate_perimeters_object()
-        return {
-            i: perimeter
-            for i, perimeter in enumerate(self.perimeters.values(), start=1)
-        }
-
     @property
     def _start_int_id(self):
         return self._perimeter_label_vs_int_id[self.trial_start_perimeter]
@@ -377,137 +328,12 @@ class BaseTrial(Behaviour, ABC):
     def _perimeter_label_sequence_to_int_id(self, label_sequence: Iterable) -> tuple:
         return tuple(self._perimeter_label_vs_int_id[label] for label in label_sequence)
 
-    @cached_property
-    def info(self):
-        return [self._trial_label] if self._trial_label else []
+    # Miscellaneous
 
     @cached_property
-    def recording_center_pixel(self):
-        return self.recording_resolution / 2.0
-
-    @cached_property
-    def _zeros_frame_length(self):
+    def _zeros_based_on_frame_length(self):
         return np.zeros(self.number_of_frames, dtype=np.uint8)
 
     @cached_property
-    def location_sequence_quadrant(self):
-        result = self._zeros_frame_length
-
-        result[self.quadrant_upper_left_boolean_index] = 1
-        result[self.quadrant_upper_right_boolean_index] = 2
-        result[self.quadrant_down_left_boolean_index] = 3
-        result[self.quadrant_down_right_boolean_index] = 4
-
-        return reduce_repeating_sequences(result, round(self.fps * 0.35))
-
-    # Quadrant upper left 1
-
-    @cached_property
-    def quadrant_upper_left_boolean_index(self):
-        return points_in_parallelogram(
-            np.array((0.0, 0.0)),
-            np.array((self.recording_center_pixel[0], 0.0)),
-            np.array((0.0, self.recording_center_pixel[1])),
-            self.coordinates_per_frame,
-        )
-
-    @cached_property
-    def quadrant_upper_left_entries(self):
-        return np.sum(self.location_sequence_quadrant == 1)
-
-    @cached_property
-    def seconds_on_quadrant_upper_left(self):
-        return np.sum(self.quadrant_upper_left_boolean_index) / self.fps
-
-    @cached_property
-    def quadrant_upper_left_freezing_time(self):
-        return (
-            np.sum(
-                self.frozen_boolean_index & self.quadrant_upper_left_boolean_index[1:]
-            )
-            / self.fps
-        )
-
-    # Quadrant upper right 2
-
-    @cached_property
-    def quadrant_upper_right_boolean_index(self):
-        return points_in_parallelogram(
-            np.array((self.recording_center_pixel[0], 0.0)),
-            self.recording_center_pixel,
-            np.array((self.horizontal_resolution, 0.0)),
-            self.coordinates_per_frame,
-        )
-
-    @cached_property
-    def quadrant_upper_right_entries(self):
-        return np.sum(self.location_sequence_quadrant == 2)
-
-    @cached_property
-    def seconds_on_quadrant_upper_right(self):
-        return np.sum(self.quadrant_upper_right_boolean_index) / self.fps
-
-    @cached_property
-    def quadrant_upper_right_freezing_time(self):
-        return (
-            np.sum(
-                self.frozen_boolean_index & self.quadrant_upper_right_boolean_index[1:]
-            )
-            / self.fps
-        )
-
-    # Quadrant down left 3
-
-    @cached_property
-    def quadrant_down_left_boolean_index(self):
-        return points_in_parallelogram(
-            np.array((0.0, self.vertical_resolution)),
-            np.array((self.recording_center_pixel[0], self.vertical_resolution)),
-            np.array((0.0, self.recording_center_pixel[1])),
-            self.coordinates_per_frame,
-        )
-
-    @cached_property
-    def quadrant_down_left_entries(self):
-        return np.sum(self.location_sequence_quadrant == 3)
-
-    @cached_property
-    def seconds_on_quadrant_down_left(self):
-        return np.sum(self.quadrant_down_left_boolean_index) / self.fps
-
-    @cached_property
-    def quadrant_down_left_freezing_time(self):
-        return (
-            np.sum(
-                self.frozen_boolean_index & self.quadrant_down_left_boolean_index[1:]
-            )
-            / self.fps
-        )
-
-    # Quadrant down right 4
-
-    @cached_property
-    def quadrant_down_right_boolean_index(self):
-        return points_in_parallelogram(
-            np.array((self.recording_center_pixel[0], self.vertical_resolution)),
-            self.recording_resolution,
-            self.recording_center_pixel,
-            self.coordinates_per_frame,
-        )
-
-    @cached_property
-    def quadrant_down_right_entries(self):
-        return np.sum(self.location_sequence_quadrant == 4)
-
-    @cached_property
-    def seconds_on_quadrant_down_right(self):
-        return np.sum(self.quadrant_down_right_boolean_index) / self.fps
-
-    @cached_property
-    def quadrant_down_right_freezing_time(self):
-        return (
-            np.sum(
-                self.frozen_boolean_index & self.quadrant_down_right_boolean_index[1:]
-            )
-            / self.fps
-        )
+    def _frame_tolerance(self):
+        return round(self._second_tolerance * self.fps)

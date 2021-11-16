@@ -1,17 +1,15 @@
 import sys
 from abc import ABC
 from concurrent.futures import ProcessPoolExecutor
-from functools import lru_cache, partial, cached_property
-from typing import Any, Generator, Iterable, Optional, Literal
+from functools import cached_property, lru_cache, partial
+from typing import Any, Generator, Iterable, Optional
 
 import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath
 
-from bikipy._base_class import BikipyBase
-from bikipy.utils.typing import NDArray
+from bikipy._base_class import BikipyBase, VideoMetaDataMixin
 from bikipy.utils.video import get_video_data
-
 
 FILE_EXTENSION_VS_PANDAS_READER = {
     "parquet": pd.read_parquet,
@@ -20,7 +18,7 @@ FILE_EXTENSION_VS_PANDAS_READER = {
 }
 
 
-class BaseReader(BikipyBase, ABC):
+class BaseReader(BikipyBase, VideoMetaDataMixin, ABC):
     df_path: FilePath = Field(
         description="Path to kinematic data, that will be " "converted to pd.DataFrame"
     )
@@ -29,9 +27,6 @@ class BaseReader(BikipyBase, ABC):
         description="Scales the coordinates with respect to their min and max. "
         "True requires x_max and y_max",
     )
-    video_path: Optional[FilePath] = None
-    manual_recording_resolution: Optional[NDArray[Literal[np.int16]]] = None
-    manual_fps: Optional[float] = None
     midpoint_groups: Optional[dict] = Field(
         None, description="labels that consist of groups that should have their"
     )
@@ -45,41 +40,6 @@ class BaseReader(BikipyBase, ABC):
             "the bottom-left"
         ),
     )
-
-    @cached_property
-    def _video_metadata(self) -> tuple:
-        error_msg = (
-            "Either video_path or video metadata needs to be exclusively " "defined."
-        )
-        if np.any(self.manual_recording_resolution) and self.manual_fps:
-            if self.video_path:
-                raise ValueError(error_msg)
-            fps = self.manual_fps
-            recording_resolution = self.manual_recording_resolution
-        elif self.video_path:
-            _frame, horizontal_resolution, vertical_resolution, fps = get_video_data(
-                self.video_path
-            )
-            recording_resolution = (horizontal_resolution, vertical_resolution)
-        else:
-            raise ValueError(error_msg)
-        return np.array(recording_resolution, dtype=np.int16), fps
-
-    @property
-    def recording_resolution(self) -> np.ndarray:
-        return self._video_metadata[0]
-
-    @property
-    def horizontal_resolution(self):
-        return self.recording_resolution[0]
-
-    @property
-    def vertical_resolution(self):
-        return self.recording_resolution[1]
-
-    @property
-    def fps(self):
-        return self._video_metadata[1]
 
     @cached_property
     def raw_df(self):

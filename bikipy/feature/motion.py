@@ -1,12 +1,11 @@
 from collections.abc import Sequence
-from functools import cached_property, lru_cache
+from dataclasses import dataclass
+from functools import cached_property
 from logging import getLogger
-from typing import Iterable, Union, Optional, Literal
+from typing import Iterable, Union
 
 import numpy as np
 import pandas as pd
-from pydantic import validate_arguments
-from pydantic.dataclasses import dataclass
 
 from bikipy.feature.attention import attention_filter
 from bikipy.math.calculus import absolute_derivative
@@ -185,49 +184,6 @@ class Motion:
     coordinate_sequence: NDArray
     units_per_pixel: Union[float, NDArray]
     fps: float
-    label_vs_boolean_index: Optional[dict]
-
-    _tracked_values = 4
-
-    @validate_arguments
-    def __setitem__(self, key: str, value: NDArray):
-        assert value.dtype == bool
-        if self.label_vs_boolean_index is not None:
-            self.label_vs_boolean_index[key] = value
-        else:
-            self.label_vs_boolean_index = {key: value}
-
-    def motion_object_from_slice(self, coordinate_slice: slice):
-        return self.__class__(
-            self.coordinate_sequence[coordinate_slice], self.units_per_pixel, self.fps
-        )
-
-    @lru_cache
-    def __getitem__(self, item: str):
-        boolean_index = attention_filter(
-            self.label_vs_boolean_index[item], self.fps, 0.0, 0.2
-        )
-        indices = np.where(boolean_index)
-
-        motion_objects = []
-        start, previous = indices[0], indices[0]
-        for i in indices[1:]:
-            if i != previous + 1 and i - start >= self._tracked_values:
-                motion_objects.append(self.motion_object_from_slice(slice(start, i)))
-                start = i
-            previous = i
-        motion_objects.append(self.motion_object_from_slice(slice(start, i)))
-
-        if len(motion_objects) == 1:
-            return motion_objects[0].to_list
-
-        result = motion_objects[0].to_list
-        for motion_object in motion_objects[1:]:
-            items = motion_object.to_list
-            for i in range(self._tracked_values):
-                result[i] += items[i]
-
-        return result
 
     @cached_property
     def metric_displacement_by_frame(self):
@@ -255,7 +211,7 @@ class Motion:
         return np.nanmedian(self.speed)
 
     @cached_property
-    def frozen_frames(self):
+    def frozen_boolean_index(self):
         if not self.total_displacement:
             return None
         return frozen_frames(self.fps, (self.metric_displacement_by_frame,))
@@ -264,7 +220,7 @@ class Motion:
     def freezing_time(self):
         if not self.total_displacement:
             return None
-        return np.nansum(self.frozen_frames) / self.fps
+        return np.nansum(self.frozen_boolean_index) / self.fps
 
     @cached_property
     def acceleration(self):
@@ -278,7 +234,7 @@ class Motion:
             return None
         return np.nanmedian(self.acceleration)
 
-    @cached_property
+    @property
     def to_list(self):
         return [
             self.total_displacement,
@@ -286,3 +242,37 @@ class Motion:
             self.median_acceleration,
             self.freezing_time,
         ]
+
+
+def merge_motion_islands(coordinate_sequence, boolean_index, fps, units_per_pixel):
+    def motion_object_from_slice(slice_start, end):
+        return Motion(
+            coordinate_sequence=coordinate_sequence[slice_start:end],
+            units_per_pixel=units_per_pixel,
+            fps=fps,
+        ).to_list
+
+    boolean_index = attention_filter(coordinate_sequence[boolean_index], fps, 0.0, 0.2)
+    indices = np.where(boolean_index)
+
+    motion_features = []
+    start, previous = indices[0], indices[0]
+    for i in indices[1:]:
+        if i != previous + 1 and i - start >= 4:
+            motion_features.append(motion_object_from_slice(start, i))
+            start = i
+        previous = i
+    motion_features.append(motion_object_from_slice(start, i))
+
+    return {
+        "total_displacement": sum(
+            motion_feature[0] for motion_feature in motion_features
+        ),
+        "median_speed": np.mean(
+            [motion_feature[1] for motion_feature in motion_features]
+        ),
+        "median_acceleration": np.mean(
+            [motion_feature[2] for motion_feature in motion_features]
+        ),
+        "freezing_time": sum(motion_feature[3] for motion_feature in motion_features),
+    }

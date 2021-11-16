@@ -26,7 +26,7 @@ class SquareEnclosedExperiment(BaseExperiment):
 
     @cached_property
     def motion_summary_frame(self):
-        periphery_center = ("Periphery", "Center")
+        periphery_center_labels = ("Periphery", "Center")
         return pd.concat(
             (
                 super().motion_summary_frame,
@@ -43,8 +43,8 @@ class SquareEnclosedExperiment(BaseExperiment):
                     columns=(
                         *self._motion_2d_multi_indexer("Periphery"),
                         *self._motion_2d_multi_indexer("Center"),
-                        *self._feature_2d_multi_indexer("Time_spent", periphery_center),
-                        *self._feature_2d_multi_indexer("Entries", periphery_center),
+                        *self._feature_2d_multi_indexer("Time_spent", periphery_center_labels),
+                        *self._feature_2d_multi_indexer("Entries", periphery_center_labels),
                     ),
                     index=self._frame_index,
                 ),

@@ -1,4 +1,5 @@
 import asyncio
+from abc import ABC
 from collections import Sequence as collections_Sequence
 from datetime import datetime
 from functools import cached_property
@@ -6,7 +7,7 @@ from logging import getLogger
 from typing import Optional, Union
 
 import numpy as np
-from pydantic import DirectoryPath, validator
+from pydantic import DirectoryPath, validator, BaseModel
 from tqdm import tqdm
 
 from bikipy.behaviour.base import BaseTrial
@@ -27,7 +28,7 @@ except ImportError as e:
 logger = getLogger(__name__)
 
 
-class LiveTrial(BaseTrial):
+class LiveTrial(BaseModel, ABC):
     save_root: DirectoryPath
     delay_timings: tuple[Union[float, int]]
     delay_timings_trial_count: Union[tuple[int], int]
