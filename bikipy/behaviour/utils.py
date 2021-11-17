@@ -37,10 +37,10 @@ def triplet_permutation_vs_base_permutation_dictionary(base_triplets: Sequence):
 
 
 def reduce_repeating_sequences(
-    repeating_sequence: Sequence,
+    repeating_sequence: np.ndarray,
     frame_tolerance: Any,
-    connector_element: Union[Any, None] = None,
-) -> list[Optional[Any]]:
+    connector_element: Any = None,
+) -> list[Any, ...]:
     """
     Reduce consecutive sub-sequences in string sequence
 

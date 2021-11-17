@@ -1,9 +1,11 @@
+from abc import ABC
 from functools import cached_property
 
 import numpy as np
 import pandas as pd
 
 from bikipy.behaviour.base import BaseTrial, BaseExperiment
+from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.motion import merge_motion_islands
 from bikipy.math.point_in_polygon import points_in_parallelogram
 
@@ -11,18 +13,29 @@ from bikipy.math.point_in_polygon import points_in_parallelogram
 class RectangleEnclosedExperiment(BaseExperiment):
     @cached_property
     def motion_summary_frame(self):
-        quadrant_labels = ("Upper-left Quadrant", "Upper-right Quadrant", "Lower-left Quadrant", "Lower-right Quadrant")
+        quadrant_labels = (
+            "Upper-left Quadrant",
+            "Upper-right Quadrant",
+            "Lower-left Quadrant",
+            "Lower-right Quadrant",
+        )
         return pd.concat(
             (
                 super().motion_summary_frame,
                 pd.DataFrame(
                     (
-                        trial.center_motion.to_list
-                        + trial.periphery_motion.to_list
-                        + trial.seconds_on_periphery
-                        + trial.seconds_on_center
-                        + trial.periphery_entries
-                        + trial.center_entries
+                        trial.motion_quadrant_upper_left.to_list
+                        + trial.motion_quadrant_upper_right.to_list
+                        + trial.motion_quadrant_down_left.to_list
+                        + trial.motion_quadrant_down_right.to_list
+                        + trial.seconds_on_quadrant_upper_left
+                        + trial.seconds_on_quadrant_upper_right
+                        + trial.seconds_on_quadrant_down_left
+                        + trial.seconds_on_quadrant_down_right
+                        + trial.quadrant_upper_left_entries
+                        + trial.quadrant_upper_right_entries
+                        + trial.quadrant_down_left_entries
+                        + trial.quadrant_down_right_entries
                         for trial in self.trial_objects
                     ),
                     columns=(
@@ -30,7 +43,9 @@ class RectangleEnclosedExperiment(BaseExperiment):
                         *self._motion_2d_multi_indexer("Upper-right Quadrant"),
                         *self._motion_2d_multi_indexer("Lower-left Quadrant"),
                         *self._motion_2d_multi_indexer("Lower-right Quadrant"),
-                        *self._feature_2d_multi_indexer("Seconds present", quadrant_labels),
+                        *self._feature_2d_multi_indexer(
+                            "Seconds present", quadrant_labels
+                        ),
                         *self._feature_2d_multi_indexer("Entries", quadrant_labels),
                     ),
                     index=self._frame_index,
@@ -40,7 +55,18 @@ class RectangleEnclosedExperiment(BaseExperiment):
         )
 
 
-class RectangleEnclosedTrial(BaseTrial):
+class RectangleEnclosedTrial(BaseTrial, ABC):
+    @cached_property
+    def location_sequence_quadrant(self) -> np.ndarray:
+        result = self._zeros_based_on_frame_length
+
+        result[self.quadrant_upper_left_boolean_index] = 1
+        result[self.quadrant_upper_right_boolean_index] = 2
+        result[self.quadrant_lower_left_boolean_index] = 3
+        result[self.quadrant_lower_right_boolean_index] = 4
+
+        return reduce_repeating_sequences(result, round(self.fps * 0.35))
+
     @cached_property
     def motion_quadrant_upper_left(self) -> np.ndarray:
         return merge_motion_islands(

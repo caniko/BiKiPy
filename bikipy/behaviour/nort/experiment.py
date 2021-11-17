@@ -8,7 +8,6 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from pydantic import Field
 
-from bikipy.behaviour.nort.trial import NortHabituationTrial
 from bikipy.behaviour.square import SquareEnclosedExperiment
 from bikipy.utils.store import sort_dict_by_key_value
 
@@ -16,16 +15,12 @@ logger = getLogger(__name__)
 
 
 class NortExperiment(SquareEnclosedExperiment):
-    """
-    Class for combining several NORT trials under one class for joint analysis
-    """
-
     gaze_travel_direction_point_label: str = Field(
         description="Label signifying the area where the gaze vector"
     )
     gaze_start_point_label: str = Field(description="Label of the eye center in the df")
     torso_label: str = Field(description="Label of the torso in the df")
-    nort_field_vs_nort_field_object: Optional[dict] = Field(
+    nort_field_id_vs_nort_field_object: Optional[dict] = Field(
         None, description="Label of the nose in the df"
     )
     perimeter_border_normal_metric_magnitude: Optional[float] = Field(
@@ -72,15 +67,6 @@ class NortExperiment(SquareEnclosedExperiment):
         -------
         DataFrame with the combined experiment attributes of all the YMazeTrial objects
         """
-        base_columns = [
-            ("All", "Stage"),
-            *self._motion_2d_multi_indexer("All"),
-            *self._motion_2d_multi_indexer("Periphery"),
-            *self._motion_2d_multi_indexer("Center"),
-            *self._feature_2d_multi_indexer("Time_spent", ("Periphery", "Center")),
-            *self._feature_2d_multi_indexer("Entries", ("Periphery", "Center")),
-        ]
-
         object_columns = [
             *self._feature_2d_multi_indexer(
                 "Observation_instances", ("A", "B", "Total")

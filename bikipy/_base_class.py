@@ -106,6 +106,13 @@ class VideoMetaDataMixin(BaseModel):
         return np.array(recording_resolution, dtype=np.int16), fps
 
     @property
+    def _video_metadata_dict_manual_format(self):
+        return {
+            "manual_recording_resolution": self.recording_resolution,
+            "manual_fps": self.fps,
+        }
+
+    @property
     def recording_resolution(self) -> np.ndarray:
         return self._video_metadata[0]
 

@@ -1,3 +1,4 @@
+from abc import ABC
 from functools import cached_property
 from logging import getLogger
 from typing import Any, Optional, Union
@@ -5,15 +6,19 @@ from typing import Any, Optional, Union
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from pydantic import Field, validator
 
-from bikipy.behaviour.base import BaseExperiment, BaseTrial
+from bikipy.behaviour.rectangle import (
+    RectangleEnclosedExperiment,
+    RectangleEnclosedTrial,
+)
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.math.point_in_polygon import points_in_parallelogram
 
 logger = getLogger(__name__)
 
 
-class SquareEnclosedExperiment(BaseExperiment):
+class SquareEnclosedExperiment(RectangleEnclosedExperiment):
     global_center_metric_length: Optional[float]
 
     def trial_keyword_arguments(self, trial_id: int) -> dict:
@@ -43,8 +48,12 @@ class SquareEnclosedExperiment(BaseExperiment):
                     columns=(
                         *self._motion_2d_multi_indexer("Periphery"),
                         *self._motion_2d_multi_indexer("Center"),
-                        *self._feature_2d_multi_indexer("Time_spent", periphery_center_labels),
-                        *self._feature_2d_multi_indexer("Entries", periphery_center_labels),
+                        *self._feature_2d_multi_indexer(
+                            "Time_spent", periphery_center_labels
+                        ),
+                        *self._feature_2d_multi_indexer(
+                            "Entries", periphery_center_labels
+                        ),
                     ),
                     index=self._frame_index,
                 ),
@@ -53,27 +62,11 @@ class SquareEnclosedExperiment(BaseExperiment):
         )
 
 
-class SquareEnclosedTrial(BaseTrial):
-    def __init__(
-        self,
-        center_metric_length: Union[float, int],
-        **base_trial_kwargs,
-    ):
-        """
-        Parameters
-        ----------
-        metric_resolution: float
-
-        center_metric_length: float
-            Length of the square box signifying periphery and inner area of the
-            square box
-        base_trial_kwargs
-            Keyword arguments passed to BaseTrial
-        """
-        super().__init__(**base_trial_kwargs)
-
-        self.center_metric_length = float(center_metric_length)
-        assert self.metric_resolution > self.center_metric_length
+class SquareEnclosedTrial(RectangleEnclosedTrial, ABC):
+    center_metric_length: float = Field(
+        description="Length of the square box signifying periphery and inner area "
+        "of the square box"
+    )
 
     @cached_property
     def center_square_corners(self):
@@ -192,13 +185,14 @@ class SquareEnclosedTrial(BaseTrial):
     @cached_property
     def center_freezing_time(self):
         return (
-            np.sum(self.frozen_boolean_index & self.center_boolean_index[1:]) / self.fps
+            np.sum(self.motion.frozen_boolean_index & self.center_boolean_index[1:])
+            / self.fps
         )
 
     @cached_property
     def periphery_freezing_time(self):
         return (
-            np.sum(self.frozen_boolean_index & self.periphery_boolean_index[1:])
+            np.sum(self.motion.frozen_boolean_index & self.periphery_boolean_index[1:])
             / self.fps
         )
 
@@ -218,24 +212,3 @@ class SquareEnclosedTrial(BaseTrial):
             )
 
         return ax
-
-    @property
-    def motion_info(self):
-        return (
-            self.motion.to_list
-            + self.periphery_motion.to_list
-            + self.center_motion.to_list
-        )
-
-    @property
-    def feature_info(self):
-        return [
-            self.seconds_on_periphery,
-            self.seconds_on_center,
-            self.periphery_entries,
-            self.center_entries,
-        ]
-
-    @property
-    def info(self):
-        return super().info + self.motion_info + self.feature_info

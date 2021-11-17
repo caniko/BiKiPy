@@ -1,6 +1,6 @@
 import os
 import re
-from abc import ABC
+from abc import ABC, abstractproperty
 from copy import copy
 from functools import cached_property
 from logging import getLogger
@@ -14,8 +14,7 @@ from tqdm import tqdm
 
 from bikipy._base_class import BikipyBase, VideoMetaDataMixin
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.feature.motion import Motion, merge_motion_islands
-from bikipy.math.point_in_polygon import points_in_parallelogram
+from bikipy.feature.motion import Motion
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.store import RangeDict
 from bikipy.utils.typing import NDArray
@@ -31,6 +30,9 @@ class Behaviour(BikipyBase, ABC):
     recording_resolution: Optional[NDArray[Literal["np.int16"]]] = None
     metric_resolution: Union[NDArray, float, None] = None
     manual_units_per_pixel: Optional[float] = None
+    data_import_kwargs: Optional[dict] = None
+    data_format_label: Literal["deeplabcut"] = "deeplabcut"
+
     _live: bool = False
 
     @property
@@ -71,42 +73,16 @@ class Behaviour(BikipyBase, ABC):
 
 
 class BaseExperiment(Behaviour, ABC):
-    trial_id_vs_trial_class: dict
+    trial_class: Any = None
+    trial_id_vs_trial_class: Optional[dict] = None
     point_label_for_motion_features: Optional[str] = None
     trial_id_vs_keyword_arguments: Optional[dict] = None
     trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
     common_trial_keyword_arguments: Optional[dict] = None
-    data_import_kwargs: Optional[dict] = None
     inspection_figure_save: Union[DirectoryPath, bool] = False
-    data_format_label: Literal["deeplabcut"] = "deeplabcut"
 
     _enable_process_pooling = True
     _deeplabcut_trial_id_finder = re.compile(r"\d+")
-
-    @staticmethod
-    def _get_reader(coordinate_data_format):
-        try:
-            return LABEL_VS_DATA_READER[coordinate_data_format]
-        except KeyError as e:
-            msg = (
-                f"{coordinate_data_format} as a format for data ingestion has "
-                f"no implementation"
-            )
-            raise NotImplemented(msg) from e
-
-    @cached_property
-    def readers(self):
-        reader = self._get_reader(self.data_format_label)
-        return tuple(
-            reader(
-                df_path=data_path,
-                int_id=self._deeplabcut_trial_id_finder.findall(Path(data_path).stem)[
-                    0
-                ],
-                **self.data_import_kwargs,
-            )
-            for data_path in self.coordinate_data_paths
-        )
 
     def trial_keyword_arguments(self, trial_id: int) -> dict:
         """
@@ -120,10 +96,14 @@ class BaseExperiment(Behaviour, ABC):
             if self.common_trial_keyword_arguments
             else {}
         )
+        result["data_format_label"] = self.data_format_label
+
         if self.trial_id_vs_keyword_arguments:
             result.update(self.trial_id_vs_keyword_arguments[trial_id])
         if self.trial_id_range_vs_keyword_arguments:
             result.update(self.trial_id_range_vs_keyword_arguments[trial_id])
+        if self.data_import_kwargs:
+            result["data_import_kwargs"] = self.data_import_kwargs
         return result
 
     @cached_property
@@ -167,17 +147,24 @@ class BaseExperiment(Behaviour, ABC):
             raise AttributeError()
 
     @property
-    def _trial_id_iterable(self):
-        return self.trial_id_vs_trial_object.keys()
+    def _trial_id_key_view(self):
+        if self.trial_id_vs_keyword_arguments:
+            return self.trial_id_vs_keyword_arguments.keys()
+        if self.trial_id_range_vs_keyword_arguments:
+            return self.trial_id_range_vs_keyword_arguments.keys()
+
+    @property
+    def trial_id_tuple(self) -> tuple:
+        return tuple(self._trial_id_key_view)
 
     @cached_property
     def number_of_trials(self):
-        return len(self._trial_id_iterable)
+        return len(self._trial_id_key_view)
 
     @property
     def trial_id_data_tqdm(self):
         return tqdm(
-            ((trial_id, self[trial_id]) for trial_id in self._trial_id_iterable),
+            ((trial_id, self[trial_id]) for trial_id in self._trial_id_key_view),
             total=self.number_of_trials,
         )
 
@@ -197,20 +184,32 @@ class BaseExperiment(Behaviour, ABC):
 
     @property
     def _frame_index(self):
-        return pd.Series(self._trial_id_iterable, name="Test ID", dtype=np.int16)
+        return pd.Series(self._trial_id_key_view, name="Test ID", dtype=np.int16)
+
+    @cached_property
+    def _trial_id_vs_animal_id_frame(self):
+        if not any(not trial.animal_id for trial in self.trial_objects):
+            return pd.DataFrame(
+                (trial.animal_id for trial in self.trial_objects),
+                columns=("Animal ID",),
+                index=self._frame_index,
+            )
 
     @cached_property
     def motion_summary_frame(self):
-        return pd.DataFrame(
+        result = pd.DataFrame(
             (trial.motion.to_list for trial in self.trial_objects),
             columns=self._motion_2d_multi_indexer("All"),
             index=self._frame_index,
         )
+        if self._trial_id_vs_animal_id_frame:
+            return pd.concat((self._trial_id_vs_animal_id_frame, result), axis=1)
+        return result
 
 
 class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
-    reader: Any = Field(
-        description="The coordinates of the subject across the frames in the video recording"
+    coordinate_data_path: FilePath = Field(
+        description="Path to file storing coordinate data"
     )
     animal_id: Optional[int] = Field(
         None, description="The ID of the animal in the trial"
@@ -237,6 +236,33 @@ class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
     _trial_sequence_index = None
     _trial_label = None
     _second_tolerance = 0.35
+
+    @abstractproperty
+    def info(self) -> dict:
+        """
+        Trial classes must implement this property for the generation of
+        summary frames
+        """
+        pass
+
+    @staticmethod
+    def _get_reader(coordinate_data_format):
+        try:
+            return LABEL_VS_DATA_READER[coordinate_data_format]
+        except KeyError as e:
+            msg = (
+                f"{coordinate_data_format} as a format for data ingestion has "
+                f"no implementation"
+            )
+            raise NotImplemented(msg) from e
+
+    @cached_property
+    def reader(self):
+        return self._get_reader(self.data_format_label)(
+            self.coordinate_data_path,
+            **self._video_metadata_dict_manual_format,
+            **self.data_import_kwargs,
+        )
 
     @property
     def coordinates_per_frame(self) -> np.ndarray:
@@ -265,17 +291,6 @@ class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
     @cached_property
     def recording_center_pixel(self) -> np.ndarray:
         return self.recording_resolution / 2.0
-
-    @cached_property
-    def location_sequence_quadrant(self) -> np.ndarray:
-        result = self._zeros_based_on_frame_length
-
-        result[self.quadrant_upper_left_boolean_index] = 1
-        result[self.quadrant_upper_right_boolean_index] = 2
-        result[self.quadrant_down_left_boolean_index] = 3
-        result[self.quadrant_down_right_boolean_index] = 4
-
-        return reduce_repeating_sequences(result, round(self.fps * 0.35))
 
     @cached_property
     def motion(self):
@@ -314,15 +329,15 @@ class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
     @cached_property
     def _perimeter_label_vs_int_id(self):
         self._validate_perimeters_object()
-        return {label: i for i, label in enumerate(self.perimeters.keys(), start=1)}
+        return {label: i for i, label in enumerate(self.perimeters, start=1)}
 
     @cached_property
     def _int_id_vs_perimeter_label(self):
         self._validate_perimeters_object()
-        return {i: label for i, label in enumerate(self.perimeters.keys(), start=1)}
+        return {i: label for i, label in enumerate(self.perimeters, start=1)}
 
     @property
-    def _start_int_id(self):
+    def _start_int_id(self) -> int:
         return self._perimeter_label_vs_int_id[self.trial_start_perimeter]
 
     def _perimeter_label_sequence_to_int_id(self, label_sequence: Iterable) -> tuple:
@@ -331,9 +346,9 @@ class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
     # Miscellaneous
 
     @cached_property
-    def _zeros_based_on_frame_length(self):
+    def _zeros_based_on_frame_length(self) -> np.ndarray:
         return np.zeros(self.number_of_frames, dtype=np.uint8)
 
     @cached_property
-    def _frame_tolerance(self):
+    def _frame_tolerance(self) -> int:
         return round(self._second_tolerance * self.fps)

@@ -28,7 +28,7 @@ if not RESULT_DIR.exists():
 
 EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
-nort_field_vs_nort_field_object = {}
+nort_field_id_vs_nort_field_object = {}
 for i, list_idx in zip(range(1, 5), range(4)):
     novel = Perimeter.from_coco(
         IMAGE_DIR / f"novel_{i}.json",
@@ -40,14 +40,14 @@ for i, list_idx in zip(range(1, 5), range(4)):
         IMAGE_DIR / f"references_training_{i}.csv",
         image_root=IMAGE_DIR,
     )
-    nort_field_vs_nort_field_object[i] = NortField(
+    nort_field_id_vs_nort_field_object[i] = NortField(
         label=i,
         constant_object_perimeter=training["constant"][list_idx],
         variable_object_perimeter=training["variable"][list_idx],
         novel_object_perimeter=novel["novel"][list_idx],
         novelty_constant_object_perimeter=novel["constant"][list_idx],
     )
-    # nort_field_vs_nort_field_object[i].plot()
+    # nort_field_id_vs_nort_field_object[i].plot()
 
 experiments = []
 for round_idx in range(2):
@@ -96,13 +96,13 @@ for round_idx in range(2):
 
             trial_id_range_vs_exp_meta[trial_id] = trial_data
 
-        experiment = NortExperiment.from_deeplabcut_data(
-            trial_id_vs_data=trial_id_range_vs_exp_meta,
+        experiment = NortExperiment(
+            trial_id_vs_keyword_arguments=trial_id_range_vs_exp_meta,
             metric_resolution=0.4,
             gaze_travel_direction_point_label="nose",
-            gaze_start_point_label="mid-left_ear-right_ear",
-            torso_label="mid-mid-left_ear-right_ear-tail",
-            nort_field_vs_nort_field_object=nort_field_vs_nort_field_object,
+            gaze_start_point_label="center_eye",
+            torso_label="torso",
+            nort_field_id_vs_nort_field_object=nort_field_id_vs_nort_field_object,
             perimeter_border_normal_metric_magnitude=0.03,
             global_center_metric_length=0.2,
             maximum_radians_inter_gaze_perimeter=np.deg2rad(75.0),
