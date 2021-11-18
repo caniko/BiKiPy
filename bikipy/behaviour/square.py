@@ -18,7 +18,7 @@ from bikipy.math.point_in_polygon import points_in_parallelogram
 logger = getLogger(__name__)
 
 
-class SquareEnclosedExperiment(RectangleEnclosedExperiment):
+class SquareEnclosedExperiment(RectangleEnclosedExperiment, ABC):
     global_center_metric_length: Optional[float]
 
     def trial_keyword_arguments(self, trial_id: int) -> dict:

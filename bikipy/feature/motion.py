@@ -244,6 +244,16 @@ class Motion:
         ]
 
 
+def motion_2d_multi_indexer(category: str):
+    _category = str(category)
+    return (
+        (category, "Displacement"),
+        (category, "Median_speed"),
+        (category, "Median_acceleration"),
+        (category, "Freezing time"),
+    )
+
+
 def merge_motion_islands(coordinate_sequence, boolean_index, fps, units_per_pixel):
     def motion_object_from_slice(slice_start, end):
         return Motion(

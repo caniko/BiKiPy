@@ -6,11 +6,11 @@ import pandas as pd
 
 from bikipy.behaviour.base import BaseTrial, BaseExperiment
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.feature.motion import merge_motion_islands
+from bikipy.feature.motion import merge_motion_islands, motion_2d_multi_indexer
 from bikipy.math.point_in_polygon import points_in_parallelogram
 
 
-class RectangleEnclosedExperiment(BaseExperiment):
+class RectangleEnclosedExperiment(BaseExperiment, ABC):
     @cached_property
     def motion_summary_frame(self):
         quadrant_labels = (
@@ -39,10 +39,10 @@ class RectangleEnclosedExperiment(BaseExperiment):
                         for trial in self.trial_objects
                     ),
                     columns=(
-                        *self._motion_2d_multi_indexer("Upper-left Quadrant"),
-                        *self._motion_2d_multi_indexer("Upper-right Quadrant"),
-                        *self._motion_2d_multi_indexer("Lower-left Quadrant"),
-                        *self._motion_2d_multi_indexer("Lower-right Quadrant"),
+                        *motion_2d_multi_indexer("Upper-left Quadrant"),
+                        *motion_2d_multi_indexer("Upper-right Quadrant"),
+                        *motion_2d_multi_indexer("Lower-left Quadrant"),
+                        *motion_2d_multi_indexer("Lower-right Quadrant"),
                         *self._feature_2d_multi_indexer(
                             "Seconds present", quadrant_labels
                         ),

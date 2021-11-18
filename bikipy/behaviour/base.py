@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from bikipy._base_class import BikipyBase, VideoMetaDataMixin
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.feature.motion import Motion
+from bikipy.feature.motion import Motion, motion_2d_multi_indexer
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.store import RangeDict
 from bikipy.utils.typing import NDArray
@@ -84,6 +84,38 @@ class BaseExperiment(Behaviour, ABC):
     _enable_process_pooling = True
     _deeplabcut_trial_id_finder = re.compile(r"\d+")
 
+    @abstractproperty
+    def _feature_summary_column(self) -> dict:
+        """
+        Experiment classes must implement this property for the generation of
+        summary frames
+        """
+        pass
+
+    @cached_property
+    def feature_summary_frame(self) -> Union[pd.DataFrame, dict[str, pd.DataFrame]]:
+        """
+        Experiment classes must implement this property for the generation of
+        summary frames
+        """
+        if self.trial_class:
+            # Only one DataFrame schema
+            return pd.DataFrame(
+                (trial.feature_summary_row for trial in self.trial_objects),
+                columns=self._feature_summary_column,
+                index=self._frame_index
+            )
+        elif self.trial_id_vs_trial_class:
+            return {
+                trial_class_name: pd.DataFrame(
+                    (trial.feature_summary_row for trial in trial_objects),
+                    columns=self._feature_summary_column,
+                    index=self._frame_index
+                )
+                for trial_class_name, trial_objects
+                in self.trial_class_name_vs_trial_objects.items()
+            }
+
     def trial_keyword_arguments(self, trial_id: int) -> dict:
         """
         Function useful for customizing initiation parameters for trial objects
@@ -108,14 +140,54 @@ class BaseExperiment(Behaviour, ABC):
 
     @cached_property
     def trial_objects(self) -> list:
-        result = []
-        for reader in self.readers:
-            trial_id = reader.int_id
-            result.append(
+        if self.trial_class:
+            return [
+                self.trial_class(**self.trial_keyword_arguments(trial_id))
+                for trial_id in self._trial_id_key_view
+            ]
+        elif self.trial_id_vs_trial_class:
+            return [
                 self.trial_id_vs_trial_class[trial_id](
                     **self.trial_keyword_arguments(trial_id)
                 )
-            )
+                for trial_id in self._trial_id_key_view
+            ]
+        else:
+            msg = "Either trial_class or trial_id_vs_trial_class have to be " \
+                  "exclusively defined"
+            raise AttributeError(msg)
+
+    @cached_property
+    def _trial_class_vs_trial_ids(self):
+        if not self.trial_id_vs_trial_class:
+            msg = "This experiment object has no trial_id_vs_trial_class, " \
+                  "this attribute is reserved for experiments with " \
+                  "several trial classes"
+            raise AttributeError(msg)
+
+        result = {}
+        for trial_class, trial_id in self.trial_id_vs_trial_class:
+            if trial_class in result:
+                result[trial_class].append(trial_id)
+            else:
+                result[trial_class] = [trial_id]
+
+        return result
+
+    @cached_property
+    def trial_class_name_vs_trial_ids(self):
+        return {
+            trial_class.__name__: trial_ids
+            for trial_class, trial_ids in self._trial_class_vs_trial_ids
+        }
+
+    @cached_property
+    def trial_class_name_vs_trial_objects(self):
+        result = {}
+        for trial_class_name, trial_ids in self.trial_class_name_vs_trial_ids.items():
+            result[trial_class_name] = [
+                self.trial_id_vs_trial_object[trial_id] for trial_id in trial_ids
+            ]
         return result
 
     @cached_property
@@ -169,16 +241,6 @@ class BaseExperiment(Behaviour, ABC):
         )
 
     @staticmethod
-    def _motion_2d_multi_indexer(category: str):
-        _category = str(category)
-        return (
-            (category, "Displacement"),
-            (category, "Median_speed"),
-            (category, "Median_acceleration"),
-            (category, "Freezing time"),
-        )
-
-    @staticmethod
     def _feature_2d_multi_indexer(feature: str, category):
         return tuple([(feature, category) for category in category])
 
@@ -199,7 +261,7 @@ class BaseExperiment(Behaviour, ABC):
     def motion_summary_frame(self):
         result = pd.DataFrame(
             (trial.motion.to_list for trial in self.trial_objects),
-            columns=self._motion_2d_multi_indexer("All"),
+            columns=motion_2d_multi_indexer("All"),
             index=self._frame_index,
         )
         if self._trial_id_vs_animal_id_frame:
@@ -238,7 +300,7 @@ class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
     _second_tolerance = 0.35
 
     @abstractproperty
-    def info(self) -> dict:
+    def feature_summary_row(self) -> dict:
         """
         Trial classes must implement this property for the generation of
         summary frames
