@@ -41,23 +41,9 @@ class DeepLabCutReader(BaseReader):
 
     _df_needs_to_be_cleaned = True
 
-    def __getitem__(self, query):
-        def isolate_coordinates(item):
-            # remove likelihood column
-            return np.delete(self.summary_frame[item].values, 2, 1)
-
-        if isinstance(query, str):
-            if query not in self.tracked_and_midpoint_labels:
-                msg = f"'{query}' is not in object DataFrame (self.summary_frame)"
-                raise AttributeError(msg)
-            return isolate_coordinates(query)
-
-        elif isinstance(query, abc.Iterable):
-            # common_slice = self._find_longest_tails(query)
-            return [isolate_coordinates(item) for item in query]
-
-        else:
-            raise NotImplementedError(f"{type(query)} has no implementation")
+    def isolate_coordinates(self, item):
+        # remove likelihood column
+        return np.delete(self.df[item].values, 2, 1)
 
     @cached_property
     def raw_df(self):
@@ -76,8 +62,8 @@ class DeepLabCutReader(BaseReader):
             return super().raw_df
 
     @cached_property
-    def summary_frame(self):
-        result = self.summary_frame.copy()
+    def df(self):
+        result = self.raw_df.copy()
         if self.x_axis_crop_end_point:
             for roi in self.tracked_point_labels:
                 result.loc[:, (roi, "x")] = (
@@ -136,10 +122,6 @@ class DeepLabCutReader(BaseReader):
         return result
 
     @property
-    def df(self):
-        return self.summary_frame
-
-    @property
     def tracked_point_labels(self) -> tuple:
         return tuple(self.raw_df.columns.levels[0])
 
@@ -150,13 +132,13 @@ class DeepLabCutReader(BaseReader):
     @cached_property
     def region_of_interest_vs_boolean_index(self):
         return {
-            roi: self.summary_frame[(roi, "likelihood")].values >= self.min_likelihood
+            roi: self.df[(roi, "likelihood")].values >= self.min_likelihood
             for roi in self.tracked_point_labels
         }
 
     @property
     def frames(self):
-        return self.summary_frame.shape[0]
+        return self.df.shape[0]
 
     def reduce_likelihoods(self, tracked_point_labels: Sequence) -> np.ndarray:
         """

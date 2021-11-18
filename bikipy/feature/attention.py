@@ -241,7 +241,7 @@ def polygonal_perimeter_attention(
     maximum_radians_inter_gaze_perimeter: float = 0.25 * np.pi,
     minimum_seconds_attention: float = 0.5,
     inspect: Union[bool, str, PurePath] = False,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, tuple]:
     """
 
     Parameters
@@ -341,4 +341,4 @@ def polygonal_perimeter_attention(
                 os.mkdir(inspect.parent)
             plt.savefig(seek_next_file_index(inspect / f"perimeter_attention.jpg"))
 
-    return perimeter_observation, location_filtered, gaze_filtered
+    return perimeter_observation, (location_filtered, gaze_filtered, semi_true_observations)

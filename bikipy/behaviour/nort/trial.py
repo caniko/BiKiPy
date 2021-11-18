@@ -3,23 +3,27 @@ Novel Object Recognition test (NORT) class representing a single test.
 These tests can be grouped together to form entire experiments.
 """
 from dataclasses import dataclass, field
+from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, Union, Iterable
 
 import matplotlib.pyplot as plt
 import numpy as np
 from compress_pickle import compress_pickle
+from pydantic import validator
 
+from bikipy.behaviour.base import OpenFieldTrialMixin
 from bikipy.behaviour.square import SquareEnclosedTrial
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.attention import polygonal_perimeter_attention
+from bikipy.feature.physical_object import PhysicalObject
 from bikipy.perimeter.base import Perimeter
 
 logger = getLogger(__name__)
 
 
-class NortHabituationTrial(SquareEnclosedTrial):
+class NortHabituationTrial(SquareEnclosedTrial, OpenFieldTrialMixin):
     """
     NORT experiment without any objects. The purpose of this test is to generate
     reference data for future NORT experiments.
@@ -33,75 +37,23 @@ class NortOpenField(NortHabituationTrial):
     pass
 
 
-class NortTrainingTrial(NortHabituationTrial):
+class NortTrainingTrial(SquareEnclosedTrial):
     _trial_sequence_index = 1
     _trial_label = "training"
 
-    nort_a: Perimeter
-    nort_b: Perimeter
-    gaze_travel_direction_point_label: str
-    gaze_start_point_label: str
+    physical_objects: tuple[PhysicalObject, ...]
     torso_label: str
     perimeter_border_normal_metric_magnitude: float
     maximum_radians_inter_gaze_perimeter: float = 1 / 4 * np.pi
 
     _minimum_seconds_attention = 0.5
 
+    @cached_property
+    def not_observing(self):
+        return
+
     def __init__(self, **data):
         super().__init__(**data)
-        self.perimeter_border_normal_pixel_magnitude = (
-            self.perimeter_border_normal_metric_magnitude
-            / np.mean(self.units_per_pixel)
-        )
-
-        (
-            self.a_observance_per_frame,
-            self.a_proximity_filtered,
-            self.a_gaze_filtered,
-        ) = self.nort_observation(self.nort_a)
-        (
-            self.b_observance_per_frame,
-            self.b_proximity_filtered,
-            self.b_gaze_filtered,
-        ) = self.nort_observation(self.nort_b)
-
-        self.not_observing = ~(
-            self.a_observance_per_frame | self.b_observance_per_frame
-        )
-
-        assert self.a_observance_per_frame.size == self.b_observance_per_frame.size
-
-        self.observation_sequence = np.zeros_like(
-            self.a_observance_per_frame, dtype=np.uint8
-        )
-
-        self.observation_sequence[self.a_observance_per_frame] = 1
-        self.observation_sequence[self.b_observance_per_frame] = 2
-        # assert np.all((self.observation_sequence == 0) == self.not_observing)
-
-        self.reduced_observation_sequence = np.array(
-            reduce_repeating_sequences(
-                self.observation_sequence, frame_tolerance=self._frame_tolerance
-            )
-        )
-
-        self.observation_instances_a = np.sum(self.reduced_observation_sequence == 1)
-        self.observation_instances_b = np.sum(self.reduced_observation_sequence == 2)
-        self.all_observation_instances = (
-            self.observation_instances_a + self.observation_instances_b
-        )
-
-        # TODO: No criteria seconds spent
-
-        self.seconds_spent_observing_a = (
-            np.sum(self.observation_sequence == 1) / self.fps
-        )
-        self.seconds_spent_observing_b = (
-            np.sum(self.observation_sequence == 2) / self.fps
-        )
-        self.seconds_observing = (
-            self.seconds_spent_observing_a + self.seconds_spent_observing_b
-        )
 
         self.object_bias_score = (
             100.0 * self.seconds_spent_observing_a / self.seconds_observing
@@ -112,6 +64,13 @@ class NortTrainingTrial(NortHabituationTrial):
         assert (
             self.seconds_observing < self.experiment_seconds
         ), f"{self.seconds_observing} > {self.experiment_seconds}"
+
+    @cached_property
+    def perimeter_border_normal_pixel_magnitude(self):
+        return (
+            self.perimeter_border_normal_metric_magnitude
+            / np.mean(self.units_per_pixel)
+        )
 
     @property
     def info(self):

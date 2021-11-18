@@ -9,11 +9,10 @@ from typing import Any, Iterable, Literal, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath, Field, FilePath
+from pydantic import DirectoryPath, Field, FilePath, BaseModel
 from tqdm import tqdm
 
 from bikipy._base_class import BikipyBase, VideoMetaDataMixin
-from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.motion import Motion, motion_2d_multi_indexer
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.store import RangeDict
@@ -84,14 +83,6 @@ class BaseExperiment(Behaviour, ABC):
     _enable_process_pooling = True
     _deeplabcut_trial_id_finder = re.compile(r"\d+")
 
-    @abstractproperty
-    def _feature_summary_column(self) -> dict:
-        """
-        Experiment classes must implement this property for the generation of
-        summary frames
-        """
-        pass
-
     @cached_property
     def feature_summary_frame(self) -> Union[pd.DataFrame, dict[str, pd.DataFrame]]:
         """
@@ -103,17 +94,16 @@ class BaseExperiment(Behaviour, ABC):
             return pd.DataFrame(
                 (trial.feature_summary_row for trial in self.trial_objects),
                 columns=self._feature_summary_column,
-                index=self._frame_index
+                index=self._frame_index,
             )
         elif self.trial_id_vs_trial_class:
             return {
                 trial_class_name: pd.DataFrame(
                     (trial.feature_summary_row for trial in trial_objects),
                     columns=self._feature_summary_column,
-                    index=self._frame_index
+                    index=self._frame_index,
                 )
-                for trial_class_name, trial_objects
-                in self.trial_class_name_vs_trial_objects.items()
+                for trial_class_name, trial_objects in self.trial_class_name_vs_trial_objects.items()
             }
 
     def trial_keyword_arguments(self, trial_id: int) -> dict:
@@ -153,16 +143,20 @@ class BaseExperiment(Behaviour, ABC):
                 for trial_id in self._trial_id_key_view
             ]
         else:
-            msg = "Either trial_class or trial_id_vs_trial_class have to be " \
-                  "exclusively defined"
+            msg = (
+                "Either trial_class or trial_id_vs_trial_class have to be "
+                "exclusively defined"
+            )
             raise AttributeError(msg)
 
     @cached_property
     def _trial_class_vs_trial_ids(self):
         if not self.trial_id_vs_trial_class:
-            msg = "This experiment object has no trial_id_vs_trial_class, " \
-                  "this attribute is reserved for experiments with " \
-                  "several trial classes"
+            msg = (
+                "This experiment object has no trial_id_vs_trial_class, "
+                "this attribute is reserved for experiments with "
+                "several trial classes"
+            )
             raise AttributeError(msg)
 
         result = {}
@@ -299,13 +293,22 @@ class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
     _trial_label = None
     _second_tolerance = 0.35
 
-    @abstractproperty
-    def feature_summary_row(self) -> dict:
+    _trial_has_feature_frame = True
+    _feature_summary_column = None
+
+    @property
+    def feature_summary_row(self) -> list:
         """
         Trial classes must implement this property for the generation of
         summary frames
         """
-        pass
+        if self._trial_has_feature_frame:
+            logger.warning(
+                "The base version of feature_summary_row property is being "
+                "used. Note that this will yield an empty summary frame. "
+                "This property needs to be replaced"
+            )
+        return []
 
     @staticmethod
     def _get_reader(coordinate_data_format):
@@ -414,3 +417,7 @@ class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
     @cached_property
     def _frame_tolerance(self) -> int:
         return round(self._second_tolerance * self.fps)
+
+
+class OpenFieldTrialMixin(BaseModel):
+    _trial_has_feature_frame = False

@@ -1,8 +1,9 @@
 import sys
-from abc import ABC
+from abc import ABC, abstractmethod
+from collections import abc
 from concurrent.futures import ProcessPoolExecutor
 from functools import cached_property, lru_cache, partial
-from typing import Any, Generator, Iterable, Optional
+from typing import Any, Generator, Iterable, Optional, Union, Hashable
 
 import numpy as np
 import pandas as pd
@@ -41,13 +42,38 @@ class BaseReader(BikipyBase, VideoMetaDataMixin, ABC):
         ),
     )
 
+    @abstractmethod
+    def _isolate_coordinates(self, key: Union[Iterable[Hashable], Hashable]):
+        pass
+
+    @abstractmethod
+    def tracked_point_labels(self) -> tuple:
+        """
+        :return: tuple storing all regions of interest that are directly tracked,
+                 no midpoints
+        """
+        pass
+
+    def __getitem__(self, query: Union[Iterable[Hashable], Hashable]):
+        if isinstance(query, abc.Iterable):
+            return [self._isolate_coordinates(item) for item in query]
+        else:
+            if query not in self.tracked_and_midpoint_labels:
+                msg = f"'{query}' is not in object DataFrame (self.summary_frame)"
+                raise AttributeError(msg)
+            return self._isolate_coordinates(query)
+
+    @property
+    def frames(self):
+        return len(self.raw_df)
+
+    @cached_property
+    def tracked_and_midpoint_labels(self):
+        return tuple(*self.tracked_point_labels, *self.midpoint_groups)
+
     @cached_property
     def raw_df(self):
         return FILE_EXTENSION_VS_PANDAS_READER[self.df_path.suffix](self.df_path)
-
-    @cached_property
-    def summary_frame(self):
-        raise NotImplementedError
 
     @property
     def df(self):
