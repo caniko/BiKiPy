@@ -3,7 +3,8 @@ from abc import ABC, abstractmethod
 from collections import abc
 from concurrent.futures import ProcessPoolExecutor
 from functools import cached_property, lru_cache, partial
-from typing import Any, Generator, Iterable, Optional, Union, Hashable
+from logging import getLogger
+from typing import Any, Generator, Hashable, Iterable, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -17,6 +18,9 @@ FILE_EXTENSION_VS_PANDAS_READER = {
     "hdf": pd.read_hdf,
     "h5": pd.read_hdf,
 }
+
+
+logger = getLogger(__name__)
 
 
 class BaseReader(BikipyBase, VideoMetaDataMixin, ABC):

@@ -1,15 +1,15 @@
 import collections.abc as abc
 import os
 from functools import cached_property
+from logging import getLogger
 from pathlib import Path
-from typing import Any, Callable, Generator, Optional, Sequence
+from typing import Sequence
 
 import numpy as np
 import pandas as pd
 from pydantic import Field
 
 from bikipy.feature.midpoint import (
-    midpoint_deeplabcut_df_computation,
     recursive_midpoint,
 )
 from bikipy.reader.base import BaseReader
@@ -23,6 +23,9 @@ DEEPLABCUT_DF_INIT_KWARGS = {
 }
 
 CROPPING_PARAMETERS_BASE = {"x1": None, "x2": None, "y1": None, "y2": None}
+
+
+logger = getLogger(__name__)
 
 
 class DeepLabCutReader(BaseReader):
@@ -41,7 +44,7 @@ class DeepLabCutReader(BaseReader):
 
     _df_needs_to_be_cleaned = True
 
-    def isolate_coordinates(self, item):
+    def _isolate_coordinates(self, item):
         # remove likelihood column
         return np.delete(self.df[item].values, 2, 1)
 
@@ -57,8 +60,12 @@ class DeepLabCutReader(BaseReader):
                 0, axis=1
             )
         else:
-            # DeepLabCut doesn't support other formats natively, assuming the df data
-            # is clean
+            # DeepLabCut doesn't support other formats natively
+            logger.debug(
+                f"{self.df_path.suffix}, is not natively supported by DeepLabCut, "
+                f"assuming user has manually cleaned and exported the data file"
+                f"to another format that is supported by BiKiPy.BaseReader. Good luck"
+            )
             return super().raw_df
 
     @cached_property

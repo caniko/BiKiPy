@@ -341,4 +341,8 @@ def polygonal_perimeter_attention(
                 os.mkdir(inspect.parent)
             plt.savefig(seek_next_file_index(inspect / f"perimeter_attention.jpg"))
 
-    return perimeter_observation, (location_filtered, gaze_filtered, semi_true_observations)
+    return perimeter_observation, (
+        location_filtered,
+        gaze_filtered,
+        semi_true_observations,
+    )

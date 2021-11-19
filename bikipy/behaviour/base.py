@@ -9,7 +9,7 @@ from typing import Any, Iterable, Literal, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath, Field, FilePath, BaseModel
+from pydantic import BaseModel, DirectoryPath, Field, FilePath
 from tqdm import tqdm
 
 from bikipy._base_class import BikipyBase, VideoMetaDataMixin
@@ -82,6 +82,9 @@ class BaseExperiment(Behaviour, ABC):
 
     _enable_process_pooling = True
     _deeplabcut_trial_id_finder = re.compile(r"\d+")
+
+    def __getitem__(self, item: int):
+        return self.trial_id_vs_trial_object[item]
 
     @cached_property
     def feature_summary_frame(self) -> Union[pd.DataFrame, dict[str, pd.DataFrame]]:
@@ -197,9 +200,6 @@ class BaseExperiment(Behaviour, ABC):
             else:
                 result[trial.animal_id] = [trial]
         return result
-
-    def __getitem__(self, item: int):
-        return self.trial_id_vs_trial_object[item]
 
     @property
     def inspect(self):
@@ -411,13 +411,32 @@ class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
     # Miscellaneous
 
     @cached_property
+    def perimeter_border_normal_pixel_magnitude(self):
+        return self.perimeter_border_normal_metric_magnitude / np.mean(
+            self.units_per_pixel
+        )
+
+    @cached_property
+    def _physical_object_keyword_arguments(self):
+        try:
+            return {
+                "reader": self.reader,
+                "gaze_travel_direction_point_label": self.gaze_travel_direction_point_label,
+                "gaze_start_point_label": self.gaze_start_point_label,
+                "fps": self.fps,
+                "perimeter_border_normal_pixel_magnitude": self.perimeter_border_normal_pixel_magnitude,
+                "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
+                "minimum_seconds_attention": self.minimum_seconds_attention,
+                "inspect": self.inspection_figure_save
+            }
+        except AttributeError as e:
+            msg = "The class does not support instancing PhysicalObject"
+            raise NotImplementedError(msg) from e
+
+    @cached_property
     def _zeros_based_on_frame_length(self) -> np.ndarray:
         return np.zeros(self.number_of_frames, dtype=np.uint8)
 
     @cached_property
     def _frame_tolerance(self) -> int:
         return round(self._second_tolerance * self.fps)
-
-
-class OpenFieldTrialMixin(BaseModel):
-    _trial_has_feature_frame = False

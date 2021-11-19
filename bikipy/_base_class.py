@@ -8,7 +8,7 @@ import compress_pickle
 import numpy as np
 from pydantic import BaseModel, DirectoryPath, Extra, Field, FilePath
 
-from bikipy.utils.typing import NDArray, OptionalPathTyping
+from bikipy.utils.typing import NDArray, OptionalPathTyping, PathTyping
 from bikipy.utils.video import get_video_data
 
 

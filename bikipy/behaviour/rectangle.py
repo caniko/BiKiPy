@@ -4,7 +4,7 @@ from functools import cached_property
 import numpy as np
 import pandas as pd
 
-from bikipy.behaviour.base import BaseTrial, BaseExperiment
+from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.motion import merge_motion_islands, motion_2d_multi_indexer
 from bikipy.math.point_in_polygon import points_in_parallelogram

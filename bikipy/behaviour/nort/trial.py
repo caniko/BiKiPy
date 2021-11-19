@@ -1,23 +1,17 @@
-"""
-Novel Object Recognition test (NORT) class representing a single test.
-These tests can be grouped together to form entire experiments.
-"""
 from dataclasses import dataclass, field
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Union, Iterable
+from typing import Any, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 from compress_pickle import compress_pickle
 from pydantic import validator
 
-from bikipy.behaviour.base import OpenFieldTrialMixin
+from bikipy.behaviour.mixins.misc import OpenFieldTrialMixin
 from bikipy.behaviour.square import SquareEnclosedTrial
-from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.feature.attention import polygonal_perimeter_attention
-from bikipy.feature.physical_object import PhysicalObject
+from bikipy.feature.physical_object import PhysicalObject, PhysicalObjectSet
 from bikipy.perimeter.base import Perimeter
 
 logger = getLogger(__name__)
@@ -38,38 +32,37 @@ class NortOpenField(NortHabituationTrial):
 
 
 class NortTrainingTrial(SquareEnclosedTrial):
-    _trial_sequence_index = 1
-    _trial_label = "training"
-
-    physical_objects: tuple[PhysicalObject, ...]
-    torso_label: str
+    variable_object_perimeter: Perimeter
+    constant_object_perimeter: Perimeter
+    gaze_travel_direction_point_label: str
+    gaze_start_point_label: str
     perimeter_border_normal_metric_magnitude: float
     maximum_radians_inter_gaze_perimeter: float = 1 / 4 * np.pi
 
+    _trial_sequence_index = 1
+    _trial_label = "training"
     _minimum_seconds_attention = 0.5
 
     @cached_property
-    def not_observing(self):
-        return
-
-    def __init__(self, **data):
-        super().__init__(**data)
-
-        self.object_bias_score = (
-            100.0 * self.seconds_spent_observing_a / self.seconds_observing
-            if self.seconds_observing
-            else 0
+    def physical_object_variable(self):
+        return PhysicalObject(
+            self.constant_object_perimeter,
+            int_id=1,
+            **self._physical_object_keyword_arguments
         )
 
-        assert (
-            self.seconds_observing < self.experiment_seconds
-        ), f"{self.seconds_observing} > {self.experiment_seconds}"
+    @cached_property
+    def physical_object_constant(self):
+        return PhysicalObject(
+            self.constant_object_perimeter,
+            int_id=2,
+            **self._physical_object_keyword_arguments
+        )
 
     @cached_property
-    def perimeter_border_normal_pixel_magnitude(self):
-        return (
-            self.perimeter_border_normal_metric_magnitude
-            / np.mean(self.units_per_pixel)
+    def physical_object_set(self):
+        return PhysicalObjectSet(
+            (self.physical_object_variable, self.physical_object_constant)
         )
 
     @property
@@ -83,23 +76,6 @@ class NortTrainingTrial(SquareEnclosedTrial):
             self.seconds_observing,
             self.object_bias_score,
         ]
-
-    def nort_observation(self, nort_object):
-        eye, nose, torso = self.coordinate_sequence[
-            self.gaze_start_point_label,
-            self.gaze_travel_direction_point_label,
-            self.torso_label,
-        ]
-        return polygonal_perimeter_attention(
-            nort_object,
-            nose,
-            eye,
-            self.fps,
-            self.perimeter_border_normal_pixel_magnitude,
-            self.maximum_radians_inter_gaze_perimeter,
-            self._minimum_seconds_attention,
-            inspect=self.inspection_figure_save,
-        )
 
     def plot(self, ax: Any = None):
         ax = super().plot(ax)
@@ -116,10 +92,6 @@ class NortNoveltyTrial(NortTrainingTrial):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.absolute_discrimination = np.sum(self.b_observance_per_frame) - np.sum(
-            self.a_observance_per_frame
-        )
 
         self.discrimination_index = (
             self.absolute_discrimination / self.experiment_seconds
@@ -217,16 +189,6 @@ class NortField:
             **data,
         )
 
-    def pickle(self, path: Any):
-        name = f"{self.__class__.__name__}_{self.label}"
-
-        i = 1
-        while (filepath := Path(path) / (name + ".lz4")).exists():
-            name += f"_{(i := 1 + i)}"
-
-        with open(filepath, "wb") as f:
-            compress_pickle.dump(self, f)
-
     @property
     def perimeter_set(self):
         result = [
@@ -252,3 +214,13 @@ class NortField:
 
         plt.tight_layout()
         plt.show()
+
+    def pickle(self, path: Any):
+        name = f"{self.__class__.__name__}_{self.label}"
+
+        i = 1
+        while (filepath := Path(path) / (name + ".lz4")).exists():
+            name += f"_{(i := 1 + i)}"
+
+        with open(filepath, "wb") as f:
+            compress_pickle.dump(self, f)
