@@ -5,19 +5,20 @@ from logging import getLogger
 from pathlib import PurePath
 from typing import Any, Union, Optional
 
+import matplotlib.pyplot as plt
 import numpy as np
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.attention import polygonal_perimeter_attention
-
+from bikipy.perimeter.base import Perimeter2D
 
 logger = getLogger(__name__)
 
 
 @pydantic_dataclass(frozen=True, order=True)
 class PhysicalObject:
-    perimeter: Any
+    perimeter: Perimeter2D
     reader: Any
     gaze_travel_direction_point_label: str
     gaze_start_point_label: str
@@ -224,7 +225,7 @@ class PhysicalObjectSet:
     def reduced_observation_sequence(self):
         return np.array(
             reduce_repeating_sequences(
-                self.observation_sequence, frame_tolerance=self._frame_tolerance
+                self.observation_sequence, frame_tolerance=self.fps / 0.35
             )
         )
 
@@ -297,3 +298,11 @@ class PhysicalObjectSet:
     @cached_property
     def _first_object(self):
         return self.physical_objects[0]
+
+    def plot(self, ax: Any = None):
+        if not ax:
+            fix, ax = plt.subplots()
+        for physical_objects in self.physical_objects:
+            ax = physical_objects.perimeter.plot(ax=ax)
+
+        return ax

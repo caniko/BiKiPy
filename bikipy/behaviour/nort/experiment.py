@@ -8,27 +8,19 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from pydantic import Field
 
+from bikipy.behaviour.mixins.physical_object import PhysicalObjectExperimentMixin
 from bikipy.behaviour.square import SquareEnclosedExperiment
 from bikipy.utils.store import sort_dict_by_key_value
 
 logger = getLogger(__name__)
 
 
-class NortExperiment(SquareEnclosedExperiment):
-    gaze_travel_direction_point_label: str = Field(
-        description="Label signifying the area where the gaze vector"
-    )
-    gaze_start_point_label: str = Field(description="Label of the eye center in the df")
-    torso_label: str = Field(description="Label of the torso in the df")
+class NortExperiment(PhysicalObjectExperimentMixin, SquareEnclosedExperiment):
     nort_field_id_vs_nort_field_object: Optional[dict] = Field(
         None, description="Label of the nose in the df"
     )
-    perimeter_border_normal_metric_magnitude: Optional[float] = Field(
-        None,
-        description="The magnitude of the normal between the perimeter and the border given in meters",
-    )
-    maximum_radians_inter_gaze_perimeter: float = Field(0.5 * np.pi)
-    trial_label_to_trial_class_name: dict = {
+
+    _trial_label_to_trial_class_name: dict = {
         "habituation": "habituation",
         "open_field": "habituation",
         "1": "training",
@@ -46,7 +38,7 @@ class NortExperiment(SquareEnclosedExperiment):
 
     def trial_keyword_arguments(self, trial_id: int) -> dict:
         generic = super().trial_keyword_arguments(trial_id)
-        if self.trial_label_to_trial_class_name[generic["stage"]] != "habituation":
+        if self._trial_label_to_trial_class_name[generic["stage"]] != "habituation":
             return {
                 **generic,
                 "gaze_travel_direction_point_label": self.gaze_travel_direction_point_label,

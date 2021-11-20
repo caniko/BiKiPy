@@ -9,7 +9,7 @@ from typing import Any, Iterable, Literal, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, DirectoryPath, Field, FilePath
+from pydantic import BaseModel, DirectoryPath, Field, FilePath, validator
 from tqdm import tqdm
 
 from bikipy._base_class import BikipyBase, VideoMetaDataMixin
@@ -234,6 +234,23 @@ class BaseExperiment(Behaviour, ABC):
             total=self.number_of_trials,
         )
 
+    @cached_property
+    def motion_summary_frame(self):
+        result = pd.DataFrame(
+            (trial.motion.to_list for trial in self.trial_objects),
+            columns=motion_2d_multi_indexer("All"),
+            index=self._frame_index,
+        )
+        if self._trial_id_vs_animal_id_frame:
+            return pd.concat((self._trial_id_vs_animal_id_frame, result), axis=1)
+        return result
+
+    @cached_property
+    def animal_id_indexed_motion_summary_frame(self):
+        result = self.motion_summary_frame
+        result.reset_index(inplace=True)
+        return result
+
     @staticmethod
     def _feature_2d_multi_indexer(feature: str, category):
         return tuple([(feature, category) for category in category])
@@ -250,17 +267,6 @@ class BaseExperiment(Behaviour, ABC):
                 columns=("Animal ID",),
                 index=self._frame_index,
             )
-
-    @cached_property
-    def motion_summary_frame(self):
-        result = pd.DataFrame(
-            (trial.motion.to_list for trial in self.trial_objects),
-            columns=motion_2d_multi_indexer("All"),
-            index=self._frame_index,
-        )
-        if self._trial_id_vs_animal_id_frame:
-            return pd.concat((self._trial_id_vs_animal_id_frame, result), axis=1)
-        return result
 
 
 class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
@@ -350,10 +356,6 @@ class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
         return self.inspection_figure_save  # return the bool in any case
 
     @cached_property
-    def info(self):
-        return [self._trial_label] if self._trial_label else []
-
-    @cached_property
     def recording_center_pixel(self) -> np.ndarray:
         return self.recording_resolution / 2.0
 
@@ -409,29 +411,6 @@ class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
         return tuple(self._perimeter_label_vs_int_id[label] for label in label_sequence)
 
     # Miscellaneous
-
-    @cached_property
-    def perimeter_border_normal_pixel_magnitude(self):
-        return self.perimeter_border_normal_metric_magnitude / np.mean(
-            self.units_per_pixel
-        )
-
-    @cached_property
-    def _physical_object_keyword_arguments(self):
-        try:
-            return {
-                "reader": self.reader,
-                "gaze_travel_direction_point_label": self.gaze_travel_direction_point_label,
-                "gaze_start_point_label": self.gaze_start_point_label,
-                "fps": self.fps,
-                "perimeter_border_normal_pixel_magnitude": self.perimeter_border_normal_pixel_magnitude,
-                "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
-                "minimum_seconds_attention": self.minimum_seconds_attention,
-                "inspect": self.inspection_figure_save
-            }
-        except AttributeError as e:
-            msg = "The class does not support instancing PhysicalObject"
-            raise NotImplementedError(msg) from e
 
     @cached_property
     def _zeros_based_on_frame_length(self) -> np.ndarray:
