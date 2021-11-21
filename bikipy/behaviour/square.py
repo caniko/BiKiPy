@@ -1,68 +1,53 @@
-from abc import ABC
 from functools import cached_property
 from logging import getLogger
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from pydantic import Field, validator
+from pydantic import Field
 
 from bikipy.behaviour.rectangle import (
     RectangleEnclosedExperiment,
     RectangleEnclosedTrial,
 )
 from bikipy.behaviour.utils import reduce_repeating_sequences
+from bikipy.feature.motion import (
+    get_combined_features_from_merged_motion_island_data,
+    motion_2d_multi_indexer,
+)
 from bikipy.math.point_in_polygon import points_in_parallelogram
 
 logger = getLogger(__name__)
 
 
-class SquareEnclosedExperiment(RectangleEnclosedExperiment, ABC):
-    global_center_metric_length: Optional[float]
+class SquareEnclosedExperiment(RectangleEnclosedExperiment):
+    global_center_metric_length: Optional[float] = None
 
     def trial_keyword_arguments(self, trial_id: int) -> dict:
-        generic = super().trial_keyword_arguments(trial_id)
+        result = super().trial_keyword_arguments(trial_id)
 
         if self.global_center_metric_length:
-            generic["center_metric_length"] = self.global_center_metric_length
+            result["center_metric_length"] = self.global_center_metric_length
 
-        return generic
+        return result
 
     @cached_property
-    def motion_summary_frame(self):
+    def _motion_summary_columns(self) -> list:
         periphery_center_labels = ("Periphery", "Center")
-        return pd.concat(
-            (
-                super().motion_summary_frame,
-                pd.DataFrame(
-                    (
-                        trial.center_motion.to_list
-                        + trial.periphery_motion.to_list
-                        + trial.seconds_on_periphery
-                        + trial.seconds_on_center
-                        + trial.periphery_entries
-                        + trial.center_entries
-                        for trial in self.trial_objects
-                    ),
-                    columns=(
-                        *self._motion_2d_multi_indexer("Periphery"),
-                        *self._motion_2d_multi_indexer("Center"),
-                        *self._feature_2d_multi_indexer(
-                            "Time_spent", periphery_center_labels
-                        ),
-                        *self._feature_2d_multi_indexer(
-                            "Entries", periphery_center_labels
-                        ),
-                    ),
-                    index=self._frame_index,
-                ),
+        return super()._motion_summary_columns + [
+            *motion_2d_multi_indexer("Periphery"),
+            *motion_2d_multi_indexer("Center"),
+            *self._feature_2d_multi_indexer(
+                "Time_spent", periphery_center_labels
             ),
-            axis=1,
-        )
+            *self._feature_2d_multi_indexer(
+                "Entries", periphery_center_labels
+            )
+        ]
 
 
-class SquareEnclosedTrial(RectangleEnclosedTrial, ABC):
+class SquareEnclosedTrial(RectangleEnclosedTrial):
     center_metric_length: float = Field(
         description="Length of the square box signifying periphery and inner area "
         "of the square box"
@@ -134,8 +119,6 @@ class SquareEnclosedTrial(RectangleEnclosedTrial, ABC):
                 x_bias=(self.horizontal_resolution - self.vertical_resolution) / 2.0
             )
 
-    # Center Periphery
-
     @cached_property
     def center_boolean_index(self):
         return points_in_parallelogram(
@@ -150,6 +133,24 @@ class SquareEnclosedTrial(RectangleEnclosedTrial, ABC):
     @cached_property
     def periphery_boolean_index(self):
         return ~self.center_boolean_index
+
+    @cached_property
+    def motion_center(self) -> dict:
+        return get_combined_features_from_merged_motion_island_data(
+            self.center_boolean_index,
+            self.coordinates_per_frame,
+            self.units_per_pixel,
+            self.fps,
+        )
+
+    @cached_property
+    def motion_periphery(self) -> dict:
+        return get_combined_features_from_merged_motion_island_data(
+            self.periphery_boolean_index,
+            self.coordinates_per_frame,
+            self.units_per_pixel,
+            self.fps,
+        )
 
     @cached_property
     def location_sequence_center_periphery(self):
@@ -212,3 +213,14 @@ class SquareEnclosedTrial(RectangleEnclosedTrial, ABC):
             )
 
         return ax
+
+    @property
+    def motion_features(self):
+        return super().motion_features + [
+            *self.motion_center.values(),
+            *self.motion_periphery.values(),
+            self.seconds_on_periphery,
+            self.seconds_on_center,
+            self.periphery_entries,
+            self.center_entries
+        ]

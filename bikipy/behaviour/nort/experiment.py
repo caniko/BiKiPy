@@ -1,6 +1,7 @@
+from dataclasses import dataclass, field
 from functools import cached_property
 from logging import getLogger
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -9,109 +10,34 @@ from matplotlib import pyplot as plt
 from pydantic import Field
 
 from bikipy.behaviour.mixins.physical_object import PhysicalObjectExperimentMixin
+from bikipy.behaviour.nort.constants import TRIAL_LABEL_VS_CLASS_NAME
 from bikipy.behaviour.square import SquareEnclosedExperiment
-from bikipy.utils.store import sort_dict_by_key_value
+from bikipy.feature.physical_object import PhysicalObjectSet
+from bikipy.perimeter.base import Perimeter2D, distance_between_two_perimeters
 
 logger = getLogger(__name__)
 
 
-class NortExperiment(PhysicalObjectExperimentMixin, SquareEnclosedExperiment):
+class NortExperiment(SquareEnclosedExperiment, PhysicalObjectExperimentMixin):
     nort_field_id_vs_nort_field_object: Optional[dict] = Field(
         None, description="Label of the nose in the df"
     )
-
-    _trial_label_to_trial_class_name: dict = {
-        "habituation": "habituation",
-        "open_field": "habituation",
-        "1": "training",
-        "t1": "training",
-        "training": "training",
-        "2": "novelty",
-        "t2": "novelty",
-        "test": "novelty",
-        "novelty_observation": "novelty",
-        "novelty": "novelty",
-    }
 
     _trials_are_sequential: bool = True
     _period_columns = ("T1", "T2", "Total")
 
     def trial_keyword_arguments(self, trial_id: int) -> dict:
-        generic = super().trial_keyword_arguments(trial_id)
-        if self._trial_label_to_trial_class_name[generic["stage"]] != "habituation":
-            return {
-                **generic,
-                "gaze_travel_direction_point_label": self.gaze_travel_direction_point_label,
-                "gaze_start_point_label": self.gaze_start_point_label,
-                "perimeter_border_normal_metric_magnitude": self.perimeter_border_normal_metric_magnitude,
-                "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
-            }
-        return generic
+        result = super().trial_keyword_arguments(trial_id)
 
-    @cached_property
-    def df(self) -> pd.DataFrame:
-        """
-        Export experimental data to pandas DataFrame
+        if TRIAL_LABEL_VS_CLASS_NAME[result["stage"]] == "habituation":
+            return result
 
-        Useful for exporting to files such as hdf, xlsx, csv, etc
-
-        Returns
-        -------
-        DataFrame with the combined experiment attributes of all the YMazeTrial objects
-        """
-        object_columns = [
-            *self._feature_2d_multi_indexer(
-                "Observation_instances", ("A", "B", "Total")
-            ),
-            *self._feature_2d_multi_indexer("Observation_time", ("A", "B", "Total")),
-            ("Object_bias_score", "Total"),
-        ]
-
-        novelty_columns = [
-            ("Absolute_discrimination", "Total"),
-            ("Discrimination_index", "Total"),
-            ("Novelty_preference", "Total"),
-        ]
-
-        label_vs_data = {}
-
-        if self.habituation_trials:
-            habituation_filler = [
-                np.nan for _i in range(len(object_columns + novelty_columns))
-            ]
-            for nort_habituation in self.habituation_trials:
-                label_vs_data[nort_habituation.int_id] = (
-                    nort_habituation.info + habituation_filler
-                )
-
-        if self.training_object_trials:
-            training_filler = [np.nan for _i in range(len(novelty_columns))]
-            for training_trial in self.training_object_trials:
-                label_vs_data[training_trial.int_id] = (
-                    training_trial.info + training_filler
-                )
-
-        for novelty_trial in self.novelty_object_trials:
-            label_vs_data[novelty_trial.int_id] = novelty_trial.info
-
-        data_dict = sort_dict_by_key_value(label_vs_data)
-        df = pd.DataFrame(
-            data_dict.values(),
-            index=self._frame_index,
-            columns=pd.MultiIndex.from_tuples(
-                base_columns + object_columns + novelty_columns,
-                names=("Feature", "Area"),
-            ),
-        )
-        # df[("All", "Stage")] = FletcherContinuousArray(df[("All", "Stage")])
-        return df
-
-    def nort_object_analysis(self):
-        if not self.training_object_trials and not self.novelty_object_trials:
-            logger.warning(
-                "There are neither training or novelty trials in the experiment object, can not analyse"
-            )
-            return None
+        return {
+            **result,
+            **self._physical_object_keyword_arguments,
+            "perimeter_border_normal_metric_magnitude": self.perimeter_border_normal_metric_magnitude,
+            "nort_field": self.nort_field_id_vs_nort_field_object[result["field_id"]],
+        }
 
     @cached_property
     def attention_state_distribution(self):
@@ -200,5 +126,76 @@ class NortExperiment(PhysicalObjectExperimentMixin, SquareEnclosedExperiment):
         )
         plt.show()
 
-    def __repr__(self):
-        return self.df
+
+@dataclass(frozen=True, order=True)
+class NortField:
+    label: int
+    constant_object_perimeter: Perimeter2D
+    variable_object_perimeter: Perimeter2D
+    novel_object_perimeter: Perimeter2D
+    novelty_constant_object_perimeter: Union[Perimeter2D, None] = field(default=None)
+
+    def __post_init__(self):
+        if self.novelty_constant_object_perimeter:
+            self.constant_object_perimeter.label = "training_constant"
+            self.novelty_constant_object_perimeter.label = "novel_constant"
+        else:
+            self.constant_object_perimeter.label = "constant"
+
+        self.variable_object_perimeter.label = "variable"
+        self.novel_object_perimeter.label = "novel"
+
+    @classmethod
+    def from_undefined(
+        cls,
+        label: int,
+        habituation_object_perimeter_a: Perimeter2D,
+        habituation_object_perimeter_b: Perimeter2D,
+        novel_object_perimeter: Perimeter2D,
+    ):
+        if distance_between_two_perimeters(
+            habituation_object_perimeter_a, novel_object_perimeter
+        ) < distance_between_two_perimeters(
+            habituation_object_perimeter_b, novel_object_perimeter
+        ):
+            constant_object_perimeter = habituation_object_perimeter_b
+            variable_object_perimeter = habituation_object_perimeter_a
+        else:
+            constant_object_perimeter = habituation_object_perimeter_a
+            variable_object_perimeter = habituation_object_perimeter_b
+
+        return cls(
+            label,
+            constant_object_perimeter,
+            variable_object_perimeter,
+            novel_object_perimeter,
+        )
+
+    def __getitem__(self, item: str):
+        if not isinstance(item, str):
+            msg = f"{self.__class__.__name__} only accepts string for getting item"
+            raise TypeError(msg)
+        if TRIAL_LABEL_VS_CLASS_NAME[item] == "training":
+            return self.training_set
+        if TRIAL_LABEL_VS_CLASS_NAME[item] == "novelty":
+            return self.novelty_set
+
+        if TRIAL_LABEL_VS_CLASS_NAME[item] == "habituation":
+            msg = "habituation has no physical objects."
+        else:
+            msg = f"{item} is neither training nor novelty related."
+        raise ValueError(msg)
+
+    def training_set(self, physical_object_set_kwargs) -> PhysicalObjectSet:
+        return PhysicalObjectSet.from_perimeter(
+            self.variable_object_perimeter,
+            self.constant_object_perimeter,
+            **physical_object_set_kwargs,
+        )
+
+    def novelty_set(self, physical_object_set_kwargs) -> PhysicalObjectSet:
+        return PhysicalObjectSet.from_perimeter(
+            self.novel_object_perimeter,
+            self.novelty_constant_object_perimeter or self.constant_object_perimeter,
+            **physical_object_set_kwargs,
+        )

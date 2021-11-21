@@ -7,8 +7,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from bikipy.behaviour.nort.experiment import NortExperiment
-from bikipy.behaviour.nort.trial import NortField
+from bikipy.behaviour.nort.constants import TRIAL_LABEL_VS_CLASS_NAME
+from bikipy.behaviour.nort.experiment import NortExperiment, NortField
+from bikipy.behaviour.nort.trial import CLASS_NAME_VS_CLASS
 from bikipy.perimeter.base import Perimeter
 from bikipy.plugins.belhaj import (
     get_animal_id_vs_apparatus,
@@ -81,27 +82,29 @@ for round_idx in range(2):
             trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(data_path).stem)[0])
             trial_id_vs_paths[trial_id]["data"] = data_path
 
-        trial_id_range_vs_exp_meta = {}
+        trial_id_range_vs_exp_meta, trial_id_vs_trial_class = {}, {}
         for trial_id, paths in trial_id_vs_paths.items():
             trial_data = {
                 "coordinate_data_path": paths["data"],
-                "stage": (stage := trial_id_vs_stage[trial_id]),
                 "video_path": paths["video"],
+                "stage": (stage := trial_id_vs_stage[trial_id]),
                 "animal_id": (animal_id := exp_vs_animal[trial_id]),
+                "field_id": animal_id_vs_app[animal_id],
                 # "inspect": True,
             }
 
-            if stage != "habituation":
-                trial_data["field"] = animal_id_vs_app[animal_id]
-
             trial_id_range_vs_exp_meta[trial_id] = trial_data
+            trial_id_vs_trial_class[trial_id] = CLASS_NAME_VS_CLASS[
+                TRIAL_LABEL_VS_CLASS_NAME[stage]
+            ]
 
         experiment = NortExperiment(
+            trial_id_vs_trial_class=trial_id_vs_trial_class,
             trial_id_vs_keyword_arguments=trial_id_range_vs_exp_meta,
             metric_resolution=0.4,
             gaze_travel_direction_point_label="nose",
             gaze_start_point_label="center_eye",
-            torso_label="torso",
+            point_label_for_motion_features="torso",
             nort_field_id_vs_nort_field_object=nort_field_id_vs_nort_field_object,
             perimeter_border_normal_metric_magnitude=0.03,
             global_center_metric_length=0.2,
@@ -129,7 +132,15 @@ with pd.ExcelWriter(
     },
 ) as writer:
     for experiment in experiments:
-        experiment.df.to_parquet(
-            RESULT_DIR / "for_analysis" / f"exp_{experiment.timestamp}.parquet"
+        # experiment.motion_summary_frame.to_parquet(
+        #     RESULT_DIR / "for_analysis" / f"motion_{experiment.timestamp}.parquet"
+        # )
+        # experiment.motion_summary_frame.to_excel(
+        #     writer, sheet_name=f"motion_{experiment.timestamp}"
+        # )
+        experiment.feature_summary_frame.to_parquet(
+            RESULT_DIR / "for_analysis" / f"feature_{experiment.timestamp}.parquet"
         )
-        experiment.df.to_excel(writer, sheet_name=str(experiment.timestamp))
+        experiment.feature_summary_frame.to_excel(
+            writer, sheet_name=f"feature_{experiment.timestamp}"
+        )

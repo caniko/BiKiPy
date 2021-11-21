@@ -9,9 +9,7 @@ import numpy as np
 import pandas as pd
 from pydantic import Field
 
-from bikipy.feature.midpoint import (
-    recursive_midpoint,
-)
+from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.reader.base import BaseReader
 
 DEEPLABCUT_DF_INIT_KWARGS = {
@@ -105,11 +103,13 @@ class DeepLabCutReader(BaseReader):
                     raise ValueError(msg)
 
             for name, group in midpoint_based_midpoints.items():
+                new_midpoint_likelihood = None
                 group_points = []
                 for component_name in group:
-                    try:
-                        group_points.append(self.get_tracking_data(component_name))
-                    except KeyError:
+                    if component_name in self.midpoint_groups:
+                        component_likelihood = midpoint_data[
+                            (component_name, "likelihood")
+                        ]
                         group_points.append(
                             np.array(
                                 (
@@ -118,10 +118,21 @@ class DeepLabCutReader(BaseReader):
                                 )
                             ).T
                         )
-                    midpoint_x, midpoint_y = recursive_midpoint(group_points).T
-                    midpoint_data[(name, "x")] = midpoint_x
-                    midpoint_data[(name, "y")] = midpoint_y
-                    midpoint_data[(name, "likelihood")] = self.reduce_likelihoods(group)
+                    else:
+                        group_points.append(self.get_tracking_data(component_name))
+                        component_likelihood = self.raw_df.loc[
+                            :, [(component_name, "likelihood")]
+                        ].values.T[0]
+
+                    if new_midpoint_likelihood is not None:
+                        new_midpoint_likelihood *= component_likelihood
+                    else:
+                        new_midpoint_likelihood = component_likelihood
+
+                midpoint_x, midpoint_y = recursive_midpoint(group_points).T
+                midpoint_data[(name, "x")] = midpoint_x
+                midpoint_data[(name, "y")] = midpoint_y
+                midpoint_data[(name, "likelihood")] = new_midpoint_likelihood.T[0]
 
             midpoint_df = pd.DataFrame.from_dict(midpoint_data)
             result = pd.concat((self.raw_df, midpoint_df), axis=1)
@@ -134,7 +145,7 @@ class DeepLabCutReader(BaseReader):
 
     @cached_property
     def tracked_and_midpoint_labels(self):
-        return tuple(*self.tracked_point_labels, *self.midpoint_groups.keys())
+        return *self.tracked_point_labels, *self.midpoint_groups.keys()
 
     @cached_property
     def region_of_interest_vs_boolean_index(self):
@@ -160,7 +171,7 @@ class DeepLabCutReader(BaseReader):
                 self.raw_df.loc[:, [(point, "likelihood")]].values
                 for point in tracked_point_labels
             ]
-        )
+        ).T[0]
 
     def get_tracking_data(self, label: str):
         """Returns an np.ndarray with the coordinates of label"""

@@ -2,7 +2,7 @@ from abc import ABC
 from datetime import date, datetime
 from functools import cached_property
 from pathlib import Path
-from typing import Literal, Optional, Union
+from typing import ClassVar, Literal, Optional, Union
 
 import compress_pickle
 import numpy as np
@@ -19,7 +19,7 @@ class BikipyBase(BaseModel, ABC):
     timestamp: Union[date, datetime] = Field(default_factory=datetime.utcnow)
     save_root: Optional[DirectoryPath] = None
 
-    _category = None
+    category: ClassVar[Optional[str]] = None
 
     class Config:
         underscore_attrs_are_private = True
@@ -31,7 +31,7 @@ class BikipyBase(BaseModel, ABC):
         save_root = Path(save_root or self.save_root)
         assert save_root
         compress_pickle.dump(
-            self, save_root / f"pickle_{self._category}_{self.timestamp}.lzma"
+            self, save_root / f"pickle_{self.category}_{self.timestamp}.lzma"
         )
 
     @property
@@ -40,7 +40,7 @@ class BikipyBase(BaseModel, ABC):
             self.best_id,
             self.group_label,
             self.timestamp,
-            self._category,
+            self.category,
         )
 
     def __hash__(self):
@@ -87,9 +87,13 @@ class VideoMetaDataMixin(BaseModel):
     manual_fps: Optional[float] = None
 
     @cached_property
+    def video_metadata_can_be_defined(self):
+        return self.video_path or (self.manual_recording_resolution and self.manual_fps)
+
+    @cached_property
     def _video_metadata(self) -> tuple:
         error_msg = (
-            "Either video_path or video metadata needs to be exclusively " "defined."
+            "Either video_path or video metadata needs to be exclusively defined."
         )
         if np.any(self.manual_recording_resolution) and self.manual_fps:
             if self.video_path:

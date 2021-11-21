@@ -159,13 +159,13 @@ def frozen_frames(
 
         discrete_thresholding.append(result)
 
-    logical_and_thresholding = np.logical_and.reduce(np.array(discrete_thresholding))
+    logical_and_thresholding = np.logical_and.reduce(discrete_thresholding)
 
     start = 0
     while start < logical_and_thresholding.size:
         if logical_and_thresholding[start]:
             end = start + 1
-            while logical_and_thresholding[end] and end < logical_and_thresholding.size:
+            while end < logical_and_thresholding.size and logical_and_thresholding[end]:
                 end += 1
 
             if end - start < frame_threshold:
@@ -187,12 +187,13 @@ class Motion:
 
     @cached_property
     def metric_displacement_by_frame(self):
-        displacement = displacement_by_frame(self.coordinate_sequence)
-        return (
-            displacement * self.units_per_pixel
-            if isinstance(self.units_per_pixel, float)
-            else displacement * np.asarray(self.units_per_pixel)
-        )
+        if isinstance(self.units_per_pixel, (float, int)):
+            displacement = displacement_by_frame(self.coordinate_sequence)
+            return displacement * self.units_per_pixel
+        else:
+            return displacement_by_frame(
+                self.coordinate_sequence * self.units_per_pixel
+            )
 
     @cached_property
     def total_displacement(self):
@@ -245,16 +246,20 @@ class Motion:
 
 
 def motion_2d_multi_indexer(category: str):
-    _category = str(category)
-    return (
+    return [
         (category, "Displacement"),
         (category, "Median_speed"),
         (category, "Median_acceleration"),
         (category, "Freezing time"),
-    )
+    ]
 
 
-def merge_motion_islands(coordinate_sequence, boolean_index, fps, units_per_pixel):
+def get_combined_features_from_merged_motion_island_data(
+    boolean_index: np.ndarray,
+    coordinate_sequence: np.ndarray,
+    units_per_pixel,
+    fps: float,
+):
     def motion_object_from_slice(slice_start, end):
         return Motion(
             coordinate_sequence=coordinate_sequence[slice_start:end],
@@ -262,8 +267,16 @@ def merge_motion_islands(coordinate_sequence, boolean_index, fps, units_per_pixe
             fps=fps,
         ).to_list
 
-    boolean_index = attention_filter(coordinate_sequence[boolean_index], fps, 0.0, 0.2)
-    indices = np.where(boolean_index)
+    if not np.any(boolean_index):
+        return {
+            "total_displacement": 0.0,
+            "median_speed": 0.0,
+            "median_acceleration": 0.0,
+            "freezing_time": 0.0,
+        }
+
+    boolean_index = attention_filter(boolean_index, fps, 0.2, 0.2)
+    indices = np.where(boolean_index)[0]
 
     motion_features = []
     start, previous = indices[0], indices[0]
@@ -272,16 +285,16 @@ def merge_motion_islands(coordinate_sequence, boolean_index, fps, units_per_pixe
             motion_features.append(motion_object_from_slice(start, i))
             start = i
         previous = i
-    motion_features.append(motion_object_from_slice(start, i))
+    motion_features.append(motion_object_from_slice(start, indices[-1] + 1))
 
     return {
         "total_displacement": sum(
             motion_feature[0] for motion_feature in motion_features
         ),
-        "median_speed": np.mean(
+        "median_speed": np.nanmean(
             [motion_feature[1] for motion_feature in motion_features]
         ),
-        "median_acceleration": np.mean(
+        "median_acceleration": np.nanmean(
             [motion_feature[2] for motion_feature in motion_features]
         ),
         "freezing_time": sum(motion_feature[3] for motion_feature in motion_features),

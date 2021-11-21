@@ -14,9 +14,9 @@ from bikipy._base_class import BikipyBase, VideoMetaDataMixin
 from bikipy.utils.video import get_video_data
 
 FILE_EXTENSION_VS_PANDAS_READER = {
-    "parquet": pd.read_parquet,
-    "hdf": pd.read_hdf,
-    "h5": pd.read_hdf,
+    ".parquet": pd.read_parquet,
+    ".hdf": pd.read_hdf,
+    ".h5": pd.read_hdf,
 }
 
 
@@ -59,7 +59,7 @@ class BaseReader(BikipyBase, VideoMetaDataMixin, ABC):
         pass
 
     def __getitem__(self, query: Union[Iterable[Hashable], Hashable]):
-        if isinstance(query, abc.Iterable):
+        if not isinstance(query, str) and isinstance(query, abc.Iterable):
             return [self._isolate_coordinates(item) for item in query]
         else:
             if query not in self.tracked_and_midpoint_labels:

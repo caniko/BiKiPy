@@ -1,5 +1,7 @@
+from typing import ClassVar
+
 from pydantic import BaseModel
 
 
 class OpenFieldTrialMixin(BaseModel):
-    _trial_has_feature_frame = False
+    trial_has_feature_frame: ClassVar[bool] = False

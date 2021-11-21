@@ -1,11 +1,13 @@
 from functools import cached_property
 from logging import getLogger
-from typing import Any
+from typing import ClassVar, Optional
 
-from bikipy.behaviour.mixins.misc import OpenFieldTrialMixin, PhysicalObjectTrialMixin
+from pydantic import Field, BaseModel
+
+from bikipy.behaviour.mixins.misc import OpenFieldTrialMixin
+from bikipy.behaviour.mixins.physical_object import PhysicalObjectTrialMixin
+from bikipy.behaviour.nort.experiment import NortField
 from bikipy.behaviour.square import SquareEnclosedTrial
-from bikipy.feature.physical_object import PhysicalObject, PhysicalObjectSet
-from bikipy.perimeter.base import Perimeter
 
 logger = getLogger(__name__)
 
@@ -16,80 +18,64 @@ class NortHabituationTrial(SquareEnclosedTrial, OpenFieldTrialMixin):
     reference data for future NORT experiments.
     """
 
-    _trial_sequence_index = 0
-    _trial_label = "habituation"
+    trial_sequence_index: ClassVar[Optional[int]] = 0
+    trial_label: ClassVar[str] = "habituation"
+
+    trial_has_feature_frame: ClassVar[bool] = False
 
 
 class NortOpenField(NortHabituationTrial):
     pass
 
 
-class NortTrainingTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin):
-    _trial_sequence_index = 1
-    _trial_label = "training"
-    _feature_summary_column = ("Seconds observing",)
+class NortFieldMixin(BaseModel):
+    nort_field: NortField
 
-    @cached_property
-    def physical_object_variable(self):
-        return PhysicalObject(
-            self.variable_object_perimeter,
-            int_id=1,
-            **self._physical_object_keyword_arguments,
-        )
 
-    @cached_property
-    def physical_object_constant(self):
-        return PhysicalObject(
-            self.constant_object_perimeter,
-            int_id=2,
-            **self._physical_object_keyword_arguments,
-        )
+class NortTrainingTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, NortFieldMixin):
+    trial_sequence_index: ClassVar[Optional[int]] = 1
+    trial_label: ClassVar[str] = "training"
+
+    trial_has_feature_frame: ClassVar[bool] = True
 
     @cached_property
     def physical_object_set(self):
-        return PhysicalObjectSet(
-            (self.physical_object_variable, self.physical_object_constant)
-        )
+        return self.nort_field.training_set(self._physical_object_keyword_arguments)
+
+    @property
+    def physical_object_variable(self):
+        return self.physical_object_set.physical_objects[0]
+
+    @property
+    def physical_object_constant(self):
+        return self.physical_object_set.physical_objects[1]
+
+    @property
+    def feature_summary_column(self) -> list:
+        return ["Seconds observing"]
 
     @property
     def feature_summary_row(self):
-        return self.physical_object_set.seconds_observing,
+        return [self.physical_object_set.seconds_observing]
 
 
-class NortNoveltyTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin):
-    novel_object_perimeter: Perimeter
-    constant_object_perimeter: Perimeter
+class NortNoveltyTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, NortFieldMixin):
+    trial_sequence_index: ClassVar[Optional[int]] = 2
+    trial_label: ClassVar[str] = "novelty"
 
-    _trial_sequence_index = 2
-    _trial_label = "novelty"
-    _minimum_seconds_attention = 0.5
-    _feature_summary_column = (
-        "Absolute discrimination",
-        "Discrimination index",
-        "Novelty index",
-    )
-
-    @cached_property
-    def physical_object_novel(self):
-        return PhysicalObject(
-            self.novel_object_perimeter,
-            int_id=1,
-            **self._physical_object_keyword_arguments,
-        )
-
-    @cached_property
-    def physical_object_constant(self):
-        return PhysicalObject(
-            self.constant_object_perimeter,
-            int_id=2,
-            **self._physical_object_keyword_arguments,
-        )
+    trial_has_feature_frame: ClassVar[bool] = True
 
     @cached_property
     def physical_object_set(self):
-        return PhysicalObjectSet(
-            (self.physical_object_novel, self.physical_object_constant)
-        )
+        return self.nort_field.novelty_set(self._physical_object_keyword_arguments)
+
+    @property
+    def physical_object_novel(self):
+        return self.physical_object_set.physical_objects[0]
+
+    @property
+    def physical_object_constant(self):
+        return self.physical_object_set.physical_objects[1]
 
     @cached_property
     def discrimination_index(self):
@@ -106,9 +92,22 @@ class NortNoveltyTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin):
         )
 
     @property
+    def feature_summary_column(self) -> list:
+        return [        "Absolute discrimination",
+        "Discrimination index",
+        "Novelty index",]
+
+    @property
     def feature_summary_row(self):
-        return (
+        return [
             self.physical_object_set.absolute_discrimination,
             self.discrimination_index,
             self.novelty_preference,
-        )
+        ]
+
+
+CLASS_NAME_VS_CLASS = {
+    "habituation": NortHabituationTrial,
+    "training": NortTrainingTrial,
+    "novelty": NortNoveltyTrial,
+}

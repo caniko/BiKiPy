@@ -4,7 +4,7 @@ import statistics
 from functools import cached_property, lru_cache
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import Any, Literal, Optional, Sequence, Union
+from typing import Any, ClassVar, Literal, Optional, Sequence, Union
 
 import cv2
 import matplotlib.pyplot as plt
@@ -34,7 +34,7 @@ class BasePerimeter(BikipyBase):
     inspect_image: Optional[NDArray] = None
     image_name: Optional[str] = None
 
-    _category = "perimeter"
+    category: ClassVar[Optional[str]] = "perimeter"
 
     @validator("inspect_image", pre=True)
     def make_sure_image_is_loaded(cls, value):
@@ -416,10 +416,6 @@ class Perimeter(BasePerimeter):
 
         return presence, valid_indices, boolean_array
 
-    @staticmethod
-    def distance_between_two_perimeters(perimeter_a, perimeter_b):
-        return np.linalg.norm(perimeter_a.centroid - perimeter_b.centroid)
-
     def plot_self(
         self,
         plot_kwargs: Optional[dict] = None,
@@ -665,6 +661,13 @@ class PerimeterSet(BasePerimeter):
                 return perimeter
         raise KeyError(f"Item was not found, {item}")
 
+    @cached_property
+    def centroid(self):
+        """
+        :return: The mean of all perimeter centroids in the set
+        """
+        return np.mean([perimeter.centroid for perimeter in self.perimeters])
+
     def discrete_confined_coordinates(
         self, coordinates: Sequence, inspect: bool = False
     ):
@@ -746,6 +749,10 @@ class PerimeterSet(BasePerimeter):
 
 
 Perimeter2D = Union[Perimeter, PerimeterSet]
+
+
+def distance_between_two_perimeters(perimeter_a: Perimeter2D, perimeter_b: Perimeter2D):
+    return np.linalg.norm(perimeter_a.centroid - perimeter_b.centroid)
 
 
 def _coco_polygon_annotation(flat_annotation_data: Sequence):

@@ -1,15 +1,19 @@
+import operator
 import os
 import re
-from abc import ABC, abstractproperty
+from abc import ABC, abstractmethod, abstractproperty
+from concurrent.futures import ProcessPoolExecutor
 from copy import copy
-from functools import cached_property
+from functools import cached_property, reduce
+from itertools import chain
 from logging import getLogger
+from operator import attrgetter
 from pathlib import Path, PurePath
-from typing import Any, Iterable, Literal, Optional, Sequence, Union
+from typing import Any, ClassVar, Iterable, Literal, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, DirectoryPath, Field, FilePath, validator
+from pydantic import DirectoryPath, Field, FilePath
 from tqdm import tqdm
 
 from bikipy._base_class import BikipyBase, VideoMetaDataMixin
@@ -24,37 +28,13 @@ logger = getLogger(__name__)
 LABEL_VS_DATA_READER = {"deeplabcut": DeepLabCutReader}
 
 
-class Behaviour(BikipyBase, ABC):
-    fps: Union[float, int, None] = None
-    recording_resolution: Optional[NDArray[Literal["np.int16"]]] = None
+class Behaviour(BikipyBase, VideoMetaDataMixin, ABC):
     metric_resolution: Union[NDArray, float, None] = None
     manual_units_per_pixel: Optional[float] = None
     data_import_kwargs: Optional[dict] = None
     data_format_label: Literal["deeplabcut"] = "deeplabcut"
 
     _live: bool = False
-
-    @property
-    def horizontal_resolution(self):
-        try:
-            return self.recording_resolution[0]
-        except TypeError:
-            msg = (
-                "recording_resolution needs to be defined to for "
-                "the acquisition of horizontal_resolution"
-            )
-            raise AttributeError(msg)
-
-    @property
-    def vertical_resolution(self):
-        try:
-            return self.recording_resolution[1]
-        except TypeError:
-            msg = (
-                "recording_resolution needs to be defined to for "
-                "the acquisition of vertical_resolution"
-            )
-            raise AttributeError(msg)
 
     @property
     def units_per_pixel(self):
@@ -72,42 +52,22 @@ class Behaviour(BikipyBase, ABC):
 
 
 class BaseExperiment(Behaviour, ABC):
+    point_label_for_motion_features: str
     trial_class: Any = None
     trial_id_vs_trial_class: Optional[dict] = None
-    point_label_for_motion_features: Optional[str] = None
     trial_id_vs_keyword_arguments: Optional[dict] = None
     trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
-    common_trial_keyword_arguments: Optional[dict] = None
+    common_trial_keyword_arguments: dict = Field(default_factory=dict)
     inspection_figure_save: Union[DirectoryPath, bool] = False
 
+    # Computational settings
     _enable_process_pooling = True
+
+    # Formatting settings
     _deeplabcut_trial_id_finder = re.compile(r"\d+")
 
     def __getitem__(self, item: int):
         return self.trial_id_vs_trial_object[item]
-
-    @cached_property
-    def feature_summary_frame(self) -> Union[pd.DataFrame, dict[str, pd.DataFrame]]:
-        """
-        Experiment classes must implement this property for the generation of
-        summary frames
-        """
-        if self.trial_class:
-            # Only one DataFrame schema
-            return pd.DataFrame(
-                (trial.feature_summary_row for trial in self.trial_objects),
-                columns=self._feature_summary_column,
-                index=self._frame_index,
-            )
-        elif self.trial_id_vs_trial_class:
-            return {
-                trial_class_name: pd.DataFrame(
-                    (trial.feature_summary_row for trial in trial_objects),
-                    columns=self._feature_summary_column,
-                    index=self._frame_index,
-                )
-                for trial_class_name, trial_objects in self.trial_class_name_vs_trial_objects.items()
-            }
 
     def trial_keyword_arguments(self, trial_id: int) -> dict:
         """
@@ -116,12 +76,13 @@ class BaseExperiment(Behaviour, ABC):
         :param trial_id: Respective trial ID
         :return:
         """
-        result = (
-            copy(self.common_trial_keyword_arguments)
-            if self.common_trial_keyword_arguments
-            else {}
-        )
-        result["data_format_label"] = self.data_format_label
+        result = {
+            **self.common_trial_keyword_arguments,
+            "int_id": trial_id,
+            "metric_resolution": self.metric_resolution,
+            "point_label_for_motion_features": self.point_label_for_motion_features,
+            "data_format_label": self.data_format_label,
+        }
 
         if self.trial_id_vs_keyword_arguments:
             result.update(self.trial_id_vs_keyword_arguments[trial_id])
@@ -129,6 +90,9 @@ class BaseExperiment(Behaviour, ABC):
             result.update(self.trial_id_range_vs_keyword_arguments[trial_id])
         if self.data_import_kwargs:
             result["data_import_kwargs"] = self.data_import_kwargs
+
+        assert result["coordinate_data_path"]
+
         return result
 
     @cached_property
@@ -140,10 +104,8 @@ class BaseExperiment(Behaviour, ABC):
             ]
         elif self.trial_id_vs_trial_class:
             return [
-                self.trial_id_vs_trial_class[trial_id](
-                    **self.trial_keyword_arguments(trial_id)
-                )
-                for trial_id in self._trial_id_key_view
+                trial_class(**self.trial_keyword_arguments(trial_id))
+                for trial_id, trial_class in self.trial_id_vs_trial_class.items()
             ]
         else:
             msg = (
@@ -163,33 +125,46 @@ class BaseExperiment(Behaviour, ABC):
             raise AttributeError(msg)
 
         result = {}
-        for trial_class, trial_id in self.trial_id_vs_trial_class:
+        for trial_id, trial_class in self.trial_id_vs_trial_class.items():
             if trial_class in result:
                 result[trial_class].append(trial_id)
             else:
                 result[trial_class] = [trial_id]
 
-        return result
+        return sorted(result, key=lambda trial_c: trial_c.trial_sequence_index)
+
+    @cached_property
+    def _trial_class_vs_trial_objects(self):
+        return {
+            trial_class: [
+                self.trial_id_vs_trial_object[trial_id] for trial_id in trial_ids
+            ]
+            for trial_class, trial_ids in self._trial_class_vs_trial_ids.items()
+        }
+
+    @cached_property
+    def _trial_classes(self) -> tuple:
+        return tuple(self._trial_class_vs_trial_ids.values())
 
     @cached_property
     def trial_class_name_vs_trial_ids(self):
         return {
             trial_class.__name__: trial_ids
-            for trial_class, trial_ids in self._trial_class_vs_trial_ids
+            for trial_class, trial_ids in self._trial_class_vs_trial_ids.items()
         }
-
-    @cached_property
-    def trial_class_name_vs_trial_objects(self):
-        result = {}
-        for trial_class_name, trial_ids in self.trial_class_name_vs_trial_ids.items():
-            result[trial_class_name] = [
-                self.trial_id_vs_trial_object[trial_id] for trial_id in trial_ids
-            ]
-        return result
 
     @cached_property
     def trial_id_vs_trial_object(self) -> dict:
         return {trial.int_id: trial for trial in self.trial_objects}
+
+    @cached_property
+    def trial_class_name_vs_trial_objects(self):
+        result = {}
+        for trial_class_name, trial_ids in self._trial_class_vs_trial_ids.items():
+            result[trial_class_name] = [
+                self.trial_id_vs_trial_object[trial_id] for trial_id in trial_ids
+            ]
+        return result
 
     @cached_property
     def animal_id_vs_trial_objects(self) -> dict:
@@ -199,7 +174,9 @@ class BaseExperiment(Behaviour, ABC):
                 result[trial.animal_id].append(trial)
             else:
                 result[trial.animal_id] = [trial]
-        return result
+        for trials in result.values():
+            trials.sort(key=lambda t: t.int_id)
+        return dict(sorted(result.items()))
 
     @property
     def inspect(self):
@@ -227,53 +204,123 @@ class BaseExperiment(Behaviour, ABC):
     def number_of_trials(self):
         return len(self._trial_id_key_view)
 
-    @property
-    def trial_id_data_tqdm(self):
-        return tqdm(
-            ((trial_id, self[trial_id]) for trial_id in self._trial_id_key_view),
-            total=self.number_of_trials,
+    # DataFrame methods
+
+    @cached_property
+    def feature_summary_frame(self) -> pd.DataFrame:
+        if self._enable_process_pooling:
+            with ProcessPoolExecutor() as executor:
+                for animal_id, trial_objects in self.animal_id_vs_trial_objects.items():
+                    row = [
+                        executor.map(attrgetter("feature_summary_row"), trial_object)
+                        for trial_object in trial_objects if trial_object.trial_has_feature_frame
+                    ]
+                    data_dict = {animal_id: row}
+        else:
+            raise NotImplementedError
+
+        if self.trial_class:
+            columns = self.trial_class.feature_summary_column
+        elif self.trial_id_vs_trial_class:
+            columns = reduce(
+                operator.add,
+                (
+                    map(attrgetter("feature_summary_column"), trial_object)
+                    for trial_object in trial_objects if trial_object.trial_has_feature_frame
+                )
+            )
+        else:
+            raise ValueError
+        return pd.DataFrame.from_dict(
+            data_dict,
+            orient="index",
+            columns=columns,
         )
 
     @cached_property
     def motion_summary_frame(self):
+        if self._enable_process_pooling:
+            with ProcessPoolExecutor() as executor:
+                rows = executor.map(attrgetter("motion_features"), self.trial_objects)
+        else:
+            rows = (trial_object.motion_features for trial_object in self.trial_objects)
+
         result = pd.DataFrame(
-            (trial.motion.to_list for trial in self.trial_objects),
-            columns=motion_2d_multi_indexer("All"),
+            rows,
+            columns=self._motion_summary_columns,
             index=self._frame_index,
         )
-        if self._trial_id_vs_animal_id_frame:
-            return pd.concat((self._trial_id_vs_animal_id_frame, result), axis=1)
-        return result
+
+        return pd.concat((self._trial_id_vs_animal_id_frame, result), axis=1)
 
     @cached_property
     def animal_id_indexed_motion_summary_frame(self):
-        result = self.motion_summary_frame
-        result.reset_index(inplace=True)
-        return result
+        return self.motion_summary_frame.copy().reset_index().sort_values(by=[("All", "Animal ID"), ("Test ID", "")]).set_index(("All", "Animal ID"))
 
     @staticmethod
     def _feature_2d_multi_indexer(feature: str, category):
         return tuple([(feature, category) for category in category])
 
-    @property
+    @cached_property
     def _frame_index(self):
         return pd.Series(self._trial_id_key_view, name="Test ID", dtype=np.int16)
 
     @cached_property
+    def _trial_class_name_vs_frame_index(self):
+        return {
+            class_name: pd.Series(trial_ids, name="Test ID", dtype=np.int16)
+            for class_name, trial_ids in self.trial_class_name_vs_trial_ids.items()
+        }
+
+    @cached_property
     def _trial_id_vs_animal_id_frame(self):
-        if not any(not trial.animal_id for trial in self.trial_objects):
+        try:
             return pd.DataFrame(
                 (trial.animal_id for trial in self.trial_objects),
-                columns=("Animal ID",),
+                columns=(("All", "Animal ID"),),
                 index=self._frame_index,
             )
+        except AttributeError as e:
+            msg = (
+                "animal_id needs to be defined for each trial instance to use "
+                "this export method"
+            )
+            raise AttributeError(msg) from e
+
+    @cached_property
+    def animal_summary_frame(self):
+        experiment_specific = pd.MultiIndex.from_product(
+            (
+                ("experiment_specific",),
+                chain.from_iterable(
+                    (
+                        trial_class.feature_summary_column
+                        for trial_class in self._trial_classes
+                    )
+                ),
+            ),
+            names=names
+        )
+        pd.MultiIndex.from_product(
+            (
+                (trial_class.__name__ for trial_class in self._trial_classes),
+                self.motion_summary_frame.columns
+            ),
+            names=("Category", "Feature")
+        )
+        for animal_id, trial_object in self.animal_id_vs_trial_objects.items():
+            pass
+
+    @property
+    def _motion_summary_columns(self) -> list:
+        return motion_2d_multi_indexer("All")
 
 
-class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
+class BaseTrial(Behaviour):
     coordinate_data_path: FilePath = Field(
         description="Path to file storing coordinate data"
     )
-    animal_id: Optional[int] = Field(
+    animal_id: int = Field(
         None, description="The ID of the animal in the trial"
     )
     point_label_for_motion_features: Optional[str] = Field(
@@ -293,28 +340,22 @@ class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
     perimeters: Optional[Sequence] = None
     trial_start_perimeter: Optional[str] = None
 
-    _category = "trial"
+    category: ClassVar[Optional[str]] = "trial"
 
-    _trial_sequence_index = None
-    _trial_label = None
-    _second_tolerance = 0.35
+    trial_sequence_index: ClassVar[Optional[int]] = None
+    trial_label: ClassVar[str] = ""
 
-    _trial_has_feature_frame = True
-    _feature_summary_column = None
+    second_tolerance: ClassVar[float] = 0.35
+
+    trial_has_feature_frame: ClassVar[bool] = False
+
+    @property
+    def feature_summary_column(self) -> tuple:
+        ...
 
     @property
     def feature_summary_row(self) -> list:
-        """
-        Trial classes must implement this property for the generation of
-        summary frames
-        """
-        if self._trial_has_feature_frame:
-            logger.warning(
-                "The base version of feature_summary_row property is being "
-                "used. Note that this will yield an empty summary frame. "
-                "This property needs to be replaced"
-            )
-        return []
+        ...
 
     @staticmethod
     def _get_reader(coordinate_data_format):
@@ -330,7 +371,7 @@ class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
     @cached_property
     def reader(self):
         return self._get_reader(self.data_format_label)(
-            self.coordinate_data_path,
+            df_path=self.coordinate_data_path,
             **self._video_metadata_dict_manual_format,
             **self.data_import_kwargs,
         )
@@ -418,4 +459,8 @@ class BaseTrial(Behaviour, VideoMetaDataMixin, ABC):
 
     @cached_property
     def _frame_tolerance(self) -> int:
-        return round(self._second_tolerance * self.fps)
+        return round(self.second_tolerance * self.fps)
+
+    @property
+    def motion_features(self):
+        return self.motion.to_list

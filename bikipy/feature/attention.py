@@ -56,7 +56,7 @@ def proximity_filter(
 
     inside_perimeter_border_boolean_index = (
         perimeter_border.coordinate_confinement_boolean_index(
-            coordinates=inside_perimeter_border, inspect=True
+            coordinates=inside_perimeter_border
         )
     )
     outside_perimeter_boolean_index = ~perimeter.coordinate_confinement_boolean_index(
@@ -174,7 +174,7 @@ def attention_filter(
     fps = float(fps)
 
     distraction_tolerance = round(distraction_tolerance_seconds * fps)
-    minimum_time_valid_observation = round(minimum_seconds_attention * fps)
+    minimum_frames_attention = round(minimum_seconds_attention * fps)
 
     length = boolean_index.shape[0]
     attention_boolean_index = np.zeros(length, dtype=bool)
@@ -189,9 +189,9 @@ def attention_filter(
             else:
                 true_counter += 1
 
-            if true_counter == minimum_time_valid_observation:
+            if true_counter == minimum_frames_attention:
                 # The first valid index is the index of the first True, i.e. when true_counter was 1
-                first_valid_index = i - minimum_time_valid_observation + 1
+                first_valid_index = i - minimum_frames_attention + 1
 
         else:
             if first_valid_index is not None:
@@ -223,10 +223,10 @@ def attention_filter(
 
     assert (
         np.any(attention_boolean_index)
-        and np.sum(attention_boolean_index) >= minimum_time_valid_observation
+        and np.sum(attention_boolean_index) >= minimum_frames_attention
     ), (
         f"True: {np.sum(attention_boolean_index)}; fps: {fps}; "
-        f"Minimum observation frames: {minimum_time_valid_observation}"
+        f"Minimum observation frames: {minimum_frames_attention}"
     )
 
     return attention_boolean_index

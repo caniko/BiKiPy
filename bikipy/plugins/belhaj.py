@@ -8,8 +8,7 @@ from typing import Union
 import numpy as np
 from pandas import DataFrame
 
-from bikipy.behaviour.nort.experiment import NortExperiment
-from bikipy.behaviour.nort.trial import NortField
+from bikipy.behaviour.nort.experiment import NortExperiment, NortField
 from bikipy.perimeter.base import Perimeter
 
 
@@ -55,8 +54,8 @@ def get_trial_id_vs_stage(
     result = {}
     for row in exp_info_df[["Video_file_name", "Stage"]].iterrows():
         trial_idx = int(trial_id_pattern.findall(Path(row[1][0]).stem)[-1])
-        stage = Path(row[1][1]).stem.lower()
-        result[trial_idx] = stage if stage == "habituation" else stage[-1]
+        stage = row[1].Stage.lower()
+        result[trial_idx] = stage.split(" ")[-1]
 
     return result
 

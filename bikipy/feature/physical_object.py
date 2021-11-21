@@ -3,10 +3,11 @@ from dataclasses import dataclass
 from functools import cached_property
 from logging import getLogger
 from pathlib import PurePath
-from typing import Any, Union, Optional
+from typing import Any, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+from pydantic import DirectoryPath
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from bikipy.behaviour.utils import reduce_repeating_sequences
@@ -28,7 +29,7 @@ class PhysicalObject:
     minimum_seconds_attention: float
     int_id: Optional[int] = None
     label: Optional[str] = None
-    inspect: Union[bool, str, PurePath] = False
+    inspect: Union[bool, str, DirectoryPath] = False
 
     @cached_property
     def _perimeter_attention_data(self) -> tuple:
@@ -39,7 +40,7 @@ class PhysicalObject:
             self.fps,
             self.perimeter_border_normal_pixel_magnitude,
             self.maximum_radians_inter_gaze_perimeter,
-            self._minimum_seconds_attention,
+            self.minimum_seconds_attention,
             inspect=self.inspect,
         )
 
@@ -93,11 +94,11 @@ class PhysicalObject:
 
 @dataclass(frozen=True, order=True)
 class PhysicalObjectSet:
-    physical_objects: tuple
+    physical_objects: tuple[PhysicalObject]
     use_label_as_id: bool = False
 
     def __post_init__(self):
-        if len(self) == 1:
+        if len(self.physical_objects) == 1:
             return
 
         not_identical_error_base = (
@@ -141,8 +142,8 @@ class PhysicalObjectSet:
         len_unique = len(int_ids_set)
         if len_total != len_unique:
             msg = (
-                "At least two of the int_id values are equal, these values "
-                "are mutually exclusive"
+                f"At least two of the int_id values are equal, these values "
+                f"are mutually exclusive,\n{object_int_ids}"
             )
             raise AttributeError(msg)
         if None in int_ids_set and len_unique != 1:
@@ -167,6 +168,15 @@ class PhysicalObjectSet:
             msg = "labels need to be unique with the exception of None"
             raise AttributeError(msg)
 
+    @classmethod
+    def from_perimeter(cls, *perimeters, **kwargs):
+        return cls(
+            tuple(
+                PhysicalObject(perimeter, int_id=i, **kwargs)
+                for i, perimeter in enumerate(perimeters, start=1)
+            )
+        )
+
     @cached_property
     def frames(self):
         return len(self._first_object)
@@ -178,10 +188,10 @@ class PhysicalObjectSet:
     @cached_property
     def observing_per_frame(self):
         return np.logical_or.reduce(
-            (
+            [
                 physical_object.observance_boolean_index
                 for physical_object in self.physical_objects
-            )
+            ]
         )
 
     @cached_property
@@ -260,7 +270,7 @@ class PhysicalObjectSet:
 
         :return:
         """
-        if len(self) != 2:
+        if len(self.physical_objects) != 2:
             msg = (
                 f"Absolute discrimination is a feature that is only supported when "
                 f"the number of PhysicalObjects in the {self.__class__.__name__} "

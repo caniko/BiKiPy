@@ -6,53 +6,32 @@ import pandas as pd
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.feature.motion import merge_motion_islands, motion_2d_multi_indexer
+from bikipy.feature.motion import (
+    get_combined_features_from_merged_motion_island_data,
+    motion_2d_multi_indexer,
+)
 from bikipy.math.point_in_polygon import points_in_parallelogram
 
 
-class RectangleEnclosedExperiment(BaseExperiment, ABC):
+class RectangleEnclosedExperiment(BaseExperiment):
     @cached_property
-    def motion_summary_frame(self):
+    def _motion_summary_columns(self) -> list:
         quadrant_labels = (
             "Upper-left Quadrant",
             "Upper-right Quadrant",
             "Lower-left Quadrant",
             "Lower-right Quadrant",
         )
-        return pd.concat(
-            (
-                super().motion_summary_frame,
-                pd.DataFrame(
-                    (
-                        trial.motion_quadrant_upper_left.to_list
-                        + trial.motion_quadrant_upper_right.to_list
-                        + trial.motion_quadrant_down_left.to_list
-                        + trial.motion_quadrant_down_right.to_list
-                        + trial.seconds_on_quadrant_upper_left
-                        + trial.seconds_on_quadrant_upper_right
-                        + trial.seconds_on_quadrant_down_left
-                        + trial.seconds_on_quadrant_down_right
-                        + trial.quadrant_upper_left_entries
-                        + trial.quadrant_upper_right_entries
-                        + trial.quadrant_down_left_entries
-                        + trial.quadrant_down_right_entries
-                        for trial in self.trial_objects
-                    ),
-                    columns=(
-                        *motion_2d_multi_indexer("Upper-left Quadrant"),
-                        *motion_2d_multi_indexer("Upper-right Quadrant"),
-                        *motion_2d_multi_indexer("Lower-left Quadrant"),
-                        *motion_2d_multi_indexer("Lower-right Quadrant"),
-                        *self._feature_2d_multi_indexer(
-                            "Seconds present", quadrant_labels
-                        ),
-                        *self._feature_2d_multi_indexer("Entries", quadrant_labels),
-                    ),
-                    index=self._frame_index,
-                ),
+        return super()._motion_summary_columns + [
+            *motion_2d_multi_indexer("Upper-left Quadrant"),
+            *motion_2d_multi_indexer("Upper-right Quadrant"),
+            *motion_2d_multi_indexer("Lower-left Quadrant"),
+            *motion_2d_multi_indexer("Lower-right Quadrant"),
+            *self._feature_2d_multi_indexer(
+                "Seconds present", quadrant_labels
             ),
-            axis=1,
-        )
+            *self._feature_2d_multi_indexer("Entries", quadrant_labels),
+        ]
 
 
 class RectangleEnclosedTrial(BaseTrial, ABC):
@@ -68,8 +47,8 @@ class RectangleEnclosedTrial(BaseTrial, ABC):
         return reduce_repeating_sequences(result, round(self.fps * 0.35))
 
     @cached_property
-    def motion_quadrant_upper_left(self) -> np.ndarray:
-        return merge_motion_islands(
+    def motion_quadrant_upper_left(self) -> dict:
+        return get_combined_features_from_merged_motion_island_data(
             self.quadrant_upper_left_boolean_index,
             self.coordinates_per_frame,
             self.units_per_pixel,
@@ -77,8 +56,8 @@ class RectangleEnclosedTrial(BaseTrial, ABC):
         )
 
     @cached_property
-    def motion_quadrant_upper_right(self) -> np.ndarray:
-        return merge_motion_islands(
+    def motion_quadrant_upper_right(self) -> dict:
+        return get_combined_features_from_merged_motion_island_data(
             self.quadrant_upper_right_boolean_index,
             self.coordinates_per_frame,
             self.units_per_pixel,
@@ -86,8 +65,8 @@ class RectangleEnclosedTrial(BaseTrial, ABC):
         )
 
     @cached_property
-    def motion_quadrant_lower_left(self) -> np.ndarray:
-        return merge_motion_islands(
+    def motion_quadrant_lower_left(self) -> dict:
+        return get_combined_features_from_merged_motion_island_data(
             self.quadrant_lower_left_boolean_index,
             self.coordinates_per_frame,
             self.units_per_pixel,
@@ -95,8 +74,8 @@ class RectangleEnclosedTrial(BaseTrial, ABC):
         )
 
     @cached_property
-    def motion_quadrant_lower_right(self) -> np.ndarray:
-        return merge_motion_islands(
+    def motion_quadrant_lower_right(self) -> dict:
+        return get_combined_features_from_merged_motion_island_data(
             self.quadrant_lower_right_boolean_index,
             self.coordinates_per_frame,
             self.units_per_pixel,
@@ -178,3 +157,20 @@ class RectangleEnclosedTrial(BaseTrial, ABC):
     @cached_property
     def seconds_on_quadrant_lower_right(self):
         return np.sum(self.quadrant_lower_right_boolean_index) / self.fps
+
+    @property
+    def motion_features(self):
+        return super().motion_features + [
+            *self.motion_quadrant_upper_left.values(),
+            *self.motion_quadrant_upper_right.values(),
+            *self.motion_quadrant_lower_left.values(),
+            *self.motion_quadrant_lower_right.values(),
+            self.seconds_on_quadrant_upper_left,
+            self.seconds_on_quadrant_upper_right,
+            self.seconds_on_quadrant_lower_left,
+            self.seconds_on_quadrant_lower_right,
+            self.quadrant_upper_left_entries,
+            self.quadrant_upper_right_entries,
+            self.quadrant_lower_left_entries,
+            self.quadrant_lower_right_entries,
+        ]
