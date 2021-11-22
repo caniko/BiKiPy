@@ -49,7 +49,7 @@ class NortExperiment(SquareEnclosedExperiment, PhysicalObjectExperimentMixin):
             "gaze true proximity false": [],
             "all false": [],
         }
-        for novelty_trial in self.novelty_object_trials:
+        for novelty_trial in self.trial_class_name_vs_trial_objects[""]:
             attention_state_analysis["proximity&gaze true observation false"].extend(
                 (
                     novelty_trial.a_proximity_filtered

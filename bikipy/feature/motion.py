@@ -260,9 +260,9 @@ def get_combined_features_from_merged_motion_island_data(
     units_per_pixel,
     fps: float,
 ):
-    def motion_object_from_slice(slice_start, end):
+    def motion_object_from_slice(slice_start, slice_end) -> list:
         return Motion(
-            coordinate_sequence=coordinate_sequence[slice_start:end],
+            coordinate_sequence=coordinate_sequence[slice_start:slice_end],
             units_per_pixel=units_per_pixel,
             fps=fps,
         ).to_list
@@ -284,7 +284,8 @@ def get_combined_features_from_merged_motion_island_data(
             motion_features.append(motion_object_from_slice(start, i))
             start = i
         previous = i
-    motion_features.append(motion_object_from_slice(start, indices[-1] + 1))
+    if (end := indices[-1] + 1) - start >= 4:
+        motion_features.append(motion_object_from_slice(start, end))
 
     return {
         "total_displacement": sum(

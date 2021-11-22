@@ -2,7 +2,6 @@ from abc import ABC
 from functools import cached_property
 
 import numpy as np
-import pandas as pd
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import reduce_repeating_sequences
@@ -35,7 +34,7 @@ class RectangleEnclosedExperiment(BaseExperiment):
 class RectangleEnclosedTrial(BaseTrial, ABC):
     @cached_property
     def location_sequence_quadrant(self) -> np.ndarray:
-        result = self._zeros_based_on_frame_length
+        result = self._uint_zeros_based_on_frame_length.copy()
 
         result[self.quadrant_upper_left_boolean_index] = 1
         result[self.quadrant_upper_right_boolean_index] = 2
@@ -92,7 +91,7 @@ class RectangleEnclosedTrial(BaseTrial, ABC):
         )
 
     @cached_property
-    def quadrant_upper_left_entries(self):
+    def quadrant_upper_left_entries(self) -> int:
         return np.sum(self.location_sequence_quadrant == 1)
 
     @cached_property

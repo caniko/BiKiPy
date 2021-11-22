@@ -111,14 +111,12 @@ def alternative_inner_angle(a_vector: Sequence, b_vector: Sequence) -> np.ndarra
 
 @njit(cache=True, nogil=True)
 def inner_angle(vector_set_1, vector_set_2):
-    """ Returns the angle in radians between given vectors"""
+    """Returns the angle in radians between given vectors"""
     result = []
     for i in range(len(vector_set_2)):
         v1_u = fast_unit_vector(vector_set_1[i])
         v2_u = fast_unit_vector(vector_set_2[i])
-        minor = np.linalg.det(
-            np.stack((v1_u[-2:], v2_u[-2:]))
-        )
+        minor = np.linalg.det(np.stack((v1_u[-2:], v2_u[-2:])))
         if minor == 0:
             sign = 1
         else:

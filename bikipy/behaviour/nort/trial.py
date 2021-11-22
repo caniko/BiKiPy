@@ -2,6 +2,7 @@ from functools import cached_property
 from logging import getLogger
 from typing import ClassVar, Optional
 
+import pandas as pd
 from pydantic import BaseModel, Field
 
 from bikipy.behaviour.mixins.misc import OpenFieldTrialMixin
@@ -52,7 +53,7 @@ class NortTrainingTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, NortField
 
     @property
     def feature_summary_column(self) -> list:
-        return ["Seconds observing"]
+        return [(self.trial_label.capitalize(), "Seconds observing")]
 
     @property
     def feature_summary_row(self):
@@ -93,11 +94,18 @@ class NortNoveltyTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, NortFieldM
 
     @property
     def feature_summary_column(self) -> list:
-        return [
-            "Absolute discrimination",
-            "Discrimination index",
-            "Novelty index",
-        ]
+        return list(
+            pd.MultiIndex.from_product(
+                [
+                    ["self.trial_label.capitalize()"],
+                    [
+                        "Absolute discrimination",
+                        "Discrimination index",
+                        "Novelty index",
+                    ],
+                ]
+            )
+        )
 
     @property
     def feature_summary_row(self):

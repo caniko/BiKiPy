@@ -8,7 +8,7 @@ from numpy.linalg import LinAlgError
 
 @njit(cache=True, nogil=True)
 def fast_unit_vector(vector):
-    """ Returns the unit vector of the vector.  """
+    """Returns the unit vector of the vector."""
     return (vector / np.linalg.norm(vector)).astype(np.float64)
 
 

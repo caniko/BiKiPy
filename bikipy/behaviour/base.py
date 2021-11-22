@@ -216,6 +216,10 @@ class BaseExperiment(Behaviour, ABC):
     # DataFrame methods
 
     @cached_property
+    def animal_summary_frame(self) -> pd.DataFrame:
+        return pd.concat((self.feature_summary_frame, self.animal_id_indexed_motion_summary_frame), axis=1)
+
+    @cached_property
     def feature_summary_frame(self) -> pd.DataFrame:
         data_dict = {}
         if self._enable_process_pooling:
@@ -265,7 +269,7 @@ class BaseExperiment(Behaviour, ABC):
         return result
 
     @cached_property
-    def motion_summary_frame(self):
+    def motion_summary_frame(self) -> pd.DataFrame:
         if self._enable_process_pooling:
             with ProcessPoolExecutor() as executor:
                 rows = executor.map(attrgetter("motion_features"), self.trial_objects)
@@ -281,30 +285,49 @@ class BaseExperiment(Behaviour, ABC):
         return pd.concat((self._trial_id_vs_animal_id_frame, result), axis=1)
 
     @cached_property
-    def animal_id_indexed_motion_summary_frame(self):
-        return (
-            self.motion_summary_frame.copy()
+    def animal_id_indexed_motion_summary_frame(self) -> pd.DataFrame:
+        motion = (
+            pd.read_parquet("motion_2020-06-02.parquet")
             .reset_index()
             .sort_values(by=[("All", "Animal ID"), ("Test ID", "")])
         )
 
+        series = {}
+        for i, animal_id_df in motion.copy().groupby(("All", "Animal ID")):
+            new_series = animal_id_df.unstack().unstack(2)
+            new_series.columns = ("H", "T", "N")
+
+            new_series = (
+                new_series.stack().reorder_levels((2, 0, 1)).sort_index(level=0)
+            )
+
+            series[i] = new_series.drop(
+                [
+                    new_series.index[index]
+                    for index in np.where(
+                        new_series.index.get_level_values(level=2) == "Animal ID"
+                    )[0]
+                ],
+            )
+        return pd.DataFrame.from_dict(series, orient="index")
+
     @staticmethod
-    def _feature_2d_multi_indexer(feature: str, category):
+    def _feature_2d_multi_indexer(feature: str, category) -> tuple:
         return tuple([(feature, category) for category in category])
 
     @cached_property
-    def _frame_index(self):
+    def _frame_index(self) -> pd.Series:
         return pd.Series(self._trial_id_key_view, name="Test ID", dtype=np.int16)
 
     @cached_property
-    def _trial_class_name_vs_frame_index(self):
+    def _trial_class_name_vs_frame_index(self) -> dict:
         return {
             class_name: pd.Series(trial_ids, name="Test ID", dtype=np.int16)
             for class_name, trial_ids in self.trial_class_name_vs_trial_ids.items()
         }
 
     @cached_property
-    def _trial_id_vs_animal_id_frame(self):
+    def _trial_id_vs_animal_id_frame(self) -> pd.DataFrame:
         try:
             return pd.DataFrame(
                 (trial.animal_id for trial in self.trial_objects),
@@ -317,30 +340,6 @@ class BaseExperiment(Behaviour, ABC):
                 "this export method"
             )
             raise AttributeError(msg) from e
-
-    @cached_property
-    def animal_summary_frame(self):
-        experiment_specific = pd.MultiIndex.from_product(
-            (
-                ("experiment_specific",),
-                chain.from_iterable(
-                    (
-                        trial_class.feature_summary_column
-                        for trial_class in self._trial_classes
-                    )
-                ),
-            ),
-            names=names,
-        )
-        pd.MultiIndex.from_product(
-            (
-                (trial_class.__name__ for trial_class in self._trial_classes),
-                self.motion_summary_frame.columns,
-            ),
-            names=("Category", "Feature"),
-        )
-        for animal_id, trial_object in self.animal_id_vs_trial_objects.items():
-            pass
 
     @property
     def _motion_summary_columns(self) -> list:
@@ -380,11 +379,11 @@ class BaseTrial(Behaviour):
 
     @property
     def feature_summary_column(self) -> tuple:
-        ...
+        raise NotImplementedError
 
     @property
     def feature_summary_row(self) -> list:
-        ...
+        raise NotImplementedError
 
     @staticmethod
     def _get_reader(coordinate_data_format):
@@ -393,7 +392,7 @@ class BaseTrial(Behaviour):
         except KeyError as e:
             msg = (
                 f"{coordinate_data_format} as a format for data ingestion has "
-                f"no implementation"
+                f"no implementation. Choose from: {LABEL_VS_DATA_READER.keys()}"
             )
             raise NotImplemented(msg) from e
 
@@ -418,7 +417,7 @@ class BaseTrial(Behaviour):
         return self.coordinates_per_frame.shape[0] / self.fps
 
     @property
-    def inspect_image_path(self):
+    def inspect_image_path(self) -> Union[DirectoryPath, bool]:
         if isinstance(self.inspection_figure_save, str) or isinstance(
             self.inspection_figure_save, PurePath
         ):
@@ -430,12 +429,12 @@ class BaseTrial(Behaviour):
         return self.recording_resolution / 2.0
 
     @cached_property
-    def motion(self):
+    def motion(self) -> Motion:
         return Motion(self.coordinates_per_frame, self.units_per_pixel, self.fps)
 
     # Perimeter
 
-    def detect_confined_perimeter(self, coordinate: np.array):
+    def detect_confined_perimeter(self, coordinate: np.ndarray) -> np.ndarray:
         """
         This function is used to determine current location of subject.
 
@@ -451,25 +450,25 @@ class BaseTrial(Behaviour):
         logger.debug(f"Location could not be determined, {coordinate}")
 
     @cached_property
-    def int_id_vs_perimeter(self):
+    def int_id_vs_perimeter(self) -> dict:
         self._validate_perimeters_object()
         return {
             i: perimeter
             for i, perimeter in enumerate(self.perimeters.values(), start=1)
         }
 
-    def _validate_perimeters_object(self):
+    def _validate_perimeters_object(self) -> None:
         if not self.perimeters:
             msg = "perimeters is not defined as an object variable, which is required for int_id_vs_perimeter"
             raise AttributeError(msg)
 
     @cached_property
-    def _perimeter_label_vs_int_id(self):
+    def _perimeter_label_vs_int_id(self) -> dict:
         self._validate_perimeters_object()
         return {label: i for i, label in enumerate(self.perimeters, start=1)}
 
     @cached_property
-    def _int_id_vs_perimeter_label(self):
+    def _int_id_vs_perimeter_label(self) -> dict:
         self._validate_perimeters_object()
         return {i: label for i, label in enumerate(self.perimeters, start=1)}
 
@@ -483,7 +482,7 @@ class BaseTrial(Behaviour):
     # Miscellaneous
 
     @cached_property
-    def _zeros_based_on_frame_length(self) -> np.ndarray:
+    def _uint_zeros_based_on_frame_length(self) -> np.ndarray:
         return np.zeros(self.number_of_frames, dtype=np.uint8)
 
     @cached_property
@@ -491,5 +490,5 @@ class BaseTrial(Behaviour):
         return round(self.second_tolerance * self.fps)
 
     @property
-    def motion_features(self):
+    def motion_features(self) -> list:
         return self.motion.to_list
