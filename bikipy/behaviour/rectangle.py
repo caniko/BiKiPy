@@ -27,9 +27,7 @@ class RectangleEnclosedExperiment(BaseExperiment):
             *motion_2d_multi_indexer("Upper-right Quadrant"),
             *motion_2d_multi_indexer("Lower-left Quadrant"),
             *motion_2d_multi_indexer("Lower-right Quadrant"),
-            *self._feature_2d_multi_indexer(
-                "Seconds present", quadrant_labels
-            ),
+            *self._feature_2d_multi_indexer("Seconds present", quadrant_labels),
             *self._feature_2d_multi_indexer("Entries", quadrant_labels),
         ]
 

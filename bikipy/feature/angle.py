@@ -3,9 +3,10 @@ from typing import Union
 from warnings import warn
 
 import numpy as np
+from numba import njit
 from pandas.core.frame import DataFrame as DataFrameType
 
-from bikipy.math.vector import dot_prod_along_axis_1, unit_vector
+from bikipy.math.vector import dot_prod_along_axis_1, unit_vector, fast_unit_vector
 
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}
 
@@ -82,7 +83,7 @@ def counterclockwise_angel_2d(
     return angles
 
 
-def inner_angle(a_vector: Sequence, b_vector: Sequence) -> np.ndarray:
+def alternative_inner_angle(a_vector: Sequence, b_vector: Sequence) -> np.ndarray:
     """
     Computes the inner angle between two vectors, a and b, in radians
 
@@ -106,6 +107,26 @@ def inner_angle(a_vector: Sequence, b_vector: Sequence) -> np.ndarray:
             * np.linalg.norm(b_unit_vector, axis=1)
         )
     )
+
+
+@njit(cache=True, nogil=True)
+def inner_angle(vector_set_1, vector_set_2):
+    """ Returns the angle in radians between given vectors"""
+    result = []
+    for i in range(len(vector_set_2)):
+        v1_u = fast_unit_vector(vector_set_1[i])
+        v2_u = fast_unit_vector(vector_set_2[i])
+        minor = np.linalg.det(
+            np.stack((v1_u[-2:], v2_u[-2:]))
+        )
+        if minor == 0:
+            sign = 1
+        else:
+            sign = -np.sign(minor)
+        dot_p = np.dot(v1_u, v2_u)
+        dot_p = min(max(dot_p, -1.0), 1.0)
+        result.append(sign * np.arccos(dot_p))
+    return np.array(result)
 
 
 def compute_angles_from_vectors(

@@ -116,11 +116,11 @@ def gaze_direction_filter(
     inspection_ax: Any = None,
 ) -> np.ndarray:
     nose, center_eye = np.asarray(nose), np.asarray(center_eye)
-    eye_to_nose_unit = unit_vector(nose - center_eye)
+    eye_to_nose_vector = nose - center_eye
 
     _closest_distance, closest_vector = perimeter.closest_sides_to_points(center_eye)
 
-    inner_angles = inner_angle(closest_vector, eye_to_nose_unit)
+    inner_angles = inner_angle(closest_vector, eye_to_nose_vector)
 
     result = inner_angles <= max_radians
 

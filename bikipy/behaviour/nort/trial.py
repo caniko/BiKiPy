@@ -2,7 +2,7 @@ from functools import cached_property
 from logging import getLogger
 from typing import ClassVar, Optional
 
-from pydantic import Field, BaseModel
+from pydantic import BaseModel, Field
 
 from bikipy.behaviour.mixins.misc import OpenFieldTrialMixin
 from bikipy.behaviour.mixins.physical_object import PhysicalObjectTrialMixin
@@ -93,9 +93,11 @@ class NortNoveltyTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, NortFieldM
 
     @property
     def feature_summary_column(self) -> list:
-        return [        "Absolute discrimination",
-        "Discrimination index",
-        "Novelty index",]
+        return [
+            "Absolute discrimination",
+            "Discrimination index",
+            "Novelty index",
+        ]
 
     @property
     def feature_summary_row(self):

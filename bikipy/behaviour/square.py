@@ -38,12 +38,8 @@ class SquareEnclosedExperiment(RectangleEnclosedExperiment):
         return super()._motion_summary_columns + [
             *motion_2d_multi_indexer("Periphery"),
             *motion_2d_multi_indexer("Center"),
-            *self._feature_2d_multi_indexer(
-                "Time_spent", periphery_center_labels
-            ),
-            *self._feature_2d_multi_indexer(
-                "Entries", periphery_center_labels
-            )
+            *self._feature_2d_multi_indexer("Time_spent", periphery_center_labels),
+            *self._feature_2d_multi_indexer("Entries", periphery_center_labels),
         ]
 
 
@@ -222,5 +218,5 @@ class SquareEnclosedTrial(RectangleEnclosedTrial):
             self.seconds_on_periphery,
             self.seconds_on_center,
             self.periphery_entries,
-            self.center_entries
+            self.center_entries,
         ]

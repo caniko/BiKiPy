@@ -202,37 +202,37 @@ class Motion:
     @cached_property
     def speed(self):
         if not self.total_displacement:
-            return None
+            return np.nan
         return absolute_derivative(self.metric_displacement_by_frame) * self.fps
 
     @cached_property
     def median_speed(self):
         if not self.total_displacement:
-            return None
+            return np.nan
         return np.nanmedian(self.speed)
 
     @cached_property
     def frozen_boolean_index(self):
         if not self.total_displacement:
-            return None
+            return np.nan
         return frozen_frames(self.fps, (self.metric_displacement_by_frame,))
 
     @cached_property
     def freezing_time(self):
         if not self.total_displacement:
-            return None
+            return np.nan
         return np.nansum(self.frozen_boolean_index) / self.fps
 
     @cached_property
     def acceleration(self):
         if not self.total_displacement:
-            return None
+            return np.nan
         return absolute_derivative(self.speed)
 
     @cached_property
     def median_acceleration(self):
         if not self.total_displacement:
-            return None
+            return np.nan
         return np.nanmedian(self.acceleration)
 
     @property
@@ -275,7 +275,6 @@ def get_combined_features_from_merged_motion_island_data(
             "freezing_time": 0.0,
         }
 
-    boolean_index = attention_filter(boolean_index, fps, 0.2, 0.2)
     indices = np.where(boolean_index)[0]
 
     motion_features = []

@@ -132,12 +132,13 @@ with pd.ExcelWriter(
     },
 ) as writer:
     for experiment in experiments:
-        # experiment.motion_summary_frame.to_parquet(
-        #     RESULT_DIR / "for_analysis" / f"motion_{experiment.timestamp}.parquet"
-        # )
-        # experiment.motion_summary_frame.to_excel(
-        #     writer, sheet_name=f"motion_{experiment.timestamp}"
-        # )
+        experiment.motion_summary_frame.to_parquet(
+            RESULT_DIR / "for_analysis" / f"motion_{experiment.timestamp}.parquet"
+        )
+        experiment.motion_summary_frame.to_excel(
+            writer, sheet_name=f"motion_{experiment.timestamp}"
+        )
+
         experiment.feature_summary_frame.to_parquet(
             RESULT_DIR / "for_analysis" / f"feature_{experiment.timestamp}.parquet"
         )

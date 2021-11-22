@@ -178,6 +178,15 @@ class BaseExperiment(Behaviour, ABC):
             trials.sort(key=lambda t: t.int_id)
         return dict(sorted(result.items()))
 
+    @cached_property
+    def trial_classes_without_features(self):
+        return np.where(
+            [
+                trial_object.trial_has_feature_frame
+                for trial_object in self.animal_id_vs_trial_objects.values()
+            ]
+        )[0]
+
     @property
     def inspect(self):
         if isinstance(self.inspection_figure_save, bool):
@@ -208,34 +217,52 @@ class BaseExperiment(Behaviour, ABC):
 
     @cached_property
     def feature_summary_frame(self) -> pd.DataFrame:
+        data_dict = {}
         if self._enable_process_pooling:
             with ProcessPoolExecutor() as executor:
                 for animal_id, trial_objects in self.animal_id_vs_trial_objects.items():
-                    row = [
-                        executor.map(attrgetter("feature_summary_row"), trial_object)
-                        for trial_object in trial_objects if trial_object.trial_has_feature_frame
+                    trial_objects = [
+                        trial_object
+                        for trial_object in copy(trial_objects)
+                        if trial_object.trial_has_feature_frame
                     ]
-                    data_dict = {animal_id: row}
+                    data_dict[animal_id] = sum(
+                        list(
+                            executor.map(
+                                attrgetter("feature_summary_row"), trial_objects
+                            )
+                        ),
+                        [],
+                    )
         else:
-            raise NotImplementedError
+            for animal_id, trial_objects in self.animal_id_vs_trial_objects.items():
+                data_dict[animal_id] = sum(
+                    (
+                        trial_object.feature_summary_row
+                        for trial_object in trial_objects
+                        if trial_object.trial_has_feature_frame
+                    ),
+                    [],
+                )
 
         if self.trial_class:
             columns = self.trial_class.feature_summary_column
         elif self.trial_id_vs_trial_class:
-            columns = reduce(
-                operator.add,
+            columns = sum(
                 (
-                    map(attrgetter("feature_summary_column"), trial_object)
-                    for trial_object in trial_objects if trial_object.trial_has_feature_frame
-                )
+                    trial_object.feature_summary_column
+                    for trial_object in trial_objects
+                    if trial_object.trial_has_feature_frame
+                ),
+                [],
             )
         else:
             raise ValueError
-        return pd.DataFrame.from_dict(
-            data_dict,
-            orient="index",
-            columns=columns,
-        )
+
+        result = pd.DataFrame.from_dict(data_dict, orient="index", columns=columns)
+        result.index.set_names("Animal ID")
+
+        return result
 
     @cached_property
     def motion_summary_frame(self):
@@ -255,7 +282,11 @@ class BaseExperiment(Behaviour, ABC):
 
     @cached_property
     def animal_id_indexed_motion_summary_frame(self):
-        return self.motion_summary_frame.copy().reset_index().sort_values(by=[("All", "Animal ID"), ("Test ID", "")]).set_index(("All", "Animal ID"))
+        return (
+            self.motion_summary_frame.copy()
+            .reset_index()
+            .sort_values(by=[("All", "Animal ID"), ("Test ID", "")])
+        )
 
     @staticmethod
     def _feature_2d_multi_indexer(feature: str, category):
@@ -299,14 +330,14 @@ class BaseExperiment(Behaviour, ABC):
                     )
                 ),
             ),
-            names=names
+            names=names,
         )
         pd.MultiIndex.from_product(
             (
                 (trial_class.__name__ for trial_class in self._trial_classes),
-                self.motion_summary_frame.columns
+                self.motion_summary_frame.columns,
             ),
-            names=("Category", "Feature")
+            names=("Category", "Feature"),
         )
         for animal_id, trial_object in self.animal_id_vs_trial_objects.items():
             pass
@@ -320,9 +351,7 @@ class BaseTrial(Behaviour):
     coordinate_data_path: FilePath = Field(
         description="Path to file storing coordinate data"
     )
-    animal_id: int = Field(
-        None, description="The ID of the animal in the trial"
-    )
+    animal_id: int = Field(None, description="The ID of the animal in the trial")
     point_label_for_motion_features: Optional[str] = Field(
         description="Label of the node that will be used to track general animal movement"
     )

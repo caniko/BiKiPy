@@ -2,7 +2,14 @@ from collections.abc import Sequence
 from typing import Union
 
 import numpy as np
+from numba import njit
 from numpy.linalg import LinAlgError
+
+
+@njit(cache=True, nogil=True)
+def fast_unit_vector(vector):
+    """ Returns the unit vector of the vector.  """
+    return (vector / np.linalg.norm(vector)).astype(np.float64)
 
 
 def unit_vector(row_vectors: Sequence, force_1_dim: bool = False) -> np.ndarray:
