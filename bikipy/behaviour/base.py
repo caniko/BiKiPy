@@ -1,11 +1,8 @@
-import operator
 import os
 import re
-from abc import ABC, abstractmethod, abstractproperty
 from concurrent.futures import ProcessPoolExecutor
 from copy import copy
-from functools import cached_property, reduce
-from itertools import chain
+from functools import cached_property
 from logging import getLogger
 from operator import attrgetter
 from pathlib import Path, PurePath
@@ -14,7 +11,6 @@ from typing import Any, ClassVar, Iterable, Literal, Optional, Sequence, Union
 import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, Field, FilePath
-from tqdm import tqdm
 
 from bikipy._base_class import BikipyBase, VideoMetaDataMixin
 from bikipy.feature.motion import Motion, motion_2d_multi_indexer
@@ -28,7 +24,7 @@ logger = getLogger(__name__)
 LABEL_VS_DATA_READER = {"deeplabcut": DeepLabCutReader}
 
 
-class Behaviour(BikipyBase, VideoMetaDataMixin, ABC):
+class Behaviour(BikipyBase, VideoMetaDataMixin):
     metric_resolution: Union[NDArray, float, None] = None
     manual_units_per_pixel: Optional[float] = None
     data_import_kwargs: Optional[dict] = None
@@ -51,7 +47,7 @@ class Behaviour(BikipyBase, VideoMetaDataMixin, ABC):
             return np.array(self.metric_resolution) / self.recording_resolution
 
 
-class BaseExperiment(Behaviour, ABC):
+class BaseExperiment(Behaviour):
     point_label_for_motion_features: str
     trial_class: Any = None
     trial_id_vs_trial_class: Optional[dict] = None
@@ -281,7 +277,23 @@ class BaseExperiment(Behaviour, ABC):
 
         if levels:
             column_array = np.array(columns)
-            print(1)
+            if levels > (native_nlevel := column_array.shape[1]):
+                return pd.MultiIndex.from_arrays(
+                    np.concatenate(
+                        (
+                            column_array,
+                            [["" for _ in range(levels - native_nlevel)]]
+                            * len(column_array),
+                        ),
+                        axis=1,
+                    )
+                )
+            elif levels < native_nlevel:
+                msg = (
+                    "Can not reduce the number of levels that are natively defined"
+                    "in index"
+                )
+                raise ValueError(msg)
 
         return pd.MultiIndex.from_tuples(columns)
 

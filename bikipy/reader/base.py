@@ -58,6 +58,19 @@ class BaseReader(BikipyBase, VideoMetaDataMixin, ABC):
         """
         pass
 
+    @abstractmethod
+    @property
+    def augmented(self) -> pd.DataFrame:
+        """
+        :return: Tracking and augmented data stored in the same frame. The augmented
+                 data should include midpoints and inner interpolations.
+        """
+        ...
+
+    @property
+    def df(self):
+        return self.augmented
+
     def __getitem__(self, query: Union[Iterable[Hashable], Hashable]):
         if not isinstance(query, str) and isinstance(query, abc.Iterable):
             return [self._isolate_coordinates(item) for item in query]
@@ -78,10 +91,6 @@ class BaseReader(BikipyBase, VideoMetaDataMixin, ABC):
     @cached_property
     def raw_df(self):
         return FILE_EXTENSION_VS_PANDAS_READER[self.df_path.suffix](self.df_path)
-
-    @property
-    def df(self):
-        return self.summary_frame
 
     @staticmethod
     def get_info_from_video_path(video_path):

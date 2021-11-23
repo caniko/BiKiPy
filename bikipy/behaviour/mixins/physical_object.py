@@ -1,4 +1,4 @@
-from abc import ABC, abstractproperty
+from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import Optional
 
@@ -20,12 +20,14 @@ class PhysicalObjectBaseMixin(BaseModel, ABC):
     maximum_radians_inter_gaze_perimeter: float = 1 / 4 * np.pi
     minimum_seconds_attention: float = 0.5
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def units_per_pixel(self):
         """Used to compute the metric distance from pixel values, and vice versa"""
         ...
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def video_metadata_can_be_defined(self):
         ...
 
@@ -63,7 +65,8 @@ class PhysicalObjectExperimentMixin(PhysicalObjectBaseMixin, ABC):
 
 
 class PhysicalObjectTrialMixin(PhysicalObjectBaseMixin, ABC):
-    @abstractproperty
+    @property
+    @abstractmethod
     def physical_object_set(self) -> PhysicalObjectSet:
         ...
 

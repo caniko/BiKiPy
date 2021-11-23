@@ -67,7 +67,7 @@ class DeepLabCutReader(BaseReader):
             return super().raw_df
 
     @cached_property
-    def df(self):
+    def augmented(self):
         result = self.raw_df.copy()
         if self.x_axis_crop_end_point:
             for roi in self.tracked_point_labels:
