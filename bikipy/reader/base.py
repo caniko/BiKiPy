@@ -58,8 +58,8 @@ class BaseReader(BikipyBase, VideoMetaDataMixin, ABC):
         """
         pass
 
-    @abstractmethod
     @property
+    @abstractmethod
     def augmented(self) -> pd.DataFrame:
         """
         :return: Tracking and augmented data stored in the same frame. The augmented

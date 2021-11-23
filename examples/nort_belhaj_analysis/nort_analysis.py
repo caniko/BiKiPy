@@ -125,23 +125,16 @@ for round_idx in range(2):
 
 
 with pd.ExcelWriter(
-    RESULT_DIR / "nort_analysis.ods",
+    RESULT_DIR / "nort_analysis.xlsx",
     engine_kwargs={
         "strings_to_formulas": False,
         "strings_to_urls": False,
     },
 ) as writer:
     for experiment in experiments:
-        experiment.motion_summary_frame.to_parquet(
-            RESULT_DIR / "for_analysis" / f"motion_{experiment.timestamp}.parquet"
+        experiment.animal_summary_frame.to_parquet(
+            RESULT_DIR / "for_analysis" / f"{experiment.timestamp}.parquet"
         )
-        experiment.motion_summary_frame.to_excel(
-            writer, sheet_name=f"motion_{experiment.timestamp}"
-        )
-
-        experiment.feature_summary_frame.to_parquet(
-            RESULT_DIR / "for_analysis" / f"feature_{experiment.timestamp}.parquet"
-        )
-        experiment.feature_summary_frame.to_excel(
-            writer, sheet_name=f"feature_{experiment.timestamp}"
+        experiment.animal_summary_frame.to_excel(
+            writer, sheet_name=f"{experiment.timestamp}"
         )

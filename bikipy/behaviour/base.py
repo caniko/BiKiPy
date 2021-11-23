@@ -15,11 +15,11 @@ from pydantic import DirectoryPath, Field, FilePath
 from bikipy._base_class import BikipyBase, VideoMetaDataMixin
 from bikipy.feature.motion import Motion, motion_2d_multi_indexer
 from bikipy.reader.deeplabcut import DeepLabCutReader
+from bikipy.utils.misc import to_tuple
 from bikipy.utils.store import RangeDict
 from bikipy.utils.typing import NDArray
 
 logger = getLogger(__name__)
-
 
 LABEL_VS_DATA_READER = {"deeplabcut": DeepLabCutReader}
 
@@ -256,7 +256,7 @@ class BaseExperiment(Behaviour):
         result = pd.DataFrame.from_dict(
             data_dict, orient="index", columns=self._feature_frame_columns()
         )
-        result.index.set_names("Animal ID")
+        result.index = result.index.set_names("Animal ID")
 
         return result
 
@@ -278,7 +278,7 @@ class BaseExperiment(Behaviour):
         if levels:
             column_array = np.array(columns)
             if levels > (native_nlevel := column_array.shape[1]):
-                return pd.MultiIndex.from_arrays(
+                columns = to_tuple(
                     np.concatenate(
                         (
                             column_array,
@@ -336,7 +336,9 @@ class BaseExperiment(Behaviour):
                     )[0]
                 ],
             )
-        return pd.DataFrame.from_dict(series, orient="index")
+        result = pd.DataFrame.from_dict(series, orient="index")
+        result.index = result.index.set_names("Animal ID")
+        return result
 
     @staticmethod
     def _feature_2d_multi_indexer(feature: str, category) -> tuple:
