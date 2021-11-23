@@ -115,7 +115,7 @@ class BaseExperiment(Behaviour, ABC):
             raise AttributeError(msg)
 
     @cached_property
-    def _trial_class_vs_trial_ids(self):
+    def _trial_class_vs_trial_ids(self) -> dict:
         if not self.trial_id_vs_trial_class:
             msg = (
                 "This experiment object has no trial_id_vs_trial_class, "
@@ -131,7 +131,9 @@ class BaseExperiment(Behaviour, ABC):
             else:
                 result[trial_class] = [trial_id]
 
-        return sorted(result, key=lambda trial_c: trial_c.trial_sequence_index)
+        return dict(
+            sorted(result.items(), key=lambda trial_c: trial_c[0].trial_sequence_index)
+        )
 
     @cached_property
     def _trial_class_vs_trial_objects(self):
@@ -144,7 +146,9 @@ class BaseExperiment(Behaviour, ABC):
 
     @cached_property
     def _trial_classes(self) -> tuple:
-        return tuple(self._trial_class_vs_trial_ids.values())
+        return tuple(
+            sorted(self._trial_class_vs_trial_ids, key=lambda x: x.trial_sequence_index)
+        )
 
     @cached_property
     def trial_class_name_vs_trial_ids(self):
@@ -217,7 +221,11 @@ class BaseExperiment(Behaviour, ABC):
 
     @cached_property
     def animal_summary_frame(self) -> pd.DataFrame:
-        return pd.concat((self.feature_summary_frame, self.animal_id_indexed_motion_summary_frame), axis=1)
+        df = self.feature_summary_frame
+        df.columns = self._feature_frame_columns(
+            levels=self.animal_id_indexed_motion_summary_frame.columns.nlevels
+        )
+        return df.join(self.animal_id_indexed_motion_summary_frame, how="inner")
 
     @cached_property
     def feature_summary_frame(self) -> pd.DataFrame:
@@ -249,13 +257,21 @@ class BaseExperiment(Behaviour, ABC):
                     [],
                 )
 
+        result = pd.DataFrame.from_dict(
+            data_dict, orient="index", columns=self._feature_frame_columns()
+        )
+        result.index.set_names("Animal ID")
+
+        return result
+
+    def _feature_frame_columns(self, levels: Optional[int] = None) -> pd.MultiIndex:
         if self.trial_class:
             columns = self.trial_class.feature_summary_column
         elif self.trial_id_vs_trial_class:
             columns = sum(
                 (
                     trial_object.feature_summary_column
-                    for trial_object in trial_objects
+                    for trial_object in self._trial_classes
                     if trial_object.trial_has_feature_frame
                 ),
                 [],
@@ -263,10 +279,11 @@ class BaseExperiment(Behaviour, ABC):
         else:
             raise ValueError
 
-        result = pd.DataFrame.from_dict(data_dict, orient="index", columns=columns)
-        result.index.set_names("Animal ID")
+        if levels:
+            column_array = np.array(columns)
+            print(1)
 
-        return result
+        return pd.MultiIndex.from_tuples(columns)
 
     @cached_property
     def motion_summary_frame(self) -> pd.DataFrame:
@@ -286,16 +303,14 @@ class BaseExperiment(Behaviour, ABC):
 
     @cached_property
     def animal_id_indexed_motion_summary_frame(self) -> pd.DataFrame:
-        motion = (
-            pd.read_parquet("motion_2020-06-02.parquet")
-            .reset_index()
-            .sort_values(by=[("All", "Animal ID"), ("Test ID", "")])
+        motion = self.motion_summary_frame.reset_index().sort_values(
+            by=[("All", "Animal ID"), ("Test ID", "")]
         )
 
         series = {}
         for i, animal_id_df in motion.copy().groupby(("All", "Animal ID")):
             new_series = animal_id_df.unstack().unstack(2)
-            new_series.columns = ("H", "T", "N")
+            new_series.columns = self._class_labels
 
             new_series = (
                 new_series.stack().reorder_levels((2, 0, 1)).sort_index(level=0)
@@ -341,6 +356,10 @@ class BaseExperiment(Behaviour, ABC):
             )
             raise AttributeError(msg) from e
 
+    @cached_property
+    def _class_labels(self):
+        return tuple(trial_class.trial_label for trial_class in self._trial_classes)
+
     @property
     def _motion_summary_columns(self) -> list:
         return motion_2d_multi_indexer("All")
@@ -376,10 +395,7 @@ class BaseTrial(Behaviour):
     second_tolerance: ClassVar[float] = 0.35
 
     trial_has_feature_frame: ClassVar[bool] = False
-
-    @property
-    def feature_summary_column(self) -> tuple:
-        raise NotImplementedError
+    feature_summary_column: ClassVar[list] = []
 
     @property
     def feature_summary_row(self) -> list:

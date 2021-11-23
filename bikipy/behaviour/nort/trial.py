@@ -3,7 +3,7 @@ from logging import getLogger
 from typing import ClassVar, Optional
 
 import pandas as pd
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from bikipy.behaviour.mixins.misc import OpenFieldTrialMixin
 from bikipy.behaviour.mixins.physical_object import PhysicalObjectTrialMixin
@@ -20,7 +20,7 @@ class NortHabituationTrial(SquareEnclosedTrial, OpenFieldTrialMixin):
     """
 
     trial_sequence_index: ClassVar[Optional[int]] = 0
-    trial_label: ClassVar[str] = "habituation"
+    trial_label: ClassVar[str] = "Habituation"
 
     trial_has_feature_frame: ClassVar[bool] = False
 
@@ -35,9 +35,10 @@ class NortFieldMixin(BaseModel):
 
 class NortTrainingTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, NortFieldMixin):
     trial_sequence_index: ClassVar[Optional[int]] = 1
-    trial_label: ClassVar[str] = "training"
+    trial_label: ClassVar[str] = "Training"
 
     trial_has_feature_frame: ClassVar[bool] = True
+    feature_summary_column: ClassVar[list] = [("Training", "Seconds observing")]
 
     @cached_property
     def physical_object_set(self):
@@ -52,19 +53,27 @@ class NortTrainingTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, NortField
         return self.physical_object_set.physical_objects[1]
 
     @property
-    def feature_summary_column(self) -> list:
-        return [(self.trial_label.capitalize(), "Seconds observing")]
-
-    @property
     def feature_summary_row(self):
         return [self.physical_object_set.seconds_observing]
 
 
 class NortNoveltyTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, NortFieldMixin):
     trial_sequence_index: ClassVar[Optional[int]] = 2
-    trial_label: ClassVar[str] = "novelty"
+    trial_label: ClassVar[str] = "Novelty"
 
     trial_has_feature_frame: ClassVar[bool] = True
+    feature_summary_column: ClassVar[list] = list(
+        pd.MultiIndex.from_product(
+            [
+                ["Novelty"],
+                [
+                    "Absolute discrimination",
+                    "Discrimination index",
+                    "Novelty index",
+                ],
+            ]
+        )
+    )
 
     @cached_property
     def physical_object_set(self):
@@ -90,21 +99,6 @@ class NortNoveltyTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, NortFieldM
             100.0
             * self.physical_object_novel.attention_filtered_seconds_observing
             / self.experiment_seconds
-        )
-
-    @property
-    def feature_summary_column(self) -> list:
-        return list(
-            pd.MultiIndex.from_product(
-                [
-                    ["self.trial_label.capitalize()"],
-                    [
-                        "Absolute discrimination",
-                        "Discrimination index",
-                        "Novelty index",
-                    ],
-                ]
-            )
         )
 
     @property
