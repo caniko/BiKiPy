@@ -257,7 +257,7 @@ class PhysicalObjectSet:
         if not self.seconds_observing:
             return self._int_id_vs_zero
         return {
-            int_id: 100.0 * physical_object / self.seconds_observing
+            int_id: 100.0 * physical_object.attention_filtered_seconds_observing / self.seconds_observing
             for int_id, physical_object in self.int_id_vs_physical_object.items()
         }
 

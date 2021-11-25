@@ -69,7 +69,8 @@ class NortNoveltyTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, NortFieldM
                 [
                     "Absolute discrimination",
                     "Discrimination index",
-                    "Novelty index",
+                    "Novelty preference",
+                    "Object bias score"
                 ],
             ]
         )
@@ -107,6 +108,7 @@ class NortNoveltyTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, NortFieldM
             self.physical_object_set.absolute_discrimination,
             self.discrimination_index,
             self.novelty_preference,
+            self.physical_object_set.object_bias_score[1]
         ]
 
 

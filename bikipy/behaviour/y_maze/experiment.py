@@ -11,10 +11,12 @@ logger = getLogger(__name__)
 
 
 class YMazeExperiment(BaseExperiment):
+    center_triangle_meter_width: float
+
     def __init__(
         self,
-        trial_id_range_vs_perimeter_set: dict[int, dict],
-        center_triangle_meter_width: float,
+        ,
+        ,
         *args,
         **kwargs,
     ):
