@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from bikipy.behaviour.y_maze.experiment import YMazeTrial
+from bikipy.behaviour.radial_arm.y_maze import YMazeTrial
 from bikipy.perimeter.parallelogram.classes import ParallelogramPerimeter
 from bikipy.perimeter.triangular import TriangularPerimeter
 from bikipy.utils.video import get_video_data

@@ -2,15 +2,15 @@ import numpy as np
 
 from bikipy.feature.attention import proximity_filter
 from bikipy.math.geometry import expand_parallelogram
-from tests.test_data.perimeter.parallelogram.get_perimeter import perimeter_object
+from tests.test_data.perimeter.parallelogram.get_perimeter import parallelogram_perimeter_coco_test_object
 
 
 def test_proximity_filter():
-    coordinates_inside_perimeter = expand_parallelogram(perimeter_object.corners, -1.0)
-    coordinates_outside_perimeter = expand_parallelogram(perimeter_object.corners, 1.0)
+    coordinates_inside_perimeter = expand_parallelogram(parallelogram_perimeter_coco_test_object.corners, -1.0)
+    coordinates_outside_perimeter = expand_parallelogram(parallelogram_perimeter_coco_test_object.corners, 1.0)
 
     perimeter_border_normal_pixel_magnitude = 50
-    border_corners = perimeter_object.border(
+    border_corners = parallelogram_perimeter_coco_test_object.border(
         perimeter_border_normal_pixel_magnitude
     ).corners
 
@@ -19,7 +19,7 @@ def test_proximity_filter():
 
     assert np.all(
         proximity_filter(
-            perimeter=perimeter_object,
+            perimeter=parallelogram_perimeter_coco_test_object,
             inside_perimeter_border=coordinates_inside_border,
             outside_perimeter=coordinates_outside_perimeter,
             perimeter_border_normal_pixel_magnitude=perimeter_border_normal_pixel_magnitude,
@@ -28,7 +28,7 @@ def test_proximity_filter():
 
     assert not np.all(
         proximity_filter(
-            perimeter=perimeter_object,
+            perimeter=parallelogram_perimeter_coco_test_object,
             inside_perimeter_border=coordinates_outside_border,
             outside_perimeter=coordinates_inside_perimeter,
             perimeter_border_normal_pixel_magnitude=perimeter_border_normal_pixel_magnitude,

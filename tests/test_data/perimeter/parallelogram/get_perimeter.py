@@ -2,9 +2,16 @@ from pathlib import Path
 
 from bikipy.perimeter.base import Perimeter
 
-FILE_ROOT = Path(__file__).parent
+ANNOTATION_DIR = Path(__file__).parent / "annotations"
 
 
-perimeter_object = Perimeter.from_coco(
-    FILE_ROOT / "perimeter.json", image_root=FILE_ROOT, single_obj_return=True
+parallelogram_perimeter_rectangle_test_object = Perimeter.from_makesense_ai(
+    ANNOTATION_DIR / "rectangle_annotation.csv",
+    image_root=ANNOTATION_DIR
+)
+
+parallelogram_perimeter_coco_test_object = Perimeter.from_polygon_coco(
+    ANNOTATION_DIR / "polygon_coco_annotation.json",
+    image_root=ANNOTATION_DIR,
+    single_obj_return=True
 )

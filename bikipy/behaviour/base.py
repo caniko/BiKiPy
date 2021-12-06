@@ -6,45 +6,28 @@ from functools import cached_property
 from logging import getLogger
 from operator import attrgetter
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Iterable, Literal, Optional, Sequence, Union
+from typing import Any, ClassVar, Iterable, Optional, Sequence, Union, Literal
 
 import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, Field, FilePath
 
-from bikipy._base_class import BikipyBase, VideoMetaDataMixin
+from bikipy._base_class import BikipyBase
 from bikipy.feature.motion import Motion, motion_2d_multi_indexer
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.misc import to_tuple
 from bikipy.utils.store import RangeDict
-from bikipy.utils.typing import NDArray
 
 logger = getLogger(__name__)
 
 LABEL_VS_DATA_READER = {"deeplabcut": DeepLabCutReader}
 
 
-class Behaviour(BikipyBase, VideoMetaDataMixin):
-    metric_resolution: Union[NDArray, float, None] = None
-    manual_units_per_pixel: Optional[float] = None
+class Behaviour(BikipyBase):
     data_import_kwargs: Optional[dict] = None
     data_format_label: Literal["deeplabcut"] = "deeplabcut"
 
     _live: bool = False
-
-    @property
-    def units_per_pixel(self):
-        return self.manual_units_per_pixel or self.computed_units_per_pixel
-
-    @cached_property
-    def computed_units_per_pixel(self):
-        if not np.any(self.metric_resolution):
-            msg = "metric_resolution attribute needs to be defined to compute units_per_pixel"
-            raise AttributeError(msg)
-        if isinstance(self.metric_resolution, (float, int)):
-            return self.metric_resolution / np.mean(self.recording_resolution)
-        else:
-            return np.array(self.metric_resolution) / self.recording_resolution
 
 
 class BaseExperiment(Behaviour):
@@ -75,7 +58,6 @@ class BaseExperiment(Behaviour):
         result = {
             **self.common_trial_keyword_arguments,
             "int_id": trial_id,
-            "metric_resolution": self.metric_resolution,
             "point_label_for_motion_features": self.point_label_for_motion_features,
             "data_format_label": self.data_format_label,
         }
@@ -84,10 +66,13 @@ class BaseExperiment(Behaviour):
             result.update(self.trial_id_vs_keyword_arguments[trial_id])
         if self.trial_id_range_vs_keyword_arguments:
             result.update(self.trial_id_range_vs_keyword_arguments[trial_id])
-        if self.data_import_kwargs:
-            result["data_import_kwargs"] = self.data_import_kwargs
 
         assert result["coordinate_data_path"]
+
+        if hasattr(self, "metric_resolution"):
+            result["metric_resolution"] = self.metric_resolution
+        if self.data_import_kwargs:
+            result["data_import_kwargs"] = self.data_import_kwargs
 
         return result
 

@@ -86,6 +86,11 @@ class VideoMetaDataMixin(BaseModel):
     manual_recording_resolution: Optional[NDArray[Literal[np.int16]]] = None
     manual_fps: Optional[float] = None
 
+    class Config:
+        arbitrary_types_allowed = True
+        extra = Extra.allow
+        keep_untouched = (cached_property,)
+
     @cached_property
     def video_metadata_can_be_defined(self):
         return self.video_path or (self.manual_recording_resolution and self.manual_fps)

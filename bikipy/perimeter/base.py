@@ -9,8 +9,9 @@ from typing import Any, ClassVar, Literal, Optional, Sequence, Union
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from numpy.typing import NDArray as NpNDArray
-from pydantic import FilePath, validator
+from pydantic import FilePath, validator, DirectoryPath
 from shapely.geometry import Point, Polygon
 
 from bikipy._base_class import BikipyBase
@@ -94,7 +95,6 @@ class Perimeter(BasePerimeter):
 
     _polygon_order = None
 
-    @classmethod
     @validator("corners")
     def corners_polygon_order_validator(cls, value: NpNDArray):
         if cls._polygon_order and (n := len(value)) != int(cls._polygon_order):
@@ -581,12 +581,12 @@ class Perimeter(BasePerimeter):
         return cls.from_image(frame, *args, feature_scale=(x_res, y_res), **kwargs)
 
     @classmethod
-    def from_coco(
+    def from_polygon_coco(
         cls,
         coco_path: Any,
-        reference_point_coco_path: OptionalPathTyping = None,
         image_root: OptionalPathTyping = None,
         single_obj_return: bool = False,
+        **perimeter_kwargs
     ) -> Union[dict, BasePerimeter]:
         def get_inspect_image_name(image_id: int):
             return coco["images"][image_id - 1]["file_name"]
@@ -620,17 +620,11 @@ class Perimeter(BasePerimeter):
                 inspect_image=get_inspect_image_path(annotation["image_id"]),
                 image_name=get_inspect_image_name(annotation["image_id"]),
                 label=coco["categories"][annotation["category_id"] - 1]["name"],
+                **perimeter_kwargs
             )
             for annotation in coco["annotations"]
         }
 
-        if reference_point_coco_path:
-            semantic_label_vs_polygon = {
-                label: polygon.change_reference_with_coco(
-                    reference_point_coco_path, image_root=image_root
-                )
-                for label, polygon in semantic_label_vs_polygon.items()
-            }
         if single_obj_return:
             assert (
                 len(semantic_label_vs_polygon) == 1
@@ -638,6 +632,21 @@ class Perimeter(BasePerimeter):
             return semantic_label_vs_polygon.popitem()[1]
 
         return semantic_label_vs_polygon
+
+    @classmethod
+    def from_makesense_ai(cls, metadata_path: FilePath, image_root: DirectoryPath, **perimeter_kwargs):
+        if metadata_path.suffix == ".csv":  # rectangle object
+            csv_data = pd.read_csv(metadata_path, header=None, index_col=0)
+            for label, row in csv_data.iterrows():
+                start = np.array(row[:2])
+                end = start + np.array(row[2:4])
+                cls.init_polygon(
+                    (start, (start[0], end[1]), end, (end[0], start[1])),
+                    inspect_image=get_inspect_image_path(annotation["image_id"]),
+                    image_name=row[4],
+                    label=label,
+                    **perimeter_kwargs
+                )
 
 
 class GenericPolygonalBorder(Perimeter):
@@ -647,12 +656,9 @@ class GenericPolygonalBorder(Perimeter):
         return self.__sides
 
 
-PERIMETER_SEQUENCE_OR_DICT = Union[Sequence[Perimeter], dict[str, Sequence[Perimeter]]]
-
-
 class PerimeterSet(BasePerimeter):
-    perimeters: PERIMETER_SEQUENCE_OR_DICT
-    restricted_perimeters: Optional[PERIMETER_SEQUENCE_OR_DICT] = None
+    perimeters: Union[tuple, dict]
+    restricted_perimeters: Union[tuple, dict, None] = None
 
     @lru_cache
     def __getitem__(self, item: Union[str, int]):

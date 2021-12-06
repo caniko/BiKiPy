@@ -24,7 +24,7 @@ def generate_radial_arm_maze_arm_perimeters(
         if not os.path.exists(center_coco_path):
             msg = f"center_coco_path does not exist, {center_coco_path}"
             raise ValueError(msg)
-        center_object = triangular_center_object or Perimeter.from_coco(
+        center_object = triangular_center_object or Perimeter.from_polygon_coco(
             center_coco_path, single_obj_return=True
         )
     else:

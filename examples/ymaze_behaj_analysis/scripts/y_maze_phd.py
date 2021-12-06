@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from bikipy.behaviour.y_maze.experiment import YMazeExperiment
+from bikipy.behaviour.radial_arm.y_maze import YMazeExperiment
 from bikipy.perimeter.radial_arm_maze import generate_radial_arm_maze_arm_perimeters
 
 # User defined

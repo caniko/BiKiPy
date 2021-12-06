@@ -31,14 +31,14 @@ EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
 nort_field_id_vs_nort_field_object = {}
 for i, list_idx in zip(range(1, 5), range(4)):
-    novel = Perimeter.from_coco(
-        IMAGE_DIR / f"novel_{i}.json",
-        IMAGE_DIR / f"references_novel_{i}.csv",
+    training = Perimeter.from_polygon_coco(
+        coco_path=IMAGE_DIR / f"training_{i}.json",
+        reference_point_coco_path=IMAGE_DIR / f"references_training_{i}.csv",
         image_root=IMAGE_DIR,
     )
-    training = Perimeter.from_coco(
-        IMAGE_DIR / f"training_{i}.json",
-        IMAGE_DIR / f"references_training_{i}.csv",
+    novel = Perimeter.from_polygon_coco(
+        coco_path=IMAGE_DIR / f"novel_{i}.json",
+        reference_point_coco_path=IMAGE_DIR / f"references_novel_{i}.csv",
         image_root=IMAGE_DIR,
     )
     nort_field_id_vs_nort_field_object[i] = NortField(
