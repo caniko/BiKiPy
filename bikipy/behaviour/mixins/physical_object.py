@@ -22,7 +22,7 @@ class PhysicalObjectBaseMixin(BaseModel, ABC):
 
     @property
     @abstractmethod
-    def units_per_pixel(self):
+    def meters_per_pixel(self):
         """Used to compute the metric distance from pixel values, and vice versa"""
         ...
 
@@ -34,7 +34,7 @@ class PhysicalObjectBaseMixin(BaseModel, ABC):
     @cached_property
     def perimeter_border_normal_pixel_magnitude(self):
         return self.perimeter_border_normal_metric_magnitude / np.mean(
-            self.units_per_pixel
+            self.meters_per_pixel
         )
 
     @cached_property

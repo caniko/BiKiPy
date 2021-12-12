@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, Field, FilePath
 
-from bikipy._base_class import BikipyBase
+from bikipy._base_class import BikipyBase, VideoMetaDataMixin
 from bikipy.feature.motion import Motion, motion_2d_multi_indexer
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.misc import to_tuple
@@ -23,7 +23,7 @@ logger = getLogger(__name__)
 LABEL_VS_DATA_READER = {"deeplabcut": DeepLabCutReader}
 
 
-class Behaviour(BikipyBase):
+class Behaviour(BikipyBase, VideoMetaDataMixin):
     data_import_kwargs: Optional[dict] = None
     data_format_label: Literal["deeplabcut"] = "deeplabcut"
 
@@ -94,42 +94,6 @@ class BaseExperiment(Behaviour):
                 "exclusively defined"
             )
             raise AttributeError(msg)
-
-    @cached_property
-    def _trial_class_vs_trial_ids(self) -> dict:
-        if not self.trial_id_vs_trial_class:
-            msg = (
-                "This experiment object has no trial_id_vs_trial_class, "
-                "this attribute is reserved for experiments with "
-                "several trial classes"
-            )
-            raise AttributeError(msg)
-
-        result = {}
-        for trial_id, trial_class in self.trial_id_vs_trial_class.items():
-            if trial_class in result:
-                result[trial_class].append(trial_id)
-            else:
-                result[trial_class] = [trial_id]
-
-        return dict(
-            sorted(result.items(), key=lambda trial_c: trial_c[0].trial_sequence_index)
-        )
-
-    @cached_property
-    def _trial_class_vs_trial_objects(self):
-        return {
-            trial_class: [
-                self.trial_id_vs_trial_object[trial_id] for trial_id in trial_ids
-            ]
-            for trial_class, trial_ids in self._trial_class_vs_trial_ids.items()
-        }
-
-    @cached_property
-    def _trial_classes(self) -> tuple:
-        return tuple(
-            sorted(self._trial_class_vs_trial_ids, key=lambda x: x.trial_sequence_index)
-        )
 
     @cached_property
     def trial_class_name_vs_trial_ids(self):
@@ -356,6 +320,42 @@ class BaseExperiment(Behaviour):
             raise AttributeError(msg) from e
 
     @cached_property
+    def _trial_class_vs_trial_ids(self) -> dict:
+        if not self.trial_id_vs_trial_class:
+            msg = (
+                "This experiment object has no trial_id_vs_trial_class, "
+                "this attribute is reserved for experiments with "
+                "several trial classes"
+            )
+            raise AttributeError(msg)
+
+        result = {}
+        for trial_id, trial_class in self.trial_id_vs_trial_class.items():
+            if trial_class in result:
+                result[trial_class].append(trial_id)
+            else:
+                result[trial_class] = [trial_id]
+
+        return dict(
+            sorted(result.items(), key=lambda trial_c: trial_c[0].trial_sequence_index)
+        )
+
+    @cached_property
+    def _trial_class_vs_trial_objects(self):
+        return {
+            trial_class: [
+                self.trial_id_vs_trial_object[trial_id] for trial_id in trial_ids
+            ]
+            for trial_class, trial_ids in self._trial_class_vs_trial_ids.items()
+        }
+
+    @cached_property
+    def _trial_classes(self) -> tuple:
+        return tuple(
+            sorted(self._trial_class_vs_trial_ids, key=lambda x: x.trial_sequence_index)
+        )
+
+    @cached_property
     def _class_labels(self):
         return tuple(trial_class.trial_label for trial_class in self._trial_classes)
 
@@ -400,23 +400,24 @@ class BaseTrial(Behaviour):
     def feature_summary_row(self) -> list:
         raise NotImplementedError
 
-    @staticmethod
-    def _get_reader(coordinate_data_format):
+    @property
+    def motion_features(self) -> list:
+        return self.motion.to_list
+
+    @cached_property
+    def reader(self):
         try:
-            return LABEL_VS_DATA_READER[coordinate_data_format]
+            reader_init_func = LABEL_VS_DATA_READER[self.data_format_label]
         except KeyError as e:
             msg = (
-                f"{coordinate_data_format} as a format for data ingestion has "
+                f"{self.data_format_label} as a format for data ingestion has "
                 f"no implementation. Choose from: {LABEL_VS_DATA_READER.keys()}"
             )
             raise NotImplemented(msg) from e
 
-    @cached_property
-    def reader(self):
-        return self._get_reader(self.data_format_label)(
+        return reader_init_func(
             df_path=self.coordinate_data_path,
-            **self._video_metadata_dict_manual_format,
-            **self.data_import_kwargs,
+            **self._reader_init_kwargs,
         )
 
     @property
@@ -445,7 +446,7 @@ class BaseTrial(Behaviour):
 
     @cached_property
     def motion(self) -> Motion:
-        return Motion(self.coordinates_per_frame, self.units_per_pixel, self.fps)
+        return Motion(self.coordinates_per_frame, self.meters_per_pixel, self.fps)
 
     # Perimeter
 
@@ -458,14 +459,18 @@ class BaseTrial(Behaviour):
         """
 
         coordinate = np.expand_dims(coordinate, 0)
-        for label, perimeter in self.int_id_vs_perimeter.items():
+        for label, perimeter in self._int_id_vs_perimeter.items():
             if perimeter.coordinate_confinement_boolean_index(coordinate):
                 logger.info(f"Location: {label}, {coordinate}")
                 return label
         logger.debug(f"Location could not be determined, {coordinate}")
 
     @cached_property
-    def int_id_vs_perimeter(self) -> dict:
+    def _reader_init_kwargs(self):
+        return self.data_import_kwargs
+
+    @cached_property
+    def _int_id_vs_perimeter(self) -> dict:
         self._validate_perimeters_object()
         return {
             i: perimeter
@@ -474,7 +479,10 @@ class BaseTrial(Behaviour):
 
     def _validate_perimeters_object(self) -> None:
         if not self.perimeters:
-            msg = "perimeters is not defined as an object variable, which is required for int_id_vs_perimeter"
+            msg = (
+                "perimeters is not defined as an object variable, "
+                "which is required for _int_id_vs_perimeter"
+            )
             raise AttributeError(msg)
 
     @cached_property
@@ -503,7 +511,3 @@ class BaseTrial(Behaviour):
     @cached_property
     def _frame_tolerance(self) -> int:
         return round(self.second_tolerance * self.fps)
-
-    @property
-    def motion_features(self) -> list:
-        return self.motion.to_list

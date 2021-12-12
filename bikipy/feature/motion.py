@@ -15,9 +15,9 @@ logger = getLogger(__name__)
 
 
 def units_pixels_per_second_frame(
-    units_per_pixel: Union[float, int], fps: Union[float, int]
+    meters_per_pixel: Union[float, int], fps: Union[float, int]
 ):
-    return units_per_pixel * fps
+    return meters_per_pixel * fps
 
 
 def displacement_by_frame(
@@ -63,7 +63,7 @@ def displacement_by_frame(
 
 def total_displacement_median_speed_acceleration(
     coordinate_sequence: Sequence[Sequence[float]],
-    units_per_pixel: Union[Sequence, float],
+    meters_per_pixel: Union[Sequence, float],
     fps: float,
 ) -> tuple:
     """
@@ -71,7 +71,7 @@ def total_displacement_median_speed_acceleration(
     Parameters
     ----------
     coordinate_sequence
-    units_per_pixel
+    meters_per_pixel
     fps
 
     Returns
@@ -79,9 +79,9 @@ def total_displacement_median_speed_acceleration(
     (total displacement, speed per frame, acceleration per frame)
     """
     displacement = (
-        displacement_by_frame(coordinate_sequence) * units_per_pixel
-        if isinstance(units_per_pixel, float)
-        else displacement_by_frame(coordinate_sequence * np.asarray(units_per_pixel))
+        displacement_by_frame(coordinate_sequence) * meters_per_pixel
+        if isinstance(meters_per_pixel, float)
+        else displacement_by_frame(coordinate_sequence * np.asarray(meters_per_pixel))
     )
     if np.any(displacement):
         return (
@@ -182,17 +182,17 @@ def frozen_frames(
 @dataclass
 class Motion:
     coordinate_sequence: NDArray
-    units_per_pixel: Union[float, NDArray]
+    meters_per_pixel: Union[float, NDArray]
     fps: float
 
     @cached_property
     def metric_displacement_by_frame(self):
-        if isinstance(self.units_per_pixel, (float, int)):
+        if isinstance(self.meters_per_pixel, (float, int)):
             displacement = displacement_by_frame(self.coordinate_sequence)
-            return displacement * self.units_per_pixel
+            return displacement * self.meters_per_pixel
         else:
             return displacement_by_frame(
-                self.coordinate_sequence * self.units_per_pixel
+                self.coordinate_sequence * self.meters_per_pixel
             )
 
     @cached_property
@@ -265,13 +265,13 @@ ZERO_RETURN = {
 def get_combined_features_from_merged_motion_island_data(
     boolean_index: np.ndarray,
     coordinate_sequence: np.ndarray,
-    units_per_pixel,
+    meters_per_pixel,
     fps: float,
 ):
     def motion_object_from_slice(slice_start, slice_end) -> list:
         return Motion(
             coordinate_sequence=coordinate_sequence[slice_start:slice_end],
-            units_per_pixel=units_per_pixel,
+            meters_per_pixel=meters_per_pixel,
             fps=fps,
         ).to_list
 

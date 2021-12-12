@@ -135,7 +135,7 @@ class SquareEnclosedTrial(RectangleEnclosedTrial):
         return get_combined_features_from_merged_motion_island_data(
             self.center_boolean_index,
             self.coordinates_per_frame,
-            self.units_per_pixel,
+            self.meters_per_pixel,
             self.fps,
         )
 
@@ -144,7 +144,7 @@ class SquareEnclosedTrial(RectangleEnclosedTrial):
         return get_combined_features_from_merged_motion_island_data(
             self.periphery_boolean_index,
             self.coordinates_per_frame,
-            self.units_per_pixel,
+            self.meters_per_pixel,
             self.fps,
         )
 

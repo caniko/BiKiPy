@@ -54,12 +54,6 @@ class BikipyBase(BaseModel, ABC):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    @staticmethod
-    def _inquire_timestamp_attribute(obj):
-        if not hasattr(obj, "timestamp"):
-            msg = "Cannot perform inequality operations on object without the timestamp attribute"
-            raise AttributeError(msg)
-
     def __lt__(self, other):
         self._inquire_timestamp_attribute(other)
         return self.timestamp < other.timestamp
@@ -80,6 +74,12 @@ class BikipyBase(BaseModel, ABC):
     def best_id(self):
         return self.label or self.int_id or None
 
+    @staticmethod
+    def _inquire_timestamp_attribute(obj):
+        if not hasattr(obj, "timestamp"):
+            msg = "Cannot perform inequality operations on object without the timestamp attribute"
+            raise AttributeError(msg)
+
 
 class VideoMetaDataMixin(BaseModel):
     video_path: Optional[FilePath] = None
@@ -94,6 +94,22 @@ class VideoMetaDataMixin(BaseModel):
     @cached_property
     def video_metadata_can_be_defined(self):
         return self.video_path or (self.manual_recording_resolution and self.manual_fps)
+
+    @property
+    def recording_resolution(self) -> np.ndarray:
+        return self._video_metadata[0]
+
+    @property
+    def horizontal_resolution(self):
+        return self.recording_resolution[0]
+
+    @property
+    def vertical_resolution(self):
+        return self.recording_resolution[1]
+
+    @property
+    def fps(self):
+        return self._video_metadata[1]
 
     @cached_property
     def _video_metadata(self) -> tuple:
@@ -120,19 +136,3 @@ class VideoMetaDataMixin(BaseModel):
             "manual_recording_resolution": self.recording_resolution,
             "manual_fps": self.fps,
         }
-
-    @property
-    def recording_resolution(self) -> np.ndarray:
-        return self._video_metadata[0]
-
-    @property
-    def horizontal_resolution(self):
-        return self.recording_resolution[0]
-
-    @property
-    def vertical_resolution(self):
-        return self.recording_resolution[1]
-
-    @property
-    def fps(self):
-        return self._video_metadata[1]

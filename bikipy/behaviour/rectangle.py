@@ -4,8 +4,9 @@ from functools import cached_property
 import numpy as np
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
-from bikipy.behaviour.mixins.unit_per_pixel.resolution_derived import \
-    ResolutionDerivedUnitPerPixelMixin
+from bikipy.behaviour.mixins.meters_per_pixel.resolution_derived import (
+    ResolutionDerivedUnitPerPixelMixin, ResolutionDerivedUnitPerPixelTrialMixin,
+)
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.motion import (
     get_combined_features_from_merged_motion_island_data,
@@ -14,7 +15,9 @@ from bikipy.feature.motion import (
 from bikipy.math.point_in_polygon import points_in_parallelogram
 
 
-class RectangleEnclosedExperiment(ResolutionDerivedUnitPerPixelMixin, BaseExperiment):
+class RectangleEnclosedExperiment(
+    ResolutionDerivedUnitPerPixelMixin, BaseExperiment
+):
     @cached_property
     def _motion_summary_columns(self) -> list:
         quadrant_labels = (
@@ -33,7 +36,7 @@ class RectangleEnclosedExperiment(ResolutionDerivedUnitPerPixelMixin, BaseExperi
         ]
 
 
-class RectangleEnclosedTrial(ResolutionDerivedUnitPerPixelMixin, BaseTrial, ABC):
+class RectangleEnclosedTrial(ResolutionDerivedUnitPerPixelTrialMixin, BaseTrial, ABC):
     @cached_property
     def location_sequence_quadrant(self) -> np.ndarray:
         result = self._uint_zeros_based_on_frame_length.copy()
@@ -50,7 +53,7 @@ class RectangleEnclosedTrial(ResolutionDerivedUnitPerPixelMixin, BaseTrial, ABC)
         return get_combined_features_from_merged_motion_island_data(
             self.quadrant_upper_left_boolean_index,
             self.coordinates_per_frame,
-            self.units_per_pixel,
+            self.meters_per_pixel,
             self.fps,
         )
 
@@ -59,7 +62,7 @@ class RectangleEnclosedTrial(ResolutionDerivedUnitPerPixelMixin, BaseTrial, ABC)
         return get_combined_features_from_merged_motion_island_data(
             self.quadrant_upper_right_boolean_index,
             self.coordinates_per_frame,
-            self.units_per_pixel,
+            self.meters_per_pixel,
             self.fps,
         )
 
@@ -68,7 +71,7 @@ class RectangleEnclosedTrial(ResolutionDerivedUnitPerPixelMixin, BaseTrial, ABC)
         return get_combined_features_from_merged_motion_island_data(
             self.quadrant_lower_left_boolean_index,
             self.coordinates_per_frame,
-            self.units_per_pixel,
+            self.meters_per_pixel,
             self.fps,
         )
 
@@ -77,7 +80,7 @@ class RectangleEnclosedTrial(ResolutionDerivedUnitPerPixelMixin, BaseTrial, ABC)
         return get_combined_features_from_merged_motion_island_data(
             self.quadrant_lower_right_boolean_index,
             self.coordinates_per_frame,
-            self.units_per_pixel,
+            self.meters_per_pixel,
             self.fps,
         )
 

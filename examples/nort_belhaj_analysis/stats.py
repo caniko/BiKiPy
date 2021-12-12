@@ -78,7 +78,12 @@ with pd.ExcelWriter(
                 x="Group", y=parameter, kind="violin", inner=None, data=concatenated
             )
             sns.swarmplot(
-                x="Group", y=parameter, color="k", size=3, data=concatenated, ax=cat_plot.ax
+                x="Group",
+                y=parameter,
+                color="k",
+                size=3,
+                data=concatenated,
+                ax=cat_plot.ax,
             )
             plt.savefig(RESULT_DIR / "figures" / f"{dataset.stem}_{i}_{parameter}.png")
 

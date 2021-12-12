@@ -586,7 +586,7 @@ class Perimeter(BasePerimeter):
         coco_path: Any,
         image_root: OptionalPathTyping = None,
         single_obj_return: bool = False,
-        **perimeter_kwargs
+        **perimeter_kwargs,
     ) -> Union[dict, BasePerimeter]:
         def get_inspect_image_name(image_id: int):
             return coco["images"][image_id - 1]["file_name"]
@@ -620,7 +620,7 @@ class Perimeter(BasePerimeter):
                 inspect_image=get_inspect_image_path(annotation["image_id"]),
                 image_name=get_inspect_image_name(annotation["image_id"]),
                 label=coco["categories"][annotation["category_id"] - 1]["name"],
-                **perimeter_kwargs
+                **perimeter_kwargs,
             )
             for annotation in coco["annotations"]
         }
@@ -634,7 +634,9 @@ class Perimeter(BasePerimeter):
         return semantic_label_vs_polygon
 
     @classmethod
-    def from_makesense_ai(cls, metadata_path: FilePath, image_root: DirectoryPath, **perimeter_kwargs):
+    def from_makesense_ai(
+        cls, metadata_path: FilePath, image_root: DirectoryPath, **perimeter_kwargs
+    ):
         if metadata_path.suffix == ".csv":  # rectangle object
             csv_data = pd.read_csv(metadata_path, header=None, index_col=0)
             for label, row in csv_data.iterrows():
@@ -645,7 +647,7 @@ class Perimeter(BasePerimeter):
                     inspect_image=get_inspect_image_path(annotation["image_id"]),
                     image_name=row[4],
                     label=label,
-                    **perimeter_kwargs
+                    **perimeter_kwargs,
                 )
 
 
@@ -727,16 +729,6 @@ class PerimeterSet(BasePerimeter):
         ax = super().plot(**kwargs)
         return Perimeter.plot_perimeters(self.perimeters, ax)
 
-    @cached_property
-    def group(self):
-        grouped = {}
-        for perimeter in self._all_perimeters:
-            if (label := perimeter.group_label) not in grouped:
-                grouped[label] = [perimeter]
-            else:
-                grouped[label].append(perimeter)
-        return grouped
-
     @property
     def _reference_point_variance(self):
         return statistics.variance(
@@ -748,10 +740,6 @@ class PerimeterSet(BasePerimeter):
         if not self.restricted_perimeters:
             return self.perimeters
         return *self.perimeters, *self.restricted_perimeters
-
-    @property
-    def _perimeter_is_dict(self):
-        return isinstance(self.perimeters, dict)
 
 
 Perimeter2D = Union[Perimeter, PerimeterSet]

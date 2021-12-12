@@ -28,7 +28,7 @@ class YMazeExperiment(BaseExperiment):
         self.trial_id_range_vs_perimeter_sets = self.trial_id_range_vs_common_data
 
         self.center_triangle_meter_width = float(center_triangle_meter_width)
-        self.units_per_pixel = (
+        self.meters_per_pixel = (
             area_set["center"][0].mean_length / self.center_triangle_meter_width
         )
 
