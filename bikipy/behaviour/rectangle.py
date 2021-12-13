@@ -1,11 +1,12 @@
-from abc import ABC
 from functools import cached_property
 
 import numpy as np
 
+from bikipy._base_class import VideoMetadataMixin
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.mixins.meters_per_pixel.resolution_derived import (
-    ResolutionDerivedUnitPerPixelMixin, ResolutionDerivedUnitPerPixelTrialMixin,
+    ResolutionDerivedUnitPerPixelMixin,
+    ResolutionDerivedUnitPerPixelTrialMixin,
 )
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.motion import (
@@ -16,7 +17,7 @@ from bikipy.math.point_in_polygon import points_in_parallelogram
 
 
 class RectangleEnclosedExperiment(
-    ResolutionDerivedUnitPerPixelMixin, BaseExperiment
+    ResolutionDerivedUnitPerPixelMixin, VideoMetadataMixin, BaseExperiment
 ):
     @cached_property
     def _motion_summary_columns(self) -> list:
@@ -36,7 +37,9 @@ class RectangleEnclosedExperiment(
         ]
 
 
-class RectangleEnclosedTrial(ResolutionDerivedUnitPerPixelTrialMixin, BaseTrial, ABC):
+class RectangleEnclosedTrial(
+    ResolutionDerivedUnitPerPixelTrialMixin, VideoMetadataMixin, BaseTrial
+):
     @cached_property
     def location_sequence_quadrant(self) -> np.ndarray:
         result = self._uint_zeros_based_on_frame_length.copy()

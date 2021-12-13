@@ -18,7 +18,7 @@ from bikipy.perimeter.base import Perimeter
 from bikipy.utils.store import translate_keys
 
 INT_TO_SEMANTIC_LABELS = {1: "A", 2: "B", 3: "C", 4: "X"}
-generic_int_to_semantic_key_translator = partial(
+int_to_semantic_key_translator = partial(
     translate_keys, translation=INT_TO_SEMANTIC_LABELS
 )
 
@@ -62,21 +62,19 @@ class YMazeTrial(BaseTrial):
         self.reduced_alternation_sequence = reduce_repeating_sequences(
             self.alternation_sequence, round(self.fps * 0.35)
         )
-        self.reduced_without_center = exclude_value_from_sequence(
-            self.reduced_alternation_sequence, self.center.int_id
-        )
+        self.
 
-        self.sum_of_alternations = len(self.reduced_without_center) - 2
+        self.
 
-        self.arm_int_triplets = [
+        self._arm_int_id_permutations = [
             triplet for triplet in it.permutations(self.arm_int_labels)
         ]
         self.arm_semantic_triplets = [
             triplet for triplet in it.permutations(self.arm_label)
         ]
 
-        self._arm_triplet_dict = {arm: 0 for arm in self.arm_int_triplets}
-        self._arm_center_int_id_to_seconds = {
+        self._arm_permutation_vs_zero = {arm: 0 for arm in self._arm_int_id_permutations}
+        self._arm_center_int_id_vs_zero = {
             area: 0 for area in self.arm_center_int_labels
         }
 
@@ -102,7 +100,7 @@ class YMazeTrial(BaseTrial):
 
     @cached_property
     def arm_center_label(self):
-        return self.arm_label + [self.center.label]
+        return self.center.label, *self.arm_label
 
     @cached_property
     def int_to_label(self):
@@ -121,12 +119,12 @@ class YMazeTrial(BaseTrial):
         dict, area vs time
         """
 
-        result = copy(self._arm_center_int_id_to_seconds)
+        result = copy(self._arm_center_int_id_vs_zero)
         for label, counts in unique_with_counts_zipped(self.alternation_sequence):
             assert label in result, f"{label} is not in {tuple(result.keys())})"
             result[label] = (counts / self.fps) if self.fps else counts
 
-        return generic_int_to_semantic_key_translator(result)
+        return int_to_semantic_key_translator(result)
 
     @cached_property
     def area_alternations(self) -> dict:
@@ -138,7 +136,7 @@ class YMazeTrial(BaseTrial):
         dict, arm label vs alternations to arm
         """
 
-        result = copy(self._arm_center_int_id_to_seconds)
+        result = copy(self._arm_center_int_id_vs_zero)
         for label, counts in unique_with_counts_zipped(
             self.reduced_alternation_sequence
         ):
@@ -171,7 +169,7 @@ class YMazeTrial(BaseTrial):
         -------
         dict, triplet vs number of occurrences.
         """
-        distribution = copy(self._arm_triplet_dict)
+        distribution = copy(self._arm_permutation_vs_zero)
         for i in range(self.sum_of_alternations):
             current_triplet = self.reduced_without_center[i : i + 3]
             if 1 in current_triplet and 2 in current_triplet and 3 in current_triplet:

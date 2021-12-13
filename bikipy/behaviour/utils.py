@@ -12,7 +12,7 @@ def unique_with_counts_zipped(array):
     return zip(*np.unique(array, return_counts=True))
 
 
-def exclude_value_from_sequence(sequence: Iterable, exclude: str):
+def exclude_value_from_sequence(sequence: Iterable, exclude: Any):
     sequence = np.asarray(sequence)
     return sequence[sequence != exclude]
 
@@ -56,9 +56,6 @@ def reduce_repeating_sequences(
     -------
     list, reduced sequence; (A, A, A, B, B, C) -> [A, B, C]
     """
-    # if (unique := np.unique(repeating_sequence)).size == 1:
-    #     return unique
-
     repeating_sequence = np.asarray(repeating_sequence)
 
     try:

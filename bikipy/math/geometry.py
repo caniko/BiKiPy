@@ -1,32 +1,43 @@
-import itertools
 from collections.abc import Sequence
 from functools import lru_cache
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from bikipy.feature.angle import counterclockwise_angel_2d
+from bikipy.feature.angle import clockwise_angel_2d
+from bikipy.perimeter.base import Perimeter2D
 
 
-def order_polygon_corners(perimeter_corners: Sequence, inspect: bool = False):
-    perimeter_corners = np.asarray(perimeter_corners)
-    centroid = np.mean(perimeter_corners, axis=0)
+def clockwise_argsort_points(points: Sequence):
+    points = np.asarray(points)
+    assert points.ndim == 2
+    centroid = np.mean(points, axis=0)
 
-    centroid_corner_vectors = perimeter_corners - centroid
-    result = perimeter_corners[argsort_counterclockwise(centroid_corner_vectors)]
+    return np.argsort(clockwise_angel_2d((0.0, 1.0), points - centroid))
+
+
+def clockwise_sort_points(points: Sequence, inspect: bool = False):
+    points = np.asarray(points)
+    result = points[clockwise_argsort_points(points)]
 
     if inspect:
         fig, ax = plt.subplots()
         for point in result:
             ax.scatter(*point)
-        plt.legend([f"result_{i}" for i in range(1, len(perimeter_corners) + 1)])
+        plt.legend([f"result_{i}" for i in range(1, len(points) + 1)])
         plt.show()
 
     return result
 
 
-def argsort_counterclockwise(sequence: Sequence):
-    return np.argsort(counterclockwise_angel_2d((-1.0, 0.0), sequence))
+@lru_cache
+def clockwise_sort_perimeter_centroids(perimeters: Sequence[Perimeter2D]):
+    return [
+        perimeters[i]
+        for i in clockwise_argsort_points(
+            [perimeter.centroid for perimeter in perimeters]
+        )
+    ]
 
 
 @lru_cache
@@ -42,7 +53,7 @@ def expand_parallelogram(
     as_array: bool = False,
 ):
     offset = float(offset)
-    down_left, down_right, up_right, up_left = order_polygon_corners(perimeter_corners)
+    up_right, down_right, down_left, up_left = clockwise_sort_points(perimeter_corners)
 
     x_offset = offset
     y_offset = -offset if y_inverted else offset
@@ -139,3 +150,7 @@ def expand_parallelogram(
 
     result = (off_down_left, off_down_right, off_up_right, off_up_left)
     return np.array(result) if as_array else result
+
+
+if __name__ == "__main__":
+    clockwise_sort_points(((1, 1), (-1, 1), (-1, -1), (1, -1)), inspect=True)

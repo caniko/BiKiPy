@@ -81,7 +81,7 @@ class BikipyBase(BaseModel, ABC):
             raise AttributeError(msg)
 
 
-class VideoMetaDataMixin(BaseModel):
+class VideoMetadataMixin(BaseModel):
     video_path: Optional[FilePath] = None
     manual_recording_resolution: Optional[NDArray[Literal[np.int16]]] = None
     manual_fps: Optional[float] = None

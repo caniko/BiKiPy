@@ -29,7 +29,7 @@ def _find_median_vector(row_vectors: np.ndarray) -> np.ndarray:
     return np.array([np.median(component) for component in row_vectors.T])
 
 
-def counterclockwise_angel_2d(
+def clockwise_angel_2d(
     start_vector: Sequence,
     end_vector: Sequence,
 ) -> np.ndarray:
@@ -43,11 +43,11 @@ def counterclockwise_angel_2d(
     :return: counterclockwise angle between start and end vector per frame
     :rtype: np.ndarray
 
-    >>> counterclockwise_angel_2d((1, 0), (0, 1))
+    >>> clockwise_angel_2d((1, 0), (0, 1))
     1.5707963267948966      # pi / 2.
-    >>> counterclockwise_angel_2d((1, 0), (1, 0))
+    >>> clockwise_angel_2d((1, 0), (1, 0))
     0.0
-    >>> counterclockwise_angel_2d((1, 0), (-1, 0))
+    >>> clockwise_angel_2d((1, 0), (-1, 0))
     3.141592653589793       # pi"""
 
     start_vector = unit_vector(start_vector, force_1_dim=True)
@@ -233,5 +233,5 @@ def dlc_compute_angles_from_vectors(
 
 ANGLE_METHOD_TO_FUNC = {
     "inner": inner_angle,
-    "counterclockwise": counterclockwise_angel_2d,
+    "counterclockwise": clockwise_angel_2d,
 }

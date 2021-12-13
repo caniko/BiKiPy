@@ -11,11 +11,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray as NpNDArray
-from pydantic import FilePath, validator, DirectoryPath
+from pydantic import DirectoryPath, FilePath, validator
 from shapely.geometry import Point, Polygon
 
 from bikipy._base_class import BikipyBase
-from bikipy.math.geometry import expand_bikipy_perimeter, order_polygon_corners
+from bikipy.math.geometry import clockwise_sort_points, expand_bikipy_perimeter
 from bikipy.math.vector import point_to_line_segment_distance
 from bikipy.utils.misc import (
     get_reference_point_from_array,
@@ -103,7 +103,7 @@ class Perimeter(BasePerimeter):
                 f"the current polygon is of the {n}th order"
             )
             raise ValueError(msg)
-        return order_polygon_corners(value)
+        return clockwise_sort_points(value)
 
     @cached_property
     def tuple_corners(self):
@@ -674,7 +674,7 @@ class PerimeterSet(BasePerimeter):
         """
         :return: The mean of all perimeter centroids in the set
         """
-        return np.mean([perimeter.centroid for perimeter in self.perimeters])
+        return np.mean([perimeter.centroid for perimeter in self.perimeters], axis=0)
 
     def discrete_confined_coordinates(
         self, coordinates: Sequence, inspect: bool = False
@@ -728,6 +728,18 @@ class PerimeterSet(BasePerimeter):
     def plot(self, **kwargs):
         ax = super().plot(**kwargs)
         return Perimeter.plot_perimeters(self.perimeters, ax)
+
+    @cached_property
+    def perimeter_vs_int_id(self):
+        return {perimeter: perimeter.int_id for perimeter in self.perimeters}
+
+    @cached_property
+    def perimeter_vs_labels(self):
+        return {perimeter: perimeter.labels for perimeter in self.perimeters}
+
+    @cached_property
+    def int_id_vs_label(self):
+        return {perimeter.int_id: perimeter.labels for perimeter in self.perimeters}
 
     @property
     def _reference_point_variance(self):

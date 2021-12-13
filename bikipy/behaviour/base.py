@@ -6,13 +6,13 @@ from functools import cached_property
 from logging import getLogger
 from operator import attrgetter
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Iterable, Optional, Sequence, Union, Literal
+from typing import Any, ClassVar, Iterable, Literal, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, Field, FilePath
 
-from bikipy._base_class import BikipyBase, VideoMetaDataMixin
+from bikipy._base_class import BikipyBase, VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_2d_multi_indexer
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.misc import to_tuple
@@ -23,7 +23,7 @@ logger = getLogger(__name__)
 LABEL_VS_DATA_READER = {"deeplabcut": DeepLabCutReader}
 
 
-class Behaviour(BikipyBase, VideoMetaDataMixin):
+class Behaviour(BikipyBase, VideoMetadataMixin):
     data_import_kwargs: Optional[dict] = None
     data_format_label: Literal["deeplabcut"] = "deeplabcut"
 

@@ -4,7 +4,7 @@ from typing import Union
 import numpy as np
 from matplotlib import pyplot as plt
 
-from bikipy.math.geometry import argsort_counterclockwise
+from bikipy.math.geometry import clockwise_argsort_points
 from bikipy.perimeter import ParallelogramPerimeter, TriangularPerimeter
 from bikipy.perimeter.base import Perimeter, PerimeterSet
 from bikipy.utils.misc import read_makesense_point_csv
@@ -43,7 +43,7 @@ def generate_radial_arm_maze_arm_perimeters(
     lines = np.array([np.array_split(line, 2) for line in line_dataset])
     line_midpoints = np.array([np.mean(line, axis=0) for line in lines])
 
-    correct_argsort = argsort_counterclockwise(line_midpoints)
+    correct_argsort = clockwise_argsort_points(line_midpoints)
     lines = lines[correct_argsort]
     line_midpoints = line_midpoints[correct_argsort]
 

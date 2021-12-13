@@ -20,7 +20,7 @@ Inner angle
 
 Clockwise angle
 ---------------
-:code:`feature.angle.counterclockwise_angel_2d` computes the angle in the counterclockwise direction, using the definition of the determinant and the dot product along with the atan2_ function:
+:code:`feature.angle.clockwise_angel_2d` computes the angle in the counterclockwise direction, using the definition of the determinant and the dot product along with the atan2_ function:
 
 .. math::
     \theta = \pi + \operatorname{atan2} (\det(\mathbf{\hat{b}}, \mathbf{\hat{a}}), \mathbf{\hat{b}} \cdot \mathbf{\hat{a}})

@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath
 
-from bikipy._base_class import BikipyBase, VideoMetaDataMixin
+from bikipy._base_class import BikipyBase, VideoMetadataMixin
 from bikipy.utils.video import get_video_data
 
 FILE_EXTENSION_VS_PANDAS_READER = {
@@ -23,7 +23,7 @@ FILE_EXTENSION_VS_PANDAS_READER = {
 logger = getLogger(__name__)
 
 
-class BaseReader(BikipyBase, VideoMetaDataMixin, ABC):
+class BaseReader(BikipyBase, VideoMetadataMixin, ABC):
     df_path: FilePath = Field(
         description="Path to kinematic data, that will be " "converted to pd.DataFrame"
     )
