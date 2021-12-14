@@ -3,7 +3,7 @@ from functools import cached_property, lru_cache
 from itertools import permutations
 from logging import getLogger
 from math import ceil
-from typing import Optional
+from typing import Optional, ClassVar
 
 import numpy as np
 
@@ -13,7 +13,7 @@ from bikipy.behaviour.radial_arm.y_maze.trial import int_to_semantic_key_transla
 from bikipy.behaviour.utils import (
     unique_with_counts_zipped,
     reduce_repeating_sequences,
-    exclude_value_from_sequence,
+    exclude_value_from_sequence, feature_2d_multi_indexer,
 )
 from bikipy.math.geometry import clockwise_sort_perimeter_centroids
 from bikipy.perimeter.base import Perimeter, Perimeter2D, PerimeterSet
@@ -26,6 +26,24 @@ logger = getLogger(__name__)
 class RadialMazeBase(BikipyBase):
     corridor_meter_width: float
 
+    number_of_arms: ClassVar[Optional[int]] = None
+
+    @classmethod
+    @property
+    @cache
+    def _arm_int_ids(cls):
+        try:
+            return [i for i in range(2, cls.number_of_arms + 2)]
+        except AttributeError as e:
+            msg = "Either define the number_of_arms class variable manually, or utilize a fitting subclass that matches the number of arms in your experiment"
+            raise AttributeError(msg) from e
+
+    @classmethod
+    @property
+    @cache
+    def _arm_int_id_permutations(cls):
+        return permutations(self._arm_int_ids)
+
 
 class BaseRadialMazeExperiment(BaseExperiment, RadialMazeBase):
     pass
@@ -35,19 +53,45 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
     center: Perimeter2D
     arms: list
 
-    def __init__(self, **data):
-        data["center"].int_label = 1
-        for i, arm_idx in enumerate(range(len(data["arms"])), start=2):
-            data["arms"][arm_idx].int_label = i
+    trial_has_feature_frame: ClassVar[bool] = True
 
-        super().__init__(**data)
+    @validator("center")
+    def center_has_1_as_int_id(cls, value):
+        value.int_id = 1
+        return value
+
+    @validator("arms")
+    def clockwise_sort_and_incremental_arm_int_ids(cls, value):
+        value = clockwise_sort_perimeter_centroids(value)
+        for i, arm in enumerate(value):
+            arm.int_id = cls._arm_int_ids[i]
+        return value
+
+    @classmethod
+    @property
+    @cache
+    def feature_summary_column(cls) -> list:
+        area_designations = ["Center"] + arms
+        return [
+            ("Alternations", "")
+            ("Spontaneous alternations", ""),
+            *feature_2d_multi_indexer("Seconds in area", area_designations),
+            *feature_2d_multi_indexer("Area alternations", area_designations),
+            *feature_2d_multi_indexer("Permutation alternation", cls._arm_int_id_permutations),
+        ]
+
 
     @property
     def feature_summary_row(self) -> list:
-        pass
+        return [
+            self.sum_of_alternations,
+            self.spontaneous_alternations,
+            self.perimeter_vs_seconds_spent,
+            self.permutation_alternation_distribution
+        ]
 
     @cached_property
-    def number_of_arms(self):
+    def arm_len(self):
         return len(self.arms)
 
     @property
@@ -97,7 +141,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return len(self.reduced_without_center) - 2
 
     @cached_property
-    def seconds_spent_in_areas(self) -> dict:
+    def perimeter_vs_seconds_spent(self) -> dict:
         """
         The time spent in each area; arms and center
 
@@ -111,10 +155,10 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
             assert label in result, f"{label} is not in {tuple(result.keys())})"
             result[label] = (counts / self.fps) if self.fps else counts
 
-        return int_to_semantic_key_translator(result)
+        return result
 
     @cached_property
-    def area_alternations(self) -> dict:
+    def perimeter_alternations(self) -> dict:
         """
         The number of alternations to every arm and center
 
@@ -149,8 +193,9 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         """
         Define the permutation alternation distribution.
 
-        A y-maze has three arms and one center, compute the number of occurrences
-        a given permutation has. There are six possible permutations, six factorial (6!).
+        A y-maze is radial maze with three arms. The function computes the number
+        of occurrences each sequential permutation of arm. There are six possible
+        permutations, three factorial (3!).
 
         Returns
         -------
@@ -158,18 +203,18 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         """
         distribution = copy(self._arm_permutation_vs_zero)
         for i in range(self.sum_of_alternations):
-            current_permutation = self.reduced_without_center[i:i + self.number_of_arms]
+            current_permutation = self.reduced_without_center[i:i + self.arm_len]
             if all(arm.int_id in current_permutation for arm in self.arms):
                 distribution[tuple(current_permutation)] += 1
 
-        result = {}
-        for key, value in distribution.items():
-            semantic_key = "".join(
-                [self.perimeter_set.int_id_vs_label[integer] for integer in key]
-            )
-            result[semantic_key] = value
+        # result = {}
+        # for key, value in distribution.items():
+        #     semantic_key = "".join(
+        #         [self.perimeter_set.int_id_vs_label[integer] for integer in key]
+        #     )
+        #     result[semantic_key] = value
 
-        return result
+        return distribution
 
     @cached_property
     def spontaneous_alternations(self) -> float:
@@ -191,7 +236,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
         alternations = 0
         for i in range(self.sum_of_alternations):
-            current_permutation = self.reduced_without_center[i:i + self.number_of_arms]
+            current_permutation = self.reduced_without_center[i:i + self.arm_len]
             if all(arm.int_id in current_permutation for arm in self.arms):
                 alternations += 1
 
@@ -218,16 +263,8 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         )
 
     @cached_property
-    def _arm_int_id_permutations(self):
-        return [permutation for permutation in permutations(self._arm_int_ids)]
-
-    @cached_property
     def _arm_permutation_vs_zero(self):
         return {arm: 0 for arm in self._arm_int_id_permutations}
-
-    @cached_property
-    def _arm_int_ids(self):
-        return [arm.int_id for arm in self.arms]
 
     @property
     def _arm_center_int_ids(self):

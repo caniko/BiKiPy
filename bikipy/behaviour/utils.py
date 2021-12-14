@@ -17,23 +17,8 @@ def exclude_value_from_sequence(sequence: Iterable, exclude: Any):
     return sequence[sequence != exclude]
 
 
-def triplet_permutation_vs_base_permutation_dictionary(base_triplets: Sequence):
-    """
-
-    Parameters
-    ----------
-    base_triplets
-
-    Returns
-    -------
-
-    """
-    if isinstance(base_triplets, str):
-        base_triplets = it.combinations_with_replacement(base_triplets, 3)
-    return {
-        base_triplet: set(it.permutations(base_triplet, 3))
-        for base_triplet in base_triplets
-    }
+def feature_2d_multi_indexer(feature: str, groups: Iterable[str]):
+    return [(feature, group) for group in groups]
 
 
 def reduce_repeating_sequences(

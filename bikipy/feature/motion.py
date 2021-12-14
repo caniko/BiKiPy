@@ -254,14 +254,6 @@ def motion_2d_multi_indexer(category: str):
     ]
 
 
-ZERO_RETURN = {
-    "total_displacement": 0.0,
-    "median_speed": 0.0,
-    "median_acceleration": 0.0,
-    "freezing_time": 0.0,
-}
-
-
 def get_combined_features_from_merged_motion_island_data(
     boolean_index: np.ndarray,
     coordinate_sequence: np.ndarray,
@@ -276,7 +268,7 @@ def get_combined_features_from_merged_motion_island_data(
         ).to_list
 
     if not np.any(boolean_index):
-        return ZERO_RETURN
+        return _ZERO_RETURN
 
     indices = np.where(boolean_index)[0]
 
@@ -302,3 +294,11 @@ def get_combined_features_from_merged_motion_island_data(
         ),
         "freezing_time": sum(motion_feature[3] for motion_feature in motion_features),
     }
+
+
+_ZERO_RETURN = {
+    "total_displacement": 0.0,
+    "median_speed": 0.0,
+    "median_acceleration": 0.0,
+    "freezing_time": 0.0,
+}
