@@ -651,13 +651,6 @@ class Perimeter(BasePerimeter):
                 )
 
 
-class GenericPolygonalBorder(Perimeter):
-    # Deprecated.
-    @property
-    def sides(self):
-        return self.__sides
-
-
 class PerimeterSet(BasePerimeter):
     perimeters: Union[tuple, dict]
     restricted_perimeters: Union[tuple, dict, None] = None
@@ -754,10 +747,7 @@ class PerimeterSet(BasePerimeter):
         return *self.perimeters, *self.restricted_perimeters
 
 
-Perimeter2D = Union[Perimeter, PerimeterSet]
-
-
-def distance_between_two_perimeters(perimeter_a: Perimeter2D, perimeter_b: Perimeter2D):
+def distance_between_two_perimeters(perimeter_a: Union[Perimeter, PerimeterSet], perimeter_b: Union[Perimeter, PerimeterSet]):
     return np.linalg.norm(perimeter_a.centroid - perimeter_b.centroid)
 
 

@@ -5,7 +5,7 @@ from typing import Union
 
 from bikipy.behaviour.base import BaseTrial
 from bikipy.behaviour.mixins.live import LiveTrial
-from bikipy.perimeter.base import Perimeter2D
+from bikipy.typing import Perimeter2D
 
 logger = getLogger(__name__)
 

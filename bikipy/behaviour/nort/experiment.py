@@ -13,7 +13,8 @@ from bikipy.behaviour.mixins.physical_object import PhysicalObjectExperimentMixi
 from bikipy.behaviour.nort.constants import TRIAL_LABEL_VS_CLASS_NAME
 from bikipy.behaviour.square import SquareEnclosedExperiment
 from bikipy.feature.physical_object import PhysicalObjectSet
-from bikipy.perimeter.base import Perimeter2D, distance_between_two_perimeters
+from bikipy.perimeter.base import distance_between_two_perimeters
+from bikipy.typing import Perimeter2D
 
 logger = getLogger(__name__)
 

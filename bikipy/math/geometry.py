@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from bikipy.feature.angle import clockwise_angel_2d
-from bikipy.perimeter.base import Perimeter2D
 
 
 def clockwise_argsort_points(points: Sequence):
@@ -31,7 +30,7 @@ def clockwise_sort_points(points: Sequence, inspect: bool = False):
 
 
 @lru_cache
-def clockwise_sort_perimeter_centroids(perimeters: Sequence[Perimeter2D]):
+def clockwise_sort_perimeter_centroids(perimeters: Sequence):
     return [
         perimeters[i]
         for i in clockwise_argsort_points(

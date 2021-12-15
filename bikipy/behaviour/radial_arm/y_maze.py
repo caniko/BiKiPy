@@ -1,12 +1,13 @@
 from logging import getLogger
-from typing import Any, Sequence, Optional, ClassVar
+from typing import Any, ClassVar, Optional, Sequence
 
 import matplotlib.pyplot as plt
 from pydantic import BaseModel
 
-from bikipy.behaviour.radial_arm.base import BaseRadialMazeTrial, \
-    BaseRadialMazeExperiment
-
+from bikipy.behaviour.radial_arm.base import (
+    BaseRadialMazeExperiment,
+    BaseRadialMazeTrial,
+)
 
 logger = getLogger(__name__)
 

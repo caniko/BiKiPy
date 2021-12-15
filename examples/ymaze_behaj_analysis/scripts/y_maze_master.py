@@ -15,7 +15,7 @@ EXP_ID_REGEX_PATTERN = re.compile("\d+")
 
 REPO_PATH = Path("C:/Users/Can/Projects/Neuroscience/bikipy")
 IMAGE_ROOT = REPO_PATH / "examples/data/images/results/master's"
-RESULT_PATH = REPO_PATH / "examples/data/results/results"
+RESULT_DIR = REPO_PATH / "examples/data/results/results"
 
 trial_id_vs_areas = {"before": {}, "after": {}}
 
@@ -307,7 +307,7 @@ for subdir in os.listdir(str(DATA_DIR)):
 
     #  trial.plot(invalid=False)
 
-with pd.ExcelWriter(RESULT_PATH / "master's.ods") as writer:
+with pd.ExcelWriter(RESULT_DIR / "master's.ods") as writer:
     for trial in trial_datas:
         print(f"Analysing {trial.label}")
         df = trial.export_to_dataframe()

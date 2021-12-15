@@ -1,24 +1,24 @@
 from copy import copy
-from functools import cached_property, lru_cache
+from functools import cache, cached_property, lru_cache
 from itertools import permutations
 from logging import getLogger
 from math import ceil
-from typing import Optional, ClassVar
+from typing import ClassVar, Optional
 
 import numpy as np
+from pydantic import validator
 
 from bikipy._base_class import BikipyBase
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
-from bikipy.behaviour.radial_arm.y_maze.trial import int_to_semantic_key_translator
 from bikipy.behaviour.utils import (
-    unique_with_counts_zipped,
+    exclude_value_from_sequence,
+    feature_2d_multi_indexer,
     reduce_repeating_sequences,
-    exclude_value_from_sequence, feature_2d_multi_indexer,
+    unique_with_counts_zipped,
 )
 from bikipy.math.geometry import clockwise_sort_perimeter_centroids
-from bikipy.perimeter.base import Perimeter, Perimeter2D, PerimeterSet
-from bikipy.utils.typing import NDArray
-
+from bikipy.perimeter.base import Perimeter, PerimeterSet
+from bikipy.typing import Perimeter2D
 
 logger = getLogger(__name__)
 
@@ -35,14 +35,18 @@ class RadialMazeBase(BikipyBase):
         try:
             return [i for i in range(2, cls.number_of_arms + 2)]
         except AttributeError as e:
-            msg = "Either define the number_of_arms class variable manually, or utilize a fitting subclass that matches the number of arms in your experiment"
+            msg = (
+                "Either define the number_of_arms class variable manually, "
+                "or utilize a fitting subclass that matches the number of "
+                "arms in your experiment."
+            )
             raise AttributeError(msg) from e
 
     @classmethod
     @property
     @cache
     def _arm_int_id_permutations(cls):
-        return permutations(self._arm_int_ids)
+        return permutations(cls._arm_int_ids)
 
 
 class BaseRadialMazeExperiment(BaseExperiment, RadialMazeBase):
@@ -51,7 +55,7 @@ class BaseRadialMazeExperiment(BaseExperiment, RadialMazeBase):
 
 class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
     center: Perimeter2D
-    arms: list
+    arms: list[Perimeter2D]
 
     trial_has_feature_frame: ClassVar[bool] = True
 
@@ -71,15 +75,16 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
     @property
     @cache
     def feature_summary_column(cls) -> list:
-        area_designations = ["Center"] + arms
+        area_designations = ["Center"] + cls._arm_int_ids
         return [
-            ("Alternations", "")
+            ("Alternations", ""),
             ("Spontaneous alternations", ""),
             *feature_2d_multi_indexer("Seconds in area", area_designations),
             *feature_2d_multi_indexer("Area alternations", area_designations),
-            *feature_2d_multi_indexer("Permutation alternation", cls._arm_int_id_permutations),
+            *feature_2d_multi_indexer(
+                "Permutation alternation", cls._arm_int_id_permutations
+            ),
         ]
-
 
     @property
     def feature_summary_row(self) -> list:
@@ -87,7 +92,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
             self.sum_of_alternations,
             self.spontaneous_alternations,
             self.perimeter_vs_seconds_spent,
-            self.permutation_alternation_distribution
+            self.permutation_alternation_distribution,
         ]
 
     @cached_property
@@ -203,7 +208,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         """
         distribution = copy(self._arm_permutation_vs_zero)
         for i in range(self.sum_of_alternations):
-            current_permutation = self.reduced_without_center[i:i + self.arm_len]
+            current_permutation = self.reduced_without_center[i : i + self.arm_len]
             if all(arm.int_id in current_permutation for arm in self.arms):
                 distribution[tuple(current_permutation)] += 1
 
@@ -236,7 +241,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
         alternations = 0
         for i in range(self.sum_of_alternations):
-            current_permutation = self.reduced_without_center[i:i + self.arm_len]
+            current_permutation = self.reduced_without_center[i : i + self.arm_len]
             if all(arm.int_id in current_permutation for arm in self.arms):
                 alternations += 1
 
