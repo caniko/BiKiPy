@@ -90,10 +90,10 @@ class BasePerimeter(BikipyBase):
 
 
 class Perimeter(BasePerimeter):
-    corners: NDArray[Literal[np.float64]]
+    corners: np.ndarray
     feature_scale: Optional[NDArray] = None
 
-    _polygon_order = None
+    _polygon_order: ClassVar[Optional[int]] = None
 
     @validator("corners")
     def corners_polygon_order_validator(cls, value: NpNDArray):

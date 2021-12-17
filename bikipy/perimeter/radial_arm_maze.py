@@ -67,7 +67,7 @@ def generate_radial_arm_maze_arm_perimeters(
 
         arm_perimeters.append(
             ParallelogramPerimeter(
-                arm_perimeter,
+                corners=arm_perimeter,
                 int_id=line_index + 1,
                 label=labels[line_index],
                 group_label="arm",
@@ -86,4 +86,4 @@ def generate_radial_arm_maze_arm_perimeters(
         plt.legend()
         plt.show()
 
-    return PerimeterSet(perimeters, **perimeter_kwargs)
+    return PerimeterSet(perimeters=perimeters, **perimeter_kwargs)

@@ -1,6 +1,6 @@
 from functools import cached_property
 from logging import getLogger
-from typing import Any, Optional, Sequence
+from typing import Any, Optional, Sequence, ClassVar
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,7 +19,7 @@ logger = getLogger(__name__)
 
 
 class ParallelogramPerimeter(Perimeter):
-    _polygon_order = 4
+    _polygon_order: ClassVar[Optional[int]] = 4
 
     @classmethod
     def from_image(cls, inspect_image: Any, *args, **kwargs):

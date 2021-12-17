@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Literal, Optional, Union
+from typing import Literal, Optional, Union, ClassVar
 
 import numpy as np
 from pydantic import Field
@@ -45,7 +45,7 @@ class LinePerimeter(BasePerimeter):
         ),
     )
 
-    _polygon_order = 1
+    _polygon_order: ClassVar[Optional[int]] = 1
 
     @property
     def feat_border(self):

@@ -246,6 +246,14 @@ python-versions = ">=3.5.0"
 unicode_backport = ["unicodedata2"]
 
 [[package]]
+name = "classutilities"
+version = "0.2.1"
+description = "A simple package that allows having class-level properties and validator for typical configuration classes."
+category = "main"
+optional = false
+python-versions = ">=3.9"
+
+[[package]]
 name = "click"
 version = "8.0.3"
 description = "Composable command line interface toolkit"
@@ -1957,7 +1965,7 @@ live = ["pyzmq"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9.0, <3.10"
-content-hash = "e08e72e244a345023ec19295e39fd8a7294d29fadf0e5bcdb34b3b17b0927ea8"
+content-hash = "06ce7b506c48101ad2c18ddbfae9abb56b8d6acccbbe1c3716b8781ac38a9511"
 
 [metadata.files]
 aiohttp = [
@@ -2176,6 +2184,10 @@ cfgv = [
 charset-normalizer = [
     {file = "charset-normalizer-2.0.9.tar.gz", hash = "sha256:b0b883e8e874edfdece9c28f314e3dd5badf067342e42fb162203335ae61aa2c"},
     {file = "charset_normalizer-2.0.9-py3-none-any.whl", hash = "sha256:1eecaa09422db5be9e29d7fc65664e6c33bd06f9ced7838578ba40d58bdf3721"},
+]
+classutilities = [
+    {file = "classutilities-0.2.1-py3-none-any.whl", hash = "sha256:89de1c6467ed9a1569f59f7ddcaa858362a88519a58e98ad12c273116fba5990"},
+    {file = "classutilities-0.2.1.tar.gz", hash = "sha256:bd9863cac66af7e729f706e4afbce11028080208e2af58d1630f101d19c31797"},
 ]
 click = [
     {file = "click-8.0.3-py3-none-any.whl", hash = "sha256:353f466495adaeb40b6b5f592f9f91cb22372351c84caeb068132442a4518ef3"},

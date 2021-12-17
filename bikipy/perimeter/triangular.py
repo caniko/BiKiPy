@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Union
+from typing import Union, ClassVar, Optional
 
 import numpy as np
 from numpy.typing import NDArray
@@ -8,7 +8,7 @@ from bikipy.perimeter.base import Perimeter
 
 
 class TriangularPerimeter(Perimeter):
-    _polygon_order = 3
+    _polygon_order: ClassVar[Optional[int]] = 3
 
     @property
     def base_a(self):
@@ -22,7 +22,7 @@ class TriangularPerimeter(Perimeter):
     def apex(self):
         return self.corners[2]
 
-    def coordinate_confinement_boolean_index(self, coordinates: NDArray) -> NDArray:
+    def coordinate_confinement_boolean_index(self, coordinates: np.ndarray) -> np.ndarray:
         """
         indices of the coordinates that are inside the respective perimeter
 

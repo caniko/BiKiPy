@@ -30,7 +30,6 @@ class RadialMazeBase(BikipyBase):
 
     @classmethod
     @property
-    @cache
     def _arm_int_ids(cls):
         try:
             return [i for i in range(2, cls.number_of_arms + 2)]
@@ -44,7 +43,6 @@ class RadialMazeBase(BikipyBase):
 
     @classmethod
     @property
-    @cache
     def _arm_int_id_permutations(cls):
         return permutations(cls._arm_int_ids)
 
@@ -73,7 +71,6 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
     @classmethod
     @property
-    @cache
     def feature_summary_column(cls) -> list:
         area_designations = ["Center"] + cls._arm_int_ids
         return [
