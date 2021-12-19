@@ -1,6 +1,6 @@
 from functools import cached_property
 from logging import getLogger
-from typing import Any, Optional, Sequence, ClassVar
+from typing import Any, ClassVar, Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np

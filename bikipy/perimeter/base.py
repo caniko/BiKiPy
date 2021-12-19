@@ -31,7 +31,7 @@ logger = getLogger(__name__)
 
 class BasePerimeter(BikipyBase):
     reference_point_coco_path: Optional[FilePath] = None
-    reference_point: Optional[NDArray] = None
+    reference_point_array: Optional[NDArray] = None
     inspect_image: Optional[NDArray] = None
     image_name: Optional[str] = None
 
@@ -52,6 +52,18 @@ class BasePerimeter(BikipyBase):
                 "an image."
             )
             raise ValueError(msg)
+
+    @property
+    def reference_point(self):
+        return (
+            _reference_point_from_coco_path(self.reference_point_coco_path)
+            if self.reference_point_array is None
+            else self.reference_point_array
+        )
+
+    @reference_point.setter
+    def reference_point(self, value):
+        self.reference_point_array = np.asarray(value)
 
     def plot(self, ax: Any = None, points: Optional[Sequence] = None):
         """
@@ -88,6 +100,22 @@ class BasePerimeter(BikipyBase):
 
         return ax
 
+    @staticmethod
+    def _get_coco_array_from_path_or_array(coco_path: Optional[FilePath] = None, coco_array: Optional[np.ndarray] = None,):
+        msg = "coco_path and coco_array are defined mutually exclusive"
+        if coco_path and np.any(coco_array):
+            raise ValueError(msg)
+
+        if coco_path:
+            result = read_makesense_point_csv(coco_path)
+        elif np.any(coco_array):
+            result = coco_array
+        else:
+            raise ValueError(msg)
+
+        assert result
+        return result
+
 
 class Perimeter(BasePerimeter):
     corners: np.ndarray
@@ -105,184 +133,11 @@ class Perimeter(BasePerimeter):
             raise ValueError(msg)
         return clockwise_sort_points(value)
 
-    @cached_property
-    def tuple_corners(self):
-        return to_tuple(self.corners)
-
-    @classmethod
-    def init_polygon(cls, corners: Sequence, **kwargs):
-        corners = np.asarray(corners)
-        if (number_of_corners := corners.shape[0]) == 3:
-            from bikipy.perimeter.triangular import TriangularPerimeter
-
-            return TriangularPerimeter(corners=corners, **kwargs)
-        elif number_of_corners == 4:
-            from bikipy.perimeter.parallelogram.classes import ParallelogramPerimeter
-
-            return ParallelogramPerimeter(corners=corners, **kwargs)
-        else:
-            return cls(corners=corners, **kwargs)
-
     def __getitem__(self, item: int):
         return self.corners[item]
 
     def __repr__(self):
         return super().__repr__() + f"\n\tcorners={self.corners}"
-
-    @cached_property
-    def number_of_corners(self):
-        return len(self.corners)
-
-    @cached_property
-    def perimeter_vectors(self):
-        return np.diff(self.corners[::-1], prepend=[self.corners[0]], axis=0)[::-1]
-
-    @cached_property
-    def perimeter_lengths(self):
-        return np.linalg.norm(self.perimeter_vectors, axis=1)
-
-    @cached_property
-    def mean_length(self):
-        return np.mean(self.perimeter_lengths)
-
-    @cached_property
-    def line_segment_pairs(self):
-        pairs = [
-            (self.corners[i], self.corners[i + 1])
-            for i in range(self.number_of_corners - 1)
-        ]
-        pairs.append((self.corners[-1], self.corners[0]))
-        return np.array(pairs)
-
-    @cached_property
-    def centroid(self):
-        return np.mean(self.corners, axis=1)
-
-    @cached_property
-    def linked_corners(self):
-        return np.append(self.corners, np.expand_dims(self.corners[0], 0), axis=0)
-
-    @cached_property
-    def edge_midpoints(self):
-        return self.corners + np.diff(self.linked_corners, axis=0) / 2.0
-
-    @cached_property
-    def linked_polygon_edge_corner_pairs(self):
-        return (
-            *((i, i + 1) for i in range(self.number_of_corners - 1)),
-            (self.number_of_corners - 1, 0),
-        )
-
-    @cached_property
-    def y_flipped_edge_midpoints(self):
-        # self.edge_midpoints.T[1].max()) is the maximum y value
-        return np.array((0.0, self.corners_y_max)) - self.edge_midpoints
-
-    @cached_property
-    def y_flipped_edge_midpoint_scalars(self):
-        return np.linalg.norm(self.y_flipped_edge_midpoints, axis=1)
-
-    @cached_property
-    def corners_y_max(self):
-        return self.corners.T[1].max()
-
-    def closest_sides_to_points(self, points: Sequence):
-        distance_sets = np.array(
-            [
-                point_to_line_segment_distance(points, line_segment_pair)
-                for line_segment_pair in self.line_segment_pairs
-            ]
-        ).T
-
-        closest_boolean_index = np.argsort(distance_sets, axis=1) == 0
-        closest_distance = distance_sets[closest_boolean_index]
-
-        closest_index = np.where(closest_boolean_index)[1]
-        closest_vectors = np.zeros((closest_distance.shape[0], 2), dtype=np.float32)
-        for i in range(self.number_of_corners):
-            closest_vectors[closest_index == i] = self.perimeter_vectors[i]
-
-        return closest_distance, closest_vectors
-
-    def change_reference(
-        self,
-        new_reference: np.ndarray,
-        new_inspect_image: Optional[np.ndarray] = None,
-        new_inspect_image_path: OptionalPathTyping = None,
-    ):
-        assert np.any(self.reference_point)
-        if np.all(self.reference_point == new_reference):
-            logger.info("The provided reference_point is identical to the current")
-            return self
-
-        new = copy.deepcopy(self)
-        new.corners += new_reference - new.reference_point
-        new.reference_point = new_reference
-
-        if new_inspect_image_path:
-            if not (new_inspect_image_path := Path(new_inspect_image_path)).exists():
-                msg = (
-                    f"new_inspect_image_path, {new_inspect_image_path}, does not exist"
-                )
-                raise AttributeError(msg)
-            new.inspect_image = new_inspect_image_path
-        elif np.any(new_inspect_image):
-            new.inspect_image = new_inspect_image
-        else:
-            new.inspect_image = None
-
-        return new
-
-    def change_reference_with_coco(self, coco_path: PathTyping, **kwargs):
-        coco_array = read_makesense_point_csv(coco_path)
-        if len(coco_array) == 1:
-            return self.change_reference(
-                get_reference_point_from_array(coco_array), **kwargs
-            )
-        return self.change_reference_with_coco_with_plural_references(
-            coco_array=coco_array, **kwargs
-        )
-
-    def change_reference_with_coco_with_plural_references(
-        self,
-        coco_path: OptionalPathTyping = None,
-        coco_array: Optional[np.ndarray] = None,
-        image_root: OptionalPathTyping = None,
-    ):
-        if coco_path:
-            if np.any(coco_array):
-                msg = "coco_path and coco_array must be exclusively defined"
-                raise ValueError(msg)
-            coco_array = get_reference_point_from_array(coco_path)
-
-        img_name_vs_reference_points = {
-            row[3]: get_reference_point_from_array(row) for row in coco_array
-        }
-        if not np.any(self.reference_point):
-            for img_name, reference_point in img_name_vs_reference_points.items():
-                if self.image_name == img_name:
-                    self.reference_point = reference_point
-                    break
-            if not np.any(self.reference_point):
-                msg = (
-                    "The reference polygon does not have a defined "
-                    "reference point, the coco_reference dataset does not "
-                    "define a reference point either. Refer to the documentation"
-                )
-                raise ValueError(msg)
-
-        return [
-            self.change_reference(
-                reference_point,
-                new_inspect_image_path=image_root / img_name if image_root else None,
-            )
-            for img_name, reference_point in img_name_vs_reference_points.items()
-        ]
-
-    def change_reference_with_image(self, image: Union[PurePath, str, np.ndarray]):
-        plt.imshow(image if isinstance(image, np.ndarray) else cv2.imread(str(image)))
-        plt.title("Please click on the reference_point point")
-        return self.change_reference(np.array(plt.ginput(n=1, timeout=0)[0]))
 
     def border(self, perimeter_border_normal_pixel_magnitude: Union[float, int]):
         """
@@ -304,6 +159,24 @@ class Perimeter(BasePerimeter):
             raise NotImplementedError(msg)
 
         return border_obj
+
+    def closest_sides_to_points(self, points: Sequence):
+        distance_sets = np.array(
+            [
+                point_to_line_segment_distance(points, line_segment_pair)
+                for line_segment_pair in self.line_segment_pairs
+            ]
+        ).T
+
+        closest_boolean_index = np.argsort(distance_sets, axis=1) == 0
+        closest_distance = distance_sets[closest_boolean_index]
+
+        closest_index = np.where(closest_boolean_index)[1]
+        closest_vectors = np.zeros((closest_distance.shape[0], 2), dtype=np.float32)
+        for i in range(self.number_of_corners):
+            closest_vectors[closest_index == i] = self.perimeter_vectors[i]
+
+        return closest_distance, closest_vectors
 
     def confined_coordinates(
         self, coordinates: Sequence, inspect: bool = False, ax: Any = None
@@ -416,6 +289,72 @@ class Perimeter(BasePerimeter):
 
         return presence, valid_indices, boolean_array
 
+    def change_reference(
+        self,
+        new_reference: Optional[np.ndarray],
+        new_inspect_image: Optional[np.ndarray] = None,
+        new_inspect_image_path: Optional[FilePath] = None,
+    ):
+        assert np.any(self.reference_point)
+        if np.all(self.reference_point == new_reference):
+            logger.info("The provided reference_point is identical to the current")
+            return self
+
+        new = copy.deepcopy(self)
+        new.corners += new_reference - new.reference_point
+        new.reference_point = new_reference
+
+        if new_inspect_image_path:
+            if not (new_inspect_image_path := Path(new_inspect_image_path)).exists():
+                msg = (
+                    f"new_inspect_image_path, {new_inspect_image_path}, does not exist"
+                )
+                raise AttributeError(msg)
+            new.inspect_image = new_inspect_image_path
+        elif np.any(new_inspect_image):
+            new.inspect_image = new_inspect_image
+        else:
+            new.inspect_image = None
+
+        return new
+
+    def change_reference_with_coco(
+        self, coco_path: Optional[FilePath] = None, coco_array: Optional[np.ndarray] = None, **kwargs
+    ):
+        coco_array = self._get_coco_array_from_path_or_array(coco_path, coco_array)
+
+        if len(coco_array) != 1:
+            msg = "The coco array includes more than one annotation. " \
+                  "Please use change_reference_with_coco_with_plural_references()"
+            raise ValueError(msg)
+
+        return self.change_reference(
+            get_reference_point_from_array(coco_array), **kwargs
+        )
+
+    def change_reference_with_coco_with_plural_references(
+        self,
+        coco_path: Optional[FilePath] = None,
+        coco_array: Optional[np.ndarray] = None,
+        image_root: OptionalPathTyping = None,
+    ):
+        coco_array = self._get_coco_array_from_path_or_array(coco_path, coco_array)
+
+        img_name_vs_reference_points = {
+            row[3]: get_reference_point_from_array(row) for row in coco_array
+        }
+        if not np.any(self.reference_point):
+            msg = "The reference polygon has no reference point"
+            raise ValueError(msg)
+
+        return [
+            self.change_reference(
+                reference_point,
+                new_inspect_image_path=image_root / img_name if image_root else None,
+            )
+            for img_name, reference_point in img_name_vs_reference_points.items()
+        ]
+
     def plot_self(
         self,
         plot_kwargs: Optional[dict] = None,
@@ -520,65 +459,76 @@ class Perimeter(BasePerimeter):
 
         return ax
 
-    def _add_label_to_str(self, in_string):
-        if self.label:
-            return f"{self.label} {in_string}"
-        if self.int_id:
-            return f"{self.int_id} {in_string}"
-        return in_string
+    @cached_property
+    def number_of_corners(self):
+        return len(self.corners)
 
-    @classmethod
-    def from_image(cls, inspect_image: Any, n: int, *args, **kwargs):
-        """
-        Define the corners of a polygon with a guiding image
+    @cached_property
+    def perimeter_vectors(self):
+        return np.diff(self.corners[::-1], prepend=[self.corners[0]], axis=0)[::-1]
 
-        Parameters
-        ----------
-        inspect_image
-            Either path to image or image in numpy array
-        n
-            The number of sides on the polygon. Each side has to be annotated
+    @cached_property
+    def perimeter_lengths(self):
+        return np.linalg.norm(self.perimeter_vectors, axis=1)
 
-        Returns
-        -------
-        list with pixel coordinates of the polygon corners
-        """
-        logger.debug("Generating Perimeter from image data")
+    @cached_property
+    def mean_length(self):
+        return np.mean(self.perimeter_lengths)
 
-        plt.imshow(
-            inspect_image
-            if isinstance(inspect_image, np.ndarray)
-            else cv2.imread(str(inspect_image))
+    @cached_property
+    def line_segment_pairs(self):
+        pairs = [
+            (self.corners[i], self.corners[i + 1])
+            for i in range(self.number_of_corners - 1)
+        ]
+        pairs.append((self.corners[-1], self.corners[0]))
+        return np.array(pairs)
+
+    @cached_property
+    def centroid(self):
+        return np.mean(self.corners, axis=1)
+
+    @cached_property
+    def linked_corners(self):
+        return np.append(self.corners, np.expand_dims(self.corners[0], 0), axis=0)
+
+    @cached_property
+    def edge_midpoints(self):
+        return self.corners + np.diff(self.linked_corners, axis=0) / 2.0
+
+    @cached_property
+    def linked_polygon_edge_corner_pairs(self):
+        return (
+            *((i, i + 1) for i in range(self.number_of_corners - 1)),
+            (self.number_of_corners - 1, 0),
         )
 
-        return cls.init_polygon(
-            corners=plt.ginput(n=n, timeout=0),
-            inspect_image=inspect_image,
-            **kwargs,
-        )
+    @cached_property
+    def y_flipped_edge_midpoints(self):
+        # self.edge_midpoints.T[1].max()) is the maximum y value
+        return np.array((0.0, self.corners_y_max)) - self.edge_midpoints
+
+    @cached_property
+    def y_flipped_edge_midpoint_scalars(self):
+        return np.linalg.norm(self.y_flipped_edge_midpoints, axis=1)
+
+    @cached_property
+    def corners_y_max(self):
+        return self.corners.T[1].max()
 
     @classmethod
-    def from_video(cls, video_path: Any, frame_time: str = "middle", *args, **kwargs):
-        """
-        Initialize class using a frame from a sample video file
+    def init_polygon(cls, corners: Sequence, **kwargs):
+        corners = np.asarray(corners)
+        if (number_of_corners := corners.shape[0]) == 3:
+            from bikipy.perimeter.triangular import TriangularPerimeter
 
-        Parameters
-        ----------
-        video_path: str
-            The path to the video file
+            return TriangularPerimeter(corners=corners, **kwargs)
+        elif number_of_corners == 4:
+            from bikipy.perimeter.parallelogram.classes import ParallelogramPerimeter
 
-        frame_time: str
-            Relative location of the frame used for reference_point in analysis
-
-        Returns
-        -------
-        bikipy.perimeter.polygon.polygon_corners_on_image call with frame from video
-        """
-        logger.debug("Generating Perimeter from video data")
-
-        frame, x_res, y_res, _fps = get_video_data(video_path, frame_time)
-
-        return cls.from_image(frame, *args, feature_scale=(x_res, y_res), **kwargs)
+            return ParallelogramPerimeter(corners=corners, **kwargs)
+        else:
+            return cls(corners=corners, **kwargs)
 
     @classmethod
     def from_polygon_coco(
@@ -592,7 +542,11 @@ class Perimeter(BasePerimeter):
             return coco["images"][image_id - 1]["file_name"]
 
         def get_inspect_image_path(image_id: int):
-            return image_root / get_inspect_image_name(image_id) if image_root else None
+            return (
+                image_root / coco["images"][image_id - 1]["file_name"]
+                if image_root
+                else None
+            )
 
         def get_semantic_label(category_id: int):
             return coco["categories"][category_id - 1]["name"].lower()
@@ -650,12 +604,28 @@ class Perimeter(BasePerimeter):
                     **perimeter_kwargs,
                 )
 
+    def _add_label_to_str(self, in_string):
+        if self.label:
+            return f"{self.label} {in_string}"
+        if self.int_id:
+            return f"{self.int_id} {in_string}"
+        return in_string
+
 
 class PerimeterSet(BasePerimeter):
     perimeters: Union[tuple, dict]
     restricted_perimeters: Union[tuple, dict, None] = None
 
-    @lru_cache
+    def __init__(self, **data):
+        super().__init__(**data)
+        if self.reference_point is not None:
+            for perimeter in self.perimeters:
+                perimeter.reference_point_array = self.reference_point
+
+            if self.restricted_perimeters:
+                for perimeter in self.restricted_perimeters:
+                    perimeter.reference_point_array = self.reference_point
+
     def __getitem__(self, item: Union[str, int]):
         for perimeter in self._all_perimeters:
             if perimeter.label == item or perimeter.int_id == item:
@@ -697,26 +667,37 @@ class PerimeterSet(BasePerimeter):
             )
         return present
 
-    def change_reference_with_coco(self, new_reference: np.ndarray, **kwargs):
-        """
-        Change the reference of
-        :param new_reference:
-        :param kwargs:
-        :return:
-        """
+    def change_reference_with_coco(self, coco_path: Optional[FilePath] = None, coco_array: Optional[np.ndarray] = None, **kwargs):
+        coco_array = self._get_coco_array_from_path_or_array(coco_path, coco_array)
+
+        if len(coco_array) != 1:
+            msg = "The coco array includes more than one annotation. " \
+                  "Please use change_reference_with_coco_with_plural_references()"
+            raise ValueError(msg)
+
         return self.__class__(
             perimeters=[
-                perimeter.change_reference(new_reference)
+                perimeter.change_reference_with_coco(coco_array)
                 for perimeter in self.perimeters
             ],
             restricted_perimeters=[
-                perimeter.change_reference(new_reference)
+                perimeter.change_reference(coco_array)
                 for perimeter in self.restricted_perimeters
             ]
             if self.restricted_perimeters
             else None,
             **kwargs,
         )
+
+    def change_reference_with_coco_with_plural_references(self, coco_path: Optional[FilePath] = None, coco_array: Optional[np.ndarray] = None, **kwargs):
+        coco_array = self._get_coco_array_from_path_or_array(coco_path, coco_array)
+        perimeters = [
+                perimeter.change_reference_with_coco(coco_array)
+
+            ]
+        perimeters = {}
+        for perimeter in self.perimeters:
+
 
     def plot(self, **kwargs):
         ax = super().plot(**kwargs)
@@ -747,7 +728,10 @@ class PerimeterSet(BasePerimeter):
         return *self.perimeters, *self.restricted_perimeters
 
 
-def distance_between_two_perimeters(perimeter_a: Union[Perimeter, PerimeterSet], perimeter_b: Union[Perimeter, PerimeterSet]):
+def distance_between_two_perimeters(
+    perimeter_a: Union[Perimeter, PerimeterSet],
+    perimeter_b: Union[Perimeter, PerimeterSet],
+):
     return np.linalg.norm(perimeter_a.centroid - perimeter_b.centroid)
 
 
@@ -756,3 +740,10 @@ def _coco_polygon_annotation(flat_annotation_data: Sequence):
         (flat_annotation_data[i], flat_annotation_data[i + 1])
         for i in range(0, len(flat_annotation_data) - 1, 2)
     ]
+
+
+@lru_cache(50)
+def _reference_point_from_coco_path(coco_path: OptionalPathTyping):
+    coco_data = pd.read_csv(coco_path, header=None)
+    assert len(coco_data) == 1
+    return coco_data.values[0][1:3]

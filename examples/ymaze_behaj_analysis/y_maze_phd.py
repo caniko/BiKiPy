@@ -8,6 +8,7 @@ import pandas as pd
 # User defined
 from bikipy.behaviour.radial_arm.y_maze import YMazeExperiment
 from bikipy.perimeter.radial_arm_maze import generate_radial_arm_maze_arm_perimeters
+from bikipy.utils.store import RangeDict
 
 DATASET_LABEL = "phd"
 
@@ -31,7 +32,8 @@ first_annotation = generate_radial_arm_maze_arm_perimeters(
 )
 
 re_referenced = first_annotation.change_reference_with_coco(
-    IMAGE_PATH / "references.csv", image_root=IMAGE_PATH
+    ANNOTATION_PATH / "references.csv",
+    image_root=IMAGE_PATH,
 )
 
 exp_period_vs_perimeter_set = {
@@ -46,7 +48,7 @@ for i, subdir in enumerate(os.listdir(str(DATA_DIR)), start=1):
     print(f"Reading {subdir}")
 
     trial_name = subdir.split("_")[1]
-    trial_id_range_vs_area_set = exp_period_vs_perimeter_set[trial_name]
+    trial_id_range_vs_area_set = RangeDict(exp_period_vs_perimeter_set[trial_name])
 
     trial_id_vs_paths = {}
     for video_path in glob(str(DATA_DIR / subdir / "*.mp4")):

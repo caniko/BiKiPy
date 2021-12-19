@@ -40,10 +40,7 @@ class BaseExperiment(Behaviour):
     inspection_figure_save: Union[DirectoryPath, bool] = False
 
     # Computational settings
-    _enable_process_pooling = True
-
-    # Formatting settings
-    _deeplabcut_trial_id_finder = re.compile(r"\d+")
+    enable_process_pooling: ClassVar[bool] = True
 
     def __getitem__(self, item: int):
         return self.trial_id_vs_trial_object[item]
@@ -175,7 +172,7 @@ class BaseExperiment(Behaviour):
     @cached_property
     def feature_summary_frame(self) -> pd.DataFrame:
         data_dict = {}
-        if self._enable_process_pooling:
+        if self.enable_process_pooling:
             with ProcessPoolExecutor() as executor:
                 for animal_id, trial_objects in self.animal_id_vs_trial_objects.items():
                     trial_objects = [
@@ -248,7 +245,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def motion_summary_frame(self) -> pd.DataFrame:
-        if self._enable_process_pooling:
+        if self.enable_process_pooling:
             with ProcessPoolExecutor() as executor:
                 rows = executor.map(attrgetter("motion_features"), self.trial_objects)
         else:

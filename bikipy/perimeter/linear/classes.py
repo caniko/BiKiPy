@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Literal, Optional, Union, ClassVar
+from typing import ClassVar, Literal, Optional, Union
 
 import numpy as np
 from pydantic import Field
