@@ -2,7 +2,6 @@ from collections import Counter
 from dataclasses import dataclass
 from functools import cached_property
 from logging import getLogger
-from pathlib import PurePath
 from typing import Any, Optional, Union
 
 import matplotlib.pyplot as plt
@@ -11,8 +10,8 @@ from pydantic import DirectoryPath
 from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.feature.attention import polygonal_perimeter_attention
-from bikipy.perimeter.base import Perimeter2D
+from bikipy.feature.attention.main import polygonal_perimeter_attention
+from bikipy.typing import Perimeter2D
 
 logger = getLogger(__name__)
 
@@ -21,8 +20,8 @@ logger = getLogger(__name__)
 class PhysicalObject:
     perimeter: Perimeter2D
     reader: Any
-    gaze_travel_direction_point_label: str
     gaze_start_point_label: str
+    gaze_travel_direction_point_label: str
     fps: float
     perimeter_border_normal_pixel_magnitude: float
     maximum_radians_inter_gaze_perimeter: float
@@ -31,17 +30,13 @@ class PhysicalObject:
     label: Optional[str] = None
     inspect: Union[bool, str, DirectoryPath] = False
 
+    def __len__(self) -> int:
+        return self.temporal_resolution
+
     @cached_property
-    def _perimeter_attention_data(self) -> tuple:
-        return polygonal_perimeter_attention(
-            self.perimeter,
-            self.reader[self.gaze_travel_direction_point_label],
-            self.reader[self.gaze_start_point_label],
-            self.fps,
-            self.perimeter_border_normal_pixel_magnitude,
-            self.maximum_radians_inter_gaze_perimeter,
-            self.minimum_seconds_attention,
-            inspect=self.inspect,
+    def distance_from_per_frame(self) -> np.ndarray:
+        return np.linalg.norm(
+            self._gaze_travel_direction_point - self.perimeter.centroid, axis=1
         )
 
     @property
@@ -65,10 +60,6 @@ class PhysicalObject:
         return self.attention_filtered_seconds_observing / self.raw_seconds_observing
 
     @property
-    def _attention_analytics(self):
-        return self._perimeter_attention_data
-
-    @property
     def attention_proximity_boolean_index(self) -> np.ndarray:
         return self._attention_analytics[0]
 
@@ -77,19 +68,37 @@ class PhysicalObject:
         return self._attention_analytics[1]
 
     @property
-    def logical_location_and_gaze(self):
+    def logical_location_and_gaze(self) -> np.ndarray:
         return self._attention_analytics[2]
 
     @property
-    def semi_true_observations(self):
+    def semi_true_observations(self) -> np.ndarray:
         return self.logical_location_and_gaze
 
     @property
-    def temporal_resolution(self):
+    def temporal_resolution(self) -> int:
         return self.reader.frames
 
-    def __len__(self):
-        return self.temporal_resolution
+    @property
+    def _gaze_travel_direction_point(self) -> np.ndarray:
+        return self.reader[self.gaze_travel_direction_point_label]
+
+    @cached_property
+    def _perimeter_attention_data(self) -> tuple:
+        return polygonal_perimeter_attention(
+            self.perimeter,
+            self._gaze_travel_direction_point,
+            self.reader[self.gaze_start_point_label],
+            self.fps,
+            self.perimeter_border_normal_pixel_magnitude,
+            self.maximum_radians_inter_gaze_perimeter,
+            self.minimum_seconds_attention,
+            inspect=self.inspect,
+        )
+
+    @property
+    def _attention_analytics(self):
+        return self._perimeter_attention_data
 
 
 @dataclass(frozen=True, order=True)
@@ -178,7 +187,7 @@ class PhysicalObjectSet:
         )
 
     @cached_property
-    def frames(self):
+    def frames(self) -> int:
         return len(self._first_object)
 
     @property

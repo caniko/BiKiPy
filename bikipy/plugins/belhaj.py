@@ -8,7 +8,10 @@ from typing import Union
 import numpy as np
 from pandas import DataFrame
 
-from bikipy.behaviour.nort.experiment import NortExperiment, NortField
+from bikipy.behaviour.object_recognition.nort.experiment import (
+    NortExperiment,
+    NortField,
+)
 from bikipy.perimeter.base import Perimeter
 
 

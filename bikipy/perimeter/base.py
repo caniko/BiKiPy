@@ -713,7 +713,9 @@ class PerimeterSet(BasePerimeter):
         perimeter_set_kwargs = {}
         for perimeter in self.perimeters:
             image_name_vs_referenced_perimeters = (
-                perimeter.change_reference_with_coco_with_plural_references(coco_array, **kwargs)
+                perimeter.change_reference_with_coco_with_plural_references(
+                    coco_array, **kwargs
+                )
             )
             for (
                 image_name,

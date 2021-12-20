@@ -1,3 +1,4 @@
+from abc import ABC
 from functools import cached_property
 from logging import getLogger
 from typing import ClassVar, Optional
@@ -7,7 +8,7 @@ from pydantic import BaseModel
 
 from bikipy.behaviour.mixins.misc import OpenFieldTrialMixin
 from bikipy.behaviour.mixins.physical_object import PhysicalObjectTrialMixin
-from bikipy.behaviour.nort.experiment import NortField
+from bikipy.behaviour.object_recognition.nort.experiment import NortField
 from bikipy.behaviour.square import SquareEnclosedTrial
 
 logger = getLogger(__name__)
@@ -29,11 +30,15 @@ class NortOpenField(NortHabituationTrial):
     pass
 
 
-class NortFieldMixin(BaseModel):
+class NortPhysicalObjectFieldMixin(BaseModel, PhysicalObjectTrialMixin, ABC):
     nort_field: NortField
 
+    @property
+    def physical_object_constant(self):
+        return self.physical_object_set.physical_objects[1]
 
-class NortTrainingTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, NortFieldMixin):
+
+class NortTrainingTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
     trial_sequence_index: ClassVar[Optional[int]] = 1
     trial_label: ClassVar[str] = "Training"
 
@@ -49,15 +54,11 @@ class NortTrainingTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, NortField
         return self.physical_object_set.physical_objects[0]
 
     @property
-    def physical_object_constant(self):
-        return self.physical_object_set.physical_objects[1]
-
-    @property
     def feature_summary_row(self):
         return [self.physical_object_set.seconds_observing]
 
 
-class NortNoveltyTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, NortFieldMixin):
+class NortNoveltyTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
     trial_sequence_index: ClassVar[Optional[int]] = 2
     trial_label: ClassVar[str] = "Novelty"
 
@@ -83,10 +84,6 @@ class NortNoveltyTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, NortFieldM
     @property
     def physical_object_novel(self):
         return self.physical_object_set.physical_objects[0]
-
-    @property
-    def physical_object_constant(self):
-        return self.physical_object_set.physical_objects[1]
 
     @cached_property
     def discrimination_index(self):

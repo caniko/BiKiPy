@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from pydantic import Field
 
 from bikipy.behaviour.mixins.physical_object import PhysicalObjectExperimentMixin
-from bikipy.behaviour.nort.constants import TRIAL_LABEL_VS_CLASS_NAME
+from bikipy.behaviour.object_recognition.nort.constants import TRIAL_LABEL_VS_CLASS_NAME
 from bikipy.behaviour.square import SquareEnclosedExperiment
 from bikipy.feature.physical_object import PhysicalObjectSet
 from bikipy.perimeter.base import distance_between_two_perimeters
@@ -24,9 +24,6 @@ class NortExperiment(SquareEnclosedExperiment, PhysicalObjectExperimentMixin):
         None, description="Label of the nose in the df"
     )
 
-    _trials_are_sequential: bool = True
-    _period_columns = ("T1", "T2", "Total")
-
     def trial_keyword_arguments(self, trial_id: int) -> dict:
         result = super().trial_keyword_arguments(trial_id)
 
@@ -39,93 +36,6 @@ class NortExperiment(SquareEnclosedExperiment, PhysicalObjectExperimentMixin):
             "perimeter_border_normal_metric_magnitude": self.perimeter_border_normal_metric_magnitude,
             "nort_field": self.nort_field_id_vs_nort_field_object[result["field_id"]],
         }
-
-    @cached_property
-    def attention_state_distribution(self):
-        attention_state_analysis = {
-            "proximity&gaze true observation false": [],
-            "observation&gaze true proximity false": [],
-            "observation&proximity true gaze false": [],
-            "proximity true gaze false": [],
-            "gaze true proximity false": [],
-            "all false": [],
-        }
-        for novelty_trial in self.trial_class_name_vs_trial_objects[""]:
-            attention_state_analysis["proximity&gaze true observation false"].extend(
-                (
-                    novelty_trial.a_proximity_filtered
-                    & novelty_trial.a_gaze_filtered
-                    & ~novelty_trial.a_observance_per_frame,
-                    #
-                    novelty_trial.b_proximity_filtered
-                    & novelty_trial.b_gaze_filtered
-                    & ~novelty_trial.b_observance_per_frame,
-                )
-            )
-            attention_state_analysis["observation&gaze true proximity false"].extend(
-                (
-                    novelty_trial.a_observance_per_frame
-                    & novelty_trial.a_gaze_filtered
-                    & (not_a_proximity_filtered := ~novelty_trial.a_proximity_filtered),
-                    #
-                    novelty_trial.b_observance_per_frame
-                    & novelty_trial.b_gaze_filtered
-                    & (not_b_proximity_filtered := ~novelty_trial.b_proximity_filtered),
-                ),
-            )
-            attention_state_analysis["observation&proximity true gaze false"].extend(
-                (
-                    novelty_trial.a_observance_per_frame
-                    & novelty_trial.a_proximity_filtered
-                    & (not_a_gaze_filtered := ~novelty_trial.a_gaze_filtered),
-                    #
-                    novelty_trial.b_observance_per_frame
-                    & novelty_trial.b_proximity_filtered
-                    & (not_b_gaze_filtered := ~novelty_trial.b_gaze_filtered),
-                )
-            )
-            attention_state_analysis["proximity true gaze false"].extend(
-                (
-                    novelty_trial.a_proximity_filtered & not_a_gaze_filtered,
-                    novelty_trial.b_proximity_filtered & not_b_gaze_filtered,
-                )
-            )
-            attention_state_analysis["gaze true proximity false"].extend(
-                (
-                    novelty_trial.a_gaze_filtered & not_a_proximity_filtered,
-                    novelty_trial.b_gaze_filtered & not_b_proximity_filtered,
-                ),
-            )
-
-        result = []
-        for label, data_set in attention_state_analysis.items():
-            for idx, data in enumerate(data_set):
-                analysis = np.sum(data) / data.size
-                attention_state_analysis[label][idx] = analysis
-                result.append((analysis, label))
-
-        return pd.DataFrame(result, columns=("Ratio", "Comparison"))
-
-    def plot_attention_state_distribution(self, bins=13, **sns_displot_kwargs):
-        sns.set_theme(style="whitegrid")
-        sns.displot(
-            self.attention_state_distribution,
-            x="Ratio",
-            hue="Comparison",
-            multiple="stack",
-            bins=bins,
-            **sns_displot_kwargs,
-        )
-        plt.show()
-        sns.displot(
-            self.attention_state_distribution,
-            x="Ratio",
-            hue="Comparison",
-            multiple="stack",
-            bins=bins,
-            **sns_displot_kwargs,
-        )
-        plt.show()
 
 
 @dataclass(frozen=True, order=True)

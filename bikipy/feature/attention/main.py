@@ -101,26 +101,26 @@ def proximity_filter(
         if not inspection_ax:
             plt.show()
 
-    return result, {
-        "inside_perimeter_border_boolean_index": inside_perimeter_border_boolean_index,
-        "outside_perimeter_boolean_index": outside_perimeter_boolean_index,
-    }
+    return result, (
+        inside_perimeter_border_boolean_index,
+        outside_perimeter_boolean_index,
+    )
 
 
 def gaze_direction_filter(
     perimeter: Perimeter,
-    nose: Sequence[Sequence[float]],
-    center_eye: Sequence[Sequence[float]],
+    gaze_travel_direction_point_label: Sequence[Sequence[float]],
+    gaze_start_point_label: Sequence[Sequence[float]],
     max_radians: float,
     inspect: bool = False,
     inspection_ax: Any = None,
-) -> np.ndarray:
-    nose, center_eye = np.asarray(nose), np.asarray(center_eye)
-    eye_to_nose_vector = nose - center_eye
+):
+    gaze_travel_direction_point_label, gaze_start_point_label = np.asarray(gaze_travel_direction_point_label), np.asarray(gaze_start_point_label)
+    eye_to_nose_vector = gaze_travel_direction_point_label - gaze_start_point_label
 
-    _closest_distance, closest_vector = perimeter.closest_sides_to_points(center_eye)
+    _closest_distance, closest_vectors = perimeter.closest_sides_to_points(gaze_start_point_label)
 
-    inner_angles = inner_angle(closest_vector, eye_to_nose_vector)
+    inner_angles = inner_angle(closest_vectors, eye_to_nose_vector)
 
     result = inner_angles <= max_radians
 
@@ -134,8 +134,8 @@ def gaze_direction_filter(
         ax.set_title("Gaze direction filter")
         perimeter.plot(ax=ax)
 
-        ax.scatter(*nose[result].T, alpha=SCATTER_ALPHA, label="Valid")
-        ax.scatter(*nose[~result].T, alpha=SCATTER_ALPHA, label="Invalid")
+        ax.scatter(*gaze_travel_direction_point_label[result].T, alpha=SCATTER_ALPHA, label="Valid")
+        ax.scatter(*gaze_travel_direction_point_label[~result].T, alpha=SCATTER_ALPHA, label="Invalid")
 
         ax.legend(
             loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=2
@@ -144,7 +144,7 @@ def gaze_direction_filter(
         if not ax:
             plt.show()
 
-    return result
+    return result, closest_vectors
 
 
 def attention_filter(
@@ -234,29 +234,29 @@ def attention_filter(
 
 def polygonal_perimeter_attention(
     perimeter: Perimeter,
-    nose: Sequence[Sequence[float]],
-    center_eye: Sequence[Sequence[float]],
+    gaze_start_point_label: Sequence[Sequence[float]],
+    gaze_travel_direction_point_label: Sequence[Sequence[float]],
     fps: float,
     perimeter_border_normal_pixel_magnitude: float,
     maximum_radians_inter_gaze_perimeter: float = 0.25 * np.pi,
     minimum_seconds_attention: float = 0.5,
     inspect: Union[bool, str, PurePath] = False,
-) -> tuple[np.ndarray, tuple]:
+) -> tuple:
     """
 
     Parameters
     ----------
     perimeter: Perimeter
-    center_eye: Sequence
+    gaze_start_point_label: Sequence
         Points across time defining the position between the eyes of the animal
-    nose: Sequence
-        Points across time defining the position of the animal nose
+    gaze_travel_direction_point_label: Sequence
+        Points across time defining the position of the animal gaze_travel_direction_point_label
     fps: float
         Frames per second (fps) of the video the data was collected from
     perimeter_border_normal_pixel_magnitude
         The magnitude of the normal between the perimeter and the border given in pixels
     maximum_radians_inter_gaze_perimeter: float
-        Maximum radians between the gaze vector (eye_centre to nose) and perimeter tangent
+        Maximum radians between the gaze vector (eye_centre to gaze_travel_direction_point_label) and perimeter tangent
     inspect: bool
         If True, will generate and show and inspection figure for the inspection of
         each filter
@@ -265,10 +265,10 @@ def polygonal_perimeter_attention(
     -------
 
     """
-    center_eye, nose, center_eye = (
-        np.asarray(center_eye),
-        np.asarray(nose),
-        np.asarray(center_eye),
+    gaze_start_point_label, gaze_travel_direction_point_label, gaze_start_point_label = (
+        np.asarray(gaze_start_point_label),
+        np.asarray(gaze_travel_direction_point_label),
+        np.asarray(gaze_start_point_label),
     )
     fps = float(fps)
     maximum_radians_inter_gaze_perimeter = float(maximum_radians_inter_gaze_perimeter)
@@ -290,23 +290,24 @@ def polygonal_perimeter_attention(
     else:
         loc_filter_kwargs, gaze_filter_kwargs = {}, {}
 
-    location_filtered, loc_analytics = proximity_filter(
+    proximity_filtered, (proximity_inside_perimeter_border_boolean_index,
+        proximity_outside_perimeter_boolean_index) = proximity_filter(
         perimeter,
-        nose,
-        center_eye,
+        gaze_travel_direction_point_label,
+        gaze_start_point_label,
         perimeter_border_normal_pixel_magnitude,
         **loc_filter_kwargs,
     )
 
-    gaze_filtered = gaze_direction_filter(
+    gaze_filtered, gaze_closest_vectors = gaze_direction_filter(
         perimeter,
-        nose,
-        center_eye,
+        gaze_travel_direction_point_label,
+        gaze_start_point_label,
         maximum_radians_inter_gaze_perimeter,
         **gaze_filter_kwargs,
     )
 
-    semi_true_observations = location_filtered & gaze_filtered
+    semi_true_observations = proximity_filtered & gaze_filtered
 
     perimeter_observation = (
         np.zeros_like(semi_true_observations, dtype=bool)
@@ -326,11 +327,11 @@ def polygonal_perimeter_attention(
                     },
                 )
 
-        axes[1][0].set_title("location_filtered & gaze_filtered")
-        axes[1][0].scatter(*nose[semi_true_observations].T, alpha=SCATTER_ALPHA)
+        axes[1][0].set_title("proximity_filtered & gaze_filtered")
+        axes[1][0].scatter(*gaze_travel_direction_point_label[semi_true_observations].T, alpha=SCATTER_ALPHA)
 
         axes[1][1].set_title("BasePerimeter observation")
-        axes[1][1].scatter(*nose[perimeter_observation].T, alpha=SCATTER_ALPHA)
+        axes[1][1].scatter(*gaze_travel_direction_point_label[perimeter_observation].T, alpha=SCATTER_ALPHA)
 
         plt.tight_layout()
         if isinstance(inspect, bool):
@@ -342,7 +343,13 @@ def polygonal_perimeter_attention(
             plt.savefig(seek_next_file_index(inspect / f"perimeter_attention.jpg"))
 
     return perimeter_observation, (
-        location_filtered,
+        # Arrays for analysing each filter
+        proximity_filtered,
         gaze_filtered,
         semi_true_observations,
+    ), (
+        # Arrays for making video
+        proximity_inside_perimeter_border_boolean_index,
+        proximity_outside_perimeter_boolean_index,
+        gaze_closest_vectors,
     )

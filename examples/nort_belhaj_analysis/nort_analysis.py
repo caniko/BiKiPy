@@ -7,9 +7,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from bikipy.behaviour.nort.constants import TRIAL_LABEL_VS_CLASS_NAME
-from bikipy.behaviour.nort.experiment import NortExperiment, NortField
-from bikipy.behaviour.nort.trial import CLASS_NAME_VS_CLASS
+from bikipy.behaviour.object_recognition.nort.constants import TRIAL_LABEL_VS_CLASS_NAME
+from bikipy.behaviour.object_recognition.nort.experiment import (
+    NortExperiment,
+    NortField,
+)
+from bikipy.behaviour.object_recognition.nort.trial import CLASS_NAME_VS_CLASS
 from bikipy.perimeter.base import Perimeter
 from bikipy.plugins.belhaj import (
     get_animal_id_vs_apparatus,

@@ -2,7 +2,7 @@ import pickle
 from glob import glob, iglob
 from pathlib import Path
 
-from bikipy.behaviour.nort.trial import NortField
+from bikipy.behaviour.object_recognition.nort.trial import NortField
 
 ROOT = Path(".").resolve().parent / "data" / "area_images"
 

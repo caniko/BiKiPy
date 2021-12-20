@@ -6,7 +6,6 @@ from typing import ClassVar, Literal, Optional, Union
 
 import compress_pickle
 import numpy as np
-from classutilities import classproperty
 from pydantic import BaseModel, DirectoryPath, Extra, Field, FilePath
 
 from bikipy.utils.typing import NDArray, OptionalPathTyping
@@ -111,6 +110,9 @@ class VideoMetadataMixin(BaseModel):
     @property
     def fps(self):
         return self._video_metadata[1]
+
+    def generate_analysis_video(self):
+
 
     @cached_property
     def _video_metadata(self) -> tuple:

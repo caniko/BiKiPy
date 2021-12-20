@@ -6,7 +6,7 @@ after the respective perimeter class has been updated
 import pickle
 from pathlib import Path
 
-from bikipy.behaviour.nort.trial import NortField
+from bikipy.behaviour.object_recognition.nort.trial import NortField
 from bikipy.perimeter.base import Perimeter
 from bikipy.plugins.belhaj import round_vs_apparatus_to_general_nort_fields
 
