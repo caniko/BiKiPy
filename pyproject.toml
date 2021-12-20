@@ -45,6 +45,7 @@ jupyter = { version = "^1.0.0", optional = true }
 jupyterthemes = { version = "^0.20.0", optional = true }
 tornado = "^6.1"
 classutilities = "^0.2.1"
+ffmpeg-python = "^0.2.0"
 
 [tool.poetry.dev-dependencies]
 black = {extras = ["d", "jupyter"], version = "*"}

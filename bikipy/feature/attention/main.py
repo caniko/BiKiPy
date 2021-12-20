@@ -115,10 +115,14 @@ def gaze_direction_filter(
     inspect: bool = False,
     inspection_ax: Any = None,
 ):
-    gaze_travel_direction_point_label, gaze_start_point_label = np.asarray(gaze_travel_direction_point_label), np.asarray(gaze_start_point_label)
+    gaze_travel_direction_point_label, gaze_start_point_label = np.asarray(
+        gaze_travel_direction_point_label
+    ), np.asarray(gaze_start_point_label)
     eye_to_nose_vector = gaze_travel_direction_point_label - gaze_start_point_label
 
-    _closest_distance, closest_vectors = perimeter.closest_sides_to_points(gaze_start_point_label)
+    _closest_distance, closest_vectors = perimeter.closest_sides_to_points(
+        gaze_start_point_label
+    )
 
     inner_angles = inner_angle(closest_vectors, eye_to_nose_vector)
 
@@ -134,8 +138,16 @@ def gaze_direction_filter(
         ax.set_title("Gaze direction filter")
         perimeter.plot(ax=ax)
 
-        ax.scatter(*gaze_travel_direction_point_label[result].T, alpha=SCATTER_ALPHA, label="Valid")
-        ax.scatter(*gaze_travel_direction_point_label[~result].T, alpha=SCATTER_ALPHA, label="Invalid")
+        ax.scatter(
+            *gaze_travel_direction_point_label[result].T,
+            alpha=SCATTER_ALPHA,
+            label="Valid",
+        )
+        ax.scatter(
+            *gaze_travel_direction_point_label[~result].T,
+            alpha=SCATTER_ALPHA,
+            label="Invalid",
+        )
 
         ax.legend(
             loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=2
@@ -265,7 +277,11 @@ def polygonal_perimeter_attention(
     -------
 
     """
-    gaze_start_point_label, gaze_travel_direction_point_label, gaze_start_point_label = (
+    (
+        gaze_start_point_label,
+        gaze_travel_direction_point_label,
+        gaze_start_point_label,
+    ) = (
         np.asarray(gaze_start_point_label),
         np.asarray(gaze_travel_direction_point_label),
         np.asarray(gaze_start_point_label),
@@ -290,8 +306,10 @@ def polygonal_perimeter_attention(
     else:
         loc_filter_kwargs, gaze_filter_kwargs = {}, {}
 
-    proximity_filtered, (proximity_inside_perimeter_border_boolean_index,
-        proximity_outside_perimeter_boolean_index) = proximity_filter(
+    proximity_filtered, (
+        proximity_inside_perimeter_border_boolean_index,
+        proximity_outside_perimeter_boolean_index,
+    ) = proximity_filter(
         perimeter,
         gaze_travel_direction_point_label,
         gaze_start_point_label,
@@ -328,10 +346,16 @@ def polygonal_perimeter_attention(
                 )
 
         axes[1][0].set_title("proximity_filtered & gaze_filtered")
-        axes[1][0].scatter(*gaze_travel_direction_point_label[semi_true_observations].T, alpha=SCATTER_ALPHA)
+        axes[1][0].scatter(
+            *gaze_travel_direction_point_label[semi_true_observations].T,
+            alpha=SCATTER_ALPHA,
+        )
 
         axes[1][1].set_title("BasePerimeter observation")
-        axes[1][1].scatter(*gaze_travel_direction_point_label[perimeter_observation].T, alpha=SCATTER_ALPHA)
+        axes[1][1].scatter(
+            *gaze_travel_direction_point_label[perimeter_observation].T,
+            alpha=SCATTER_ALPHA,
+        )
 
         plt.tight_layout()
         if isinstance(inspect, bool):
@@ -342,14 +366,18 @@ def polygonal_perimeter_attention(
                 os.mkdir(inspect.parent)
             plt.savefig(seek_next_file_index(inspect / f"perimeter_attention.jpg"))
 
-    return perimeter_observation, (
-        # Arrays for analysing each filter
-        proximity_filtered,
-        gaze_filtered,
-        semi_true_observations,
-    ), (
-        # Arrays for making video
-        proximity_inside_perimeter_border_boolean_index,
-        proximity_outside_perimeter_boolean_index,
-        gaze_closest_vectors,
+    return (
+        perimeter_observation,
+        (
+            # Arrays for analysing each filter
+            proximity_filtered,
+            gaze_filtered,
+            semi_true_observations,
+        ),
+        (
+            # Arrays for making video
+            proximity_inside_perimeter_border_boolean_index,
+            proximity_outside_perimeter_boolean_index,
+            gaze_closest_vectors,
+        ),
     )

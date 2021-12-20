@@ -8,6 +8,7 @@ from operator import attrgetter
 from pathlib import Path, PurePath
 from typing import Any, ClassVar, Iterable, Literal, Optional, Sequence, Union
 
+import cv2
 import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, Field, FilePath
@@ -15,6 +16,7 @@ from pydantic import DirectoryPath, Field, FilePath
 from bikipy._base_class import BikipyBase, VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_2d_multi_indexer
 from bikipy.reader.deeplabcut import DeepLabCutReader
+from bikipy.utils.render_video import VideoWriter
 from bikipy.utils.misc import to_tuple
 from bikipy.utils.store import RangeDict
 
@@ -461,6 +463,26 @@ class BaseTrial(Behaviour):
                 logger.info(f"Location: {label}, {coordinate}")
                 return label
         logger.debug(f"Location could not be determined, {coordinate}")
+
+    def render_analytical_video(self):
+        if not self.video_path:
+            msg = "video_path needs to be defined to render analytical video"
+            raise AttributeError(msg)
+
+        cap = cv2.VideoCapture(str(self.video_path))
+        writer = VideoWriter(
+            filename=self.video_path.with_name(f"{self.video_path.stem}_analysis.mp4"),
+            fps=round(self.fps * 0.75)
+        )
+        success, frame = cap.read()
+        assert success
+        i = 0
+
+        while success:
+            frame = self.process_frame(frame, i)
+            writer.add(frame)
+            success, frame = cap.read()
+            i += 1
 
     @cached_property
     def _reader_init_kwargs(self):

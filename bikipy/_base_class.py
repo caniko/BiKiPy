@@ -111,9 +111,6 @@ class VideoMetadataMixin(BaseModel):
     def fps(self):
         return self._video_metadata[1]
 
-    def generate_analysis_video(self):
-
-
     @cached_property
     def _video_metadata(self) -> tuple:
         error_msg = (
