@@ -1,5 +1,5 @@
 from copy import copy
-from functools import cache, cached_property, lru_cache
+from functools import cached_property, lru_cache
 from itertools import permutations
 from logging import getLogger
 from math import ceil

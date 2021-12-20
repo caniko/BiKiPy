@@ -4,9 +4,8 @@ import statistics
 from functools import cached_property, lru_cache
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Literal, Optional, Sequence, Union
+from typing import Any, ClassVar, Optional, Sequence, Union
 
-import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -23,8 +22,7 @@ from bikipy.utils.misc import (
     read_makesense_point_csv,
     to_tuple,
 )
-from bikipy.utils.typing import NDArray, OptionalPathTyping, PathTyping
-from bikipy.utils.video import get_video_data
+from bikipy.utils.typing import NDArray, OptionalPathTyping
 
 logger = getLogger(__name__)
 
@@ -101,7 +99,10 @@ class BasePerimeter(BikipyBase):
         return ax
 
     @staticmethod
-    def _get_coco_array_from_path_or_array(coco_path: Optional[FilePath] = None, coco_array: Optional[np.ndarray] = None,):
+    def _get_coco_array_from_path_or_array(
+        coco_path: Optional[FilePath] = None,
+        coco_array: Optional[np.ndarray] = None,
+    ):
         msg = "coco_path and coco_array are defined mutually exclusive"
         if coco_path and np.any(coco_array):
             raise ValueError(msg)
@@ -319,13 +320,18 @@ class Perimeter(BasePerimeter):
         return new
 
     def change_reference_with_coco(
-        self, coco_path: Optional[FilePath] = None, coco_array: Optional[np.ndarray] = None, **kwargs
+        self,
+        coco_path: Optional[FilePath] = None,
+        coco_array: Optional[np.ndarray] = None,
+        **kwargs,
     ):
         coco_array = self._get_coco_array_from_path_or_array(coco_path, coco_array)
 
         if len(coco_array) != 1:
-            msg = "The coco array includes more than one annotation. " \
-                  "Please use change_reference_with_coco_with_plural_references()"
+            msg = (
+                "The coco array includes more than one annotation. "
+                "Please use change_reference_with_coco_with_plural_references()"
+            )
             raise ValueError(msg)
 
         return self.change_reference(
@@ -336,7 +342,7 @@ class Perimeter(BasePerimeter):
         self,
         coco_path: Optional[FilePath] = None,
         coco_array: Optional[np.ndarray] = None,
-        image_root: OptionalPathTyping = None,
+        image_root: Optional[DirectoryPath] = None,
     ):
         coco_array = self._get_coco_array_from_path_or_array(coco_path, coco_array)
 
@@ -534,7 +540,7 @@ class Perimeter(BasePerimeter):
     def from_polygon_coco(
         cls,
         coco_path: Any,
-        image_root: OptionalPathTyping = None,
+        image_root: Optional[DirectoryPath] = None,
         single_obj_return: bool = False,
         **perimeter_kwargs,
     ) -> Union[dict, BasePerimeter]:
@@ -667,12 +673,19 @@ class PerimeterSet(BasePerimeter):
             )
         return present
 
-    def change_reference_with_coco(self, coco_path: Optional[FilePath] = None, coco_array: Optional[np.ndarray] = None, **kwargs):
+    def change_reference_with_coco(
+        self,
+        coco_path: Optional[FilePath] = None,
+        coco_array: Optional[np.ndarray] = None,
+        **kwargs,
+    ):
         coco_array = self._get_coco_array_from_path_or_array(coco_path, coco_array)
 
         if len(coco_array) != 1:
-            msg = "The coco array includes more than one annotation. " \
-                  "Please use change_reference_with_coco_with_plural_references()"
+            msg = (
+                "The coco array includes more than one annotation. "
+                "Please use change_reference_with_coco_with_plural_references()"
+            )
             raise ValueError(msg)
 
         return self.__class__(
@@ -689,15 +702,56 @@ class PerimeterSet(BasePerimeter):
             **kwargs,
         )
 
-    def change_reference_with_coco_with_plural_references(self, coco_path: Optional[FilePath] = None, coco_array: Optional[np.ndarray] = None, **kwargs):
+    def change_reference_with_coco_with_plural_references(
+        self,
+        coco_path: Optional[FilePath] = None,
+        coco_array: Optional[np.ndarray] = None,
+        **kwargs,
+    ):
         coco_array = self._get_coco_array_from_path_or_array(coco_path, coco_array)
-        perimeters = [
-                perimeter.change_reference_with_coco(coco_array)
 
-            ]
-        perimeters = {}
+        perimeter_set_kwargs = {}
         for perimeter in self.perimeters:
+            image_name_vs_referenced_perimeters = (
+                perimeter.change_reference_with_coco_with_plural_references(coco_array, **kwargs)
+            )
+            for (
+                image_name,
+                referenced_perimeter,
+            ) in image_name_vs_referenced_perimeters.items():
+                if image_name in perimeter_set_kwargs:
+                    perimeter_set_kwargs[image_name]["perimeters"].append(
+                        referenced_perimeter
+                    )
+                else:
+                    perimeter_set_kwargs[image_name] = {
+                        "perimeters": [referenced_perimeter]
+                    }
 
+        if self.restricted_perimeters:
+            for perimeter in self.restricted_perimeters:
+                image_name_vs_referenced_perimeters = (
+                    perimeter.change_reference_with_coco_with_plural_references(
+                        coco_array, **kwargs
+                    )
+                )
+                for (
+                    image_name,
+                    referenced_perimeter,
+                ) in image_name_vs_referenced_perimeters.items():
+                    if "restricted_perimeters" in perimeter_set_kwargs[image_name]:
+                        perimeter_set_kwargs[image_name][
+                            "restricted_perimeters"
+                        ].append(referenced_perimeter)
+                    else:
+                        perimeter_set_kwargs[image_name] = {
+                            "restricted_perimeters": [referenced_perimeter]
+                        }
+
+        return {
+            image_name: self.__class__(**perimeter_data)
+            for image_name, perimeter_data in perimeter_set_kwargs.items()
+        }
 
     def plot(self, **kwargs):
         ax = super().plot(**kwargs)
@@ -743,7 +797,7 @@ def _coco_polygon_annotation(flat_annotation_data: Sequence):
 
 
 @lru_cache(50)
-def _reference_point_from_coco_path(coco_path: OptionalPathTyping):
+def _reference_point_from_coco_path(coco_path: Optional[FilePath]):
     coco_data = pd.read_csv(coco_path, header=None)
     assert len(coco_data) == 1
     return coco_data.values[0][1:3]
