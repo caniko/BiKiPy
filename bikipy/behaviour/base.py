@@ -34,12 +34,13 @@ class Behaviour(BikipyBase, VideoMetadataMixin):
 
 class BaseExperiment(Behaviour):
     point_label_for_motion_features: str
-    trial_class: Any = None
     trial_id_vs_trial_class: Optional[dict] = None
     trial_id_vs_keyword_arguments: Optional[dict] = None
     trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
     common_trial_keyword_arguments: dict = Field(default_factory=dict)
     inspection_figure_save: Union[DirectoryPath, bool] = False
+
+    trial_class: ClassVar[Any] = None
 
     # Computational settings
     enable_process_pooling: ClassVar[bool] = True

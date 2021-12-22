@@ -70,7 +70,7 @@ def generate_radial_arm_maze_arm_perimeters(
                 corners=arm_perimeter,
                 int_id=line_index + 1,
                 label=labels[line_index],
-                group_label="arm",
+                group_label="arms",
             )
         )
 

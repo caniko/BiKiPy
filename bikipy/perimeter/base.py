@@ -53,6 +53,8 @@ class BasePerimeter(BikipyBase):
 
     @property
     def reference_point(self):
+        if self.reference_point_array is None and not self.reference_point_coco_path:
+            return None
         return (
             _reference_point_from_coco_path(self.reference_point_coco_path)
             if self.reference_point_array is None
@@ -114,7 +116,7 @@ class BasePerimeter(BikipyBase):
         else:
             raise ValueError(msg)
 
-        assert result
+        assert np.any(result)
         return result
 
 
@@ -260,10 +262,10 @@ class Perimeter(BasePerimeter):
         )
         presence = np.zeros(
             coordinates.shape[0],
-            dtype=np.int8 if len(border_sequence) <= 7 else np.int16,
+            dtype=np.int8 if len(border_sequence) <= 255 else np.int16,
         )
-        overlap_locations = {}
 
+        overlap_locations = {}
         for border in border_sequence:
             confined_coord_booleans_index = border.coordinate_confinement_boolean_index(
                 coordinates
@@ -300,6 +302,8 @@ class Perimeter(BasePerimeter):
         if np.all(self.reference_point == new_reference):
             logger.info("The provided reference_point is identical to the current")
             return self
+
+        new_reference.astype(np.float64, copy=False)
 
         new = copy.deepcopy(self)
         new.corners += new_reference - new.reference_point
@@ -343,7 +347,14 @@ class Perimeter(BasePerimeter):
         coco_path: Optional[FilePath] = None,
         coco_array: Optional[np.ndarray] = None,
         image_root: Optional[DirectoryPath] = None,
+        map_to_image_names: bool = True
     ):
+        def _change_reference_loop_func(reference_point, img_name):
+            return self.change_reference(
+                reference_point,
+                new_inspect_image_path=image_root / img_name if image_root else None,
+            )
+
         coco_array = self._get_coco_array_from_path_or_array(coco_path, coco_array)
 
         img_name_vs_reference_points = {
@@ -353,11 +364,13 @@ class Perimeter(BasePerimeter):
             msg = "The reference polygon has no reference point"
             raise ValueError(msg)
 
+        if map_to_image_names:
+            return {
+                img_name: _change_reference_loop_func(reference_point, img_name)
+                for img_name, reference_point in img_name_vs_reference_points.items()
+            }
         return [
-            self.change_reference(
-                reference_point,
-                new_inspect_image_path=image_root / img_name if image_root else None,
-            )
+            _change_reference_loop_func(reference_point, img_name)
             for img_name, reference_point in img_name_vs_reference_points.items()
         ]
 
@@ -492,7 +505,7 @@ class Perimeter(BasePerimeter):
 
     @cached_property
     def centroid(self):
-        return np.mean(self.corners, axis=1)
+        return np.mean(self.corners, axis=0)
 
     @cached_property
     def linked_corners(self):
@@ -639,6 +652,24 @@ class PerimeterSet(BasePerimeter):
         raise KeyError(f"Item was not found, {item}")
 
     @cached_property
+    def group(self):
+        grouped = {}
+        for perimeter in self._all_perimeters:
+            if (label := perimeter.group_label) not in grouped:
+                grouped[label] = [perimeter]
+            else:
+                grouped[label].append(perimeter)
+
+        # Groups with one perimeter member should be the value of the respective key
+        for label, perimeters in grouped.items():
+            if len(perimeters) == 1:
+                grouped[label] = perimeters[0]
+            else:
+                grouped[label] = tuple(perimeters)
+
+        return grouped
+
+    @cached_property
     def centroid(self):
         """
         :return: The mean of all perimeter centroids in the set
@@ -706,6 +737,7 @@ class PerimeterSet(BasePerimeter):
         self,
         coco_path: Optional[FilePath] = None,
         coco_array: Optional[np.ndarray] = None,
+        map_to_image_names: bool = True,
         **kwargs,
     ):
         coco_array = self._get_coco_array_from_path_or_array(coco_path, coco_array)
@@ -714,7 +746,7 @@ class PerimeterSet(BasePerimeter):
         for perimeter in self.perimeters:
             image_name_vs_referenced_perimeters = (
                 perimeter.change_reference_with_coco_with_plural_references(
-                    coco_array, **kwargs
+                    coco_array=coco_array, **kwargs
                 )
             )
             for (
@@ -750,10 +782,15 @@ class PerimeterSet(BasePerimeter):
                             "restricted_perimeters": [referenced_perimeter]
                         }
 
-        return {
-            image_name: self.__class__(**perimeter_data)
-            for image_name, perimeter_data in perimeter_set_kwargs.items()
-        }
+        if map_to_image_names:
+            return {
+                image_name: self.__class__(**perimeter_data)
+                for image_name, perimeter_data in perimeter_set_kwargs.items()
+            }
+        return [
+            self.__class__(**perimeter_data)
+            for perimeter_data in perimeter_set_kwargs.values()
+        ]
 
     def plot(self, **kwargs):
         ax = super().plot(**kwargs)
@@ -802,4 +839,4 @@ def _coco_polygon_annotation(flat_annotation_data: Sequence):
 def _reference_point_from_coco_path(coco_path: Optional[FilePath]):
     coco_data = pd.read_csv(coco_path, header=None)
     assert len(coco_data) == 1
-    return coco_data.values[0][1:3]
+    return coco_data.values[0][1:3].astype(np.float64)

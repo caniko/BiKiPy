@@ -98,7 +98,8 @@ class DeepLabCutReader(BaseReader):
                 else:
                     msg = (
                         f"Midpoint {name}, cannot be derived as its components are "
-                        f"not defined in the tracked dataset nor in midpoint_groups"
+                        f"not defined in the tracked dataset nor in midpoint_groups.\n"
+                        f"The following are tracked: {self.tracked_point_labels}"
                     )
                     raise ValueError(msg)
 

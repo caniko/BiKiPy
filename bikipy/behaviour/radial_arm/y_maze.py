@@ -16,11 +16,7 @@ class BaseYMaze(BaseModel):
     number_of_arms: ClassVar[Optional[int]] = 3
 
 
-class YMazeExperiment(BaseRadialMazeExperiment, BaseYMaze):
-    pass
-
-
-class YMazeTrial(BaseRadialMazeTrial, BaseYMaze):
+class YMazeTrial(BaseYMaze, BaseRadialMazeTrial):
     def plot(
         self,
         ax: Any = None,
@@ -50,3 +46,7 @@ class YMazeTrial(BaseRadialMazeTrial, BaseYMaze):
         )
 
         return ax
+
+
+class YMazeExperiment(BaseYMaze, BaseRadialMazeExperiment):
+    trial_class: ClassVar[Any] = YMazeTrial

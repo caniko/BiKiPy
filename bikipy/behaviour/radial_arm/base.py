@@ -24,8 +24,6 @@ logger = getLogger(__name__)
 
 
 class RadialMazeBase(BikipyBase):
-    corridor_meter_width: float
-
     number_of_arms: ClassVar[Optional[int]] = None
 
     @classmethod
@@ -52,8 +50,10 @@ class BaseRadialMazeExperiment(BaseExperiment, RadialMazeBase):
 
 
 class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
+    corridor_meter_width: float
+
     center: Perimeter2D
-    arms: list[Perimeter2D]
+    arms: tuple[Perimeter2D, ...]
 
     trial_has_feature_frame: ClassVar[bool] = True
 
@@ -62,12 +62,12 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         value.int_id = 1
         return value
 
-    @validator("arms")
+    @validator("arms", pre=True)
     def clockwise_sort_and_incremental_arm_int_ids(cls, value):
         value = clockwise_sort_perimeter_centroids(value)
         for i, arm in enumerate(value):
             arm.int_id = cls._arm_int_ids[i]
-        return value
+        return tuple(value)
 
     @classmethod
     @property
