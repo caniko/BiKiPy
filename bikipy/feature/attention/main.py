@@ -28,13 +28,13 @@ def proximity_filter(
     inspection_ax: Any = None,
 ) -> Sequence[bool]:
     """
-    Filter with respect to proximity rules. (1) The inside_perimeter_border has to be in front of perimeter, but inside the border;
+    Filter with respect to proximity rules. (1) The inside_perimeter_border has to be in front of perimeter, but inside the perimeter;
     (2) the outside_perimeter is outside of the perimeter.
 
     :param perimeter:
     :param inside_perimeter_border: Cartesian coordinates of the inside_perimeter_border
     :param outside_perimeter: Cartesian coordinates of the center of mass
-    :param perimeter_border_normal_pixel_magnitude: The magnitude of the normal between the perimeter and the border given in pixels
+    :param perimeter_border_normal_pixel_magnitude: The magnitude of the normal between the perimeter and the perimeter given in pixels
     :param inspect: If True, generate and view an analytics of the resulting filter
     :param inspection_ax: matplotlib Axes that the inspection plots will (optionally) be saved in
     :type perimeter: Perimeter
@@ -50,7 +50,7 @@ def proximity_filter(
     inside_perimeter_border = np.asarray(inside_perimeter_border)
     outside_perimeter = np.asarray(outside_perimeter)
 
-    perimeter_border = perimeter.border(
+    perimeter_border = perimeter.perimeter(
         perimeter_border_normal_pixel_magnitude=perimeter_border_normal_pixel_magnitude
     )
 
@@ -266,7 +266,7 @@ def polygonal_perimeter_attention(
     fps: float
         Frames per second (fps) of the video the data was collected from
     perimeter_border_normal_pixel_magnitude
-        The magnitude of the normal between the perimeter and the border given in pixels
+        The magnitude of the normal between the perimeter and the perimeter given in pixels
     maximum_radians_inter_gaze_perimeter: float
         Maximum radians between the gaze vector (eye_centre to gaze_travel_direction_point_label) and perimeter tangent
     inspect: bool

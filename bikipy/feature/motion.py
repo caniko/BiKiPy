@@ -28,7 +28,7 @@ def displacement_by_frame(
     """
     Compute the absolute displacement of the given point from its coordinates across frames.
     The values that are undefined, or "not a number" (NaN), on the tails are removed, and the
-    undefined values that border defined values are interpolate.
+    undefined values that perimeter defined values are interpolate.
 
     Parameters
     ----------

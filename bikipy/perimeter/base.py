@@ -31,7 +31,6 @@ class BasePerimeter(BikipyBase):
     reference_point_coco_path: Optional[FilePath] = None
     reference_point_array: Optional[NDArray] = None
     inspect_image: Optional[NDArray] = None
-    image_name: Optional[str] = None
 
     category: ClassVar[Optional[str]] = "perimeter"
 
@@ -142,10 +141,10 @@ class Perimeter(BasePerimeter):
     def __repr__(self):
         return super().__repr__() + f"\n\tcorners={self.corners}"
 
-    def border(self, perimeter_border_normal_pixel_magnitude: Union[float, int]):
+    def perimeter(self, perimeter_border_normal_pixel_magnitude: Union[float, int]):
         """
         :param perimeter_border_normal_pixel_magnitude: The magnitude of the normal between
-            the perimeter and the border given in pixels
+            the perimeter and the perimeter given in pixels
         :return:
         """
         if self._polygon_order == 4:
@@ -255,33 +254,35 @@ class Perimeter(BasePerimeter):
 
         coordinates = np.asarray(coordinates)
 
-        border_sequence = (
+        perimeter_sequence = (
             (*inferior_poly_border_instances, *superior_poly_border_instances)
             if inferior_poly_border_instances
             else superior_poly_border_instances
         )
         presence = np.zeros(
             coordinates.shape[0],
-            dtype=np.int8 if len(border_sequence) <= 255 else np.int16,
+            dtype=np.int8 if len(perimeter_sequence) <= 255 else np.int16,
         )
 
         overlap_locations = {}
-        for border in border_sequence:
-            confined_coord_booleans_index = border.coordinate_confinement_boolean_index(
+        for perimeter in perimeter_sequence:
+            confined_coord_booleans_index = perimeter.coordinate_confinement_boolean_index(
                 coordinates
             )
+            perimeter.plot(points=coordinates)
+            plt.show()
 
             if presence[confined_coord_booleans_index].any():
-                overlap_locations[border.label] = np.flatnonzero(
+                overlap_locations[perimeter.label] = np.flatnonzero(
                     presence[confined_coord_booleans_index]
                 )
-                presence[overlap_locations[border.label]] = 0
+                presence[overlap_locations[perimeter.label]] = 0
                 logger.info(
-                    f"BasePerimeter {border.label} has coordinate overlap with "
-                    f"other border_corners, {overlap_locations[border.label].size}"
+                    f"BasePerimeter {perimeter.label} has coordinate overlap with "
+                    f"other border_corners, {overlap_locations[perimeter.label].size}"
                 )
 
-            presence[confined_coord_booleans_index] = border.int_id
+            presence[confined_coord_booleans_index] = perimeter.int_id
 
         valid_indices = np.nonzero(presence)
         if clean_outliers:
@@ -456,9 +457,9 @@ class Perimeter(BasePerimeter):
             ax.scatter(*self.edge_midpoints[index])
 
             if perimeter_border_normal_pixel_magnitude:
-                border = self.border(perimeter_border_normal_pixel_magnitude)
-                border_a = border[index]
-                border_b = border[following_index]
+                perimeter = self.perimeter(perimeter_border_normal_pixel_magnitude)
+                border_a = perimeter[index]
+                border_b = perimeter[following_index]
                 ax.plot(
                     (border_a[0], border_b[0]),
                     (border_a[1], border_b[1]),
@@ -554,6 +555,7 @@ class Perimeter(BasePerimeter):
         cls,
         coco_path: Any,
         image_root: Optional[DirectoryPath] = None,
+        inspect_image: Any = None,
         single_obj_return: bool = False,
         **perimeter_kwargs,
     ) -> Union[dict, BasePerimeter]:
@@ -590,7 +592,7 @@ class Perimeter(BasePerimeter):
         semantic_label_vs_polygon = {
             get_semantic_label(annotation["category_id"]): cls.init_polygon(
                 _coco_polygon_annotation(annotation["segmentation"][0]),
-                inspect_image=get_inspect_image_path(annotation["image_id"]),
+                inspect_image=inspect_image or get_inspect_image_path(annotation["image_id"]),
                 image_name=get_inspect_image_name(annotation["image_id"]),
                 label=coco["categories"][annotation["category_id"] - 1]["name"],
                 **perimeter_kwargs,
@@ -618,7 +620,6 @@ class Perimeter(BasePerimeter):
                 cls.init_polygon(
                     (start, (start[0], end[1]), end, (end[0], start[1])),
                     inspect_image=get_inspect_image_path(annotation["image_id"]),
-                    image_name=row[4],
                     label=label,
                     **perimeter_kwargs,
                 )

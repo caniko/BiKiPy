@@ -32,8 +32,8 @@ class RenameUnpickler(pickle.Unpickler):
             renamed_module = "bikipy.perimeter.base"
         elif module == "bikipy.behaviour.nort.experiment":
             renamed_module = "bikipy.behaviour.nort.trial"
-        elif "bikipy.border" in module:
-            renamed_module = module.replace("bikipy.border", "bikipy.perimeter")
+        elif "bikipy.perimeter" in module:
+            renamed_module = module.replace("bikipy.perimeter", "bikipy.perimeter")
 
         if name == "NortObjectField":
             name = "NortField"

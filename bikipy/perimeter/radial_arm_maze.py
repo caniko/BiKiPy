@@ -15,6 +15,7 @@ def generate_radial_arm_maze_arm_perimeters(
     line_csv_path: PathTyping,
     center_coco_path: OptionalPathTyping = None,
     triangular_center_object: Union[TriangularPerimeter, None] = None,
+    inspect_image = None,
     inspect: bool = False,
     **perimeter_kwargs,
 ):
@@ -25,7 +26,7 @@ def generate_radial_arm_maze_arm_perimeters(
             msg = f"center_coco_path does not exist, {center_coco_path}"
             raise ValueError(msg)
         center_object = triangular_center_object or Perimeter.from_polygon_coco(
-            center_coco_path, single_obj_return=True
+            center_coco_path, inspect_image=inspect_image, single_obj_return=True
         )
     else:
         msg = "Either center_object or center_coco_path has to be defined"
@@ -86,4 +87,4 @@ def generate_radial_arm_maze_arm_perimeters(
         plt.legend()
         plt.show()
 
-    return PerimeterSet(perimeters=perimeters, **perimeter_kwargs)
+    return PerimeterSet(perimeters=perimeters, inspect_image=inspect_image, **perimeter_kwargs)

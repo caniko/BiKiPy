@@ -15,7 +15,7 @@ class PhysicalObjectBaseMixin(BaseModel, ABC):
     )
     perimeter_border_normal_metric_magnitude: Optional[float] = Field(
         None,
-        description="The magnitude of the normal between the perimeter and the border given in meters",
+        description="The magnitude of the normal between the perimeter and the perimeter given in meters",
     )
     maximum_radians_inter_gaze_perimeter: float = 1 / 4 * np.pi
     minimum_seconds_attention: float = 0.5
