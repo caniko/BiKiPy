@@ -10,7 +10,8 @@ import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath
 
-from bikipy._base_class import BikipyBaseHashable, VideoMetadataMixin
+from bikipy.core.base_class import BikipyBaseHashable
+from bikipy.core.mixin import VideoMetadataMixin
 from bikipy.utils.video import get_video_data
 
 FILE_EXTENSION_VS_PANDAS_READER = {

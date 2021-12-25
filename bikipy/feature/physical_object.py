@@ -11,7 +11,7 @@ from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.attention.main import polygonal_perimeter_attention
-from bikipy.typing import Perimeter2D
+from bikipy.core.typing import Perimeter2D
 
 logger = getLogger(__name__)
 

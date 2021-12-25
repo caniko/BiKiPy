@@ -1,5 +1,5 @@
 import os
-import re
+from abc import ABC, abstractmethod
 from concurrent.futures import ProcessPoolExecutor
 from copy import copy
 from functools import cached_property
@@ -11,10 +11,11 @@ from typing import Any, ClassVar, Iterable, Literal, Optional, Sequence, Union
 import cv2
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath, Field, FilePath, root_validator
+from pydantic import DirectoryPath, Field, FilePath
 
-from bikipy._base_class import BikipyBaseHashable, VideoMetadataMixin
+from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.feature.motion import Motion, motion_2d_multi_indexer
+from bikipy.core.mixin import VideoMetadataMixin
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.render_video import VideoWriter
 from bikipy.utils.misc import to_tuple
@@ -129,15 +130,6 @@ class BaseExperiment(Behaviour):
             trials.sort(key=lambda t: t.int_id)
         return dict(sorted(result.items()))
 
-    @cached_property
-    def trial_classes_without_features(self):
-        return np.where(
-            [
-                trial_object.trial_has_feature_frame
-                for trial_object in self.animal_id_vs_trial_objects.values()
-            ]
-        )[0]
-
     @property
     def inspect(self):
         if isinstance(self.inspection_figure_save, bool):
@@ -176,6 +168,8 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def feature_summary_frame(self) -> pd.DataFrame:
+        assert self._at_least_one_trial_class_has_features
+
         data_dict = {}
         if self.enable_process_pooling:
             with ProcessPoolExecutor() as executor:
@@ -210,43 +204,6 @@ class BaseExperiment(Behaviour):
         result.index = result.index.set_names("Animal ID")
 
         return result
-
-    def _feature_frame_columns(self, levels: Optional[int] = None) -> pd.MultiIndex:
-        if self.trial_class:
-            columns = self.trial_class.feature_summary_column
-        elif self.trial_id_vs_trial_class:
-            columns = sum(
-                (
-                    trial_object.feature_summary_column
-                    for trial_object in self._trial_classes
-                    if trial_object.trial_has_feature_frame
-                ),
-                [],
-            )
-        else:
-            raise ValueError
-
-        if levels:
-            column_array = np.array(columns)
-            if levels > (native_nlevel := column_array.shape[1]):
-                columns = to_tuple(
-                    np.concatenate(
-                        (
-                            column_array,
-                            [["" for _ in range(levels - native_nlevel)]]
-                            * len(column_array),
-                        ),
-                        axis=1,
-                    )
-                )
-            elif levels < native_nlevel:
-                msg = (
-                    "Can not reduce the number of levels that are natively defined"
-                    "in index"
-                )
-                raise ValueError(msg)
-
-        return pd.MultiIndex.from_tuples(columns)
 
     @cached_property
     def motion_summary_frame(self) -> pd.DataFrame:
@@ -290,6 +247,47 @@ class BaseExperiment(Behaviour):
         result = pd.DataFrame.from_dict(series, orient="index")
         result.index = result.index.set_names("Animal ID")
         return result
+
+    @cached_property
+    def _at_least_one_trial_class_has_features(self):
+        return any(trial_class.trial_has_feature_frame for trial_class in self._trial_classes)
+
+    def _feature_frame_columns(self, levels: Optional[int] = None) -> pd.MultiIndex:
+        if self.trial_class:
+            columns = self.trial_class.feature_summary_column
+        elif self.trial_id_vs_trial_class:
+            columns = sum(
+                (
+                    trial_object.feature_summary_column
+                    for trial_object in self._trial_classes
+                    if trial_object.trial_has_feature_frame
+                ),
+                [],
+            )
+        else:
+            raise ValueError
+
+        if levels:
+            column_array = np.array(columns)
+            if levels > (native_nlevel := column_array.shape[1]):
+                columns = to_tuple(
+                    np.concatenate(
+                        (
+                            column_array,
+                            [["" for _ in range(levels - native_nlevel)]]
+                            * len(column_array),
+                        ),
+                        axis=1,
+                    )
+                )
+            elif levels < native_nlevel:
+                msg = (
+                    "Can not reduce the number of levels that are natively defined"
+                    "in index"
+                )
+                raise ValueError(msg)
+
+        return pd.MultiIndex.from_tuples(columns)
 
     @staticmethod
     def _feature_2d_multi_indexer(feature: str, category) -> tuple:
@@ -396,11 +394,6 @@ class BaseTrial(Behaviour):
     second_tolerance: ClassVar[float] = 0.35
 
     trial_has_feature_frame: ClassVar[bool] = False
-    feature_summary_column: ClassVar[list] = []
-
-    @property
-    def feature_summary_row(self) -> list:
-        raise NotImplementedError
 
     @property
     def motion_features(self) -> list:
@@ -494,10 +487,7 @@ class BaseTrial(Behaviour):
     @cached_property
     def _int_id_vs_perimeter(self) -> dict:
         self._validate_perimeters_object()
-        return {
-            i: perimeter
-            for i, perimeter in enumerate(self.perimeters.values(), start=1)
-        }
+        return {perimeter.int_id: perimeter for perimeter in self.perimeters}
 
     def _validate_perimeters_object(self) -> None:
         if not self.perimeters:

@@ -6,8 +6,9 @@ from typing import ClassVar, Optional
 import pandas as pd
 from pydantic import BaseModel
 
-from bikipy.behaviour.mixins.misc import OpenFieldTrialMixin
-from bikipy.behaviour.mixins.physical_object import PhysicalObjectTrialMixin
+from bikipy.behaviour.mixin.base import FeaturefullTrialMixin
+from bikipy.behaviour.mixin.misc import OpenFieldTrialMixin
+from bikipy.behaviour.mixin.physical_object import PhysicalObjectTrialMixin
 from bikipy.behaviour.object_recognition.nort.experiment import NortField
 from bikipy.behaviour.square import SquareEnclosedTrial
 
@@ -30,7 +31,7 @@ class NortOpenField(NortHabituationTrial):
     pass
 
 
-class NortPhysicalObjectFieldMixin(BaseModel, PhysicalObjectTrialMixin):
+class NortPhysicalObjectFieldMixin(PhysicalObjectTrialMixin, ABC):
     nort_field: NortField
 
     @property
@@ -38,11 +39,10 @@ class NortPhysicalObjectFieldMixin(BaseModel, PhysicalObjectTrialMixin):
         return self.physical_object_set.physical_objects[1]
 
 
-class NortTrainingTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
+class NortTrainingTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin, FeaturefullTrialMixin):
     trial_sequence_index: ClassVar[Optional[int]] = 1
     trial_label: ClassVar[str] = "Training"
 
-    trial_has_feature_frame: ClassVar[bool] = True
     feature_summary_column: ClassVar[list] = [("Training", "Seconds observing")]
 
     @cached_property
@@ -58,11 +58,10 @@ class NortTrainingTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
         return [self.physical_object_set.seconds_observing]
 
 
-class NortNoveltyTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
+class NortNoveltyTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin, FeaturefullTrialMixin):
     trial_sequence_index: ClassVar[Optional[int]] = 2
     trial_label: ClassVar[str] = "Novelty"
 
-    trial_has_feature_frame: ClassVar[bool] = True
     feature_summary_column: ClassVar[list] = list(
         pd.MultiIndex.from_product(
             [

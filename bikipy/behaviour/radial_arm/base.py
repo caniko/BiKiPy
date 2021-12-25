@@ -8,7 +8,7 @@ from typing import ClassVar, Optional
 import numpy as np
 from pydantic import validator
 
-from bikipy._base_class import BikipyBaseHashable
+from bikipy.core._base_class import BikipyBaseHashable
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import (
     exclude_value_from_sequence,
@@ -18,7 +18,7 @@ from bikipy.behaviour.utils import (
 )
 from bikipy.math.geometry import clockwise_sort_perimeter_centroids
 from bikipy.perimeter.base import Perimeter, PerimeterSet
-from bikipy.typing import Perimeter2D
+from bikipy.core.typing import Perimeter2D
 
 logger = getLogger(__name__)
 

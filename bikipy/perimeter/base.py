@@ -3,7 +3,7 @@ import json
 import statistics
 from functools import cached_property, lru_cache
 from logging import getLogger
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import Any, ClassVar, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
@@ -13,14 +13,13 @@ from numpy.typing import NDArray as NpNDArray
 from pydantic import DirectoryPath, FilePath, validator, root_validator
 from shapely.geometry import Point, Polygon
 
-from bikipy._base_class import BikipyBaseHashable
+from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.math.geometry import clockwise_sort_points, expand_bikipy_perimeter
 from bikipy.math.vector import point_to_line_segment_distance
 from bikipy.utils.misc import (
     get_reference_point_from_array,
     read_image,
     read_makesense_point_csv,
-    to_tuple,
 )
 from bikipy.utils.typing import NDArray
 
