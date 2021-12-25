@@ -69,22 +69,17 @@ class DeepLabCutReader(BaseReader):
     @cached_property
     def augmented(self):
         result = self.raw_df.copy()
-        if self.x_axis_crop_end_point:
-            for roi in self.tracked_point_labels:
-                result.loc[:, (roi, "x")] = (
-                    result.loc[:, (roi, "x")] + self.x_axis_crop_end_point
-                )
 
-        if self.y_add:
-            for roi in self.tracked_point_labels:
-                result.loc[:, (roi, "y")] = result.loc[:, (roi, "y")] + self.y_add
+        if self.x_add or self.y_add:
+            result.loc[:, pd.IndexSlice[:, "x"]] += self.x_add
+            result.loc[:, pd.IndexSlice[:, "y"]] += self.y_add
 
         if self.midpoint_groups:
             midpoint_data, midpoint_based_midpoints = {}, {}
             for name, group in self.midpoint_groups.items():
                 if all(component in self.tracked_point_labels for component in group):
                     group_points = [
-                        self.get_tracking_data(component_name)
+                        result.loc[:, pd.IndexSlice[component_name, ("x", "y")]].values
                         for component_name in group
                     ]
                     midpoint_x, midpoint_y = recursive_midpoint(group_points).T
@@ -120,8 +115,8 @@ class DeepLabCutReader(BaseReader):
                             ).T
                         )
                     else:
-                        group_points.append(self.get_tracking_data(component_name))
-                        component_likelihood = self.raw_df.loc[
+                        group_points.append(result.loc[:, pd.IndexSlice[component_name, ("x", "y")]].values)
+                        component_likelihood = result.loc[
                             :, [(component_name, "likelihood")]
                         ].values.T[0]
 
@@ -136,7 +131,7 @@ class DeepLabCutReader(BaseReader):
                 midpoint_data[(name, "likelihood")] = new_midpoint_likelihood.T[0]
 
             midpoint_df = pd.DataFrame.from_dict(midpoint_data)
-            result = pd.concat((self.raw_df, midpoint_df), axis=1)
+            result = pd.concat((result, midpoint_df), axis=1)
 
         return result
 
@@ -168,15 +163,8 @@ class DeepLabCutReader(BaseReader):
         :return: np.ndarray with the reduced likelihood values
         """
         return np.multiply.reduce(
-            [
-                self.raw_df.loc[:, [(point, "likelihood")]].values
-                for point in tracked_point_labels
-            ]
+            self.raw_df.loc[:, pd.IndexSlice[tracked_point_labels, "likelihood"]].values
         ).T[0]
-
-    def get_tracking_data(self, label: str):
-        """Returns an np.ndarray with the coordinates of label"""
-        return self.raw_df.loc[:, [(label, "x"), (label, "y")]].values
 
 
 def convert_hdf_to_parquet(data_paths, delete_hdf: bool = False):

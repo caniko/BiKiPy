@@ -30,7 +30,7 @@ class NortOpenField(NortHabituationTrial):
     pass
 
 
-class NortPhysicalObjectFieldMixin(BaseModel, PhysicalObjectTrialMixin, ABC):
+class NortPhysicalObjectFieldMixin(BaseModel, PhysicalObjectTrialMixin):
     nort_field: NortField
 
     @property

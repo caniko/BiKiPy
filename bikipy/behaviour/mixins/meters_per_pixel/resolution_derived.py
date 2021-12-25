@@ -7,12 +7,12 @@ from functools import cached_property, lru_cache
 from typing import Optional, Union
 
 import numpy as np
-from pydantic import BaseModel
 
+from bikipy._base_class import BikipyBase
 from bikipy.utils.typing import NDArray
 
 
-class ResolutionDerivedUnitPerPixelMixin(BaseModel, ABC):
+class ResolutionDerivedUnitPerPixelMixin(BikipyBase, ABC):
     metric_resolution: Union[NDArray, float, None] = None
     manual_meters_per_pixel: Optional[float] = None
 

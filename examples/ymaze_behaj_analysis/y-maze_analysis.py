@@ -29,15 +29,13 @@ first_annotation = generate_radial_arm_maze_arm_perimeters(
     line_csv_path=ANNOTATION_PATH / "lines.csv",
     center_coco_path=ANNOTATION_PATH / "center.json",
     reference_point_coco_path=ANNOTATION_PATH / "reference.csv",
-    inspect_image=IMAGE_PATH / "a_p1_1_before_1_phd.png",
+    inspect_image_path=IMAGE_PATH / "a_p1_1_before_1_phd.png",
     label="a_p1_1",
     # inspect=True,
 )
 
 re_referenced = first_annotation.change_reference_with_coco_with_plural_references(
-    IMAGE_PATH / "references.csv",
-    image_root=IMAGE_PATH,
-    map_to_image_names=False
+    IMAGE_PATH / "references.csv", image_root=IMAGE_PATH, map_to_image_names=False
 )
 
 exp_period_vs_perimeter_set = {
@@ -51,7 +49,7 @@ common_trial_keyword_arguments = {
     "corridor_meter_width": 0.08,
 }
 
-YMazeExperiment.enable_process_pooling = False
+# YMazeExperiment.enable_process_pooling = False
 
 experiments = []
 for i, subdir in enumerate(os.listdir(str(DATA_DIR)), start=1):

@@ -10,10 +10,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray as NpNDArray
-from pydantic import DirectoryPath, FilePath, validator
+from pydantic import DirectoryPath, FilePath, validator, root_validator
 from shapely.geometry import Point, Polygon
 
-from bikipy._base_class import BikipyBase
+from bikipy._base_class import BikipyBaseHashable
 from bikipy.math.geometry import clockwise_sort_points, expand_bikipy_perimeter
 from bikipy.math.vector import point_to_line_segment_distance
 from bikipy.utils.misc import (
@@ -22,33 +22,45 @@ from bikipy.utils.misc import (
     read_makesense_point_csv,
     to_tuple,
 )
-from bikipy.utils.typing import NDArray, OptionalPathTyping
+from bikipy.utils.typing import NDArray
 
 logger = getLogger(__name__)
 
 
-class BasePerimeter(BikipyBase):
+class BasePerimeter(BikipyBaseHashable):
     reference_point_coco_path: Optional[FilePath] = None
     reference_point_array: Optional[NDArray] = None
-    inspect_image: Optional[NDArray] = None
+    inspect_image_path: Optional[FilePath] = None
+    inspect_image_array: Optional[NDArray] = None
 
     category: ClassVar[Optional[str]] = "perimeter"
 
-    @validator("inspect_image", pre=True)
-    def make_sure_image_is_loaded(cls, value):
-        if isinstance(value, (str, PurePath)):
-            if not (path := Path(value)).exists():
-                msg = "The provided path to image for inspection, doesn not exist"
-                raise ValueError(msg)
-            return read_image(path)
-        elif np.any(value) or value is None:
-            return value
-        else:
-            msg = (
-                "inspect_image:P The provided object is not a numpy array; it is not "
-                "an image."
-            )
-            raise ValueError(msg)
+    @root_validator(pre=True)
+    def mutually_exclusive(cls, values):
+        if all(key in values for key in ("inspect_image_path", "inspect_image_array")):
+            msg = "inspect_image_path and inspect_image_array must be defined mutually exclusive"
+            raise AttributeError(msg)
+        if all(
+            key in values
+            for key in ("reference_point_coco_path", "reference_point_array")
+        ):
+            msg = "reference_point_coco_path and reference_point_array must be defined mutually exclusive"
+            raise AttributeError(msg)
+        return values
+
+    @property
+    def inspect_image(self):
+        if self.inspect_image_array is None and not self.inspect_image_path:
+            return None
+        return (
+            read_image(self.inspect_image_path)
+            if self.inspect_image_path
+            else self.inspect_image_array
+        )
+
+    @inspect_image.setter
+    def inspect_image(self, value):
+        self.inspect_image_array = np.asarray(value)
 
     @property
     def reference_point(self):
@@ -266,11 +278,9 @@ class Perimeter(BasePerimeter):
 
         overlap_locations = {}
         for perimeter in perimeter_sequence:
-            confined_coord_booleans_index = perimeter.coordinate_confinement_boolean_index(
-                coordinates
+            confined_coord_booleans_index = (
+                perimeter.coordinate_confinement_boolean_index(coordinates)
             )
-            perimeter.plot(points=coordinates)
-            plt.show()
 
             if presence[confined_coord_booleans_index].any():
                 overlap_locations[perimeter.label] = np.flatnonzero(
@@ -348,7 +358,7 @@ class Perimeter(BasePerimeter):
         coco_path: Optional[FilePath] = None,
         coco_array: Optional[np.ndarray] = None,
         image_root: Optional[DirectoryPath] = None,
-        map_to_image_names: bool = True
+        map_to_image_names: bool = True,
     ):
         def _change_reference_loop_func(reference_point, img_name):
             return self.change_reference(
@@ -592,7 +602,8 @@ class Perimeter(BasePerimeter):
         semantic_label_vs_polygon = {
             get_semantic_label(annotation["category_id"]): cls.init_polygon(
                 _coco_polygon_annotation(annotation["segmentation"][0]),
-                inspect_image=inspect_image or get_inspect_image_path(annotation["image_id"]),
+                inspect_image=inspect_image
+                or get_inspect_image_path(annotation["image_id"]),
                 image_name=get_inspect_image_name(annotation["image_id"]),
                 label=coco["categories"][annotation["category_id"] - 1]["name"],
                 **perimeter_kwargs,

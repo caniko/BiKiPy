@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath
 
-from bikipy._base_class import BikipyBase, VideoMetadataMixin
+from bikipy._base_class import BikipyBaseHashable, VideoMetadataMixin
 from bikipy.utils.video import get_video_data
 
 FILE_EXTENSION_VS_PANDAS_READER = {
@@ -23,7 +23,7 @@ FILE_EXTENSION_VS_PANDAS_READER = {
 logger = getLogger(__name__)
 
 
-class BaseReader(BikipyBase, VideoMetadataMixin, ABC):
+class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
     df_path: FilePath = Field(
         description="Path to kinematic data, that will be " "converted to pd.DataFrame"
     )
@@ -99,17 +99,6 @@ class BaseReader(BikipyBase, VideoMetadataMixin, ABC):
             "recording_resolution": (x_res, y_res),
             "fps": fps,
         }
-
-    @property
-    def recording_resolution(self):
-        try:
-            return self.horizontal_resolution, self.vertical_resolution
-        except AttributeError as e:
-            msg = (
-                "horizontal_resolution, vertical_resolution needs to be defined "
-                "for recording_resolution to be defined"
-            )
-            raise AttributeError(msg) from e
 
     @property
     def region_of_interest_vs_boolean_index(self):

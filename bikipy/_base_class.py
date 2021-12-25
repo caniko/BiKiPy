@@ -12,7 +12,16 @@ from bikipy.utils.typing import NDArray, OptionalPathTyping
 from bikipy.utils.video import get_video_data
 
 
-class BikipyBase(BaseModel, ABC):
+class BikipyBase(BaseModel):
+    class Config:
+        underscore_attrs_are_private = True
+        arbitrary_types_allowed = True
+        frozen = False
+        extra = Extra.allow
+        keep_untouched = (cached_property,)
+
+
+class BikipyBaseHashable(BikipyBase, ABC):
     int_id: Optional[int] = None
     label: Optional[str] = None
     group_label: Optional[str] = None
@@ -20,12 +29,6 @@ class BikipyBase(BaseModel, ABC):
     save_root: Optional[DirectoryPath] = None
 
     category: ClassVar[Optional[str]] = None
-
-    class Config:
-        underscore_attrs_are_private = True
-        arbitrary_types_allowed = True
-        extra = Extra.allow
-        keep_untouched = (cached_property,)
 
     def save(self, save_root: OptionalPathTyping = None):
         save_root = Path(save_root or self.save_root)
@@ -81,15 +84,10 @@ class BikipyBase(BaseModel, ABC):
             raise AttributeError(msg)
 
 
-class VideoMetadataMixin(BaseModel):
+class VideoMetadataMixin(BikipyBase):
     video_path: Optional[FilePath] = None
     manual_recording_resolution: Optional[NDArray[Literal[np.int16]]] = None
     manual_fps: Optional[float] = None
-
-    class Config:
-        arbitrary_types_allowed = True
-        extra = Extra.allow
-        keep_untouched = (cached_property,)
 
     @cached_property
     def video_metadata_can_be_defined(self):

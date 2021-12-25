@@ -11,9 +11,9 @@ from typing import Any, ClassVar, Iterable, Literal, Optional, Sequence, Union
 import cv2
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath, Field, FilePath
+from pydantic import DirectoryPath, Field, FilePath, root_validator
 
-from bikipy._base_class import BikipyBase, VideoMetadataMixin
+from bikipy._base_class import BikipyBaseHashable, VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_2d_multi_indexer
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.render_video import VideoWriter
@@ -25,7 +25,7 @@ logger = getLogger(__name__)
 LABEL_VS_DATA_READER = {"deeplabcut": DeepLabCutReader}
 
 
-class Behaviour(BikipyBase, VideoMetadataMixin):
+class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
     data_import_kwargs: Optional[dict] = None
     data_format_label: Literal["deeplabcut"] = "deeplabcut"
 
@@ -73,6 +73,8 @@ class BaseExperiment(Behaviour):
             result["metric_resolution"] = self.metric_resolution
         if self.data_import_kwargs:
             result["data_import_kwargs"] = self.data_import_kwargs
+        if "animal_id" not in result:
+            result["animal_id"] = trial_id
 
         return result
 
@@ -256,7 +258,7 @@ class BaseExperiment(Behaviour):
 
         result = pd.DataFrame(
             rows,
-            columns=self._motion_summary_columns,
+            columns=self.motion_summary_columns,
             index=self._frame_index,
         )
 
@@ -360,7 +362,7 @@ class BaseExperiment(Behaviour):
         return tuple(trial_class.trial_label for trial_class in self._trial_classes)
 
     @property
-    def _motion_summary_columns(self) -> list:
+    def motion_summary_columns(self) -> list:
         return motion_2d_multi_indexer("All")
 
 
@@ -368,7 +370,7 @@ class BaseTrial(Behaviour):
     coordinate_data_path: FilePath = Field(
         description="Path to file storing coordinate data"
     )
-    animal_id: int = Field(None, description="The ID of the animal in the trial")
+    animal_id: int = Field(description="The ID of the animal in the trial")
     point_label_for_motion_features: Optional[str] = Field(
         description="Label of the node that will be used to track general animal movement"
     )
@@ -473,7 +475,7 @@ class BaseTrial(Behaviour):
         cap = cv2.VideoCapture(str(self.video_path))
         writer = VideoWriter(
             filename=self.video_path.with_name(f"{self.video_path.stem}_analysis.mp4"),
-            fps=round(self.fps * 0.75)
+            fps=round(self.fps * 0.75),
         )
         success, frame = cap.read()
         assert success

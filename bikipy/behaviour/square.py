@@ -33,9 +33,9 @@ class SquareEnclosedExperiment(RectangleEnclosedExperiment):
         return result
 
     @cached_property
-    def _motion_summary_columns(self) -> list:
+    def motion_summary_columns(self) -> list:
         periphery_center_labels = ("Periphery", "Center")
-        return super()._motion_summary_columns + [
+        return super().motion_summary_columns + [
             *motion_2d_multi_indexer("Periphery"),
             *motion_2d_multi_indexer("Center"),
             *self._feature_2d_multi_indexer("Time_spent", periphery_center_labels),

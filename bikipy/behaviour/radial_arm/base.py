@@ -8,7 +8,7 @@ from typing import ClassVar, Optional
 import numpy as np
 from pydantic import validator
 
-from bikipy._base_class import BikipyBase
+from bikipy._base_class import BikipyBaseHashable
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import (
     exclude_value_from_sequence,
@@ -23,7 +23,7 @@ from bikipy.typing import Perimeter2D
 logger = getLogger(__name__)
 
 
-class RadialMazeBase(BikipyBase):
+class RadialMazeBase(BikipyBaseHashable):
     number_of_arms: ClassVar[Optional[int]] = None
 
     @classmethod
@@ -274,7 +274,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
     @cached_property
     def _arm_center_int_id_vs_zero(self):
-        return {perimeter: 0 for perimeter in self._arm_center_int_ids}
+        return {perimeter.int_id: 0 for perimeter in self._arm_center_int_ids}
 
 
 @lru_cache

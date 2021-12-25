@@ -3,12 +3,13 @@ from functools import cached_property
 from typing import Optional
 
 import numpy as np
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from bikipy._base_class import BikipyBase
 from bikipy.feature.physical_object import PhysicalObjectSet
 
 
-class PhysicalObjectBaseMixin(BaseModel, ABC):
+class PhysicalObjectBaseMixin(BikipyBase, ABC):
     gaze_start_point_label: str = Field(description="Label of the eye center in the df")
     gaze_travel_direction_point_label: str = Field(
         description="Label signifying the area where the gaze vector"

@@ -1,12 +1,7 @@
 from dataclasses import dataclass, field
-from functools import cached_property
 from logging import getLogger
 from typing import Optional, Union
 
-import numpy as np
-import pandas as pd
-import seaborn as sns
-from matplotlib import pyplot as plt
 from pydantic import Field
 
 from bikipy.behaviour.mixins.physical_object import PhysicalObjectExperimentMixin
