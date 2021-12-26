@@ -1,7 +1,6 @@
-import itertools as it
 from collections.abc import Sequence
 from logging import getLogger
-from typing import Any, Iterable, Optional, Union
+from typing import Any, Iterable
 
 import numpy as np
 
@@ -18,7 +17,7 @@ def exclude_value_from_sequence(sequence: Iterable, exclude: Any):
 
 
 def feature_2d_multi_indexer(feature: str, groups: Iterable[str]):
-    return [(feature, group) for group in groups]
+    return [(str(feature), str(group)) for group in groups]
 
 
 def reduce_repeating_sequences(

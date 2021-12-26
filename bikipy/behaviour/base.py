@@ -488,6 +488,8 @@ class BaseTrial(Behaviour):
             success, frame = cap.read()
             i += 1
 
+        writer.close()
+
     @cached_property
     def _reader_init_kwargs(self):
         return self.data_import_kwargs

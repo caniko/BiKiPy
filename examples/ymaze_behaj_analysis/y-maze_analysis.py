@@ -1,5 +1,6 @@
 import os
 import re
+from datetime import date
 from glob import glob
 from pathlib import Path
 
@@ -55,8 +56,11 @@ experiments = []
 for i, subdir in enumerate(os.listdir(str(DATA_DIR)), start=1):
     print(f"Reading {subdir}")
 
-    trial_set_date = subdir.split("_")[1]
-    trial_id_range_vs_area_set = RangeDict(exp_period_vs_perimeter_set[trial_set_date])
+    trial_set_date_n_id = subdir.split("_")[1]
+    trial_id_range_vs_area_set = RangeDict(exp_period_vs_perimeter_set[trial_set_date_n_id])
+
+    trial_set_date = trial_set_date_n_id.split(" ")[0]
+    day, month, year = map(int, trial_set_date.split("."))
 
     trial_id_vs_paths = {}
     for video_path in glob(str(DATA_DIR / subdir / "*.mp4")):
@@ -77,12 +81,13 @@ for i, subdir in enumerate(os.listdir(str(DATA_DIR)), start=1):
     experiments.append(
         (
             trial := YMazeExperiment(
-                point_label_for_motion_features="torso",
+                point_label_for_motion_features="center_eye",
                 common_trial_keyword_arguments=common_trial_keyword_arguments,
                 trial_id_vs_keyword_arguments=trial_id_vs_exp_meta,
                 trial_id_range_vs_keyword_arguments=trial_id_range_vs_area_set,
                 label=subdir,
                 int_id=i,
+                timestamp=date(year, month, day),
                 data_import_kwargs={
                     "init_from": "hdf",
                     "x_axis_crop_end_point": 95.0,
@@ -96,9 +101,6 @@ for i, subdir in enumerate(os.listdir(str(DATA_DIR)), start=1):
         )
     )
     # trial.plot(invalid=False)
-
-
-print(experiments[0].animal_summary_frame)
 
 with pd.ExcelWriter(
     RESULT_DIR / "ymaze_analysis.xlsx",

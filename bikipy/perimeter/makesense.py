@@ -2,26 +2,25 @@ import json
 from functools import lru_cache
 from logging import getLogger
 from pathlib import Path
-from typing import Optional, Any, Union, Sequence, Callable
+from typing import Optional, Any, Sequence
 
 import numpy as np
 import pandas as pd
 from pydantic import FilePath, DirectoryPath
 
-from bikipy.perimeter.base import BasePerimeter
-
+from bikipy.perimeter.base import Perimeter
+from bikipy.perimeter.utils import reference_point_from_coco_path
 
 logger = getLogger(__name__)
 
 
 def from_makesense_coco_polygon(
-    cls,
     metadata_path: Any,
     image_root: Optional[DirectoryPath] = None,
     reference_point_csv_path: Optional[FilePath] = None,
     single_obj_return: bool = False,
     **perimeter_kwargs,
-) -> Union[dict, BasePerimeter]:
+):
     logger.debug("Generating Perimeter from makesense polygon data in coco format")
 
     with open(metadata_path, "rb") as in_json:
@@ -40,8 +39,12 @@ def from_makesense_coco_polygon(
     )
 
     if reference_point_csv_path:
-        reference_data = reference_point_from_coco_path(reference_point_csv_path, single_row=False)
-        assert len(reference_data) == len(coco["annotations"]), f"{len(reference_data)} != {len(coco['annotations'])}"
+        reference_data = reference_point_from_coco_path(
+            reference_point_csv_path, single_row=False
+        )
+        assert len(reference_data) == len(
+            coco["annotations"]
+        ), f"{len(reference_data)} != {len(coco['annotations'])}"
 
     semantic_label_vs_polygon = {}
     for annotation in coco["annotations"]:
@@ -56,7 +59,7 @@ def from_makesense_coco_polygon(
         if reference_point_csv_path:
             current_kwargs["reference_point_array"] = reference_data[image_name]
 
-        semantic_label_vs_polygon[annotation["category_id"]] = cls.init_polygon(
+        semantic_label_vs_polygon[annotation["category_id"]] = Perimeter.init_polygon(
             _coco_polygon_annotation(annotation["segmentation"][0]),
             label=coco["categories"][annotation["category_id"] - 1]["name"],
             **current_kwargs,
@@ -73,7 +76,6 @@ def from_makesense_coco_polygon(
 
 
 def from_makesense_csv_rectangle(
-    cls,
     metadata_path: FilePath,
     image_root: DirectoryPath,
     reference_point_csv_path: Optional[FilePath] = None,
@@ -82,8 +84,12 @@ def from_makesense_csv_rectangle(
     csv_data = pd.read_csv(metadata_path, header=None, index_col=0)
 
     if reference_point_csv_path:
-        reference_data = reference_point_from_coco_path(reference_point_csv_path, single_row=False)
-        assert len(reference_data) == len(csv_data), f"{len(reference_data)} != {len(csv_data)}"
+        reference_data = reference_point_from_coco_path(
+            reference_point_csv_path, single_row=False
+        )
+        assert len(reference_data) == len(
+            csv_data
+        ), f"{len(reference_data)} != {len(csv_data)}"
 
     result = []
     for label, row in csv_data.iterrows():
@@ -109,26 +115,11 @@ def from_makesense_csv_rectangle(
 
 
 def many_references_from_single_reference_file(
-    cls,
     reference_path: FilePath,
     image_root: DirectoryPath,
     **kwargs,
 ):
     pass
-
-
-@lru_cache(50)
-def reference_point_from_coco_path(
-    metadata_path: Optional[FilePath], single_row: bool = True
-):
-    coco_data = pd.read_csv(
-        metadata_path,
-        names=("label", "x", "y", "image_name", "x_res", "y_res"),
-    )
-    if single_row:
-        assert len(coco_data) == 1
-        return coco_data.iloc[0].values[1:3].astype(np.float64)
-    return {csv_row[3]: csv_row[1:3].astype(np.float64) for csv_row in coco_data.values}
 
 
 def _coco_polygon_annotation(flat_annotation_data: Sequence):

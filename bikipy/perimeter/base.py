@@ -1,14 +1,12 @@
 import copy
-import json
 import statistics
-from functools import cached_property, lru_cache, cache
+from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, ClassVar, Optional, Sequence, Union, Callable
+from typing import Any, ClassVar, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from numpy.typing import NDArray as NpNDArray
 from pydantic import DirectoryPath, FilePath, root_validator, validator
 from shapely.geometry import Point, Polygon
@@ -16,7 +14,7 @@ from shapely.geometry import Point, Polygon
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.math.geometry import clockwise_sort_points, expand_bikipy_perimeter
 from bikipy.math.vector import point_to_line_segment_distance
-from bikipy.perimeter.makesense import reference_point_from_coco_path
+from bikipy.perimeter.utils import reference_point_from_coco_path
 from bikipy.utils.misc import (
     get_reference_point_from_array,
     read_image,

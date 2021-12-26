@@ -9,6 +9,7 @@ from pydantic import FilePath
 from bikipy.math.geometry import clockwise_argsort_points
 from bikipy.perimeter import ParallelogramPerimeter, TriangularPerimeter
 from bikipy.perimeter.base import Perimeter, PerimeterSet
+from bikipy.perimeter.makesense import from_makesense_coco_polygon
 from bikipy.utils.misc import read_makesense_point_csv
 from bikipy.utils.typing import OptionalPathTyping, PathTyping
 
@@ -30,13 +31,10 @@ def generate_radial_arm_maze_arm_perimeters(
         if not os.path.exists(center_coco_path):
             msg = f"center_coco_path does not exist, {center_coco_path}"
             raise ValueError(msg)
-        center_object = (
-            triangular_center_object
-            or Perimeter.from_makesense_coco_polygon(
-                center_coco_path,
-                inspect_image_path=inspect_image_path,
-                single_obj_return=True,
-            )
+        center_object = triangular_center_object or from_makesense_coco_polygon(
+            center_coco_path,
+            inspect_image_path=inspect_image_path,
+            single_obj_return=True,
         )
     else:
         msg = "Either center_object or center_coco_path has to be defined"

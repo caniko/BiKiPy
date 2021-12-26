@@ -1,3 +1,4 @@
+import string
 from copy import copy
 from functools import cached_property, lru_cache
 from itertools import permutations
@@ -44,6 +45,21 @@ class RadialMazeBase(BikipyBaseHashable):
     def _arm_int_id_permutations(cls):
         return permutations(cls._arm_int_ids)
 
+    @classmethod
+    @property
+    def _arm_labels(cls):
+        return string.ascii_uppercase[:cls.number_of_arms]
+
+    @classmethod
+    @property
+    def _arm_label_permutations(cls):
+        return permutations(cls._arm_labels)
+
+    @classmethod
+    @property
+    def _arm_label_permutations_as_string(cls):
+        return map(str, cls._arm_label_permutations)
+
 
 class BaseRadialMazeExperiment(BaseExperiment, RadialMazeBase):
     pass
@@ -72,14 +88,14 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
     @classmethod
     @property
     def feature_summary_column(cls) -> list:
-        area_designations = ["Center"] + cls._arm_int_ids
+        area_designations = ["Center", *cls._arm_labels]
         return [
             ("Alternations", ""),
             ("Spontaneous alternations", ""),
             *feature_2d_multi_indexer("Seconds in area", area_designations),
             *feature_2d_multi_indexer("Area alternations", area_designations),
             *feature_2d_multi_indexer(
-                "Permutation alternation", cls._arm_int_id_permutations
+                "Permutation alternation", cls._arm_label_permutations_as_string
             ),
         ]
 
@@ -88,8 +104,9 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return [
             self.sum_of_alternations,
             self.spontaneous_alternations,
-            self.perimeter_vs_seconds_spent,
-            self.permutation_alternation_distribution,
+            *self.perimeter_vs_seconds_spent.values(),
+            *self.perimeter_alternations.values(),
+            *self.permutation_alternation_distribution.values(),
         ]
 
     @cached_property
@@ -129,7 +146,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
     @cached_property
     def reduced_alternation_sequence(self):
         return reduce_repeating_sequences(
-            self.alternation_sequence, round(self.fps * 0.35)
+            self.alternation_sequence, round(self.fps * 0.075)
         )
 
     @cached_property
@@ -168,16 +185,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         -------
         dict, arm label vs alternations to arm
         """
-
-        result = copy(self._arm_center_int_id_vs_zero)
-        for label, counts in unique_with_counts_zipped(
-            self.reduced_alternation_sequence
-        ):
-            assert label in result
-            result[label] = counts
-
-        if not result[self.center.int_id]:
-            result[self.center.int_id] = 0
+        result = dict(unique_with_counts_zipped(self.reduced_alternation_sequence))
 
         if result[self.center.int_id] < (
             minimum_center_entries := ceil(self.sum_of_alternations / 2.0)
