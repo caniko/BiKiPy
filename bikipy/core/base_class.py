@@ -11,6 +11,8 @@ from bikipy.utils.typing import OptionalPathTyping
 
 
 class BikipyBase(BaseModel):
+    category: ClassVar[Optional[str]] = None
+
     class Config:
         underscore_attrs_are_private = True
         arbitrary_types_allowed = True
@@ -25,8 +27,6 @@ class BikipyBaseHashable(BikipyBase, ABC):
     group_label: Optional[str] = None
     timestamp: Union[date, datetime] = Field(default_factory=datetime.utcnow)
     save_root: Optional[DirectoryPath] = None
-
-    category: ClassVar[Optional[str]] = None
 
     def save(self, save_root: OptionalPathTyping = None):
         save_root = Path(save_root or self.save_root)
@@ -73,7 +73,7 @@ class BikipyBaseHashable(BikipyBase, ABC):
 
     @property
     def best_id(self):
-        return self.label or self.int_id or None
+        return self.label or self.int_id or self.timestamp or self.category
 
     @staticmethod
     def _inquire_timestamp_attribute(obj):

@@ -5,7 +5,7 @@ from bikipy.perimeter.base import Perimeter
 
 ROOT = Path(".").resolve()
 
-perimeters = Perimeter.from_polygon_coco(
+perimeters = Perimeter.from_makesense_coco_polygon(
     ROOT / "coco_annotations_2021-09-01-02-19-41.json",
     inspect_image_path="./maze_example.png",
 )

@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Optional, Literal
+from typing import Literal, Optional
 
 import numpy as np
 from pydantic import FilePath

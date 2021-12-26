@@ -4,8 +4,10 @@ from functools import cached_property
 import numpy as np
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
-from bikipy.behaviour.mixin.meters_per_pixel.resolution_derived import \
-    ResolutionDerivedUnitPerPixelMixin, ResolutionDerivedUnitPerPixelTrialMixin
+from bikipy.behaviour.mixin.meters_per_pixel.resolution_derived import (
+    ResolutionDerivedUnitPerPixelMixin,
+    ResolutionDerivedUnitPerPixelTrialMixin,
+)
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.motion import (
     get_combined_features_from_merged_motion_island_data,

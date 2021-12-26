@@ -1,8 +1,8 @@
-ref_constant,54,64,A1_novel_2.png,224,212
-ref_novel,156,141,A1_novel_2.png,224,212
-ref_constant,53,63,A2_novel_2.png,224,212
-ref_novel,152,145,A2_novel_2.png,224,212
-ref_constant,51,63,B1_novel_2.png,224,212
-ref_novel,151,143,B1_novel_2.png,224,212
-ref_constant,52,61,B2_novel_2.png,224,212
-ref_novel,153,145,B2_novel_2.png,224,212
+Constant,54,64,A1_novel_2.png,224,212
+Novel,156,141,A1_novel_2.png,224,212
+Constant,53,63,A2_novel_2.png,224,212
+Novel,152,145,A2_novel_2.png,224,212
+Constant,51,63,B1_novel_2.png,224,212
+Novel,151,143,B1_novel_2.png,224,212
+Constant,52,61,B2_novel_2.png,224,212
+Novel,153,145,B2_novel_2.png,224,212

@@ -1,2 +1,2 @@
-from .main import *
 from .analysis import *
+from .main import *

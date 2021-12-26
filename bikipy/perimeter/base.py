@@ -1,21 +1,22 @@
 import copy
 import json
 import statistics
-from functools import cached_property, lru_cache
+from functools import cached_property, lru_cache, cache
 from logging import getLogger
 from pathlib import Path
-from typing import Any, ClassVar, Optional, Sequence, Union
+from typing import Any, ClassVar, Optional, Sequence, Union, Callable
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray as NpNDArray
-from pydantic import DirectoryPath, FilePath, validator, root_validator
+from pydantic import DirectoryPath, FilePath, root_validator, validator
 from shapely.geometry import Point, Polygon
 
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.math.geometry import clockwise_sort_points, expand_bikipy_perimeter
 from bikipy.math.vector import point_to_line_segment_distance
+from bikipy.perimeter.makesense import reference_point_from_coco_path
 from bikipy.utils.misc import (
     get_reference_point_from_array,
     read_image,
@@ -66,7 +67,7 @@ class BasePerimeter(BikipyBaseHashable):
         if self.reference_point_array is None and not self.reference_point_coco_path:
             return None
         return (
-            _reference_point_from_coco_path(self.reference_point_coco_path)
+            reference_point_from_coco_path(self.reference_point_coco_path)
             if self.reference_point_array is None
             else self.reference_point_array
         )
@@ -112,15 +113,15 @@ class BasePerimeter(BikipyBaseHashable):
 
     @staticmethod
     def _get_coco_array_from_path_or_array(
-        coco_path: Optional[FilePath] = None,
+        metadata_path: Optional[FilePath] = None,
         coco_array: Optional[np.ndarray] = None,
     ):
-        msg = "coco_path and coco_array are defined mutually exclusive"
-        if coco_path and np.any(coco_array):
+        msg = "metadata_path and coco_array are defined mutually exclusive"
+        if metadata_path and np.any(coco_array):
             raise ValueError(msg)
 
-        if coco_path:
-            result = read_makesense_point_csv(coco_path)
+        if metadata_path:
+            result = read_makesense_point_csv(metadata_path)
         elif np.any(coco_array):
             result = coco_array
         else:
@@ -165,7 +166,7 @@ class Perimeter(BasePerimeter):
                 corners=expand_bikipy_perimeter(
                     self, perimeter_border_normal_pixel_magnitude
                 ),
-                inspect_image=self.inspect_image,
+                inspect_image_array=self.inspect_image,
             )
         else:
             msg = f"Polygon order {self._polygon_order} is not supported"
@@ -335,11 +336,11 @@ class Perimeter(BasePerimeter):
 
     def change_reference_with_coco(
         self,
-        coco_path: Optional[FilePath] = None,
+        metadata_path: Optional[FilePath] = None,
         coco_array: Optional[np.ndarray] = None,
         **kwargs,
     ):
-        coco_array = self._get_coco_array_from_path_or_array(coco_path, coco_array)
+        coco_array = self._get_coco_array_from_path_or_array(metadata_path, coco_array)
 
         if len(coco_array) != 1:
             msg = (
@@ -354,7 +355,7 @@ class Perimeter(BasePerimeter):
 
     def change_reference_with_coco_with_plural_references(
         self,
-        coco_path: Optional[FilePath] = None,
+        metadata_path: Optional[FilePath] = None,
         coco_array: Optional[np.ndarray] = None,
         image_root: Optional[DirectoryPath] = None,
         map_to_image_names: bool = True,
@@ -365,7 +366,7 @@ class Perimeter(BasePerimeter):
                 new_inspect_image_path=image_root / img_name if image_root else None,
             )
 
-        coco_array = self._get_coco_array_from_path_or_array(coco_path, coco_array)
+        coco_array = self._get_coco_array_from_path_or_array(metadata_path, coco_array)
 
         img_name_vs_reference_points = {
             row[3]: get_reference_point_from_array(row) for row in coco_array
@@ -559,81 +560,6 @@ class Perimeter(BasePerimeter):
         else:
             return cls(corners=corners, **kwargs)
 
-    @classmethod
-    def from_polygon_coco(
-        cls,
-        coco_path: Any,
-        image_root: Optional[DirectoryPath] = None,
-        inspect_image: Any = None,
-        single_obj_return: bool = False,
-        **perimeter_kwargs,
-    ) -> Union[dict, BasePerimeter]:
-        def get_inspect_image_name(image_id: int):
-            return coco["images"][image_id - 1]["file_name"]
-
-        def get_inspect_image_path(image_id: int):
-            return (
-                image_root / coco["images"][image_id - 1]["file_name"]
-                if image_root
-                else None
-            )
-
-        def get_semantic_label(category_id: int):
-            return coco["categories"][category_id - 1]["name"].lower()
-
-        logger.debug("Generating Perimeter from coco data")
-
-        with open(coco_path, "rb") as in_json:
-            coco = json.load(in_json)
-
-        assert not image_root or (image_root := Path(image_root)).exists()
-
-        # The coco annotations are not sorted with respect to the category IDs
-        coco["annotations"] = sorted(
-            coco["annotations"], key=lambda dictionary: dictionary["category_id"]
-        )
-
-        # We don't need to do this, but better to be on the safe side
-        coco["categories"] = sorted(
-            coco["categories"], key=lambda dictionary: dictionary["id"]
-        )
-
-        semantic_label_vs_polygon = {
-            get_semantic_label(annotation["category_id"]): cls.init_polygon(
-                _coco_polygon_annotation(annotation["segmentation"][0]),
-                inspect_image=inspect_image
-                or get_inspect_image_path(annotation["image_id"]),
-                image_name=get_inspect_image_name(annotation["image_id"]),
-                label=coco["categories"][annotation["category_id"] - 1]["name"],
-                **perimeter_kwargs,
-            )
-            for annotation in coco["annotations"]
-        }
-
-        if single_obj_return:
-            assert (
-                len(semantic_label_vs_polygon) == 1
-            ), f"More than one item in coco set, {len(semantic_label_vs_polygon)}"
-            return semantic_label_vs_polygon.popitem()[1]
-
-        return semantic_label_vs_polygon
-
-    @classmethod
-    def from_makesense_ai(
-        cls, metadata_path: FilePath, image_root: DirectoryPath, **perimeter_kwargs
-    ):
-        if metadata_path.suffix == ".csv":  # rectangle object
-            csv_data = pd.read_csv(metadata_path, header=None, index_col=0)
-            for label, row in csv_data.iterrows():
-                start = np.array(row[:2])
-                end = start + np.array(row[2:4])
-                cls.init_polygon(
-                    (start, (start[0], end[1]), end, (end[0], start[1])),
-                    inspect_image=get_inspect_image_path(annotation["image_id"]),
-                    label=label,
-                    **perimeter_kwargs,
-                )
-
     def _add_label_to_str(self, in_string):
         if self.label:
             return f"{self.label} {in_string}"
@@ -717,11 +643,11 @@ class PerimeterSet(BasePerimeter):
 
     def change_reference_with_coco(
         self,
-        coco_path: Optional[FilePath] = None,
+        metadata_path: Optional[FilePath] = None,
         coco_array: Optional[np.ndarray] = None,
         **kwargs,
     ):
-        coco_array = self._get_coco_array_from_path_or_array(coco_path, coco_array)
+        coco_array = self._get_coco_array_from_path_or_array(metadata_path, coco_array)
 
         if len(coco_array) != 1:
             msg = (
@@ -746,12 +672,12 @@ class PerimeterSet(BasePerimeter):
 
     def change_reference_with_coco_with_plural_references(
         self,
-        coco_path: Optional[FilePath] = None,
+        metadata_path: Optional[FilePath] = None,
         coco_array: Optional[np.ndarray] = None,
         map_to_image_names: bool = True,
         **kwargs,
     ):
-        coco_array = self._get_coco_array_from_path_or_array(coco_path, coco_array)
+        coco_array = self._get_coco_array_from_path_or_array(metadata_path, coco_array)
 
         perimeter_set_kwargs = {}
         for perimeter in self.perimeters:
@@ -837,17 +763,3 @@ def distance_between_two_perimeters(
     perimeter_b: Union[Perimeter, PerimeterSet],
 ):
     return np.linalg.norm(perimeter_a.centroid - perimeter_b.centroid)
-
-
-def _coco_polygon_annotation(flat_annotation_data: Sequence):
-    return [
-        (flat_annotation_data[i], flat_annotation_data[i + 1])
-        for i in range(0, len(flat_annotation_data) - 1, 2)
-    ]
-
-
-@lru_cache(50)
-def _reference_point_from_coco_path(coco_path: Optional[FilePath]):
-    coco_data = pd.read_csv(coco_path, header=None)
-    assert len(coco_data) == 1
-    return coco_data.values[0][1:3].astype(np.float64)

@@ -1,4 +1,5 @@
 import os.path
+from logging import getLogger
 from typing import Union
 
 import numpy as np
@@ -10,6 +11,9 @@ from bikipy.perimeter import ParallelogramPerimeter, TriangularPerimeter
 from bikipy.perimeter.base import Perimeter, PerimeterSet
 from bikipy.utils.misc import read_makesense_point_csv
 from bikipy.utils.typing import OptionalPathTyping, PathTyping
+
+
+logger = getLogger(__name__)
 
 
 def generate_radial_arm_maze_arm_perimeters(
@@ -26,10 +30,13 @@ def generate_radial_arm_maze_arm_perimeters(
         if not os.path.exists(center_coco_path):
             msg = f"center_coco_path does not exist, {center_coco_path}"
             raise ValueError(msg)
-        center_object = triangular_center_object or Perimeter.from_polygon_coco(
-            center_coco_path,
-            inspect_image_path=inspect_image_path,
-            single_obj_return=True,
+        center_object = (
+            triangular_center_object
+            or Perimeter.from_makesense_coco_polygon(
+                center_coco_path,
+                inspect_image_path=inspect_image_path,
+                single_obj_return=True,
+            )
         )
     else:
         msg = "Either center_object or center_coco_path has to be defined"

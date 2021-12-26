@@ -14,11 +14,11 @@ import pandas as pd
 from pydantic import DirectoryPath, Field, FilePath
 
 from bikipy.core.base_class import BikipyBaseHashable
-from bikipy.feature.motion import Motion, motion_2d_multi_indexer
 from bikipy.core.mixin import VideoMetadataMixin
+from bikipy.feature.motion import Motion, motion_2d_multi_indexer
 from bikipy.reader.deeplabcut import DeepLabCutReader
-from bikipy.utils.render_video import VideoWriter
 from bikipy.utils.misc import to_tuple
+from bikipy.utils.render_video import VideoWriter
 from bikipy.utils.store import RangeDict
 
 logger = getLogger(__name__)
@@ -250,7 +250,9 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _at_least_one_trial_class_has_features(self):
-        return any(trial_class.trial_has_feature_frame for trial_class in self._trial_classes)
+        return any(
+            trial_class.trial_has_feature_frame for trial_class in self._trial_classes
+        )
 
     def _feature_frame_columns(self, levels: Optional[int] = None) -> pd.MultiIndex:
         if self.trial_class:
@@ -351,8 +353,14 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _trial_classes(self) -> tuple:
-        return tuple(
-            sorted(self._trial_class_vs_trial_ids, key=lambda x: x.trial_sequence_index)
+        return (
+            (self.trial_class,)
+            if self.trial_class
+            else tuple(
+                sorted(
+                    self._trial_class_vs_trial_ids, key=lambda x: x.trial_sequence_index
+                )
+            )
         )
 
     @cached_property

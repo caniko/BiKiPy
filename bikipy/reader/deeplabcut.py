@@ -115,7 +115,11 @@ class DeepLabCutReader(BaseReader):
                             ).T
                         )
                     else:
-                        group_points.append(result.loc[:, pd.IndexSlice[component_name, ("x", "y")]].values)
+                        group_points.append(
+                            result.loc[
+                                :, pd.IndexSlice[component_name, ("x", "y")]
+                            ].values
+                        )
                         component_likelihood = result.loc[
                             :, [(component_name, "likelihood")]
                         ].values.T[0]
