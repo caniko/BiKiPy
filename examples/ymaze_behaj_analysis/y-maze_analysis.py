@@ -1,5 +1,6 @@
 import os
 import re
+from datetime import date
 from glob import glob
 from pathlib import Path
 
@@ -19,21 +20,23 @@ ROOT_DIR = Path(__file__).parent
 
 IMAGE_PATH = ROOT_DIR / "perimeter_images" / "phd"
 RESULT_DIR = ROOT_DIR / "results"
+ANALYSIS_DIR = RESULT_DIR / "for_analysis"
 ANNOTATION_PATH = IMAGE_PATH / "annotation"
+
+os.makedirs(ANALYSIS_DIR, exist_ok=True)
 
 # 07.06.2020
 first_annotation = generate_radial_arm_maze_arm_perimeters(
     line_csv_path=ANNOTATION_PATH / "lines.csv",
     center_coco_path=ANNOTATION_PATH / "center.json",
     reference_point_coco_path=ANNOTATION_PATH / "reference.csv",
-    inspect_image=IMAGE_PATH / "a_p1_1_before_1_phd.png",
+    inspect_image_path=IMAGE_PATH / "a_p1_1_before_1_phd.png",
     label="a_p1_1",
     # inspect=True,
 )
 
 re_referenced = first_annotation.change_reference_with_coco_with_plural_references(
-    ANNOTATION_PATH / "references.csv",
-    image_root=IMAGE_PATH,
+    IMAGE_PATH / "references.csv", image_root=IMAGE_PATH, map_to_image_names=False
 )
 
 exp_period_vs_perimeter_set = {
@@ -43,12 +46,21 @@ exp_period_vs_perimeter_set = {
     "25.11.2020 (2B)": {1: re_referenced[4].group},
 }
 
+common_trial_keyword_arguments = {
+    "corridor_meter_width": 0.08,
+}
+
+# YMazeExperiment.enable_process_pooling = False
+
 experiments = []
 for i, subdir in enumerate(os.listdir(str(DATA_DIR)), start=1):
     print(f"Reading {subdir}")
 
-    trial_name = subdir.split("_")[1]
-    trial_id_range_vs_area_set = RangeDict(exp_period_vs_perimeter_set[trial_name])
+    trial_set_date_n_id = subdir.split("_")[1]
+    trial_id_range_vs_area_set = RangeDict(exp_period_vs_perimeter_set[trial_set_date_n_id])
+
+    trial_set_date = trial_set_date_n_id.split(" ")[0]
+    day, month, year = map(int, trial_set_date.split("."))
 
     trial_id_vs_paths = {}
     for video_path in glob(str(DATA_DIR / subdir / "*.mp4")):
@@ -69,26 +81,26 @@ for i, subdir in enumerate(os.listdir(str(DATA_DIR)), start=1):
     experiments.append(
         (
             trial := YMazeExperiment(
+                point_label_for_motion_features="center_eye",
+                common_trial_keyword_arguments=common_trial_keyword_arguments,
                 trial_id_vs_keyword_arguments=trial_id_vs_exp_meta,
                 trial_id_range_vs_keyword_arguments=trial_id_range_vs_area_set,
-                point_label_for_motion_features="torso",
-                corridor_meter_width=0.08,
                 label=subdir,
                 int_id=i,
+                timestamp=date(year, month, day),
                 data_import_kwargs={
                     "init_from": "hdf",
                     "x_axis_crop_end_point": 95.0,
                     "y_axis_crop_end_point": 75.0,
                     "midpoint_groups": {
                         "center_eye": ("left_ear", "right_ear"),
-                        "torso": ("center_eye", "tail"),
+                        "torso": ("center_eye", "base_tail"),
                     },
                 },
             )
         )
     )
     # trial.plot(invalid=False)
-
 
 with pd.ExcelWriter(
     RESULT_DIR / "ymaze_analysis.xlsx",

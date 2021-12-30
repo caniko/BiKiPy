@@ -1,10 +1,10 @@
+from abc import ABC
 from functools import cached_property
 
 import numpy as np
 
-from bikipy._base_class import VideoMetadataMixin
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
-from bikipy.behaviour.mixins.meters_per_pixel.resolution_derived import (
+from bikipy.behaviour.mixin.meters_per_pixel.resolution_derived import (
     ResolutionDerivedUnitPerPixelMixin,
     ResolutionDerivedUnitPerPixelTrialMixin,
 )
@@ -16,18 +16,16 @@ from bikipy.feature.motion import (
 from bikipy.math.point_in_polygon import points_in_parallelogram
 
 
-class RectangleEnclosedExperiment(
-    ResolutionDerivedUnitPerPixelMixin, VideoMetadataMixin, BaseExperiment
-):
+class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelMixin):
     @cached_property
-    def _motion_summary_columns(self) -> list:
+    def motion_summary_columns(self) -> list:
         quadrant_labels = (
             "Upper-left Quadrant",
             "Upper-right Quadrant",
             "Lower-left Quadrant",
             "Lower-right Quadrant",
         )
-        return super()._motion_summary_columns + [
+        return super().motion_summary_columns + [
             *motion_2d_multi_indexer("Upper-left Quadrant"),
             *motion_2d_multi_indexer("Upper-right Quadrant"),
             *motion_2d_multi_indexer("Lower-left Quadrant"),
@@ -37,9 +35,7 @@ class RectangleEnclosedExperiment(
         ]
 
 
-class RectangleEnclosedTrial(
-    ResolutionDerivedUnitPerPixelTrialMixin, VideoMetadataMixin, BaseTrial
-):
+class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin, ABC):
     @cached_property
     def location_sequence_quadrant(self) -> np.ndarray:
         result = self._uint_zeros_based_on_frame_length.copy()

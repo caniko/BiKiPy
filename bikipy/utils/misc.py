@@ -29,9 +29,9 @@ def read_image(image: Any, imread_flagg: Any = None):
     return image
 
 
-def read_makesense_point_csv(coco_path: PathTyping):
+def read_makesense_point_csv(metadata_path: PathTyping):
     return pd.read_csv(
-        coco_path,
+        metadata_path,
         header=None,
         # dtype={0: str, 1: float, 2: float, 3: str, 4: int, 5: int}
         # names=["x1", "y1", "x2", "y2", "filename", "img_x", "img_y"],

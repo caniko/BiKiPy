@@ -1,8 +1,8 @@
-ref_variable,160,41,A1_training_1.png,232,216
-ref_constant,76,142,A1_training_1.png,232,216
-ref_variable,159,41,A2_training_1.png,232,216
-ref_constant,75,139,A2_training_1.png,232,216
-ref_variable,159,40,B1_training_1.png,232,216
-ref_constant,76,136,B1_training_1.png,232,216
-ref_variable,75,137,B2_training_1.png,232,216
-ref_constant,159,40,B2_training_1.png,232,216
+Variable,160,41,A1_training_1.png,232,216
+Constant,76,142,A1_training_1.png,232,216
+Variable,159,41,A2_training_1.png,232,216
+Constant,75,139,A2_training_1.png,232,216
+Variable,159,40,B1_training_1.png,232,216
+Constant,76,136,B1_training_1.png,232,216
+Variable,75,137,B2_training_1.png,232,216
+Constant,159,40,B2_training_1.png,232,216

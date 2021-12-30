@@ -16,7 +16,7 @@ def test_proximity_filter():
     )
 
     perimeter_border_normal_pixel_magnitude = 50
-    border_corners = parallelogram_perimeter_coco_test_object.border(
+    border_corners = parallelogram_perimeter_coco_test_object.perimeter(
         perimeter_border_normal_pixel_magnitude
     ).corners
 

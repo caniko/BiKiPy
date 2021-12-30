@@ -1,20 +1,27 @@
 import os.path
+from logging import getLogger
 from typing import Union
 
 import numpy as np
 from matplotlib import pyplot as plt
+from pydantic import FilePath
 
 from bikipy.math.geometry import clockwise_argsort_points
 from bikipy.perimeter import ParallelogramPerimeter, TriangularPerimeter
 from bikipy.perimeter.base import Perimeter, PerimeterSet
+from bikipy.perimeter.makesense import from_makesense_coco_polygon
 from bikipy.utils.misc import read_makesense_point_csv
 from bikipy.utils.typing import OptionalPathTyping, PathTyping
+
+
+logger = getLogger(__name__)
 
 
 def generate_radial_arm_maze_arm_perimeters(
     line_csv_path: PathTyping,
     center_coco_path: OptionalPathTyping = None,
     triangular_center_object: Union[TriangularPerimeter, None] = None,
+    inspect_image_path: FilePath = None,
     inspect: bool = False,
     **perimeter_kwargs,
 ):
@@ -24,8 +31,10 @@ def generate_radial_arm_maze_arm_perimeters(
         if not os.path.exists(center_coco_path):
             msg = f"center_coco_path does not exist, {center_coco_path}"
             raise ValueError(msg)
-        center_object = triangular_center_object or Perimeter.from_polygon_coco(
-            center_coco_path, single_obj_return=True
+        center_object = triangular_center_object or from_makesense_coco_polygon(
+            center_coco_path,
+            inspect_image_path=inspect_image_path,
+            single_obj_return=True,
         )
     else:
         msg = "Either center_object or center_coco_path has to be defined"
@@ -70,7 +79,7 @@ def generate_radial_arm_maze_arm_perimeters(
                 corners=arm_perimeter,
                 int_id=line_index + 1,
                 label=labels[line_index],
-                group_label="arm",
+                group_label="arms",
             )
         )
 
@@ -86,4 +95,6 @@ def generate_radial_arm_maze_arm_perimeters(
         plt.legend()
         plt.show()
 
-    return PerimeterSet(perimeters=perimeters, **perimeter_kwargs)
+    return PerimeterSet(
+        perimeters=perimeters, inspect_image_path=inspect_image_path, **perimeter_kwargs
+    )

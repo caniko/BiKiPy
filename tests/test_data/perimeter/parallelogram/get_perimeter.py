@@ -9,7 +9,7 @@ parallelogram_perimeter_rectangle_test_object = Perimeter.from_makesense_ai(
     ANNOTATION_DIR / "rectangle_annotation.csv", image_root=ANNOTATION_DIR
 )
 
-parallelogram_perimeter_coco_test_object = Perimeter.from_polygon_coco(
+parallelogram_perimeter_coco_test_object = Perimeter.from_makesense_coco_polygon(
     ANNOTATION_DIR / "polygon_coco_annotation.json",
     image_root=ANNOTATION_DIR,
     single_obj_return=True,

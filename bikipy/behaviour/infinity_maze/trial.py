@@ -4,8 +4,8 @@ from math import floor
 from typing import Union
 
 from bikipy.behaviour.base import BaseTrial
-from bikipy.behaviour.mixins.live import LiveTrial
-from bikipy.typing import Perimeter2D
+from bikipy.behaviour.mixin.live import LiveTrial
+from bikipy.core.typing import Perimeter2D
 
 logger = getLogger(__name__)
 

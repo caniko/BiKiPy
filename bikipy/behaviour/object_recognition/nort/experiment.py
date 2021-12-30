@@ -1,20 +1,15 @@
 from dataclasses import dataclass, field
-from functools import cached_property
 from logging import getLogger
 from typing import Optional, Union
 
-import numpy as np
-import pandas as pd
-import seaborn as sns
-from matplotlib import pyplot as plt
 from pydantic import Field
 
-from bikipy.behaviour.mixins.physical_object import PhysicalObjectExperimentMixin
+from bikipy.behaviour.mixin.physical_object import PhysicalObjectExperimentMixin
 from bikipy.behaviour.object_recognition.nort.constants import TRIAL_LABEL_VS_CLASS_NAME
 from bikipy.behaviour.square import SquareEnclosedExperiment
+from bikipy.core.typing import Perimeter2D
 from bikipy.feature.physical_object import PhysicalObjectSet
 from bikipy.perimeter.base import distance_between_two_perimeters
-from bikipy.typing import Perimeter2D
 
 logger = getLogger(__name__)
 
@@ -44,7 +39,7 @@ class NortField:
     constant_object_perimeter: Perimeter2D
     variable_object_perimeter: Perimeter2D
     novel_object_perimeter: Perimeter2D
-    novelty_constant_object_perimeter: Union[Perimeter2D, None] = field(default=None)
+    novelty_constant_object_perimeter: Optional[Perimeter2D] = None
 
     def __post_init__(self):
         if self.novelty_constant_object_perimeter:

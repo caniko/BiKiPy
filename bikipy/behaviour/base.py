@@ -1,4 +1,5 @@
 import os
+from abc import ABC, abstractmethod
 from concurrent.futures import ProcessPoolExecutor
 from copy import copy
 from functools import cached_property
@@ -14,7 +15,8 @@ import pandas as pd
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from pydantic import DirectoryPath, Field, FilePath
 
-from bikipy._base_class import BikipyBase, VideoMetadataMixin
+from bikipy.core.base_class import BikipyBaseHashable
+from bikipy.core.mixin import VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_2d_multi_indexer
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.misc import to_tuple
@@ -26,7 +28,7 @@ logger = getLogger(__name__)
 LABEL_VS_DATA_READER = {"deeplabcut": DeepLabCutReader}
 
 
-class Behaviour(BikipyBase, VideoMetadataMixin):
+class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
     data_import_kwargs: Optional[dict] = None
     data_format_label: Literal["deeplabcut"] = "deeplabcut"
 
@@ -38,12 +40,16 @@ class Behaviour(BikipyBase, VideoMetadataMixin):
 
 class BaseExperiment(Behaviour):
     point_label_for_motion_features: str
-    trial_class: Any = None
     trial_id_vs_trial_class: Optional[dict] = None
     trial_id_vs_keyword_arguments: Optional[dict] = None
     trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
     common_trial_keyword_arguments: dict = Field(default_factory=dict)
     inspection_figure_save: Union[DirectoryPath, bool] = False
+
+    trial_class: ClassVar[Any] = None
+
+    # Computational settings
+    enable_process_pooling: ClassVar[bool] = True
 
     def __getitem__(self, item: int):
         return self.trial_id_vs_trial_object[item]
@@ -73,6 +79,8 @@ class BaseExperiment(Behaviour):
             result["metric_resolution"] = self.metric_resolution
         if self.data_import_kwargs:
             result["data_import_kwargs"] = self.data_import_kwargs
+        if "animal_id" not in result:
+            result["animal_id"] = trial_id
 
         return result
 
@@ -127,15 +135,6 @@ class BaseExperiment(Behaviour):
             trials.sort(key=lambda t: t.int_id)
         return dict(sorted(result.items()))
 
-    @cached_property
-    def trial_classes_without_features(self):
-        return np.where(
-            [
-                trial_object.trial_has_feature_frame
-                for trial_object in self.animal_id_vs_trial_objects.values()
-            ]
-        )[0]
-
     @property
     def inspect(self):
         if isinstance(self.inspection_figure_save, bool):
@@ -174,6 +173,8 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def feature_summary_frame(self) -> pd.DataFrame:
+        assert self._at_least_one_trial_class_has_features
+
         data_dict = {}
         if self.enable_process_pooling:
             with ProcessPoolExecutor() as executor:
@@ -208,6 +209,55 @@ class BaseExperiment(Behaviour):
         result.index = result.index.set_names("Animal ID")
 
         return result
+
+    @cached_property
+    def motion_summary_frame(self) -> pd.DataFrame:
+        if self.enable_process_pooling:
+            with ProcessPoolExecutor() as executor:
+                rows = executor.map(attrgetter("motion_features"), self.trial_objects)
+        else:
+            rows = (trial_object.motion_features for trial_object in self.trial_objects)
+
+        result = pd.DataFrame(
+            rows,
+            columns=self.motion_summary_columns,
+            index=self._frame_index,
+        )
+
+        return pd.concat((self._trial_id_vs_animal_id_frame, result), axis=1)
+
+    @cached_property
+    def animal_id_indexed_motion_summary_frame(self) -> pd.DataFrame:
+        motion = self.motion_summary_frame.reset_index().sort_values(
+            by=[("All", "Animal ID"), ("Test ID", "")]
+        )
+
+        series = {}
+        for i, animal_id_df in motion.copy().groupby(("All", "Animal ID")):
+            new_series = animal_id_df.unstack().unstack(2)
+            new_series.columns = self._class_labels
+
+            new_series = (
+                new_series.stack().reorder_levels((2, 0, 1)).sort_index(level=0)
+            )
+
+            series[i] = new_series.drop(
+                [
+                    new_series.index[index]
+                    for index in np.where(
+                        new_series.index.get_level_values(level=2) == "Animal ID"
+                    )[0]
+                ],
+            )
+        result = pd.DataFrame.from_dict(series, orient="index")
+        result.index = result.index.set_names("Animal ID")
+        return result
+
+    @cached_property
+    def _at_least_one_trial_class_has_features(self):
+        return any(
+            trial_class.trial_has_feature_frame for trial_class in self._trial_classes
+        )
 
     def _feature_frame_columns(self, levels: Optional[int] = None) -> pd.MultiIndex:
         if self.trial_class:
@@ -245,49 +295,6 @@ class BaseExperiment(Behaviour):
                 raise ValueError(msg)
 
         return pd.MultiIndex.from_tuples(columns)
-
-    @cached_property
-    def motion_summary_frame(self) -> pd.DataFrame:
-        if self.enable_process_pooling:
-            with ProcessPoolExecutor() as executor:
-                rows = executor.map(attrgetter("motion_features"), self.trial_objects)
-        else:
-            rows = (trial_object.motion_features for trial_object in self.trial_objects)
-
-        result = pd.DataFrame(
-            rows,
-            columns=self._motion_summary_columns,
-            index=self._frame_index,
-        )
-
-        return pd.concat((self._trial_id_vs_animal_id_frame, result), axis=1)
-
-    @cached_property
-    def animal_id_indexed_motion_summary_frame(self) -> pd.DataFrame:
-        motion = self.motion_summary_frame.reset_index().sort_values(
-            by=[("All", "Animal ID"), ("Test ID", "")]
-        )
-
-        series = {}
-        for i, animal_id_df in motion.copy().groupby(("All", "Animal ID")):
-            new_series = animal_id_df.unstack().unstack(2)
-            new_series.columns = self._class_labels
-
-            new_series = (
-                new_series.stack().reorder_levels((2, 0, 1)).sort_index(level=0)
-            )
-
-            series[i] = new_series.drop(
-                [
-                    new_series.index[index]
-                    for index in np.where(
-                        new_series.index.get_level_values(level=2) == "Animal ID"
-                    )[0]
-                ],
-            )
-        result = pd.DataFrame.from_dict(series, orient="index")
-        result.index = result.index.set_names("Animal ID")
-        return result
 
     @staticmethod
     def _feature_2d_multi_indexer(feature: str, category) -> tuple:
@@ -351,8 +358,14 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _trial_classes(self) -> tuple:
-        return tuple(
-            sorted(self._trial_class_vs_trial_ids, key=lambda x: x.trial_sequence_index)
+        return (
+            (self.trial_class,)
+            if self.trial_class
+            else tuple(
+                sorted(
+                    self._trial_class_vs_trial_ids, key=lambda x: x.trial_sequence_index
+                )
+            )
         )
 
     @cached_property
@@ -360,7 +373,7 @@ class BaseExperiment(Behaviour):
         return tuple(trial_class.trial_label for trial_class in self._trial_classes)
 
     @property
-    def _motion_summary_columns(self) -> list:
+    def motion_summary_columns(self) -> list:
         return motion_2d_multi_indexer("All")
 
 
@@ -368,7 +381,7 @@ class BaseTrial(Behaviour):
     coordinate_data_path: FilePath = Field(
         description="Path to file storing coordinate data"
     )
-    animal_id: int = Field(None, description="The ID of the animal in the trial")
+    animal_id: int = Field(description="The ID of the animal in the trial")
     point_label_for_motion_features: Optional[str] = Field(
         description="Label of the node that will be used to track general animal movement"
     )
@@ -395,11 +408,6 @@ class BaseTrial(Behaviour):
     second_tolerance: ClassVar[float] = 0.35
 
     trial_has_feature_frame: ClassVar[bool] = False
-    feature_summary_column: ClassVar[list] = []
-
-    @property
-    def feature_summary_row(self) -> list:
-        raise NotImplementedError
 
     @property
     def motion_features(self) -> list:
@@ -530,10 +538,7 @@ class BaseTrial(Behaviour):
     @cached_property
     def _int_id_vs_perimeter(self) -> dict:
         self._validate_perimeters_object()
-        return {
-            i: perimeter
-            for i, perimeter in enumerate(self.perimeters.values(), start=1)
-        }
+        return {perimeter.int_id: perimeter for perimeter in self.perimeters}
 
     def _validate_perimeters_object(self) -> None:
         if not self.perimeters:
