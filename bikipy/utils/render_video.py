@@ -1,9 +1,8 @@
 # Courtesy of https://github.com/kylemcdonald/python-utils/blob/master/ffmpeg.py
-from pydantic import FilePath, Field
-from pydantic.dataclasses import dataclass
-
 import ffmpeg
 import numpy as np
+from pydantic import Field, FilePath
+from pydantic.dataclasses import dataclass
 
 
 @dataclass

@@ -1,5 +1,4 @@
 import os
-import re
 from concurrent.futures import ProcessPoolExecutor
 from copy import copy
 from functools import cached_property
@@ -9,15 +8,17 @@ from pathlib import Path, PurePath
 from typing import Any, ClassVar, Iterable, Literal, Optional, Sequence, Union
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from pydantic import DirectoryPath, Field, FilePath
 
 from bikipy._base_class import BikipyBase, VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_2d_multi_indexer
 from bikipy.reader.deeplabcut import DeepLabCutReader
-from bikipy.utils.render_video import VideoWriter
 from bikipy.utils.misc import to_tuple
+from bikipy.utils.render_video import VideoWriter
 from bikipy.utils.store import RangeDict
 
 logger = getLogger(__name__)
@@ -29,7 +30,10 @@ class Behaviour(BikipyBase, VideoMetadataMixin):
     data_import_kwargs: Optional[dict] = None
     data_format_label: Literal["deeplabcut"] = "deeplabcut"
 
-    _live: bool = False
+    _live: ClassVar[bool] = False
+
+    # Computational settings
+    enable_process_pooling: ClassVar[bool] = True
 
 
 class BaseExperiment(Behaviour):
@@ -40,9 +44,6 @@ class BaseExperiment(Behaviour):
     trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
     common_trial_keyword_arguments: dict = Field(default_factory=dict)
     inspection_figure_save: Union[DirectoryPath, bool] = False
-
-    # Computational settings
-    enable_process_pooling: ClassVar[bool] = True
 
     def __getitem__(self, item: int):
         return self.trial_id_vs_trial_object[item]
@@ -385,6 +386,7 @@ class BaseTrial(Behaviour):
     perimeters: Optional[Sequence] = None
     trial_start_perimeter: Optional[str] = None
 
+    # Class variables
     category: ClassVar[Optional[str]] = "trial"
 
     trial_sequence_index: ClassVar[Optional[int]] = None
@@ -472,17 +474,54 @@ class BaseTrial(Behaviour):
         cap = cv2.VideoCapture(str(self.video_path))
         writer = VideoWriter(
             filename=self.video_path.with_name(f"{self.video_path.stem}_analysis.mp4"),
-            fps=round(self.fps * 0.75)
+            fps=round(self.fps * 0.75),
         )
         success, frame = cap.read()
         assert success
-        i = 0
 
-        while success:
-            frame = self.process_frame(frame, i)
-            writer.add(frame)
-            success, frame = cap.read()
-            i += 1
+        i = 0
+        frames = []
+        if self.enable_process_pooling:
+            with ProcessPoolExecutor() as executor:
+                while success:
+                    frames.append(executor.submit(self._process_frame, frame, i))
+                    success, frame = cap.read()
+                    i += 1
+
+                for frame in frames:
+                    writer.add(frame)
+        else:
+            logger.debug("Process pooling is disabled, will create video with one core")
+            while success:
+                frame = self._process_frame(frame, i)
+                writer.add(frame)
+                success, frame = cap.read()
+                i += 1
+
+        writer.close()
+
+    def _process_frame(self, frame: np.ndarray, frame_index: int) -> np.ndarray:
+        return cv2.hconcat(
+            (
+                self._overlay_video_frame(frame, frame_index),
+                self._create_analysis_frame(frame_index),
+            )
+        )
+
+    def _overlay_video_frame(self, frame: np.ndarray, frame_index: int) -> np.ndarray:
+        fig, ax = plt.subplots()
+        canvas = FigureCanvas(fig)
+
+        ax.imshow(frame)
+        ax.scatter(*self.coordinates_per_frame[frame_index])
+        ax.axis("off")
+
+        canvas.draw()
+
+        return np.frombuffer(canvas.tostring_rgb(), dtype="uint8")
+
+    def _create_analysis_frame(frame_index: int) -> np.ndarray:
+        return
 
     @cached_property
     def _reader_init_kwargs(self):
