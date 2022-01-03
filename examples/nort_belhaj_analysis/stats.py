@@ -3,7 +3,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
+import seaborn as sb
 from statsmodels.multivariate.manova import MANOVA
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
@@ -74,10 +74,10 @@ with pd.ExcelWriter(
             #     writer, sheet_name=f"{parameter}_{dataset.stem}"
             # )
 
-            cat_plot = sns.catplot(
+            cat_plot = sb.catplot(
                 x="Group", y=parameter, kind="violin", inner=None, data=concatenated
             )
-            sns.swarmplot(
+            sb.swarmplot(
                 x="Group",
                 y=parameter,
                 color="k",

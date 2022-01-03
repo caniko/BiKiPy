@@ -57,7 +57,9 @@ for i, subdir in enumerate(os.listdir(str(DATA_DIR)), start=1):
     print(f"Reading {subdir}")
 
     trial_set_date_n_id = subdir.split("_")[1]
-    trial_id_range_vs_area_set = RangeDict(exp_period_vs_perimeter_set[trial_set_date_n_id])
+    trial_id_range_vs_area_set = RangeDict(
+        exp_period_vs_perimeter_set[trial_set_date_n_id]
+    )
 
     trial_set_date = trial_set_date_n_id.split(" ")[0]
     day, month, year = map(int, trial_set_date.split("."))
@@ -110,9 +112,9 @@ with pd.ExcelWriter(
     },
 ) as writer:
     for experiment in experiments:
-        experiment.animal_summary_frame.to_parquet(
+        experiment.animal_id_indexed_feature_frame.to_parquet(
             RESULT_DIR / "for_analysis" / f"{experiment.timestamp}.parquet"
         )
-        experiment.animal_summary_frame.to_excel(
+        experiment.animal_id_indexed_feature_frame.to_excel(
             writer, sheet_name=f"{experiment.timestamp}"
         )

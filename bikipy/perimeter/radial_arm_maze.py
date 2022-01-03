@@ -13,7 +13,6 @@ from bikipy.perimeter.makesense import from_makesense_coco_polygon
 from bikipy.utils.misc import read_makesense_point_csv
 from bikipy.utils.typing import OptionalPathTyping, PathTyping
 
-
 logger = getLogger(__name__)
 
 

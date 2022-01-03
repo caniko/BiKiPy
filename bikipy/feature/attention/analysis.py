@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import seaborn as sns
+import seaborn as sb
 from matplotlib import pyplot as plt
 
 
@@ -71,24 +71,24 @@ def attention_state_distribution(trials):
 
 
 def plot_attention_state_distribution(
-    attention_state_distribution, bins=13, **sns_displot_kwargs
+    attention_state_distribution, bins=13, **sb_displot_kwargs
 ):
-    sns.set_theme(style="whitegrid")
-    sns.displot(
+    sb.set_theme(style="whitegrid")
+    sb.displot(
         attention_state_distribution,
         x="Ratio",
         hue="Comparison",
         multiple="stack",
         bins=bins,
-        **sns_displot_kwargs,
+        **sb_displot_kwargs,
     )
     plt.show()
-    sns.displot(
+    sb.displot(
         attention_state_distribution,
         x="Ratio",
         hue="Comparison",
         multiple="stack",
         bins=bins,
-        **sns_displot_kwargs,
+        **sb_displot_kwargs,
     )
     plt.show()

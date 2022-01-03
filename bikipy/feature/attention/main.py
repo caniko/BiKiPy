@@ -8,7 +8,7 @@ from typing import Any, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
+import seaborn as sb
 
 from bikipy.feature.angle import inner_angle
 from bikipy.math.vector import unit_vector
@@ -67,7 +67,7 @@ def proximity_filter(
 
     if inspection_ax is not None or inspect:
         if inspection_ax is None:
-            sns.set_theme(style="darkgrid")
+            sb.set_theme(style="darkgrid")
             fig, ax = plt.subplots()
             if np.any(perimeter.inspect_image):
                 ax.imread(perimeter.inspect_image)
@@ -130,7 +130,7 @@ def gaze_direction_filter(
 
     if inspection_ax is not None or inspect:
         if inspection_ax is None:
-            sns.set_theme(style="darkgrid")
+            sb.set_theme(style="darkgrid")
             fig, ax = plt.subplots()
         else:
             ax = inspection_ax

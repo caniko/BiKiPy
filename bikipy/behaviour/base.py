@@ -1,5 +1,4 @@
 import os
-from abc import ABC, abstractmethod
 from concurrent.futures import ProcessPoolExecutor
 from copy import copy
 from functools import cached_property
@@ -12,6 +11,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sb
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from pydantic import DirectoryPath, Field, FilePath
 
@@ -163,16 +163,35 @@ class BaseExperiment(Behaviour):
 
     # DataFrame methods
 
+    def animal_id_indexed_metadata_feature_frame(
+        self,
+        metadata_frame: pd.DataFrame,
+        animal_id_column_name: str = "Animal",
+        normalize_column_levels: bool = False,
+    ) -> pd.DataFrame:
+        metadata_frame = metadata_frame.drop_duplicates(
+            animal_id_column_name
+        ).set_index(animal_id_column_name)
+
+        if normalize_column_levels:
+            metadata_frame.columns = self._feature_frame_columns(
+                levels=self.animal_id_indexed_motion_summary_frame.columns.nlevels
+            )
+
+        return pd.join(
+            (self.animal_id_indexed_feature_frame, metadata_frame), how="inner"
+        )
+
     @cached_property
-    def animal_summary_frame(self) -> pd.DataFrame:
-        df = self.feature_summary_frame
+    def animal_id_indexed_feature_frame(self) -> pd.DataFrame:
+        df = self.experiment_specific_feature_frame
         df.columns = self._feature_frame_columns(
             levels=self.animal_id_indexed_motion_summary_frame.columns.nlevels
         )
         return df.join(self.animal_id_indexed_motion_summary_frame, how="inner")
 
     @cached_property
-    def feature_summary_frame(self) -> pd.DataFrame:
+    def experiment_specific_feature_frame(self) -> pd.DataFrame:
         assert self._at_least_one_trial_class_has_features
 
         data_dict = {}
@@ -252,6 +271,112 @@ class BaseExperiment(Behaviour):
         result = pd.DataFrame.from_dict(series, orient="index")
         result.index = result.index.set_names("Animal ID")
         return result
+
+    # Statistics
+
+    def category_vs_features_plot(
+        self,
+        output_dir: DirectoryPath,
+        category: str,
+        features: list[str],
+        **metadata_feature_frame_kwargs,
+    ):
+        experiment_data_df = self.animal_id_indexed_metadata_feature_frame(
+            **metadata_feature_frame_kwargs
+        )
+
+        for parameter in features:
+            cat_plot = sb.catplot(
+                x=category,
+                y=parameter,
+                kind="violin",
+                inner=None,
+                data=experiment_data_df,
+            )
+            sb.swarmplot(
+                x=category,
+                y=parameter,
+                color="k",
+                size=3,
+                data=experiment_data_df,
+                ax=cat_plot.ax,
+            )
+            plt.savefig(output_dir / f"{self.best_id}_{parameter}.png")
+
+    def categorical_vs_feature_manova(
+        self,
+        output_path: FilePath,
+        categories: list[str],
+        features: list[str],
+        **metadata_feature_frame_kwargs,
+    ):
+        try:
+            from statsmodels.multivariate.manova import MANOVA
+        except ImportError:
+            msg = "Install bikipy[stats] module to perform MANOVA"
+            raise ImportError(msg)
+
+        categories_rhs = " + ".join(map(lambda c: f"C({c})", categories))
+        with pd.ExcelWriter(
+            output_path,
+            engine_kwargs={
+                "strings_to_formulas": False,
+                "strings_to_urls": False,
+            },
+        ) as writer:
+            for feature in features:
+                analyse = MANOVA.from_formula(
+                    f"{categories_rhs} ~ {feature}",
+                    self.animal_id_indexed_metadata_feature_frame(
+                        **metadata_feature_frame_kwargs
+                    ),
+                )
+                analyse.mv_test().summary_frame.to_excel(
+                    writer, sheet_name=f"{feature}_{self.best_id}"
+                )
+
+    def categorical_vs_feature_pairwise_tukey(
+        self,
+        output_path: FilePath,
+        categories: list[str],
+        features: list[tuple[str, ...]],
+        **metadata_feature_frame_kwargs,
+    ):
+        try:
+            from statsmodels.stats.multicomp import pairwise_tukeyhsd
+        except ImportError:
+            msg = "Install bikipy[stats] module to perform pairwise_tukeyhsd"
+            raise ImportError(msg)
+
+        experiment_data_df = self.animal_id_indexed_metadata_feature_frame(
+            **metadata_feature_frame_kwargs
+        )
+        with pd.ExcelWriter(
+            output_path,
+            engine_kwargs={
+                "strings_to_formulas": False,
+                "strings_to_urls": False,
+            },
+        ) as writer:
+            for feature in features:
+                tukey_results = []
+                for category in categories:
+                    tukey = pairwise_tukeyhsd(
+                        endog=experiment_data_df[feature],  # Data
+                        groups=experiment_data_df[category],  # Groups
+                        alpha=0.05,  # Significance
+                    )
+                    tukey_results.append(
+                        pd.DataFrame(
+                            data=tukey._results_table.data[1:],
+                            columns=tukey._results_table.data[0],
+                        )
+                    )
+                pd.concat(tukey_results).to_excel(
+                    writer, sheet_name=f"{self.best_id}_{features}"
+                )
+
+    # Private methods
 
     @cached_property
     def _at_least_one_trial_class_has_features(self):
@@ -408,6 +533,7 @@ class BaseTrial(Behaviour):
     second_tolerance: ClassVar[float] = 0.35
 
     trial_has_feature_frame: ClassVar[bool] = False
+    trial_has_video_space_for_analysis: ClassVar[bool] = False
 
     @property
     def motion_features(self) -> list:
@@ -497,7 +623,7 @@ class BaseTrial(Behaviour):
                     i += 1
 
                 for frame in frames:
-                    writer.add(frame)
+                    writer.add(frame.result())
         else:
             logger.debug("Process pooling is disabled, will create video with one core")
             while success:
@@ -509,12 +635,14 @@ class BaseTrial(Behaviour):
         writer.close()
 
     def _process_frame(self, frame: np.ndarray, frame_index: int) -> np.ndarray:
-        return cv2.hconcat(
-            (
-                self._overlay_video_frame(frame, frame_index),
-                self._create_analysis_frame(frame_index),
+        if self.trial_has_video_space_for_analysis:
+            return cv2.hconcat(
+                (
+                    self._overlay_video_frame(frame, frame_index),
+                    self._create_analysis_frame(frame_index),
+                )
             )
-        )
+        return self._overlay_video_frame(frame, frame_index)
 
     def _overlay_video_frame(self, frame: np.ndarray, frame_index: int) -> np.ndarray:
         fig, ax = plt.subplots()
@@ -528,8 +656,8 @@ class BaseTrial(Behaviour):
 
         return np.frombuffer(canvas.tostring_rgb(), dtype="uint8")
 
-    def _create_analysis_frame(frame_index: int) -> np.ndarray:
-        return
+    def _create_analysis_frame(self, frame_index: int) -> np.ndarray:
+        raise NotImplemented("The analysis space is a work in progress")
 
     @cached_property
     def _reader_init_kwargs(self):

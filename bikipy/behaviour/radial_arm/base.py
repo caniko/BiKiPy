@@ -48,7 +48,7 @@ class RadialMazeBase(BikipyBaseHashable):
     @classmethod
     @property
     def _arm_labels(cls):
-        return string.ascii_uppercase[:cls.number_of_arms]
+        return string.ascii_uppercase[: cls.number_of_arms]
 
     @classmethod
     @property

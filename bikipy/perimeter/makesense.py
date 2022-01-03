@@ -2,11 +2,11 @@ import json
 from functools import lru_cache
 from logging import getLogger
 from pathlib import Path
-from typing import Optional, Any, Sequence
+from typing import Any, Optional, Sequence
 
 import numpy as np
 import pandas as pd
-from pydantic import FilePath, DirectoryPath
+from pydantic import DirectoryPath, FilePath
 
 from bikipy.perimeter.base import Perimeter
 from bikipy.perimeter.utils import reference_point_from_coco_path

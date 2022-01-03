@@ -135,9 +135,9 @@ with pd.ExcelWriter(
     },
 ) as writer:
     for experiment in experiments:
-        experiment.animal_summary_frame.to_parquet(
+        experiment.animal_id_indexed_feature_frame.to_parquet(
             RESULT_DIR / "for_analysis" / f"{experiment.timestamp}.parquet"
         )
-        experiment.animal_summary_frame.to_excel(
+        experiment.animal_id_indexed_feature_frame.to_excel(
             writer, sheet_name=f"{experiment.timestamp}"
         )
