@@ -1,12 +1,12 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from logging import getLogger
-from typing import Optional, Union
+from typing import Optional
 
 from pydantic import Field
 
 from bikipy.behaviour.mixin.physical_object import PhysicalObjectExperimentMixin
 from bikipy.behaviour.object_recognition.nort.constants import TRIAL_LABEL_VS_CLASS_NAME
-from bikipy.behaviour.square import SquareEnclosedExperiment
+from bikipy.behaviour.rectangle.square import SquareEnclosedExperiment
 from bikipy.core.typing import Perimeter2D
 from bikipy.feature.physical_object import PhysicalObjectSet
 from bikipy.perimeter.base import distance_between_two_perimeters

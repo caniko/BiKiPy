@@ -11,10 +11,10 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sb
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from pydantic import DirectoryPath, Field, FilePath
 
+from bikipy.behaviour.summary import ExperimentSummary
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.mixin import VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_2d_multi_indexer
@@ -50,6 +50,9 @@ class BaseExperiment(Behaviour):
 
     # Computational settings
     enable_process_pooling: ClassVar[bool] = True
+
+    def __add__(self, other):
+        return self.join(other)
 
     def __getitem__(self, item: int):
         return self.trial_id_vs_trial_object[item]
@@ -168,7 +171,8 @@ class BaseExperiment(Behaviour):
         metadata_frame: pd.DataFrame,
         animal_id_column_name: str = "Animal",
         normalize_column_levels: bool = False,
-    ) -> pd.DataFrame:
+        root_dir_path: Optional[DirectoryPath] = None
+    ) -> ExperimentSummary:
         metadata_frame = metadata_frame.drop_duplicates(
             animal_id_column_name
         ).set_index(animal_id_column_name)
@@ -178,8 +182,12 @@ class BaseExperiment(Behaviour):
                 levels=self.animal_id_indexed_motion_summary_frame.columns.nlevels
             )
 
-        return pd.join(
-            (self.animal_id_indexed_feature_frame, metadata_frame), how="inner"
+        return ExperimentSummary(
+            df=pd.join(
+                (self.animal_id_indexed_feature_frame, metadata_frame), how="inner"
+            ),
+            identifier=self.best_id,
+            root_dir_path=root_dir_path
         )
 
     @cached_property
@@ -271,110 +279,6 @@ class BaseExperiment(Behaviour):
         result = pd.DataFrame.from_dict(series, orient="index")
         result.index = result.index.set_names("Animal ID")
         return result
-
-    # Statistics
-
-    def category_vs_features_plot(
-        self,
-        output_dir: DirectoryPath,
-        category: str,
-        features: list[str],
-        **metadata_feature_frame_kwargs,
-    ):
-        experiment_data_df = self.animal_id_indexed_metadata_feature_frame(
-            **metadata_feature_frame_kwargs
-        )
-
-        for parameter in features:
-            cat_plot = sb.catplot(
-                x=category,
-                y=parameter,
-                kind="violin",
-                inner=None,
-                data=experiment_data_df,
-            )
-            sb.swarmplot(
-                x=category,
-                y=parameter,
-                color="k",
-                size=3,
-                data=experiment_data_df,
-                ax=cat_plot.ax,
-            )
-            plt.savefig(output_dir / f"{self.best_id}_{parameter}.png")
-
-    def categorical_vs_feature_manova(
-        self,
-        output_path: FilePath,
-        categories: list[str],
-        features: list[str],
-        **metadata_feature_frame_kwargs,
-    ):
-        try:
-            from statsmodels.multivariate.manova import MANOVA
-        except ImportError:
-            msg = "Install bikipy[stats] module to perform MANOVA"
-            raise ImportError(msg)
-
-        categories_rhs = " + ".join(map(lambda c: f"C({c})", categories))
-        with pd.ExcelWriter(
-            output_path,
-            engine_kwargs={
-                "strings_to_formulas": False,
-                "strings_to_urls": False,
-            },
-        ) as writer:
-            for feature in features:
-                analyse = MANOVA.from_formula(
-                    f"{categories_rhs} ~ {feature}",
-                    self.animal_id_indexed_metadata_feature_frame(
-                        **metadata_feature_frame_kwargs
-                    ),
-                )
-                analyse.mv_test().summary_frame.to_excel(
-                    writer, sheet_name=f"{feature}_{self.best_id}"
-                )
-
-    def categorical_vs_feature_pairwise_tukey(
-        self,
-        output_path: FilePath,
-        categories: list[str],
-        features: list[tuple[str, ...]],
-        **metadata_feature_frame_kwargs,
-    ):
-        try:
-            from statsmodels.stats.multicomp import pairwise_tukeyhsd
-        except ImportError:
-            msg = "Install bikipy[stats] module to perform pairwise_tukeyhsd"
-            raise ImportError(msg)
-
-        experiment_data_df = self.animal_id_indexed_metadata_feature_frame(
-            **metadata_feature_frame_kwargs
-        )
-        with pd.ExcelWriter(
-            output_path,
-            engine_kwargs={
-                "strings_to_formulas": False,
-                "strings_to_urls": False,
-            },
-        ) as writer:
-            for feature in features:
-                tukey_results = []
-                for category in categories:
-                    tukey = pairwise_tukeyhsd(
-                        endog=experiment_data_df[feature],  # Data
-                        groups=experiment_data_df[category],  # Groups
-                        alpha=0.05,  # Significance
-                    )
-                    tukey_results.append(
-                        pd.DataFrame(
-                            data=tukey._results_table.data[1:],
-                            columns=tukey._results_table.data[0],
-                        )
-                    )
-                pd.concat(tukey_results).to_excel(
-                    writer, sheet_name=f"{self.best_id}_{features}"
-                )
 
     # Private methods
 
@@ -496,6 +400,16 @@ class BaseExperiment(Behaviour):
     @cached_property
     def _class_labels(self):
         return tuple(trial_class.trial_label for trial_class in self._trial_classes)
+
+    def _difference_warning(self, other, attribute: str):
+        if (self_attr := getattr(self, attribute)) == (
+            other_attr := getattr(other, attribute)
+        ):
+            return
+        logger.warning(
+            f"Joining experiments {self.best_id} & {other.best_id}: "
+            f"{self_attr} != {other_attr}"
+        )
 
     @property
     def motion_summary_columns(self) -> list:

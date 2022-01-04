@@ -3,13 +3,12 @@ from logging import getLogger
 from typing import Any, Optional
 
 import numpy as np
-import pandas as pd
 from matplotlib import pyplot as plt
 from pydantic import Field
 
-from bikipy.behaviour.rectangle import (
-    RectangleEnclosedExperiment,
+from bikipy.behaviour.rectangle.rectangle import (
     RectangleEnclosedTrial,
+    RectangleEnclosedExperiment,
 )
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.motion import (

@@ -4,13 +4,12 @@ from logging import getLogger
 from typing import ClassVar, Optional
 
 import pandas as pd
-from pydantic import BaseModel
 
 from bikipy.behaviour.mixin.base import FeaturefullTrialMixin
 from bikipy.behaviour.mixin.misc import OpenFieldTrialMixin
 from bikipy.behaviour.mixin.physical_object import PhysicalObjectTrialMixin
 from bikipy.behaviour.object_recognition.nort.experiment import NortField
-from bikipy.behaviour.square import SquareEnclosedTrial
+from bikipy.behaviour.rectangle.square import SquareEnclosedTrial
 
 logger = getLogger(__name__)
 

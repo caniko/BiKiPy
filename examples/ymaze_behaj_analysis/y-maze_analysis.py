@@ -53,32 +53,35 @@ common_trial_keyword_arguments = {
 # YMazeExperiment.enable_process_pooling = False
 
 experiments = []
-for i, subdir in enumerate(os.listdir(str(DATA_DIR)), start=1):
-    print(f"Reading {subdir}")
+for round_id, data_dirs in round_dirs.items():
+    for data_dir in data_dirs:
+        print(f"Reading {data_dir}")
 
-    trial_set_date_n_id = subdir.split("_")[1]
-    trial_id_range_vs_area_set = RangeDict(
-        exp_period_vs_perimeter_set[trial_set_date_n_id]
-    )
+        trial_set_date_n_id = data_dir.split("_")[1]
+        trial_id_range_vs_area_set = RangeDict(
+            exp_period_vs_perimeter_set[trial_set_date_n_id]
+        )
 
-    trial_set_date = trial_set_date_n_id.split(" ")[0]
-    day, month, year = map(int, trial_set_date.split("."))
+        trial_set_date = trial_set_date_n_id.split(" ")[0]
+        day, month, year = map(int, trial_set_date.split("."))
+        date_obj = date(year, month, day)
 
-    trial_id_vs_paths = {}
-    for video_path in glob(str(DATA_DIR / subdir / "*.mp4")):
-        trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(video_path).stem)[0])
-        trial_id_vs_paths[trial_id] = {"video": video_path}
-    for data_path in glob(str(DATA_DIR / subdir / "*.h5")):
-        trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(data_path).stem)[0])
-        trial_id_vs_paths[trial_id]["data"] = data_path
+        trial_id_vs_paths = {}
+        for video_path in glob(str(data_dir / "*.mp4")):
+            trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(video_path).stem)[0])
+            trial_id_vs_paths[trial_id] = {"video": video_path}
+        for data_path in glob(str(data_dir / "*.h5")):
+            trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(data_path).stem)[0])
+            trial_id_vs_paths[trial_id]["data"] = data_path
 
-    trial_id_vs_exp_meta = {}
-    for trial_id, paths in trial_id_vs_paths.items():
-        trial_id_vs_exp_meta[trial_id] = {
-            "coordinate_data_path": paths["data"],
-            "video_path": paths["video"],
-            "inspect": False,
-        }
+        trial_id_vs_exp_meta = {}
+        for trial_id, paths in trial_id_vs_paths.items():
+            trial_id_vs_exp_meta[trial_id] = {
+                "coordinate_data_path": paths["data"],
+                "video_path": paths["video"],
+                "inspect": False,
+                "timestamp": date_obj
+            }
 
     experiments.append(
         (
@@ -87,9 +90,7 @@ for i, subdir in enumerate(os.listdir(str(DATA_DIR)), start=1):
                 common_trial_keyword_arguments=common_trial_keyword_arguments,
                 trial_id_vs_keyword_arguments=trial_id_vs_exp_meta,
                 trial_id_range_vs_keyword_arguments=trial_id_range_vs_area_set,
-                label=subdir,
-                int_id=i,
-                timestamp=date(year, month, day),
+                int_id=round_id,
                 data_import_kwargs={
                     "init_from": "hdf",
                     "x_axis_crop_end_point": 95.0,

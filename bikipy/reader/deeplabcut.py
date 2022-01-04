@@ -171,16 +171,16 @@ class DeepLabCutReader(BaseReader):
         ).T[0]
 
 
-def convert_hdf_to_parquet(data_paths, delete_hdf: bool = False):
+def convert_hdf_to_parquet(data_path, delete_hdf: bool = False):
     """
     Convert deeplabcut hdf files to parquet format, by replacing the filename suffix
     with parquet. Thereby, keeping the original path.
 
-    :param data_paths:
+    :param data_path:
     :param delete_hdf:
     :return:
     """
-    data_path = Path(data_paths)
+    data_path = Path(data_path)
     parquet_path = data_path.with_suffix(".parquet")
 
     if not parquet_path.exists():
