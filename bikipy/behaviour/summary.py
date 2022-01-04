@@ -2,9 +2,9 @@ import os
 from typing import Optional
 
 import pandas as pd
-from matplotlib import pyplot as plt
 import seaborn as sb
-from pydantic import DirectoryPath, BaseModel
+from matplotlib import pyplot as plt
+from pydantic import BaseModel, DirectoryPath
 
 
 class ExperimentSummary(BaseModel):

@@ -44,6 +44,9 @@ class BaseExperiment(Behaviour):
     trial_id_vs_keyword_arguments: Optional[dict] = None
     trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
     common_trial_keyword_arguments: dict = Field(default_factory=dict)
+    stage: Optional[str] = Field(
+        None, description="The semantic stage of the experiment"
+    )
     inspection_figure_save: Union[DirectoryPath, bool] = False
 
     trial_class: ClassVar[Any] = None
@@ -171,7 +174,7 @@ class BaseExperiment(Behaviour):
         metadata_frame: pd.DataFrame,
         animal_id_column_name: str = "Animal",
         normalize_column_levels: bool = False,
-        root_dir_path: Optional[DirectoryPath] = None
+        root_dir_path: Optional[DirectoryPath] = None,
     ) -> ExperimentSummary:
         metadata_frame = metadata_frame.drop_duplicates(
             animal_id_column_name
@@ -182,12 +185,13 @@ class BaseExperiment(Behaviour):
                 levels=self.animal_id_indexed_motion_summary_frame.columns.nlevels
             )
 
+        # TODO: Fix me, no join!!!
         return ExperimentSummary(
             df=pd.join(
                 (self.animal_id_indexed_feature_frame, metadata_frame), how="inner"
             ),
             identifier=self.best_id,
-            root_dir_path=root_dir_path
+            root_dir_path=root_dir_path,
         )
 
     @cached_property
@@ -302,6 +306,11 @@ class BaseExperiment(Behaviour):
             )
         else:
             raise ValueError
+
+        if self.stage:
+            columns = list(
+                pd.MultiIndex.from_product([self.stage], columns)
+            )
 
         if levels:
             column_array = np.array(columns)
@@ -444,7 +453,7 @@ class BaseTrial(Behaviour):
     trial_sequence_index: ClassVar[Optional[int]] = None
     trial_label: ClassVar[str] = ""
 
-    second_tolerance: ClassVar[float] = 0.35
+    second_tolerance: ClassVar[float] = 0.15
 
     trial_has_feature_frame: ClassVar[bool] = False
     trial_has_video_space_for_analysis: ClassVar[bool] = False

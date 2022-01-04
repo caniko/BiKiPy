@@ -7,6 +7,7 @@ from math import ceil
 from typing import ClassVar, Optional
 
 import numpy as np
+import pandas as pd
 from pydantic import validator
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial

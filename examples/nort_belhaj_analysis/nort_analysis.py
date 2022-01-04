@@ -23,6 +23,7 @@ from bikipy.plugins.belhaj import (
 
 DEEPLABCUT_DIR = Path("/mnt/md0/Projects/Neuroscience/Imen/data/nort")
 
+
 WORKING_DIR = Path(".").resolve()
 DATA_DIR = WORKING_DIR / "data"
 IMAGE_DIR = DATA_DIR / "area_images"
