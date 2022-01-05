@@ -171,8 +171,7 @@ class BaseExperiment(Behaviour):
         metadata_frame: pd.DataFrame,
         animal_id_column_name: str = "Animal",
         normalize_column_levels: bool = False,
-        root_dir_path: Optional[DirectoryPath] = None
-    ) -> ExperimentSummary:
+    ) -> pd.DataFrame:
         metadata_frame = metadata_frame.drop_duplicates(
             animal_id_column_name
         ).set_index(animal_id_column_name)
@@ -182,13 +181,7 @@ class BaseExperiment(Behaviour):
                 levels=self.animal_id_indexed_motion_summary_frame.columns.nlevels
             )
 
-        return ExperimentSummary(
-            df=pd.join(
-                (self.animal_id_indexed_feature_frame, metadata_frame), how="inner"
-            ),
-            identifier=self.best_id,
-            root_dir_path=root_dir_path
-        )
+        return self.animal_id_indexed_feature_frame.join(metadata_frame, how="inner")
 
     @cached_property
     def animal_id_indexed_feature_frame(self) -> pd.DataFrame:

@@ -32,7 +32,7 @@ Common analytical methods are available in the classes located in :code:`behavio
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
    behaviour/index.rst

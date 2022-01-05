@@ -8,7 +8,7 @@ import pandas as pd
 
 # User defined
 from bikipy.behaviour.radial_arm.y_maze import YMazeExperiment
-from bikipy.perimeter.radial_arm_maze import generate_radial_arm_maze_arm_perimeters
+from bikipy.perimeter.radial_maze import generate_radial_maze_perimeters
 from bikipy.utils.store import RangeDict
 
 DATASET_LABEL = "phd"
@@ -26,7 +26,7 @@ ANNOTATION_PATH = IMAGE_PATH / "annotation"
 os.makedirs(ANALYSIS_DIR, exist_ok=True)
 
 # 07.06.2020
-first_annotation = generate_radial_arm_maze_arm_perimeters(
+first_annotation = generate_radial_maze_perimeters(
     line_csv_path=ANNOTATION_PATH / "lines.csv",
     center_coco_path=ANNOTATION_PATH / "center.json",
     reference_point_coco_path=ANNOTATION_PATH / "reference.csv",
@@ -80,7 +80,7 @@ for round_id, data_dirs in round_dirs.items():
                 "coordinate_data_path": paths["data"],
                 "video_path": paths["video"],
                 "inspect": False,
-                "timestamp": date_obj
+                "timestamp": date_obj,
             }
 
     experiments.append(

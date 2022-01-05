@@ -31,6 +31,8 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     # "autoapi.extension"
 ]
+autosectionlabel_prefix_document = True
+autosectionlabel_maxdepth = 3
 
 # autoapi_dirs = ["../../bikipy"]
 

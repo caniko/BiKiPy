@@ -7,7 +7,6 @@ from typing import Iterable, Union
 import numpy as np
 import pandas as pd
 
-from bikipy.feature.attention import attention_filter
 from bikipy.math.calculus import absolute_derivative
 from bikipy.utils.typing import NDArray
 

@@ -7,8 +7,8 @@ from matplotlib import pyplot as plt
 from pydantic import Field
 
 from bikipy.behaviour.rectangle.rectangle import (
-    RectangleEnclosedTrial,
     RectangleEnclosedExperiment,
+    RectangleEnclosedTrial,
 )
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.motion import (

@@ -50,7 +50,7 @@ def proximity_filter(
     inside_perimeter_border = np.asarray(inside_perimeter_border)
     outside_perimeter = np.asarray(outside_perimeter)
 
-    perimeter_border = perimeter.perimeter(
+    perimeter_border = perimeter.expand(
         perimeter_border_normal_pixel_magnitude=perimeter_border_normal_pixel_magnitude
     )
 
@@ -120,11 +120,12 @@ def gaze_direction_filter(
     ), np.asarray(gaze_start_point_label)
     eye_to_nose_vector = gaze_travel_direction_point_label - gaze_start_point_label
 
-    _closest_distance, closest_vectors = perimeter.closest_sides_to_points(
-        gaze_start_point_label
-    )
+    (
+        _closest_corner_start_point,
+        closest_corner_vectors,
+    ) = perimeter.closest_sides_to_coordinates(gaze_start_point_label)
 
-    inner_angles = inner_angle(closest_vectors, eye_to_nose_vector)
+    inner_angles = inner_angle(closest_corner_vectors, eye_to_nose_vector)
 
     result = inner_angles <= max_radians
 
@@ -156,14 +157,14 @@ def gaze_direction_filter(
         if not ax:
             plt.show()
 
-    return result, closest_vectors
+    return result, closest_corner_vectors
 
 
-def attention_filter(
+def tolerance_filter(
     boolean_index: Sequence[bool],
     fps: float,
     minimum_seconds_attention: float,
-    distraction_tolerance_seconds: float = 0.5,
+    maximum_seconds_distraction: float = 0.5,
 ) -> np.ndarray:
     """
     Filters boolean_index with respect to attention. The filter tolerates distraction, and requires
@@ -173,7 +174,7 @@ def attention_filter(
     :param fps: Frames per second (fps) of the recording used to generate the data in boolean_index
     :param minimum_seconds_attention: Minimum number of seconds that the sequence has to be True
     for it to be defined as an attention sequence. Filtered sequences will be converted to False.
-    :param distraction_tolerance_seconds:
+    :param maximum_seconds_distraction:
     :type boolean_index: np.ndarray
     :type fps: float
     :type minimum_seconds_attention: float
@@ -185,7 +186,7 @@ def attention_filter(
 
     fps = float(fps)
 
-    distraction_tolerance = round(distraction_tolerance_seconds * fps)
+    distraction_tolerance = round(maximum_seconds_distraction * fps)
     minimum_frames_attention = round(minimum_seconds_attention * fps)
 
     length = boolean_index.shape[0]
@@ -244,10 +245,10 @@ def attention_filter(
     return attention_boolean_index
 
 
-def polygonal_perimeter_attention(
+def perimeter_attention(
     perimeter: Perimeter,
-    gaze_start_point_label: Sequence[Sequence[float]],
-    gaze_travel_direction_point_label: Sequence[Sequence[float]],
+    eye_center: Sequence[Sequence[float]],
+    nose: Sequence[Sequence[float]],
     fps: float,
     perimeter_border_normal_pixel_magnitude: float,
     maximum_radians_inter_gaze_perimeter: float = 0.25 * np.pi,
@@ -259,16 +260,17 @@ def polygonal_perimeter_attention(
     Parameters
     ----------
     perimeter: Perimeter
-    gaze_start_point_label: Sequence
+    eye_center: Sequence
         Points across time defining the position between the eyes of the animal
-    gaze_travel_direction_point_label: Sequence
-        Points across time defining the position of the animal gaze_travel_direction_point_label
+    nose: Sequence
+        Points across time defining the position of the animal nose
     fps: float
         Frames per second (fps) of the video the data was collected from
     perimeter_border_normal_pixel_magnitude
         The magnitude of the normal between the perimeter and the perimeter given in pixels
     maximum_radians_inter_gaze_perimeter: float
-        Maximum radians between the gaze vector (eye_centre to gaze_travel_direction_point_label) and perimeter tangent
+        Maximum radians between the gaze vector (eye_centre to nose) and perimeter tangent
+    minimum_seconds_attention
     inspect: bool
         If True, will generate and show and inspection figure for the inspection of
         each filter
@@ -277,15 +279,7 @@ def polygonal_perimeter_attention(
     -------
 
     """
-    (
-        gaze_start_point_label,
-        gaze_travel_direction_point_label,
-        gaze_start_point_label,
-    ) = (
-        np.asarray(gaze_start_point_label),
-        np.asarray(gaze_travel_direction_point_label),
-        np.asarray(gaze_start_point_label),
-    )
+    eye_center, nose = np.asarray(eye_center), np.asarray(nose)
     fps = float(fps)
     maximum_radians_inter_gaze_perimeter = float(maximum_radians_inter_gaze_perimeter)
 
@@ -311,16 +305,16 @@ def polygonal_perimeter_attention(
         proximity_outside_perimeter_boolean_index,
     ) = proximity_filter(
         perimeter,
-        gaze_travel_direction_point_label,
-        gaze_start_point_label,
+        nose,
+        eye_center,
         perimeter_border_normal_pixel_magnitude,
         **loc_filter_kwargs,
     )
 
     gaze_filtered, gaze_closest_vectors = gaze_direction_filter(
         perimeter,
-        gaze_travel_direction_point_label,
-        gaze_start_point_label,
+        nose,
+        eye_center,
         maximum_radians_inter_gaze_perimeter,
         **gaze_filter_kwargs,
     )
@@ -331,7 +325,7 @@ def polygonal_perimeter_attention(
         np.zeros_like(semi_true_observations, dtype=bool)
         if np.sum(semi_true_observations) < fps
         else np.array(
-            attention_filter(semi_true_observations, fps, minimum_seconds_attention)
+            tolerance_filter(semi_true_observations, fps, minimum_seconds_attention)
         )
     )
 
@@ -347,13 +341,13 @@ def polygonal_perimeter_attention(
 
         axes[1][0].set_title("proximity_filtered & gaze_filtered")
         axes[1][0].scatter(
-            *gaze_travel_direction_point_label[semi_true_observations].T,
+            *nose[semi_true_observations].T,
             alpha=SCATTER_ALPHA,
         )
 
         axes[1][1].set_title("BasePerimeter observation")
         axes[1][1].scatter(
-            *gaze_travel_direction_point_label[perimeter_observation].T,
+            *nose[perimeter_observation].T,
             alpha=SCATTER_ALPHA,
         )
 

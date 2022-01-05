@@ -149,7 +149,3 @@ def expand_parallelogram(
 
     result = (off_down_left, off_down_right, off_up_right, off_up_left)
     return np.array(result) if as_array else result
-
-
-if __name__ == "__main__":
-    clockwise_sort_points(((1, 1), (-1, 1), (-1, -1), (1, -1)), inspect=True)

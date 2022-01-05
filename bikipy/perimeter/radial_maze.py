@@ -16,7 +16,7 @@ from bikipy.utils.typing import OptionalPathTyping, PathTyping
 logger = getLogger(__name__)
 
 
-def generate_radial_arm_maze_arm_perimeters(
+def generate_radial_maze_perimeters(
     line_csv_path: PathTyping,
     center_coco_path: OptionalPathTyping = None,
     triangular_center_object: Union[TriangularPerimeter, None] = None,

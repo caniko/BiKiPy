@@ -11,7 +11,7 @@ from pydantic.dataclasses import dataclass as pydantic_dataclass
 
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.typing import Perimeter2D
-from bikipy.feature.attention.main import polygonal_perimeter_attention
+from bikipy.feature.attention.main import perimeter_attention
 
 logger = getLogger(__name__)
 
@@ -85,7 +85,7 @@ class PhysicalObject:
 
     @cached_property
     def _perimeter_attention_data(self) -> tuple:
-        return polygonal_perimeter_attention(
+        return perimeter_attention(
             self.perimeter,
             self._gaze_travel_direction_point,
             self.reader[self.gaze_start_point_label],

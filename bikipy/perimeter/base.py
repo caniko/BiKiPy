@@ -13,7 +13,7 @@ from shapely.geometry import Point, Polygon
 
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.math.geometry import clockwise_sort_points, expand_bikipy_perimeter
-from bikipy.math.vector import point_to_line_segment_distance
+from bikipy.math.vector import normal_from_line_to_point, point_to_line_segment_distance
 from bikipy.perimeter.utils import reference_point_from_coco_path
 from bikipy.utils.misc import (
     get_reference_point_from_array,
@@ -74,16 +74,16 @@ class BasePerimeter(BikipyBaseHashable):
     def reference_point(self, value):
         self.reference_point_array = np.asarray(value)
 
-    def plot(self, ax: Any = None, points: Optional[Sequence] = None):
+    def plot(self, ax: Any = None, coordinates: Optional[Sequence] = None):
         """
-        Plot the perimeter using matplotlib. Optionally, plot points alongside the perimeter
+        Plot the perimeter using matplotlib. Optionally, plot coordinates alongside the perimeter
 
         Parameters
         ----------
         ax
             Axes object that the plot will be saved in. A new instance of Axes will be used
             if object returns False.
-        points
+        coordinates
             Sequence of 2D coordinates that will be plotted alongside the perimeter
 
         Returns
@@ -96,14 +96,14 @@ class BasePerimeter(BikipyBaseHashable):
         if self.inspect_image is not None:
             ax.imshow(self.inspect_image)
 
-        if points is not None:
-            points = np.asarray(points)
+        if coordinates is not None:
+            coordinates = np.asarray(coordinates)
 
             histogram, _x_edges, _y_edges = np.histogram2d(
-                *points[np.logical_and(*np.isfinite(points).T)].T, bins=60
+                *coordinates[np.logical_and(*np.isfinite(coordinates).T)].T, bins=60
             )
             ax.imshow(histogram.T, interpolation="sinc")
-            ax.plot(*points.T, ".r-")
+            ax.plot(*coordinates.T, ".r-")
 
         ax.set_title(self.best_id)
 
@@ -151,7 +151,7 @@ class Perimeter(BasePerimeter):
     def __repr__(self):
         return super().__repr__() + f"\n\tcorners={self.corners}"
 
-    def perimeter(self, perimeter_border_normal_pixel_magnitude: Union[float, int]):
+    def expand(self, perimeter_border_normal_pixel_magnitude: Union[float, int]):
         """
         :param perimeter_border_normal_pixel_magnitude: The magnitude of the normal between
             the perimeter and the perimeter given in pixels
@@ -172,10 +172,10 @@ class Perimeter(BasePerimeter):
 
         return border_obj
 
-    def closest_sides_to_points(self, points: Sequence):
+    def closest_sides_to_coordinates(self, coordinates: Sequence):
         distance_sets = np.array(
             [
-                point_to_line_segment_distance(points, line_segment_pair)
+                point_to_line_segment_distance(coordinates, line_segment_pair)
                 for line_segment_pair in self.line_segment_pairs
             ]
         ).T
@@ -184,11 +184,30 @@ class Perimeter(BasePerimeter):
         closest_distance = distance_sets[closest_boolean_index]
 
         closest_index = np.where(closest_boolean_index)[1]
-        closest_vectors = np.zeros((closest_distance.shape[0], 2), dtype=np.float32)
-        for i in range(self.number_of_corners):
-            closest_vectors[closest_index == i] = self.perimeter_vectors[i]
 
-        return closest_distance, closest_vectors
+        closest_corner_start_point = np.zeros(
+            (closest_distance.shape[0], 2), dtype=np.float32
+        )
+        closest_corner_vectors = np.zeros(
+            (closest_distance.shape[0], 2), dtype=np.float32
+        )
+        for i in range(self.number_of_corners):
+            closest_corner_start_point[closest_index == i] = self.corners[i]
+            closest_corner_vectors[
+                closest_index == i
+            ] = self.perimeter_corner_to_next_clockwise_corner_vectors[i]
+
+        return closest_corner_start_point, closest_corner_vectors
+
+    def closest_perimeter_points_to_coordinates(self, coordinates: Sequence):
+        (
+            closest_corner_start_point,
+            closest_corner_vectors,
+        ) = self.closest_sides_to_coordinates(coordinates)
+
+        return normal_from_line_to_point(
+            closest_corner_vectors, closest_corner_start_point, coordinates
+        )
 
     def confined_coordinates(
         self, coordinates: Sequence, inspect: bool = False, ax: Any = None
@@ -492,12 +511,14 @@ class Perimeter(BasePerimeter):
         return len(self.corners)
 
     @cached_property
-    def perimeter_vectors(self):
+    def perimeter_corner_to_next_clockwise_corner_vectors(self):
         return np.diff(self.corners[::-1], prepend=[self.corners[0]], axis=0)[::-1]
 
     @cached_property
     def perimeter_lengths(self):
-        return np.linalg.norm(self.perimeter_vectors, axis=1)
+        return np.linalg.norm(
+            self.perimeter_corner_to_next_clockwise_corner_vectors, axis=1
+        )
 
     @cached_property
     def mean_length(self):

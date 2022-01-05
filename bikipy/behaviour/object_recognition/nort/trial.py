@@ -5,7 +5,7 @@ from typing import ClassVar, Optional
 
 import pandas as pd
 
-from bikipy.behaviour.mixin.base import FeaturefullTrialMixin
+from bikipy.behaviour.mixin.features.base import FeaturefullTrialMixin
 from bikipy.behaviour.mixin.misc import OpenFieldTrialMixin
 from bikipy.behaviour.mixin.physical_object import PhysicalObjectTrialMixin
 from bikipy.behaviour.object_recognition.nort.experiment import NortField
