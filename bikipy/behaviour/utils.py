@@ -61,7 +61,7 @@ def reduce_repeating_sequences(
             ):
                 if (
                     np.mean(repeating_sequence[i : i + frame_tolerance] == new_element)
-                    >= 0.6
+                    > 0.5
                 ):
                     if connector_element and reduced_sequence[-1] != connector_element:
                         reduced_sequence.append(connector_element)
