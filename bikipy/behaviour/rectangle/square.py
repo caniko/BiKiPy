@@ -1,9 +1,8 @@
-from functools import cached_property, cache
+from functools import cached_property
 from logging import getLogger
 from typing import Any, Optional
 
 import numpy as np
-from skg import ngauss_fit
 from matplotlib import pyplot as plt
 from pydantic import Field
 
@@ -48,10 +47,6 @@ class SquareEnclosedTrial(RectangleEnclosedTrial):
         description="Length of the square box signifying periphery and inner area "
         "of the square box"
     )
-
-    @cached_property
-    def gaussian_center_to_periphery_score(self):
-
 
     @cached_property
     def center_square_corners(self):
@@ -224,15 +219,3 @@ class SquareEnclosedTrial(RectangleEnclosedTrial):
             self.periphery_entries,
             self.center_entries,
         ]
-
-
-@cache
-def gaussian_scoring_field(resolution: tuple[float, float], scale: int = 4):
-    resolution = np.array(resolution, dtype=int) * scale
-
-    model = ngauss_fit.model(
-        x=np.indices(resolution, dtype=float), a=255, mu=resolution / 2.0, cov=np.array([[resolution[0] ** 2, 0.0], [0.0, resolution[1] ** 2]]), axis=0
-    )
-
-    scale_as_float = float(scale)
-    return lambda x, y: model[round(x / scale_as_float)][round(y / scale_as_float)]

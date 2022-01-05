@@ -1,6 +1,7 @@
 from abc import ABC
-from functools import cached_property
+from functools import cached_property, cache
 
+from skg import ngauss_fit
 import numpy as np
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
@@ -16,6 +17,9 @@ from bikipy.feature.motion import (
 from bikipy.math.point_in_polygon import points_in_parallelogram
 
 
+A = 255
+
+
 class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelMixin):
     @cached_property
     def motion_summary_columns(self) -> list:
@@ -26,6 +30,7 @@ class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelM
             "Lower-right Quadrant",
         )
         return super().motion_summary_columns + [
+            ("gaussian_center_to_periphery_score", ""),
             *motion_2d_multi_indexer("Upper-left Quadrant"),
             *motion_2d_multi_indexer("Upper-right Quadrant"),
             *motion_2d_multi_indexer("Lower-left Quadrant"),
@@ -36,6 +41,14 @@ class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelM
 
 
 class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin, ABC):
+    @cached_property
+    def gaussian_center_to_periphery_score(self):
+        func = gaussian_scoring_field(*self.recording_resolution)
+        scores = np.array([
+            func(*coordinate) for coordinate in self.coordinates_per_frame
+        ])
+        return np.sum(scores) / (A * self.number_of_frames)
+
     @cached_property
     def location_sequence_quadrant(self) -> np.ndarray:
         result = self._uint_zeros_based_on_frame_length.copy()
@@ -162,6 +175,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
     @property
     def motion_features(self):
         return super().motion_features + [
+            self.gaussian_center_to_periphery_score,
             *self.motion_quadrant_upper_left.values(),
             *self.motion_quadrant_upper_right.values(),
             *self.motion_quadrant_lower_left.values(),
@@ -175,3 +189,15 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             self.quadrant_lower_left_entries,
             self.quadrant_lower_right_entries,
         ]
+
+
+@cache
+def gaussian_scoring_field(resolution: tuple[float, float], scale: int = 4):
+    resolution = np.array(resolution, dtype=int) * scale
+
+    model = ngauss_fit.model(
+        x=np.indices(resolution, dtype=float), a=A, mu=resolution / 2.0, cov=np.array([[resolution[0] ** 2, 0.0], [0.0, resolution[1] ** 2]]), axis=0
+    )
+
+    scale_as_float = float(scale)
+    return lambda x, y: model[round(x * scale_as_float)][round(y * scale_as_float)]
