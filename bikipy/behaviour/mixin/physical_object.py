@@ -20,6 +20,7 @@ class PhysicalObjectBaseMixin(BikipyBase, ABC):
     )
     maximum_radians_inter_gaze_perimeter: float = 1 / 4 * np.pi
     minimum_seconds_attention: float = 0.5
+    maximum_seconds_distraction: float = 0.5
 
     @property
     @abstractmethod
@@ -46,6 +47,7 @@ class PhysicalObjectBaseMixin(BikipyBase, ABC):
                 "gaze_start_point_label": self.gaze_start_point_label,
                 "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
                 "minimum_seconds_attention": self.minimum_seconds_attention,
+                "maximum_seconds_distraction": self.maximum_seconds_distraction,
                 "inspect": self.inspection_figure_save,
             }
         except AttributeError as e:

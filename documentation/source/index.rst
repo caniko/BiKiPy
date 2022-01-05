@@ -5,7 +5,7 @@ Behavioral kinematics_ Python, or BiKiPy (pronounced like bee-key-py), is a data
 
 Motivation
 ----------
-Behavioral research doesn't have any centralised repository for standardization, which ultimately slows down the scientific progression of research and industry applications. *BiKiPy* is the solution.
+Behavioral research doesn't have any centralized repository for standardization, which ultimately slows down progress. *BiKiPy* is the solution.
 
 Goals
 -----

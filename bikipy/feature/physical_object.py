@@ -26,6 +26,7 @@ class PhysicalObject:
     perimeter_border_normal_pixel_magnitude: float
     maximum_radians_inter_gaze_perimeter: float
     minimum_seconds_attention: float
+    maximum_seconds_distraction: float
     int_id: Optional[int] = None
     label: Optional[str] = None
     inspect: Union[bool, str, DirectoryPath] = False
@@ -93,6 +94,7 @@ class PhysicalObject:
             self.perimeter_border_normal_pixel_magnitude,
             self.maximum_radians_inter_gaze_perimeter,
             self.minimum_seconds_attention,
+            self.maximum_seconds_distraction,
             inspect=self.inspect,
         )
 

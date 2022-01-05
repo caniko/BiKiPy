@@ -253,6 +253,7 @@ def perimeter_attention(
     perimeter_border_normal_pixel_magnitude: float,
     maximum_radians_inter_gaze_perimeter: float = 0.25 * np.pi,
     minimum_seconds_attention: float = 0.5,
+    maximum_seconds_distraction: float = 0.5,
     inspect: Union[bool, str, PurePath] = False,
 ) -> tuple:
     """
@@ -325,7 +326,7 @@ def perimeter_attention(
         np.zeros_like(semi_true_observations, dtype=bool)
         if np.sum(semi_true_observations) < fps
         else np.array(
-            tolerance_filter(semi_true_observations, fps, minimum_seconds_attention)
+            tolerance_filter(semi_true_observations, fps, minimum_seconds_attention, maximum_seconds_distraction)
         )
     )
 

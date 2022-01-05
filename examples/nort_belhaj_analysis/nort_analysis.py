@@ -113,6 +113,8 @@ for round_idx in range(2):
             perimeter_border_normal_metric_magnitude=0.03,
             global_center_metric_length=0.2,
             maximum_radians_inter_gaze_perimeter=np.deg2rad(75.0),
+            minimum_seconds_attention=2.0,
+            maximum_seconds_distraction=0.5,
             # inspection_figure_save=RESULT_DIR / "inspect",
             data_import_kwargs={
                 "init_from": "parquet",
