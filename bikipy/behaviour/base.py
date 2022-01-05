@@ -44,9 +44,6 @@ class BaseExperiment(Behaviour):
     trial_id_vs_keyword_arguments: Optional[dict] = None
     trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
     common_trial_keyword_arguments: dict = Field(default_factory=dict)
-    stage: Optional[str] = Field(
-        None, description="The semantic stage of the experiment"
-    )
     inspection_figure_save: Union[DirectoryPath, bool] = False
 
     trial_class: ClassVar[Any] = None
@@ -141,6 +138,20 @@ class BaseExperiment(Behaviour):
             trials.sort(key=lambda t: t.int_id)
         return dict(sorted(result.items()))
 
+    @cached_property
+    def stage_vs_trial_objects(self) -> dict:
+        result = {}
+        for trial in self.trial_objects:
+            if trial.stage in result:
+                result[trial.stage].append(trial)
+            else:
+                result[trial.stage] = [trial]
+        return result
+
+    @cached_property
+    def stages(self):
+        return tuple(self.stage_vs_trial_objects.keys())
+
     @property
     def inspect(self):
         if isinstance(self.inspection_figure_save, bool):
@@ -151,13 +162,6 @@ class BaseExperiment(Behaviour):
             return self.inspection_figure_save / f"experiment_{self.timestamp}_inspect"
         else:
             raise AttributeError()
-
-    @property
-    def _trial_id_key_view(self):
-        if self.trial_id_vs_keyword_arguments:
-            return self.trial_id_vs_keyword_arguments.keys()
-        if self.trial_id_range_vs_keyword_arguments:
-            return self.trial_id_range_vs_keyword_arguments.keys()
 
     @property
     def trial_id_tuple(self) -> tuple:
@@ -188,14 +192,14 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def animal_id_indexed_feature_frame(self) -> pd.DataFrame:
-        df = self.experiment_specific_feature_frame
+        df = self.animal_id_indexed_experiment_specific_feature_frame
         df.columns = self._feature_frame_columns(
             levels=self.animal_id_indexed_motion_summary_frame.columns.nlevels
         )
         return df.join(self.animal_id_indexed_motion_summary_frame, how="inner")
 
     @cached_property
-    def experiment_specific_feature_frame(self) -> pd.DataFrame:
+    def animal_id_indexed_experiment_specific_feature_frame(self) -> pd.DataFrame:
         assert self._at_least_one_trial_class_has_features
 
         data_dict = {}
@@ -386,6 +390,13 @@ class BaseExperiment(Behaviour):
             for trial_class, trial_ids in self._trial_class_vs_trial_ids.items()
         }
 
+    @property
+    def _trial_id_key_view(self):
+        if self.trial_id_vs_keyword_arguments:
+            return self.trial_id_vs_keyword_arguments.keys()
+        if self.trial_id_range_vs_keyword_arguments:
+            return self.trial_id_range_vs_keyword_arguments.keys()
+
     @cached_property
     def _trial_classes(self) -> tuple:
         return (
@@ -428,6 +439,9 @@ class BaseTrial(Behaviour):
     rigid_nodes_freezing: Optional[Sequence[Union[str, int]]] = Field(
         None,
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
+    )
+    stage: Optional[str] = Field(
+        None, description="The semantic stage of the experiment"
     )
     inspection_figure_save: Union[DirectoryPath, bool] = Field(
         False, description="Path to save figures for inspection of results"
