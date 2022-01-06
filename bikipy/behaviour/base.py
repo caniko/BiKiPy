@@ -14,7 +14,6 @@ import pandas as pd
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from pydantic import DirectoryPath, Field, FilePath
 
-from bikipy.behaviour.summary import ExperimentSummary
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.mixin import VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_2d_multi_indexer

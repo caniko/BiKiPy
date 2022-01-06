@@ -2,20 +2,20 @@ import json
 from functools import lru_cache
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Optional, Sequence
+from typing import Any, Optional, Sequence, Callable
 
 import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, FilePath
 
-from bikipy.perimeter.base import Perimeter
+from bikipy.perimeter.base import Perimeter, PerimeterSet
 from bikipy.perimeter.utils import reference_point_from_coco_path
 
 logger = getLogger(__name__)
 
 
 def from_makesense_coco_polygon(
-    metadata_path: Any,
+    data_path: Any,
     image_root: Optional[DirectoryPath] = None,
     reference_point_csv_path: Optional[FilePath] = None,
     single_obj_return: bool = False,
@@ -23,7 +23,7 @@ def from_makesense_coco_polygon(
 ):
     logger.debug("Generating Perimeter from makesense polygon data in coco format")
 
-    with open(metadata_path, "rb") as in_json:
+    with open(data_path, "rb") as in_json:
         coco = json.load(in_json)
 
     assert not image_root or (image_root := Path(image_root)).exists()
@@ -44,7 +44,8 @@ def from_makesense_coco_polygon(
         )
         assert len(reference_data) == len(
             coco["annotations"]
-        ), f"{len(reference_data)} != {len(coco['annotations'])}"
+        ), f"{len(reference_data)} != {len(coco['annotations'])}\n" \
+           f"try: many_references_from_single_reference_file"
 
     semantic_label_vs_polygon = {}
     for annotation in coco["annotations"]:
@@ -76,12 +77,12 @@ def from_makesense_coco_polygon(
 
 
 def from_makesense_csv_rectangle(
-    metadata_path: FilePath,
+    data_path: FilePath,
     image_root: DirectoryPath,
     reference_point_csv_path: Optional[FilePath] = None,
     **perimeter_kwargs,
 ):
-    csv_data = pd.read_csv(metadata_path, header=None, index_col=0)
+    csv_data = pd.read_csv(data_path, header=None, index_col=0)
 
     if reference_point_csv_path:
         reference_data = reference_point_from_coco_path(
@@ -103,7 +104,7 @@ def from_makesense_csv_rectangle(
         end = start + np.array(row[2:4])
 
         result.append(
-            cls.init_polygon(
+            Perimeter.init_polygon(
                 (start, (start[0], end[1]), end, (end[0], start[1])),
                 inspect_image_path=image_root / image_name if image_root else None,
                 label=label,
@@ -114,12 +115,19 @@ def from_makesense_csv_rectangle(
     return result
 
 
-def many_references_from_single_reference_file(
-    reference_path: FilePath,
-    image_root: DirectoryPath,
-    **kwargs,
+def many_references_from_single_reference_file_for_perimeter(
+    data_path: FilePath,
+    reference_point_csv_path: FilePath,
+    method: Callable = from_makesense_coco_polygon,
 ):
-    pass
+    reference_data = reference_point_from_coco_path(
+        reference_point_csv_path, single_row=False
+    )
+    perimeter_set = PerimeterSet(
+        method(data_path),
+        reference_point_array=reference_data[]
+    )
+    1
 
 
 def _coco_polygon_annotation(flat_annotation_data: Sequence):

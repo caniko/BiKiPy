@@ -13,7 +13,8 @@ from bikipy.behaviour.object_recognition.nort.experiment import (
     NortField,
 )
 from bikipy.behaviour.object_recognition.nort.trial import CLASS_NAME_VS_CLASS
-from bikipy.perimeter.makesense import from_makesense_coco_polygon
+from bikipy.perimeter.makesense import from_makesense_coco_polygon, \
+    many_references_from_single_reference_file
 from bikipy.plugins.belhaj import (
     get_animal_id_vs_apparatus,
     get_animal_id_vs_trial_ids,
@@ -35,6 +36,7 @@ EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
 nort_field_id_vs_nort_field_object = {}
 for i, list_idx in zip(range(1, 5), range(4)):
+    many_references_from_single_reference_file(IMAGE_DIR / f"references_training_{i}.csv")
     training = from_makesense_coco_polygon(
         metadata_path=IMAGE_DIR / f"training_{i}.json",
         reference_point_csv_path=IMAGE_DIR / f"references_training_{i}.csv",
