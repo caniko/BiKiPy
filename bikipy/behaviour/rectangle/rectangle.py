@@ -1,8 +1,8 @@
 from abc import ABC
-from functools import cached_property, cache
+from functools import cache, cached_property
 
-from skg import ngauss_fit
 import numpy as np
+from skg import ngauss_fit
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.mixin.meters_per_pixel.resolution_derived import (
@@ -15,7 +15,6 @@ from bikipy.feature.motion import (
     motion_2d_multi_indexer,
 )
 from bikipy.math.point_in_polygon import points_in_parallelogram
-
 
 A = 255
 
@@ -44,9 +43,9 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
     @cached_property
     def gaussian_center_to_periphery_score(self):
         func = gaussian_scoring_field(*self.recording_resolution)
-        scores = np.array([
-            func(*coordinate) for coordinate in self.coordinates_per_frame
-        ])
+        scores = np.array(
+            [func(*coordinate) for coordinate in self.coordinates_per_frame]
+        )
         return np.sum(scores) / (A * self.number_of_frames)
 
     @cached_property
@@ -196,7 +195,11 @@ def gaussian_scoring_field(resolution: tuple[float, float], scale: int = 4):
     resolution = np.array(resolution, dtype=int) * scale
 
     model = ngauss_fit.model(
-        x=np.indices(resolution, dtype=float), a=A, mu=resolution / 2.0, cov=np.array([[resolution[0] ** 2, 0.0], [0.0, resolution[1] ** 2]]), axis=0
+        x=np.indices(resolution, dtype=float),
+        a=A,
+        mu=resolution / 2.0,
+        cov=np.array([[resolution[0] ** 2, 0.0], [0.0, resolution[1] ** 2]]),
+        axis=0,
     )
 
     scale_as_float = float(scale)

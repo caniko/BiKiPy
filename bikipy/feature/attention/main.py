@@ -326,7 +326,12 @@ def perimeter_attention(
         np.zeros_like(semi_true_observations, dtype=bool)
         if np.sum(semi_true_observations) < fps
         else np.array(
-            tolerance_filter(semi_true_observations, fps, minimum_seconds_attention, maximum_seconds_distraction)
+            tolerance_filter(
+                semi_true_observations,
+                fps,
+                minimum_seconds_attention,
+                maximum_seconds_distraction,
+            )
         )
     )
 

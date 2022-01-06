@@ -89,9 +89,11 @@ for round_id, data_dirs in enumerate(round_dirs):
         trial_id_vs_exp_meta = {}
         for trial_id, paths in trial_id_vs_paths.items():
             trial_id_vs_exp_meta[trial_id] = {
-                "animal_id": int(metadata_df.loc[
-                    metadata_df.iloc[:, metadata_animal_id_cidx] == trial_id
-                ]["Animal nr"].iloc[0]),
+                "animal_id": int(
+                    metadata_df.loc[
+                        metadata_df.iloc[:, metadata_animal_id_cidx] == trial_id
+                    ]["Animal nr"].iloc[0]
+                ),
                 "coordinate_data_path": paths["data"],
                 "video_path": paths["video"],
                 "inspect": False,
@@ -136,7 +138,7 @@ with pd.ExcelWriter(
                 experiment.animal_id_indexed_feature_frame
                 for experiment in experiment_objs
             ],
-            axis=1
+            axis=1,
         )
 
         metadata_frame = metadata_frame.set_index("Animal nr")

@@ -308,9 +308,7 @@ class BaseExperiment(Behaviour):
             raise ValueError
 
         if self.stage:
-            columns = list(
-                pd.MultiIndex.from_product([self.stage], columns)
-            )
+            columns = list(pd.MultiIndex.from_product([self.stage], columns))
 
         if levels:
             column_array = np.array(columns)

@@ -1,4 +1,4 @@
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import ClassVar
 
@@ -93,18 +93,19 @@ class FeatureBaselineExperimentMixin(MotionBaselineExperimentMixin, ABC):
         for stage in self.stages:
             if stage == self.baseline_stage:
                 continue
-            to_subtract = self.animal_id_indexed_experiment_specific_feature_frame[stage]
+            to_subtract = self.animal_id_indexed_experiment_specific_feature_frame[
+                stage
+            ]
             if self.baseline_delta_features:
                 to_subtract = to_subtract[self.baseline_stage]
-            data.append(
-                self._baseline_experiment_specific_feature_frame
-                - to_subtract
-            )
+            data.append(self._baseline_experiment_specific_feature_frame - to_subtract)
         return pd.concat(data)
 
     @cached_property
     def _baseline_experiment_specific_feature_frame(self):
-        result = self.animal_id_indexed_experiment_specific_feature_frame[self.baseline_stage]
+        result = self.animal_id_indexed_experiment_specific_feature_frame[
+            self.baseline_stage
+        ]
         if self.baseline_delta_features:
             result = result[self.baseline_stage]
         return result
