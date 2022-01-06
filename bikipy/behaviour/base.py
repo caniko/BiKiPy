@@ -188,7 +188,11 @@ class BaseExperiment(Behaviour):
                 levels=self.animal_id_indexed_motion_summary_frame.columns.nlevels
             )
 
-        return self.animal_id_indexed_feature_frame.join(metadata_frame, how="inner")
+        return self.animal_id_indexed_summary_frame.join(metadata_frame, how="inner")
+
+    @property
+    def animal_id_indexed_summary_frame(self) -> pd.DataFrame:
+        return self.animal_id_indexed_summary_frame
 
     @cached_property
     def animal_id_indexed_feature_frame(self) -> pd.DataFrame:

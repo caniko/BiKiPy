@@ -12,6 +12,11 @@ class MotionBaselineExperimentMixin(BikipyBase, ABC):
 
     @property
     @abstractmethod
+    def animal_id_indexed_feature_frame(self):
+        ...
+
+    @property
+    @abstractmethod
     def animal_id_indexed_motion_summary_frame(self):
         ...
 
@@ -19,6 +24,19 @@ class MotionBaselineExperimentMixin(BikipyBase, ABC):
     @abstractmethod
     def stages(self):
         ...
+
+    @property
+    @abstractmethod
+    def _feature_frame_columns(self):
+        ...
+
+    @cached_property
+    def animal_id_indexed_summary_frame(self) -> pd.DataFrame:
+        df = self.baseline_delta_motion_frame
+        df.columns = self._feature_frame_columns(
+            levels=self.animal_id_indexed_feature_frame.columns.nlevels
+        )
+        return df.join(self.animal_id_indexed_feature_frame, how="inner")
 
     @cached_property
     def baseline_delta_motion_frame(self):
@@ -51,10 +69,13 @@ class FeatureBaselineExperimentMixin(MotionBaselineExperimentMixin, ABC):
     def animal_id_indexed_experiment_specific_feature_frame(self):
         ...
 
-    @property
-    @abstractmethod
-    def _feature_frame_columns(self):
-        ...
+    @cached_property
+    def animal_id_indexed_summary_frame(self) -> pd.DataFrame:
+        df = self.baseline_delta_feature_frame
+        df.columns = self._feature_frame_columns(
+            levels=self.animal_id_indexed_feature_frame.columns.nlevels
+        )
+        return df.join(self.animal_id_indexed_feature_frame, how="inner")
 
     @cached_property
     def baseline_delta_feature_frame(self) -> pd.DataFrame:
