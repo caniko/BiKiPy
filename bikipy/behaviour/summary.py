@@ -127,12 +127,7 @@ class StatisticalAnalysis(BaseModel):
                 for category in categories:
                     x = rstats.aov(f"{feature} ~ {category}", data=self._r_df)
                     bonferroni = desctools.PostHocTest(
-                        x,
-                        which=None,
-                        method="bonferroni",
-                        **{
-                            "conf.level": 0.95
-                        }
+                        x, which=None, method="bonferroni", **{"conf.level": 0.95}
                     )
                     print(bonferroni)
 

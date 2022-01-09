@@ -4,6 +4,7 @@ from datetime import date
 from glob import glob
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 # User defined
@@ -31,7 +32,6 @@ first_annotation = generate_radial_maze_perimeters(
     center_coco_path=ANNOTATION_PATH / "center.json",
     reference_point_coco_path=ANNOTATION_PATH / "reference.csv",
     inspect_image_path=IMAGE_PATH / "a_p1_1_before_1_phd.png",
-    label="a_p1_1",
     # inspect=True,
 )
 
@@ -59,7 +59,7 @@ common_trial_keyword_arguments = {
     "corridor_meter_width": 0.08,
 }
 
-# YMazeExperiment.enable_process_pooling = False
+YMazeExperiment.enable_process_pooling = False
 
 experiment_obj_sets = []
 for round_id, data_dirs in enumerate(round_dirs):
@@ -88,6 +88,8 @@ for round_id, data_dirs in enumerate(round_dirs):
 
         trial_id_vs_exp_meta = {}
         for trial_id, paths in trial_id_vs_paths.items():
+            if not np.any(trial_id == metadata_df.iloc[:, metadata_animal_id_cidx]):
+                continue
             trial_id_vs_exp_meta[trial_id] = {
                 "animal_id": int(
                     metadata_df.loc[
@@ -107,7 +109,7 @@ for round_id, data_dirs in enumerate(round_dirs):
                     common_trial_keyword_arguments=common_trial_keyword_arguments,
                     trial_id_vs_keyword_arguments=trial_id_vs_exp_meta,
                     trial_id_range_vs_keyword_arguments=trial_id_range_vs_area_set,
-                    label=stage,
+                    stage=stage,
                     int_id=round_id,
                     data_import_kwargs={
                         "init_from": "hdf",
@@ -125,6 +127,13 @@ for round_id, data_dirs in enumerate(round_dirs):
 
     experiment_obj_sets.append(experiment_objs)
 
+metadata_frame = {
+    0: pd.read_excel("y-maze_metadata.xlsx", sheet_name=0).set_index("Animal nr"),
+    2: pd.read_excel("y-maze_metadata.xlsx", sheet_name=1).set_index("Animal nr"),
+}
+metadata_frame[1] = metadata_frame[0]
+metadata_frame[3] = metadata_frame[2]
+
 with pd.ExcelWriter(
     RESULT_DIR / "ymaze_analysis.xlsx",
     engine_kwargs={
@@ -141,10 +150,8 @@ with pd.ExcelWriter(
             axis=1,
         )
 
-        metadata_frame = metadata_frame.set_index("Animal nr")
-
         label = " & ".join([experiment.stage for experiment in experiment_objs])
-        summary = df.join(metadata_frame, how="inner")
+        summary = df.join(metadata_frame[i], how="inner")
 
         df.to_parquet(RESULT_DIR / "for_analysis" / f"{label}.parquet")
         df.to_excel(writer, sheet_name=f"{label}")

@@ -7,7 +7,6 @@ from math import ceil
 from typing import ClassVar, Optional
 
 import numpy as np
-import pandas as pd
 from pydantic import validator
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
@@ -59,7 +58,7 @@ class RadialMazeBase(BikipyBaseHashable):
     @classmethod
     @property
     def _arm_label_permutations_as_string(cls):
-        return map(str, cls._arm_label_permutations)
+        return map("".join, cls._arm_label_permutations)
 
 
 class BaseRadialMazeExperiment(BaseExperiment, RadialMazeBase):

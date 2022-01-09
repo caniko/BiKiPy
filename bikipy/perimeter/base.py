@@ -1,5 +1,6 @@
 import copy
 import statistics
+from dataclasses import InitVar, dataclass
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
@@ -8,13 +9,12 @@ from typing import Any, ClassVar, Optional, Sequence, Union
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray as NpNDArray
-from pydantic import DirectoryPath, FilePath, root_validator, validator
+from pydantic import DirectoryPath, FilePath, root_validator, validator, Field
 from shapely.geometry import Point, Polygon
 
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.math.geometry import clockwise_sort_points, expand_bikipy_perimeter
 from bikipy.math.vector import normal_from_line_to_point, point_to_line_segment_distance
-from bikipy.perimeter.utils import reference_point_from_coco_path
 from bikipy.utils.misc import (
     get_reference_point_from_array,
     read_image,
@@ -62,6 +62,8 @@ class BasePerimeter(BikipyBaseHashable):
 
     @property
     def reference_point(self):
+        from bikipy.perimeter.io.makesense import reference_point_from_coco_path
+
         if self.reference_point_array is None and not self.reference_point_coco_path:
             return None
         return (
@@ -110,30 +112,34 @@ class BasePerimeter(BikipyBaseHashable):
         return ax
 
     @staticmethod
-    def _get_coco_array_from_path_or_array(
-        metadata_path: Optional[FilePath] = None,
-        coco_array: Optional[np.ndarray] = None,
-    ):
-        msg = "metadata_path and coco_array are defined mutually exclusive"
-        if metadata_path and np.any(coco_array):
-            raise ValueError(msg)
-
-        if metadata_path:
-            result = read_makesense_point_csv(metadata_path)
-        elif np.any(coco_array):
-            result = coco_array
-        else:
-            raise ValueError(msg)
-
-        assert np.any(result)
-        return result
+    def _get_coco_array_from_path_or_array(**kwargs):
+        return _get_coco_array_from_path_or_array(**kwargs)
 
 
 class Perimeter(BasePerimeter):
     corners: np.ndarray
+    reference_point_coco_path: Optional[FilePath] = None
+    reference_point_array: Optional[NDArray] = None
+    inspect_image_path: Optional[FilePath] = None
+    inspect_image_array: Optional[NDArray] = None
     feature_scale: Optional[NDArray] = None
 
+    category: ClassVar[Optional[str]] = "perimeter"
+
     _polygon_order: ClassVar[Optional[int]] = None
+
+    @root_validator(pre=True)
+    def mutually_exclusive(cls, values):
+        if all(key in values for key in ("inspect_image_path", "inspect_image_array")):
+            msg = "inspect_image_path and inspect_image_array must be defined mutually exclusive"
+            raise AttributeError(msg)
+        if all(
+            key in values
+            for key in ("reference_point_coco_path", "reference_point_array")
+        ):
+            msg = "reference_point_coco_path and reference_point_array must be defined mutually exclusive"
+            raise AttributeError(msg)
+        return values
 
     @validator("corners")
     def corners_polygon_order_validator(cls, value: NpNDArray):
@@ -357,7 +363,7 @@ class Perimeter(BasePerimeter):
         coco_array: Optional[np.ndarray] = None,
         **kwargs,
     ):
-        coco_array = self._get_coco_array_from_path_or_array(metadata_path, coco_array)
+        coco_array = _get_coco_array_from_path_or_array(metadata_path, coco_array)
 
         if len(coco_array) != 1:
             msg = (
@@ -383,7 +389,7 @@ class Perimeter(BasePerimeter):
                 new_inspect_image_path=image_root / img_name if image_root else None,
             )
 
-        coco_array = self._get_coco_array_from_path_or_array(metadata_path, coco_array)
+        coco_array = _get_coco_array_from_path_or_array(metadata_path, coco_array)
 
         img_name_vs_reference_points = {
             row[3]: get_reference_point_from_array(row) for row in coco_array
@@ -587,19 +593,16 @@ class Perimeter(BasePerimeter):
         return in_string
 
 
-class PerimeterSet(BasePerimeter):
-    perimeters: Union[tuple, dict]
-    restricted_perimeters: Union[tuple, dict, None] = None
+@dataclass
+class PerimeterSet:
+    perimeters: tuple
+    restricted_perimeters: Optional[tuple] = None
 
-    def __init__(self, **data):
-        super().__init__(**data)
-        if self.reference_point is not None:
-            for perimeter in self.perimeters:
-                perimeter.reference_point_array = self.reference_point
+    category: ClassVar[Optional[str]] = "perimeter"
 
-            if self.restricted_perimeters:
-                for perimeter in self.restricted_perimeters:
-                    perimeter.reference_point_array = self.reference_point
+    class Config:
+        arbitrary_types_allowed = True
+        keep_untouched = (cached_property,)
 
     def __getitem__(self, item: Union[str, int]):
         for perimeter in self._all_perimeters:
@@ -660,13 +663,24 @@ class PerimeterSet(BasePerimeter):
             )
         return present
 
+    def change_reference(self, **perimeter_change_reference_kwargs):
+        return self.__class__(
+            perimeters=tuple(
+                perimeter.change_reference(**perimeter_change_reference_kwargs)
+                for perimeter in self.perimeters
+            ),
+            restricted_perimeters=tuple(
+                perimeter.change_reference(**perimeter_change_reference_kwargs)
+                for perimeter in self.restricted_perimeters
+            ),
+        )
+
     def change_reference_with_coco(
         self,
         metadata_path: Optional[FilePath] = None,
         coco_array: Optional[np.ndarray] = None,
-        **kwargs,
     ):
-        coco_array = self._get_coco_array_from_path_or_array(metadata_path, coco_array)
+        coco_array = _get_coco_array_from_path_or_array(metadata_path, coco_array)
 
         if len(coco_array) != 1:
             msg = (
@@ -676,17 +690,9 @@ class PerimeterSet(BasePerimeter):
             raise ValueError(msg)
 
         return self.__class__(
-            perimeters=[
-                perimeter.change_reference_with_coco(coco_array)
-                for perimeter in self.perimeters
-            ],
-            restricted_perimeters=[
-                perimeter.change_reference(coco_array)
-                for perimeter in self.restricted_perimeters
-            ]
-            if self.restricted_perimeters
-            else None,
-            **kwargs,
+            perimeters=self.perimeters,
+            restricted_perimeters=self.restricted_perimeters,
+            reference_point_array=coco_array
         )
 
     def change_reference_with_coco_with_plural_references(
@@ -696,7 +702,7 @@ class PerimeterSet(BasePerimeter):
         map_to_image_names: bool = True,
         **kwargs,
     ):
-        coco_array = self._get_coco_array_from_path_or_array(metadata_path, coco_array)
+        coco_array = _get_coco_array_from_path_or_array(metadata_path, coco_array)
 
         perimeter_set_kwargs = {}
         for perimeter in self.perimeters:
@@ -718,25 +724,24 @@ class PerimeterSet(BasePerimeter):
                         "perimeters": [referenced_perimeter]
                     }
 
-        if self.restricted_perimeters:
-            for perimeter in self.restricted_perimeters:
-                image_name_vs_referenced_perimeters = (
-                    perimeter.change_reference_with_coco_with_plural_references(
-                        coco_array, **kwargs
-                    )
+        for perimeter in (self.restricted_perimeters or []):
+            image_name_vs_referenced_perimeters = (
+                perimeter.change_reference_with_coco_with_plural_references(
+                    coco_array, **kwargs
                 )
-                for (
-                    image_name,
-                    referenced_perimeter,
-                ) in image_name_vs_referenced_perimeters.items():
-                    if "restricted_perimeters" in perimeter_set_kwargs[image_name]:
-                        perimeter_set_kwargs[image_name][
-                            "restricted_perimeters"
-                        ].append(referenced_perimeter)
-                    else:
-                        perimeter_set_kwargs[image_name] = {
-                            "restricted_perimeters": [referenced_perimeter]
-                        }
+            )
+            for (
+                image_name,
+                referenced_perimeter,
+            ) in image_name_vs_referenced_perimeters.items():
+                if "restricted_perimeters" in perimeter_set_kwargs[image_name]:
+                    perimeter_set_kwargs[image_name]["restricted_perimeters"].append(
+                        referenced_perimeter
+                    )
+                else:
+                    perimeter_set_kwargs[image_name] = {
+                        "restricted_perimeters": [referenced_perimeter]
+                    }
 
         if map_to_image_names:
             return {
@@ -765,16 +770,38 @@ class PerimeterSet(BasePerimeter):
         return {perimeter.int_id: perimeter.labels for perimeter in self.perimeters}
 
     @property
-    def _reference_point_variance(self):
-        return statistics.variance(
-            perimeter.reference_point for perimeter in self._all_perimeters
-        )
+    def reference_point(self):
+        expected_reference_point = self._all_perimeters[0].reference_point
+        if equality := np.all(
+            expected_reference_point == perimeter.reference_point
+            for perimeter in self._all_perimeters
+        ):
+            logger.warning("The reference points are different within the perimeter set")
+        if not equality or not np.any(expected_reference_point):
+            return None
+        return expected_reference_point
+
+    @property
+    def inspect_image(self):
+        result = self.perimeters[0].inspect_image
+        assert all(result == perimeter.inspect_image for perimeter in self._all_perimeters)
+        return result
+
+    @property
+    def inspect_image_path(self):
+        result = self.perimeters[0].inspect_image_path
+        assert all(
+            result == perimeter.inspect_image_path for perimeter in self._all_perimeters)
+        return result
 
     @property
     def _all_perimeters(self) -> Sequence:
         if not self.restricted_perimeters:
             return self.perimeters
-        return *self.perimeters, *self.restricted_perimeters
+        return (
+            *self.perimeters,
+            *self.restricted_perimeters,
+        )
 
 
 def distance_between_two_perimeters(
@@ -782,3 +809,22 @@ def distance_between_two_perimeters(
     perimeter_b: Union[Perimeter, PerimeterSet],
 ):
     return np.linalg.norm(perimeter_a.centroid - perimeter_b.centroid)
+
+
+def _get_coco_array_from_path_or_array(
+    metadata_path: Optional[FilePath] = None,
+    coco_array: Optional[np.ndarray] = None,
+):
+    msg = "metadata_path and coco_array are defined mutually exclusive"
+    if metadata_path and np.any(coco_array):
+        raise ValueError(msg)
+
+    if metadata_path:
+        result = read_makesense_point_csv(metadata_path)
+    elif np.any(coco_array):
+        result = coco_array
+    else:
+        raise ValueError(msg)
+
+    assert np.any(result)
+    return result

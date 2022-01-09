@@ -1,9 +1,7 @@
 ======
 Y-Maze
 ======
-From a technical perspective, we can define Y-Maze as a radial maze with three arms. This makes the application very applicable to radial mazes of higher order.
-
-The center of the y-maze is an equilateral triangle, while the arms are parallelograms. Each area is defined as a :code:`bikipy.perimeter`.
+The Y-Maze is defined as a radial maze with three arms. The center of the y-maze is an equilateral triangle, while the arms are parallelograms. Each area is defined as a :code:`bikipy.perimeter`.
 
 .. note::
     As with other radial mazes, the perimeters of the y-maze is most accurately defined by using the :code:`bikipy.perimeter.radial_maze.generate_radial_maze_perimeters` function.

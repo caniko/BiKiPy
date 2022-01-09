@@ -13,8 +13,11 @@ from bikipy.behaviour.object_recognition.nort.experiment import (
     NortField,
 )
 from bikipy.behaviour.object_recognition.nort.trial import CLASS_NAME_VS_CLASS
-from bikipy.perimeter.makesense import from_makesense_coco_polygon, \
-    many_references_from_single_reference_file
+from bikipy.perimeter.io.general import defer_perimeter_set_from_multi_row_reference
+from bikipy.perimeter.io.makesense import (
+    from_makesense_coco_polygon,
+    reference_point_from_coco_path,
+)
 from bikipy.plugins.belhaj import (
     get_animal_id_vs_apparatus,
     get_animal_id_vs_trial_ids,
@@ -36,23 +39,35 @@ EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
 nort_field_id_vs_nort_field_object = {}
 for i, list_idx in zip(range(1, 5), range(4)):
-    many_references_from_single_reference_file(IMAGE_DIR / f"references_training_{i}.csv")
-    training = from_makesense_coco_polygon(
-        metadata_path=IMAGE_DIR / f"training_{i}.json",
-        reference_point_csv_path=IMAGE_DIR / f"references_training_{i}.csv",
+    training_perimeters_images, training_perimeters = tuple(from_makesense_coco_polygon(
+        IMAGE_DIR / f"training_{i}.json", image_root=IMAGE_DIR, map_to_image_name=True
+    ).items())[0]
+    training = defer_perimeter_set_from_multi_row_reference(
+        reference_perimeters=training_perimeters,
+        reference_perimeter_image_name=training_perimeters_images,
+        image_name_to_reference_data=reference_point_from_coco_path(
+            IMAGE_DIR / f"references_training_{i}.csv", single_row=False
+        ),
         image_root=IMAGE_DIR,
     )
-    novel = from_makesense_coco_polygon(
-        metadata_path=IMAGE_DIR / f"novel_{i}.json",
-        reference_point_csv_path=IMAGE_DIR / f"references_novel_{i}.csv",
+
+    novel_perimeters_images, novel_perimeters = tuple(from_makesense_coco_polygon(
+        IMAGE_DIR / f"novel_{i}.json", map_to_image_name=True
+    ).items())[0]
+    novel = defer_perimeter_set_from_multi_row_reference(
+        reference_perimeters=novel_perimeters,
+        reference_perimeter_image_name=novel_perimeters_images,
+        image_name_to_reference_data=reference_point_from_coco_path(
+            IMAGE_DIR / f"references_novel_{i}.csv", single_row=False
+        ),
         image_root=IMAGE_DIR,
     )
     nort_field_id_vs_nort_field_object[i] = NortField(
         label=i,
-        constant_object_perimeter=training["constant"][list_idx],
-        variable_object_perimeter=training["variable"][list_idx],
-        novel_object_perimeter=novel["novel"][list_idx],
-        novelty_constant_object_perimeter=novel["constant"][list_idx],
+        constant_object_perimeter=training["Constant"][list_idx],
+        variable_object_perimeter=training["Variable"][list_idx],
+        novel_object_perimeter=novel["Novel"][list_idx],
+        novelty_constant_object_perimeter=novel["Constant"][list_idx],
     )
     # nort_field_id_vs_nort_field_object[i].plot()
 

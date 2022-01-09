@@ -42,16 +42,14 @@ class BaseExperiment(Behaviour):
     trial_id_vs_trial_class: Optional[dict] = None
     trial_id_vs_keyword_arguments: Optional[dict] = None
     trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
-    common_trial_keyword_arguments: dict = Field(default_factory=dict)
+    common_trial_keyword_arguments: Optional[dict] = None
+    stage: Optional[str] = None
     inspection_figure_save: Union[DirectoryPath, bool] = False
 
     trial_class: ClassVar[Any] = None
 
     # Computational settings
     enable_process_pooling: ClassVar[bool] = True
-
-    def __add__(self, other):
-        return self.join(other)
 
     def __getitem__(self, item: int):
         return self.trial_id_vs_trial_object[item]
@@ -246,7 +244,7 @@ class BaseExperiment(Behaviour):
             with ProcessPoolExecutor() as executor:
                 rows = executor.map(attrgetter("motion_features"), self.trial_objects)
         else:
-            rows = (trial_object.motion_features for trial_object in self.trial_objects)
+            rows = [trial_object.motion_features for trial_object in self.trial_objects]
 
         result = pd.DataFrame(
             rows,
@@ -259,7 +257,7 @@ class BaseExperiment(Behaviour):
     @cached_property
     def animal_id_indexed_motion_summary_frame(self) -> pd.DataFrame:
         motion = self.motion_summary_frame.reset_index().sort_values(
-            by=[("All", "Animal ID"), ("Test ID", "")]
+            by=[("All", "Animal ID"), ("All", "Test ID")]
         )
 
         series = {}
@@ -307,7 +305,7 @@ class BaseExperiment(Behaviour):
             raise ValueError
 
         if self.stage:
-            columns = list(pd.MultiIndex.from_product([self.stage], columns))
+            columns = [(self.stage, *column) for column in columns]
 
         if levels:
             column_array = np.array(columns)
@@ -426,7 +424,10 @@ class BaseExperiment(Behaviour):
 
     @property
     def motion_summary_columns(self) -> list:
-        return motion_2d_multi_indexer("All")
+        result = motion_2d_multi_indexer("All")
+        if self.stage:
+            return [[self.stage, *column] for column in result]
+        return result
 
 
 class BaseTrial(Behaviour):
