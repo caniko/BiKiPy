@@ -1,6 +1,6 @@
 import os
 from functools import cached_property
-from typing import Union, Iterable
+from typing import Iterable, Union
 
 import numpy as np
 import pandas as pd
@@ -32,8 +32,8 @@ class StatisticalAnalysis(BikipyBase):
         metadata_df = values["metadata_df"]
         values["metadata_df"] = (
             metadata_df.drop_duplicates(values["animal_id_column_name"])
-                .set_index(values["animal_id_column_name"])
-                .applymap(lambda x: x.strip() if isinstance(x, str) else x)
+            .set_index(values["animal_id_column_name"])
+            .applymap(lambda x: x.strip() if isinstance(x, str) else x)
         )
         return values
 
@@ -54,36 +54,15 @@ class StatisticalAnalysis(BikipyBase):
                 boolean_index = self.metadata_df[column] == unique_category
                 assert np.any(boolean_index)
                 median_series.append(self.df.iloc[boolean_index, :].median())
-            dataframes.append(pd.DataFrame(
-                median_series,
-                index=pd.MultiIndex.from_product([
-                    [column],
-                    self.unique_category_values[column]
-                ])
-            ))
+            dataframes.append(
+                pd.DataFrame(
+                    median_series,
+                    index=pd.MultiIndex.from_product(
+                        [[column], self.unique_category_values[column]]
+                    ),
+                )
+            )
         return pd.concat(dataframes, axis=0)
-
-    def categorical_vs_feature_manova(
-        self,
-        categories: list[str],
-        features: list[str],
-    ):
-        categories_rhs = " + ".join(map(lambda c: f"C({c})", categories))
-        with pd.ExcelWriter(
-            self.analysis_path / f"manova_{self.identifier}.xlsx",
-            engine_kwargs={
-                "strings_to_formulas": False,
-                "strings_to_urls": False,
-            },
-        ) as writer:
-            for feature in features:
-                analyse = MANOVA.from_formula(
-                    f"{categories_rhs} ~ {feature}",
-                    self.df,
-                )
-                analyse.mv_test().summary_frame.to_excel(
-                    writer, sheet_name=f"{feature}_{self.identifier}"
-                )
 
     def categorical_vs_feature_pairwise_tukey(
         self,

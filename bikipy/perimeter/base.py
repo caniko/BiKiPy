@@ -9,7 +9,7 @@ from typing import Any, ClassVar, Optional, Sequence, Union
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray as NpNDArray
-from pydantic import DirectoryPath, FilePath, root_validator, validator, Field
+from pydantic import DirectoryPath, Field, FilePath, root_validator, validator
 from shapely.geometry import Point, Polygon
 
 from bikipy.core.base_class import BikipyBaseHashable

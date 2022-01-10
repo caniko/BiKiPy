@@ -250,7 +250,7 @@ class BaseExperiment(Behaviour):
 
         result = pd.DataFrame(
             rows,
-            columns=self.motion_summary_columns,
+            columns=self._motion_summary_column_index,
             index=self._frame_index,
         )
 
@@ -259,7 +259,7 @@ class BaseExperiment(Behaviour):
     @cached_property
     def animal_id_indexed_motion_summary_frame(self) -> pd.DataFrame:
         motion = self.motion_summary_frame.reset_index().sort_values(
-            by=[("All", "Animal ID"), ("All", "Test ID")]
+            by=(self._animal_id_column_index, self._trial_id_column_index)
         )
 
         series = {}
@@ -337,7 +337,11 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _frame_index(self) -> pd.Series:
-        return pd.Series(self._trial_id_key_view, name="Test ID", dtype=np.int16)
+        return pd.Series(
+            self._trial_id_key_view,
+            name=self._trial_id_column_index,
+            dtype=np.int16,
+        )
 
     @cached_property
     def _trial_class_name_vs_frame_index(self) -> dict:
@@ -351,7 +355,7 @@ class BaseExperiment(Behaviour):
         try:
             return pd.DataFrame(
                 (trial.animal_id for trial in self.trial_objects),
-                columns=(("All", "Animal ID"),),
+                columns=[self._animal_id_column_index],
                 index=self._frame_index,
             )
         except AttributeError as e:
@@ -424,12 +428,38 @@ class BaseExperiment(Behaviour):
             f"{self_attr} != {other_attr}"
         )
 
-    @property
-    def motion_summary_columns(self) -> list:
-        result = motion_2d_multi_indexer("All")
+    @cached_property
+    def _trial_id_column_index(self):
+        return (
+            "Trial ID",
+            *["" for _ in range(self._motion_summary_column_depth - 1)],
+        )
+
+    @cached_property
+    def _animal_id_column_index(self):
+        return (
+            "Animal ID",
+            *["" for _ in range(self._motion_summary_column_depth - 1)],
+        )
+
+    @cached_property
+    def _motion_summary_column_index(self) -> pd.MultiIndex:
         if self.stage:
-            return [[self.stage, *column] for column in result]
+            return pd.MultiIndex.from_tuples([[self.stage, *column] for column in self.motion_summary_columns])
+        return pd.MultiIndex.from_tuples(self.motion_summary_columns)
+
+    @cached_property
+    def _motion_summary_column_depth(self):
+        motion_summary_column_index_list = list(self._motion_summary_column_index)
+        result = len(motion_summary_column_index_list[0])
+        assert all(
+            result == len(column) for column in motion_summary_column_index_list[1:]
+        )
         return result
+
+    @cached_property
+    def motion_summary_columns(self) -> list:
+        return motion_2d_multi_indexer("All")
 
 
 class BaseTrial(Behaviour):

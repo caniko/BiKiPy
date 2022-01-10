@@ -1,6 +1,6 @@
 import os.path
 from logging import getLogger
-from typing import Union, Optional
+from typing import Optional, Union
 
 import numpy as np
 from matplotlib import pyplot as plt

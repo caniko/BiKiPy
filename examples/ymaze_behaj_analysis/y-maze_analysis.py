@@ -59,7 +59,7 @@ common_trial_keyword_arguments = {
     "corridor_meter_width": 0.08,
 }
 
-YMazeExperiment.enable_process_pooling = False
+# YMazeExperiment.enable_process_pooling = False
 
 experiment_obj_sets = []
 for round_id, data_dirs in enumerate(round_dirs):

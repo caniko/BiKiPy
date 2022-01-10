@@ -2,7 +2,7 @@ import json
 from functools import lru_cache
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Optional, Sequence, Callable
+from typing import Any, Callable, Optional, Sequence
 
 import numpy as np
 import pandas as pd
