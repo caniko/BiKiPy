@@ -30,9 +30,7 @@ def generate_radial_maze_perimeters(
             msg = f"center_coco_path does not exist, {center_coco_path}"
             raise ValueError(msg)
         center_object = triangular_center_object or from_makesense_coco_polygon(
-            center_coco_path,
-            single_obj_return=True,
-            **perimeter_kwargs
+            center_coco_path, single_obj_return=True, **perimeter_kwargs
         )
     else:
         msg = "Either center_object or center_coco_path has to be defined"
@@ -78,7 +76,7 @@ def generate_radial_maze_perimeters(
                 int_id=line_index + 1,
                 label=labels[line_index],
                 group_label="arms",
-                **perimeter_kwargs
+                **perimeter_kwargs,
             )
         )
 

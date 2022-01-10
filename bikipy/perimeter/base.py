@@ -692,7 +692,7 @@ class PerimeterSet:
         return self.__class__(
             perimeters=self.perimeters,
             restricted_perimeters=self.restricted_perimeters,
-            reference_point_array=coco_array
+            reference_point_array=coco_array,
         )
 
     def change_reference_with_coco_with_plural_references(
@@ -724,7 +724,7 @@ class PerimeterSet:
                         "perimeters": [referenced_perimeter]
                     }
 
-        for perimeter in (self.restricted_perimeters or []):
+        for perimeter in self.restricted_perimeters or []:
             image_name_vs_referenced_perimeters = (
                 perimeter.change_reference_with_coco_with_plural_references(
                     coco_array, **kwargs
@@ -776,7 +776,9 @@ class PerimeterSet:
             expected_reference_point == perimeter.reference_point
             for perimeter in self._all_perimeters
         ):
-            logger.warning("The reference points are different within the perimeter set")
+            logger.warning(
+                "The reference points are different within the perimeter set"
+            )
         if not equality or not np.any(expected_reference_point):
             return None
         return expected_reference_point
@@ -784,14 +786,17 @@ class PerimeterSet:
     @property
     def inspect_image(self):
         result = self.perimeters[0].inspect_image
-        assert all(result == perimeter.inspect_image for perimeter in self._all_perimeters)
+        assert all(
+            result == perimeter.inspect_image for perimeter in self._all_perimeters
+        )
         return result
 
     @property
     def inspect_image_path(self):
         result = self.perimeters[0].inspect_image_path
         assert all(
-            result == perimeter.inspect_image_path for perimeter in self._all_perimeters)
+            result == perimeter.inspect_image_path for perimeter in self._all_perimeters
+        )
         return result
 
     @property

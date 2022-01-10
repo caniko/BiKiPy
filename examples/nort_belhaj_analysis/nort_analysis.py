@@ -39,9 +39,13 @@ EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
 nort_field_id_vs_nort_field_object = {}
 for i, list_idx in zip(range(1, 5), range(4)):
-    training_perimeters_images, training_perimeters = tuple(from_makesense_coco_polygon(
-        IMAGE_DIR / f"training_{i}.json", image_root=IMAGE_DIR, map_to_image_name=True
-    ).items())[0]
+    training_perimeters_images, training_perimeters = tuple(
+        from_makesense_coco_polygon(
+            IMAGE_DIR / f"training_{i}.json",
+            image_root=IMAGE_DIR,
+            map_to_image_name=True,
+        ).items()
+    )[0]
     training = defer_perimeter_set_from_multi_row_reference(
         reference_perimeters=training_perimeters,
         reference_perimeter_image_name=training_perimeters_images,
@@ -51,9 +55,11 @@ for i, list_idx in zip(range(1, 5), range(4)):
         image_root=IMAGE_DIR,
     )
 
-    novel_perimeters_images, novel_perimeters = tuple(from_makesense_coco_polygon(
-        IMAGE_DIR / f"novel_{i}.json", map_to_image_name=True
-    ).items())[0]
+    novel_perimeters_images, novel_perimeters = tuple(
+        from_makesense_coco_polygon(
+            IMAGE_DIR / f"novel_{i}.json", map_to_image_name=True
+        ).items()
+    )[0]
     novel = defer_perimeter_set_from_multi_row_reference(
         reference_perimeters=novel_perimeters,
         reference_perimeter_image_name=novel_perimeters_images,

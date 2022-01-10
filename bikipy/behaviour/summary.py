@@ -1,62 +1,67 @@
 import os
 from functools import cached_property
+from typing import Union, Iterable
 
+import numpy as np
 import pandas as pd
-import seaborn as sb
-from matplotlib import pyplot as plt
-from pydantic import BaseModel, DirectoryPath
+from pydantic import BaseModel, DirectoryPath, root_validator
+
+from bikipy.core.base_class import BikipyBase
 
 try:
     from statsmodels.multivariate.manova import MANOVA
     from statsmodels.stats.multicomp import pairwise_tukeyhsd
-
-    from rpy2.robjects import pandas2ri
-    from rpy2.robjects.packages import importr
 except ImportError:
     msg = "Install bikipy[stats] module to perform statistical analysis"
     raise ImportError(msg)
 
 
-rstats = importr("stats")
-desctools = importr("DescTools")
-
-
-class StatisticalAnalysis(BaseModel):
+class StatisticalAnalysis(BikipyBase):
     df: pd.DataFrame
+    metadata_df: pd.DataFrame
+    animal_id_column_name: str
+    category_columns: Union[Iterable[str, ...], Iterable[int, ...]]
     identifier: str
     root_dir_path: DirectoryPath
-
-    class Config:
-        arbitrary_types_allowed = True
-        keep_untouched = (cached_property,)
 
     def __repr__(self):
         return self.df
 
-    def category_vs_features_plot(
-        self,
-        category: str,
-        features: list[str],
-    ):
-        for parameter in features:
-            cat_plot = sb.catplot(
-                x=category,
-                y=parameter,
-                kind="violin",
-                inner=None,
-                data=self.df,
-            )
-            sb.swarmplot(
-                x=category,
-                y=parameter,
-                color="k",
-                size=3,
-                data=self.df,
-                ax=cat_plot.ax,
-            )
-            plt.savefig(
-                self.figure_path / f"{category}_vs_{parameter}-{self.identifier}.png"
-            )
+    @root_validator
+    def ensure_metadata_df_is_clean(cls, values):
+        metadata_df = values["metadata_df"]
+        values["metadata_df"] = (
+            metadata_df.drop_duplicates(values["animal_id_column_name"])
+                .set_index(values["animal_id_column_name"])
+                .applymap(lambda x: x.strip() if isinstance(x, str) else x)
+        )
+        return values
+
+    @cached_property
+    def unique_category_values(self):
+        result = {}
+        for column in self.category_columns:
+            assert column in self.metadata_df.columns
+            result[column] = np.unique(self.metadata_df[column])
+        return result
+
+    @cached_property
+    def categorized_dataframes(self) -> pd.DataFrame:
+        dataframes = []
+        for column in self.category_columns:
+            median_series = []
+            for unique_category in self.unique_category_values[column]:
+                boolean_index = self.metadata_df[column] == unique_category
+                assert np.any(boolean_index)
+                median_series.append(self.df.iloc[boolean_index, :].median())
+            dataframes.append(pd.DataFrame(
+                median_series,
+                index=pd.MultiIndex.from_product([
+                    [column],
+                    self.unique_category_values[column]
+                ])
+            ))
+        return pd.concat(dataframes, axis=0)
 
     def categorical_vs_feature_manova(
         self,

@@ -176,9 +176,11 @@ class BaseExperiment(Behaviour):
         animal_id_column_name: str = "Animal",
         normalize_column_levels: bool = False,
     ) -> pd.DataFrame:
-        metadata_frame = metadata_frame.drop_duplicates(
-            animal_id_column_name
-        ).set_index(animal_id_column_name)
+        metadata_frame = (
+            metadata_frame.drop_duplicates(animal_id_column_name)
+            .set_index(animal_id_column_name)
+            .applymap(lambda x: x.strip() if isinstance(x, str) else x)
+        )
 
         if normalize_column_levels:
             metadata_frame.columns = self._feature_frame_columns(
