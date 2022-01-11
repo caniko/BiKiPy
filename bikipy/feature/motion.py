@@ -13,6 +13,10 @@ from bikipy.utils.typing import NDArray
 logger = getLogger(__name__)
 
 
+summary_motion_features = ("total_displacement", "median_speed", "median_acceleration", "freezing_time")
+_zero_return = {feature: 0.0 for feature in summary_motion_features}
+
+
 def units_pixels_per_second_frame(
     meters_per_pixel: Union[float, int], fps: Union[float, int]
 ):
@@ -267,7 +271,7 @@ def get_combined_features_from_merged_motion_island_data(
         ).to_list
 
     if not np.any(boolean_index):
-        return _ZERO_RETURN
+        return _zero_return
 
     indices = np.where(boolean_index)[0]
 
@@ -293,11 +297,3 @@ def get_combined_features_from_merged_motion_island_data(
         ),
         "freezing_time": sum(motion_feature[3] for motion_feature in motion_features),
     }
-
-
-_ZERO_RETURN = {
-    "total_displacement": 0.0,
-    "median_speed": 0.0,
-    "median_acceleration": 0.0,
-    "freezing_time": 0.0,
-}

@@ -189,7 +189,7 @@ class BaseExperiment(Behaviour):
             # Prepend experiment stage to column MultiIndex:
             # https://stackoverflow.com/a/42094658/9793651
             keys=[self.stage],
-            names=["Stage"],
+            names=["Stage", "Feature", "Category"],
         )
 
     @cached_property
@@ -408,7 +408,9 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _motion_summary_column_index(self) -> pd.MultiIndex:
-        return pd.MultiIndex.from_tuples(self.motion_summary_columns, names=["Feature", "Category"])
+        return pd.MultiIndex.from_tuples(
+            self.motion_summary_columns, names=["Feature", "Category"]
+        )
 
     @cached_property
     def _motion_summary_column_depth(self):
