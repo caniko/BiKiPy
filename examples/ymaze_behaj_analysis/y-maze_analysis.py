@@ -94,7 +94,7 @@ for round_id, data_dirs in enumerate(round_dirs):
                 "animal_id": int(
                     metadata_df.loc[
                         metadata_df.iloc[:, metadata_animal_id_cidx] == trial_id
-                    ]["Animal nr"].iloc[0]
+                    ]["Animal ID"].iloc[0]
                 ),
                 "coordinate_data_path": paths["data"],
                 "video_path": paths["video"],
@@ -127,13 +127,6 @@ for round_id, data_dirs in enumerate(round_dirs):
 
     experiment_obj_sets.append(experiment_objs)
 
-metadata_frame = {
-    0: pd.read_excel("y-maze_metadata.xlsx", sheet_name=0).set_index("Animal nr"),
-    2: pd.read_excel("y-maze_metadata.xlsx", sheet_name=1).set_index("Animal nr"),
-}
-metadata_frame[1] = metadata_frame[0]
-metadata_frame[3] = metadata_frame[2]
-
 with pd.ExcelWriter(
     RESULT_DIR / "ymaze_analysis.xlsx",
     engine_kwargs={
@@ -151,7 +144,6 @@ with pd.ExcelWriter(
         )
 
         label = " & ".join([experiment.stage for experiment in experiment_objs])
-        summary = df.join(metadata_frame[i], how="inner")
 
         df.to_parquet(RESULT_DIR / "for_analysis" / f"{label}.parquet")
         df.to_excel(writer, sheet_name=f"{label}")

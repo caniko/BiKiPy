@@ -4,7 +4,7 @@ from typing import Iterable, Union
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, DirectoryPath, root_validator
+from pydantic import DirectoryPath, root_validator
 
 from bikipy.core.base_class import BikipyBase
 
@@ -18,20 +18,28 @@ except ImportError:
 
 class StatisticalAnalysis(BikipyBase):
     df: pd.DataFrame
-    metadata_df: pd.DataFrame
-    animal_id_column_name: str
-    category_columns: Union[Iterable[str, ...], Iterable[int, ...]]
+    category_columns: Iterable[str, ...]
     identifier: str
     root_dir_path: DirectoryPath
+
+    @classmethod
+    def merge_analysis_data_with_metadata(cls, analysis_df: pd.DataFrame, df: pd.DataFrame, animal_id_column_name: str = "Animal ID", **kwargs):
+        if animal_id_column_name in df.columns:
+            df = df.set_index(animal_id_column_name).sort_index()
+        elif animal_id_column_name != df.index.name:
+            msg = f"The metadata does not define the given animal_id_column_name, {animal_id_column_name}"
+            raise KeyError(msg)
+        df.index.name = "Animal ID"
+        return cls(df=pd.merge(analysis_df, df, on="Animal ID"), **kwargs)
 
     def __repr__(self):
         return self.df
 
     @root_validator
     def ensure_metadata_df_is_clean(cls, values):
-        metadata_df = values["metadata_df"]
-        values["metadata_df"] = (
-            metadata_df.drop_duplicates(values["animal_id_column_name"])
+        df = values["df"]
+        values["df"] = (
+            df.drop_duplicates(values["animal_id_column_name"])
             .set_index(values["animal_id_column_name"])
             .applymap(lambda x: x.strip() if isinstance(x, str) else x)
         )
@@ -41,8 +49,8 @@ class StatisticalAnalysis(BikipyBase):
     def unique_category_values(self):
         result = {}
         for column in self.category_columns:
-            assert column in self.metadata_df.columns
-            result[column] = np.unique(self.metadata_df[column])
+            assert column in self.df.columns
+            result[column] = np.unique(self.df[column])
         return result
 
     @cached_property
@@ -51,7 +59,7 @@ class StatisticalAnalysis(BikipyBase):
         for column in self.category_columns:
             median_series = []
             for unique_category in self.unique_category_values[column]:
-                boolean_index = self.metadata_df[column] == unique_category
+                boolean_index = self.df[column] == unique_category
                 assert np.any(boolean_index)
                 median_series.append(self.df.iloc[boolean_index, :].median())
             dataframes.append(
@@ -109,12 +117,6 @@ class StatisticalAnalysis(BikipyBase):
             for feature in features:
                 bonferroni_results = []
                 for category in categories:
-                    x = rstats.aov(f"{feature} ~ {category}", data=self._r_df)
-                    bonferroni = desctools.PostHocTest(
-                        x, which=None, method="bonferroni", **{"conf.level": 0.95}
-                    )
-                    print(bonferroni)
-
                     bonferroni_results.append(
                         pd.DataFrame(
                             # TODO: Fill me!
@@ -123,10 +125,6 @@ class StatisticalAnalysis(BikipyBase):
                 pd.concat(bonferroni_results).to_excel(
                     writer, sheet_name=f"{self.identifier}_{features}"
                 )
-
-    @cached_property
-    def _r_df(self):
-        return pandas2ri.py2rpy(self.df)
 
     @property
     def analysis_path(self):

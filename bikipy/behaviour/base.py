@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from pydantic import DirectoryPath, Field, FilePath
+from pydantic import DirectoryPath, Field, FilePath, root_validator, validator
 
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.mixin import VideoMetadataMixin
@@ -38,18 +38,26 @@ class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
 
 
 class BaseExperiment(Behaviour):
+    stage: str
     point_label_for_motion_features: str
     trial_id_vs_trial_class: Optional[dict] = None
     trial_id_vs_keyword_arguments: Optional[dict] = None
     trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
     common_trial_keyword_arguments: Optional[dict] = None
-    stage: Optional[str] = None
     inspection_figure_save: Union[DirectoryPath, bool] = False
 
     trial_class: ClassVar[Any] = None
 
     # Computational settings
     enable_process_pooling: ClassVar[bool] = True
+
+    @validator("trial_id_vs_trial_class")
+    def sort_trial_id_vs_trial_class_ascending(cls, value):
+        return dict(sorted(value.items()))
+
+    @validator("trial_id_vs_trial_class")
+    def sort_trial_id_vs_keyword_arguments_ascending(cls, value):
+        return dict(sorted(value.items()))
 
     def __getitem__(self, item: int):
         return self.trial_id_vs_trial_object[item]
@@ -170,36 +178,19 @@ class BaseExperiment(Behaviour):
 
     # DataFrame methods
 
-    def animal_id_indexed_metadata_feature_frame(
-        self,
-        metadata_frame: pd.DataFrame,
-        animal_id_column_name: str = "Animal",
-        normalize_column_levels: bool = False,
-    ) -> pd.DataFrame:
-        metadata_frame = (
-            metadata_frame.drop_duplicates(animal_id_column_name)
-            .set_index(animal_id_column_name)
-            .applymap(lambda x: x.strip() if isinstance(x, str) else x)
-        )
-
-        if normalize_column_levels:
-            metadata_frame.columns = self._feature_frame_columns(
-                levels=self.animal_id_indexed_motion_summary_frame.columns.nlevels
-            )
-
-        return self.animal_id_indexed_summary_frame.join(metadata_frame, how="inner")
-
-    @property
-    def animal_id_indexed_summary_frame(self) -> pd.DataFrame:
-        return self.animal_id_indexed_summary_frame
-
     @cached_property
     def animal_id_indexed_feature_frame(self) -> pd.DataFrame:
-        df = self.animal_id_indexed_experiment_specific_feature_frame
-        df.columns = self._feature_frame_columns(
-            levels=self.animal_id_indexed_motion_summary_frame.columns.nlevels
+        return pd.concat(
+            (
+                self.animal_id_indexed_experiment_specific_feature_frame,
+                self.animal_id_indexed_motion_summary_frame,
+            ),
+            axis=1,
+            # Prepend experiment stage to column MultiIndex:
+            # https://stackoverflow.com/a/42094658/9793651
+            keys=[self.stage],
+            names=["Stage"],
         )
-        return df.join(self.animal_id_indexed_motion_summary_frame, how="inner")
 
     @cached_property
     def animal_id_indexed_experiment_specific_feature_frame(self) -> pd.DataFrame:
@@ -236,9 +227,23 @@ class BaseExperiment(Behaviour):
         result = pd.DataFrame.from_dict(
             data_dict, orient="index", columns=self._feature_frame_columns()
         )
-        result.index = result.index.set_names("Animal ID")
+        result.index.name = "Animal ID"
+        result.columns.names = ["Feature", "Category"]
 
         return result
+
+    @cached_property
+    def animal_id_indexed_motion_summary_frame(self) -> pd.DataFrame:
+        return (
+            pd.merge(
+                self._trial_id_indexed_animal_ids.reset_index(),
+                self.motion_summary_frame,
+                on="Trial ID",
+            )
+            .drop("Trial ID", axis=1)
+            .set_index("Animal ID")
+            .sort_index()
+        )
 
     @cached_property
     def motion_summary_frame(self) -> pd.DataFrame:
@@ -248,40 +253,11 @@ class BaseExperiment(Behaviour):
         else:
             rows = [trial_object.motion_features for trial_object in self.trial_objects]
 
-        result = pd.DataFrame(
+        return pd.DataFrame(
             rows,
             columns=self._motion_summary_column_index,
-            index=self._frame_index,
+            index=self._trial_id_series,
         )
-
-        return pd.concat((self._trial_id_vs_animal_id_frame, result), axis=1)
-
-    @cached_property
-    def animal_id_indexed_motion_summary_frame(self) -> pd.DataFrame:
-        motion = self.motion_summary_frame.reset_index().sort_values(
-            by=(self._animal_id_column_index, self._trial_id_column_index)
-        )
-
-        series = {}
-        for i, animal_id_df in motion.copy().groupby(("All", "Animal ID")):
-            new_series = animal_id_df.unstack().unstack(2)
-            new_series.columns = self._class_labels
-
-            new_series = (
-                new_series.stack().reorder_levels((2, 0, 1)).sort_index(level=0)
-            )
-
-            series[i] = new_series.drop(
-                [
-                    new_series.index[index]
-                    for index in np.where(
-                        new_series.index.get_level_values(level=2) == "Animal ID"
-                    )[0]
-                ],
-            )
-        result = pd.DataFrame.from_dict(series, orient="index")
-        result.index = result.index.set_names("Animal ID")
-        return result
 
     # Private methods
 
@@ -305,9 +281,6 @@ class BaseExperiment(Behaviour):
             )
         else:
             raise ValueError
-
-        if self.stage:
-            columns = [(self.stage, *column) for column in columns]
 
         if levels:
             column_array = np.array(columns)
@@ -336,34 +309,21 @@ class BaseExperiment(Behaviour):
         return tuple([(feature, category) for category in category])
 
     @cached_property
-    def _frame_index(self) -> pd.Series:
+    def _trial_id_series(self) -> pd.Series:
         return pd.Series(
             self._trial_id_key_view,
-            name=self._trial_id_column_index,
-            dtype=np.int16,
+            name="Trial ID",
+            dtype=np.uint16,
         )
 
     @cached_property
-    def _trial_class_name_vs_frame_index(self) -> dict:
-        return {
-            class_name: pd.Series(trial_ids, name="Test ID", dtype=np.int16)
-            for class_name, trial_ids in self.trial_class_name_vs_trial_ids.items()
-        }
-
-    @cached_property
-    def _trial_id_vs_animal_id_frame(self) -> pd.DataFrame:
-        try:
-            return pd.DataFrame(
-                (trial.animal_id for trial in self.trial_objects),
-                columns=[self._animal_id_column_index],
-                index=self._frame_index,
-            )
-        except AttributeError as e:
-            msg = (
-                "animal_id needs to be defined for each trial instance to use "
-                "this export method"
-            )
-            raise AttributeError(msg) from e
+    def _trial_id_indexed_animal_ids(self) -> pd.Series:
+        return pd.Series(
+            self._animal_id_key_view,
+            index=self._trial_id_series,
+            name="Animal ID",
+            dtype=np.uint16,
+        ).sort_index()
 
     @cached_property
     def _trial_class_vs_trial_ids(self) -> dict:
@@ -443,10 +403,12 @@ class BaseExperiment(Behaviour):
         )
 
     @cached_property
+    def _animal_id_key_view(self):
+        return self.animal_id_vs_trial_objects.keys()
+
+    @cached_property
     def _motion_summary_column_index(self) -> pd.MultiIndex:
-        if self.stage:
-            return pd.MultiIndex.from_tuples([[self.stage, *column] for column in self.motion_summary_columns])
-        return pd.MultiIndex.from_tuples(self.motion_summary_columns)
+        return pd.MultiIndex.from_tuples(self.motion_summary_columns, names=["Feature", "Category"])
 
     @cached_property
     def _motion_summary_column_depth(self):
