@@ -332,16 +332,19 @@ class Perimeter(BasePerimeter):
         new_inspect_image: Optional[np.ndarray] = None,
         new_inspect_image_path: Optional[FilePath] = None,
     ):
-        assert np.any(self.reference_point)
         if np.all(self.reference_point == new_reference):
             logger.info("The provided reference_point is identical to the current")
             return self
 
         new_reference.astype(np.float64, copy=False)
 
-        new = copy.deepcopy(self)
-        new.corners += new_reference - new.reference_point
-        new.reference_point = new_reference
+        if not np.any(self.reference_point):
+            new = self
+            new.reference_point_array = new_reference
+        else:
+            new = copy.deepcopy(self)
+            new.corners += new_reference - new.reference_point
+            new.reference_point = new_reference
 
         if new_inspect_image_path:
             if not (new_inspect_image_path := Path(new_inspect_image_path)).exists():
@@ -672,7 +675,7 @@ class PerimeterSet:
             restricted_perimeters=tuple(
                 perimeter.change_reference(**perimeter_change_reference_kwargs)
                 for perimeter in self.restricted_perimeters
-            ),
+            ) if self.restricted_perimeters else None,
         )
 
     def change_reference_with_coco(

@@ -4,8 +4,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sb
-from statsmodels.multivariate.manova import MANOVA
-from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
 WORKING_DIR = Path(".").resolve()
 RESULT_DIR = WORKING_DIR / "results"
