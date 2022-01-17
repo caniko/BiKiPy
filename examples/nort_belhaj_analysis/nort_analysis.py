@@ -38,38 +38,43 @@ if not RESULT_DIR.exists():
 EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
 nort_field_id_vs_nort_field_object = {}
-for i, list_idx in zip(range(1, 5), range(4)):
+for field_idx in range(1, 5):
     training_perimeters = from_makesense_coco_polygon(
-        IMAGE_DIR / f"training_{i}.json",
+        IMAGE_DIR / f"training_{field_idx}.json",
         image_root=IMAGE_DIR,
     )
-    training = defer_perimeter_set_from_multi_row_reference(
-        reference_perimeters=training_perimeters,
+    nort_training_objects = defer_perimeter_set_from_multi_row_reference(
+        reference_perimeters=training_perimeters.values(),
         image_name_to_reference_data=reference_point_from_coco_path(
-            IMAGE_DIR / f"references_training_{i}.csv", single_row=False
+            IMAGE_DIR / f"references_training_{field_idx}.csv", single_row=False
         ),
         image_root=IMAGE_DIR,
     )
 
     novel_perimeters = from_makesense_coco_polygon(
-            IMAGE_DIR / f"novel_{i}.json",
-            image_root=IMAGE_DIR,
-        )
-    novel = defer_perimeter_set_from_multi_row_reference(
-        reference_perimeters=novel_perimeters,
+        IMAGE_DIR / f"novel_{field_idx}.json",
+        image_root=IMAGE_DIR,
+    )
+    nort_novelty_objects = defer_perimeter_set_from_multi_row_reference(
+        reference_perimeters=novel_perimeters.values(),
         image_name_to_reference_data=reference_point_from_coco_path(
-            IMAGE_DIR / f"references_novel_{i}.csv", single_row=False
+            IMAGE_DIR / f"references_novel_{field_idx}.csv", single_row=False
         ),
         image_root=IMAGE_DIR,
     )
-    nort_field_id_vs_nort_field_object[i] = NortField(
-        label=i,
-        constant_object_perimeter=training["Constant"][list_idx],
-        variable_object_perimeter=training["Variable"][list_idx],
-        novel_object_perimeter=novel["Novel"][list_idx],
-        novelty_constant_object_perimeter=novel["Constant"][list_idx],
-    )
-    # nort_field_id_vs_nort_field_object[i].plot()
+    nort_field_id_vs_nort_field_object[field_idx] = []
+    for experiment_period, novel in nort_novelty_objects.items():
+        training = nort_training_objects[experiment_period]
+        nort_field_id_vs_nort_field_object[field_idx].append(
+            NortField(
+                label=field_idx,
+                constant_object_perimeter=training["Constant"],
+                variable_object_perimeter=training["Variable"],
+                novel_object_perimeter=novel["Novel"],
+                novelty_constant_object_perimeter=novel["Constant"],
+            )
+        )
+    # nort_field_id_vs_nort_field_object[field_idx].plot()
 
 experiments = []
 for round_idx in range(2):

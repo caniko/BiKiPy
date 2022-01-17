@@ -675,7 +675,9 @@ class PerimeterSet:
             restricted_perimeters=tuple(
                 perimeter.change_reference(**perimeter_change_reference_kwargs)
                 for perimeter in self.restricted_perimeters
-            ) if self.restricted_perimeters else None,
+            )
+            if self.restricted_perimeters
+            else None,
         )
 
     def change_reference_with_coco(

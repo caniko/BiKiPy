@@ -45,7 +45,7 @@ class StatisticalAnalysis(BikipyBase):
                     index=[
                         "{}_{}".format(*row[:2])
                         for row in tukey._results_table.data[1:]
-                    ]
+                    ],
                 )
                 tukey_df.index = pd.MultiIndex.from_tuples(
                     [
@@ -54,7 +54,7 @@ class StatisticalAnalysis(BikipyBase):
                             [[feature_column], tukey_df.index]
                         )
                     ],
-                    names=("Category", "Feature", "Group")
+                    names=("Category", "Feature", "Group"),
                 )
                 result.append(tukey_df)
         pd.concat(result).to_excel(self.analysis_path / "tukey.xlsx")
@@ -76,8 +76,8 @@ class StatisticalAnalysis(BikipyBase):
                     [
                         (category, *downstream)
                         for downstream in pd.MultiIndex.from_product(
-                        [[feature_column], tukey_df.index]
-                    )
+                            [[feature_column], tukey_df.index]
+                        )
                     ]
                 )
                 result.append(tukey_df)
@@ -86,9 +86,7 @@ class StatisticalAnalysis(BikipyBase):
     @cached_property
     def merged_df(self):
         concatenated = pd.concat(
-            (self.analysis_df.sort_index(),
-            self.metadata_df.sort_index()),
-            axis=1
+            (self.analysis_df.sort_index(), self.metadata_df.sort_index()), axis=1
         )
 
     @cached_property

@@ -13,7 +13,12 @@ from bikipy.utils.typing import NDArray
 logger = getLogger(__name__)
 
 
-summary_motion_features = ("total_displacement", "median_speed", "median_acceleration", "freezing_time")
+summary_motion_features = (
+    "total_displacement",
+    "median_speed",
+    "median_acceleration",
+    "freezing_time",
+)
 _zero_return = {feature: 0.0 for feature in summary_motion_features}
 
 

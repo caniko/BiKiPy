@@ -24,4 +24,4 @@ def defer_perimeter_set_from_multi_row_reference(
             new_reference=reference, new_inspect_image_path=image_root / image_name
         )
 
-    return result
+    return dict(sorted(result.items()))

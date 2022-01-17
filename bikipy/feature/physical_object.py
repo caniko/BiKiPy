@@ -106,11 +106,11 @@ class PhysicalObject:
 @dataclass(frozen=True, order=True)
 class PhysicalObjectSet:
     physical_objects: tuple[PhysicalObject]
-    use_label_as_id: bool = False
 
     def __post_init__(self):
         if len(self.physical_objects) == 1:
-            return
+            msg = "Number of physical_objects in a set needs to be more than one"
+            raise ValueError(msg)
 
         not_identical_error_base = (
             f"PhysicalObject instances in {self.__class__.__name__} "
