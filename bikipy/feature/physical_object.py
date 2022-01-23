@@ -12,6 +12,7 @@ from bikipy.core.base_class import BikipyBase
 from bikipy.core.typing import Perimeter2D
 from bikipy.feature.attention.main import perimeter_attention
 from bikipy.perimeter.base import PerimeterSet
+from bikipy.perimeter.io.general import defer_perimeter_set_from_multi_row_reference
 
 logger = getLogger(__name__)
 
@@ -123,7 +124,7 @@ class PhysicalObjectSet(BikipyBase):
         return value
 
     @validator("physical_objects", pre=True)
-    def identical_temporal_resolution(cls, value):
+    def identical_fps(cls, value):
         if any(value[0].fps != physical_object.fps for physical_object in value[1:]):
             msg = (
                 f"Frames per second differ across physical objects:\n"
@@ -333,3 +334,14 @@ class PhysicalObjectSet(BikipyBase):
             ax = physical_objects.perimeter.plot(ax=ax)
 
         return ax
+
+
+def defer_physical_object_set_from_multi_row_reference(**kwargs):
+    """
+    Shares the same kwargs as defer_perimeter_set_from_multi_row_reference
+
+    :param kwargs:
+    :return:
+    """
+    image_name_to_perimeter_set = defer_perimeter_set_from_multi_row_reference(**kwargs)
+
