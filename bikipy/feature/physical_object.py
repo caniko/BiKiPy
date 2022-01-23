@@ -1,23 +1,22 @@
 from collections import Counter
-from dataclasses import dataclass
 from functools import cached_property
 from logging import getLogger
 from typing import Any, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from pydantic import DirectoryPath
-from pydantic.dataclasses import dataclass as pydantic_dataclass
+from pydantic import DirectoryPath, validator
 
 from bikipy.behaviour.utils import reduce_repeating_sequences
+from bikipy.core.base_class import BikipyBase
 from bikipy.core.typing import Perimeter2D
 from bikipy.feature.attention.main import perimeter_attention
+from bikipy.perimeter.base import PerimeterSet
 
 logger = getLogger(__name__)
 
 
-@pydantic_dataclass(frozen=True, order=True)
-class PhysicalObject:
+class PhysicalObject(BikipyBase):
     perimeter: Perimeter2D
     reader: Any
     gaze_start_point_label: str
@@ -103,58 +102,50 @@ class PhysicalObject:
         return self._perimeter_attention_data
 
 
-@dataclass(frozen=True, order=True)
-class PhysicalObjectSet:
+class PhysicalObjectSet(BikipyBase):
     physical_objects: tuple[PhysicalObject]
 
-    def __post_init__(self):
-        if len(self.physical_objects) == 1:
+    @validator("physical_objects", pre=True)
+    def more_than_one_objects(cls, value):
+        if len(value) <= 1:
             msg = "Number of physical_objects in a set needs to be more than one"
             raise ValueError(msg)
+        return value
 
-        not_identical_error_base = (
-            f"PhysicalObject instances in {self.__class__.__name__} "
-            f"needs to have identical"
-        )
-        if any(
-            (
-                len(self._first_object) != len(physical_object)
-                for physical_object in self.physical_objects[1:]
-            )
-        ):
-            temporal_resolutions = (
-                str(len(physical_object)) for physical_object in self.physical_objects
-            )
+    @validator("physical_objects", pre=True)
+    def identical_temporal_resolution(cls, value):
+        if any(len(value[0]) != len(physical_object) for physical_object in value[1:]):
             msg = (
-                f"{not_identical_error_base} temporal resolution. Current state:\n"
-                f"{', '.join(temporal_resolutions)}"
+                f"The number of frames differ across physical objects:\n"
+                f"{', '.join(str(len(physical_object)) for physical_object in value)}"
             )
             raise AttributeError(msg)
+        return value
 
-        if any(
-            self._first_object.fps != physical_object.fps
-            for physical_object in self.physical_objects[1:]
-        ):
-            fps_values = (
-                physical_object.fps for physical_object in self.physical_objects
-            )
+    @validator("physical_objects", pre=True)
+    def identical_temporal_resolution(cls, value):
+        if any(value[0].fps != physical_object.fps for physical_object in value[1:]):
             msg = (
-                f"{not_identical_error_base} frame per second (fps). Current state:\n"
-                f"{', '.join(fps_values)}"
+                f"Frames per second differ across physical objects:\n"
+                f"{', '.join((physical_object.fps for physical_object in value))}"
             )
             raise AttributeError(msg)
+        return value
 
-        object_int_ids = [
-            physical_object.int_id for physical_object in self.physical_objects
-        ]
+    @validator("physical_objects", pre=True)
+    def ids_are_unique(cls, value):
+        object_int_ids = (physical_object.int_id for physical_object in value)
+
         int_ids_set = set(object_int_ids)
-
-        len_total = len(object_int_ids)
         len_unique = len(int_ids_set)
+
+        len_total = len(value)
+
         if len_total != len_unique:
             msg = (
-                f"At least two of the int_id values are equal, these values "
-                f"are mutually exclusive,\n{object_int_ids}"
+                f"At least two of the int_id values are equal, these int_ids are "
+                f"mutually exclusive in {cls.__class__.__name__}:\n"
+                f"{', '.join(object_int_ids)}"
             )
             raise AttributeError(msg)
         if None in int_ids_set and len_unique != 1:
@@ -165,14 +156,12 @@ class PhysicalObjectSet:
             raise AttributeError(msg)
         if int_ids_set != set(range(1, len_total + 1)):
             msg = (
-                "The int_ids must be incremental. IDs that do not follow this rule "
+                "int_ids must be incremental. IDs that do not follow this rule "
                 "must be stored in the label attribute"
             )
             raise AttributeError(msg)
 
-        object_labels = [
-            physical_object.label for physical_object in self.physical_objects
-        ]
+        object_labels = (physical_object.label for physical_object in value)
         label_set = set(object_labels)
         counter = Counter(object_labels)
         if any(counter[value] > 1 for value in label_set if value is not None):
@@ -187,6 +176,11 @@ class PhysicalObjectSet:
                 for i, perimeter in enumerate(perimeters, start=1)
             )
         )
+
+    @classmethod
+    def from_perimeter_set(cls, perimeter_set: PerimeterSet):
+        assert not perimeter_set.restricted_perimeters
+        return cls.from_perimeter(*perimeter_set.perimeters)
 
     @cached_property
     def frames(self) -> int:
@@ -222,7 +216,7 @@ class PhysicalObjectSet:
         overlapping_frames = 0
 
         result = np.zeros(len(self._first_object), dtype=np.uint8)
-        for int_id, physical_object in self.int_id_vs_physical_object.items():
+        for int_id, physical_object in self._int_id_vs_physical_object.items():
             current_boolean_index = physical_object.observance_boolean_index
 
             overlapping_frames += np.sum(current_boolean_index & result)
@@ -271,15 +265,13 @@ class PhysicalObjectSet:
             int_id: 100.0
             * physical_object.attention_filtered_seconds_observing
             / self.seconds_observing
-            for int_id, physical_object in self.int_id_vs_physical_object.items()
+            for int_id, physical_object in self._int_id_vs_physical_object.items()
         }
 
     @cached_property
     def absolute_discrimination(self) -> float:
         """
         Definition: <frames observing novel object> - <frames observing constant object>
-
-        Note: The first PhysicalObject in physical_objects must be the novel object!
 
         :return:
         """
@@ -291,15 +283,27 @@ class PhysicalObjectSet:
             )
             raise AttributeError(msg)
 
-        return np.sum(self.physical_objects[0].observance_boolean_index) - np.sum(
-            self.physical_objects[1].observance_boolean_index
-        )
+        try:
+            return np.sum(
+                self._label_vs_physical_object["novel"].observance_boolean_index
+            ) - np.sum(self._label_vs_physical_object["constant"].observance_boolean_index)
+        except KeyError:
+            msg = "The physical_objects must have a novel and a constant label " \
+                  "to compute absolute_discrimination"
+            raise AttributeError(msg)
 
     @cached_property
-    def int_id_vs_physical_object(self) -> dict:
+    def _int_id_vs_physical_object(self) -> dict:
         return {
             int_id: physical_object
             for int_id, physical_object in zip(self._int_ids, self.physical_objects)
+        }
+
+    @cached_property
+    def _label_vs_physical_object(self) -> dict:
+        return {
+            physical_object.label.lower(): physical_object
+            for physical_object in self.physical_objects
         }
 
     @cached_property
@@ -316,7 +320,7 @@ class PhysicalObjectSet:
 
     @cached_property
     def _int_id_vs_zero(self) -> dict:
-        return {int_id: 0.0 for int_id in self.int_id_vs_physical_object}
+        return {int_id: 0.0 for int_id in self._int_id_vs_physical_object}
 
     @cached_property
     def _first_object(self):

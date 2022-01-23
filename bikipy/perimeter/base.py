@@ -1,6 +1,4 @@
 import copy
-import statistics
-from dataclasses import InitVar, dataclass
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
@@ -9,10 +7,10 @@ from typing import Any, ClassVar, Optional, Sequence, Union
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray as NpNDArray
-from pydantic import DirectoryPath, Field, FilePath, root_validator, validator
+from pydantic import DirectoryPath, FilePath, root_validator, validator
 from shapely.geometry import Point, Polygon
 
-from bikipy.core.base_class import BikipyBaseHashable
+from bikipy.core.base_class import BikipyBaseHashable, BikipyBase
 from bikipy.math.geometry import clockwise_sort_points, expand_bikipy_perimeter
 from bikipy.math.vector import normal_from_line_to_point, point_to_line_segment_distance
 from bikipy.utils.misc import (
@@ -36,13 +34,19 @@ class BasePerimeter(BikipyBaseHashable):
     @root_validator(pre=True)
     def mutually_exclusive(cls, values):
         if all(key in values for key in ("inspect_image_path", "inspect_image_array")):
-            msg = "inspect_image_path and inspect_image_array must be defined mutually exclusive"
+            msg = (
+                "inspect_image_path and inspect_image_array must be defined "
+                "mutually exclusive"
+            )
             raise AttributeError(msg)
         if all(
             key in values
             for key in ("reference_point_coco_path", "reference_point_array")
         ):
-            msg = "reference_point_coco_path and reference_point_array must be defined mutually exclusive"
+            msg = (
+                "reference_point_coco_path and reference_point_array must be "
+                "defined mutually exclusive"
+            )
             raise AttributeError(msg)
         return values
 
@@ -596,16 +600,11 @@ class Perimeter(BasePerimeter):
         return in_string
 
 
-@dataclass
-class PerimeterSet:
+class PerimeterSet(BikipyBase):
     perimeters: tuple
     restricted_perimeters: Optional[tuple] = None
 
     category: ClassVar[Optional[str]] = "perimeter"
-
-    class Config:
-        arbitrary_types_allowed = True
-        keep_untouched = (cached_property,)
 
     def __getitem__(self, item: Union[str, int]):
         for perimeter in self._all_perimeters:
