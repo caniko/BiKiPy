@@ -2,11 +2,12 @@ from dataclasses import dataclass
 from logging import getLogger
 from typing import Optional
 
-from pydantic import Field
+from pydantic import Field, root_validator
 
 from bikipy.behaviour.mixin.physical_object import PhysicalObjectExperimentMixin
 from bikipy.behaviour.object_recognition.nort.constants import TRIAL_LABEL_VS_CLASS_NAME
 from bikipy.behaviour.rectangle.square import SquareEnclosedExperiment
+from bikipy.core.base_class import BikipyBase
 from bikipy.core.typing import Perimeter2D
 from bikipy.feature.physical_object import PhysicalObjectSet
 from bikipy.perimeter.base import distance_between_two_perimeters
@@ -33,23 +34,24 @@ class NortExperiment(SquareEnclosedExperiment, PhysicalObjectExperimentMixin):
         }
 
 
-@dataclass(frozen=True, order=True)
-class NortField:
+class NortField(BikipyBase):
     label: int
     constant_object_perimeter: Perimeter2D
     variable_object_perimeter: Perimeter2D
     novel_object_perimeter: Perimeter2D
     novelty_constant_object_perimeter: Optional[Perimeter2D] = None
 
-    def __post_init__(self):
-        if self.novelty_constant_object_perimeter:
-            self.constant_object_perimeter.label = "training_constant"
-            self.novelty_constant_object_perimeter.label = "novel_constant"
-        else:
-            self.constant_object_perimeter.label = "constant"
+    @root_validator
+    def normalize_perimeter_labels(cls, values):
+        if values["novelty_constant_object_perimeter"]:
+            values["novelty_constant_object_perimeter"].label = "constant"
 
-        self.variable_object_perimeter.label = "variable"
-        self.novel_object_perimeter.label = "novel"
+        values["constant_object_perimeter"].label = "constant"
+
+        values["variable_object_perimeter"].label = "variable"
+        values["novel_object_perimeter"].label = "novel"
+
+        return values
 
     @classmethod
     def from_undefined(
@@ -81,6 +83,9 @@ class NortField:
         if not isinstance(item, str):
             msg = f"{self.__class__.__name__} only accepts string for getting item"
             raise TypeError(msg)
+
+        item = item.lower()
+
         if TRIAL_LABEL_VS_CLASS_NAME[item] == "training":
             return self.training_set
         if TRIAL_LABEL_VS_CLASS_NAME[item] == "novelty":

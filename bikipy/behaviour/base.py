@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from pydantic import DirectoryPath, Field, FilePath, root_validator, validator
+from pydantic import DirectoryPath, Field, FilePath, validator
 
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.mixin import VideoMetadataMixin
@@ -70,12 +70,13 @@ class BaseExperiment(Behaviour):
         :return:
         """
         result = {
-            **self.common_trial_keyword_arguments,
             "int_id": trial_id,
             "point_label_for_motion_features": self.point_label_for_motion_features,
             "data_format_label": self.data_format_label,
         }
 
+        if self.common_trial_keyword_arguments:
+            result.update(self.common_trial_keyword_arguments)
         if self.trial_id_vs_keyword_arguments:
             result.update(self.trial_id_vs_keyword_arguments[trial_id])
         if self.trial_id_range_vs_keyword_arguments:
@@ -264,7 +265,7 @@ class BaseExperiment(Behaviour):
     @cached_property
     def _at_least_one_trial_class_has_features(self):
         return any(
-            trial_class.trial_has_feature_frame for trial_class in self._trial_classes
+            trial_class.feature_summary_column for trial_class in self._trial_classes
         )
 
     def _feature_frame_columns(self, levels: Optional[int] = None) -> pd.MultiIndex:
@@ -459,7 +460,7 @@ class BaseTrial(Behaviour):
 
     second_tolerance: ClassVar[float] = 0.15
 
-    trial_has_feature_frame: ClassVar[bool] = False
+    feature_summary_column: ClassVar[Any] = None
     trial_has_video_space_for_analysis: ClassVar[bool] = False
 
     @property

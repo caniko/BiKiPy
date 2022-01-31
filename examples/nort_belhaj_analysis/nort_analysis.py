@@ -38,6 +38,7 @@ if not RESULT_DIR.exists():
 EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
 nort_field_id_vs_nort_field_object = {}
+nort_field_to_period_field = {}
 for field_idx in range(1, 5):
     training_perimeters = from_makesense_coco_polygon(
         IMAGE_DIR / f"training_{field_idx}.json",
@@ -64,14 +65,14 @@ for field_idx in range(1, 5):
     )
     nort_field_id_vs_nort_field_object[field_idx] = []
     for experiment_period, novel in nort_novelty_objects.items():
-        training = nort_training_objects[experiment_period]
+        training = nort_training_objects[experiment_period.replace("novel", "training")]
         nort_field_id_vs_nort_field_object[field_idx].append(
             NortField(
                 label=field_idx,
-                constant_object_perimeter=training["Constant"],
-                variable_object_perimeter=training["Variable"],
-                novel_object_perimeter=novel["Novel"],
-                novelty_constant_object_perimeter=novel["Constant"],
+                constant_object_perimeter=training["constant"],
+                variable_object_perimeter=training["variable"],
+                novel_object_perimeter=novel["novel"],
+                novelty_constant_object_perimeter=novel["constant"],
             )
         )
     # nort_field_id_vs_nort_field_object[field_idx].plot()
@@ -125,6 +126,7 @@ for round_idx in range(2):
             ]
 
         experiment = NortExperiment(
+            stage=str(round_number),
             trial_id_vs_trial_class=trial_id_vs_trial_class,
             trial_id_vs_keyword_arguments=trial_id_range_vs_exp_meta,
             metric_resolution=0.4,
@@ -154,10 +156,6 @@ for round_idx in range(2):
 
 with pd.ExcelWriter(
     RESULT_DIR / "nort_analysis.xlsx",
-    engine_kwargs={
-        "strings_to_formulas": False,
-        "strings_to_urls": False,
-    },
 ) as writer:
     for experiment in experiments:
         experiment.animal_id_indexed_feature_frame.to_parquet(

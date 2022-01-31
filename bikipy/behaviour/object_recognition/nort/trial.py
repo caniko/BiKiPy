@@ -5,8 +5,6 @@ from typing import ClassVar, Optional
 
 import pandas as pd
 
-from bikipy.behaviour.mixin.featurefull import FeaturefullTrialMixin
-from bikipy.behaviour.mixin.misc import OpenFieldTrialMixin
 from bikipy.behaviour.mixin.physical_object import PhysicalObjectTrialMixin
 from bikipy.behaviour.object_recognition.nort.experiment import NortField
 from bikipy.behaviour.rectangle.square import SquareEnclosedTrial
@@ -14,7 +12,7 @@ from bikipy.behaviour.rectangle.square import SquareEnclosedTrial
 logger = getLogger(__name__)
 
 
-class NortHabituationTrial(SquareEnclosedTrial, OpenFieldTrialMixin):
+class NortHabituationTrial(SquareEnclosedTrial):
     """
     NORT experiment without any objects. The purpose of this test is to generate
     reference data for future NORT experiments.
@@ -22,8 +20,6 @@ class NortHabituationTrial(SquareEnclosedTrial, OpenFieldTrialMixin):
 
     trial_sequence_index: ClassVar[Optional[int]] = 0
     trial_label: ClassVar[str] = "Habituation"
-
-    trial_has_feature_frame: ClassVar[bool] = False
 
 
 class NortOpenField(NortHabituationTrial):
@@ -38,9 +34,7 @@ class NortPhysicalObjectFieldMixin(PhysicalObjectTrialMixin, ABC):
         return self.physical_object_set.physical_objects[1]
 
 
-class NortTrainingTrial(
-    SquareEnclosedTrial, NortPhysicalObjectFieldMixin, FeaturefullTrialMixin
-):
+class NortTrainingTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
     trial_sequence_index: ClassVar[Optional[int]] = 1
     trial_label: ClassVar[str] = "Training"
 
@@ -59,9 +53,7 @@ class NortTrainingTrial(
         return [self.physical_object_set.seconds_observing]
 
 
-class NortNoveltyTrial(
-    SquareEnclosedTrial, NortPhysicalObjectFieldMixin, FeaturefullTrialMixin
-):
+class NortNoveltyTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
     trial_sequence_index: ClassVar[Optional[int]] = 2
     trial_label: ClassVar[str] = "Novelty"
 

@@ -71,8 +71,6 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
     center: Perimeter2D
     arms: tuple[Perimeter2D, ...]
 
-    trial_has_feature_frame: ClassVar[bool] = True
-
     @validator("center")
     def center_has_1_as_int_id(cls, value):
         value.int_id = 1

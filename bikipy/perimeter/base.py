@@ -610,7 +610,7 @@ class PerimeterSet(BikipyBase):
         for perimeter in self._all_perimeters:
             if perimeter.label == item or perimeter.int_id == item:
                 return perimeter
-        raise KeyError(f"Item was not found, {item}")
+        raise KeyError(f"Item was not found, {item} amongst {self._all_perimeters}")
 
     @cached_property
     def group(self):
