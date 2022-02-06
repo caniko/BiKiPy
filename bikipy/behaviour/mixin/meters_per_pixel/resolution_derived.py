@@ -18,8 +18,12 @@ class ResolutionDerivedUnitPerPixelMixin(BikipyBase, ABC):
 
     @property
     @abstractmethod
-    def recording_resolution(self):
+    def recording_resolution(self) -> np.ndarray:
         ...
+
+    @cached_property
+    def tuple_recording_resolution(self) -> tuple:
+        return tuple(self.recording_resolution)
 
     @property
     def meters_per_pixel(self):
@@ -27,9 +31,17 @@ class ResolutionDerivedUnitPerPixelMixin(BikipyBase, ABC):
 
     @cached_property
     def computed_meters_per_pixel(self):
-        return _compute_meter_per_pixel(
-            self.metric_resolution, self.recording_resolution
-        )
+        if not np.any(self.metric_resolution):
+            msg = (
+                "metric_resolution attribute needs to be defined to compute "
+                "meters_per_pixel"
+            )
+            raise AttributeError(msg)
+
+        if isinstance(self.metric_resolution, (float, int)):
+            return np.array(self.metric_resolution) / self.recording_resolution
+        else:
+            return self.metric_resolution / np.mean(self.recording_resolution)
 
 
 class ResolutionDerivedUnitPerPixelTrialMixin(ResolutionDerivedUnitPerPixelMixin, ABC):
@@ -44,20 +56,3 @@ class ResolutionDerivedUnitPerPixelTrialMixin(ResolutionDerivedUnitPerPixelMixin
             **self._video_metadata_dict_manual_format,
             **super()._reader_init_kwargs,
         }
-
-
-@lru_cache
-def _compute_meter_per_pixel(
-    metric_resolution: Union[np.ndarray, float], recording_resolution: np.ndarray
-) -> Union[np.ndarray, float]:
-    if not np.any(metric_resolution):
-        msg = (
-            "metric_resolution attribute needs to be defined to compute "
-            "meters_per_pixel"
-        )
-        raise AttributeError(msg)
-
-    if isinstance(metric_resolution, (float, int)):
-        return np.array(metric_resolution) / recording_resolution
-    else:
-        return metric_resolution / np.mean(recording_resolution)

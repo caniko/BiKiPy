@@ -157,16 +157,6 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
             add_y += self.y_axis_crop_end_point
         return add_y
 
-    @lru_cache
-    def _find_longest_tails(self, items, as_slice: bool = True):
-        left_valid_tails, right_valid_tails = np.array(
-            [self.valid_tails[item] for item in items]
-        ).T
-
-        result = (left_valid_tails.max(), right_valid_tails.min())
-
-        return slice(*result) if as_slice else result
-
     @classmethod
     def init_many_mapper(
         cls,
@@ -204,3 +194,14 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
         else:
             for data_path, label in zip(data_path, labels):
                 yield kwarg_loaded_init(data_path, label=label)
+
+
+@lru_cache
+def _find_longest_tails(valid_tails, items, as_slice: bool = True):
+    left_valid_tails, right_valid_tails = np.array(
+        [valid_tails[item] for item in items]
+    ).T
+
+    result = (left_valid_tails.max(), right_valid_tails.min())
+
+    return slice(*result) if as_slice else result

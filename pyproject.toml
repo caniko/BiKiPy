@@ -48,7 +48,7 @@ jupyterthemes = { version = "^0.20.0", optional = true }
 scikit-posthocs = {version = "^0.6.7", optional = true}
 
 [tool.poetry.dev-dependencies]
-black = "*"
+black = {extras = ["jupyter"], version = "*"}
 Cython = "*"
 isort = "*"
 pytest = "^6.2.5"

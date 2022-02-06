@@ -37,8 +37,7 @@ if not RESULT_DIR.exists():
 
 EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
-nort_field_id_vs_nort_field_object = {}
-nort_field_to_period_field = {}
+period_to_field_id_to_nort_field = {}
 for field_idx in range(1, 5):
     training_perimeters = from_makesense_coco_polygon(
         IMAGE_DIR / f"training_{field_idx}.json",
@@ -63,35 +62,35 @@ for field_idx in range(1, 5):
         ),
         image_root=IMAGE_DIR,
     )
-    nort_field_id_vs_nort_field_object[field_idx] = []
     for experiment_period, novel in nort_novelty_objects.items():
         training = nort_training_objects[experiment_period.replace("novel", "training")]
-        nort_field_id_vs_nort_field_object[field_idx].append(
-            NortField(
-                label=field_idx,
-                constant_object_perimeter=training["constant"],
-                variable_object_perimeter=training["variable"],
-                novel_object_perimeter=novel["novel"],
-                novelty_constant_object_perimeter=novel["constant"],
-            )
+        period, _, field = experiment_period.split(".")[0].split("_")
+        if period not in period_to_field_id_to_nort_field:
+            period_to_field_id_to_nort_field[period] = {}
+
+        period_to_field_id_to_nort_field[period][int(field)] = NortField(
+            label=field_idx,
+            constant_object_perimeter=training["constant"],
+            variable_object_perimeter=training["variable"],
+            novel_object_perimeter=novel["novel"],
+            novelty_constant_object_perimeter=novel["constant"],
         )
-    # nort_field_id_vs_nort_field_object[field_idx].plot()
+    # period_to_field_id_to_nort_field[field_idx].plot()
 
 experiments = []
-for round_idx in range(2):
-    round_number = round_idx + 1
-    experiment_root_data_path = DEEPLABCUT_DIR / f"Experiment_{round_number}"
-    meta_data = DATA_DIR / f"nort_round_{round_number}.xlsx"
-    for round_part_idx, round_part_dir_name in enumerate(
-        os.listdir(experiment_root_data_path)
-    ):
+for period_index, period_letter in enumerate(("A", "B"), start=1):
+    period_name = f"{period_letter}{period_index}"
+    experiment_root_data_path = DEEPLABCUT_DIR / f"Experiment_{period_index}"
+    meta_data = DATA_DIR / f"nort_round_{period_index}.xlsx"
+    for round_part_dir_name in os.listdir(experiment_root_data_path):
         round_dir_path = experiment_root_data_path / round_part_dir_name
+        round_index = int(round_part_dir_name.split("_")[0][-1]) - 1
 
         day, month, year = round_dir_path.name.split("_")[1].split(".")
         date = datetime.date(int(year), int(month), int(day))
 
         exp_metadata_df = pd.read_excel(
-            meta_data, sheet_name=round_part_idx, engine="openpyxl"
+            meta_data, sheet_name=round_index, engine="openpyxl"
         )
 
         animal_id_vs_app = get_animal_id_vs_apparatus(
@@ -126,14 +125,16 @@ for round_idx in range(2):
             ]
 
         experiment = NortExperiment(
-            stage=str(round_number),
+            stage=str(period_index),
             trial_id_vs_trial_class=trial_id_vs_trial_class,
             trial_id_vs_keyword_arguments=trial_id_range_vs_exp_meta,
             metric_resolution=0.4,
             gaze_travel_direction_point_label="nose",
             gaze_start_point_label="center_eye",
             point_label_for_motion_features="torso",
-            nort_field_id_vs_nort_field_object=nort_field_id_vs_nort_field_object,
+            nort_field_id_vs_nort_field_object=period_to_field_id_to_nort_field[
+                period_name
+            ],
             perimeter_border_normal_metric_magnitude=0.03,
             global_center_metric_length=0.2,
             maximum_radians_inter_gaze_perimeter=np.deg2rad(75.0),
@@ -153,6 +154,8 @@ for round_idx in range(2):
         # experiment.plot_attention_state_distribution()
         experiments.append(experiment)
 
+
+experiment.animal_id_indexed_feature_frame
 
 with pd.ExcelWriter(
     RESULT_DIR / "nort_analysis.xlsx",

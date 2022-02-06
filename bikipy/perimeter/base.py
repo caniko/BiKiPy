@@ -579,7 +579,7 @@ class Perimeter(BasePerimeter):
         return self.corners.T[1].max()
 
     @classmethod
-    def init_polygon(cls, corners: Sequence, **kwargs):
+    def init_polygon(cls, corners: np.ndarray, **kwargs):
         corners = np.asarray(corners)
         if (number_of_corners := corners.shape[0]) == 3:
             from bikipy.perimeter.triangular import TriangularPerimeter

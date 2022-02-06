@@ -28,11 +28,14 @@ class PhysicalObject(BikipyBase):
     minimum_seconds_attention: float
     maximum_seconds_distraction: float
     int_id: Optional[int] = None
-    label: Optional[str] = None
     inspect: Union[bool, str, DirectoryPath] = False
 
     def __len__(self) -> int:
         return self.temporal_resolution
+
+    @property
+    def label(self):
+        return self.perimeter.label
 
     @cached_property
     def distance_from_per_frame(self) -> np.ndarray:
@@ -104,76 +107,13 @@ class PhysicalObject(BikipyBase):
 
 
 class PhysicalObjectSet(BikipyBase):
-    physical_objects: tuple[PhysicalObject]
-
-    @validator("physical_objects", pre=True)
-    def more_than_one_objects(cls, value):
-        if len(value) <= 1:
-            msg = "Number of physical_objects in a set needs to be more than one"
-            raise ValueError(msg)
-        return value
-
-    @validator("physical_objects", pre=True)
-    def identical_temporal_resolution(cls, value):
-        if any(len(value[0]) != len(physical_object) for physical_object in value[1:]):
-            msg = (
-                f"The number of frames differ across physical objects:\n"
-                f"{', '.join(str(len(physical_object)) for physical_object in value)}"
-            )
-            raise AttributeError(msg)
-        return value
-
-    @validator("physical_objects", pre=True)
-    def identical_fps(cls, value):
-        if any(value[0].fps != physical_object.fps for physical_object in value[1:]):
-            msg = (
-                f"Frames per second differ across physical objects:\n"
-                f"{', '.join((physical_object.fps for physical_object in value))}"
-            )
-            raise AttributeError(msg)
-        return value
-
-    @validator("physical_objects", pre=True)
-    def ids_are_unique(cls, value):
-        object_int_ids = (physical_object.int_id for physical_object in value)
-
-        int_ids_set = set(object_int_ids)
-        len_unique = len(int_ids_set)
-
-        len_total = len(value)
-
-        if len_total != len_unique:
-            msg = (
-                f"At least two of the int_id values are equal, these int_ids are "
-                f"mutually exclusive in {cls.__class__.__name__}:\n"
-                f"{', '.join(object_int_ids)}"
-            )
-            raise AttributeError(msg)
-        if None in int_ids_set and len_unique != 1:
-            msg = (
-                "Either none or all of PhysicalObjects need to have their int_ids"
-                "defined"
-            )
-            raise AttributeError(msg)
-        if int_ids_set != set(range(1, len_total + 1)):
-            msg = (
-                "int_ids must be incremental. IDs that do not follow this rule "
-                "must be stored in the label attribute"
-            )
-            raise AttributeError(msg)
-
-        object_labels = (physical_object.label for physical_object in value)
-        label_set = set(object_labels)
-        counter = Counter(object_labels)
-        if any(counter[value] > 1 for value in label_set if value is not None):
-            msg = "labels need to be unique with the exception of None"
-            raise AttributeError(msg)
+    physical_objects: tuple[PhysicalObject, ...]
 
     @classmethod
     def from_perimeter(cls, *perimeters, **kwargs):
         return cls(
-            tuple(
-                PhysicalObject(perimeter, int_id=i, **kwargs)
+            physical_objects=tuple(
+                PhysicalObject(perimeter=perimeter, int_id=i, **kwargs)
                 for i, perimeter in enumerate(perimeters, start=1)
             )
         )
@@ -287,10 +227,14 @@ class PhysicalObjectSet(BikipyBase):
         try:
             return np.sum(
                 self._label_vs_physical_object["novel"].observance_boolean_index
-            ) - np.sum(self._label_vs_physical_object["constant"].observance_boolean_index)
+            ) - np.sum(
+                self._label_vs_physical_object["constant"].observance_boolean_index
+            )
         except KeyError:
-            msg = "The physical_objects must have a novel and a constant label " \
-                  "to compute absolute_discrimination"
+            msg = (
+                "The physical_objects must have a novel and a constant label "
+                "to compute absolute_discrimination"
+            )
             raise AttributeError(msg)
 
     @cached_property
@@ -335,6 +279,71 @@ class PhysicalObjectSet(BikipyBase):
 
         return ax
 
+    @validator("physical_objects", pre=True)
+    def more_than_one_object(cls, value):
+        if len(value) <= 1:
+            msg = "Number of physical_objects in a set needs to be more than one"
+            raise ValueError(msg)
+        return value
+
+    @validator("physical_objects", pre=True)
+    def identical_temporal_resolution(cls, value):
+        if any(len(value[0]) != len(physical_object) for physical_object in value[1:]):
+            msg = (
+                f"The number of frames differ across physical objects:\n"
+                f"{', '.join(str(len(physical_object)) for physical_object in value)}"
+            )
+            raise AttributeError(msg)
+        return value
+
+    @validator("physical_objects", pre=True)
+    def identical_fps(cls, value):
+        if any(value[0].fps != physical_object.fps for physical_object in value[1:]):
+            msg = (
+                f"Frames per second differ across physical objects:\n"
+                f"{', '.join((physical_object.fps for physical_object in value))}"
+            )
+            raise AttributeError(msg)
+        return value
+
+    @validator("physical_objects", pre=True)
+    def ids_are_unique(cls, value):
+        object_int_ids = (physical_object.int_id for physical_object in value)
+
+        int_ids_set = set(object_int_ids)
+        len_unique = len(int_ids_set)
+
+        len_total = len(value)
+
+        if len_total != len_unique:
+            msg = (
+                f"At least two of the int_id values are equal, these int_ids are "
+                f"mutually exclusive in {cls.__class__.__name__}:\n"
+                f"{', '.join(object_int_ids)}"
+            )
+            raise AttributeError(msg)
+        if None in int_ids_set and len_unique != 1:
+            msg = (
+                "Either none or all of PhysicalObjects need to have their int_ids"
+                "defined"
+            )
+            raise AttributeError(msg)
+        if int_ids_set != set(range(1, len_total + 1)):
+            msg = (
+                "int_ids must be incremental. IDs that do not follow this rule "
+                "must be stored in the label attribute"
+            )
+            raise AttributeError(msg)
+
+        object_labels = (physical_object.label for physical_object in value)
+        label_set = set(object_labels)
+        counter = Counter(object_labels)
+        if any(counter[value] > 1 for value in label_set if value is not None):
+            msg = "labels need to be unique with the exception of None"
+            raise AttributeError(msg)
+
+        return value
+
 
 def defer_physical_object_set_from_multi_row_reference(**kwargs):
     """
@@ -344,4 +353,3 @@ def defer_physical_object_set_from_multi_row_reference(**kwargs):
     :return:
     """
     image_name_to_perimeter_set = defer_perimeter_set_from_multi_row_reference(**kwargs)
-

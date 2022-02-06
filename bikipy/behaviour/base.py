@@ -145,6 +145,21 @@ class BaseExperiment(Behaviour):
         return dict(sorted(result.items()))
 
     @cached_property
+    def animal_id_vs_trial_ids(self) -> dict:
+        return {
+            animal_id: (trial_object.int_id for trial_object in trial_objects)
+            for animal_id, trial_objects in self.animal_id_vs_trial_objects.items()
+        }
+
+    @cached_property
+    def trial_id_vs_animal_id(self) -> dict:
+        result = {}
+        for animal_id, trial_objects in self.animal_id_vs_trial_objects.items():
+            for trial_object in trial_objects:
+                result[trial_object.int_id] = animal_id
+        return dict(sorted(result.items()))
+
+    @cached_property
     def stage_vs_trial_objects(self) -> dict:
         result = {}
         for trial in self.trial_objects:
@@ -204,7 +219,7 @@ class BaseExperiment(Behaviour):
                     trial_objects = [
                         trial_object
                         for trial_object in copy(trial_objects)
-                        if trial_object.trial_has_feature_frame
+                        if trial_object._trial_has_feature_frame
                     ]
                     data_dict[animal_id] = sum(
                         list(
@@ -220,7 +235,7 @@ class BaseExperiment(Behaviour):
                     (
                         trial_object.feature_summary_row
                         for trial_object in trial_objects
-                        if trial_object.trial_has_feature_frame
+                        if trial_object._trial_has_feature_frame
                     ),
                     [],
                 )
@@ -237,7 +252,7 @@ class BaseExperiment(Behaviour):
     def animal_id_indexed_motion_summary_frame(self) -> pd.DataFrame:
         return (
             pd.merge(
-                self._trial_id_indexed_animal_ids.reset_index(),
+                self._trial_id_indexed_animal_ids,
                 self.motion_summary_frame,
                 on="Trial ID",
             )
@@ -276,7 +291,7 @@ class BaseExperiment(Behaviour):
                 (
                     trial_object.feature_summary_column
                     for trial_object in self._trial_classes
-                    if trial_object.trial_has_feature_frame
+                    if trial_object._trial_has_feature_frame
                 ),
                 [],
             )
@@ -320,8 +335,8 @@ class BaseExperiment(Behaviour):
     @cached_property
     def _trial_id_indexed_animal_ids(self) -> pd.Series:
         return pd.Series(
-            self._animal_id_key_view,
-            index=self._trial_id_series,
+            self.trial_id_vs_animal_id.values(),
+            index=self._trial_id_series,    # derived from self.trial_id_vs_animal_id
             name="Animal ID",
             dtype=np.uint16,
         ).sort_index()
@@ -358,10 +373,7 @@ class BaseExperiment(Behaviour):
 
     @property
     def _trial_id_key_view(self):
-        if self.trial_id_vs_keyword_arguments:
-            return self.trial_id_vs_keyword_arguments.keys()
-        if self.trial_id_range_vs_keyword_arguments:
-            return self.trial_id_range_vs_keyword_arguments.keys()
+        return self.trial_id_vs_animal_id.keys()
 
     @cached_property
     def _trial_classes(self) -> tuple:
@@ -630,3 +642,8 @@ class BaseTrial(Behaviour):
     @cached_property
     def _frame_tolerance(self) -> int:
         return round(self.second_tolerance * self.fps)
+
+    @classmethod
+    @property
+    def _trial_has_feature_frame(cls) -> bool:
+        return cls.feature_summary_column is not None

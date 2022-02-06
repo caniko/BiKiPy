@@ -41,7 +41,7 @@ def clockwise_sort_perimeter_centroids(perimeters: Sequence):
 
 @lru_cache
 def expand_bikipy_perimeter(perimeter, *args, **kwargs):
-    return expand_parallelogram(perimeter.corners, *args, **kwargs)
+    return np.array(expand_parallelogram(perimeter.corners, *args, **kwargs))
 
 
 def expand_parallelogram(
