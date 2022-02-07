@@ -336,7 +336,7 @@ class BaseExperiment(Behaviour):
     def _trial_id_indexed_animal_ids(self) -> pd.Series:
         return pd.Series(
             self.trial_id_vs_animal_id.values(),
-            index=self._trial_id_series,    # derived from self.trial_id_vs_animal_id
+            index=self._trial_id_series,  # derived from self.trial_id_vs_animal_id
             name="Animal ID",
             dtype=np.uint16,
         ).sort_index()
@@ -523,7 +523,7 @@ class BaseTrial(Behaviour):
     def motion(self) -> Motion:
         return Motion(self.coordinates_per_frame, self.meters_per_pixel, self.fps)
 
-    # Perimeter
+    # PolygonPerimeter
 
     def detect_confined_perimeter(self, coordinate: np.ndarray) -> np.ndarray:
         """

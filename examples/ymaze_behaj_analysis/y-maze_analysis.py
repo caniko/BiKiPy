@@ -9,7 +9,7 @@ import pandas as pd
 
 # User defined
 from bikipy.behaviour.radial_arm.y_maze import YMazeExperiment
-from bikipy.perimeter.radial_maze import generate_radial_maze_perimeters
+from bikipy.perimeter.polygon.radial_maze import generate_radial_maze_perimeters
 from bikipy.utils.store import RangeDict
 
 DATASET_LABEL = "phd"

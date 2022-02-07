@@ -19,7 +19,7 @@ from bikipy.behaviour.utils import (
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.typing import Perimeter2D
 from bikipy.math.geometry import clockwise_sort_perimeter_centroids
-from bikipy.perimeter.base import Perimeter, PerimeterSet
+from bikipy.perimeter.base import PerimeterSet, PolygonPerimeter
 
 logger = getLogger(__name__)
 
@@ -264,7 +264,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
     @cached_property
     def _border_presence_data(self):
-        return Perimeter.detect_sequential_border_presence(
+        return PolygonPerimeter.detect_sequential_border_presence(
             self.coordinates_per_frame,
             self.arms,
             inferior_poly_border_instances=[self.center],

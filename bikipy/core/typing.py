@@ -1,5 +1,5 @@
 from typing import Union
 
-from bikipy.perimeter.base import Perimeter, PerimeterSet
+from bikipy.perimeter.base import PerimeterSet, PolygonPerimeter
 
-Perimeter2D = Union[Perimeter, PerimeterSet]
+Perimeter2D = Union[PolygonPerimeter, PerimeterSet]

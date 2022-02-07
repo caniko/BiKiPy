@@ -12,13 +12,13 @@ from bikipy.math.vector import (
     orthogonal_unit_vector,
     unit_vector,
 )
-from bikipy.perimeter.base import Perimeter
-from bikipy.perimeter.parallelogram.draw import parallelogram_input
+from bikipy.perimeter.base import PolygonPerimeter
+from bikipy.perimeter.polygon.parallelogram.draw import parallelogram_input
 
 logger = getLogger(__name__)
 
 
-class ParallelogramPerimeter(Perimeter):
+class ParallelogramPerimeter(PolygonPerimeter):
     _polygon_order: ClassVar[Optional[int]] = 4
 
     @classmethod

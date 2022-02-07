@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, FilePath
 
-from bikipy.perimeter.base import Perimeter
+from bikipy.perimeter.base import PolygonPerimeter
 
 logger = getLogger(__name__)
 
@@ -22,7 +22,9 @@ def from_makesense_coco_polygon(
     single_obj_return: bool = False,
     **perimeter_kwargs,
 ):
-    logger.debug("Generating Perimeter from makesense polygon data in coco format")
+    logger.debug(
+        "Generating PolygonPerimeter from makesense polygon data in coco format"
+    )
 
     with open(data_path, "rb") as in_json:
         coco = json.load(in_json)
@@ -61,7 +63,7 @@ def from_makesense_coco_polygon(
         if reference_point_csv_path:
             current_kwargs["reference_point_array"] = reference_data[image_name]
 
-        perimeter = Perimeter.init_polygon(
+        perimeter = PolygonPerimeter.init_polygon(
             _coco_polygon_annotation(annotation["segmentation"][0]),
             label=coco["categories"][annotation["category_id"] - 1]["name"],
             **current_kwargs,
@@ -112,7 +114,7 @@ def from_makesense_csv_rectangle(
         start = np.array(row[:2])
         end = start + np.array(row[2:4])
 
-        perimeter = Perimeter.init_polygon(
+        perimeter = PolygonPerimeter.init_polygon(
             (start, (start[0], end[1]), end, (end[0], start[1])),
             inspect_image_path=image_root / image_name if image_root else None,
             label=label,

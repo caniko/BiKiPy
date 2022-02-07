@@ -1,11 +1,11 @@
 from pathlib import Path
 
 from bikipy.behaviour.infinity_maze.trial import InfinityMaze
-from bikipy.perimeter.base import Perimeter
+from bikipy.perimeter.base import PolygonPerimeter
 
 ROOT = Path(".").resolve()
 
-perimeters = Perimeter.from_makesense_coco_polygon(
+perimeters = PolygonPerimeter.from_makesense_coco_polygon(
     ROOT / "coco_annotations_2021-09-01-02-19-41.json",
     inspect_image_path="./maze_example.png",
 )

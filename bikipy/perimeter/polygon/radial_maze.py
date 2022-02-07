@@ -8,7 +8,7 @@ from pydantic import FilePath
 
 from bikipy.math.geometry import clockwise_argsort_points
 from bikipy.perimeter import ParallelogramPerimeter, TriangularPerimeter
-from bikipy.perimeter.base import Perimeter, PerimeterSet
+from bikipy.perimeter.base import PerimeterSet, PolygonPerimeter
 from bikipy.perimeter.io.makesense import from_makesense_coco_polygon
 from bikipy.utils.misc import read_makesense_point_csv
 from bikipy.utils.typing import OptionalPathTyping, PathTyping
@@ -83,7 +83,7 @@ def generate_radial_maze_perimeters(
     perimeters = (*arm_perimeters, center_object)
     if inspect:
         fig, ax = plt.subplots(ncols=3)
-        Perimeter.plot_perimeters(perimeters, ax=ax[0])
+        PolygonPerimeter.plot_perimeters(perimeters, ax=ax[0])
         for i, (line, center_corner) in enumerate(
             zip(lines, center_object.corners), start=1
         ):

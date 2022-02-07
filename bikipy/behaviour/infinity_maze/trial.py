@@ -50,7 +50,7 @@ class InfinityMaze(BaseTrial, LiveTrial):
         regression_seconds_tolerance_decimal = regression_seconds_tolerance % 1.0
         self._regression_seconds_tolerance = datetime.time(
             second=floor(regression_seconds_tolerance),
-            microsecond=round(regression_seconds_tolerance_decimal * 10**6),
+            microsecond=round(regression_seconds_tolerance_decimal * 10 ** 6),
         )
 
         self.regression_data = []

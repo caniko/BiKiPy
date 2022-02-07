@@ -1,7 +1,7 @@
 =========
 Attention
 =========
-Consists primarily of :code:`feature.attention.perimeter_attention` that computes the attentiveness of the animal towards an area defined by a :code:`Perimeter` object. To arrive at attention as a probable qualia_ at a given video frame, certain conditions have to be fulfilled. These conditions are defined as filters for simplicity.
+Consists primarily of :code:`feature.attention.perimeter_attention` that computes the attentiveness of the animal towards an area defined by a :code:`PolygonPerimeter` object. To arrive at attention as a probable qualia_ at a given video frame, certain conditions have to be fulfilled. These conditions are defined as filters for simplicity.
 
 Filters
 =======

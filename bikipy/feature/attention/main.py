@@ -12,7 +12,7 @@ import seaborn as sb
 
 from bikipy.feature.angle import inner_angle
 from bikipy.math.vector import unit_vector
-from bikipy.perimeter.base import Perimeter
+from bikipy.perimeter.base import PolygonPerimeter
 from bikipy.utils.misc import seek_next_file_index
 
 SCATTER_ALPHA = 0.55
@@ -20,7 +20,7 @@ logger = getLogger(__name__)
 
 
 def proximity_filter(
-    perimeter: Perimeter,
+    perimeter: PolygonPerimeter,
     inside_perimeter_border: Sequence[Sequence[float]],
     outside_perimeter: Sequence[Sequence[float]],
     perimeter_border_normal_pixel_magnitude: float,
@@ -37,7 +37,7 @@ def proximity_filter(
     :param perimeter_border_normal_pixel_magnitude: The magnitude of the normal between the perimeter and the perimeter given in pixels
     :param inspect: If True, generate and view an analytics of the resulting filter
     :param inspection_ax: matplotlib Axes that the inspection plots will (optionally) be saved in
-    :type perimeter: Perimeter
+    :type perimeter: PolygonPerimeter
     :type inside_perimeter_border: np.ndarray
     :type outside_perimeter: np.ndarray
     :type perimeter_border_normal_pixel_magnitude: float
@@ -108,7 +108,7 @@ def proximity_filter(
 
 
 def gaze_direction_filter(
-    perimeter: Perimeter,
+    perimeter: PolygonPerimeter,
     gaze_travel_direction_point_label: Sequence[Sequence[float]],
     gaze_start_point_label: Sequence[Sequence[float]],
     max_radians: float,
@@ -246,7 +246,7 @@ def tolerance_filter(
 
 
 def perimeter_attention(
-    perimeter: Perimeter,
+    perimeter: PolygonPerimeter,
     eye_center: Sequence[Sequence[float]],
     nose: Sequence[Sequence[float]],
     fps: float,
@@ -260,7 +260,7 @@ def perimeter_attention(
 
     Parameters
     ----------
-    perimeter: Perimeter
+    perimeter: PolygonPerimeter
     eye_center: Sequence
         Points across time defining the position between the eyes of the animal
     nose: Sequence

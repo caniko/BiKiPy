@@ -70,7 +70,7 @@ sphinx = ["Sphinx", "sphinx-material", "sphinx-autoapi", "setuptools"]
 profile = "black"
 
 [tool.black]
-target-version = ['py37', 'py38', 'py39']
+target-version = ['py39']
 include = '\.pyi?$'
 exclude = '''
 (
