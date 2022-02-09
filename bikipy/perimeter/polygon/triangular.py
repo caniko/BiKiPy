@@ -4,7 +4,7 @@ from typing import ClassVar, Optional, Union
 import numpy as np
 from numpy.typing import NDArray
 
-from bikipy.perimeter.base import PolygonPerimeter
+from bikipy.perimeter.polygon.base import PolygonPerimeter
 
 
 class TriangularPerimeter(PolygonPerimeter):

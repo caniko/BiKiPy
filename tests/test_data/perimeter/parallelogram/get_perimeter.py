@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from bikipy.perimeter.base import PolygonPerimeter
+from bikipy.perimeter.polygon.base import PolygonPerimeter
 
 ANNOTATION_DIR = Path(__file__).parent / "annotations"
 

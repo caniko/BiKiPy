@@ -2,13 +2,13 @@ import json
 from functools import lru_cache
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Callable, Optional, Sequence
+from typing import Any, Optional, Sequence
 
 import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, FilePath
 
-from bikipy.perimeter.base import PolygonPerimeter
+from bikipy.perimeter.polygon.base import PolygonPerimeter
 
 logger = getLogger(__name__)
 

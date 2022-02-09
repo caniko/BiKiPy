@@ -252,9 +252,9 @@ class BaseExperiment(Behaviour):
     def animal_id_indexed_motion_summary_frame(self) -> pd.DataFrame:
         return (
             pd.merge(
-                self._trial_id_indexed_animal_ids,
+                self._trial_id_indexed_animal_ids.reset_index(),
                 self.motion_summary_frame,
-                on="Trial ID",
+                on="Trial ID"
             )
             .drop("Trial ID", axis=1)
             .set_index("Animal ID")

@@ -12,7 +12,7 @@ from bikipy.behaviour.object_recognition.nort.experiment import (
     NortExperiment,
     NortField,
 )
-from bikipy.perimeter.base import PolygonPerimeter
+from bikipy.perimeter.polygon.base import PolygonPerimeter
 
 
 def _re_pattern_validator(pattern: re.Pattern):

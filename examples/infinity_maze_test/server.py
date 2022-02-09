@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from bikipy.behaviour.infinity_maze.trial import InfinityMaze
-from bikipy.perimeter.base import PolygonPerimeter
+from bikipy.perimeter.polygon.base import PolygonPerimeter
 
 ROOT = Path(".").resolve()
 

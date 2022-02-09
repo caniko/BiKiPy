@@ -1,17 +1,12 @@
-from typing import Optional, Union
+from typing import Optional
 
 import numpy as np
 from pydantic import FilePath
 
-from bikipy.perimeter.base import PerimeterSet
-from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.utils.misc import read_makesense_point_csv
 
 
-def distance_between_two_perimeters(
-    perimeter_a: Union[PolygonPerimeter, PerimeterSet],
-    perimeter_b: Union[PolygonPerimeter, PerimeterSet],
-):
+def distance_between_two_perimeters(perimeter_a, perimeter_b):
     return np.linalg.norm(perimeter_a.centroid - perimeter_b.centroid)
 
 

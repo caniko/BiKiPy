@@ -11,8 +11,7 @@ import numpy as np
 import seaborn as sb
 
 from bikipy.feature.angle import inner_angle
-from bikipy.math.vector import unit_vector
-from bikipy.perimeter.base import PolygonPerimeter
+from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.utils.misc import seek_next_file_index
 
 SCATTER_ALPHA = 0.55

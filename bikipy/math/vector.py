@@ -130,7 +130,7 @@ def point_to_line_segment_distance(points, line_segment):
     start_end_y = segment_end_y - segment_start_y
 
     dot = start_to_point_x * start_end_x + start_to_point_y * start_end_y
-    len_sq = start_end_x ** 2 + start_end_y ** 2
+    len_sq = start_end_x**2 + start_end_y**2
 
     param = np.full_like(dot, -1.0) if len_sq == 0 else dot / len_sq
 
@@ -153,7 +153,7 @@ def point_to_line_segment_distance(points, line_segment):
 
     dx = point_x - xx
     dy = point_y - yy
-    return np.sqrt(dx ** 2 + dy ** 2)
+    return np.sqrt(dx**2 + dy**2)
 
 
 def closest_line_to_point(

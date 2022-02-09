@@ -3,7 +3,7 @@ from datetime import datetime
 import zmq
 from matplotlib import pyplot as plt
 
-from bikipy.perimeter.base import PolygonPerimeter
+from bikipy.perimeter.polygon.base import PolygonPerimeter
 
 
 def onclick(event):

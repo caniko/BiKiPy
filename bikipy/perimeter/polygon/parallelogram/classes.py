@@ -12,7 +12,7 @@ from bikipy.math.vector import (
     orthogonal_unit_vector,
     unit_vector,
 )
-from bikipy.perimeter.base import PolygonPerimeter
+from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.perimeter.polygon.parallelogram.draw import parallelogram_input
 
 logger = getLogger(__name__)

@@ -7,7 +7,7 @@ import pickle
 from pathlib import Path
 
 from bikipy.behaviour.object_recognition.nort.trial import NortField
-from bikipy.perimeter.base import PolygonPerimeter
+from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.plugins.belhaj import round_vs_apparatus_to_general_nort_fields
 
 NORT_EXAMPLE_DIR = Path(".").resolve().parent

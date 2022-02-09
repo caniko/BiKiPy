@@ -10,7 +10,7 @@ from bikipy.behaviour.rectangle.square import SquareEnclosedExperiment
 from bikipy.core.base_class import BikipyBase
 from bikipy.core.typing import Perimeter2D
 from bikipy.feature.physical_object import PhysicalObjectSet
-from bikipy.perimeter.base import distance_between_two_perimeters
+from bikipy.perimeter.utils import distance_between_two_perimeters
 
 logger = getLogger(__name__)
 
