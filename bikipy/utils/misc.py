@@ -64,6 +64,34 @@ def seek_next_file_index(filepath: Union[PurePath, str]) -> PurePath:
     return new_filepath
 
 
+def rise_to_n_levels(columns, n_levels: int):
+    """
+    Used to equate two pandas dataframes in terms of their column levels before merge
+
+    :param columns:
+    :param n_levels:
+    :return:
+    """
+    column_array = np.array(columns)
+    if n_levels < column_array.shape[1]:
+        msg = (
+            "Can not reduce the number of levels that are natively defined"
+            "in index"
+        )
+        raise ValueError(msg)
+
+    return to_tuple(
+        np.concatenate(
+            (
+                column_array,
+                [["" for _ in range(n_levels - column_array.shape[1])]]
+                * len(column_array),
+            ),
+            axis=1,
+        )
+    )
+
+
 def clear_console():
     """
     https://stackoverflow.com/a/65343640/9793651
