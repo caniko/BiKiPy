@@ -73,6 +73,9 @@ def rise_to_n_levels(columns, n_levels: int):
     :return:
     """
     column_array = np.array(columns)
+    if len(column_array.shape) == 1:
+        column_array = np.expand_dims(column_array, 1)
+
     if n_levels < column_array.shape[1]:
         msg = (
             "Can not reduce the number of levels that are natively defined"

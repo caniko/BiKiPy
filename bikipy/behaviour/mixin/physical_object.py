@@ -48,7 +48,7 @@ class PhysicalObjectBaseMixin(BikipyBase, ABC):
                 "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
                 "minimum_seconds_attention": self.minimum_seconds_attention,
                 "maximum_seconds_distraction": self.maximum_seconds_distraction,
-                "inspect": self.inspection_figure_save,
+                "inspect": self.inspect,
             }
         except AttributeError as e:
             msg = "The class does not support instancing PhysicalObject"

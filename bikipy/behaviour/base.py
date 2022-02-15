@@ -18,7 +18,7 @@ from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.mixin import VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_2d_multi_indexer
 from bikipy.reader.deeplabcut import DeepLabCutReader
-from bikipy.utils.misc import to_tuple
+from bikipy.utils.misc import to_tuple, rise_to_n_levels
 from bikipy.utils.render_video import VideoWriter
 from bikipy.utils.store import RangeDict
 
@@ -44,7 +44,7 @@ class BaseExperiment(Behaviour):
     trial_id_vs_keyword_arguments: Optional[dict] = None
     trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
     common_trial_keyword_arguments: Optional[dict] = None
-    inspection_figure_save: Union[DirectoryPath, bool] = False
+    inspect: Union[DirectoryPath, bool] = False
 
     trial_class: ClassVar[Any] = None
 
@@ -58,6 +58,18 @@ class BaseExperiment(Behaviour):
     @validator("trial_id_vs_trial_class")
     def sort_trial_id_vs_keyword_arguments_ascending(cls, value):
         return dict(sorted(value.items()))
+
+    @validator("inspect")
+    def validate_inspect_as_bool_or_path(cls, value):
+        if isinstance(value, bool):
+            return value
+        else:   # elif isinstance(value, Path)
+            # Assign a directory for the inspection picture of the runtime
+            i = 1
+            while (experiment_inspect_path := value / f"experiment_inspect_{i}").exists():
+                i += 1
+            os.mkdir(experiment_inspect_path)
+            return experiment_inspect_path
 
     def __getitem__(self, item: int):
         return self.trial_id_vs_trial_object[item]
@@ -88,8 +100,11 @@ class BaseExperiment(Behaviour):
             result["metric_resolution"] = self.metric_resolution
         if self.data_import_kwargs:
             result["data_import_kwargs"] = self.data_import_kwargs
+
         if "animal_id" not in result:
             result["animal_id"] = trial_id
+        if "inspect" not in result:
+            result["inspect"] = self.inspect
 
         return result
 
@@ -106,11 +121,7 @@ class BaseExperiment(Behaviour):
                 for trial_id, trial_class in self.trial_id_vs_trial_class.items()
             ]
         else:
-            msg = (
-                "Either trial_class or trial_id_vs_trial_class have to be "
-                "exclusively defined"
-            )
-            raise AttributeError(msg)
+            self._neither_singular_trial_class_or_trial_id_vs_trial_class()
 
     @cached_property
     def trial_class_name_vs_trial_ids(self):
@@ -172,17 +183,6 @@ class BaseExperiment(Behaviour):
     @cached_property
     def stages(self):
         return tuple(self.stage_vs_trial_objects.keys())
-
-    @property
-    def inspect(self):
-        if isinstance(self.inspection_figure_save, bool):
-            return self.inspection_figure_save
-        elif isinstance(self.inspection_figure_save, PurePath):
-            if not self.inspection_figure_save.exists():
-                os.makedirs(self.inspection_figure_save)
-            return self.inspection_figure_save / f"experiment_{self.timestamp}_inspect"
-        else:
-            raise AttributeError()
 
     @property
     def trial_id_tuple(self) -> tuple:
@@ -252,7 +252,7 @@ class BaseExperiment(Behaviour):
     def animal_id_indexed_motion_summary_frame(self) -> pd.DataFrame:
         return (
             pd.merge(
-                self._trial_id_indexed_animal_ids.reset_index(),
+                self._trial_id_animal_id(self.motion_summary_frame.columns.nlevels),
                 self.motion_summary_frame,
                 on="Trial ID"
             )
@@ -296,27 +296,10 @@ class BaseExperiment(Behaviour):
                 [],
             )
         else:
-            raise ValueError
+            self._neither_singular_trial_class_or_trial_id_vs_trial_class()
 
         if levels:
-            column_array = np.array(columns)
-            if levels > (native_nlevel := column_array.shape[1]):
-                columns = to_tuple(
-                    np.concatenate(
-                        (
-                            column_array,
-                            [["" for _ in range(levels - native_nlevel)]]
-                            * len(column_array),
-                        ),
-                        axis=1,
-                    )
-                )
-            elif levels < native_nlevel:
-                msg = (
-                    "Can not reduce the number of levels that are natively defined"
-                    "in index"
-                )
-                raise ValueError(msg)
+            columns = rise_to_n_levels(columns, levels)
 
         return pd.MultiIndex.from_tuples(columns)
 
@@ -340,6 +323,13 @@ class BaseExperiment(Behaviour):
             name="Animal ID",
             dtype=np.uint16,
         ).sort_index()
+
+    def _trial_id_animal_id(self, levels: Optional[int] = None) -> pd.DataFrame:
+        result = self._trial_id_indexed_animal_ids.reset_index()
+        if levels:
+            columns = rise_to_n_levels(result.columns, levels)
+            result.columns = columns
+        return result
 
     @cached_property
     def _trial_class_vs_trial_ids(self) -> dict:
@@ -377,13 +367,11 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _trial_classes(self) -> tuple:
-        return (
-            (self.trial_class,)
-            if self.trial_class
-            else tuple(
-                sorted(
-                    self._trial_class_vs_trial_ids, key=lambda x: x.trial_sequence_index
-                )
+        if self.trial_class:
+            return self.trial_class,
+        return tuple(
+            sorted(
+                self._trial_class_vs_trial_ids, key=lambda x: x.trial_sequence_index
             )
         )
 
@@ -438,6 +426,13 @@ class BaseExperiment(Behaviour):
     def motion_summary_columns(self) -> list:
         return motion_2d_multi_indexer("All")
 
+    def _neither_singular_trial_class_or_trial_id_vs_trial_class(self):
+        msg = (
+            "Either trial_class has to be singularly defined, "
+            "or trial_id_vs_trial_class have to be exclusively defined"
+        )
+        raise AttributeError(msg)
+
 
 class BaseTrial(Behaviour):
     coordinate_data_path: FilePath = Field(
@@ -454,7 +449,7 @@ class BaseTrial(Behaviour):
     stage: Optional[str] = Field(
         None, description="The semantic stage of the experiment"
     )
-    inspection_figure_save: Union[DirectoryPath, bool] = Field(
+    inspect: Union[DirectoryPath, bool] = Field(
         False, description="Path to save figures for inspection of results"
     )
     inspect_image: Optional[FilePath] = Field(
@@ -509,11 +504,11 @@ class BaseTrial(Behaviour):
 
     @property
     def inspect_image_path(self) -> Union[DirectoryPath, bool]:
-        if isinstance(self.inspection_figure_save, str) or isinstance(
-            self.inspection_figure_save, PurePath
+        if isinstance(self.inspect, str) or isinstance(
+            self.inspect, PurePath
         ):
-            return Path(self.inspection_figure_save) / self.best_id
-        return self.inspection_figure_save  # return the bool in any case
+            return Path(self.inspect) / self.best_id
+        return self.inspect  # return the bool in any case
 
     @cached_property
     def recording_center_pixel(self) -> np.ndarray:

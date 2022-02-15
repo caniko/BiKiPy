@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from logging import getLogger
-from typing import Optional
+from typing import Optional, ClassVar
 
 from pydantic import Field, root_validator
 

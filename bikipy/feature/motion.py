@@ -290,6 +290,9 @@ def get_combined_features_from_merged_motion_island_data(
     if (end := indices[-1] + 1) - start >= 4:
         motion_features.append(motion_object_from_slice(start, end))
 
+    if not np.any(motion_features[0]):
+        return _zero_return
+
     return {
         "total_displacement": sum(
             motion_feature[0] for motion_feature in motion_features

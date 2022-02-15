@@ -121,7 +121,7 @@ class SquareEnclosedTrial(RectangleEnclosedTrial):
             self.center_square_corners[3],
             self.center_square_corners[1],
             self.coordinates_per_frame,
-            inspect=self.inspection_figure_save,
+            inspect=self.inspect,
             inspect_function_call_context=self.__class__.__name__,
         )
 
