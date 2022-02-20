@@ -3,6 +3,7 @@ import os
 import re
 from glob import glob
 from pathlib import Path
+from shutil import rmtree
 
 import numpy as np
 import pandas as pd
@@ -34,6 +35,10 @@ IMAGE_DIR = DATA_DIR / "area_images"
 RESULT_DIR = WORKING_DIR / "results"
 if not RESULT_DIR.exists():
     os.mkdir(RESULT_DIR)
+
+inspect_dir = WORKING_DIR / "inspect"
+rmtree(inspect_dir)
+os.mkdir(inspect_dir)
 
 EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
@@ -140,7 +145,7 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
             maximum_radians_inter_gaze_perimeter=np.deg2rad(75.0),
             minimum_seconds_attention=2.0,
             maximum_seconds_distraction=0.5,
-            inspect=RESULT_DIR / "inspect",
+            inspection_dir=inspect_dir,
             data_import_kwargs={
                 "init_from": "parquet",
                 "midpoint_groups": {
@@ -154,8 +159,6 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
         # experiment.plot_attention_state_distribution()
         experiments.append(experiment)
 
-
-experiment.animal_id_indexed_feature_frame
 
 with pd.ExcelWriter(
     RESULT_DIR / "nort_analysis.xlsx",

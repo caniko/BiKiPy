@@ -397,7 +397,7 @@ class PolygonPerimeter(BasePerimeter):
             ax.scatter(*self.edge_midpoints[index])
 
             if perimeter_border_normal_pixel_magnitude:
-                perimeter = self.perimeter(perimeter_border_normal_pixel_magnitude)
+                perimeter = self.expand(perimeter_border_normal_pixel_magnitude)
                 border_a = perimeter[index]
                 border_b = perimeter[following_index]
                 ax.plot(

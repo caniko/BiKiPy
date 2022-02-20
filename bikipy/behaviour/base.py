@@ -44,7 +44,9 @@ class BaseExperiment(Behaviour):
     trial_id_vs_keyword_arguments: Optional[dict] = None
     trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
     common_trial_keyword_arguments: Optional[dict] = None
-    inspect: Union[DirectoryPath, bool] = False
+    inspection_dir: Optional[DirectoryPath] = Field(
+        None, description="Path to save figures for inspection of results"
+    )
 
     trial_class: ClassVar[Any] = None
 
@@ -58,18 +60,6 @@ class BaseExperiment(Behaviour):
     @validator("trial_id_vs_trial_class")
     def sort_trial_id_vs_keyword_arguments_ascending(cls, value):
         return dict(sorted(value.items()))
-
-    @validator("inspect")
-    def validate_inspect_as_bool_or_path(cls, value):
-        if isinstance(value, bool):
-            return value
-        else:   # elif isinstance(value, Path)
-            # Assign a directory for the inspection picture of the runtime
-            i = 1
-            while (experiment_inspect_path := value / f"experiment_inspect_{i}").exists():
-                i += 1
-            os.mkdir(experiment_inspect_path)
-            return experiment_inspect_path
 
     def __getitem__(self, item: int):
         return self.trial_id_vs_trial_object[item]
@@ -103,8 +93,9 @@ class BaseExperiment(Behaviour):
 
         if "animal_id" not in result:
             result["animal_id"] = trial_id
-        if "inspect" not in result:
-            result["inspect"] = self.inspect
+
+        if self.inspection_dir:
+            result["inspection_dir"] = self.inspection_dir / result["stage"] if "stage" in result else self.inspection_dir
 
         return result
 
@@ -426,6 +417,9 @@ class BaseExperiment(Behaviour):
     def motion_summary_columns(self) -> list:
         return motion_2d_multi_indexer("All")
 
+    def _make_categorical_inspection_dir(self, trial_root_dir: Path):
+        pass
+
     def _neither_singular_trial_class_or_trial_id_vs_trial_class(self):
         msg = (
             "Either trial_class has to be singularly defined, "
@@ -449,11 +443,11 @@ class BaseTrial(Behaviour):
     stage: Optional[str] = Field(
         None, description="The semantic stage of the experiment"
     )
-    inspect: Union[DirectoryPath, bool] = Field(
-        False, description="Path to save figures for inspection of results"
+    inspection_dir: Optional[DirectoryPath] = Field(
+        None, description="Path to save figures for inspection of results"
     )
     inspect_image: Optional[FilePath] = Field(
-        None, description="Image used for inspection"
+        None, description="Image to use as background in the plots for visualising the analysis data"
     )
     # Variables for trials with zones, see doc for more info.
     perimeters: Optional[Sequence] = None
@@ -469,6 +463,10 @@ class BaseTrial(Behaviour):
 
     feature_summary_column: ClassVar[Any] = None
     trial_has_video_space_for_analysis: ClassVar[bool] = False
+
+    @validator("inspection_dir")
+    def make_categorical_inspection_sub_dirs(cls, value):
+        return value
 
     @property
     def motion_features(self) -> list:
@@ -501,14 +499,6 @@ class BaseTrial(Behaviour):
     @cached_property
     def experiment_seconds(self) -> int:
         return self.coordinates_per_frame.shape[0] / self.fps
-
-    @property
-    def inspect_image_path(self) -> Union[DirectoryPath, bool]:
-        if isinstance(self.inspect, str) or isinstance(
-            self.inspect, PurePath
-        ):
-            return Path(self.inspect) / self.best_id
-        return self.inspect  # return the bool in any case
 
     @cached_property
     def recording_center_pixel(self) -> np.ndarray:

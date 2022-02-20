@@ -95,6 +95,15 @@ def rise_to_n_levels(columns, n_levels: int):
     )
 
 
+def directory_incrementor(path: Path):
+    path = Path(path)
+    i = 2
+    while path.exists():
+        path = path.with_stem(path.stem + f"_{i}")
+        i += 1
+    return path
+
+
 def clear_console():
     """
     https://stackoverflow.com/a/65343640/9793651

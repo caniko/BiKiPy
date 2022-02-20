@@ -287,7 +287,7 @@ def perimeter_attention(
         if perimeter.inspect_image is None:
             fig, axes = plt.subplots(nrows=2, ncols=2)
         else:
-            x, y = perimeter.inspect_image.shape
+            x, y = perimeter.inspect_image.shape[:2]
             fig, axes = plt.subplots(
                 nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0)
             )

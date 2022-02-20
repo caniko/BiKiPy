@@ -1,8 +1,11 @@
+import os
 from abc import ABC
 from functools import cache, cached_property
+from pathlib import Path
+from typing import Optional
 
 import numpy as np
-from pydantic import validate_arguments
+from pydantic import validate_arguments, validator
 from skg import ngauss_fit
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
@@ -39,8 +42,16 @@ class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelM
             *self._feature_2d_multi_indexer("Entries", quadrant_labels),
         ]
 
+    def _make_categorical_inspection_dir(self, trial_root_dir: Path):
+        os.makedirs(trial_root_dir / "")
 
 class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin, ABC):
+    center_box_to_recording_resolution_ratio: Optional[float] = None
+
+    @validator("inspection_dir")
+    def make_categorical_inspection_sub_dirs(cls, value):
+        return value
+
     @cached_property
     def gaussian_center_to_periphery_score(self):
         func = gaussian_scoring_field(self.tuple_recording_resolution)
@@ -189,6 +200,105 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             self.quadrant_lower_left_entries,
             self.quadrant_lower_right_entries,
         ]
+
+    # Center vs Periphery ==============================================================
+    @cached_property
+    def center_square_corners(self):
+        if self.center_box_to_recording_resolution_ratio is None:
+            msg = "center_box_to_recording_resolution_ratio must be defined for center and periphery analysis"
+            raise AttributeError(msg)
+        center_pixel_lengths = self.recording_resolution / self.center_box_to_recording_resolution_ratio
+        center_point_to_center_box_side_normal_lengths = center_pixel_lengths / 2.0
+
+        x_short = self.recording_center_pixel[0] - center_point_to_center_box_side_normal_lengths[0]
+        x_long = self.recording_center_pixel[0] + center_point_to_center_box_side_normal_lengths[0]
+        y_short = self.recording_center_pixel[1] + center_point_to_center_box_side_normal_lengths[1]
+        y_long = self.recording_center_pixel[1] - center_point_to_center_box_side_normal_lengths[1]
+
+        return np.array((
+            (x_short, y_short),
+            (x_short, y_long),
+            (x_long, y_long),
+            (x_long, y_short)
+        ))
+
+    @cached_property
+    def center_boolean_index(self):
+        return points_in_parallelogram(
+            self.center_square_corners[0],
+            self.center_square_corners[3],
+            self.center_square_corners[1],
+            self.coordinates_per_frame,
+            inspect=self.inspection_dir / "center_boolean_index",
+            inspect_function_call_context=self.__class__.__name__,
+        )
+
+    @cached_property
+    def periphery_boolean_index(self):
+        return ~self.center_boolean_index
+
+    @cached_property
+    def motion_center(self) -> dict:
+        return get_combined_features_from_merged_motion_island_data(
+            self.center_boolean_index,
+            self.coordinates_per_frame,
+            self.meters_per_pixel,
+            self.fps,
+        )
+
+    @cached_property
+    def motion_periphery(self) -> dict:
+        return get_combined_features_from_merged_motion_island_data(
+            self.periphery_boolean_index,
+            self.coordinates_per_frame,
+            self.meters_per_pixel,
+            self.fps,
+        )
+
+    @cached_property
+    def location_sequence_center_periphery(self):
+        # 1 is center, 2 is periphery, 0 is unknown
+        location_sequence_center_periphery = np.zeros_like(
+            self.center_boolean_index, dtype=np.uint8
+        )
+        location_sequence_center_periphery[self.center_boolean_index] = 1
+        location_sequence_center_periphery[self.periphery_boolean_index] = 2
+        return np.array(
+            reduce_repeating_sequences(
+                location_sequence_center_periphery,
+                frame_tolerance=self._frame_tolerance,
+            )
+        )
+
+    @cached_property
+    def center_entries(self):
+        return np.sum(self.location_sequence_center_periphery == 1)
+
+    @cached_property
+    def periphery_entries(self):
+        return np.sum(self.location_sequence_center_periphery == 2)
+
+    @cached_property
+    def seconds_on_center(self):
+        return np.sum(self.center_boolean_index) / self.fps
+
+    @cached_property
+    def seconds_on_periphery(self):
+        return np.sum(self.periphery_boolean_index) / self.fps
+
+    @cached_property
+    def center_freezing_time(self):
+        return (
+            np.sum(self.motion.frozen_boolean_index & self.center_boolean_index[1:])
+            / self.fps
+        )
+
+    @cached_property
+    def periphery_freezing_time(self):
+        return (
+            np.sum(self.motion.frozen_boolean_index & self.periphery_boolean_index[1:])
+            / self.fps
+        )
 
 
 @cache
