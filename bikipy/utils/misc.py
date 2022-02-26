@@ -77,10 +77,7 @@ def rise_to_n_levels(columns, n_levels: int):
         column_array = np.expand_dims(column_array, 1)
 
     if n_levels < column_array.shape[1]:
-        msg = (
-            "Can not reduce the number of levels that are natively defined"
-            "in index"
-        )
+        msg = "Can not reduce the number of levels that are natively defined" "in index"
         raise ValueError(msg)
 
     return to_tuple(

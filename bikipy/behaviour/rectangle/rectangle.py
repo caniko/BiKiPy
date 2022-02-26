@@ -45,11 +45,13 @@ class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelM
     def _make_categorical_inspection_dir(self, trial_root_dir: Path):
         os.makedirs(trial_root_dir / "")
 
+
 class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin, ABC):
     center_box_to_recording_resolution_ratio: Optional[float] = None
 
     @validator("inspection_dir")
     def make_categorical_inspection_sub_dirs(cls, value):
+        os.mkdir(value / "quadrant")
         return value
 
     @cached_property
@@ -116,6 +118,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             np.array((self.recording_center_pixel[0], 0.0)),
             np.array((0.0, self.recording_center_pixel[1])),
             self.coordinates_per_frame,
+            inspect=self.inspection_dir / "quadrant" / "upper_left"
         )
 
     @cached_property
@@ -135,6 +138,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             self.recording_center_pixel,
             np.array((self.horizontal_resolution, 0.0)),
             self.coordinates_per_frame,
+            inspect=self.inspection_dir / "quadrant" / "upper_right"
         )
 
     @cached_property
@@ -154,6 +158,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             np.array((self.recording_center_pixel[0], self.vertical_resolution)),
             np.array((0.0, self.recording_center_pixel[1])),
             self.coordinates_per_frame,
+            inspect=self.inspection_dir / "quadrant" / "lower_left"
         )
 
     @cached_property
@@ -173,6 +178,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             self.recording_resolution,
             self.recording_center_pixel,
             self.coordinates_per_frame,
+            inspect=self.inspection_dir / "quadrant" / "lower_right"
         )
 
     @cached_property
@@ -207,20 +213,31 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
         if self.center_box_to_recording_resolution_ratio is None:
             msg = "center_box_to_recording_resolution_ratio must be defined for center and periphery analysis"
             raise AttributeError(msg)
-        center_pixel_lengths = self.recording_resolution / self.center_box_to_recording_resolution_ratio
+        center_pixel_lengths = (
+            self.recording_resolution / self.center_box_to_recording_resolution_ratio
+        )
         center_point_to_center_box_side_normal_lengths = center_pixel_lengths / 2.0
 
-        x_short = self.recording_center_pixel[0] - center_point_to_center_box_side_normal_lengths[0]
-        x_long = self.recording_center_pixel[0] + center_point_to_center_box_side_normal_lengths[0]
-        y_short = self.recording_center_pixel[1] + center_point_to_center_box_side_normal_lengths[1]
-        y_long = self.recording_center_pixel[1] - center_point_to_center_box_side_normal_lengths[1]
+        x_short = (
+            self.recording_center_pixel[0]
+            - center_point_to_center_box_side_normal_lengths[0]
+        )
+        x_long = (
+            self.recording_center_pixel[0]
+            + center_point_to_center_box_side_normal_lengths[0]
+        )
+        y_short = (
+            self.recording_center_pixel[1]
+            + center_point_to_center_box_side_normal_lengths[1]
+        )
+        y_long = (
+            self.recording_center_pixel[1]
+            - center_point_to_center_box_side_normal_lengths[1]
+        )
 
-        return np.array((
-            (x_short, y_short),
-            (x_short, y_long),
-            (x_long, y_long),
-            (x_long, y_short)
-        ))
+        return np.array(
+            ((x_short, y_short), (x_short, y_long), (x_long, y_long), (x_long, y_short))
+        )
 
     @cached_property
     def center_boolean_index(self):

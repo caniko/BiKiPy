@@ -2,18 +2,21 @@ from typing import Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numba import njit
+from pydantic import DirectoryPath
 from seaborn import set_theme
 
 from bikipy.math.vector import dot_prod_along_axis_1, orthogonal_unit_vector
 from bikipy.utils.misc import generic_inspection_finalization
 
 
+@njit
 def points_in_parallelogram(
     ab_mid_corner: np.ndarray,
     corner_a: np.ndarray,
     corner_b: np.ndarray,
     coordinates: np.ndarray,
-    inspect: bool = False,
+    inspect: Optional[DirectoryPath] = None,
     inspect_function_call_context: Optional[str] = None,
 ) -> np.ndarray:
     """

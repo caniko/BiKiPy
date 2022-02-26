@@ -95,7 +95,11 @@ class BaseExperiment(Behaviour):
             result["animal_id"] = trial_id
 
         if self.inspection_dir:
-            result["inspection_dir"] = self.inspection_dir / result["stage"] if "stage" in result else self.inspection_dir
+            result["inspection_dir"] = (
+                self.inspection_dir / result["stage"]
+                if "stage" in result
+                else self.inspection_dir
+            )
 
         return result
 
@@ -245,7 +249,7 @@ class BaseExperiment(Behaviour):
             pd.merge(
                 self._trial_id_animal_id(self.motion_summary_frame.columns.nlevels),
                 self.motion_summary_frame,
-                on="Trial ID"
+                on="Trial ID",
             )
             .drop("Trial ID", axis=1)
             .set_index("Animal ID")
@@ -359,11 +363,9 @@ class BaseExperiment(Behaviour):
     @cached_property
     def _trial_classes(self) -> tuple:
         if self.trial_class:
-            return self.trial_class,
+            return (self.trial_class,)
         return tuple(
-            sorted(
-                self._trial_class_vs_trial_ids, key=lambda x: x.trial_sequence_index
-            )
+            sorted(self._trial_class_vs_trial_ids, key=lambda x: x.trial_sequence_index)
         )
 
     @cached_property
@@ -447,7 +449,8 @@ class BaseTrial(Behaviour):
         None, description="Path to save figures for inspection of results"
     )
     inspect_image: Optional[FilePath] = Field(
-        None, description="Image to use as background in the plots for visualising the analysis data"
+        None,
+        description="Image to use as background in the plots for visualising the analysis data",
     )
     # Variables for trials with zones, see doc for more info.
     perimeters: Optional[Sequence] = None

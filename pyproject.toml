@@ -18,7 +18,7 @@ scipy = "^1.5.3"
 Shapely = "^1.7.1"
 scikit-guess = {git = "https://github.com/madphysicist/scikit-guess"}
 
-pandas = "^1.0.5"
+pandas = "^1.4.1"
 tables = "*"
 
 pyarrow = "*"
@@ -27,7 +27,7 @@ openpyxl = "*"
 odfpy = "*"
 
 llvmlite = "*"
-numba = "^0.53.1"
+numba = "*"
 
 matplotlib = "^3.2.2"
 PyQt5 = { version = "*", platform = "linux" }
