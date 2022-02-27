@@ -1,6 +1,6 @@
 import os
 from abc import ABC
-from functools import cache, cached_property
+from functools import cached_property, lru_cache
 from pathlib import Path
 from typing import Optional
 
@@ -21,6 +21,8 @@ from bikipy.feature.motion import (
 from bikipy.math.point_in_polygon import points_in_parallelogram
 
 A = 255
+QUADRANT_INSPECTION_DIR_NAME = "PiP_quadrant_location_booleans"
+CENTER_INSPECTION_DIR_NAME = "PiP_center_location_booleans"
 
 
 class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelMixin):
@@ -49,9 +51,17 @@ class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelM
 class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin, ABC):
     center_box_to_recording_resolution_ratio: Optional[float] = None
 
+    @cached_property
+    def _quadrant_inspection_dir(self):
+        return self.inspection_dir / QUADRANT_INSPECTION_DIR_NAME
+
     @validator("inspection_dir")
     def make_categorical_inspection_sub_dirs(cls, value):
-        os.mkdir(value / "quadrant")
+        if value and not (quadrant_dir := value / QUADRANT_INSPECTION_DIR_NAME).exists():
+            os.mkdir(quadrant_dir)
+            for current_quadrant in ("upper_left", "upper_right", "lower_right", "lower_left"):
+                os.mkdir(quadrant_dir / current_quadrant)
+            os.mkdir(value / CENTER_INSPECTION_DIR_NAME)
         return value
 
     @cached_property
@@ -118,7 +128,8 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             np.array((self.recording_center_pixel[0], 0.0)),
             np.array((0.0, self.recording_center_pixel[1])),
             self.coordinates_per_frame,
-            inspect=self.inspection_dir / "quadrant" / "upper_left"
+            inspect=self._quadrant_inspection_dir / "upper_left" / self._inspection_image_name if self.inspection_dir else None,
+            inspect_image=self.inspect_image,
         )
 
     @cached_property
@@ -138,7 +149,8 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             self.recording_center_pixel,
             np.array((self.horizontal_resolution, 0.0)),
             self.coordinates_per_frame,
-            inspect=self.inspection_dir / "quadrant" / "upper_right"
+            inspect=self._quadrant_inspection_dir / "upper_right" / self._inspection_image_name if self.inspection_dir else None,
+            inspect_image=self.inspect_image,
         )
 
     @cached_property
@@ -158,7 +170,8 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             np.array((self.recording_center_pixel[0], self.vertical_resolution)),
             np.array((0.0, self.recording_center_pixel[1])),
             self.coordinates_per_frame,
-            inspect=self.inspection_dir / "quadrant" / "lower_left"
+            inspect=self._quadrant_inspection_dir / "lower_left" / self._inspection_image_name if self.inspection_dir else None,
+            inspect_image=self.inspect_image,
         )
 
     @cached_property
@@ -178,7 +191,8 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             self.recording_resolution,
             self.recording_center_pixel,
             self.coordinates_per_frame,
-            inspect=self.inspection_dir / "quadrant" / "lower_right"
+            inspect=self._quadrant_inspection_dir / "lower_right" / self._inspection_image_name if self.inspection_dir else None,
+            inspect_image=self.inspect_image,
         )
 
     @cached_property
@@ -246,8 +260,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             self.center_square_corners[3],
             self.center_square_corners[1],
             self.coordinates_per_frame,
-            inspect=self.inspection_dir / "center_boolean_index",
-            inspect_function_call_context=self.__class__.__name__,
+            inspect=self.inspection_dir / CENTER_INSPECTION_DIR_NAME / self._inspection_image_name,
         )
 
     @cached_property
@@ -318,7 +331,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
         )
 
 
-@cache
+@lru_cache
 @validate_arguments
 def gaussian_scoring_field(resolution: tuple[float, float], scale: int = 4):
     resolution = np.array(resolution, dtype=int) * scale

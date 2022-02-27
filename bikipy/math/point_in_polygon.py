@@ -1,43 +1,26 @@
-from typing import Optional, Union
+from pathlib import PurePath
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numba import njit
-from pydantic import DirectoryPath
 from seaborn import set_theme
 
 from bikipy.math.vector import dot_prod_along_axis_1, orthogonal_unit_vector
 from bikipy.utils.misc import generic_inspection_finalization
 
 
-@njit
 def points_in_parallelogram(
     ab_mid_corner: np.ndarray,
     corner_a: np.ndarray,
     corner_b: np.ndarray,
     coordinates: np.ndarray,
-    inspect: Optional[DirectoryPath] = None,
-    inspect_function_call_context: Optional[str] = None,
+    inspect: Optional[PurePath] = None,
+    inspect_image: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """
     Algebraic solver for finding points contained inside the respective parallelogram.
 
     Theoretical source: https://math.stackexchange.com/a/2643651/604035
-
-    :param ab_mid_corner:
-    :param corner_a:
-    :param corner_b:
-    :param coordinates:
-    :param inspect:
-    :param inspect_function_call_context:
-    :type ab_mid_corner: np.ndarray
-    :type corner_a: np.ndarray
-    :type corner_b: np.ndarray
-    :type coordinates: np.ndarray
-    :type inspect: bool
-    :type inspect_function_call_context: str
-    :return:
-    :rtype np.ndarray
     """
 
     ca_vector = corner_a - ab_mid_corner
@@ -75,6 +58,8 @@ def points_in_parallelogram(
     if inspect:
         set_theme(style="darkgrid")
         fig, ax = plt.subplots()
+        if inspect_image is not None:
+            ax.imshow(inspect_image)
 
         ax.plot(*np.array((corner_a, ab_mid_corner)).T)
         ax.plot(*np.array((corner_b, ab_mid_corner)).T)
@@ -82,12 +67,8 @@ def points_in_parallelogram(
         ax.scatter(*coordinates[boolean_index].T)
         ax.scatter(*coordinates[~boolean_index].T)
         ax.legend(("A", "B", "valid_points", "invalid_points"))
-        ax.set_title(
-            f"Point in parallelogram\nContext: {inspect_function_call_context}"
-            if inspect_function_call_context
-            else "Point in parallelogram"
-        )
+        ax.set_title("Point in parallelogram")
 
-        generic_inspection_finalization(inspect, inspect_function_call_context)
+        generic_inspection_finalization(inspect)
 
     return boolean_index

@@ -36,9 +36,10 @@ RESULT_DIR = WORKING_DIR / "results"
 if not RESULT_DIR.exists():
     os.mkdir(RESULT_DIR)
 
-inspect_dir = WORKING_DIR / "inspect"
-rmtree(inspect_dir)
-os.mkdir(inspect_dir)
+inspection_dir = WORKING_DIR / "inspect"
+if inspection_dir.exists():
+    rmtree(inspection_dir)
+os.mkdir(inspection_dir)
 
 EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
@@ -121,7 +122,6 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
                 "stage": (stage := trial_id_vs_stage[trial_id]),
                 "animal_id": (animal_id := exp_vs_animal[trial_id]),
                 "field_id": animal_id_vs_app[animal_id],
-                # "inspect": True,
             }
 
             trial_id_range_vs_exp_meta[trial_id] = trial_data
@@ -145,7 +145,7 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
             maximum_radians_inter_gaze_perimeter=np.deg2rad(75.0),
             minimum_seconds_attention=2.0,
             maximum_seconds_distraction=0.5,
-            inspection_dir=inspect_dir,
+            inspection_dir=inspection_dir,
             data_import_kwargs={
                 "init_from": "parquet",
                 "midpoint_groups": {
@@ -156,7 +156,6 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
             timestamp=date,
         )
 
-        # experiment.plot_attention_state_distribution()
         experiments.append(experiment)
 
 

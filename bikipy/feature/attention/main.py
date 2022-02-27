@@ -4,15 +4,16 @@
 import os
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import Any, Sequence, Tuple, Union
+from typing import Any, Sequence, Tuple, Union, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sb
+from pydantic import DirectoryPath
 
 from bikipy.feature.angle import inner_angle
 from bikipy.perimeter.polygon.base import PolygonPerimeter
-from bikipy.utils.misc import seek_next_file_index
+from bikipy.utils.misc import seek_next_file_index, generic_inspection_finalization
 
 SCATTER_ALPHA = 0.55
 logger = getLogger(__name__)
@@ -253,7 +254,7 @@ def perimeter_attention(
     maximum_radians_inter_gaze_perimeter: float = 0.25 * np.pi,
     minimum_seconds_attention: float = 0.5,
     maximum_seconds_distraction: float = 0.5,
-    inspect: Union[bool, str, PurePath] = False,
+    inspect: Union[bool, DirectoryPath] = False
 ) -> tuple:
     """
 
@@ -357,13 +358,8 @@ def perimeter_attention(
         )
 
         plt.tight_layout()
-        if isinstance(inspect, bool):
-            plt.show()
-        elif isinstance(inspect, str) or isinstance(inspect, PurePath):
-            inspect = Path(inspect).resolve()
-            if not inspect.parent.exists():
-                os.mkdir(inspect.parent)
-            plt.savefig(seek_next_file_index(inspect / f"perimeter_attention.jpg"))
+        generic_inspection_finalization(inspect)
+        fig.clear()
 
     return (
         perimeter_observation,

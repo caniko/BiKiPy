@@ -95,11 +95,12 @@ class BaseExperiment(Behaviour):
             result["animal_id"] = trial_id
 
         if self.inspection_dir:
-            result["inspection_dir"] = (
-                self.inspection_dir / result["stage"]
-                if "stage" in result
-                else self.inspection_dir
-            )
+            if "stage" in result:
+                result["inspection_dir"] = self.inspection_dir / result["stage"]
+                if not result["inspection_dir"].exists():
+                    os.mkdir(result["inspection_dir"])
+            else:
+                result["inspection_dir"] = self.inspection_dir
 
         return result
 
@@ -622,6 +623,10 @@ class BaseTrial(Behaviour):
         return tuple(self._perimeter_label_vs_int_id[label] for label in label_sequence)
 
     # Miscellaneous
+
+    @cached_property
+    def _inspection_image_name(self):
+        return f"trial_{self.best_id}.jpg"
 
     @cached_property
     def _uint_zeros_based_on_frame_length(self) -> np.ndarray:

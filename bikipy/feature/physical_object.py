@@ -1,7 +1,8 @@
+import os
 from collections import Counter
 from functools import cached_property
 from logging import getLogger
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,7 +29,7 @@ class PhysicalObject(BikipyBase):
     minimum_seconds_attention: float
     maximum_seconds_distraction: float
     int_id: Optional[int] = None
-    inspect: Union[bool, str, DirectoryPath] = False
+    inspection_dir: Optional[DirectoryPath] = None
 
     def __len__(self) -> int:
         return self.temporal_resolution
@@ -89,6 +90,9 @@ class PhysicalObject(BikipyBase):
 
     @cached_property
     def _perimeter_attention_data(self) -> tuple:
+        if self.inspection_dir:
+            if not (perimeter_dir := self.inspection_dir / f"PhyObj_attention_perimeter-{self.perimeter.best_id}").exists():
+                os.mkdir(perimeter_dir)
         return perimeter_attention(
             self.perimeter,
             self._gaze_travel_direction_point,
@@ -98,7 +102,7 @@ class PhysicalObject(BikipyBase):
             self.maximum_radians_inter_gaze_perimeter,
             self.minimum_seconds_attention,
             self.maximum_seconds_distraction,
-            inspect=self.inspect,
+            inspect=perimeter_dir / f"id_{self.int_id}.jpg" if self.inspection_dir else None
         )
 
     @property

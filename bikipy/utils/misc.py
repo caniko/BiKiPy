@@ -42,14 +42,11 @@ def get_reference_point_from_array(array: np.ndarray):
     return np.array(array[1:3], dtype=float)
 
 
-def generic_inspection_finalization(inspect, category: str):
+def generic_inspection_finalization(inspect):
     if isinstance(inspect, bool):
         plt.show()
     elif isinstance(inspect, str) or isinstance(inspect, PurePath):
-        root = Path(inspect).resolve() / category
-        if not root.exists():
-            os.makedirs(root)
-        plt.savefig(seek_next_file_index(root / f"{category}.jpg"))
+        plt.savefig(inspect)
 
 
 def seek_next_file_index(filepath: Union[PurePath, str]) -> PurePath:
