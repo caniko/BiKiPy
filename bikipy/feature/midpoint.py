@@ -68,6 +68,7 @@ def recursive_midpoint(point_sets: Sequence[np.ndarray]) -> np.ndarray:
 
     return midpoint
 
+
 def midpoint_deeplabcut_df_computation(
     df, point_group_names_set, min_likelihood: float = None
 ):

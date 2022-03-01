@@ -12,7 +12,7 @@ HDF_PATH = EXAMPLES_ROOT / "data_for_angle.h5"
 
 @pytest.fixture
 def dlc_test_instance() -> DeepLabCutReader:
-    return DeepLabCutReader.from_hdf(str(HDF_PATH))
+    return DeepLabCutReader(df_path=HDF_PATH)
 
 
 @pytest.mark.parametrize("roi_a, roi_b", (("left_ear", "right_ear"),))
@@ -24,10 +24,10 @@ def test_reduce_likelihoods(dlc_test_instance, roi_a, roi_b):
     )
 
     np.testing.assert_allclose(
-        expected_result, dlc_test_instance.reduce_likelihoods(dlc_test_instance.df, (roi_a, roi_b))
+        expected_result, dlc_test_instance.reduce_likelihoods((roi_a, roi_b))
     )
 
 
 @pytest.mark.parametrize("roi", ("left_ear", "right_ear"))
 def test_region_of_interest_vs_boolean_index(dlc_test_instance, roi):
-    assert np.any(dlc_test_instance.region_of_interest_vs_boolean_index(roi))
+    assert dlc_test_instance.region_of_interest_vs_boolean_index[roi] is not None

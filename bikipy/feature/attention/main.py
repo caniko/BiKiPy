@@ -254,7 +254,7 @@ def perimeter_attention(
     maximum_radians_inter_gaze_perimeter: float = 0.25 * np.pi,
     minimum_seconds_attention: float = 0.5,
     maximum_seconds_distraction: float = 0.5,
-    inspect: Union[bool, DirectoryPath] = False
+    inspect: Union[bool, DirectoryPath] = False,
 ) -> tuple:
     """
 

@@ -191,6 +191,7 @@ def compute_angles_from_vectors(
 
     return computation
 
+
 ANGLE_METHOD_TO_FUNC = {
     "inner": inner_angle,
     "counterclockwise": clockwise_angel_2d,

@@ -13,33 +13,17 @@ IMG_PATH = EXAMPLES_ROOT / "test.png"
 PIXEL_RESOLUTION = (388, 442)
 
 
-def test_deep_lab_cut_reader_from_video():
-    partial_dlc = partial(
-        DeepLabCutReader.from_video,
-        str(VIDEO_PATH),
-        future_scaling=True,
-        midpoint_groups=[("left_ear", "right_ear")],
-    )
-
-    assert partial_dlc(csv_path=CSV_PATH)
-    assert partial_dlc(hdf_path=HDF_PATH)
-
-    assert partial_dlc(hdf_path=HDF_PATH).recording_resolution == PIXEL_RESOLUTION
-
-
 def test_deep_lab_cut_reader_from_csv():
-    assert DeepLabCutReader.from_csv(
-        str(CSV_PATH),
-        PIXEL_RESOLUTION,
+    assert DeepLabCutReader(
+        df_path=CSV_PATH,
         future_scaling=True,
-        midpoint_groups=[("left_ear", "right_ear")],
+        midpoint_groups={"center_eye": ("left_ear", "right_ear")},
     )
 
 
 def test_deep_lab_cut_reader_from_hdf():
-    assert DeepLabCutReader.from_hdf(
-        str(HDF_PATH),
-        PIXEL_RESOLUTION,
+    assert DeepLabCutReader(
+        df_path=HDF_PATH,
         future_scaling=True,
-        midpoint_groups=[("left_ear", "right_ear")],
+        midpoint_groups={"center_eye": ("left_ear", "right_ear")},
     )

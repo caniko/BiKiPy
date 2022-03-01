@@ -57,9 +57,17 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
 
     @validator("inspection_dir")
     def make_categorical_inspection_sub_dirs(cls, value):
-        if value and not (quadrant_dir := value / QUADRANT_INSPECTION_DIR_NAME).exists():
+        if (
+            value
+            and not (quadrant_dir := value / QUADRANT_INSPECTION_DIR_NAME).exists()
+        ):
             os.mkdir(quadrant_dir)
-            for current_quadrant in ("upper_left", "upper_right", "lower_right", "lower_left"):
+            for current_quadrant in (
+                "upper_left",
+                "upper_right",
+                "lower_right",
+                "lower_left",
+            ):
                 os.mkdir(quadrant_dir / current_quadrant)
             os.mkdir(value / CENTER_INSPECTION_DIR_NAME)
         return value
@@ -128,7 +136,11 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             np.array((self.recording_center_pixel[0], 0.0)),
             np.array((0.0, self.recording_center_pixel[1])),
             self.coordinates_per_frame,
-            inspect=self._quadrant_inspection_dir / "upper_left" / self._inspection_image_name if self.inspection_dir else None,
+            inspect=self._quadrant_inspection_dir
+            / "upper_left"
+            / self._inspection_image_name
+            if self.inspection_dir
+            else None,
             inspect_image=self.inspect_image,
         )
 
@@ -149,7 +161,11 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             self.recording_center_pixel,
             np.array((self.horizontal_resolution, 0.0)),
             self.coordinates_per_frame,
-            inspect=self._quadrant_inspection_dir / "upper_right" / self._inspection_image_name if self.inspection_dir else None,
+            inspect=self._quadrant_inspection_dir
+            / "upper_right"
+            / self._inspection_image_name
+            if self.inspection_dir
+            else None,
             inspect_image=self.inspect_image,
         )
 
@@ -170,7 +186,11 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             np.array((self.recording_center_pixel[0], self.vertical_resolution)),
             np.array((0.0, self.recording_center_pixel[1])),
             self.coordinates_per_frame,
-            inspect=self._quadrant_inspection_dir / "lower_left" / self._inspection_image_name if self.inspection_dir else None,
+            inspect=self._quadrant_inspection_dir
+            / "lower_left"
+            / self._inspection_image_name
+            if self.inspection_dir
+            else None,
             inspect_image=self.inspect_image,
         )
 
@@ -191,7 +211,11 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             self.recording_resolution,
             self.recording_center_pixel,
             self.coordinates_per_frame,
-            inspect=self._quadrant_inspection_dir / "lower_right" / self._inspection_image_name if self.inspection_dir else None,
+            inspect=self._quadrant_inspection_dir
+            / "lower_right"
+            / self._inspection_image_name
+            if self.inspection_dir
+            else None,
             inspect_image=self.inspect_image,
         )
 
@@ -260,7 +284,9 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             self.center_square_corners[3],
             self.center_square_corners[1],
             self.coordinates_per_frame,
-            inspect=self.inspection_dir / CENTER_INSPECTION_DIR_NAME / self._inspection_image_name,
+            inspect=self.inspection_dir
+            / CENTER_INSPECTION_DIR_NAME
+            / self._inspection_image_name,
         )
 
     @cached_property

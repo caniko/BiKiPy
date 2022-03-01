@@ -1,6 +1,9 @@
 from pathlib import Path
 
-from bikipy.perimeter.io.makesense import from_makesense_coco_polygon, from_makesense_csv_rectangle
+from bikipy.perimeter.io.makesense import (
+    from_makesense_coco_polygon,
+    from_makesense_csv_rectangle,
+)
 
 
 ANNOTATION_DIR = Path(__file__).parent / "annotations"

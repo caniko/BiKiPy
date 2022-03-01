@@ -91,7 +91,10 @@ class PhysicalObject(BikipyBase):
     @cached_property
     def _perimeter_attention_data(self) -> tuple:
         if self.inspection_dir:
-            if not (perimeter_dir := self.inspection_dir / f"PhyObj_attention_perimeter-{self.perimeter.best_id}").exists():
+            if not (
+                perimeter_dir := self.inspection_dir
+                / f"PhyObj_attention_perimeter-{self.perimeter.best_id}"
+            ).exists():
                 os.mkdir(perimeter_dir)
         return perimeter_attention(
             self.perimeter,
@@ -102,7 +105,9 @@ class PhysicalObject(BikipyBase):
             self.maximum_radians_inter_gaze_perimeter,
             self.minimum_seconds_attention,
             self.maximum_seconds_distraction,
-            inspect=perimeter_dir / f"id_{self.int_id}.jpg" if self.inspection_dir else None
+            inspect=perimeter_dir / f"id_{self.int_id}.jpg"
+            if self.inspection_dir
+            else None,
         )
 
     @property

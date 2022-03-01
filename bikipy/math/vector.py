@@ -2,9 +2,11 @@ from collections.abc import Sequence
 from typing import Union
 
 import numpy as np
+from numba import jit
 from numpy.linalg import LinAlgError
 
 
+@jit
 def fast_unit_vector(vector):
     """Returns the unit vector of the vector."""
     return (vector / np.linalg.norm(vector)).astype(np.float64)

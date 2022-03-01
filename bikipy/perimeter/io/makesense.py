@@ -21,7 +21,7 @@ def from_makesense_coco_polygon(
     map_to_image_name: bool = False,
     single_obj_return: bool = False,
     **perimeter_kwargs,
-):
+) -> PolygonPerimeter:
     logger.debug(
         "Generating PolygonPerimeter from makesense polygon data in coco format"
     )
