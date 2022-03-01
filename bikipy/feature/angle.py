@@ -191,46 +191,6 @@ def compute_angles_from_vectors(
 
     return computation
 
-
-def dlc_compute_angles_from_vectors(
-    df: DataFrameType,
-    point_a_name: str,
-    point_b_name: str,
-    point_c_name: str,
-    *args,
-    **kwargs,
-) -> dict:
-    """
-    compute_angles_from_vectors wrapper for pandas.DataFrames generated from DeepLabCut 2d result files
-
-    :param df: Data from DeepLabCut ingested as a pd.DataFrame
-    :param point_a_name: Name of vector group
-    :param point_b_name: Name of the vector that is the joint between the two other groups
-    :param point_c_name: Name of vector group
-    :param args: Arguments for compute_angles_from_vectors
-    :param kwargs: Keyword arguments for compute_angles_from_vectors
-    :type df: pd.DataFrame
-    :type point_a_name: str
-    :type point_b_name: str
-    :type point_c_name: str
-    :return: {Angle: Likelihood}
-    :rtype: dict
-    """
-    from bikipy.utils.deeplabcut import get_region_of_interest_data, reduce_likelihoods
-
-    ordered_point_names = (point_a_name, point_b_name, point_c_name)
-    likelihood = reduce_likelihoods(df, ordered_point_names)
-    point_set = [
-        get_region_of_interest_data(df, point_name)
-        for point_name in ordered_point_names
-    ]
-
-    return {
-        "Angle": compute_angles_from_vectors(*point_set, *args, **kwargs),
-        "Likelihood": likelihood,
-    }
-
-
 ANGLE_METHOD_TO_FUNC = {
     "inner": inner_angle,
     "counterclockwise": clockwise_angel_2d,

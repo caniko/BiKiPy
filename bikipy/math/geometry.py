@@ -51,11 +51,10 @@ def expand_parallelogram(
     inspect: bool = False,
     as_array: bool = False,
 ):
-    offset = float(offset)
-    up_right, down_right, down_left, up_left = clockwise_sort_points(perimeter_corners)
-
-    x_offset = offset
+    x_offset = offset = float(offset)
     y_offset = -offset if y_inverted else offset
+
+    up_right, down_right, down_left, up_left = clockwise_sort_points(perimeter_corners)
 
     off_down_left = (down_left[0] - x_offset, down_left[1] - y_offset)
     off_down_right = (down_right[0] + x_offset, down_right[1] - y_offset)

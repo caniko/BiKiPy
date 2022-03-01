@@ -1,6 +1,5 @@
-from dataclasses import dataclass
 from logging import getLogger
-from typing import Optional, ClassVar
+from typing import Optional
 
 from pydantic import Field, root_validator
 
@@ -73,10 +72,10 @@ class NortField(BikipyBase):
             variable_object_perimeter = habituation_object_perimeter_b
 
         return cls(
-            label,
-            constant_object_perimeter,
-            variable_object_perimeter,
-            novel_object_perimeter,
+            label=label,
+            constant_object_perimeter=constant_object_perimeter,
+            variable_object_perimeter=variable_object_perimeter,
+            novel_object_perimeter=novel_object_perimeter,
         )
 
     def __getitem__(self, item: str):

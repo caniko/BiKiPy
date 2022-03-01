@@ -11,6 +11,8 @@ authors = ["Can H. Tartanoglu <canhtart@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = ">=3.9.0, <3.10"
+setuptools = "*"
+
 pydantic = "^1.8.2"
 
 numpy = "^1.19.3"

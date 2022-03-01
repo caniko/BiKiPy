@@ -68,35 +68,6 @@ def recursive_midpoint(point_sets: Sequence[np.ndarray]) -> np.ndarray:
 
     return midpoint
 
-
-def triangulate(point_1: Sequence, point_2: Sequence, point_3: Sequence) -> np.ndarray:
-    """
-
-    Midpoint between point_3, and the midpoint between point_1 and point_2
-
-    Wrapper of recursive_midpoint for three points.
-
-    Parameters
-    ----------
-    point_1: np.ndarray
-
-    point_2: np.ndarray
-        Set of points part of the pair used for computing first midpoint(s).
-    point_3: np.ndarray
-        Set of points part of the pair used for computing the second/last midpoint(s).
-
-    Returns
-    -------
-    np.ndarray; triangulation between three points.
-
-    :param point_1: Set of points part of the pair used for computing first midpoint(s).
-    :param point_2: Set of points part of the pair used for computing first midpoint(s).
-    :param point_3: Set of points part of the pair used for computing first midpoint(s).
-    :return:
-    """
-    return recursive_midpoint((point_1, point_2, point_3))
-
-
 def midpoint_deeplabcut_df_computation(
     df, point_group_names_set, min_likelihood: float = None
 ):

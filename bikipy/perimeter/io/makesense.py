@@ -107,16 +107,16 @@ def from_makesense_csv_rectangle(
     for label, row in csv_data.iterrows():
         current_kwargs = {}
 
-        image_name = row[4]
+        image_name = row.values[4]
         if reference_point_csv_path:
             current_kwargs["reference_point_array"] = reference_data[image_name]
 
-        start = np.array(row[:2])
-        end = start + np.array(row[2:4])
+        start = np.array(row[:2]).astype(int)
+        end = start + np.array(row[2:4]).astype(int)
 
         perimeter = PolygonPerimeter.init_polygon(
-            (start, (start[0], end[1]), end, (end[0], start[1])),
-            inspect_image_path=image_root / image_name if image_root else None,
+            np.array((start, (start[0], end[1]), end, (end[0], start[1]))),
+            inspect_image_path=image_root / str(image_name) if image_root else None,
             label=label,
             **current_kwargs,
             **perimeter_kwargs,
