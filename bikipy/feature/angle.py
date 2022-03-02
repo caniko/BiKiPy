@@ -187,9 +187,18 @@ def compute_angles_from_vectors(
         raise ValueError(msg) from e
 
     if degrees:
-        computation = np.rad2deg(computation)
+        return np.rad2deg(computation)
 
     return computation
+
+
+def angles_between_0_2pi(angles: np.array):
+    angles = np.asarray(angles)
+
+    boolean_indexes = np.abs(angles) >= 2.0 * np.pi
+    angles[boolean_indexes] = 2.0 * np.pi - angles[boolean_indexes]
+
+    return angles
 
 
 ANGLE_METHOD_TO_FUNC = {

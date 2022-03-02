@@ -1,5 +1,5 @@
 [build-system]
-requires = ["poetry>=0.12"]
+requires = ["poetry>=0.12", "setuptools"]
 build-backend = "poetry.masonry.api"
 
 [tool.poetry]
@@ -11,7 +11,6 @@ authors = ["Can H. Tartanoglu <canhtart@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = ">=3.9.0, <3.10"
-setuptools = "*"
 
 pydantic = "^1.8.2"
 
@@ -37,7 +36,7 @@ seaborn = "*"
 ffmpeg-python = "^0.2.0"
 opencv-python-headless = "^4.5"
 
-colorama = {"version" = "^0.4.4", "platform" = "win32"}
+colorama = { "version" = "^0.4.4", "platform" = "win32" }
 tqdm = "^4.60.0"
 
 compress-pickle = {extras = ["lz4"], version = "^2.0.1"}

@@ -47,7 +47,7 @@ def expand_bikipy_perimeter(perimeter, *args, **kwargs):
 def expand_parallelogram(
     perimeter_corners: Sequence,
     offset: float,
-    y_inverted: bool = True,
+    y_inverted: bool = False,
     inspect: bool = False,
     as_array: bool = False,
 ):

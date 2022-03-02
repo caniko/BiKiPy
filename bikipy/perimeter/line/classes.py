@@ -4,7 +4,7 @@ from typing import ClassVar, Literal, Optional, Union
 import numpy as np
 from pydantic import Field
 
-from bikipy.perimeter.base import BasePerimeter
+from bikipy.core.base_class import BikipyBase
 
 # 0: Use the x coordinate(s) as the perimeter
 # 1: Use the y coordinate(s) as the perimeter
@@ -22,7 +22,7 @@ LOGIC_TO_FUNC = {
 }
 
 
-class LinePerimeter(BasePerimeter):
+class LinePerimeter(BikipyBase):
     location: Union[float, int] = Field(description="The location given in pixels")
     orientation: Union[str, int] = Field(
         description=(

@@ -2,17 +2,19 @@ from collections.abc import Sequence
 from typing import Union
 
 import numpy as np
-from numba import jit
+from numba import njit
 from numpy.linalg import LinAlgError
 
+from bikipy.utils.typing import NDArray
 
-@jit
-def fast_unit_vector(vector):
+
+@njit
+def fast_unit_vector(vector: NDArray) -> NDArray:
     """Returns the unit vector of the vector."""
-    return (vector / np.linalg.norm(vector)).astype(np.float64)
+    return vector / np.linalg.norm(vector)
 
 
-def unit_vector(row_vectors: Sequence, force_1_dim: bool = False) -> np.ndarray:
+def unit_vector(row_vectors: Sequence, force_1_dim: bool = False) -> NDArray:
     """
     Computes unit vector, i.e. vector/<norm of the vector>
 
@@ -45,7 +47,7 @@ def unit_vector(row_vectors: Sequence, force_1_dim: bool = False) -> np.ndarray:
     return (row_vectors.T / np.linalg.norm(row_vectors, axis=1)).T
 
 
-def orthogonal_unit_vector(vector: Sequence) -> np.ndarray:
+def orthogonal_unit_vector(vector: Sequence) -> NDArray:
     """
     Computes the orthogonal unit vector of the given 2D vector
 
@@ -66,7 +68,7 @@ def orthogonal_unit_vector(vector: Sequence) -> np.ndarray:
         return unit_vector(np.array((-vector.T[1], vector.T[0])).T)
 
 
-def dot_prod_along_axis_1(vector_a: np.ndarray, vector_b: np.ndarray) -> np.ndarray:
+def dot_prod_along_axis_1(vector_a: NDArray, vector_b: NDArray) -> NDArray:
     # np.einsum("ij,ij->i", vector_a, vector_b)
     return np.nansum(vector_a * vector_b, axis=1)
 
@@ -110,7 +112,7 @@ def normal_from_line_to_point(
     return sol
 
 
-def distance_between_line_and_point(*args, **kwargs) -> np.ndarray:
+def distance_between_line_and_point(*args, **kwargs) -> NDArray:
     """
     Compute distance between point and a line.
 
@@ -172,7 +174,7 @@ def intersection_between_two_lines(
     vector_b: Sequence,
     vector_a_start: Sequence,
     vector_b_start: Sequence,
-) -> Union[np.ndarray, bool]:
+) -> Union[NDArray, bool]:
     """
     Compute the intersection between two lines designated by a starting point
     and a direction/unit vector

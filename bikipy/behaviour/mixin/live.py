@@ -33,6 +33,22 @@ class LiveTrial(BaseModel, ABC):
     delay_timings_trial_count: Union[tuple[int], int]
     manual_total_loops_per_trial: Optional[int] = None
 
+    node_sequence: list = []
+
+    bad_turn_counter: int = 0
+    bad_loop_record: dict = {}
+
+    loop_number: int = 0
+
+    live_expose_metrics: list = []
+    countdown_timings: list = []
+
+    _delay_countdown_task = None
+    _counting_down = False
+
+    _zmq_context = None
+    _socket = None
+
     @validator("delay_timings_trial_count", "delay_timings")
     def ensure_delay_timings_trial_count_and_delay_timings_have_eq_len(
         cls, delay_timings_trial_count, delay_timings
@@ -65,24 +81,6 @@ class LiveTrial(BaseModel, ABC):
             )
             raise ValueError(msg)
         return delay_timings_trial_count, manual_total_loops_per_trial
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        self.node_sequence = []
-
-        self.bad_turn_counter = 0
-        self.bad_loop_record = {}
-
-        self.loop_number = 0
-
-        self.live_expose_metrics = []
-        self.countdown_timings = []
-
-        self._delay_countdown_task = None
-        self._counting_down = False
-
-        self._zmq_context = None
-        self._socket = None
 
     @cached_property
     def _loop_number_vs_delay_time(self):

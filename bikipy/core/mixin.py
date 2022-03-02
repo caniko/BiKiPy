@@ -11,7 +11,7 @@ from bikipy.utils.video import get_video_data
 
 class VideoMetadataMixin(BikipyBase):
     video_path: Optional[FilePath] = None
-    manual_recording_resolution: Optional[np.ndarray] = None
+    manual_recording_resolution: Optional[NDArray] = None
     manual_fps: Optional[float] = None
 
     @cached_property

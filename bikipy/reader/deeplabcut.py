@@ -167,8 +167,11 @@ class DeepLabCutReader(BaseReader):
         :return: np.ndarray with the reduced likelihood values
         """
         return np.multiply.reduce(
-            self.raw_df.loc[:, pd.IndexSlice[tracked_point_labels, "likelihood"]].values
-        ).T[0]
+            self.raw_df.loc[
+                :, pd.IndexSlice[tracked_point_labels, "likelihood"]
+            ].values,
+            axis=1,
+        )
 
 
 def convert_hdf_to_parquet(data_path, delete_hdf: bool = False):

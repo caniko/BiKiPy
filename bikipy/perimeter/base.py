@@ -1,14 +1,16 @@
+from abc import abstractmethod
 from functools import cached_property
 from logging import getLogger
+from pathlib import Path
 from typing import Any, ClassVar, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from pydantic import FilePath, root_validator
+from pydantic import FilePath, root_validator, DirectoryPath
 
 from bikipy.core.base_class import BikipyBase, BikipyBaseHashable
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
-from bikipy.utils.misc import read_image
+from bikipy.utils.misc import read_image, get_reference_point_from_array
 from bikipy.utils.typing import NDArray
 
 logger = getLogger(__name__)
@@ -21,6 +23,46 @@ class BasePerimeter(BikipyBaseHashable):
     inspect_image_array: Optional[NDArray] = None
 
     category: ClassVar[Optional[str]] = "perimeter"
+
+    @abstractmethod
+    def coordinate_confinement_boolean_index(self, coordinates: NDArray):
+        ...
+
+    @abstractmethod
+    def change_reference(
+        self, new_reference: Optional[NDArray], **new_inspect_image_kwargs
+    ):
+        """"""
+        ...
+
+    @abstractmethod
+    def plot_perimeter(
+        self,
+        perimeter_border_normal_pixel_magnitude: Union[float, int, None] = None,
+        ax: Any = None,
+        include_geometric_legend: bool = False,
+        colormap: Any = None,
+    ):
+        ...
+
+    @staticmethod
+    def _new_inspect_image(
+        perimeter,
+        new_inspect_image: Optional[NDArray] = None,
+        new_inspect_image_path: Optional[FilePath] = None,
+    ):
+        if new_inspect_image_path:
+            if not (new_inspect_image_path := Path(new_inspect_image_path)).exists():
+                msg = (
+                    f"new_inspect_image_path, {new_inspect_image_path}, does not exist"
+                )
+                raise AttributeError(msg)
+            perimeter.inspect_image = new_inspect_image_path
+        elif np.any(new_inspect_image):
+            perimeter.inspect_image = new_inspect_image
+        else:
+            perimeter.inspect_image = None
+        return perimeter
 
     @root_validator(pre=True)
     def mutually_exclusive(cls, values):
@@ -71,7 +113,171 @@ class BasePerimeter(BikipyBaseHashable):
     def reference_point(self, value):
         self.reference_point_array = np.asarray(value)
 
-    def plot(self, ax: Any = None, coordinates: Optional[Sequence] = None):
+    def change_reference_with_coco(
+        self,
+        metadata_path: Optional[FilePath] = None,
+        coco_array: Optional[NDArray] = None,
+        **kwargs,
+    ):
+        coco_array = get_coco_array_from_path_or_array(metadata_path, coco_array)
+
+        if len(coco_array) != 1:
+            msg = (
+                "The coco array includes more than one annotation. "
+                "Please use change_reference_with_coco_with_plural_references()"
+            )
+            raise ValueError(msg)
+
+        return self.change_reference(
+            get_reference_point_from_array(coco_array), **kwargs
+        )
+
+    def change_reference_with_coco_with_plural_references(
+        self,
+        metadata_path: Optional[FilePath] = None,
+        coco_array: Optional[NDArray] = None,
+        image_root: Optional[DirectoryPath] = None,
+        map_to_image_names: bool = True,
+    ):
+        def _change_reference_loop_func(reference_point, img_name):
+            return self.change_reference(
+                reference_point,
+                new_inspect_image_path=image_root / img_name if image_root else None,
+            )
+
+        coco_array = get_coco_array_from_path_or_array(metadata_path, coco_array)
+
+        img_name_vs_reference_points = {
+            row[3]: get_reference_point_from_array(row) for row in coco_array
+        }
+        if not np.any(self.reference_point):
+            msg = "The reference polygon has no reference point"
+            raise ValueError(msg)
+
+        if map_to_image_names:
+            return {
+                img_name: _change_reference_loop_func(reference_point, img_name)
+                for img_name, reference_point in img_name_vs_reference_points.items()
+            }
+        return [
+            _change_reference_loop_func(reference_point, img_name)
+            for img_name, reference_point in img_name_vs_reference_points.items()
+        ]
+
+    def confined_coordinates(
+        self, coordinates: Sequence, inspect: bool = False, ax: Any = None
+    ):
+        """
+        self.confined_coordinates to fetch confined coordinates within
+        the respective perimeter
+
+        Parameters
+        ----------
+        coordinates
+            Coordinates that will have their confinement tested
+        inspect
+            If True, plot the confined coordinates
+        ax
+
+        Returns
+        -------
+
+        """
+        coordinates = np.asarray(coordinates)
+        coordinate_confinement_boolean_index = coordinates[
+            self.coordinate_confinement_boolean_index(coordinates)
+        ]
+        if inspect or ax:
+            if not ax:
+                ax = self.plot_self()
+            ax.scatter(
+                coordinate_confinement_boolean_index.T[0],
+                coordinate_confinement_boolean_index.T[1],
+                marker="x",
+            )
+            ax.set_tittle("Confined coordinates")
+            plt.show()
+
+        return coordinate_confinement_boolean_index
+
+    @classmethod
+    def detect_sequential_border_presence(
+        cls,
+        coordinates: Sequence[Sequence[float]],
+        superior_poly_border_instances: Optional[Sequence],
+        inferior_poly_border_instances: Optional[Sequence] = None,
+        clean_outliers: bool = True,
+    ):
+        """
+        Define sequential perimeter confinements of coordinates
+
+        Parameters
+        ----------
+        coordinates: Sequence
+            Coordinates that will have their confinement tested
+
+        superior_poly_border_instances: Sequence
+            PolygonPerimeter instances that will have the highest priority
+            in case of overlap with respect to confinement
+
+        inferior_poly_border_instances: Sequence
+            PolygonPerimeter instances that will have the lowest priority
+            in case of overlap with respect to confinement
+
+        clean_outliers
+            Clear elements that aren't confined to any of the given border_corners
+            as a final action before returning the sequential perimeter presence
+
+        Returns
+        -------
+        np.ndarray that stores the sequential perimeter presence across frames
+        """
+
+        coordinates = np.asarray(coordinates)
+
+        perimeter_sequence = (
+            (*inferior_poly_border_instances, *superior_poly_border_instances)
+            if inferior_poly_border_instances
+            else superior_poly_border_instances
+        )
+        presence = np.zeros(
+            coordinates.shape[0],
+            dtype=np.uint8 if len(perimeter_sequence) <= 255 else np.uint16,
+        )
+
+        overlap_locations = {}
+        for perimeter in perimeter_sequence:
+            confined_coord_booleans_index = (
+                perimeter.coordinate_confinement_boolean_index(coordinates)
+            )
+
+            if presence[confined_coord_booleans_index].any():
+                overlap_locations[perimeter.label] = np.flatnonzero(
+                    presence[confined_coord_booleans_index]
+                )
+                presence[overlap_locations[perimeter.label]] = 0
+                logger.info(
+                    f"BasePerimeter {perimeter.label} has coordinate overlap with "
+                    f"other border_corners, {overlap_locations[perimeter.label].size}"
+                )
+
+            presence[confined_coord_booleans_index] = perimeter.int_id
+
+        valid_indices = np.nonzero(presence)
+        if clean_outliers:
+            presence = presence[valid_indices]
+
+        boolean_array = np.full(coordinates.shape[0], False, dtype=np.bool)
+        boolean_array[valid_indices] = True
+
+        return presence, valid_indices, boolean_array
+
+    def plot(
+        self,
+        ax: Any = None,
+        coordinates: Optional[Sequence] = None,
+        perimeter_plot_kwargs: Optional[dict] = None,
+    ):
         """
         Plot the perimeter using matplotlib. Optionally, plot coordinates alongside the perimeter
 
@@ -82,6 +288,7 @@ class BasePerimeter(BikipyBaseHashable):
             if object returns False.
         coordinates
             Sequence of 2D coordinates that will be plotted alongside the perimeter
+        perimeter_plot_kwargs
 
         Returns
         -------
@@ -104,7 +311,7 @@ class BasePerimeter(BikipyBaseHashable):
 
         ax.set_title(self.best_id)
 
-        return ax
+        return self.plot_perimeter(**perimeter_plot_kwargs, ax=ax)
 
 
 class PerimeterSet(BikipyBase):
@@ -172,6 +379,9 @@ class PerimeterSet(BikipyBase):
             )
         return present
 
+    def coordinate_confinement_boolean_index(self, coordinates: Sequence):
+        return self.combined_confined_coordinates(coordinates)
+
     def change_reference(self, **perimeter_change_reference_kwargs):
         return self.__class__(
             perimeters=tuple(
@@ -189,7 +399,7 @@ class PerimeterSet(BikipyBase):
     def change_reference_with_coco(
         self,
         metadata_path: Optional[FilePath] = None,
-        coco_array: Optional[np.ndarray] = None,
+        coco_array: Optional[NDArray] = None,
     ):
         coco_array = get_coco_array_from_path_or_array(metadata_path, coco_array)
 
@@ -209,7 +419,7 @@ class PerimeterSet(BikipyBase):
     def change_reference_with_coco_with_plural_references(
         self,
         metadata_path: Optional[FilePath] = None,
-        coco_array: Optional[np.ndarray] = None,
+        coco_array: Optional[NDArray] = None,
         map_to_image_names: bool = True,
         **kwargs,
     ):
@@ -263,10 +473,6 @@ class PerimeterSet(BikipyBase):
             self.__class__(**perimeter_data)
             for perimeter_data in perimeter_set_kwargs.values()
         ]
-
-    # def plot(self, **kwargs):
-    #     ax = super().plot(**kwargs)
-    #     return PolygonPerimeter.plot_perimeters(self.perimeters, ax)
 
     @cached_property
     def perimeter_vs_int_id(self):

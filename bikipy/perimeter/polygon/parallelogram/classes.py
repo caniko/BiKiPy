@@ -6,7 +6,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray
 
-from bikipy.math.point_in_polygon import points_in_parallelogram
+from bikipy.math.point_in_polygon import (
+    points_in_parallelogram,
+    parallel_point_in_polygon,
+)
 from bikipy.math.vector import (
     normal_from_line_to_point,
     orthogonal_unit_vector,
@@ -164,14 +167,15 @@ class ParallelogramPerimeter(PolygonPerimeter):
     def coordinate_confinement_boolean_index(
         self, coordinates: NDArray, *args, **kwargs
     ):
-        return points_in_parallelogram(
-            self.corners[3],
-            self.corners[0],
-            self.corners[2],
-            np.asarray(coordinates),
-            *args,
-            **kwargs,
-        )
+        return parallel_point_in_polygon(coordinates, self.corners)
+        # return points_in_parallelogram(
+        #     self.corners[3],
+        #     self.corners[0],
+        #     self.corners[2],
+        #     np.asarray(coordinates),
+        #     *args,
+        #     **kwargs,
+        # )
 
     @classmethod
     def many(

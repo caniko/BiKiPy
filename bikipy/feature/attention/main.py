@@ -1,10 +1,8 @@
 """
 2D kinematic filters, 3D not supported.
 """
-import os
 from logging import getLogger
-from pathlib import Path, PurePath
-from typing import Any, Sequence, Tuple, Union, Optional
+from typing import Any, Sequence, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -70,7 +68,7 @@ def proximity_filter(
             sb.set_theme(style="darkgrid")
             fig, ax = plt.subplots()
             if np.any(perimeter.inspect_image):
-                ax.imread(perimeter.inspect_image)
+                ax.imshow(perimeter.inspect_image)
         else:
             ax = inspection_ax
 
