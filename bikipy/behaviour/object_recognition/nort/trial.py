@@ -48,6 +48,10 @@ class NortTrainingTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
     def physical_object_variable(self):
         return self.physical_object_set.physical_objects[0]
 
+    # @property
+    # def physical_object_constant(self):
+    #     return self.physical_object_set.physical_objects[1]
+
     @property
     def feature_summary_row(self):
         return [self.physical_object_set.seconds_observing]

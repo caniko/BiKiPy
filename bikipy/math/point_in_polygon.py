@@ -13,13 +13,13 @@ from bikipy.utils.typing import NDArray
 
 
 def points_in_parallelogram(
-    ab_mid_corner: np.ndarray,
-    corner_a: np.ndarray,
-    corner_b: np.ndarray,
-    coordinates: np.ndarray,
+    ab_mid_corner: NDArray,
+    corner_a: NDArray,
+    corner_b: NDArray,
+    coordinates: NDArray,
     inspect: Optional[PurePath] = None,
     inspect_image: Optional[NDArray] = None,
-) -> np.ndarray:
+) -> NDArray:
     """
     Algebraic solver for finding points contained inside the respective parallelogram.
 
@@ -77,8 +77,14 @@ def points_in_parallelogram(
     return boolean_index
 
 
-@njit()
-def is_inside_sm(polygon, point):
+def parallel_point_in_polygon(points: Sequence, polygon: Sequence):
+    return is_inside_sm_parallel(
+        np.asarray(points, dtype=np.float32), np.ascontiguousarray(polygon, dtype=np.float32)
+    )
+
+
+@njit(cache=True)
+def _is_inside_sm(point: NDArray, polygon: NDArray):
     length = len(polygon) - 1
     dy2 = point[1] - polygon[0][1]
     intersections = 0
@@ -122,16 +128,10 @@ def is_inside_sm(polygon, point):
     return intersections & 1
 
 
-@njit(parallel=True)
-def is_inside_sm_parallel(points, polygon):
+@njit(parallel=True, cache=True)
+def _is_inside_sm_parallel(points: NDArray, polygon: NDArray):
     ln = len(points)
-    D = np.empty(ln, dtype=numba.boolean)
+    result = np.empty(ln, dtype=numba.boolean)
     for i in numba.prange(ln):
-        D[i] = is_inside_sm(polygon, points[i])
-    return D
-
-
-def parallel_point_in_polygon(points, polygon):
-    return is_inside_sm_parallel(
-        np.asarray(points, dtype=float), np.ascontiguousarray(polygon, dtype=float)
-    )
+        result[i] = is_inside_sm(points[i], polygon)
+    return result
