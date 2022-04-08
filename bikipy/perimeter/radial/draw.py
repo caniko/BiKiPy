@@ -9,9 +9,17 @@ from bikipy.utils.misc import read_image
 
 def draw_bikipy_circle(radius: float, img: Any = None):
     def on_press(event: Any):
-        print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
-              ('double' if event.dblclick else 'single', event.button,
-               event.x, event.y, event.xdata, event.ydata))
+        print(
+            "%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f"
+            % (
+                "double" if event.dblclick else "single",
+                event.button,
+                event.x,
+                event.y,
+                event.xdata,
+                event.ydata,
+            )
+        )
         if event.button:
             plot_circle((event.xdata, event.ydata), radius, ax)
             center = np.array((event.xdata, event.ydata))

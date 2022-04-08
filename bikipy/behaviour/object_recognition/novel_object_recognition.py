@@ -6,20 +6,28 @@ from typing import ClassVar, Optional
 import pandas as pd
 
 from bikipy.behaviour.mixin.physical_object import PhysicalObjectTrialMixin
-from bikipy.behaviour.object_recognition.nort.experiment import NortField
+from bikipy.behaviour.object_recognition.base import ObjectField, ObjectRecognitionHabituationTrial
 from bikipy.behaviour.rectangle.square import SquareEnclosedTrial
 
 logger = getLogger(__name__)
 
 
-class NortHabituationTrial(SquareEnclosedTrial):
-    """
-    NORT experiment without any objects. The purpose of this test is to generate
-    reference data for future NORT experiments.
-    """
+EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME = {
+    "habituation": 0,
+    "open_field": 0,
+    "training": 1,
+    "1": 1,
+    "t1": 1,
+    "novelty": 2,
+    "2": 2,
+    "t2": 2,
+    "test": 2,
+    "novelty_observation": 2,
+}
 
-    trial_sequence_index: ClassVar[Optional[int]] = 0
-    trial_label: ClassVar[str] = "Habituation"
+
+class NortHabituationTrial(ObjectRecognitionHabituationTrial):
+    pass
 
 
 class NortOpenField(NortHabituationTrial):
@@ -27,7 +35,7 @@ class NortOpenField(NortHabituationTrial):
 
 
 class NortPhysicalObjectFieldMixin(PhysicalObjectTrialMixin, ABC):
-    nort_field: NortField
+    nort_field: ObjectField
 
     @property
     def physical_object_constant(self):
@@ -42,7 +50,9 @@ class NortTrainingTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
 
     @cached_property
     def physical_object_set(self):
-        return self.nort_field.training_set(self._physical_object_keyword_arguments)
+        return self.nort_field.nort_training_set(
+            self._physical_object_keyword_arguments
+        )
 
     @property
     def physical_object_variable(self):
@@ -77,7 +87,7 @@ class NortNoveltyTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
 
     @cached_property
     def physical_object_set(self):
-        return self.nort_field.novelty_set(self._physical_object_keyword_arguments)
+        return self.nort_field.nort_novelty_set(self._physical_object_keyword_arguments)
 
     @property
     def physical_object_novel(self):

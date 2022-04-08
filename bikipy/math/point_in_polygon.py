@@ -79,7 +79,8 @@ def points_in_parallelogram(
 
 def parallel_point_in_polygon(points: Sequence, polygon: Sequence):
     return is_inside_sm_parallel(
-        np.asarray(points, dtype=np.float32), np.ascontiguousarray(polygon, dtype=np.float32)
+        np.asarray(points, dtype=np.float32),
+        np.ascontiguousarray(polygon, dtype=np.float32),
     )
 
 

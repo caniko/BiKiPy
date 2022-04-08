@@ -8,9 +8,9 @@ from typing import Union
 import numpy as np
 from pandas import DataFrame
 
-from bikipy.behaviour.object_recognition.nort.experiment import (
-    NortExperiment,
-    NortField,
+from bikipy.behaviour.object_recognition.base import (
+    ObjectRecognitionExperiment,
+    ObjectField,
 )
 from bikipy.perimeter.polygon.base import PolygonPerimeter
 
@@ -81,7 +81,9 @@ def round_vs_apparatus_to_general_nort_fields(
     for field_key in field_keys:
         field_temp_store = {}
         for rem_round in rounds:
-            exp_name = NortExperiment._trial_label_to_trial_class_name[rem_round]
+            exp_name = ObjectRecognitionExperiment._trial_label_to_trial_class_name[
+                rem_round
+            ]
             if exp_name == "training":
                 field_temp_store[
                     "constant_object_perimeter"
@@ -104,6 +106,6 @@ def round_vs_apparatus_to_general_nort_fields(
 
                 field_temp_store[key] = PolygonPerimeter.init_polygon(**kwargs)
 
-        result.append(NortField(label=field_key, **field_temp_store))
+        result.append(ObjectField(label=field_key, **field_temp_store))
 
     return result

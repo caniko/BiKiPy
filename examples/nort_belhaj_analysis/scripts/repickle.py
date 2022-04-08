@@ -6,7 +6,7 @@ after the respective perimeter class has been updated
 import pickle
 from pathlib import Path
 
-from bikipy.behaviour.object_recognition.nort.trial import NortField
+from bikipy.behaviour.object_recognition.novel_object_recognition import ObjectField
 from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.plugins.belhaj import round_vs_apparatus_to_general_nort_fields
 
@@ -36,7 +36,7 @@ class RenameUnpickler(pickle.Unpickler):
             renamed_module = module.replace("bikipy.perimeter", "bikipy.perimeter")
 
         if name == "NortObjectField":
-            name = "NortField"
+            name = "ObjectField"
         return super(RenameUnpickler, self).find_class(renamed_module, name)
 
 
@@ -55,7 +55,7 @@ for annotation_obj_path in B_PICKLE_PATHS:
         gen_poly_seq = renamed_load(infile)
 
     for i, gen_poly in enumerate(gen_poly_seq):
-        gen_poly_seq[i] = NortField(
+        gen_poly_seq[i] = ObjectField(
             label=int(gen_poly.label),
             constant_object_perimeter=PolygonPerimeter.init_polygon(
                 inspect_image=annotation_obj_path.parent / f"training_{i+1}.png",

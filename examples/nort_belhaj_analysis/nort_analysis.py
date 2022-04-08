@@ -8,12 +8,16 @@ from shutil import rmtree
 import numpy as np
 import pandas as pd
 
-from bikipy.behaviour.object_recognition.nort.constants import TRIAL_LABEL_VS_CLASS_NAME
-from bikipy.behaviour.object_recognition.nort.experiment import (
-    NortExperiment,
-    NortField,
+from bikipy.behaviour.object_recognition.novel_object_recognition.constants import (
+    EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME,
 )
-from bikipy.behaviour.object_recognition.nort.trial import CLASS_NAME_VS_CLASS
+from bikipy.behaviour.object_recognition.base import (
+    ObjectRecognitionExperiment,
+    ObjectField,
+)
+from bikipy.behaviour.object_recognition.novel_object_recognition import (
+    CLASS_NAME_VS_CLASS,
+)
 from bikipy.perimeter.io.general import defer_perimeter_set_from_multi_row_reference
 from bikipy.perimeter.io.makesense import (
     from_makesense_coco_polygon,
@@ -32,6 +36,7 @@ DEEPLABCUT_DIR = Path("/mnt/md0/Projects/Neuroscience/Imen/data/nort")
 WORKING_DIR = Path(".").resolve()
 DATA_DIR = WORKING_DIR / "data"
 IMAGE_DIR = DATA_DIR / "area_images"
+
 RESULT_DIR = WORKING_DIR / "results"
 if not RESULT_DIR.exists():
     os.mkdir(RESULT_DIR)
@@ -74,7 +79,7 @@ for field_idx in range(1, 5):
         if period not in period_to_field_id_to_nort_field:
             period_to_field_id_to_nort_field[period] = {}
 
-        period_to_field_id_to_nort_field[period][int(field)] = NortField(
+        period_to_field_id_to_nort_field[period][int(field)] = ObjectField(
             label=field_idx,
             constant_object_perimeter=training["constant"],
             variable_object_perimeter=training["variable"],
@@ -126,10 +131,10 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
 
             trial_id_range_vs_exp_meta[trial_id] = trial_data
             trial_id_vs_trial_class[trial_id] = CLASS_NAME_VS_CLASS[
-                TRIAL_LABEL_VS_CLASS_NAME[stage]
+                EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME[stage]
             ]
 
-        experiment = NortExperiment(
+        experiment = ObjectRecognitionExperiment(
             stage=str(period_index),
             trial_id_vs_trial_class=trial_id_vs_trial_class,
             trial_id_vs_keyword_arguments=trial_id_range_vs_exp_meta,
@@ -137,9 +142,7 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
             gaze_travel_direction_point_label="nose",
             gaze_start_point_label="center_eye",
             point_label_for_motion_features="torso",
-            nort_field_id_vs_nort_field_object=period_to_field_id_to_nort_field[
-                period_name
-            ],
+            id_vs_object_field=period_to_field_id_to_nort_field[period_name],
             perimeter_border_normal_metric_magnitude=0.03,
             global_center_metric_length=0.2,
             maximum_radians_inter_gaze_perimeter=np.deg2rad(75.0),

@@ -2,13 +2,13 @@ import pickle
 from glob import glob, iglob
 from pathlib import Path
 
-from bikipy.behaviour.object_recognition.nort.trial import NortField
+from bikipy.behaviour.object_recognition.novel_object_recognition import ObjectField
 
 ROOT = Path(".").resolve().parent / "data" / "area_images"
 
 for directory in iglob(ROOT / "**", recursive=True):
     nort_fields = [
-        NortField.from_images(i, habit, novelty)
+        ObjectField.from_images(i, habit, novelty)
         for i, (habit, novelty) in enumerate(
             zip(glob(str(directory / "habit*")), glob(str(directory / "novel*"))),
             start=1,
