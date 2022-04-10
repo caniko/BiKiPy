@@ -52,7 +52,10 @@ class GenericObjectRecognitionTrial(SquareEnclosedTrial, PhysicalObjectBaseMixin
 
     @cached_property
     def physical_object_set(self) -> PhysicalObjectSet:
-        return self.object_field.derive_physical_object_set(self._physical_object_keyword_arguments)
+        return self.object_field.derive_physical_object_set(
+            self.trial_sequence_index,
+            **self._physical_object_keyword_arguments
+        )
 
     @cached_property
     def number_of_objects(self) -> int:
