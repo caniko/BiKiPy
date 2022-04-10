@@ -2,7 +2,7 @@ import os
 from collections import Counter
 from functools import cached_property
 from logging import getLogger
-from typing import Any, Optional
+from typing import Any, Optional, ClassVar
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,6 +19,10 @@ logger = getLogger(__name__)
 
 
 class PhysicalObject(BikipyBase):
+    """
+    The physical object is a triadic abstraction of Reader, Perimeter and Trial. This abstraction allows
+    us to define methods that require the respective attributes, think of it as a union between the classes!
+    """
     perimeter: Perimeter2D
     reader: Any
     gaze_start_point_label: str
@@ -28,7 +32,6 @@ class PhysicalObject(BikipyBase):
     maximum_radians_inter_gaze_perimeter: float
     minimum_seconds_attention: float
     maximum_seconds_distraction: float
-    int_id: Optional[int] = None
     inspection_dir: Optional[DirectoryPath] = None
 
     def __len__(self) -> int:
@@ -36,7 +39,12 @@ class PhysicalObject(BikipyBase):
 
     @property
     def label(self):
-        return self.perimeter.label
+        """
+        Caveat:
+            - NORT: An explicit label for variable, constant, and novel object must be provided
+        :return:
+        """
+        return self.perimeter.best_id
 
     @cached_property
     def distance_from_per_frame(self) -> np.ndarray:
@@ -48,7 +56,7 @@ class PhysicalObject(BikipyBase):
     def observance_boolean_index(self) -> np.ndarray:
         return self._perimeter_attention_data[0]
 
-    @property
+    @cached_property
     def not_observing(self) -> np.ndarray:
         return ~self.observance_boolean_index
 
@@ -105,7 +113,7 @@ class PhysicalObject(BikipyBase):
             self.maximum_radians_inter_gaze_perimeter,
             self.minimum_seconds_attention,
             self.maximum_seconds_distraction,
-            inspect=perimeter_dir / f"id_{self.int_id}.jpg"
+            inspect=perimeter_dir / f"id_{self.label}.jpg"
             if self.inspection_dir
             else None,
         )
@@ -116,16 +124,21 @@ class PhysicalObject(BikipyBase):
 
 
 class PhysicalObjectSet(BikipyBase):
+    """
+    The physical object set provides useful methods that compute for several objects. Some methods are designed specifically
+    for sets with a specific number of objects, while others are generalized.
+    """
     physical_objects: tuple[PhysicalObject, ...]
+
+    overlapping_frame_to_total_frame_warning_ratio: ClassVar[float] = 0.05
+
+    @cached_property
+    def __len__(self):
+        return len(self.physical_objects)
 
     @classmethod
     def from_perimeter(cls, *perimeters, **kwargs):
-        return cls(
-            physical_objects=tuple(
-                PhysicalObject(perimeter=perimeter, int_id=i, **kwargs)
-                for i, perimeter in enumerate(perimeters, start=1)
-            )
-        )
+        return cls(physical_objects=tuple(PhysicalObject(perimeter=perimeter, **kwargs) for perimeter in perimeters))
 
     @classmethod
     def from_perimeter_set(cls, perimeter_set: PerimeterSet):
@@ -162,27 +175,35 @@ class PhysicalObjectSet(BikipyBase):
         return np.sum(self.not_observing_per_frame) / self.fps
 
     @cached_property
+    def object_specific_observation(self) -> dict[Any, int]:
+        return {
+            physical_object.label: physical_object.raw_seconds_observing for physical_object in self.physical_objects
+        }
+
+    @cached_property
     def observation_sequence(self):
         overlapping_frames = 0
 
         result = np.zeros(len(self._first_object), dtype=np.uint8)
-        for int_id, physical_object in self._int_id_vs_physical_object.items():
+        for label, physical_object in self._label_vs_physical_object.items():
             current_boolean_index = physical_object.observance_boolean_index
 
             overlapping_frames += np.sum(current_boolean_index & result)
 
-            result[current_boolean_index] = int_id
+            result[current_boolean_index] = label
 
         if overlapping_frames:
-            logger.warning(
-                f"{overlapping_frames} out of {self.frames} overlap. This is a "
-                "soft warning; do not be alarmed. Two or more objects have a temporal "
-                "overlap in their observation_sequence. This is a limitation of "
-                "the current methodology (refer to the docs). This warning can be "
-                "ignored in most instances.\n"
-                "You have been warned that this observation_sequence data "
-                "MIGHT be empirically wrong. "
-            )
+            ratio = overlapping_frames / self.frames
+            logger.info(f"{overlapping_frames} out of {self.frames} overlap; ratio {overlapping_frames / self.frames}")
+            if ratio > self.overlapping_frame_to_total_frame_warning_ratio:
+                logger.warning(
+                    f"Ratio is above the warning ratio, {self.overlapping_frame_to_total_frame_warning_ratio}:\n"
+                    "This is a soft warning; do not be alarmed. Two or more objects have a temporal "
+                    "overlap in their observation_sequence. This warning can be  ignored in most instances. "
+                    "You have been warned that this observation_sequence data "
+                    "MIGHT be empirically wrong. You may re-annotate the perimeters "
+                    "of the objects for improved results"
+                )
 
         return result
 
@@ -197,8 +218,8 @@ class PhysicalObjectSet(BikipyBase):
     @cached_property
     def physical_object_id_vs_observation_instances(self):
         return {
-            int_id: count
-            for int_id, count in np.unique(
+            label: count
+            for label, count in np.unique(
                 self.reduced_observation_sequence, return_counts=True
             )
         }
@@ -210,34 +231,29 @@ class PhysicalObjectSet(BikipyBase):
     @cached_property
     def object_bias_score(self) -> dict:
         if not self.seconds_observing:
-            return self._int_id_vs_zero
+            return self._label_vs_zero
         return {
-            int_id: 100.0
+            label: 100.0
             * physical_object.attention_filtered_seconds_observing
             / self.seconds_observing
-            for int_id, physical_object in self._int_id_vs_physical_object.items()
+            for label, physical_object in self._label_vs_physical_object.items()
         }
 
     @cached_property
-    def absolute_discrimination(self) -> float:
+    def nort_absolute_discrimination(self) -> float:
         """
         Definition: <frames observing novel object> - <frames observing constant object>
 
         :return:
         """
         if len(self.physical_objects) != 2:
-            msg = (
-                f"Absolute discrimination is a feature that is only supported when "
-                f"the number of PhysicalObjects in the {self.__class__.__name__} "
-                f"is two (2)."
-            )
+            msg = f"NORT absolute discrimination requires that the object number of the set is 2, not {len(self)}"
             raise AttributeError(msg)
 
         try:
-            return np.sum(
-                self._label_vs_physical_object["novel"].observance_boolean_index
-            ) - np.sum(
-                self._label_vs_physical_object["constant"].observance_boolean_index
+            return (
+                self._label_vs_physical_object["novel"].attention_filtered_seconds_observing
+                - self._label_vs_physical_object["constant"].attention_filtered_seconds_observing
             )
         except KeyError:
             msg = (
@@ -247,38 +263,21 @@ class PhysicalObjectSet(BikipyBase):
             raise AttributeError(msg)
 
     @cached_property
-    def _int_id_vs_physical_object(self) -> dict:
-        return {
-            int_id: physical_object
-            for int_id, physical_object in zip(self._int_ids, self.physical_objects)
-        }
+    def absolute_pair_discrimination(self) -> float:
+        if len(self) != 2:
+            msg = f"novel constant discrimination requires that the object number of the set is 2, not {len(self)}"
+            raise AttributeError(msg)
+        return abs(
+            self.physical_objects[0].attention_filtered_seconds_observing
+            - self.physical_objects[1].attention_filtered_seconds_observing
+        )
 
     @cached_property
     def _label_vs_physical_object(self) -> dict:
         return {
-            physical_object.label.lower(): physical_object
-            for physical_object in self.physical_objects
+            label: physical_object
+            for label, physical_object in zip(self._labels, self.physical_objects)
         }
-
-    @cached_property
-    def __len__(self):
-        return len(self.physical_objects)
-
-    @cached_property
-    def _int_ids(self):
-        if self._first_object.int_id:
-            return tuple(
-                physical_object.int_id for physical_object in self.physical_objects
-            )
-        return tuple(range(1, len(self) + 1))
-
-    @cached_property
-    def _int_id_vs_zero(self) -> dict:
-        return {int_id: 0.0 for int_id in self._int_id_vs_physical_object}
-
-    @cached_property
-    def _first_object(self):
-        return self.physical_objects[0]
 
     def plot(self, ax: Any = None):
         if not ax:
@@ -287,6 +286,22 @@ class PhysicalObjectSet(BikipyBase):
             ax = physical_objects.perimeter.plot(ax=ax)
 
         return ax
+
+    @cached_property
+    def _labels(self):
+        if self._first_object.label:
+            return tuple(
+                physical_object.label for physical_object in self.physical_objects
+            )
+        return tuple(range(1, len(self) + 1))
+
+    @cached_property
+    def _label_vs_zero(self) -> dict:
+        return {label: 0.0 for label in self._label_vs_physical_object}
+
+    @cached_property
+    def _first_object(self):
+        return self.physical_objects[0]
 
     @validator("physical_objects", pre=True)
     def more_than_one_object(cls, value):
@@ -317,29 +332,29 @@ class PhysicalObjectSet(BikipyBase):
 
     @validator("physical_objects", pre=True)
     def ids_are_unique(cls, value):
-        object_int_ids = (physical_object.int_id for physical_object in value)
+        object_labels = (physical_object.label for physical_object in value)
 
-        int_ids_set = set(object_int_ids)
-        len_unique = len(int_ids_set)
+        labels_set = set(object_labels)
+        len_unique = len(labels_set)
 
         len_total = len(value)
 
         if len_total != len_unique:
             msg = (
-                f"At least two of the int_id values are equal, these int_ids are "
+                f"At least two of the label values are equal, these labels are "
                 f"mutually exclusive in {cls.__class__.__name__}:\n"
-                f"{', '.join(object_int_ids)}"
+                f"{', '.join(object_labels)}"
             )
             raise AttributeError(msg)
-        if None in int_ids_set and len_unique != 1:
+        if None in labels_set and len_unique != 1:
             msg = (
-                "Either none or all of PhysicalObjects need to have their int_ids"
+                "Either none or all of PhysicalObjects need to have their labels"
                 "defined"
             )
             raise AttributeError(msg)
-        if int_ids_set != set(range(1, len_total + 1)):
+        if labels_set != set(range(1, len_total + 1)):
             msg = (
-                "int_ids must be incremental. IDs that do not follow this rule "
+                "labels must be incremental. IDs that do not follow this rule "
                 "must be stored in the label attribute"
             )
             raise AttributeError(msg)
@@ -352,13 +367,3 @@ class PhysicalObjectSet(BikipyBase):
             raise AttributeError(msg)
 
         return value
-
-
-def defer_physical_object_set_from_multi_row_reference(**kwargs):
-    """
-    Shares the same kwargs as defer_perimeter_set_from_multi_row_reference
-
-    :param kwargs:
-    :return:
-    """
-    image_name_to_perimeter_set = defer_perimeter_set_from_multi_row_reference(**kwargs)

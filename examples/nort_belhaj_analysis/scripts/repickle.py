@@ -8,7 +8,7 @@ from pathlib import Path
 
 from bikipy.behaviour.object_recognition.novel_object_recognition import ObjectField
 from bikipy.perimeter.polygon.base import PolygonPerimeter
-from bikipy.plugins.belhaj import round_vs_apparatus_to_general_nort_fields
+from bikipy.plugins.belhaj import round_vs_apparatus_to_general_object_fields
 
 NORT_EXAMPLE_DIR = Path(".").resolve().parent
 IMAGE_DIR = NORT_EXAMPLE_DIR / "data" / "area_images"
@@ -81,7 +81,7 @@ with open(A_PICKLE_PATH, "rb") as infile:
 
 round_keys = [f"round_{num}" for num in range(len(round_vs_field_apparatus))]
 round_vs_field_vs_apparatus = {
-    rem_round: round_vs_apparatus_to_general_nort_fields(
+    rem_round: round_vs_apparatus_to_general_object_fields(
         field_apparatus, convert_from_legacy=True
     )
     for rem_round, field_apparatus in zip(round_keys, round_vs_field_apparatus.values())

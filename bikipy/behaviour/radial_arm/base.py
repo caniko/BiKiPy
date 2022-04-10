@@ -85,7 +85,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
     @classmethod
     @property
-    def feature_summary_column(cls) -> list:
+    def feature_headers(cls) -> list:
         area_designations = ["Center", *cls._arm_labels]
         return [
             ("Alternations", ""),

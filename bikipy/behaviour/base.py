@@ -465,12 +465,14 @@ class BaseTrial(Behaviour):
 
     second_tolerance: ClassVar[float] = 0.15
 
-    feature_summary_column: ClassVar[Any] = None
+    feature_headers: ClassVar[Optional[list[str]]] = None
     trial_has_video_space_for_analysis: ClassVar[bool] = False
 
-    @validator("inspection_dir")
-    def make_categorical_inspection_sub_dirs(cls, value):
-        return value
+    @cached_property
+    def feature_summary_column(self):
+        if not self.trial_label:
+            return self.feature_headers
+        return pd.MultiIndex.from_product([self.trial_label], self.feature_headers)
 
     @property
     def motion_features(self) -> list:

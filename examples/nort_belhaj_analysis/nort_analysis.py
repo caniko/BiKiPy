@@ -8,15 +8,12 @@ from shutil import rmtree
 import numpy as np
 import pandas as pd
 
-from bikipy.behaviour.object_recognition.novel_object_recognition.constants import (
-    EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME,
-)
 from bikipy.behaviour.object_recognition.base import (
     ObjectRecognitionExperiment,
     ObjectField,
 )
 from bikipy.behaviour.object_recognition.novel_object_recognition import (
-    CLASS_NAME_VS_CLASS,
+    CLASS_NAME_VS_CLASS, EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME,
 )
 from bikipy.perimeter.io.general import defer_perimeter_set_from_multi_row_reference
 from bikipy.perimeter.io.makesense import (
@@ -30,7 +27,7 @@ from bikipy.plugins.belhaj import (
     get_trial_id_vs_stage,
 )
 
-DEEPLABCUT_DIR = Path("/mnt/md0/Projects/Neuroscience/Imen/data/nort")
+DEEPLABCUT_DIR = Path("/mnt/soma/Projects/Neuroscience/Imen/data/nort")
 
 
 WORKING_DIR = Path(".").resolve()
@@ -48,7 +45,7 @@ os.mkdir(inspection_dir)
 
 EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
-period_to_field_id_to_nort_field = {}
+period_to_field_id_to_object_field = {}
 for field_idx in range(1, 5):
     training_perimeters = from_makesense_coco_polygon(
         IMAGE_DIR / f"training_{field_idx}.json",
@@ -76,17 +73,16 @@ for field_idx in range(1, 5):
     for experiment_period, novel in nort_novelty_objects.items():
         training = nort_training_objects[experiment_period.replace("novel", "training")]
         period, _, field = experiment_period.split(".")[0].split("_")
-        if period not in period_to_field_id_to_nort_field:
-            period_to_field_id_to_nort_field[period] = {}
+        if period not in period_to_field_id_to_object_field:
+            period_to_field_id_to_object_field[period] = {}
 
-        period_to_field_id_to_nort_field[period][int(field)] = ObjectField(
-            label=field_idx,
+        period_to_field_id_to_object_field[period][int(field)] = ObjectField.nort_format(
             constant_object_perimeter=training["constant"],
             variable_object_perimeter=training["variable"],
             novel_object_perimeter=novel["novel"],
             novelty_constant_object_perimeter=novel["constant"],
         )
-    # period_to_field_id_to_nort_field[field_idx].plot()
+    # period_to_field_id_to_object_field[field_idx].plot()
 
 experiments = []
 for period_index, period_letter in enumerate(("A", "B"), start=1):
@@ -142,13 +138,13 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
             gaze_travel_direction_point_label="nose",
             gaze_start_point_label="center_eye",
             point_label_for_motion_features="torso",
-            id_vs_object_field=period_to_field_id_to_nort_field[period_name],
+            id_vs_object_field=period_to_field_id_to_object_field[period_name],
             perimeter_border_normal_metric_magnitude=0.03,
             global_center_metric_length=0.2,
             maximum_radians_inter_gaze_perimeter=np.deg2rad(75.0),
             minimum_seconds_attention=2.0,
             maximum_seconds_distraction=0.5,
-            inspection_dir=inspection_dir,
+            # inspection_dir=inspection_dir,
             data_import_kwargs={
                 "init_from": "parquet",
                 "midpoint_groups": {

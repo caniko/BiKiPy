@@ -16,7 +16,6 @@ pydantic = "^1.8.2"
 
 numpy = "^1.19.3"
 scipy = "^1.5.3"
-Shapely = "^1.7.1"
 scikit-guess = {git = "https://github.com/madphysicist/scikit-guess"}
 
 pandas = "^1.4.1"

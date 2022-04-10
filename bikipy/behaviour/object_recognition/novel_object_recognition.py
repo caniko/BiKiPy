@@ -6,7 +6,10 @@ from typing import ClassVar, Optional
 import pandas as pd
 
 from bikipy.behaviour.mixin.physical_object import PhysicalObjectTrialMixin
-from bikipy.behaviour.object_recognition.base import ObjectField, ObjectRecognitionHabituationTrial
+from bikipy.behaviour.object_recognition.base import (
+    ObjectField,
+    ObjectRecognitionHabituationTrial,
+)
 from bikipy.behaviour.rectangle.square import SquareEnclosedTrial
 
 logger = getLogger(__name__)
@@ -35,7 +38,7 @@ class NortOpenField(NortHabituationTrial):
 
 
 class NortPhysicalObjectFieldMixin(PhysicalObjectTrialMixin, ABC):
-    nort_field: ObjectField
+    object_field: ObjectField
 
     @property
     def physical_object_constant(self):
@@ -46,11 +49,11 @@ class NortTrainingTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
     trial_sequence_index: ClassVar[Optional[int]] = 1
     trial_label: ClassVar[str] = "Training"
 
-    feature_summary_column: ClassVar[list] = [("Training", "Seconds observing")]
+    feature_headers: ClassVar[list] = ["Seconds observing"]
 
     @cached_property
     def physical_object_set(self):
-        return self.nort_field.nort_training_set(
+        return self.object_field.nort_training_set(
             self._physical_object_keyword_arguments
         )
 
@@ -71,23 +74,18 @@ class NortNoveltyTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
     trial_sequence_index: ClassVar[Optional[int]] = 2
     trial_label: ClassVar[str] = "Novelty"
 
-    feature_summary_column: ClassVar[list] = list(
-        pd.MultiIndex.from_product(
-            [
-                ["Novelty"],
-                [
-                    "Absolute discrimination",
-                    "Discrimination index",
-                    "Novelty preference",
-                    "Object bias score",
-                ],
-            ]
-        )
-    )
+    feature_headers: ClassVar[list] = [
+        "Absolute discrimination",
+        "Discrimination index",
+        "Novelty preference",
+        "Object bias score",
+    ]
 
     @cached_property
     def physical_object_set(self):
-        return self.nort_field.nort_novelty_set(self._physical_object_keyword_arguments)
+        return self.object_field.nort_novelty_set(
+            self._physical_object_keyword_arguments
+        )
 
     @property
     def physical_object_novel(self):
@@ -96,7 +94,7 @@ class NortNoveltyTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
     @cached_property
     def discrimination_index(self):
         return (
-            self.physical_object_set.absolute_discrimination / self.experiment_seconds
+            self.physical_object_set.nort_absolute_discrimination / self.experiment_seconds
         )
 
     @cached_property
@@ -110,7 +108,7 @@ class NortNoveltyTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
     @property
     def feature_summary_row(self):
         return [
-            self.physical_object_set.absolute_discrimination,
+            self.physical_object_set.nort_absolute_discrimination,
             self.discrimination_index,
             self.novelty_preference,
             self.physical_object_set.object_bias_score[1],

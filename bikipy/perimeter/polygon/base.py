@@ -1,20 +1,17 @@
 import copy
 from functools import cached_property
 from logging import getLogger
-from pathlib import Path
 from typing import Any, ClassVar, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray as NpNDArray
-from pydantic import DirectoryPath, FilePath, root_validator, validator
-from shapely.geometry import Point, Polygon
+from pydantic import FilePath, validator
 
 from bikipy.math.geometry import clockwise_sort_points, expand_bikipy_perimeter
+from bikipy.math.point_in_polygon import parallel_point_in_polygon
 from bikipy.math.vector import normal_from_line_to_point, point_to_line_segment_distance
 from bikipy.perimeter.base import BasePerimeter
-from bikipy.perimeter.utils import get_coco_array_from_path_or_array
-from bikipy.utils.misc import get_reference_point_from_array, read_image
 from bikipy.utils.typing import NDArray
 
 logger = getLogger(__name__)
@@ -40,7 +37,7 @@ class PolygonPerimeter(BasePerimeter):
                 f"the current polygon is of the {n}th order"
             )
             raise ValueError(msg)
-        return clockwise_sort_points(value)
+        return np.ascontiguousarray(clockwise_sort_points(value), dtype=np.float32)
 
     def __getitem__(self, item: int):
         return self.corners[item]
@@ -108,11 +105,7 @@ class PolygonPerimeter(BasePerimeter):
 
     def coordinate_confinement_boolean_index(self, coordinates: NDArray) -> np.ndarray:
         assert self.number_of_corners > 4
-
-        polygon = Polygon(self.corners)
-        return np.array(
-            [polygon.contains(Point(coordinate)) for coordinate in coordinates]
-        )
+        return parallel_point_in_polygon(coordinates, self.corners)
 
     def change_reference(
         self, new_reference: Optional[NDArray], **new_inspect_image_kwargs

@@ -10,11 +10,11 @@ HDF_PATH = Path(__file__).parent.parent.resolve() / "test_data/data_for_angle.h5
 
 
 def test_compute_angles_from_vectors():
-    # Inner
-    point_1 = ((0.0, 0.0), (0.0, 0.0), (0.0, 0.0))
-    point_2 = ((1.0, 0.0), (1.0, 0.0), (1.0, 0.0))
-    point_3 = ((2.0, 0.0), (1.0, 1.0), (1.0, -1.0))
+    point_1 = np.array(((0.0, 0.0), (0.0, 0.0), (0.0, 0.0)))
+    point_2 = np.array(((1.0, 0.0), (1.0, 0.0), (1.0, 0.0)))
+    point_3 = np.array(((2.0, 0.0), (1.0, 1.0), (1.0, -1.0)))
 
+    # Inner
     answers = np.array((0.0, -np.pi / 2.0, np.pi / 2.0))
 
     # AB -> BC
@@ -30,11 +30,6 @@ def test_compute_angles_from_vectors():
         point_1, point_2, point_3, method="inner", degrees=True
     )
     np.testing.assert_allclose(result, answers_in_deg)
-
-    # Counter clockwise
-    point_1 = ((0.0, 0.0), (0.0, 0.0), (0.0, 0.0))
-    point_2 = ((1.0, 0.0), (1.0, 0.0), (1.0, 0.0))
-    point_3 = ((2.0, 0.0), (1.0, 1.0), (1.0, -1.0))
 
     answers = np.array((0.0, 3.0 * np.pi / 2.0, np.pi / 2.0))
 

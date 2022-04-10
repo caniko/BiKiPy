@@ -16,6 +16,7 @@ def clockwise_argsort_points(points: Sequence):
 
 
 def clockwise_sort_points(points: Sequence, inspect: bool = False):
+    # Sort from top-right point
     points = np.asarray(points)
     result = points[clockwise_argsort_points(points)]
 
@@ -27,6 +28,9 @@ def clockwise_sort_points(points: Sequence, inspect: bool = False):
         plt.show()
 
     return result
+
+
+clockwise_sort_points(((0, 0), (1, 0), (1, 1), (0, 1)), inspect=True)
 
 
 @lru_cache

@@ -123,7 +123,9 @@ def gaze_direction_filter(
         closest_corner_vectors,
     ) = perimeter.closest_sides_to_coordinates(gaze_start_point_label)
 
-    inner_angles = inner_angle(closest_corner_vectors, eye_to_nose_vector)
+    inner_angles = inner_angle(
+        closest_corner_vectors.astype(np.float32), eye_to_nose_vector.astype(np.float32)
+    )
 
     result = inner_angles <= max_radians
 

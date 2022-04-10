@@ -2,9 +2,10 @@ import os
 from abc import ABC
 from functools import cached_property, lru_cache
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
+from numpy.typing import NDArray
 from pydantic import validate_arguments, validator
 from skg import ngauss_fit
 
@@ -14,15 +15,40 @@ from bikipy.behaviour.mixin.meters_per_pixel.resolution_derived import (
     ResolutionDerivedUnitPerPixelTrialMixin,
 )
 from bikipy.behaviour.utils import reduce_repeating_sequences
+from bikipy.core.base_class import BikipyBase
 from bikipy.feature.motion import (
     get_combined_features_from_merged_motion_island_data,
     motion_2d_multi_indexer,
 )
-from bikipy.math.point_in_polygon import points_in_parallelogram
+from bikipy.math.point_in_polygon import parallel_point_in_polygon
 
 A = 255
 QUADRANT_INSPECTION_DIR_NAME = "PiP_quadrant_location_booleans"
 CENTER_INSPECTION_DIR_NAME = "PiP_center_location_booleans"
+
+
+class Quadrant(BikipyBase):
+    corners: NDArray
+    coordinates_per_frame: NDArray
+    meters_per_pixel: float
+    fps: float
+
+    @validator("corners")
+    def make_contiguous_array(cls, value):
+        return np.ascontiguousarray(value, dtype=np.float32)
+
+    @cached_property
+    def confinement_boolean_index(self):
+        return parallel_point_in_polygon(self.coordinates_per_frame, self.corners)
+
+    @cached_property
+    def motion(self) -> dict:
+        return get_combined_features_from_merged_motion_island_data(
+            self.confinement_boolean_index,
+            self.coordinates_per_frame,
+            self.meters_per_pixel,
+            self.fps,
+        )
 
 
 class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelMixin):
@@ -50,6 +76,7 @@ class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelM
 
 class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin, ABC):
     center_box_to_recording_resolution_ratio: Optional[float] = None
+    rectangle_2d_bin: tuple[int, int] = (2, 2)
 
     @cached_property
     def _quadrant_inspection_dir(self):
@@ -81,6 +108,24 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
         return np.sum(scores) / (A * self.number_of_frames)
 
     @cached_property
+    def quadrant_corners(self) -> dict[tuple[int, int], Quadrant]:
+        """
+        Left to right, top to down
+        :return:
+        """
+        horizontal_uniform_distance = (
+            self.horizontal_resolution / self.rectangle_2d_bin[0]
+        )
+        vertical_uniform_distance = self.vertical_resolution / self.rectangle_2d_bin[1]
+        result = {}
+        for v in range(1, self.rectangle_2d_bin[1]):
+            vertical_coordinate_min = vertical_uniform_distance * (v - 1)
+            vertical_coordinate_max = vertical_uniform_distance * v
+            for h in range(1, self.rectangle_2d_bin[0]):
+                result[(h, v)] = (h * horizontal_uniform_distance, vertical_coordinate)
+        return
+
+    @cached_property
     def location_sequence_quadrant(self) -> np.ndarray:
         result = self._uint_zeros_based_on_frame_length.copy()
 
@@ -91,47 +136,10 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
 
         return reduce_repeating_sequences(result, round(self.fps * 0.35))
 
-    @cached_property
-    def motion_quadrant_upper_left(self) -> dict:
-        return get_combined_features_from_merged_motion_island_data(
-            self.quadrant_upper_left_boolean_index,
-            self.coordinates_per_frame,
-            self.meters_per_pixel,
-            self.fps,
-        )
-
-    @cached_property
-    def motion_quadrant_upper_right(self) -> dict:
-        return get_combined_features_from_merged_motion_island_data(
-            self.quadrant_upper_right_boolean_index,
-            self.coordinates_per_frame,
-            self.meters_per_pixel,
-            self.fps,
-        )
-
-    @cached_property
-    def motion_quadrant_lower_left(self) -> dict:
-        return get_combined_features_from_merged_motion_island_data(
-            self.quadrant_lower_left_boolean_index,
-            self.coordinates_per_frame,
-            self.meters_per_pixel,
-            self.fps,
-        )
-
-    @cached_property
-    def motion_quadrant_lower_right(self) -> dict:
-        return get_combined_features_from_merged_motion_island_data(
-            self.quadrant_lower_right_boolean_index,
-            self.coordinates_per_frame,
-            self.meters_per_pixel,
-            self.fps,
-        )
-
     # Quadrant upper left 1
-
     @cached_property
     def quadrant_upper_left_boolean_index(self) -> np.ndarray:
-        return points_in_parallelogram(
+        return parallel_point_in_polygon(
             np.array((0.0, 0.0)),
             np.array((self.recording_center_pixel[0], 0.0)),
             np.array((0.0, self.recording_center_pixel[1])),
@@ -156,7 +164,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
 
     @cached_property
     def quadrant_upper_right_boolean_index(self) -> np.ndarray:
-        return points_in_parallelogram(
+        return parallel_point_in_polygon(
             np.array((self.recording_center_pixel[0], 0.0)),
             self.recording_center_pixel,
             np.array((self.horizontal_resolution, 0.0)),
@@ -181,7 +189,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
 
     @cached_property
     def quadrant_lower_left_boolean_index(self) -> np.ndarray:
-        return points_in_parallelogram(
+        return parallel_point_in_polygon(
             np.array((0.0, self.vertical_resolution)),
             np.array((self.recording_center_pixel[0], self.vertical_resolution)),
             np.array((0.0, self.recording_center_pixel[1])),
@@ -206,7 +214,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
 
     @cached_property
     def quadrant_lower_right_boolean_index(self) -> np.ndarray:
-        return points_in_parallelogram(
+        return parallel_point_in_polygon(
             np.array((self.recording_center_pixel[0], self.vertical_resolution)),
             self.recording_resolution,
             self.recording_center_pixel,
@@ -279,14 +287,16 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
 
     @cached_property
     def center_boolean_index(self):
-        return points_in_parallelogram(
+        return parallel_point_in_polygon(
             self.center_square_corners[0],
             self.center_square_corners[3],
             self.center_square_corners[1],
             self.coordinates_per_frame,
             inspect=self.inspection_dir
             / CENTER_INSPECTION_DIR_NAME
-            / self._inspection_image_name,
+            / self._inspection_image_name
+            if self.inspection_dir
+            else None,
         )
 
     @cached_property

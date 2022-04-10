@@ -1,5 +1,5 @@
 from pathlib import PurePath
-from typing import Optional
+from typing import Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -78,7 +78,7 @@ def points_in_parallelogram(
 
 
 def parallel_point_in_polygon(points: Sequence, polygon: Sequence):
-    return is_inside_sm_parallel(
+    return _is_inside_sm_parallel(
         np.asarray(points, dtype=np.float32),
         np.ascontiguousarray(polygon, dtype=np.float32),
     )
@@ -134,5 +134,5 @@ def _is_inside_sm_parallel(points: NDArray, polygon: NDArray):
     ln = len(points)
     result = np.empty(ln, dtype=numba.boolean)
     for i in numba.prange(ln):
-        result[i] = is_inside_sm(points[i], polygon)
+        result[i] = _is_inside_sm(points[i], polygon)
     return result

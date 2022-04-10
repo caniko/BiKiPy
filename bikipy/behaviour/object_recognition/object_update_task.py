@@ -1,4 +1,5 @@
-from bikipy.behaviour.rectangle.square import SquareEnclosedTrial
+from bikipy.behaviour.object_recognition.base import GenericObjectRecognitionTrial
 
 
-class ObjectUpdateTaskTrial(SquareEnclosedTrial):
+class ObjectUpdateTaskTraining(GenericObjectRecognitionTrial):
+    pass

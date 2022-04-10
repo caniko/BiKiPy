@@ -63,7 +63,7 @@ def get_trial_id_vs_stage(
     return result
 
 
-def round_vs_apparatus_to_general_nort_fields(
+def round_vs_apparatus_to_general_object_fields(
     round_vs_field_apparatus: dict, convert_from_legacy: bool = False
 ):
     rounds = tuple(round_vs_field_apparatus.keys())
