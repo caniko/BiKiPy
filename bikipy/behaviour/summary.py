@@ -42,17 +42,12 @@ class StatisticalAnalysis(BikipyBase):
                 tukey_df = pd.DataFrame(
                     data=[row[2:] for row in tukey._results_table.data[1:]],
                     columns=tukey._results_table.data[0][2:],
-                    index=[
-                        "{}_{}".format(*row[:2])
-                        for row in tukey._results_table.data[1:]
-                    ],
+                    index=["{}_{}".format(*row[:2]) for row in tukey._results_table.data[1:]],
                 )
                 tukey_df.index = pd.MultiIndex.from_tuples(
                     [
                         (category, *downstream)
-                        for downstream in pd.MultiIndex.from_product(
-                            [[feature_column], tukey_df.index]
-                        )
+                        for downstream in pd.MultiIndex.from_product([[feature_column], tukey_df.index])
                     ],
                     names=("Category", "Feature", "Group"),
                 )
@@ -75,9 +70,7 @@ class StatisticalAnalysis(BikipyBase):
                 tukey_df.index = pd.MultiIndex.from_tuples(
                     [
                         (category, *downstream)
-                        for downstream in pd.MultiIndex.from_product(
-                            [[feature_column], tukey_df.index]
-                        )
+                        for downstream in pd.MultiIndex.from_product([[feature_column], tukey_df.index])
                     ]
                 )
                 result.append(tukey_df)
@@ -85,9 +78,7 @@ class StatisticalAnalysis(BikipyBase):
 
     @cached_property
     def merged_df(self):
-        concatenated = pd.concat(
-            (self.analysis_df.sort_index(), self.metadata_df.sort_index()), axis=1
-        )
+        concatenated = pd.concat((self.analysis_df.sort_index(), self.metadata_df.sort_index()), axis=1)
 
     @cached_property
     def unique_category_values(self):
@@ -106,9 +97,7 @@ class StatisticalAnalysis(BikipyBase):
                 boolean_index = self.metadata_df[column] == unique_category
                 assert np.any(boolean_index)
                 df = self.analysis_df[boolean_index]
-                df.index = pd.MultiIndex.from_product(
-                    [[unique_category], df.index], names=("Group", "Animal_ID")
-                )
+                df.index = pd.MultiIndex.from_product([[unique_category], df.index], names=("Group", "Animal_ID"))
                 dataframe_set.append(df)
             result[column] = pd.concat(dataframe_set)
         return result

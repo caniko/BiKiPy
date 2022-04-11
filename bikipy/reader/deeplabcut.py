@@ -54,9 +54,7 @@ class DeepLabCutReader(BaseReader):
         if self.df_path.suffix == ".csv":
             return pd.read_csv(self.df_path, **DEEPLABCUT_DF_INIT_KWARGS)
         elif self.df_path.suffix == ".h5":
-            return pd.read_hdf(self.df_path, **DEEPLABCUT_DF_INIT_KWARGS).droplevel(
-                0, axis=1
-            )
+            return pd.read_hdf(self.df_path, **DEEPLABCUT_DF_INIT_KWARGS).droplevel(0, axis=1)
         else:
             # DeepLabCut doesn't support other formats natively
             logger.debug(
@@ -79,16 +77,13 @@ class DeepLabCutReader(BaseReader):
             for name, group in self.midpoint_groups.items():
                 if all(component in self.tracked_point_labels for component in group):
                     group_points = [
-                        result.loc[:, pd.IndexSlice[component_name, ("x", "y")]].values
-                        for component_name in group
+                        result.loc[:, pd.IndexSlice[component_name, ("x", "y")]].values for component_name in group
                     ]
                     midpoint_x, midpoint_y = recursive_midpoint(group_points).T
                     midpoint_data[(name, "x")] = midpoint_x
                     midpoint_data[(name, "y")] = midpoint_y
                     midpoint_data[(name, "likelihood")] = self.reduce_likelihoods(group)
-                elif all(
-                    component in self.tracked_and_midpoint_labels for component in group
-                ):
+                elif all(component in self.tracked_and_midpoint_labels for component in group):
                     midpoint_based_midpoints[name] = group
                 else:
                     msg = (
@@ -103,9 +98,7 @@ class DeepLabCutReader(BaseReader):
                 group_points = []
                 for component_name in group:
                     if component_name in self.midpoint_groups:
-                        component_likelihood = midpoint_data[
-                            (component_name, "likelihood")
-                        ]
+                        component_likelihood = midpoint_data[(component_name, "likelihood")]
                         group_points.append(
                             np.array(
                                 (
@@ -115,14 +108,8 @@ class DeepLabCutReader(BaseReader):
                             ).T
                         )
                     else:
-                        group_points.append(
-                            result.loc[
-                                :, pd.IndexSlice[component_name, ("x", "y")]
-                            ].values
-                        )
-                        component_likelihood = result.loc[
-                            :, [(component_name, "likelihood")]
-                        ].values.T[0]
+                        group_points.append(result.loc[:, pd.IndexSlice[component_name, ("x", "y")]].values)
+                        component_likelihood = result.loc[:, [(component_name, "likelihood")]].values.T[0]
 
                     if new_midpoint_likelihood is not None:
                         new_midpoint_likelihood *= component_likelihood
@@ -149,10 +136,7 @@ class DeepLabCutReader(BaseReader):
 
     @cached_property
     def region_of_interest_vs_boolean_index(self):
-        return {
-            roi: self.df[(roi, "likelihood")].values >= self.min_likelihood
-            for roi in self.tracked_point_labels
-        }
+        return {roi: self.df[(roi, "likelihood")].values >= self.min_likelihood for roi in self.tracked_point_labels}
 
     @property
     def frames(self):
@@ -167,9 +151,7 @@ class DeepLabCutReader(BaseReader):
         :return: np.ndarray with the reduced likelihood values
         """
         return np.multiply.reduce(
-            self.raw_df.loc[
-                :, pd.IndexSlice[tracked_point_labels, "likelihood"]
-            ].values,
+            self.raw_df.loc[:, pd.IndexSlice[tracked_point_labels, "likelihood"]].values,
             axis=1,
         )
 
@@ -187,9 +169,7 @@ def convert_hdf_to_parquet(data_path, delete_hdf: bool = False):
     parquet_path = data_path.with_suffix(".parquet")
 
     if not parquet_path.exists():
-        pd.read_hdf(data_path, **DEEPLABCUT_DF_INIT_KWARGS).droplevel(
-            0, axis=1
-        ).to_parquet(parquet_path)
+        pd.read_hdf(data_path, **DEEPLABCUT_DF_INIT_KWARGS).droplevel(0, axis=1).to_parquet(parquet_path)
 
     if delete_hdf:
         os.remove(data_path)

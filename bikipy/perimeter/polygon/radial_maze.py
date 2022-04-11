@@ -1,17 +1,17 @@
 import os.path
 from logging import getLogger
-from typing import Optional, Union
+from typing import Optional
 
 import numpy as np
 from matplotlib import pyplot as plt
 from pydantic import FilePath
 
-from bikipy.math.geometry import clockwise_argsort_points
+from bikipy.utils.math import clockwise_argsort_points
 from bikipy.perimeter import ParallelogramPerimeter, TriangularPerimeter
 from bikipy.perimeter.base import PerimeterSet, PolygonPerimeter
 from bikipy.perimeter.io.makesense import from_makesense_coco_polygon
 from bikipy.utils.misc import read_makesense_point_csv
-from bikipy.utils.typing import OptionalPathTyping, PathTyping
+from bikipy.utils.typing import PathTyping
 
 logger = getLogger(__name__)
 
@@ -55,17 +55,12 @@ def generate_radial_maze_perimeters(
     arm_perimeters = []
     for line_index, line_midpoint in enumerate(line_midpoints):
         line_pair_index = np.where(
-            np.argsort(
-                np.linalg.norm(line_midpoint - center_object.edge_midpoints, axis=1)
-            )
-            == 0
+            np.argsort(np.linalg.norm(line_midpoint - center_object.edge_midpoints, axis=1)) == 0
         )[0][0]
 
         arm_perimeter = np.concatenate(
             (
-                center_object.corners[
-                    center_object.linked_polygon_edge_corner_pairs[line_pair_index], :
-                ],
+                center_object.corners[center_object.linked_polygon_edge_corner_pairs[line_pair_index], :],
                 lines[line_index],
             )
         )
@@ -84,9 +79,7 @@ def generate_radial_maze_perimeters(
     if inspect:
         fig, ax = plt.subplots(ncols=3)
         PolygonPerimeter.plot_perimeters(perimeters, ax=ax[0])
-        for i, (line, center_corner) in enumerate(
-            zip(lines, center_object.corners), start=1
-        ):
+        for i, (line, center_corner) in enumerate(zip(lines, center_object.corners), start=1):
             ax[1].scatter(*line.T, label=f"line_{i}")
             ax[2].scatter(*center_corner.T, label=f"center_corners_{i}")
         plt.legend()

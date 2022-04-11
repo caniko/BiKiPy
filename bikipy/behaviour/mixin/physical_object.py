@@ -11,9 +11,7 @@ from bikipy.feature.physical_object import PhysicalObjectSet
 
 class PhysicalObjectBaseMixin(BikipyBase, ABC):
     gaze_start_point_label: str = Field(description="Label of the eye center in the df")
-    gaze_travel_direction_point_label: str = Field(
-        description="Label signifying the area where the gaze vector"
-    )
+    gaze_travel_direction_point_label: str = Field(description="Label signifying the area where the gaze vector")
     perimeter_border_normal_metric_magnitude: Optional[float] = Field(
         None,
         description="The magnitude of the normal between the perimeter and the perimeter given in meters",
@@ -35,9 +33,7 @@ class PhysicalObjectBaseMixin(BikipyBase, ABC):
 
     @cached_property
     def perimeter_border_normal_pixel_magnitude(self):
-        return self.perimeter_border_normal_metric_magnitude / np.mean(
-            self.meters_per_pixel
-        )
+        return self.perimeter_border_normal_metric_magnitude / np.mean(self.meters_per_pixel)
 
     @cached_property
     def _physical_object_keyword_arguments(self):
@@ -56,9 +52,7 @@ class PhysicalObjectBaseMixin(BikipyBase, ABC):
 
         if self.video_metadata_can_be_defined:
             result["fps"] = self.fps
-            result[
-                "perimeter_border_normal_pixel_magnitude"
-            ] = self.perimeter_border_normal_pixel_magnitude
+            result["perimeter_border_normal_pixel_magnitude"] = self.perimeter_border_normal_pixel_magnitude
 
         return result
 

@@ -36,18 +36,14 @@ class VideoMetadataMixin(BikipyBase):
 
     @cached_property
     def _video_metadata(self) -> tuple:
-        error_msg = (
-            "Either video_path or video metadata needs to be exclusively defined."
-        )
+        error_msg = "Either video_path or video metadata needs to be exclusively defined."
         if np.any(self.manual_recording_resolution) and self.manual_fps:
             if self.video_path:
                 raise ValueError(error_msg)
             fps = self.manual_fps
             recording_resolution = self.manual_recording_resolution
         elif self.video_path:
-            _frame, horizontal_resolution, vertical_resolution, fps = get_video_data(
-                self.video_path
-            )
+            _frame, horizontal_resolution, vertical_resolution, fps = get_video_data(self.video_path)
             recording_resolution = (horizontal_resolution, vertical_resolution)
         else:
             raise ValueError(error_msg)

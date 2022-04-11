@@ -45,8 +45,7 @@ def plot_perimeters(
             if isinstance(perimeter.inspect_image, np.ndarray):
                 potential_inspect_image = perimeter.inspect_image
                 if i == len(perimeters) - 1 or all(
-                    perimeter.inspect_image is None
-                    or np.all(potential_inspect_image == perimeter.inspect_image)
+                    perimeter.inspect_image is None or np.all(potential_inspect_image == perimeter.inspect_image)
                     for perimeter in perimeters[i + 1 :]
                 ):
                     """

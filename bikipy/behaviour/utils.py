@@ -43,9 +43,7 @@ def reduce_repeating_sequences(
     repeating_sequence = np.asarray(repeating_sequence)
 
     try:
-        i = np.where(repeating_sequence != repeating_sequence[frame_tolerance - 1])[0][
-            0
-        ]
+        i = np.where(repeating_sequence != repeating_sequence[frame_tolerance - 1])[0][0]
     except IndexError:
         # The sequence consists only of one value after index "frame_tolerance - 1"
         assert len(repeating_sequence) > frame_tolerance - 1
@@ -58,10 +56,7 @@ def reduce_repeating_sequences(
             i += 1
             new_element = repeating_sequence[i]
             if i + frame_tolerance == last_index or last_element != new_element:
-                if (
-                    np.mean(repeating_sequence[i : i + frame_tolerance] == new_element)
-                    > 0.5
-                ):
+                if np.mean(repeating_sequence[i : i + frame_tolerance] == new_element) > 0.5:
                     if connector_element and reduced_sequence[-1] != connector_element:
                         reduced_sequence.append(connector_element)
                     reduced_sequence.append(new_element)
@@ -87,8 +82,3 @@ def reduce_repeating_sequences_absolute(
             reduced_sequence.append(last_element)
 
     return reduced_sequence
-
-
-def cm_per_pixel_from_reference_line_segment(segment_start, segment_end, centimeters: float) -> float:
-    segment_length = np.linalg.norm(np.asarray(segment_end) - np.asarray(segment_start))
-    return segment_length / centimeters

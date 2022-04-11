@@ -23,6 +23,7 @@ class PhysicalObject(BikipyBase):
     The physical object is a triadic abstraction of Reader, Perimeter and Trial. This abstraction allows
     us to define methods that require the respective attributes, think of it as a union between the classes!
     """
+
     perimeter: Perimeter2D
     reader: Any
     gaze_start_point_label: str
@@ -48,9 +49,7 @@ class PhysicalObject(BikipyBase):
 
     @cached_property
     def distance_from_per_frame(self) -> np.ndarray:
-        return np.linalg.norm(
-            self._gaze_travel_direction_point - self.perimeter.centroid, axis=1
-        )
+        return np.linalg.norm(self._gaze_travel_direction_point - self.perimeter.centroid, axis=1)
 
     @property
     def observance_boolean_index(self) -> np.ndarray:
@@ -100,8 +99,7 @@ class PhysicalObject(BikipyBase):
     def _perimeter_attention_data(self) -> tuple:
         if self.inspection_dir:
             if not (
-                perimeter_dir := self.inspection_dir
-                / f"PhyObj_attention_perimeter-{self.perimeter.best_id}"
+                perimeter_dir := self.inspection_dir / f"PhyObj_attention_perimeter-{self.perimeter.best_id}"
             ).exists():
                 os.mkdir(perimeter_dir)
         return perimeter_attention(
@@ -113,9 +111,7 @@ class PhysicalObject(BikipyBase):
             self.maximum_radians_inter_gaze_perimeter,
             self.minimum_seconds_attention,
             self.maximum_seconds_distraction,
-            inspect=perimeter_dir / f"id_{self.label}.jpg"
-            if self.inspection_dir
-            else None,
+            inspect=perimeter_dir / f"id_{self.label}.jpg" if self.inspection_dir else None,
         )
 
     @property
@@ -128,6 +124,7 @@ class PhysicalObjectSet(BikipyBase):
     The physical object set provides useful methods that compute for several objects. Some methods are designed specifically
     for sets with a specific number of objects, while others are generalized.
     """
+
     physical_objects: tuple[PhysicalObject, ...]
 
     overlapping_frame_to_total_frame_warning_ratio: ClassVar[float] = 0.05
@@ -156,10 +153,7 @@ class PhysicalObjectSet(BikipyBase):
     @cached_property
     def observing_per_frame(self):
         return np.logical_or.reduce(
-            [
-                physical_object.observance_boolean_index
-                for physical_object in self.physical_objects
-            ]
+            [physical_object.observance_boolean_index for physical_object in self.physical_objects]
         )
 
     @cached_property
@@ -209,20 +203,11 @@ class PhysicalObjectSet(BikipyBase):
 
     @cached_property
     def reduced_observation_sequence(self):
-        return np.array(
-            reduce_repeating_sequences(
-                self.observation_sequence, frame_tolerance=self.fps / 0.35
-            )
-        )
+        return np.array(reduce_repeating_sequences(self.observation_sequence, frame_tolerance=self.fps / 0.35))
 
     @cached_property
     def physical_object_id_vs_observation_instances(self):
-        return {
-            label: count
-            for label, count in np.unique(
-                self.reduced_observation_sequence, return_counts=True
-            )
-        }
+        return {label: count for label, count in np.unique(self.reduced_observation_sequence, return_counts=True)}
 
     @cached_property
     def sum_of_observation_instances(self):
@@ -233,9 +218,7 @@ class PhysicalObjectSet(BikipyBase):
         if not self.seconds_observing:
             return self._label_vs_zero
         return {
-            label: 100.0
-            * physical_object.attention_filtered_seconds_observing
-            / self.seconds_observing
+            label: 100.0 * physical_object.attention_filtered_seconds_observing / self.seconds_observing
             for label, physical_object in self._label_vs_physical_object.items()
         }
 
@@ -256,10 +239,7 @@ class PhysicalObjectSet(BikipyBase):
                 - self._label_vs_physical_object["constant"].attention_filtered_seconds_observing
             )
         except KeyError:
-            msg = (
-                "The physical_objects must have a novel and a constant label "
-                "to compute absolute_discrimination"
-            )
+            msg = "The physical_objects must have a novel and a constant label " "to compute absolute_discrimination"
             raise AttributeError(msg)
 
     @cached_property
@@ -274,10 +254,7 @@ class PhysicalObjectSet(BikipyBase):
 
     @cached_property
     def _label_vs_physical_object(self) -> dict:
-        return {
-            label: physical_object
-            for label, physical_object in zip(self._labels, self.physical_objects)
-        }
+        return {label: physical_object for label, physical_object in zip(self._labels, self.physical_objects)}
 
     def plot(self, ax: Any = None):
         if not ax:
@@ -290,9 +267,7 @@ class PhysicalObjectSet(BikipyBase):
     @cached_property
     def _labels(self):
         if self._first_object.label:
-            return tuple(
-                physical_object.label for physical_object in self.physical_objects
-            )
+            return tuple(physical_object.label for physical_object in self.physical_objects)
         return tuple(range(1, len(self) + 1))
 
     @cached_property
@@ -347,15 +322,11 @@ class PhysicalObjectSet(BikipyBase):
             )
             raise AttributeError(msg)
         if None in labels_set and len_unique != 1:
-            msg = (
-                "Either none or all of PhysicalObjects need to have their labels"
-                "defined"
-            )
+            msg = "Either none or all of PhysicalObjects need to have their labels" "defined"
             raise AttributeError(msg)
         if labels_set != set(range(1, len_total + 1)):
             msg = (
-                "labels must be incremental. IDs that do not follow this rule "
-                "must be stored in the label attribute"
+                "labels must be incremental. IDs that do not follow this rule " "must be stored in the label attribute"
             )
             raise AttributeError(msg)
 

@@ -3,9 +3,12 @@ from logging import getLogger
 from typing import Optional, ClassVar
 
 import pandas as pd
-from pydantic import Field
+from pydantic import Field, root_validator
 
-from bikipy.behaviour.mixin.physical_object import PhysicalObjectExperimentMixin, PhysicalObjectBaseMixin
+from bikipy.behaviour.mixin.physical_object import (
+    PhysicalObjectExperimentMixin,
+    PhysicalObjectBaseMixin,
+)
 from bikipy.behaviour.rectangle.square import (
     SquareEnclosedExperiment,
     SquareEnclosedTrial,
@@ -16,31 +19,44 @@ from bikipy.feature.physical_object.field import ObjectField
 logger = getLogger(__name__)
 
 
-class ObjectRecognitionExperiment(
-    SquareEnclosedExperiment, PhysicalObjectExperimentMixin
-):
-    id_vs_object_field: Optional[dict[int, ObjectField]] = Field(
-        None, description="Label of the nose in the df"
+class ObjectRecognitionExperiment(SquareEnclosedExperiment, PhysicalObjectExperimentMixin):
+    global_object_field: Optional[ObjectField] = Field(
+        description="""
+        ObjectField to be used for all trials. Most common use case is when the ObjectField has its 
+        object-presence sequences are defined by dictionary.
+        """
     )
+    id_vs_object_field: Optional[dict[int, ObjectField]] = Field(description="Trial ID to ObjectField map")
     first_stage_has_no_object: ClassVar[bool] = True
 
     def trial_keyword_arguments(self, trial_id: int) -> dict:
         upstream_kwargs = super().trial_keyword_arguments(trial_id)
+        stage = upstream_kwargs["stage"]
 
-        if self.first_stage_has_no_object and upstream_kwargs["stage"] == 0:
+        if self.first_stage_has_no_object and stage == 0:
             return upstream_kwargs
 
         return {
             **upstream_kwargs,
             **self._physical_object_keyword_arguments,
             "perimeter_border_normal_metric_magnitude": self.perimeter_border_normal_metric_magnitude,
-            "object_field": self.id_vs_object_field[upstream_kwargs["field_id"]],
+            "object_field": self.global_object_field[stage]
+            if self.global_object_field
+            else self.id_vs_object_field[upstream_kwargs["field_id"]][stage],
         }
+
+    @root_validator
+    def global_object_field_and_id_vs_object_field_mutually_exclusive(cls, values):
+        if "global_object_field" in values and "id_vs_object_field" in values:
+            msg = "global_object_field and id_vs_object_field are mutually exclusive"
+            raise ValueError(msg)
+        return values
 
 
 class ObjectRecognitionHabituationTrial(SquareEnclosedTrial):
     """The purpose of this stage is to generate reference data for proceeding experiments with objects."""
-    trial_sequence_index: ClassVar[Optional[int]] = 0
+
+    trial_stage_index: ClassVar[Optional[int]] = 0
     trial_label: ClassVar[str] = "Habituation"
 
 
@@ -53,8 +69,7 @@ class GenericObjectRecognitionTrial(SquareEnclosedTrial, PhysicalObjectBaseMixin
     @cached_property
     def physical_object_set(self) -> PhysicalObjectSet:
         return self.object_field.derive_physical_object_set(
-            self.trial_sequence_index,
-            **self._physical_object_keyword_arguments
+            self.trial_stage_index, **self._physical_object_keyword_arguments
         )
 
     @cached_property
@@ -73,18 +88,18 @@ class GenericObjectRecognitionTrial(SquareEnclosedTrial, PhysicalObjectBaseMixin
         if self.number_of_objects == 2:
             general_feature_headers.append("Absolute pair discrimination")
         # ==================================================================
-        result = pd.MultiIndex.from_product([
-            ["General"],
-            general_feature_headers + self.general_feature_headers
-        ])
-        return result + pd.MultiIndex.from_product([
-            list(self.object_field.labels),
+        result = pd.MultiIndex.from_product([["General"], general_feature_headers + self.general_feature_headers])
+        return result + pd.MultiIndex.from_product(
             [
-                # Add object feature headers =========================================================
-                "Seconds observing",
-                # ====================================================================================
-            ] + self.object_feature_headers
-        ])
+                list(self.object_field.labels),
+                [
+                    # Add object feature headers =========================================================
+                    "Seconds observing",
+                    # ====================================================================================
+                ]
+                + self.object_feature_headers,
+            ]
+        )
 
     @property
     def general_features(self) -> list:

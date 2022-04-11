@@ -25,17 +25,12 @@ logger = getLogger(__name__)
 
 
 class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
-    df_path: FilePath = Field(
-        description="Path to kinematic data, that will be " "converted to pd.DataFrame"
-    )
+    df_path: FilePath = Field(description="Path to kinematic data, that will be " "converted to pd.DataFrame")
     future_scaling: bool = Field(
         None,
-        description="Scales the coordinates with respect to their min and max. "
-        "True requires x_max and y_max",
+        description="Scales the coordinates with respect to their min and max. " "True requires x_max and y_max",
     )
-    midpoint_groups: Optional[dict] = Field(
-        None, description="labels that consist of groups that should have their"
-    )
+    midpoint_groups: Optional[dict] = Field(None, description="labels that consist of groups that should have their")
     x_axis_crop_end_point: float = Field(0.0, description="")
     y_axis_crop_end_point: float = Field(0.0, description="")
     reverse_y_axis: bool = Field(
@@ -111,10 +106,7 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
 
     @cached_property
     def valid_point_indices(self):
-        return {
-            roi: np.where(self.region_of_interest_vs_boolean_index[roi])[0]
-            for roi in self.tracked_point_labels
-        }
+        return {roi: np.where(self.region_of_interest_vs_boolean_index[roi])[0] for roi in self.tracked_point_labels}
 
     @cached_property
     def valid_tails(self):
@@ -129,17 +121,14 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
     @cached_property
     def valid_slices(self):
         return {
-            item: slice(
-                self.valid_point_indices[item][0], self.valid_point_indices[item][-1]
-            )
+            item: slice(self.valid_point_indices[item][0], self.valid_point_indices[item][-1])
             for item in self.tracked_point_labels
         }
 
     @cached_property
     def validity_ratio(self):
         return {
-            roi: np.sum(self.region_of_interest_vs_boolean_index[roi])
-            / len(self.raw_df)
+            roi: np.sum(self.region_of_interest_vs_boolean_index[roi]) / len(self.raw_df)
             for roi in self.tracked_point_labels
         }
 
@@ -198,9 +187,7 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
 
 @lru_cache
 def _find_longest_tails(valid_tails, items, as_slice: bool = True):
-    left_valid_tails, right_valid_tails = np.array(
-        [valid_tails[item] for item in items]
-    ).T
+    left_valid_tails, right_valid_tails = np.array([valid_tails[item] for item in items]).T
 
     result = (left_valid_tails.max(), right_valid_tails.min())
 

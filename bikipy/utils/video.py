@@ -27,10 +27,7 @@ def get_video_data(video_path: PathTyping, frame_time: Union[str, int, None] = N
     cap = cv2.VideoCapture(str(video_path))
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    msg = (
-        f"frame_time can only be defined as halfway, start, end, or integer; "
-        f"not {type(frame_time)}"
-    )
+    msg = f"frame_time can only be defined as halfway, start, end, or integer; " f"not {type(frame_time)}"
     if frame_time:
         if isinstance(frame_time, str):
             if (frame_time := frame_time.lower()) == "middle":

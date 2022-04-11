@@ -8,9 +8,9 @@ import numpy as np
 from numpy.typing import NDArray as NpNDArray
 from pydantic import FilePath, validator
 
-from bikipy.math.geometry import clockwise_sort_points, expand_bikipy_perimeter
-from bikipy.math.point_in_polygon import parallel_point_in_polygon
-from bikipy.math.vector import normal_from_line_to_point, point_to_line_segment_distance
+from bikipy.utils.math import clockwise_sort_points, expand_bikipy_perimeter
+from bikipy.utils.math import parallel_point_in_polygon
+from bikipy.utils.math import normal_from_line_to_point, point_to_line_segment_distance
 from bikipy.perimeter.base import BasePerimeter
 from bikipy.utils.typing import NDArray
 
@@ -55,9 +55,7 @@ class PolygonPerimeter(BasePerimeter):
             from bikipy.perimeter import ParallelogramPerimeter
 
             border_obj = ParallelogramPerimeter(
-                corners=expand_bikipy_perimeter(
-                    self, perimeter_border_normal_pixel_magnitude
-                ),
+                corners=expand_bikipy_perimeter(self, perimeter_border_normal_pixel_magnitude),
                 inspect_image_array=self.inspect_image,
             )
         else:
@@ -79,17 +77,11 @@ class PolygonPerimeter(BasePerimeter):
 
         closest_index = np.where(closest_boolean_index)[1]
 
-        closest_corner_start_point = np.zeros(
-            (closest_distance.shape[0], 2), dtype=np.float32
-        )
-        closest_corner_vectors = np.zeros(
-            (closest_distance.shape[0], 2), dtype=np.float32
-        )
+        closest_corner_start_point = np.zeros((closest_distance.shape[0], 2), dtype=np.float32)
+        closest_corner_vectors = np.zeros((closest_distance.shape[0], 2), dtype=np.float32)
         for i in range(self.number_of_corners):
             closest_corner_start_point[closest_index == i] = self.corners[i]
-            closest_corner_vectors[
-                closest_index == i
-            ] = self.perimeter_corner_to_next_clockwise_corner_vectors[i]
+            closest_corner_vectors[closest_index == i] = self.perimeter_corner_to_next_clockwise_corner_vectors[i]
 
         return closest_corner_start_point, closest_corner_vectors
 
@@ -99,17 +91,13 @@ class PolygonPerimeter(BasePerimeter):
             closest_corner_vectors,
         ) = self.closest_sides_to_coordinates(coordinates)
 
-        return normal_from_line_to_point(
-            closest_corner_vectors, closest_corner_start_point, coordinates
-        )
+        return normal_from_line_to_point(closest_corner_vectors, closest_corner_start_point, coordinates)
 
     def coordinate_confinement_boolean_index(self, coordinates: NDArray) -> np.ndarray:
         assert self.number_of_corners > 4
         return parallel_point_in_polygon(coordinates, self.corners)
 
-    def change_reference(
-        self, new_reference: Optional[NDArray], **new_inspect_image_kwargs
-    ):
+    def change_reference(self, new_reference: Optional[NDArray], **new_inspect_image_kwargs):
         if np.all(self.reference_point == new_reference):
             logger.info("The provided reference_point is identical to the current")
             return self
@@ -184,9 +172,7 @@ class PolygonPerimeter(BasePerimeter):
 
     @cached_property
     def perimeter_lengths(self):
-        return np.linalg.norm(
-            self.perimeter_corner_to_next_clockwise_corner_vectors, axis=1
-        )
+        return np.linalg.norm(self.perimeter_corner_to_next_clockwise_corner_vectors, axis=1)
 
     @cached_property
     def mean_length(self):
@@ -194,10 +180,7 @@ class PolygonPerimeter(BasePerimeter):
 
     @cached_property
     def line_segment_pairs(self):
-        pairs = [
-            (self.corners[i], self.corners[i + 1])
-            for i in range(self.number_of_corners - 1)
-        ]
+        pairs = [(self.corners[i], self.corners[i + 1]) for i in range(self.number_of_corners - 1)]
         pairs.append((self.corners[-1], self.corners[0]))
         return np.array(pairs)
 

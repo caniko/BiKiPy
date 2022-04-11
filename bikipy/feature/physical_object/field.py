@@ -18,9 +18,8 @@ class ObjectField(BikipyBase):
 
     Each stage field can be inspected by using the item getter, <ObjectField object>[stage_id].
     """
-    perimeters: dict[
-        str, Union[dict[int, Perimeter2D], Sequence[Perimeter2D], Perimeter2D]
-    ] = Field(
+
+    perimeters: dict[str, Union[dict[int, Perimeter2D], Sequence[Perimeter2D], Perimeter2D]] = Field(
         description="""
         Each perimeter type defined by the experiment design is a key-value pair, where the value is:
             - dict ->       The key is the stage index, and the value is the respective perimeter; useful when
@@ -82,9 +81,7 @@ class ObjectField(BikipyBase):
         return tuple(self.perimeters)
 
     def derive_physical_object_set(self, stage: int, **physical_object_set_kwargs):
-        return PhysicalObjectSet.from_perimeter(
-            *self[stage], **physical_object_set_kwargs
-        )
+        return PhysicalObjectSet.from_perimeter(*self[stage], **physical_object_set_kwargs)
 
     @classmethod
     def nort_format(

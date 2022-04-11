@@ -73,9 +73,7 @@ def dot_prod_along_axis_1(vector_a: NDArray, vector_b: NDArray) -> NDArray:
     return np.nansum(vector_a * vector_b, axis=1)
 
 
-def normal_from_line_to_point(
-    line_vector: Sequence, line_start: Sequence, point: Sequence
-):
+def normal_from_line_to_point(line_vector: Sequence, line_start: Sequence, point: Sequence):
     """
     Computes the magnitude of two vectors. Vector nr. 1 with line vector as unit,
     from 'line_start' to the beginning of the normal, and,
@@ -158,9 +156,7 @@ def point_to_line_segment_distance(points, line_segment):
     return np.sqrt(dx**2 + dy**2)
 
 
-def closest_line_to_point(
-    line_vectors: Sequence, line_starts: Sequence, point: Sequence
-):
+def closest_line_to_point(line_vectors: Sequence, line_starts: Sequence, point: Sequence):
     distances = [
         distance_between_line_and_point(line_vector, line_start, point)
         for line_vector, line_start in zip(line_vectors, line_starts)

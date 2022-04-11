@@ -7,7 +7,7 @@ from typing import Iterable, Union
 import numpy as np
 import pandas as pd
 
-from bikipy.math.calculus import absolute_derivative
+from bikipy.utils.math import absolute_derivative
 from bikipy.utils.typing import NDArray
 
 logger = getLogger(__name__)
@@ -22,9 +22,7 @@ summary_motion_features = (
 _zero_return = {feature: 0.0 for feature in summary_motion_features}
 
 
-def units_pixels_per_second_frame(
-    meters_per_pixel: Union[float, int], fps: Union[float, int]
-):
+def units_pixels_per_second_frame(meters_per_pixel: Union[float, int], fps: Union[float, int]):
     return meters_per_pixel * fps
 
 
@@ -52,9 +50,7 @@ def displacement_by_frame(
     if np.all(np.isnan((magnitudes := np.linalg.norm(coordinate_sequence, axis=1)))):
         return absolute_derivative(magnitudes)
 
-    logger.debug(
-        "Interpolating data as there are non-finite values in the location data"
-    )
+    logger.debug("Interpolating data as there are non-finite values in the location data")
 
     magnitudes_series = pd.Series(magnitudes)
     magnitudes_series.interpolate(
@@ -199,9 +195,7 @@ class Motion:
             displacement = displacement_by_frame(self.coordinate_sequence)
             return displacement * self.meters_per_pixel
         else:
-            return displacement_by_frame(
-                self.coordinate_sequence * self.meters_per_pixel
-            )
+            return displacement_by_frame(self.coordinate_sequence * self.meters_per_pixel)
 
     @cached_property
     def total_displacement(self):
@@ -297,14 +291,8 @@ def get_combined_features_from_merged_motion_island_data(
         print(1)
 
     return {
-        "total_displacement": sum(
-            motion_feature[0] for motion_feature in motion_features
-        ),
-        "median_speed": np.nanmean(
-            [motion_feature[1] for motion_feature in motion_features]
-        ),
-        "median_acceleration": np.nanmean(
-            [motion_feature[2] for motion_feature in motion_features]
-        ),
+        "total_displacement": sum(motion_feature[0] for motion_feature in motion_features),
+        "median_speed": np.nanmean([motion_feature[1] for motion_feature in motion_features]),
+        "median_acceleration": np.nanmean([motion_feature[2] for motion_feature in motion_features]),
         "freezing_time": sum(motion_feature[3] for motion_feature in motion_features),
     }

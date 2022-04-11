@@ -31,9 +31,7 @@ class BikipyBaseHashable(BikipyBase, ABC):
     def save(self, save_root: OptionalPathTyping = None):
         save_root = Path(save_root or self.save_root)
         assert save_root
-        compress_pickle.dump(
-            self, save_root / f"pickle_{self.category}_{self.timestamp}.lzma"
-        )
+        compress_pickle.dump(self, save_root / f"pickle_{self.category}_{self.timestamp}.lzma")
 
     @property
     def _hash_key(self):

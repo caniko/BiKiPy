@@ -79,10 +79,7 @@ class InfinityMaze(BaseTrial, LiveTrial):
 
     def localize_loop_func(self, location: int, timestamp: datetime.datetime):
         if location == self._last_location_id:
-            if (
-                self._regressing
-                and self._regression_start_timestamp >= self.regression_buffer
-            ):
+            if self._regressing and self._regression_start_timestamp >= self.regression_buffer:
                 self._regressing = False
                 self.regressed = True
             return
@@ -106,9 +103,7 @@ class InfinityMaze(BaseTrial, LiveTrial):
             self.regressed = False
             self._sequential_regressions += 1
 
-        location_string = (
-            self._int_id_vs_perimeter_label[location] if location else None
-        )
+        location_string = self._int_id_vs_perimeter_label[location] if location else None
         if location_string is None:
             pass
         elif "delay_zone" == location_string:
@@ -121,25 +116,19 @@ class InfinityMaze(BaseTrial, LiveTrial):
             self._regression_start_timestamp = timestamp
         elif "reward" in location_string and not self._current_loop_is_bad:
             if self._received_reward:
-                self.record_bad_loop(
-                    "The animal regressed to the other reward site after getting a reward"
-                )
+                self.record_bad_loop("The animal regressed to the other reward site after getting a reward")
             elif self._last_loop:
                 if "reward_left" == location_string:
                     if "right" == self._last_loop:
                         self.reward("left")
                     else:
-                        self.record_bad_loop(
-                            f"Made left turn {self.bad_turn_counter} after the initial left turn"
-                        )
+                        self.record_bad_loop(f"Made left turn {self.bad_turn_counter} after the initial left turn")
 
                 else:  # same as `elif "reward_right" == location_string:`
                     if "left" == self._last_loop:
                         self.reward("right")
                     else:
-                        self.record_bad_loop(
-                            f"Made right turn {self.bad_turn_counter} after the initial right turn"
-                        )
+                        self.record_bad_loop(f"Made right turn {self.bad_turn_counter} after the initial right turn")
                     self._last_loop = "right"
             else:
                 self._last_loop = location_string.split("_")[1]

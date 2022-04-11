@@ -21,17 +21,13 @@ PARAMETERS_TO_COMPARE = (
     ("Novelty", "Object bias score", ""),
 )
 meta_dfs = (
-    pd.read_excel(
-        DATA_DIR / "nort_round_1.xlsx", index_col="Test", sheet_name="NORT_02.06.2020"
-    ),
+    pd.read_excel(DATA_DIR / "nort_round_1.xlsx", index_col="Test", sheet_name="NORT_02.06.2020"),
     pd.read_excel(
         DATA_DIR / "nort_round_1.xlsx",
         index_col="Test",
         sheet_name="NORT_ 24.08.2020 (after)",
     ),
-    pd.read_excel(
-        DATA_DIR / "nort_round_2.xlsx", index_col="Test", sheet_name="NORT2_30.08.20"
-    ),
+    pd.read_excel(DATA_DIR / "nort_round_2.xlsx", index_col="Test", sheet_name="NORT2_30.08.20"),
     pd.read_excel(
         DATA_DIR / "nort_round_2.xlsx",
         index_col="Test",
@@ -47,9 +43,7 @@ with pd.ExcelWriter(
         "strings_to_urls": False,
     },
 ) as writer:
-    for i, dataset in enumerate(
-        iglob(str(RESULT_DIR / "for_analysis" / f"*.{FILE_EXTENSION}"))
-    ):
+    for i, dataset in enumerate(iglob(str(RESULT_DIR / "for_analysis" / f"*.{FILE_EXTENSION}"))):
         print(i)
         dataset = Path(dataset)
         df = pd.read_parquet(dataset)
@@ -72,9 +66,7 @@ with pd.ExcelWriter(
             #     writer, sheet_name=f"{parameter}_{dataset.stem}"
             # )
 
-            cat_plot = sb.catplot(
-                x="Group", y=parameter, kind="violin", inner=None, data=concatenated
-            )
+            cat_plot = sb.catplot(x="Group", y=parameter, kind="violin", inner=None, data=concatenated)
             sb.swarmplot(
                 x="Group",
                 y=parameter,
@@ -99,6 +91,4 @@ with pd.ExcelWriter(
                         columns=tukey._results_table.data[0],
                     )
                 )
-            pd.concat(dfs).to_excel(
-                writer, sheet_name=f"{dataset.stem}_{i}_{parameter}"
-            )
+            pd.concat(dfs).to_excel(writer, sheet_name=f"{dataset.stem}_{i}_{parameter}")

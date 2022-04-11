@@ -37,22 +37,15 @@ def get_trial_id_vs_animal_id(id_exp):
     return result
 
 
-def get_animal_id_vs_apparatus(
-    info_df, trial_id_pattern: Union[re.Pattern, str] = r"\d+"
-):
+def get_animal_id_vs_apparatus(info_df, trial_id_pattern: Union[re.Pattern, str] = r"\d+"):
     trial_id_pattern = _re_pattern_validator(trial_id_pattern)
     animal_id = np.unique(info_df["Animal"])
     apparatus = info_df["Apparatus"]
 
-    return {
-        int(i): int(trial_id_pattern.findall(app)[0])
-        for i, app in zip(animal_id, apparatus)
-    }
+    return {int(i): int(trial_id_pattern.findall(app)[0]) for i, app in zip(animal_id, apparatus)}
 
 
-def get_trial_id_vs_stage(
-    exp_info_df, trial_id_pattern: Union[re.Pattern, str] = r"\d+"
-):
+def get_trial_id_vs_stage(exp_info_df, trial_id_pattern: Union[re.Pattern, str] = r"\d+"):
     trial_id_pattern = _re_pattern_validator(trial_id_pattern)
     result = {}
     for row in exp_info_df[["Video_file_name", "Stage"]].iterrows():
@@ -63,15 +56,11 @@ def get_trial_id_vs_stage(
     return result
 
 
-def round_vs_apparatus_to_general_object_fields(
-    round_vs_field_apparatus: dict, convert_from_legacy: bool = False
-):
+def round_vs_apparatus_to_general_object_fields(round_vs_field_apparatus: dict, convert_from_legacy: bool = False):
     rounds = tuple(round_vs_field_apparatus.keys())
     assert len(rounds) == 2  # No novelty -> novelty (two rounds in totalt)
 
-    all_round_fields = [
-        tuple(round_vs_field_apparatus[rem_round].keys()) for rem_round in rounds
-    ]
+    all_round_fields = [tuple(round_vs_field_apparatus[rem_round].keys()) for rem_round in rounds]
     assert all_round_fields.count(all_round_fields[0]) == len(
         all_round_fields
     ), "Rounds have different field designations"
@@ -81,20 +70,12 @@ def round_vs_apparatus_to_general_object_fields(
     for field_key in field_keys:
         field_temp_store = {}
         for rem_round in rounds:
-            exp_name = ObjectRecognitionExperiment._trial_label_to_trial_class_name[
-                rem_round
-            ]
+            exp_name = ObjectRecognitionExperiment._trial_label_to_trial_class_name[rem_round]
             if exp_name == "training":
-                field_temp_store[
-                    "constant_object_perimeter"
-                ] = round_vs_field_apparatus[rem_round][field_key]["A"]
-                field_temp_store[
-                    "variable_object_perimeter"
-                ] = round_vs_field_apparatus[rem_round][field_key]["B"]
+                field_temp_store["constant_object_perimeter"] = round_vs_field_apparatus[rem_round][field_key]["A"]
+                field_temp_store["variable_object_perimeter"] = round_vs_field_apparatus[rem_round][field_key]["B"]
             elif exp_name == "novelty":
-                field_temp_store["novel_object_perimeter"] = round_vs_field_apparatus[
-                    rem_round
-                ][field_key]["B"]
+                field_temp_store["novel_object_perimeter"] = round_vs_field_apparatus[rem_round][field_key]["B"]
 
         if convert_from_legacy:
             for key, field in field_temp_store.items():

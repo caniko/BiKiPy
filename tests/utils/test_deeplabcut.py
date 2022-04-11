@@ -18,13 +18,10 @@ def dlc_test_instance() -> DeepLabCutReader:
 @pytest.mark.parametrize("roi_a, roi_b", (("left_ear", "right_ear"),))
 def test_reduce_likelihoods(dlc_test_instance, roi_a, roi_b):
     expected_result = (
-        dlc_test_instance.df[(roi_a, "likelihood")].values
-        * dlc_test_instance.df[(roi_b, "likelihood")].values
+        dlc_test_instance.df[(roi_a, "likelihood")].values * dlc_test_instance.df[(roi_b, "likelihood")].values
     )
 
-    np.testing.assert_allclose(
-        expected_result, dlc_test_instance.reduce_likelihoods((roi_a, roi_b))
-    )
+    np.testing.assert_allclose(expected_result, dlc_test_instance.reduce_likelihoods((roi_a, roi_b)))
 
 
 @pytest.mark.parametrize("roi", ("left_ear", "right_ear"))

@@ -6,11 +6,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray
 
-from bikipy.math.point_in_polygon import (
-    points_in_parallelogram,
+from bikipy.utils.math import (
     parallel_point_in_polygon,
 )
-from bikipy.math.vector import (
+from bikipy.utils.math import (
     normal_from_line_to_point,
     orthogonal_unit_vector,
     unit_vector,
@@ -30,9 +29,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
         return cls(corners=np.array((*base, *apex)), inspect_image=inspect_image)
 
     @staticmethod
-    def midpoint(
-        close_corner: Sequence[float], far_corner: Sequence[float]
-    ) -> np.ndarray:
+    def midpoint(close_corner: Sequence[float], far_corner: Sequence[float]) -> np.ndarray:
         """
         Find the midpoint of the parallelogram
 
@@ -135,9 +132,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
     def far_from_origin_side_unit(self):
         return unit_vector(self.far_from_origin_side_vector)
 
-    def base_midpoint_coordinate_unit_vector_magnitudes(
-        self, coordinates: Sequence
-    ) -> np.ndarray:
+    def base_midpoint_coordinate_unit_vector_magnitudes(self, coordinates: Sequence) -> np.ndarray:
         """
         Generate the magnitude of the line segment that goes from origin
         to the defined coordinate
@@ -155,18 +150,14 @@ class ParallelogramPerimeter(PolygonPerimeter):
 
         coordinates = np.asarray(coordinates)
         magnitudes = np.apply_along_axis(
-            lambda x: normal_from_line_to_point(
-                self.midline_unit, self.base_mindpoint, x
-            ),
+            lambda x: normal_from_line_to_point(self.midline_unit, self.base_mindpoint, x),
             1,
             coordinates,
         )
 
         return np.squeeze(np.hsplit(magnitudes, 2))
 
-    def coordinate_confinement_boolean_index(
-        self, coordinates: NDArray, *args, **kwargs
-    ):
+    def coordinate_confinement_boolean_index(self, coordinates: NDArray, *args, **kwargs):
         return parallel_point_in_polygon(coordinates, self.corners)
         # return points_in_parallelogram(
         #     self.corners[3],
@@ -184,9 +175,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
         n: int,
         object_kwargs: Optional[Sequence] = None,
     ):
-        return [
-            cls(inspect_image=inspect_image, **object_kwargs[i]) for i in range(int(n))
-        ]
+        return [cls(inspect_image=inspect_image, **object_kwargs[i]) for i in range(int(n))]
 
     def plot_parallelogram_labels(self, *args, **kwargs):
         ax = super().plot(*args, **kwargs)

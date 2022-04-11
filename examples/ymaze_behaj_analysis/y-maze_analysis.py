@@ -59,8 +59,6 @@ common_trial_keyword_arguments = {
     "corridor_meter_width": 0.08,
 }
 
-# YMazeExperiment.enable_process_pooling = False
-
 experiment_obj_sets = []
 for round_id, data_dirs in enumerate(round_dirs):
     experiment_objs = []
@@ -70,9 +68,7 @@ for round_id, data_dirs in enumerate(round_dirs):
         stage = data_dir.name
 
         trial_set_date_n_id = stage.split("_")[1]
-        trial_id_range_vs_area_set = RangeDict(
-            exp_period_vs_perimeter_set[trial_set_date_n_id]
-        )
+        trial_id_range_vs_area_set = RangeDict(exp_period_vs_perimeter_set[trial_set_date_n_id])
 
         trial_set_date = trial_set_date_n_id.split(" ")[0]
         day, month, year = map(int, trial_set_date.split("."))
@@ -92,9 +88,7 @@ for round_id, data_dirs in enumerate(round_dirs):
                 continue
             trial_id_vs_exp_meta[trial_id] = {
                 "animal_id": int(
-                    metadata_df.loc[
-                        metadata_df.iloc[:, metadata_animal_id_cidx] == trial_id
-                    ]["Animal ID"].iloc[0]
+                    metadata_df.loc[metadata_df.iloc[:, metadata_animal_id_cidx] == trial_id]["Animal ID"].iloc[0]
                 ),
                 "coordinate_data_path": paths["data"],
                 "video_path": paths["video"],
@@ -136,10 +130,7 @@ with pd.ExcelWriter(
 ) as writer:
     for i, experiment_objs in enumerate(experiment_obj_sets):
         df = pd.concat(
-            [
-                experiment.animal_id_indexed_feature_frame
-                for experiment in experiment_objs
-            ],
+            [experiment.animal_id_indexed_feature_frame for experiment in experiment_objs],
             axis=1,
         )
 

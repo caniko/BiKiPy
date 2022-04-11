@@ -4,9 +4,8 @@ from warnings import warn
 
 import numpy as np
 from numba import njit
-from pandas.core.frame import DataFrame as DataFrameType
 
-from bikipy.math.vector import dot_prod_along_axis_1, fast_unit_vector, unit_vector
+from bikipy.utils.math import dot_prod_along_axis_1, fast_unit_vector, unit_vector
 
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}
 
@@ -102,10 +101,7 @@ def alternative_inner_angle(a_vector: Sequence, b_vector: Sequence) -> np.ndarra
 
     return np.arccos(
         dot_prod_along_axis_1(a_unit_vector, b_unit_vector)
-        / (
-            np.linalg.norm(a_unit_vector, axis=1)
-            * np.linalg.norm(b_unit_vector, axis=1)
-        )
+        / (np.linalg.norm(a_unit_vector, axis=1) * np.linalg.norm(b_unit_vector, axis=1))
     )
 
 

@@ -9,6 +9,7 @@ from bikipy.behaviour.mixin.physical_object import PhysicalObjectTrialMixin
 from bikipy.behaviour.object_recognition.base import (
     ObjectField,
     ObjectRecognitionHabituationTrial,
+    ObjectRecognitionExperiment,
 )
 from bikipy.behaviour.rectangle.square import SquareEnclosedTrial
 
@@ -46,16 +47,14 @@ class NortPhysicalObjectFieldMixin(PhysicalObjectTrialMixin, ABC):
 
 
 class NortTrainingTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
-    trial_sequence_index: ClassVar[Optional[int]] = 1
+    trial_stage_index: ClassVar[Optional[int]] = 1
     trial_label: ClassVar[str] = "Training"
 
     feature_headers: ClassVar[list] = ["Seconds observing"]
 
     @cached_property
     def physical_object_set(self):
-        return self.object_field.nort_training_set(
-            self._physical_object_keyword_arguments
-        )
+        return self.object_field.nort_training_set(self._physical_object_keyword_arguments)
 
     @property
     def physical_object_variable(self):
@@ -71,7 +70,7 @@ class NortTrainingTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
 
 
 class NortNoveltyTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
-    trial_sequence_index: ClassVar[Optional[int]] = 2
+    trial_stage_index: ClassVar[Optional[int]] = 2
     trial_label: ClassVar[str] = "Novelty"
 
     feature_headers: ClassVar[list] = [
@@ -83,9 +82,7 @@ class NortNoveltyTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
 
     @cached_property
     def physical_object_set(self):
-        return self.object_field.nort_novelty_set(
-            self._physical_object_keyword_arguments
-        )
+        return self.object_field.nort_novelty_set(self._physical_object_keyword_arguments)
 
     @property
     def physical_object_novel(self):
@@ -93,17 +90,11 @@ class NortNoveltyTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
 
     @cached_property
     def discrimination_index(self):
-        return (
-            self.physical_object_set.nort_absolute_discrimination / self.experiment_seconds
-        )
+        return self.physical_object_set.nort_absolute_discrimination / self.experiment_seconds
 
     @cached_property
     def novelty_preference(self):
-        return (
-            100.0
-            * self.physical_object_novel.attention_filtered_seconds_observing
-            / self.experiment_seconds
-        )
+        return 100.0 * self.physical_object_novel.attention_filtered_seconds_observing / self.experiment_seconds
 
     @property
     def feature_summary_row(self):
@@ -120,3 +111,11 @@ CLASS_NAME_VS_CLASS = {
     "training": NortTrainingTrial,
     "novelty": NortNoveltyTrial,
 }
+
+
+class NortExperiment(ObjectRecognitionExperiment):
+    _trial_classes: ClassVar = (
+        NortHabituationTrial,
+        NortTrainingTrial,
+        NortNoveltyTrial,
+    )

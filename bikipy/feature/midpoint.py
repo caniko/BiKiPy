@@ -34,13 +34,10 @@ def compute_midpoint(point_1: Sequence, point_2: Sequence) -> np.ndarray:
 
     compute = np.zeros((ii_greater_i.size, 2))
     compute[i_greater_equals_ii] = (
-        point_2[i_greater_equals_ii]
-        + (point_1[i_greater_equals_ii] - point_2[i_greater_equals_ii]) / 2.0
+        point_2[i_greater_equals_ii] + (point_1[i_greater_equals_ii] - point_2[i_greater_equals_ii]) / 2.0
     )
 
-    compute[ii_greater_i] = (
-        point_1[ii_greater_i] + (point_2[ii_greater_i] - point_1[ii_greater_i]) / 2.0
-    )
+    compute[ii_greater_i] = point_1[ii_greater_i] + (point_2[ii_greater_i] - point_1[ii_greater_i]) / 2.0
 
     return compute
 
@@ -69,17 +66,12 @@ def recursive_midpoint(point_sets: Sequence[np.ndarray]) -> np.ndarray:
     return midpoint
 
 
-def midpoint_deeplabcut_df_computation(
-    df, point_group_names_set, min_likelihood: float = None
-):
+def midpoint_deeplabcut_df_computation(df, point_group_names_set, min_likelihood: float = None):
     result = {}
     for group_subset_names in point_group_names_set:
         likelihood = reduce_likelihoods(df, group_subset_names)
 
-        points = [
-            get_region_of_interest_data(df, point_name)
-            for point_name in group_subset_names
-        ]
+        points = [get_region_of_interest_data(df, point_name) for point_name in group_subset_names]
 
         compute_result = recursive_midpoint(points)
 

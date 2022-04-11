@@ -44,11 +44,9 @@ class BaseExperiment(Behaviour):
     trial_id_vs_keyword_arguments: Optional[dict] = None
     trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
     common_trial_keyword_arguments: Optional[dict] = None
-    inspection_dir: Optional[DirectoryPath] = Field(
-        None, description="Path to save figures for inspection of results"
-    )
+    inspection_dir: Optional[DirectoryPath] = Field(None, description="Path to save figures for inspection of results")
 
-    trial_class: ClassVar[Any] = None
+    _trial_classes: ClassVar[tuple[Any]] = Field(...)
 
     # Computational settings
     enable_process_pooling: ClassVar[bool] = True
@@ -63,6 +61,51 @@ class BaseExperiment(Behaviour):
 
     def __getitem__(self, item: int):
         return self.trial_id_vs_trial_object[item]
+
+    @classmethod
+    @property
+    def is_trial_sequence(cls):
+        return len(cls._trial_classes) != 1
+
+    @classmethod
+    @property
+    def trial_class(cls):
+        if not cls.is_trial_sequence:
+            msg = f"{cls.__name__}: trial_class attribute can only be utilized when there is only one Trial class"
+            raise AttributeError(msg)
+        return cls._trial_classes[0]
+
+    @classmethod
+    @property
+    def stage_index_to_trial_class(cls):
+        if cls.is_trial_sequence:
+            msg = (
+                f"{cls.__name__}: stage_index_to_trial_class attribute can only be utilized when "
+                f"there are many Trial classes"
+            )
+            raise AttributeError(msg)
+
+        try:
+            return {trial_class.trial_stage_index: trial_class for trial_class in cls._trial_classes}
+        except AttributeError:
+            msg = "trial_stage_index must be defined for each trial class when working with a sequence of trial classes"
+            raise AttributeError(msg)
+
+    @classmethod
+    @property
+    def trial_class_name_to_trial_class(cls):
+        if cls.is_trial_sequence:
+            msg = (
+                f"{cls.__name__}: trial_class_name_to_trial_class attribute can only be utilized when "
+                f"there are many Trial classes"
+            )
+            raise AttributeError(msg)
+
+        try:
+            return {trial_class.__name__: trial_class for trial_class in cls._trial_classes}
+        except AttributeError:
+            msg = "trial_stage_index must be defined for each trial class when working with a sequence of trial classes"
+            raise AttributeError(msg)
 
     def trial_keyword_arguments(self, trial_id: int) -> dict:
         """
@@ -107,10 +150,7 @@ class BaseExperiment(Behaviour):
     @cached_property
     def trial_objects(self) -> list:
         if self.trial_class:
-            return [
-                self.trial_class(**self.trial_keyword_arguments(trial_id))
-                for trial_id in self._trial_id_key_view
-            ]
+            return [self.trial_class(**self.trial_keyword_arguments(trial_id)) for trial_id in self._trial_id_key_view]
         elif self.trial_id_vs_trial_class:
             return [
                 trial_class(**self.trial_keyword_arguments(trial_id))
@@ -121,10 +161,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def trial_class_name_vs_trial_ids(self):
-        return {
-            trial_class.__name__: trial_ids
-            for trial_class, trial_ids in self._trial_class_vs_trial_ids.items()
-        }
+        return {trial_class.__name__: trial_ids for trial_class, trial_ids in self._trial_class_vs_trial_ids.items()}
 
     @cached_property
     def trial_id_vs_trial_object(self) -> dict:
@@ -134,9 +171,7 @@ class BaseExperiment(Behaviour):
     def trial_class_name_vs_trial_objects(self):
         result = {}
         for trial_class_name, trial_ids in self._trial_class_vs_trial_ids.items():
-            result[trial_class_name] = [
-                self.trial_id_vs_trial_object[trial_id] for trial_id in trial_ids
-            ]
+            result[trial_class_name] = [self.trial_id_vs_trial_object[trial_id] for trial_id in trial_ids]
         return result
 
     @cached_property
@@ -167,7 +202,7 @@ class BaseExperiment(Behaviour):
         return dict(sorted(result.items()))
 
     @cached_property
-    def stage_vs_trial_objects(self) -> dict:
+    def stage_index_to_trial_objects(self) -> dict:
         result = {}
         for trial in self.trial_objects:
             if trial.stage in result:
@@ -178,7 +213,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def stages(self):
-        return tuple(self.stage_vs_trial_objects.keys())
+        return tuple(self.stage_index_to_trial_objects.keys())
 
     @property
     def trial_id_tuple(self) -> tuple:
@@ -213,16 +248,10 @@ class BaseExperiment(Behaviour):
             with ProcessPoolExecutor() as executor:
                 for animal_id, trial_objects in self.animal_id_vs_trial_objects.items():
                     trial_objects = [
-                        trial_object
-                        for trial_object in copy(trial_objects)
-                        if trial_object._trial_has_feature_frame
+                        trial_object for trial_object in copy(trial_objects) if trial_object._trial_has_feature_frame
                     ]
                     data_dict[animal_id] = sum(
-                        list(
-                            executor.map(
-                                attrgetter("feature_summary_row"), trial_objects
-                            )
-                        ),
+                        list(executor.map(attrgetter("feature_summary_row"), trial_objects)),
                         [],
                     )
         else:
@@ -236,9 +265,7 @@ class BaseExperiment(Behaviour):
                     [],
                 )
 
-        result = pd.DataFrame.from_dict(
-            data_dict, orient="index", columns=self._feature_frame_columns()
-        )
+        result = pd.DataFrame.from_dict(data_dict, orient="index", columns=self._feature_frame_columns())
         result.index.name = "Animal ID"
         result.columns.names = ["Feature", "Category"]
 
@@ -275,9 +302,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _at_least_one_trial_class_has_features(self):
-        return any(
-            trial_class.feature_summary_column for trial_class in self._trial_classes
-        )
+        return any(trial_class.feature_summary_column for trial_class in self._trial_classes)
 
     def _feature_frame_columns(self, levels: Optional[int] = None) -> pd.MultiIndex:
         if self.trial_class:
@@ -344,16 +369,12 @@ class BaseExperiment(Behaviour):
             else:
                 result[trial_class] = [trial_id]
 
-        return dict(
-            sorted(result.items(), key=lambda trial_c: trial_c[0].trial_sequence_index)
-        )
+        return dict(sorted(result.items(), key=lambda trial_c: trial_c[0].trial_stage_index))
 
     @cached_property
     def _trial_class_vs_trial_objects(self):
         return {
-            trial_class: [
-                self.trial_id_vs_trial_object[trial_id] for trial_id in trial_ids
-            ]
+            trial_class: [self.trial_id_vs_trial_object[trial_id] for trial_id in trial_ids]
             for trial_class, trial_ids in self._trial_class_vs_trial_ids.items()
         }
 
@@ -362,26 +383,13 @@ class BaseExperiment(Behaviour):
         return self.trial_id_vs_animal_id.keys()
 
     @cached_property
-    def _trial_classes(self) -> tuple:
-        if self.trial_class:
-            return (self.trial_class,)
-        return tuple(
-            sorted(self._trial_class_vs_trial_ids, key=lambda x: x.trial_sequence_index)
-        )
-
-    @cached_property
     def _class_labels(self):
         return tuple(trial_class.trial_label for trial_class in self._trial_classes)
 
     def _difference_warning(self, other, attribute: str):
-        if (self_attr := getattr(self, attribute)) == (
-            other_attr := getattr(other, attribute)
-        ):
+        if (self_attr := getattr(self, attribute)) == (other_attr := getattr(other, attribute)):
             return
-        logger.warning(
-            f"Joining experiments {self.best_id} & {other.best_id}: "
-            f"{self_attr} != {other_attr}"
-        )
+        logger.warning(f"Joining experiments {self.best_id} & {other.best_id}: " f"{self_attr} != {other_attr}")
 
     @cached_property
     def _trial_id_column_index(self):
@@ -403,17 +411,13 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _motion_summary_column_index(self) -> pd.MultiIndex:
-        return pd.MultiIndex.from_tuples(
-            self.motion_summary_columns, names=["Feature", "Category"]
-        )
+        return pd.MultiIndex.from_tuples(self.motion_summary_columns, names=["Feature", "Category"])
 
     @cached_property
     def _motion_summary_column_depth(self):
         motion_summary_column_index_list = list(self._motion_summary_column_index)
         result = len(motion_summary_column_index_list[0])
-        assert all(
-            result == len(column) for column in motion_summary_column_index_list[1:]
-        )
+        assert all(result == len(column) for column in motion_summary_column_index_list[1:])
         return result
 
     @cached_property
@@ -432,9 +436,7 @@ class BaseExperiment(Behaviour):
 
 
 class BaseTrial(Behaviour):
-    coordinate_data_path: FilePath = Field(
-        description="Path to file storing coordinate data"
-    )
+    coordinate_data_path: FilePath = Field(description="Path to file storing coordinate data")
     animal_id: int = Field(description="The ID of the animal in the trial")
     point_label_for_motion_features: Optional[str] = Field(
         description="Label of the node that will be used to track general animal movement"
@@ -443,12 +445,8 @@ class BaseTrial(Behaviour):
         None,
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
     )
-    stage: Optional[str] = Field(
-        None, description="The semantic stage of the experiment"
-    )
-    inspection_dir: Optional[DirectoryPath] = Field(
-        None, description="Path to save figures for inspection of results"
-    )
+    stage: Optional[str] = Field(None, description="The semantic stage of the experiment")
+    inspection_dir: Optional[DirectoryPath] = Field(None, description="Path to save figures for inspection of results")
     inspect_image: Optional[FilePath] = Field(
         None,
         description="Image to use as background in the plots for visualising the analysis data",
@@ -460,7 +458,7 @@ class BaseTrial(Behaviour):
     # Class variables
     category: ClassVar[Optional[str]] = "trial"
 
-    trial_sequence_index: ClassVar[Optional[int]] = None
+    trial_stage_index: ClassVar[Optional[int]] = None
     trial_label: ClassVar[str] = ""
 
     second_tolerance: ClassVar[float] = 0.15
@@ -601,10 +599,7 @@ class BaseTrial(Behaviour):
 
     def _validate_perimeters_object(self) -> None:
         if not self.perimeters:
-            msg = (
-                "perimeters is not defined as an object variable, "
-                "which is required for _int_id_vs_perimeter"
-            )
+            msg = "perimeters is not defined as an object variable, " "which is required for _int_id_vs_perimeter"
             raise AttributeError(msg)
 
     @cached_property

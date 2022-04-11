@@ -2,7 +2,7 @@ import os
 from abc import ABC
 from functools import cached_property, lru_cache
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Optional
 
 import numpy as np
 from numpy.typing import NDArray
@@ -20,7 +20,7 @@ from bikipy.feature.motion import (
     get_combined_features_from_merged_motion_island_data,
     motion_2d_multi_indexer,
 )
-from bikipy.math.point_in_polygon import parallel_point_in_polygon
+from bikipy.utils.math import parallel_point_in_polygon
 
 A = 255
 QUADRANT_INSPECTION_DIR_NAME = "PiP_quadrant_location_booleans"
@@ -84,10 +84,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
 
     @validator("inspection_dir")
     def make_categorical_inspection_sub_dirs(cls, value):
-        if (
-            value
-            and not (quadrant_dir := value / QUADRANT_INSPECTION_DIR_NAME).exists()
-        ):
+        if value and not (quadrant_dir := value / QUADRANT_INSPECTION_DIR_NAME).exists():
             os.mkdir(quadrant_dir)
             for current_quadrant in (
                 "upper_left",
@@ -102,9 +99,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
     @cached_property
     def gaussian_center_to_periphery_score(self):
         func = gaussian_scoring_field(self.tuple_recording_resolution)
-        scores = np.array(
-            [func(*coordinate) for coordinate in self.coordinates_per_frame]
-        )
+        scores = np.array([func(*coordinate) for coordinate in self.coordinates_per_frame])
         return np.sum(scores) / (A * self.number_of_frames)
 
     @cached_property
@@ -113,9 +108,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
         Left to right, top to down
         :return:
         """
-        horizontal_uniform_distance = (
-            self.horizontal_resolution / self.rectangle_2d_bin[0]
-        )
+        horizontal_uniform_distance = self.horizontal_resolution / self.rectangle_2d_bin[0]
         vertical_uniform_distance = self.vertical_resolution / self.rectangle_2d_bin[1]
         result = {}
         for v in range(1, self.rectangle_2d_bin[1]):
@@ -144,9 +137,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             np.array((self.recording_center_pixel[0], 0.0)),
             np.array((0.0, self.recording_center_pixel[1])),
             self.coordinates_per_frame,
-            inspect=self._quadrant_inspection_dir
-            / "upper_left"
-            / self._inspection_image_name
+            inspect=self._quadrant_inspection_dir / "upper_left" / self._inspection_image_name
             if self.inspection_dir
             else None,
             inspect_image=self.inspect_image,
@@ -169,9 +160,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             self.recording_center_pixel,
             np.array((self.horizontal_resolution, 0.0)),
             self.coordinates_per_frame,
-            inspect=self._quadrant_inspection_dir
-            / "upper_right"
-            / self._inspection_image_name
+            inspect=self._quadrant_inspection_dir / "upper_right" / self._inspection_image_name
             if self.inspection_dir
             else None,
             inspect_image=self.inspect_image,
@@ -194,9 +183,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             np.array((self.recording_center_pixel[0], self.vertical_resolution)),
             np.array((0.0, self.recording_center_pixel[1])),
             self.coordinates_per_frame,
-            inspect=self._quadrant_inspection_dir
-            / "lower_left"
-            / self._inspection_image_name
+            inspect=self._quadrant_inspection_dir / "lower_left" / self._inspection_image_name
             if self.inspection_dir
             else None,
             inspect_image=self.inspect_image,
@@ -219,9 +206,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             self.recording_resolution,
             self.recording_center_pixel,
             self.coordinates_per_frame,
-            inspect=self._quadrant_inspection_dir
-            / "lower_right"
-            / self._inspection_image_name
+            inspect=self._quadrant_inspection_dir / "lower_right" / self._inspection_image_name
             if self.inspection_dir
             else None,
             inspect_image=self.inspect_image,
@@ -259,31 +244,15 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
         if self.center_box_to_recording_resolution_ratio is None:
             msg = "center_box_to_recording_resolution_ratio must be defined for center and periphery analysis"
             raise AttributeError(msg)
-        center_pixel_lengths = (
-            self.recording_resolution / self.center_box_to_recording_resolution_ratio
-        )
+        center_pixel_lengths = self.recording_resolution / self.center_box_to_recording_resolution_ratio
         center_point_to_center_box_side_normal_lengths = center_pixel_lengths / 2.0
 
-        x_short = (
-            self.recording_center_pixel[0]
-            - center_point_to_center_box_side_normal_lengths[0]
-        )
-        x_long = (
-            self.recording_center_pixel[0]
-            + center_point_to_center_box_side_normal_lengths[0]
-        )
-        y_short = (
-            self.recording_center_pixel[1]
-            + center_point_to_center_box_side_normal_lengths[1]
-        )
-        y_long = (
-            self.recording_center_pixel[1]
-            - center_point_to_center_box_side_normal_lengths[1]
-        )
+        x_short = self.recording_center_pixel[0] - center_point_to_center_box_side_normal_lengths[0]
+        x_long = self.recording_center_pixel[0] + center_point_to_center_box_side_normal_lengths[0]
+        y_short = self.recording_center_pixel[1] + center_point_to_center_box_side_normal_lengths[1]
+        y_long = self.recording_center_pixel[1] - center_point_to_center_box_side_normal_lengths[1]
 
-        return np.array(
-            ((x_short, y_short), (x_short, y_long), (x_long, y_long), (x_long, y_short))
-        )
+        return np.array(((x_short, y_short), (x_short, y_long), (x_long, y_long), (x_long, y_short)))
 
     @cached_property
     def center_boolean_index(self):
@@ -292,9 +261,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
             self.center_square_corners[3],
             self.center_square_corners[1],
             self.coordinates_per_frame,
-            inspect=self.inspection_dir
-            / CENTER_INSPECTION_DIR_NAME
-            / self._inspection_image_name
+            inspect=self.inspection_dir / CENTER_INSPECTION_DIR_NAME / self._inspection_image_name
             if self.inspection_dir
             else None,
         )
@@ -324,9 +291,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
     @cached_property
     def location_sequence_center_periphery(self):
         # 1 is center, 2 is periphery, 0 is unknown
-        location_sequence_center_periphery = np.zeros_like(
-            self.center_boolean_index, dtype=np.uint8
-        )
+        location_sequence_center_periphery = np.zeros_like(self.center_boolean_index, dtype=np.uint8)
         location_sequence_center_periphery[self.center_boolean_index] = 1
         location_sequence_center_periphery[self.periphery_boolean_index] = 2
         return np.array(
@@ -354,17 +319,11 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
 
     @cached_property
     def center_freezing_time(self):
-        return (
-            np.sum(self.motion.frozen_boolean_index & self.center_boolean_index[1:])
-            / self.fps
-        )
+        return np.sum(self.motion.frozen_boolean_index & self.center_boolean_index[1:]) / self.fps
 
     @cached_property
     def periphery_freezing_time(self):
-        return (
-            np.sum(self.motion.frozen_boolean_index & self.periphery_boolean_index[1:])
-            / self.fps
-        )
+        return np.sum(self.motion.frozen_boolean_index & self.periphery_boolean_index[1:]) / self.fps
 
 
 @lru_cache

@@ -33,9 +33,7 @@ class MotionBaselineExperimentMixin(BikipyBase, ABC):
     @cached_property
     def animal_id_indexed_summary_frame(self) -> pd.DataFrame:
         df = self.baseline_delta_motion_frame
-        df.columns = self._feature_frame_columns(
-            levels=self.animal_id_indexed_feature_frame.columns.nlevels
-        )
+        df.columns = self._feature_frame_columns(levels=self.animal_id_indexed_feature_frame.columns.nlevels)
         return df.join(self.animal_id_indexed_feature_frame, how="inner")
 
     @cached_property
@@ -46,10 +44,7 @@ class MotionBaselineExperimentMixin(BikipyBase, ABC):
         for stage in self.stages:
             if stage == self.baseline_stage:
                 continue
-            data.append(
-                self._baseline_motion_frame
-                - self.animal_id_indexed_motion_summary_frame[stage]
-            )
+            data.append(self._baseline_motion_frame - self.animal_id_indexed_motion_summary_frame[stage])
         return pd.concat(data)
 
     @cached_property
@@ -72,17 +67,13 @@ class FeatureBaselineExperimentMixin(MotionBaselineExperimentMixin, ABC):
     @cached_property
     def animal_id_indexed_summary_frame(self) -> pd.DataFrame:
         df = self.baseline_delta_feature_frame
-        df.columns = self._feature_frame_columns(
-            levels=self.animal_id_indexed_feature_frame.columns.nlevels
-        )
+        df.columns = self._feature_frame_columns(levels=self.animal_id_indexed_feature_frame.columns.nlevels)
         return df.join(self.animal_id_indexed_feature_frame, how="inner")
 
     @cached_property
     def baseline_delta_feature_frame(self) -> pd.DataFrame:
         df = self.baseline_delta_experiment_specific_feature_frame
-        df.columns = self._feature_frame_columns(
-            levels=self.baseline_delta_motion_frame.columns.nlevels
-        )
+        df.columns = self._feature_frame_columns(levels=self.baseline_delta_motion_frame.columns.nlevels)
         return df.join(self.baseline_delta_motion_frame, how="inner")
 
     @cached_property
@@ -93,9 +84,7 @@ class FeatureBaselineExperimentMixin(MotionBaselineExperimentMixin, ABC):
         for stage in self.stages:
             if stage == self.baseline_stage:
                 continue
-            to_subtract = self.animal_id_indexed_experiment_specific_feature_frame[
-                stage
-            ]
+            to_subtract = self.animal_id_indexed_experiment_specific_feature_frame[stage]
             if self.baseline_delta_features:
                 to_subtract = to_subtract[self.baseline_stage]
             data.append(self._baseline_experiment_specific_feature_frame - to_subtract)
@@ -103,9 +92,7 @@ class FeatureBaselineExperimentMixin(MotionBaselineExperimentMixin, ABC):
 
     @cached_property
     def _baseline_experiment_specific_feature_frame(self):
-        result = self.animal_id_indexed_experiment_specific_feature_frame[
-            self.baseline_stage
-        ]
+        result = self.animal_id_indexed_experiment_specific_feature_frame[self.baseline_stage]
         if self.baseline_delta_features:
             result = result[self.baseline_stage]
         return result

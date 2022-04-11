@@ -71,9 +71,7 @@ for annotation_obj_path in B_PICKLE_PATHS:
             ),
         )
 
-    with open(
-        annotation_obj_path.with_stem(f"{annotation_obj_path.stem}_repickled"), "wb"
-    ) as outfile:
+    with open(annotation_obj_path.with_stem(f"{annotation_obj_path.stem}_repickled"), "wb") as outfile:
         pickle.dump(gen_poly_seq, outfile)
 
 with open(A_PICKLE_PATH, "rb") as infile:
@@ -81,25 +79,15 @@ with open(A_PICKLE_PATH, "rb") as infile:
 
 round_keys = [f"round_{num}" for num in range(len(round_vs_field_apparatus))]
 round_vs_field_vs_apparatus = {
-    rem_round: round_vs_apparatus_to_general_object_fields(
-        field_apparatus, convert_from_legacy=True
-    )
+    rem_round: round_vs_apparatus_to_general_object_fields(field_apparatus, convert_from_legacy=True)
     for rem_round, field_apparatus in zip(round_keys, round_vs_field_apparatus.values())
 }
 
-for (round_number, apparatuses), path in zip(
-    round_vs_field_vs_apparatus.items(), NEW_A_PICKLE_PATHS
-):
+for (round_number, apparatuses), path in zip(round_vs_field_vs_apparatus.items(), NEW_A_PICKLE_PATHS):
     for app_id, apparatus in enumerate(apparatuses):
-        apparatuses[app_id].constant_object_perimeter.inspect_image = (
-            path.parent / f"training_{apparatus.label}.png"
-        )
-        apparatuses[app_id].variable_object_perimeter.inspect_image = (
-            path.parent / f"training_{apparatus.label}.png"
-        )
-        apparatuses[app_id].novel_object_perimeter.inspect_image = (
-            path.parent / f"novel_{apparatus.label}.png"
-        )
+        apparatuses[app_id].constant_object_perimeter.inspect_image = path.parent / f"training_{apparatus.label}.png"
+        apparatuses[app_id].variable_object_perimeter.inspect_image = path.parent / f"training_{apparatus.label}.png"
+        apparatuses[app_id].novel_object_perimeter.inspect_image = path.parent / f"novel_{apparatus.label}.png"
         if apparatuses[app_id].novelty_constant_object_perimeter:
             apparatuses[app_id].novelty_constant_object_perimeter.inspect_image = (
                 path.parent / f"novel_{apparatus.label}.png"

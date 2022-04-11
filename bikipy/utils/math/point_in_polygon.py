@@ -7,7 +7,7 @@ from seaborn import set_theme
 from numba import njit
 import numba
 
-from bikipy.math.vector import dot_prod_along_axis_1, orthogonal_unit_vector
+from bikipy.utils.math.vector import dot_prod_along_axis_1, orthogonal_unit_vector
 from bikipy.utils.misc import generic_inspection_finalization
 from bikipy.utils.typing import NDArray
 
@@ -39,22 +39,14 @@ def points_in_parallelogram(
         orthogonal_cb_vector = orthogonal_unit_vector(cb_vector)
 
     # oca = Orthogonal corner-a vector
-    normalised_oca = (
-        np.sign(np.dot(orthogonal_ca_vector, cb_vector)) * orthogonal_ca_vector
-    )
+    normalised_oca = np.sign(np.dot(orthogonal_ca_vector, cb_vector)) * orthogonal_ca_vector
     oca_cc_dot = dot_prod_along_axis_1(normalised_oca, c_coord_vectors)
-    orthogonal_oca_bool = np.logical_and(
-        0 <= oca_cc_dot, oca_cc_dot <= np.dot(normalised_oca, cb_vector)
-    )
+    orthogonal_oca_bool = np.logical_and(0 <= oca_cc_dot, oca_cc_dot <= np.dot(normalised_oca, cb_vector))
 
     # oca = Orthogonal corner-b vector
-    normalised_ocb = (
-        np.sign(np.dot(orthogonal_cb_vector, ca_vector)) * orthogonal_cb_vector
-    )
+    normalised_ocb = np.sign(np.dot(orthogonal_cb_vector, ca_vector)) * orthogonal_cb_vector
     ocb_cc_dot = dot_prod_along_axis_1(normalised_ocb, c_coord_vectors)
-    orthogonal_ocb_bool = np.logical_and(
-        0 <= ocb_cc_dot, ocb_cc_dot <= np.dot(normalised_ocb, ca_vector)
-    )
+    orthogonal_ocb_bool = np.logical_and(0 <= ocb_cc_dot, ocb_cc_dot <= np.dot(normalised_ocb, ca_vector))
 
     boolean_index = orthogonal_oca_bool & orthogonal_ocb_bool
 
@@ -97,17 +89,13 @@ def _is_inside_sm(point: NDArray, polygon: NDArray):
         dy2 = point[1] - polygon[jj][1]
 
         # consider only lines which are not completely above/bellow/right from the point
-        if dy * dy2 <= 0.0 and (
-            point[0] >= polygon[ii][0] or point[0] >= polygon[jj][0]
-        ):
+        if dy * dy2 <= 0.0 and (point[0] >= polygon[ii][0] or point[0] >= polygon[jj][0]):
 
             # non-horizontal line
             if dy < 0 or dy2 < 0:
                 F = dy * (polygon[jj][0] - polygon[ii][0]) / (dy - dy2) + polygon[ii][0]
 
-                if (
-                    point[0] > F
-                ):  # if line is left from the point - the ray moving towards left, will intersect it
+                if point[0] > F:  # if line is left from the point - the ray moving towards left, will intersect it
                     intersections += 1
                 elif point[0] == F:  # point on line
                     return 2
@@ -115,10 +103,7 @@ def _is_inside_sm(point: NDArray, polygon: NDArray):
             # point on upper peak (dy2=dx2=0) or horizontal line (dy=dy2=0 and dx*dx2<=0)
             elif dy2 == 0 and (
                 point[0] == polygon[jj][0]
-                or (
-                    dy == 0
-                    and (point[0] - polygon[ii][0]) * (point[0] - polygon[jj][0]) <= 0
-                )
+                or (dy == 0 and (point[0] - polygon[ii][0]) * (point[0] - polygon[jj][0]) <= 0)
             ):
                 return 2
 

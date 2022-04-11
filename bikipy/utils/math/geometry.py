@@ -35,12 +35,7 @@ clockwise_sort_points(((0, 0), (1, 0), (1, 1), (0, 1)), inspect=True)
 
 @lru_cache
 def clockwise_sort_perimeter_centroids(perimeters: Sequence):
-    return [
-        perimeters[i]
-        for i in clockwise_argsort_points(
-            [perimeter.centroid for perimeter in perimeters]
-        )
-    ]
+    return [perimeters[i] for i in clockwise_argsort_points([perimeter.centroid for perimeter in perimeters])]
 
 
 @lru_cache

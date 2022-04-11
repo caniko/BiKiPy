@@ -18,7 +18,7 @@ from bikipy.behaviour.utils import (
 )
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.typing import Perimeter2D
-from bikipy.math.geometry import clockwise_sort_perimeter_centroids
+from bikipy.utils.math import clockwise_sort_perimeter_centroids
 from bikipy.perimeter.base import PerimeterSet, PolygonPerimeter
 
 logger = getLogger(__name__)
@@ -92,9 +92,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
             ("Spontaneous alternations", ""),
             *feature_2d_multi_indexer("Seconds in area", area_designations),
             *feature_2d_multi_indexer("Area alternations", area_designations),
-            *feature_2d_multi_indexer(
-                "Permutation alternation", cls._arm_label_permutations_as_string
-            ),
+            *feature_2d_multi_indexer("Permutation alternation", cls._arm_label_permutations_as_string),
         ]
 
     @property
@@ -121,9 +119,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
     @cached_property
     def meters_per_pixel(self):
-        return _compute_meter_per_pixel(
-            self.center.mean_length, self.corridor_meter_width
-        )
+        return _compute_meter_per_pixel(self.center.mean_length, self.corridor_meter_width)
 
     @property
     def alternation_sequence(self):
@@ -143,15 +139,11 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
     @cached_property
     def reduced_alternation_sequence(self):
-        return reduce_repeating_sequences(
-            self.alternation_sequence, round(self.fps * 0.075)
-        )
+        return reduce_repeating_sequences(self.alternation_sequence, round(self.fps * 0.075))
 
     @cached_property
     def reduced_without_center(self):
-        return exclude_value_from_sequence(
-            self.reduced_alternation_sequence, self.center.int_id
-        )
+        return exclude_value_from_sequence(self.reduced_alternation_sequence, self.center.int_id)
 
     @cached_property
     def sum_of_alternations(self):
@@ -185,9 +177,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         """
         result = dict(unique_with_counts_zipped(self.reduced_alternation_sequence))
 
-        if result[self.center.int_id] < (
-            minimum_center_entries := ceil(self.sum_of_alternations / 2.0)
-        ):
+        if result[self.center.int_id] < (minimum_center_entries := ceil(self.sum_of_alternations / 2.0)):
             logger.warning(
                 f"{self.center.int_id}: The number of alternations to the center, "
                 f"{result[self.center.int_id]} can't be less than the "
@@ -253,9 +243,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return 100.0 * alternations / self.sum_of_alternations
 
     @classmethod
-    def with_reference_point(
-        cls, center: Perimeter2D, arms: tuple, reference_point: np.ndarray, **kwargs
-    ):
+    def with_reference_point(cls, center: Perimeter2D, arms: tuple, reference_point: np.ndarray, **kwargs):
         return cls(
             center=center.change_reference(reference_point),
             arms=[arm.change_reference(reference_point) for arm in arms],
@@ -284,7 +272,5 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
 
 @lru_cache
-def _compute_meter_per_pixel(
-    corridor_pixel_length: float, corridor_metric_width: float
-) -> float:
+def _compute_meter_per_pixel(corridor_pixel_length: float, corridor_metric_width: float) -> float:
     return corridor_pixel_length / corridor_metric_width

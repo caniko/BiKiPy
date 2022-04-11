@@ -38,13 +38,11 @@ def borders_on_image(
 
     plt.title("Greater than border_corners")
     greater_than_borders = [
-        LinePerimeter(coordinate, orientation, logic=">", resolution=resolution)
-        for coordinate in plt.ginput(0, 0)
+        LinePerimeter(coordinate, orientation, logic=">", resolution=resolution) for coordinate in plt.ginput(0, 0)
     ]
     plt.title("Less than border_corners")
     less_than_borders = [
-        LinePerimeter(coordinate, orientation, logic="<", resolution=resolution)
-        for coordinate in plt.ginput(0, 0)
+        LinePerimeter(coordinate, orientation, logic="<", resolution=resolution) for coordinate in plt.ginput(0, 0)
     ]
 
     return greater_than_borders, less_than_borders

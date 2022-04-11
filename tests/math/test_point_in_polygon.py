@@ -1,6 +1,6 @@
 import numpy as np
 
-from bikipy.math.point_in_polygon import points_in_parallelogram
+from bikipy.utils.math import points_in_parallelogram
 
 
 def test_points_in_parallelogram():

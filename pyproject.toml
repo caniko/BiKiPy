@@ -30,7 +30,7 @@ llvmlite = "*"
 numba = "*"
 
 matplotlib = "^3.2.2"
-PyQt5 = { version = "*", platform = "linux" }
+PyQt5 = "*"
 seaborn = "*"
 ffmpeg-python = "^0.2.0"
 opencv-python-headless = "^4.5"
@@ -46,12 +46,13 @@ pyzmq = {version = "^22.2.1", optional = true }
 jupyter = { version = "^1.0.0", optional = true }
 jupyterthemes = { version = "^0.20.0", optional = true }
 scikit-posthocs = {version = "^0.6.7", optional = true}
+PyYAML = "^6.0"
 
 [tool.poetry.dev-dependencies]
 black = {extras = ["jupyter"], version = "*"}
 Cython = "*"
 isort = "*"
-pytest = "^6.2.5"
+pytest = "*"
 
 Sphinx = {version = "*", optional = true }
 sphinx-material = {version = "*", optional = true }
@@ -70,22 +71,5 @@ sphinx = ["Sphinx", "sphinx-material", "sphinx-autoapi", "setuptools"]
 profile = "black"
 
 [tool.black]
-target-version = ['py39']
-include = '\.pyi?$'
-exclude = '''
-(
- /(
-     \.eggs         # exclude a few common directories in the
-   | \.git          # root of the project
-   | \.hg
-   | \.mypy_cache
-   | \.tox
-   | \.venv
-   | _build
-   | buck-out
-   | build
-   | dist
-   | docs
- )/
-)
-'''
+line-length = 120
+target-version = ["py310"]

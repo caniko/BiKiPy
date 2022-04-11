@@ -22,9 +22,7 @@ def read_image(image: Any, imread_flagg: Any = None):
         assert image_path.exists(), image_path
         image = cv2.imread(str(image_path), flags=imread_flagg)
     else:
-        assert isinstance(
-            image, ndarray
-        ), f"image must be either path or np.ndarray, but got:\n{image}"
+        assert isinstance(image, ndarray), f"image must be either path or np.ndarray, but got:\n{image}"
 
     return image
 
@@ -81,8 +79,7 @@ def rise_to_n_levels(columns, n_levels: int):
         np.concatenate(
             (
                 column_array,
-                [["" for _ in range(n_levels - column_array.shape[1])]]
-                * len(column_array),
+                [["" for _ in range(n_levels - column_array.shape[1])]] * len(column_array),
             ),
             axis=1,
         )

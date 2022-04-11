@@ -50,19 +50,13 @@ class LiveTrial(BaseModel, ABC):
     _socket = None
 
     @validator("delay_timings_trial_count", "delay_timings")
-    def ensure_delay_timings_trial_count_and_delay_timings_have_eq_len(
-        cls, delay_timings_trial_count, delay_timings
-    ):
+    def ensure_delay_timings_trial_count_and_delay_timings_have_eq_len(cls, delay_timings_trial_count, delay_timings):
         if isinstance(delay_timings_trial_count, collections_Sequence):
             assert len(delay_timings_trial_count) == len(delay_timings)
-            assert all(
-                isinstance(timing, (float, int)) for timing in delay_timings_trial_count
-            )
+            assert all(isinstance(timing, (float, int)) for timing in delay_timings_trial_count)
             delay_timings_trial_count = tuple(delay_timings_trial_count)
         elif isinstance(delay_timings_trial_count, (float, int)):
-            delay_timings_trial_count = tuple(
-                delay_timings_trial_count for _ in range(len(delay_timings))
-            )
+            delay_timings_trial_count = tuple(delay_timings_trial_count for _ in range(len(delay_timings)))
         return delay_timings_trial_count, delay_timings
 
     @validator("delay_timings_trial_count", "manual_total_loops_per_trial")
@@ -86,12 +80,7 @@ class LiveTrial(BaseModel, ABC):
     def _loop_number_vs_delay_time(self):
         return (
             RangeDict(
-                {
-                    i: delay_time
-                    for i, delay_time in zip(
-                        self.delay_timings_trial_count, self.delay_timings
-                    )
-                },
+                {i: delay_time for i, delay_time in zip(self.delay_timings_trial_count, self.delay_timings)},
                 allow_less_than_first_key=0,
             )
             if self.delay_timings
@@ -100,9 +89,7 @@ class LiveTrial(BaseModel, ABC):
 
     @cached_property
     def total_loops_per_trial(self):
-        return self.manual_total_loops_per_trial or np.sum(
-            self.delay_timings_trial_count
-        )
+        return self.manual_total_loops_per_trial or np.sum(self.delay_timings_trial_count)
 
     def generate_zmq_context(self, socket_address: str = "tcp://*:5555"):
         self._zmq_context = zmq.asyncio.Context()
@@ -120,9 +107,7 @@ class LiveTrial(BaseModel, ABC):
         except KeyboardInterrupt:
             logger.info("Localization loop interrupted with keyboard interrupt")
 
-        request_save = input(
-            "Would you like to save the results from the experiment? Y/n\n"
-        ).lower()
+        request_save = input("Would you like to save the results from the experiment? Y/n\n").lower()
         if not request_save or request_save == "y":
             self.save()
         else:
@@ -147,23 +132,14 @@ class LiveTrial(BaseModel, ABC):
                 location = self.detect_confined_perimeter(
                     np.array(coordinate_str.split(data_delimiter), dtype=np.float32)
                 )
-                logger.debug(
-                    f"Coordinates: {coordinate_str}\n"
-                    f"Timestamp: {timestamp_str}\n"
-                    f"Location: {location}"
-                )
-                self.localize_loop_func(
-                    location, datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S.%f")
-                )
+                logger.debug(f"Coordinates: {coordinate_str}\n" f"Timestamp: {timestamp_str}\n" f"Location: {location}")
+                self.localize_loop_func(location, datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S.%f"))
         finally:
             self._socket.close()
 
     @property
     def state_string(self):
-        return (
-            f"Loop: {self.loop_number}/{self.total_loops_per_trial}; "
-            f"Bad loops: {self.bad_turn_counter}"
-        )
+        return f"Loop: {self.loop_number}/{self.total_loops_per_trial}; " f"Bad loops: {self.bad_turn_counter}"
 
     async def print_state(self, refresh_rate: float = 0.2):
         while True:
@@ -187,9 +163,7 @@ class LiveTrial(BaseModel, ABC):
             await asyncio.sleep(1.0)
         stop = datetime.now()
 
-        logger.debug(
-            f"Countdown was finalised. Number of seconds {(total_time := stop - start)}"
-        )
+        logger.debug(f"Countdown was finalised. Number of seconds {(total_time := stop - start)}")
         self.countdown_timings.append((start, stop, total_time))
 
     def localize_loop_func(self, location: int, timestamp: datetime):

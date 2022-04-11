@@ -16,13 +16,9 @@ def attention_state_distribution(trials):
     for trial in trials:
         attention_state_analysis["proximity&gaze true observation false"].extend(
             (
-                trial.a_proximity_filtered
-                & trial.a_gaze_filtered
-                & ~trial.a_observance_per_frame,
+                trial.a_proximity_filtered & trial.a_gaze_filtered & ~trial.a_observance_per_frame,
                 #
-                trial.b_proximity_filtered
-                & trial.b_gaze_filtered
-                & ~trial.b_observance_per_frame,
+                trial.b_proximity_filtered & trial.b_gaze_filtered & ~trial.b_observance_per_frame,
             )
         )
         attention_state_analysis["observation&gaze true proximity false"].extend(
@@ -70,9 +66,7 @@ def attention_state_distribution(trials):
     return pd.DataFrame(result, columns=("Ratio", "Comparison"))
 
 
-def plot_attention_state_distribution(
-    attention_state_distribution, bins=13, **sb_displot_kwargs
-):
+def plot_attention_state_distribution(attention_state_distribution, bins=13, **sb_displot_kwargs):
     sb.set_theme(style="whitegrid")
     sb.displot(
         attention_state_distribution,

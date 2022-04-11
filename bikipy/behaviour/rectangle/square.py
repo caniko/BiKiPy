@@ -10,12 +10,9 @@ from bikipy.behaviour.rectangle.rectangle import (
     RectangleEnclosedExperiment,
     RectangleEnclosedTrial,
 )
-from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.motion import (
-    get_combined_features_from_merged_motion_island_data,
     motion_2d_multi_indexer,
 )
-from bikipy.math.point_in_polygon import points_in_parallelogram
 
 logger = getLogger(__name__)
 
@@ -44,8 +41,7 @@ class SquareEnclosedExperiment(RectangleEnclosedExperiment):
 
 class SquareEnclosedTrial(RectangleEnclosedTrial):
     center_metric_length: float = Field(
-        description="Length of the square box signifying periphery and inner area "
-        "of the square box"
+        description="Length of the square box signifying periphery and inner area " "of the square box"
     )
 
     @cached_property
@@ -77,9 +73,7 @@ class SquareEnclosedTrial(RectangleEnclosedTrial):
                 )
             )
 
-        center_box_ratio = (
-            (self.metric_resolution - self.center_metric_length) / 2.0
-        ) / self.metric_resolution
+        center_box_ratio = ((self.metric_resolution - self.center_metric_length) / 2.0) / self.metric_resolution
         one_minus_center_box_ratio = 1.0 - center_box_ratio
 
         x = self.horizontal_resolution * center_box_ratio
@@ -105,14 +99,10 @@ class SquareEnclosedTrial(RectangleEnclosedTrial):
             )
 
         elif self.horizontal_resolution < self.vertical_resolution:
-            return non_square_rectification(
-                y_bias=(self.vertical_resolution - self.horizontal_resolution) / 2.0
-            )
+            return non_square_rectification(y_bias=(self.vertical_resolution - self.horizontal_resolution) / 2.0)
 
         else:
-            return non_square_rectification(
-                x_bias=(self.horizontal_resolution - self.vertical_resolution) / 2.0
-            )
+            return non_square_rectification(x_bias=(self.horizontal_resolution - self.vertical_resolution) / 2.0)
 
     def plot(self, ax: Any = None):
         if not ax:

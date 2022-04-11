@@ -39,9 +39,7 @@ class YMazeTrial(BaseYMaze, BaseRadialMazeTrial):
             bin=True,
             points=(
                 points
-                or self.coordinates_per_frame[
-                    self.invalid_boolean_index if invalid else self.valid_boolean_index
-                ]
+                or self.coordinates_per_frame[self.invalid_boolean_index if invalid else self.valid_boolean_index]
             ),
         )
 

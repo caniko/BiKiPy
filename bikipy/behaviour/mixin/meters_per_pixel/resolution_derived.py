@@ -32,10 +32,7 @@ class ResolutionDerivedUnitPerPixelMixin(BikipyBase, ABC):
     @cached_property
     def computed_meters_per_pixel(self):
         if not np.any(self.metric_resolution):
-            msg = (
-                "metric_resolution attribute needs to be defined to compute "
-                "meters_per_pixel"
-            )
+            msg = "metric_resolution attribute needs to be defined to compute " "meters_per_pixel"
             raise AttributeError(msg)
 
         if isinstance(self.metric_resolution, (float, int)):

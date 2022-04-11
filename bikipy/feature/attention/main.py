@@ -48,18 +48,12 @@ def proximity_filter(
     inside_perimeter_border = np.asarray(inside_perimeter_border)
     outside_perimeter = np.asarray(outside_perimeter)
 
-    perimeter_border = perimeter.expand(
-        perimeter_border_normal_pixel_magnitude=perimeter_border_normal_pixel_magnitude
-    )
+    perimeter_border = perimeter.expand(perimeter_border_normal_pixel_magnitude=perimeter_border_normal_pixel_magnitude)
 
-    inside_perimeter_border_boolean_index = (
-        perimeter_border.coordinate_confinement_boolean_index(
-            coordinates=inside_perimeter_border
-        )
+    inside_perimeter_border_boolean_index = perimeter_border.coordinate_confinement_boolean_index(
+        coordinates=inside_perimeter_border
     )
-    outside_perimeter_boolean_index = ~perimeter.coordinate_confinement_boolean_index(
-        outside_perimeter
-    )
+    outside_perimeter_boolean_index = ~perimeter.coordinate_confinement_boolean_index(outside_perimeter)
 
     result = inside_perimeter_border_boolean_index & outside_perimeter_boolean_index
 
@@ -77,9 +71,7 @@ def proximity_filter(
 
         not_result = ~result
         ax.scatter(
-            *inside_perimeter_border[
-                inside_perimeter_border_boolean_index & not_result
-            ].T,
+            *inside_perimeter_border[inside_perimeter_border_boolean_index & not_result].T,
             alpha=SCATTER_ALPHA,
             label="Nose valid, invalid outside_perimeter",
         )
@@ -88,13 +80,9 @@ def proximity_filter(
             alpha=SCATTER_ALPHA,
             label="Center of mass valid, invalid inside_perimeter_border",
         )
-        ax.scatter(
-            *inside_perimeter_border[result].T, alpha=SCATTER_ALPHA, label="Valid"
-        )
+        ax.scatter(*inside_perimeter_border[result].T, alpha=SCATTER_ALPHA, label="Valid")
 
-        ax.legend(
-            loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=3
-        )
+        ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=3)
 
         if not inspection_ax:
             plt.show()
@@ -123,9 +111,7 @@ def gaze_direction_filter(
         closest_corner_vectors,
     ) = perimeter.closest_sides_to_coordinates(gaze_start_point_label)
 
-    inner_angles = inner_angle(
-        closest_corner_vectors.astype(np.float32), eye_to_nose_vector.astype(np.float32)
-    )
+    inner_angles = inner_angle(closest_corner_vectors.astype(np.float32), eye_to_nose_vector.astype(np.float32))
 
     result = inner_angles <= max_radians
 
@@ -150,9 +136,7 @@ def gaze_direction_filter(
             label="Invalid",
         )
 
-        ax.legend(
-            loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=2
-        )
+        ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=2)
 
         if not ax:
             plt.show()
@@ -234,10 +218,7 @@ def tolerance_filter(
         assert not np.any(attention_boolean_index)
         return attention_boolean_index
 
-    assert (
-        np.any(attention_boolean_index)
-        and np.sum(attention_boolean_index) >= minimum_frames_attention
-    ), (
+    assert np.any(attention_boolean_index) and np.sum(attention_boolean_index) >= minimum_frames_attention, (
         f"True: {np.sum(attention_boolean_index)}; fps: {fps}; "
         f"Minimum observation frames: {minimum_frames_attention}"
     )
@@ -289,9 +270,7 @@ def perimeter_attention(
             fig, axes = plt.subplots(nrows=2, ncols=2)
         else:
             x, y = perimeter.inspect_image.shape[:2]
-            fig, axes = plt.subplots(
-                nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0)
-            )
+            fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0))
 
         fig.gca().invert_yaxis()
         fig.suptitle("Observation cumulative filtration analysis")

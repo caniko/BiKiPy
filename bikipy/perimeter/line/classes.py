@@ -33,9 +33,7 @@ class LinePerimeter(BikipyBase):
             "For orientation to function, video_path or greater_than_borders andless_than_borders has to be defined."
         )
     )
-    logic: Literal["<", "<=", ">", ">=", "=="] = Field(
-        description="The logic of the perimeter"
-    )
+    logic: Literal["<", "<=", ">", ">=", "=="] = Field(description="The logic of the perimeter")
     resolution: Optional[NDArray] = Field(
         None,
         description=(

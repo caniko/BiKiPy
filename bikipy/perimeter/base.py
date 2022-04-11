@@ -29,9 +29,7 @@ class BasePerimeter(BikipyBaseHashable):
         ...
 
     @abstractmethod
-    def change_reference(
-        self, new_reference: Optional[NDArray], **new_inspect_image_kwargs
-    ):
+    def change_reference(self, new_reference: Optional[NDArray], **new_inspect_image_kwargs):
         """"""
         ...
 
@@ -53,9 +51,7 @@ class BasePerimeter(BikipyBaseHashable):
     ):
         if new_inspect_image_path:
             if not (new_inspect_image_path := Path(new_inspect_image_path)).exists():
-                msg = (
-                    f"new_inspect_image_path, {new_inspect_image_path}, does not exist"
-                )
+                msg = f"new_inspect_image_path, {new_inspect_image_path}, does not exist"
                 raise AttributeError(msg)
             perimeter.inspect_image = new_inspect_image_path
         elif np.any(new_inspect_image):
@@ -67,19 +63,10 @@ class BasePerimeter(BikipyBaseHashable):
     @root_validator(pre=True)
     def mutually_exclusive(cls, values):
         if all(key in values for key in ("inspect_image_path", "inspect_image_array")):
-            msg = (
-                "inspect_image_path and inspect_image_array must be defined "
-                "mutually exclusive"
-            )
+            msg = "inspect_image_path and inspect_image_array must be defined " "mutually exclusive"
             raise AttributeError(msg)
-        if all(
-            key in values
-            for key in ("reference_point_coco_path", "reference_point_array")
-        ):
-            msg = (
-                "reference_point_coco_path and reference_point_array must be "
-                "defined mutually exclusive"
-            )
+        if all(key in values for key in ("reference_point_coco_path", "reference_point_array")):
+            msg = "reference_point_coco_path and reference_point_array must be " "defined mutually exclusive"
             raise AttributeError(msg)
         return values
 
@@ -87,11 +74,7 @@ class BasePerimeter(BikipyBaseHashable):
     def inspect_image(self):
         if self.inspect_image_array is None and not self.inspect_image_path:
             return None
-        return (
-            read_image(self.inspect_image_path)
-            if self.inspect_image_path
-            else self.inspect_image_array
-        )
+        return read_image(self.inspect_image_path) if self.inspect_image_path else self.inspect_image_array
 
     @inspect_image.setter
     def inspect_image(self, value):
@@ -128,9 +111,7 @@ class BasePerimeter(BikipyBaseHashable):
             )
             raise ValueError(msg)
 
-        return self.change_reference(
-            get_reference_point_from_array(coco_array), **kwargs
-        )
+        return self.change_reference(get_reference_point_from_array(coco_array), **kwargs)
 
     def change_reference_with_coco_with_plural_references(
         self,
@@ -147,9 +128,7 @@ class BasePerimeter(BikipyBaseHashable):
 
         coco_array = get_coco_array_from_path_or_array(metadata_path, coco_array)
 
-        img_name_vs_reference_points = {
-            row[3]: get_reference_point_from_array(row) for row in coco_array
-        }
+        img_name_vs_reference_points = {row[3]: get_reference_point_from_array(row) for row in coco_array}
         if not np.any(self.reference_point):
             msg = "The reference polygon has no reference point"
             raise ValueError(msg)
@@ -164,9 +143,7 @@ class BasePerimeter(BikipyBaseHashable):
             for img_name, reference_point in img_name_vs_reference_points.items()
         ]
 
-    def confined_coordinates(
-        self, coordinates: Sequence, inspect: bool = False, ax: Any = None
-    ):
+    def confined_coordinates(self, coordinates: Sequence, inspect: bool = False, ax: Any = None):
         """
         self.confined_coordinates to fetch confined coordinates within
         the respective perimeter
@@ -184,9 +161,7 @@ class BasePerimeter(BikipyBaseHashable):
 
         """
         coordinates = np.asarray(coordinates)
-        coordinate_confinement_boolean_index = coordinates[
-            self.coordinate_confinement_boolean_index(coordinates)
-        ]
+        coordinate_confinement_boolean_index = coordinates[self.coordinate_confinement_boolean_index(coordinates)]
         if inspect or ax:
             if not ax:
                 ax = self.plot_self()
@@ -247,14 +222,10 @@ class BasePerimeter(BikipyBaseHashable):
 
         overlap_locations = {}
         for perimeter in perimeter_sequence:
-            confined_coord_booleans_index = (
-                perimeter.coordinate_confinement_boolean_index(coordinates)
-            )
+            confined_coord_booleans_index = perimeter.coordinate_confinement_boolean_index(coordinates)
 
             if presence[confined_coord_booleans_index].any():
-                overlap_locations[perimeter.label] = np.flatnonzero(
-                    presence[confined_coord_booleans_index]
-                )
+                overlap_locations[perimeter.label] = np.flatnonzero(presence[confined_coord_booleans_index])
                 presence[overlap_locations[perimeter.label]] = 0
                 logger.info(
                     f"BasePerimeter {perimeter.label} has coordinate overlap with "
@@ -351,9 +322,7 @@ class PerimeterSet(BikipyBase):
         """
         return np.mean([perimeter.centroid for perimeter in self.perimeters], axis=0)
 
-    def discrete_confined_coordinates(
-        self, coordinates: Sequence, inspect: bool = False
-    ):
+    def discrete_confined_coordinates(self, coordinates: Sequence, inspect: bool = False):
         ax = self.plot() if inspect else None
         result = {}
         for i, perimeter in enumerate(self._all_perimeters):
@@ -364,12 +333,7 @@ class PerimeterSet(BikipyBase):
         return result
 
     def combined_confined_coordinates(self, coordinates: Sequence):
-        present = np.any(
-            [
-                perimeter.coordinate_confinement_boolean_index(coordinates)
-                for perimeter in self.perimeters
-            ]
-        )
+        present = np.any([perimeter.coordinate_confinement_boolean_index(coordinates) for perimeter in self.perimeters])
         if self.restricted_perimeters:
             present = present & ~np.any(
                 [
@@ -385,8 +349,7 @@ class PerimeterSet(BikipyBase):
     def change_reference(self, **perimeter_change_reference_kwargs):
         return self.__class__(
             perimeters=tuple(
-                perimeter.change_reference(**perimeter_change_reference_kwargs)
-                for perimeter in self.perimeters
+                perimeter.change_reference(**perimeter_change_reference_kwargs) for perimeter in self.perimeters
             ),
             restricted_perimeters=tuple(
                 perimeter.change_reference(**perimeter_change_reference_kwargs)
@@ -427,52 +390,37 @@ class PerimeterSet(BikipyBase):
 
         perimeter_set_kwargs = {}
         for perimeter in self.perimeters:
-            image_name_vs_referenced_perimeters = (
-                perimeter.change_reference_with_coco_with_plural_references(
-                    coco_array=coco_array, **kwargs
-                )
+            image_name_vs_referenced_perimeters = perimeter.change_reference_with_coco_with_plural_references(
+                coco_array=coco_array, **kwargs
             )
             for (
                 image_name,
                 referenced_perimeter,
             ) in image_name_vs_referenced_perimeters.items():
                 if image_name in perimeter_set_kwargs:
-                    perimeter_set_kwargs[image_name]["perimeters"].append(
-                        referenced_perimeter
-                    )
+                    perimeter_set_kwargs[image_name]["perimeters"].append(referenced_perimeter)
                 else:
-                    perimeter_set_kwargs[image_name] = {
-                        "perimeters": [referenced_perimeter]
-                    }
+                    perimeter_set_kwargs[image_name] = {"perimeters": [referenced_perimeter]}
 
         for perimeter in self.restricted_perimeters or []:
-            image_name_vs_referenced_perimeters = (
-                perimeter.change_reference_with_coco_with_plural_references(
-                    coco_array, **kwargs
-                )
+            image_name_vs_referenced_perimeters = perimeter.change_reference_with_coco_with_plural_references(
+                coco_array, **kwargs
             )
             for (
                 image_name,
                 referenced_perimeter,
             ) in image_name_vs_referenced_perimeters.items():
                 if "restricted_perimeters" in perimeter_set_kwargs[image_name]:
-                    perimeter_set_kwargs[image_name]["restricted_perimeters"].append(
-                        referenced_perimeter
-                    )
+                    perimeter_set_kwargs[image_name]["restricted_perimeters"].append(referenced_perimeter)
                 else:
-                    perimeter_set_kwargs[image_name] = {
-                        "restricted_perimeters": [referenced_perimeter]
-                    }
+                    perimeter_set_kwargs[image_name] = {"restricted_perimeters": [referenced_perimeter]}
 
         if map_to_image_names:
             return {
                 image_name: self.__class__(**perimeter_data)
                 for image_name, perimeter_data in perimeter_set_kwargs.items()
             }
-        return [
-            self.__class__(**perimeter_data)
-            for perimeter_data in perimeter_set_kwargs.values()
-        ]
+        return [self.__class__(**perimeter_data) for perimeter_data in perimeter_set_kwargs.values()]
 
     @cached_property
     def perimeter_vs_int_id(self):
@@ -490,12 +438,9 @@ class PerimeterSet(BikipyBase):
     def reference_point(self):
         expected_reference_point = self._all_perimeters[0].reference_point
         if equality := np.all(
-            expected_reference_point == perimeter.reference_point
-            for perimeter in self._all_perimeters
+            expected_reference_point == perimeter.reference_point for perimeter in self._all_perimeters
         ):
-            logger.warning(
-                "The reference points are different within the perimeter set"
-            )
+            logger.warning("The reference points are different within the perimeter set")
         if not equality or not np.any(expected_reference_point):
             return None
         return expected_reference_point
@@ -503,17 +448,13 @@ class PerimeterSet(BikipyBase):
     @property
     def inspect_image(self):
         result = self.perimeters[0].inspect_image
-        assert all(
-            result == perimeter.inspect_image for perimeter in self._all_perimeters
-        )
+        assert all(result == perimeter.inspect_image for perimeter in self._all_perimeters)
         return result
 
     @property
     def inspect_image_path(self):
         result = self.perimeters[0].inspect_image_path
-        assert all(
-            result == perimeter.inspect_image_path for perimeter in self._all_perimeters
-        )
+        assert all(result == perimeter.inspect_image_path for perimeter in self._all_perimeters)
         return result
 
     @property

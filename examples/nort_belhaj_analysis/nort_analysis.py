@@ -8,12 +8,11 @@ from shutil import rmtree
 import numpy as np
 import pandas as pd
 
-from bikipy.behaviour.object_recognition.base import (
-    ObjectRecognitionExperiment,
-    ObjectField,
-)
+from bikipy.behaviour.object_recognition.base import ObjectField
 from bikipy.behaviour.object_recognition.novel_object_recognition import (
-    CLASS_NAME_VS_CLASS, EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME,
+    CLASS_NAME_VS_CLASS,
+    EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME,
+    NortExperiment,
 )
 from bikipy.perimeter.io.general import defer_perimeter_set_from_multi_row_reference
 from bikipy.perimeter.io.makesense import (
@@ -96,13 +95,9 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
         day, month, year = round_dir_path.name.split("_")[1].split(".")
         date = datetime.date(int(year), int(month), int(day))
 
-        exp_metadata_df = pd.read_excel(
-            meta_data, sheet_name=round_index, engine="openpyxl"
-        )
+        exp_metadata_df = pd.read_excel(meta_data, sheet_name=round_index, engine="openpyxl")
 
-        animal_id_vs_app = get_animal_id_vs_apparatus(
-            exp_metadata_df, EXP_ID_REGEX_PATTERN
-        )
+        animal_id_vs_app = get_animal_id_vs_apparatus(exp_metadata_df, EXP_ID_REGEX_PATTERN)
         trial_id_vs_stage = get_trial_id_vs_stage(exp_metadata_df, EXP_ID_REGEX_PATTERN)
         animal_id_vs_trial_ids = get_animal_id_vs_trial_ids(exp_metadata_df)
         exp_vs_animal = get_trial_id_vs_animal_id(animal_id_vs_trial_ids)
@@ -126,11 +121,9 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
             }
 
             trial_id_range_vs_exp_meta[trial_id] = trial_data
-            trial_id_vs_trial_class[trial_id] = CLASS_NAME_VS_CLASS[
-                EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME[stage]
-            ]
+            trial_id_vs_trial_class[trial_id] = CLASS_NAME_VS_CLASS[EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME[stage]]
 
-        experiment = ObjectRecognitionExperiment(
+        experiment = NortExperiment(
             stage=str(period_index),
             trial_id_vs_trial_class=trial_id_vs_trial_class,
             trial_id_vs_keyword_arguments=trial_id_range_vs_exp_meta,
@@ -165,6 +158,4 @@ with pd.ExcelWriter(
         experiment.animal_id_indexed_feature_frame.to_parquet(
             RESULT_DIR / "for_analysis" / f"{experiment.timestamp}.parquet"
         )
-        experiment.animal_id_indexed_feature_frame.to_excel(
-            writer, sheet_name=f"{experiment.timestamp}"
-        )
+        experiment.animal_id_indexed_feature_frame.to_excel(writer, sheet_name=f"{experiment.timestamp}")

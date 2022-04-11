@@ -22,9 +22,7 @@ class TriangularPerimeter(PolygonPerimeter):
     def apex(self):
         return self.corners[2]
 
-    def coordinate_confinement_boolean_index(
-        self, coordinates: np.ndarray
-    ) -> np.ndarray:
+    def coordinate_confinement_boolean_index(self, coordinates: np.ndarray) -> np.ndarray:
         """
         indices of the coordinates that are inside the respective perimeter
 
@@ -39,15 +37,15 @@ class TriangularPerimeter(PolygonPerimeter):
         """
         coord_x_comp, coord_y_comp = np.asarray(coordinates).T
 
-        c1 = (self.base_b[0] - self.base_a[0]) * (coord_y_comp - self.base_a[1]) - (
-            self.base_b[1] - self.base_a[1]
-        ) * (coord_x_comp - self.base_a[0])
-        c2 = (self.apex[0] - self.base_b[0]) * (coord_y_comp - self.base_b[1]) - (
-            self.apex[1] - self.base_b[1]
-        ) * (coord_x_comp - self.base_b[0])
-        c3 = (self.base_a[0] - self.apex[0]) * (coord_y_comp - self.apex[1]) - (
-            self.base_a[1] - self.apex[1]
-        ) * (coord_x_comp - self.apex[0])
+        c1 = (self.base_b[0] - self.base_a[0]) * (coord_y_comp - self.base_a[1]) - (self.base_b[1] - self.base_a[1]) * (
+            coord_x_comp - self.base_a[0]
+        )
+        c2 = (self.apex[0] - self.base_b[0]) * (coord_y_comp - self.base_b[1]) - (self.apex[1] - self.base_b[1]) * (
+            coord_x_comp - self.base_b[0]
+        )
+        c3 = (self.base_a[0] - self.apex[0]) * (coord_y_comp - self.apex[1]) - (self.base_a[1] - self.apex[1]) * (
+            coord_x_comp - self.apex[0]
+        )
 
         return np.logical_or(
             np.logical_and(c1 > 0, np.logical_and(c2 > 0, c3 > 0)),
