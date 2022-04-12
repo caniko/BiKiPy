@@ -2,11 +2,12 @@ import os
 from abc import ABC
 from functools import cached_property, lru_cache
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any, ClassVar
 
 import numpy as np
+import pandas as pd
 from numpy.typing import NDArray
-from pydantic import validate_arguments, validator
+from pydantic import validate_arguments, validator, Field
 from skg import ngauss_fit
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
@@ -18,20 +19,26 @@ from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BikipyBase
 from bikipy.feature.motion import (
     get_combined_features_from_merged_motion_island_data,
-    motion_2d_multi_indexer,
+    motion_multi_indexer,
 )
-from bikipy.utils.math import parallel_point_in_polygon
+from bikipy.perimeter.utils import perimeter_multi_indexer
+from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 
 A = 255
 QUADRANT_INSPECTION_DIR_NAME = "PiP_quadrant_location_booleans"
 CENTER_INSPECTION_DIR_NAME = "PiP_center_location_booleans"
 
+_TWO_BY_TWO_IN_ENGLISH = {
+    "upper_left": (0,0),"upper_right": (0,1),"lower_left": (0,1),"lower_right": (1,1),
+}
+
 
 class Quadrant(BikipyBase):
-    corners: NDArray
-    coordinates_per_frame: NDArray
-    meters_per_pixel: float
-    fps: float
+    corners: NDArray = Field(...)
+    coordinates_per_frame: NDArray = Field(...)
+    meters_per_pixel: float = Field(...)
+    fps: float = Field(...)
+    quadrant_index: int = Field(...)
 
     @validator("corners")
     def make_contiguous_array(cls, value):
@@ -40,6 +47,10 @@ class Quadrant(BikipyBase):
     @cached_property
     def confinement_boolean_index(self):
         return parallel_point_in_polygon(self.coordinates_per_frame, self.corners)
+
+    @cached_property
+    def seconds_present(self) -> float:
+        return np.sum(self.confinement_boolean_index) / self.fps
 
     @cached_property
     def motion(self) -> dict:
@@ -52,31 +63,44 @@ class Quadrant(BikipyBase):
 
 
 class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelMixin):
+    rectangle_2d_bin: tuple[int, int] = (2, 2)
+
+    _pandas_multi_index_level: ClassVar[int] = 3
+
+    def trial_keyword_arguments(self, trial_id: int) -> dict:
+        result = super().trial_keyword_arguments(trial_id)
+        result["rectangle_2d_bin"] = self.rectangle_2d_bin
+        return result
+
     @cached_property
     def motion_summary_columns(self) -> list:
-        quadrant_labels = (
-            "Upper-left Quadrant",
-            "Upper-right Quadrant",
-            "Lower-left Quadrant",
-            "Lower-right Quadrant",
-        )
-        return super().motion_summary_columns + [
-            ("gaussian_center_to_periphery_score", ""),
-            *motion_2d_multi_indexer("Upper-left Quadrant"),
-            *motion_2d_multi_indexer("Upper-right Quadrant"),
-            *motion_2d_multi_indexer("Lower-left Quadrant"),
-            *motion_2d_multi_indexer("Lower-right Quadrant"),
-            *self._feature_2d_multi_indexer("Seconds present", quadrant_labels),
-            *self._feature_2d_multi_indexer("Entries", quadrant_labels),
-        ]
-
-    def _make_categorical_inspection_dir(self, trial_root_dir: Path):
-        os.makedirs(trial_root_dir / "")
+        quadrant_summary_columns = []
+        for h in range(1, self.rectangle_2d_bin[0]):
+            for v in range(1, self.rectangle_2d_bin[1]):
+                quadrant_grid_coordinates = (h, v)
+                quadrant_summary_columns.extend([
+                    *motion_multi_indexer(quadrant_grid_coordinates, level=2),
+                    *perimeter_multi_indexer(quadrant_grid_coordinates, level=2),
+                ])
+        return super().motion_summary_columns + list(pd.MultiIndex.from_product([
+            ["Quadrant"], quadrant_summary_columns
+        ])) + list(pd.MultiIndex.from_product([
+            [""], [
+                *motion_multi_indexer("Center", self._pandas_multi_index_level),
+                *perimeter_multi_indexer("Center", self._pandas_multi_index_level),
+                *motion_multi_indexer("Periphery", self._pandas_multi_index_level),
+                *perimeter_multi_indexer("Periphery", self._pandas_multi_index_level),
+            ]
+        ]))
 
 
 class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin, ABC):
     center_box_to_recording_resolution_ratio: Optional[float] = None
     rectangle_2d_bin: tuple[int, int] = (2, 2)
+
+    @cached_property
+    def _quadrant_coordinate_to_index(self):
+        return {grid_coord: i for i, grid_coord in enumerate(self.quadrants, start=1)}
 
     @cached_property
     def _quadrant_inspection_dir(self):
@@ -103,7 +127,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
         return np.sum(scores) / (A * self.number_of_frames)
 
     @cached_property
-    def quadrant_corners(self) -> dict[tuple[int, int], Quadrant]:
+    def quadrants(self) -> dict[tuple[int, int], Quadrant]:
         """
         Left to right, top to down
         :return:
@@ -111,132 +135,22 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
         horizontal_uniform_distance = self.horizontal_resolution / self.rectangle_2d_bin[0]
         vertical_uniform_distance = self.vertical_resolution / self.rectangle_2d_bin[1]
         result = {}
-        for v in range(1, self.rectangle_2d_bin[1]):
-            vertical_coordinate_min = vertical_uniform_distance * (v - 1)
-            vertical_coordinate_max = vertical_uniform_distance * v
-            for h in range(1, self.rectangle_2d_bin[0]):
-                result[(h, v)] = (h * horizontal_uniform_distance, vertical_coordinate)
-        return
-
-    @cached_property
-    def location_sequence_quadrant(self) -> np.ndarray:
-        result = self._uint_zeros_based_on_frame_length.copy()
-
-        result[self.quadrant_upper_left_boolean_index] = 1
-        result[self.quadrant_upper_right_boolean_index] = 2
-        result[self.quadrant_lower_left_boolean_index] = 3
-        result[self.quadrant_lower_right_boolean_index] = 4
-
-        return reduce_repeating_sequences(result, round(self.fps * 0.35))
-
-    # Quadrant upper left 1
-    @cached_property
-    def quadrant_upper_left_boolean_index(self) -> np.ndarray:
-        return parallel_point_in_polygon(
-            np.array((0.0, 0.0)),
-            np.array((self.recording_center_pixel[0], 0.0)),
-            np.array((0.0, self.recording_center_pixel[1])),
-            self.coordinates_per_frame,
-            inspect=self._quadrant_inspection_dir / "upper_left" / self._inspection_image_name
-            if self.inspection_dir
-            else None,
-            inspect_image=self.inspect_image,
-        )
-
-    @cached_property
-    def quadrant_upper_left_entries(self) -> int:
-        return np.sum(self.location_sequence_quadrant == 1)
-
-    @cached_property
-    def seconds_on_quadrant_upper_left(self):
-        return np.sum(self.quadrant_upper_left_boolean_index) / self.fps
-
-    # Quadrant upper right 2
-
-    @cached_property
-    def quadrant_upper_right_boolean_index(self) -> np.ndarray:
-        return parallel_point_in_polygon(
-            np.array((self.recording_center_pixel[0], 0.0)),
-            self.recording_center_pixel,
-            np.array((self.horizontal_resolution, 0.0)),
-            self.coordinates_per_frame,
-            inspect=self._quadrant_inspection_dir / "upper_right" / self._inspection_image_name
-            if self.inspection_dir
-            else None,
-            inspect_image=self.inspect_image,
-        )
-
-    @cached_property
-    def quadrant_upper_right_entries(self):
-        return np.sum(self.location_sequence_quadrant == 2)
-
-    @cached_property
-    def seconds_on_quadrant_upper_right(self):
-        return np.sum(self.quadrant_upper_right_boolean_index) / self.fps
-
-    # Quadrant lower left 3
-
-    @cached_property
-    def quadrant_lower_left_boolean_index(self) -> np.ndarray:
-        return parallel_point_in_polygon(
-            np.array((0.0, self.vertical_resolution)),
-            np.array((self.recording_center_pixel[0], self.vertical_resolution)),
-            np.array((0.0, self.recording_center_pixel[1])),
-            self.coordinates_per_frame,
-            inspect=self._quadrant_inspection_dir / "lower_left" / self._inspection_image_name
-            if self.inspection_dir
-            else None,
-            inspect_image=self.inspect_image,
-        )
-
-    @cached_property
-    def quadrant_lower_left_entries(self):
-        return np.sum(self.location_sequence_quadrant == 3)
-
-    @cached_property
-    def seconds_on_quadrant_lower_left(self):
-        return np.sum(self.quadrant_lower_left_boolean_index) / self.fps
-
-    # Quadrant lower right 4
-
-    @cached_property
-    def quadrant_lower_right_boolean_index(self) -> np.ndarray:
-        return parallel_point_in_polygon(
-            np.array((self.recording_center_pixel[0], self.vertical_resolution)),
-            self.recording_resolution,
-            self.recording_center_pixel,
-            self.coordinates_per_frame,
-            inspect=self._quadrant_inspection_dir / "lower_right" / self._inspection_image_name
-            if self.inspection_dir
-            else None,
-            inspect_image=self.inspect_image,
-        )
-
-    @cached_property
-    def quadrant_lower_right_entries(self):
-        return np.sum(self.location_sequence_quadrant == 4)
-
-    @cached_property
-    def seconds_on_quadrant_lower_right(self):
-        return np.sum(self.quadrant_lower_right_boolean_index) / self.fps
+        for quadrant_coordinate, corners in _compute_quadrant_grid_coordinates(self.rectangle_2d_bin, self.recording_resolution).items():
+            result[quadrant_coordinate] = Quadrant(
+                corners=corners,
+                coordinates_per_frame=self.coordinates_per_frame,
+                meters_per_pixel=self.meters_per_pixel,
+                fps=self.fps,
+                quadrant_index=self._quadrant_coordinate_to_index[quadrant_coordinate]
+            )
+        location_sequence_quadrant = _compute_quadrant_location_sequence(result, self.number_of_frames, self.fps)
+        for quadrant in result.values():
+            quadrant.entries = np.sum(location_sequence_quadrant == quadrant.quadrant_index)
+        return result
 
     @property
-    def motion_features(self):
-        return super().motion_features + [
-            self.gaussian_center_to_periphery_score,
-            *self.motion_quadrant_upper_left.values(),
-            *self.motion_quadrant_upper_right.values(),
-            *self.motion_quadrant_lower_left.values(),
-            *self.motion_quadrant_lower_right.values(),
-            self.seconds_on_quadrant_upper_left,
-            self.seconds_on_quadrant_upper_right,
-            self.seconds_on_quadrant_lower_left,
-            self.seconds_on_quadrant_lower_right,
-            self.quadrant_upper_left_entries,
-            self.quadrant_upper_right_entries,
-            self.quadrant_lower_left_entries,
-            self.quadrant_lower_right_entries,
-        ]
+    def location_sequence_quadrant(self) -> np.ndarray:
+        return _compute_quadrant_location_sequence(self.quadrants, self.number_of_frames, self.fps)
 
     # Center vs Periphery ==============================================================
     @cached_property
@@ -256,15 +170,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
 
     @cached_property
     def center_boolean_index(self):
-        return parallel_point_in_polygon(
-            self.center_square_corners[0],
-            self.center_square_corners[3],
-            self.center_square_corners[1],
-            self.coordinates_per_frame,
-            inspect=self.inspection_dir / CENTER_INSPECTION_DIR_NAME / self._inspection_image_name
-            if self.inspection_dir
-            else None,
-        )
+        return parallel_point_in_polygon(self.coordinates_per_frame, self.center_square_corners)
 
     @cached_property
     def periphery_boolean_index(self):
@@ -317,13 +223,49 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
     def seconds_on_periphery(self):
         return np.sum(self.periphery_boolean_index) / self.fps
 
-    @cached_property
-    def center_freezing_time(self):
-        return np.sum(self.motion.frozen_boolean_index & self.center_boolean_index[1:]) / self.fps
+    @property
+    def motion_features(self) -> list:
+        return super().motion_features + [
+            quadrant.motion.values() for quadrant in self.quadrants.values()
+        ] + [
+            *self.motion_center.values(),
+            self.center_entries,
+            self.seconds_on_center,
+            *self.motion_periphery.values(),
+            self.periphery_entries,
+            self.seconds_on_periphery,
+            self.gaussian_center_to_periphery_score
+        ]
 
-    @cached_property
-    def periphery_freezing_time(self):
-        return np.sum(self.motion.frozen_boolean_index & self.periphery_boolean_index[1:]) / self.fps
+    def __getattr__(self, item: str) -> Any:
+        if item != "quadrants" and not item.startswith("quadrant") and not item == "quadrant_location_sequence":
+            return super(object, self).__getattr__(item)
+
+        quadrant_grid_coordinates = None
+        if self.rectangle_2d_bin == (2, 2) and ("upper" in item or "lower" in item):
+            for english_label, coordinates in _TWO_BY_TWO_IN_ENGLISH.items():
+                if english_label in item:
+                    quadrant_grid_coordinates = coordinates
+                    break
+        values_in_item = item.split("_")
+        if not quadrant_grid_coordinates:
+            quadrant_grid_coordinates = tuple(int(i) for i in values_in_item[1] if i.isdigit())
+        if not quadrant_grid_coordinates:
+            # An exception will be raised
+            return super(object, self).__getattr__(item)
+
+        data_type = values_in_item[2]
+        if data_type == "boolean_index":
+            return self.quadrants[quadrant_grid_coordinates].confinement_boolean_index
+        if data_type == "motion":
+            return self.quadrants[quadrant_grid_coordinates].motion
+        if data_type == "entries":
+            return self.quadrants[quadrant_grid_coordinates].entries
+        if data_type == "secondsPresent":
+            return self.quadrants[quadrant_grid_coordinates].seconds_present
+
+        # An exception will be raised
+        return super(object, self).__getattr__(item)
 
 
 @lru_cache
@@ -341,3 +283,34 @@ def gaussian_scoring_field(resolution: tuple[float, float], scale: int = 4):
 
     scale_as_float = float(scale)
     return lambda x, y: model[round(x * scale_as_float)][round(y * scale_as_float)]
+
+
+@lru_cache
+def _compute_quadrant_location_sequence(quadrants, number_of_frames: int, fps: float):
+    result = np.zeros(number_of_frames, dtype=np.uint8)
+    for i, grid_coord in enumerate(quadrants, start=1):
+        result[grid_coord] = i
+    return np.array(reduce_repeating_sequences(result, round(fps * 0.35)))
+
+
+@lru_cache
+def _compute_quadrant_grid_coordinates(rectangle_2d_bin: tuple[int, int], recording_resolution: NDArray[int, int]):
+    horizontal_resolution, vertical_resolution = recording_resolution
+
+    horizontal_uniform_distance = horizontal_resolution / rectangle_2d_bin[0]
+    vertical_uniform_distance = vertical_resolution / rectangle_2d_bin[1]
+    result = {}
+    for h in range(1, rectangle_2d_bin[0]):
+        horizontal_coordinate_min = horizontal_uniform_distance * (h - 1)
+        horizontal_coordinate_max = horizontal_uniform_distance * h
+        for v in range(1, rectangle_2d_bin[1]):
+            vertical_coordinate_min = vertical_uniform_distance * (v - 1)
+            vertical_coordinate_max = vertical_uniform_distance * v
+
+            result[(h, v)] = np.array((
+                (horizontal_coordinate_min, vertical_coordinate_min),
+                (horizontal_coordinate_max, vertical_coordinate_min),
+                (horizontal_coordinate_max, vertical_coordinate_max),
+                (horizontal_coordinate_min, vertical_coordinate_min)
+            ))
+    return result

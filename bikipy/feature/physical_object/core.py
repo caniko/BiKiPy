@@ -13,7 +13,6 @@ from bikipy.core.base_class import BikipyBase
 from bikipy.core.typing import Perimeter2D
 from bikipy.feature.attention.main import perimeter_attention
 from bikipy.perimeter.base import PerimeterSet
-from bikipy.perimeter.io.general import defer_perimeter_set_from_multi_row_reference
 
 logger = getLogger(__name__)
 

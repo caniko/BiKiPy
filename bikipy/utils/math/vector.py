@@ -5,7 +5,7 @@ import numpy as np
 from numba import njit
 from numpy.linalg import LinAlgError
 
-from bikipy.utils.typing import NDArray
+from numpy.typing import NDArray
 
 
 @njit

@@ -1,14 +1,16 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
-from functools import cached_property
+from functools import cached_property, lru_cache
 from logging import getLogger
-from typing import Iterable, Union
+from typing import Iterable, Union, Any
 
 import numpy as np
 import pandas as pd
 
-from bikipy.utils.math import absolute_derivative
-from bikipy.utils.typing import NDArray
+from bikipy.utils.math.calculus import absolute_derivative
+from numpy.typing import NDArray
+
+from bikipy.utils.misc import generic_multi_indexer
 
 logger = getLogger(__name__)
 
@@ -247,13 +249,10 @@ class Motion:
         ]
 
 
-def motion_2d_multi_indexer(category: str):
-    return [
-        (category, "Displacement"),
-        (category, "Median_speed"),
-        (category, "Median_acceleration"),
-        (category, "Freezing time"),
-    ]
+def motion_multi_indexer(category: Any, level: int):
+    return generic_multi_indexer(
+        "Displacement", "Median_speed", "Median_speed", "Median_acceleration", "Freezing time"
+    )(category, level)
 
 
 def get_combined_features_from_merged_motion_island_data(

@@ -9,7 +9,7 @@ from pydantic import FilePath
 from bikipy.utils.math import clockwise_argsort_points
 from bikipy.perimeter import ParallelogramPerimeter, TriangularPerimeter
 from bikipy.perimeter.base import PerimeterSet, PolygonPerimeter
-from bikipy.perimeter.io.makesense import from_makesense_coco_polygon
+from bikipy.utils.io import from_makesense_coco_polygon
 from bikipy.utils.misc import read_makesense_point_csv
 from bikipy.utils.typing import PathTyping
 

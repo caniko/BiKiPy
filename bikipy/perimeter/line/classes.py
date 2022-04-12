@@ -8,7 +8,7 @@ from bikipy.core.base_class import BikipyBase
 
 # 0: Use the x coordinate(s) as the perimeter
 # 1: Use the y coordinate(s) as the perimeter
-from bikipy.utils.typing import NDArray
+from numpy.typing import NDArray
 
 ORIENTATION_TO_INDEX = {"vertical": 0, "horizontal": 1}
 INDEX_TO_ORIENTATION = {0: "vertical", 1: "horizontal"}

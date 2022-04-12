@@ -5,7 +5,7 @@ from warnings import warn
 import numpy as np
 from numba import njit
 
-from bikipy.utils.math import dot_prod_along_axis_1, fast_unit_vector, unit_vector
+from bikipy.utils.math.vector import dot_prod_along_axis_1, fast_unit_vector, unit_vector
 
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}
 

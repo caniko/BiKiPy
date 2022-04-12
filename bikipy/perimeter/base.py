@@ -11,7 +11,7 @@ from pydantic import FilePath, root_validator, DirectoryPath
 from bikipy.core.base_class import BikipyBase, BikipyBaseHashable
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
 from bikipy.utils.misc import read_image, get_reference_point_from_array
-from bikipy.utils.typing import NDArray
+from numpy.typing import NDArray
 
 logger = getLogger(__name__)
 
@@ -82,7 +82,7 @@ class BasePerimeter(BikipyBaseHashable):
 
     @property
     def reference_point(self):
-        from bikipy.perimeter.io.makesense import reference_point_from_coco_path
+        from bikipy.utils.io import reference_point_from_coco_path
 
         if self.reference_point_array is None and not self.reference_point_coco_path:
             return None

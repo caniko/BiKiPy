@@ -1,5 +1,6 @@
 import copy
 import os
+from functools import lru_cache
 from logging import getLogger
 from pathlib import Path, PurePath
 from typing import Any, Union
@@ -84,6 +85,20 @@ def rise_to_n_levels(columns, n_levels: int):
             axis=1,
         )
     )
+
+
+@lru_cache
+def generic_multi_indexer(*basis_labels):
+    number_of_levels = len(basis_labels)
+
+    def result(category: Any, level: int):
+        if level < number_of_levels:
+            msg = f"At least {number_of_levels} levels; provided={level}"
+            raise ValueError(msg)
+        levels_to_add = ["" for _ in range(level - number_of_levels)]
+        return [(category, basis_label, *levels_to_add) for basis_label in basis_labels]
+
+    return result
 
 
 def directory_incrementor(path: Path):

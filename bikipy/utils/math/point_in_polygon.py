@@ -3,13 +3,13 @@ from typing import Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.typing import NDArray
 from seaborn import set_theme
 from numba import njit
 import numba
 
 from bikipy.utils.math.vector import dot_prod_along_axis_1, orthogonal_unit_vector
 from bikipy.utils.misc import generic_inspection_finalization
-from bikipy.utils.typing import NDArray
 
 
 def points_in_parallelogram(

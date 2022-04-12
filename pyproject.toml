@@ -30,7 +30,6 @@ llvmlite = "*"
 numba = "*"
 
 matplotlib = "^3.2.2"
-PyQt5 = "*"
 seaborn = "*"
 ffmpeg-python = "^0.2.0"
 opencv-python-headless = "^4.5"
@@ -47,6 +46,7 @@ jupyter = { version = "^1.0.0", optional = true }
 jupyterthemes = { version = "^0.20.0", optional = true }
 scikit-posthocs = {version = "^0.6.7", optional = true}
 PyYAML = "^6.0"
+plyer = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
 black = {extras = ["jupyter"], version = "*"}

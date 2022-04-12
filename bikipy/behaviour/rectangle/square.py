@@ -10,9 +10,6 @@ from bikipy.behaviour.rectangle.rectangle import (
     RectangleEnclosedExperiment,
     RectangleEnclosedTrial,
 )
-from bikipy.feature.motion import (
-    motion_2d_multi_indexer,
-)
 
 logger = getLogger(__name__)
 
@@ -27,16 +24,6 @@ class SquareEnclosedExperiment(RectangleEnclosedExperiment):
             result["center_metric_length"] = self.global_center_metric_length
 
         return result
-
-    @cached_property
-    def motion_summary_columns(self) -> list:
-        periphery_center_labels = ("Periphery", "Center")
-        return super().motion_summary_columns + [
-            *motion_2d_multi_indexer("Periphery"),
-            *motion_2d_multi_indexer("Center"),
-            *self._feature_2d_multi_indexer("Time_spent", periphery_center_labels),
-            *self._feature_2d_multi_indexer("Entries", periphery_center_labels),
-        ]
 
 
 class SquareEnclosedTrial(RectangleEnclosedTrial):

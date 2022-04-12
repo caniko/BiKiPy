@@ -1,5 +1,4 @@
 import json
-from functools import lru_cache
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Optional, Sequence
@@ -19,6 +18,7 @@ def from_makesense_coco_polygon(
     reference_point_csv_path: Optional[FilePath] = None,
     no_map: bool = False,
     map_to_image_name: bool = False,
+    map_to_label: bool = False,
     single_obj_return: bool = False,
     **perimeter_kwargs,
 ) -> dict:
@@ -46,6 +46,8 @@ def from_makesense_coco_polygon(
     for annotation in coco["annotations"]:
         current_kwargs = {}
         image_name = coco["images"][annotation["image_id"] - 1]["file_name"]
+        label = coco["categories"][annotation["category_id"] - 1]["name"]
+
         if image_root:
             assert not any(key in perimeter_kwargs for key in ("inspect_image_path", "inspect_image_array"))
             current_kwargs["inspect_image_path"] = image_root / image_name
@@ -54,7 +56,7 @@ def from_makesense_coco_polygon(
 
         perimeter = PolygonPerimeter.init_polygon(
             _coco_polygon_annotation(annotation["segmentation"][0]),
-            label=coco["categories"][annotation["category_id"] - 1]["name"],
+            label=label,
             **current_kwargs,
             **perimeter_kwargs,
         )
@@ -62,6 +64,11 @@ def from_makesense_coco_polygon(
             return perimeter
         elif no_map:
             result.append(perimeter)
+        elif map_to_label:
+            if label in result:
+                msg = f"Non-unique label, {label}: labels for each perimeter must be unique when map_to_label is True"
+                raise ValueError(msg)
+            result[label] = perimeter
         elif map_to_image_name:
             if image_name in result:
                 result[image_name].append(perimeter)
@@ -122,16 +129,28 @@ def from_makesense_csv_rectangle(
     return result
 
 
-@lru_cache(50)
-def reference_point_from_coco_path(metadata_path: Optional[FilePath], single_row: bool = True):
+def from_makesense_line(data_path: FilePath, single_row: bool = True):
     coco_data = pd.read_csv(
-        metadata_path,
+        data_path,
+        names=("label", "1x", "1y", "2x", "2y", "image_name", "x_res", "y_res"),
+    )
+
+    if single_row:
+        assert len(coco_data) == 1
+        return np.array((coco_data.iloc[0].values[1:3], coco_data.iloc[0].values[3:5]), dtype=int)
+
+    return {csv_row[0]: np.array((csv_row.values[1:3], csv_row.values[3:5]), dtype=int) for csv_row in coco_data.values}
+
+
+def reference_point_from_coco_path(data_path: FilePath, single_row: bool = True):
+    coco_data = pd.read_csv(
+        data_path,
         names=("label", "x", "y", "image_name", "x_res", "y_res"),
     )
     if single_row:
         assert len(coco_data) == 1
         return coco_data.iloc[0].values[1:3].astype(np.float64)
-    return {csv_row[3]: csv_row[1:3].astype(np.float64) for csv_row in coco_data.values}
+    return {csv_row[0]: csv_row[1:3].astype(np.float64) for csv_row in coco_data.values}
 
 
 def _coco_polygon_annotation(flat_annotation_data: Sequence):

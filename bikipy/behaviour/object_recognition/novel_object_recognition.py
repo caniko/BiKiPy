@@ -114,7 +114,7 @@ CLASS_NAME_VS_CLASS = {
 
 
 class NortExperiment(ObjectRecognitionExperiment):
-    _trial_classes: ClassVar = (
+    trial_classes: ClassVar = (
         NortHabituationTrial,
         NortTrainingTrial,
         NortNoveltyTrial,

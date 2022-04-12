@@ -14,11 +14,12 @@ import pandas as pd
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from pydantic import DirectoryPath, Field, FilePath, validator
 
+from bikipy import ENABLE_PROCESS_POOLING
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.mixin import VideoMetadataMixin
-from bikipy.feature.motion import Motion, motion_2d_multi_indexer
+from bikipy.feature.motion import Motion, motion_multi_indexer
 from bikipy.reader.deeplabcut import DeepLabCutReader
-from bikipy.utils.misc import to_tuple, rise_to_n_levels
+from bikipy.utils.misc import rise_to_n_levels
 from bikipy.utils.render_video import VideoWriter
 from bikipy.utils.store import RangeDict
 
@@ -33,23 +34,18 @@ class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
 
     _live: ClassVar[bool] = False
 
-    # Computational settings
-    enable_process_pooling: ClassVar[bool] = True
-
 
 class BaseExperiment(Behaviour):
-    stage: str
-    point_label_for_motion_features: str
+    stage: str = Field(...)
+    point_label_for_motion_features: str = Field(...)
     trial_id_vs_trial_class: Optional[dict] = None
     trial_id_vs_keyword_arguments: Optional[dict] = None
     trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
     common_trial_keyword_arguments: Optional[dict] = None
     inspection_dir: Optional[DirectoryPath] = Field(None, description="Path to save figures for inspection of results")
 
-    _trial_classes: ClassVar[tuple[Any]] = Field(...)
-
-    # Computational settings
-    enable_process_pooling: ClassVar[bool] = True
+    trial_classes: ClassVar[tuple[Any]] = Field(...)
+    _pandas_multi_index_level: ClassVar[int] = 2
 
     @validator("trial_id_vs_trial_class")
     def sort_trial_id_vs_trial_class_ascending(cls, value):
@@ -65,7 +61,7 @@ class BaseExperiment(Behaviour):
     @classmethod
     @property
     def is_trial_sequence(cls):
-        return len(cls._trial_classes) != 1
+        return len(cls.trial_classes) != 1
 
     @classmethod
     @property
@@ -73,7 +69,7 @@ class BaseExperiment(Behaviour):
         if not cls.is_trial_sequence:
             msg = f"{cls.__name__}: trial_class attribute can only be utilized when there is only one Trial class"
             raise AttributeError(msg)
-        return cls._trial_classes[0]
+        return cls.trial_classes[0]
 
     @classmethod
     @property
@@ -86,7 +82,7 @@ class BaseExperiment(Behaviour):
             raise AttributeError(msg)
 
         try:
-            return {trial_class.trial_stage_index: trial_class for trial_class in cls._trial_classes}
+            return {trial_class.trial_stage_index: trial_class for trial_class in cls.trial_classes}
         except AttributeError:
             msg = "trial_stage_index must be defined for each trial class when working with a sequence of trial classes"
             raise AttributeError(msg)
@@ -102,7 +98,7 @@ class BaseExperiment(Behaviour):
             raise AttributeError(msg)
 
         try:
-            return {trial_class.__name__: trial_class for trial_class in cls._trial_classes}
+            return {trial_class.__name__: trial_class for trial_class in cls.trial_classes}
         except AttributeError:
             msg = "trial_stage_index must be defined for each trial class when working with a sequence of trial classes"
             raise AttributeError(msg)
@@ -244,7 +240,7 @@ class BaseExperiment(Behaviour):
         assert self._at_least_one_trial_class_has_features
 
         data_dict = {}
-        if self.enable_process_pooling:
+        if ENABLE_PROCESS_POOLING:
             with ProcessPoolExecutor() as executor:
                 for animal_id, trial_objects in self.animal_id_vs_trial_objects.items():
                     trial_objects = [
@@ -286,7 +282,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def motion_summary_frame(self) -> pd.DataFrame:
-        if self.enable_process_pooling:
+        if ENABLE_PROCESS_POOLING:
             with ProcessPoolExecutor() as executor:
                 rows = executor.map(attrgetter("motion_features"), self.trial_objects)
         else:
@@ -302,7 +298,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _at_least_one_trial_class_has_features(self):
-        return any(trial_class.feature_summary_column for trial_class in self._trial_classes)
+        return any(trial_class.feature_summary_column for trial_class in self.trial_classes)
 
     def _feature_frame_columns(self, levels: Optional[int] = None) -> pd.MultiIndex:
         if self.trial_class:
@@ -311,7 +307,7 @@ class BaseExperiment(Behaviour):
             columns = sum(
                 (
                     trial_object.feature_summary_column
-                    for trial_object in self._trial_classes
+                    for trial_object in self.trial_classes
                     if trial_object._trial_has_feature_frame
                 ),
                 [],
@@ -384,7 +380,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _class_labels(self):
-        return tuple(trial_class.trial_label for trial_class in self._trial_classes)
+        return tuple(trial_class.trial_label for trial_class in self.trial_classes)
 
     def _difference_warning(self, other, attribute: str):
         if (self_attr := getattr(self, attribute)) == (other_attr := getattr(other, attribute)):
@@ -422,7 +418,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def motion_summary_columns(self) -> list:
-        return motion_2d_multi_indexer("All")
+        return motion_multi_indexer("All", self._pandas_multi_index_level)
 
     def _make_categorical_inspection_dir(self, trial_root_dir: Path):
         pass
@@ -436,19 +432,17 @@ class BaseExperiment(Behaviour):
 
 
 class BaseTrial(Behaviour):
-    coordinate_data_path: FilePath = Field(description="Path to file storing coordinate data")
-    animal_id: int = Field(description="The ID of the animal in the trial")
+    coordinate_data_path: FilePath = Field(..., description="Path to file storing coordinate data")
+    animal_id: int = Field(..., description="The ID of the animal in the trial")
     point_label_for_motion_features: Optional[str] = Field(
-        description="Label of the node that will be used to track general animal movement"
+        ..., description="Label of the node that will be used to track general animal movement"
     )
     rigid_nodes_freezing: Optional[Sequence[Union[str, int]]] = Field(
-        None,
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
     )
-    stage: Optional[str] = Field(None, description="The semantic stage of the experiment")
-    inspection_dir: Optional[DirectoryPath] = Field(None, description="Path to save figures for inspection of results")
+    stage: Optional[str] = Field(description="The semantic stage of the experiment")
+    inspection_dir: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
     inspect_image: Optional[FilePath] = Field(
-        None,
         description="Image to use as background in the plots for visualising the analysis data",
     )
     # Variables for trials with zones, see doc for more info.
@@ -544,7 +538,7 @@ class BaseTrial(Behaviour):
 
         i = 0
         frames = []
-        if self.enable_process_pooling:
+        if ENABLE_PROCESS_POOLING:
             with ProcessPoolExecutor() as executor:
                 while success:
                     frames.append(executor.submit(self._process_frame, frame, i))

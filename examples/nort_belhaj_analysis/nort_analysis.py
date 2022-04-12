@@ -14,8 +14,8 @@ from bikipy.behaviour.object_recognition.novel_object_recognition import (
     EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME,
     NortExperiment,
 )
-from bikipy.perimeter.io.general import defer_perimeter_set_from_multi_row_reference
-from bikipy.perimeter.io.makesense import (
+from bikipy.utils.io.general import defer_perimeter_set_from_multi_row_reference
+from bikipy.utils.io import (
     from_makesense_coco_polygon,
     reference_point_from_coco_path,
 )

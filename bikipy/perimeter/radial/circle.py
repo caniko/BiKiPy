@@ -3,11 +3,12 @@ from typing import Optional, Any
 import numpy as np
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
-from pydantic import validator
+from pydantic import validator, FilePath
 
-from bikipy.utils.math import unit_vector
 from bikipy.perimeter.base import BasePerimeter
 from bikipy.perimeter.radial.utils import plot_circle
+from bikipy.utils.io.makesense import from_makesense_line
+from bikipy.utils.math.vector import unit_vector
 
 
 class CirclePerimeter(BasePerimeter):
@@ -25,6 +26,14 @@ class CirclePerimeter(BasePerimeter):
         else:
             msg = f"The center of {cls.__name__} must be a single coordinate tuple"
             raise ValueError(msg)
+
+    @classmethod
+    def from_makesense_line(cls, data_path: FilePath) -> dict[str, Any]:
+        return {
+            label: cls(center=segment_tip_a, radius=np.linalg.norm(segment_tip_a - segment_tip_b))
+            for label, (segment_tip_a, segment_tip_b)
+            in from_makesense_line(data_path).items()
+        }
 
     def change_reference(self, new_reference: NDArray, **new_inspect_image_kwargs):
         kwargs = self.dict()

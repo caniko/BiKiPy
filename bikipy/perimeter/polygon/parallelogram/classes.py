@@ -6,10 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray
 
-from bikipy.utils.math import (
-    parallel_point_in_polygon,
-)
-from bikipy.utils.math import (
+from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
+from bikipy.utils.math.vector import (
     normal_from_line_to_point,
     orthogonal_unit_vector,
     unit_vector,

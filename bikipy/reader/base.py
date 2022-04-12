@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath
 
+from bikipy import ENABLE_PROCESS_POOLING
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.mixin import VideoMetadataMixin
 from bikipy.utils.video import get_video_data
@@ -151,7 +152,6 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
         cls,
         data_path: Iterable[Any],
         labels: Iterable[str],
-        enable_process_pooling: bool = True,
         **init_kwargs,
     ) -> Generator:
         """
@@ -161,13 +161,10 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
             data format
         :param data_path: Path to the data that will imported
         :param labels: labels of the data
-        :param enable_process_pooling: If True, initialize each DeepLabCutReader object with multiprocessing.
-            Useful when initialize approximately 20 or more dlc objects
         :param init_kwargs: Keyword arguments for the class init-method
         :type init_method: Callable
         :type data_path: Iterable[Any]
         :type labels: Iterable[str]
-        :type enable_process_pooling: bool
         :type init_kwargs: dict
         :return: Objects instanced from the respective class with the provided data
         :rtype: tuple
@@ -175,11 +172,10 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
         kwarg_loaded_init = partial(cls, **init_kwargs)
 
         # Process pooling in windows is subpar and is not supported.
-        if enable_process_pooling and sys.platform != "win32":
+        if ENABLE_PROCESS_POOLING:
             with ProcessPoolExecutor() as executor:
                 for dlc_obj in executor.map(kwarg_loaded_init, data_path, labels):
                     yield dlc_obj
-
         else:
             for data_path, label in zip(data_path, labels):
                 yield kwarg_loaded_init(data_path, label=label)

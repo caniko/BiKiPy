@@ -5,7 +5,7 @@ import numpy as np
 from pydantic import FilePath
 
 from bikipy.core.base_class import BikipyBase
-from bikipy.utils.typing import NDArray
+from numpy.typing import NDArray
 from bikipy.utils.video import get_video_data
 
 

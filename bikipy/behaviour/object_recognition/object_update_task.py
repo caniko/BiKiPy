@@ -70,7 +70,7 @@ class ObjectUpdateTaskTest(GenericObjectRecognitionTrial):
 
 
 class ObjectUpdateTaskExperiment(ObjectRecognitionExperiment):
-    _trial_classes: ClassVar = (
+    trial_classes: ClassVar = (
         ObjectUpdateTaskTraining,
         ObjectUpdateTaskUpdate,
         ObjectUpdateTaskTest,

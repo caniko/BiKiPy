@@ -8,11 +8,11 @@ import numpy as np
 from numpy.typing import NDArray as NpNDArray
 from pydantic import FilePath, validator
 
-from bikipy.utils.math import clockwise_sort_points, expand_bikipy_perimeter
-from bikipy.utils.math import parallel_point_in_polygon
-from bikipy.utils.math import normal_from_line_to_point, point_to_line_segment_distance
+from bikipy.utils.math.geometry import clockwise_sort_points, expand_bikipy_perimeter
+from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
+from bikipy.utils.math.vector import normal_from_line_to_point, point_to_line_segment_distance
 from bikipy.perimeter.base import BasePerimeter
-from bikipy.utils.typing import NDArray
+from numpy.typing import NDArray
 
 logger = getLogger(__name__)
 

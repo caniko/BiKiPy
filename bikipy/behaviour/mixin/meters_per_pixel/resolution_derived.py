@@ -9,7 +9,7 @@ from typing import Optional, Union
 import numpy as np
 
 from bikipy.core.base_class import BikipyBase
-from bikipy.utils.typing import NDArray
+from numpy.typing import NDArray
 
 
 class ResolutionDerivedUnitPerPixelMixin(BikipyBase, ABC):

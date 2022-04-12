@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from bikipy.perimeter.io.makesense import (
+from bikipy.utils.io import (
     from_makesense_coco_polygon,
     from_makesense_csv_rectangle,
 )

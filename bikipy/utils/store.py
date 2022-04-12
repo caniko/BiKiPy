@@ -80,3 +80,20 @@ class RangeDict(UserDict):
 
     def __hash__(self):
         return 0
+
+    @classmethod
+    def __modify_schema__(cls, field_schema):
+        field_schema.update(
+            examples=[{5: "foo", 20: "bar"}],
+        )
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v):
+        if not isinstance(v, cls):
+            msg = f"type {type(v)} is not {cls.__name__}"
+            raise TypeError(msg)
+        return v

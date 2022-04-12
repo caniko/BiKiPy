@@ -4,8 +4,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pydantic import FilePath
 
-from bikipy.utils.misc import read_makesense_point_csv, read_image
-from bikipy.utils.typing import NDArray
+from bikipy.utils.misc import read_makesense_point_csv, read_image, generic_multi_indexer
+from numpy.typing import NDArray
 
 
 def distance_between_two_perimeters(perimeter_a, perimeter_b):
@@ -64,3 +64,7 @@ def plot_perimeters(
         perimeter.plot_perimeter(ax=ax, **perimeter_plot_kwargs)
 
     return ax
+
+
+def perimeter_multi_indexer(category: Any, level: int):
+    return generic_multi_indexer("Seconds present", "Entries")(category, level)

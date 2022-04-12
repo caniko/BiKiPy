@@ -15,17 +15,21 @@ The author method:
         - Make sure your dataset has no junk characters that might lead to problems with string comparisons
 """
 import os
+import pickle
 from glob import iglob
 from logging import getLogger
 from pathlib import Path
-from typing import Optional, Any, Union
+from typing import Any, Union, Optional, Literal
 
 import pandas as pd
+import plyer
 import yaml
-from pydantic import validate_arguments, DirectoryPath
+from pydantic import validate_arguments, DirectoryPath, FilePath
 
 from bikipy.behaviour.base import BaseExperiment
-from bikipy.reader.ingress.cm_pixel_ratio import CentimeterPixelRatio
+from bikipy.perimeter.radial.circle import CirclePerimeter
+from bikipy.reader.ingress.meter_pixel_ratio import CentimeterPixelRatio
+from bikipy.utils.io.makesense import from_makesense_coco_polygon
 
 logger = getLogger(__name__)
 
@@ -34,15 +38,15 @@ logger = getLogger(__name__)
 def author_generate_configuration(
     root_directory: DirectoryPath,
     experiment_class: BaseExperiment,
-    cm_pixel_ratio_kwargs: Union[float, dict[str, Any]],
+    meter_pixel_ratio_kwargs: Union[float, dict[str, Any]],
     kinematic_data_file_extension: str = "h5",
     metadata_filename: str = "metadata.xlsx",
     animals_have_several_trial_sets: bool = False,
-) -> None:
-    cm_pixel_ratio = (
-        CentimeterPixelRatio(**cm_pixel_ratio_kwargs)
-        if isinstance(cm_pixel_ratio_kwargs, dict)
-        else cm_pixel_ratio_kwargs
+) -> FilePath:
+    meter_pixel_ratio = (
+        CentimeterPixelRatio(**meter_pixel_ratio_kwargs)
+        if isinstance(meter_pixel_ratio_kwargs, dict)
+        else meter_pixel_ratio_kwargs
     )
 
     logger.info(f"Generating experiment configuration at {root_directory}")
@@ -94,22 +98,71 @@ def author_generate_configuration(
         )
         raise ValueError(msg)
 
-    with open("settings.yaml", "w") as out_file:
+    settings_path = _get_project_settings_path(root_directory)
+    with open(settings_path, "w") as out_file:
         yaml.dump(
             {
+                "meter_pixel_ratio": meter_pixel_ratio,
                 "metadata_filename": metadata_filename,
+                "perimeter": {
+                    "perimeter_pickle_file": "perimeters.pickle",
+                    "immutable": {
+                        "perimeters_added": False
+                    }
+                },
                 "immutable": {
-                    "cm_pixel_ratio": cm_pixel_ratio,
                     "kinematic_data_file_extension": kinematic_data_file_extension,
                     "experiment_class": experiment_class.__name__,
                     "Total # animals": len(animal_ids),
                     "animals_have_several_trial_sets": animals_have_several_trial_sets,
                 },
             },
-            out_file,
+            out_file
         )
+
+    return settings_path
+
+
+@validate_arguments
+def add_perimeter_from_makesense(
+    root_directory: DirectoryPath, shape: Literal["circle", "polygon", "parallelogram"]
+):
+    perimeter_pickle_path = _get_perimeter_pickle_path(root_directory, _load_settings(root_directory))
+    if perimeter_pickle_path.exists():
+        with open(perimeter_pickle_path, "rb") as in_file:
+            perimeters = pickle.load(in_file)
+    else:
+        perimeters = {}
+
+    perimeter_path = plyer.filechooser.open_file()
+    if not perimeter_path:
+        return print("Cancelled by user")
+    perimeter_path = Path(perimeter_path[0])
+
+    if shape == "circle":
+        perimeters.update(CirclePerimeter.from_makesense_line(perimeter_path))
+    elif shape == "polygon" or shape == "parallelogram":
+        perimeters.update(from_makesense_coco_polygon(perimeter_path, map_to_label=True))
+    else:
+        raise RuntimeError
+
+    with open(perimeter_pickle_path, "wb") as out_file:
+        pickle.dump(perimeters, out_file)
 
 
 @validate_arguments
 def author_ingress_method(root_directory: DirectoryPath):
     pass
+
+
+def _get_project_settings_path(root_directory: DirectoryPath):
+    return root_directory / "settings.yaml"
+
+
+def _load_settings(root_directory: DirectoryPath):
+    with open(_get_project_settings_path(root_directory), "r") as in_file:
+        return yaml.load(in_file, yaml.full_load)
+
+
+def _get_perimeter_pickle_path(root_directory: DirectoryPath, settings: dict):
+    return root_directory / settings["perimeter_pickle_file"]
