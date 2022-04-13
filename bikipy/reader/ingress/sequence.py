@@ -1,17 +1,23 @@
 """
+===================
+The Sequence Method
+===================
 Designed for working with sequences of trials.
 
 All delimiting is with a dash, "-"
 
-The author method:
+The sequence method:
     - Each trial set has its own directory, the name of the directory must be prefixed with the animal ID (delimit!).
     - Dataset of each component of the trial has the stage index as prefix, stage indexing starts from 0 (delimit!).
-      Optionally, for improved readability one can have the stage index followed by the stage label; ex: 0-Habituation.
+      Optionally, for improved readability one can have the stage index followed by the stage label.
+      Example: 0-Habituation, 1-Training, 2-Test.
     - The metadata must be either .xlsx or .odt (xlsx has best support, sorry FOSS), the metadata must be in sheet 0!
         - Animal ID column name must be "Animal"
         - Genetic state column must have the name "Gene"
         - Optional, "Cohort"
         - Optional, "Sex"
+        - Optional, Store the usage of a perimeter "Perimeter_{label_of_perimeter}". Row must be empty if the
+          perimeter. Row must define the label to apply to the perimeter
         - Make sure your dataset has no junk characters that might lead to problems with string comparisons
 """
 import os
@@ -19,7 +25,7 @@ import pickle
 from glob import iglob
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Union, Optional, Literal
+from typing import Any, Union, Literal
 
 import pandas as pd
 import plyer
@@ -28,14 +34,14 @@ from pydantic import validate_arguments, DirectoryPath, FilePath
 
 from bikipy.behaviour.base import BaseExperiment
 from bikipy.perimeter.radial.circle import CirclePerimeter
-from bikipy.reader.ingress.meter_pixel_ratio import CentimeterPixelRatio
+from bikipy.reader.ingress.cm_pixel_ratio import CentimeterPixelRatio
 from bikipy.utils.io.makesense import from_makesense_coco_polygon
 
 logger = getLogger(__name__)
 
 
 @validate_arguments
-def author_generate_configuration(
+def sequence_generate_configuration(
     root_directory: DirectoryPath,
     experiment_class: BaseExperiment,
     meter_pixel_ratio_kwargs: Union[float, dict[str, Any]],
@@ -104,6 +110,7 @@ def author_generate_configuration(
             {
                 "meter_pixel_ratio": meter_pixel_ratio,
                 "metadata_filename": metadata_filename,
+                "required_fields": dict.fromkeys(experiment_class.schema()["required"]),
                 "perimeter": {
                     "perimeter_pickle_file": "perimeters.pickle",
                     "immutable": {
@@ -151,8 +158,8 @@ def add_perimeter_from_makesense(
 
 
 @validate_arguments
-def author_ingress_method(root_directory: DirectoryPath):
-    pass
+def sequence_ingress_method(root_directory: DirectoryPath):
+
 
 
 def _get_project_settings_path(root_directory: DirectoryPath):
