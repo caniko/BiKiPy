@@ -14,7 +14,7 @@ python = ">=3.9.0, <3.11"
 
 pydantic = "^1.8.2"
 
-numpy = "^1.19.3"
+numpy = "^1.21.6"
 scipy = "^1.5.3"
 scikit-guess = {git = "https://github.com/madphysicist/scikit-guess"}
 
@@ -54,18 +54,15 @@ Cython = "*"
 isort = "*"
 pytest = "*"
 
-Sphinx = {version = "*", optional = true }
-sphinx-material = {version = "*", optional = true }
-sphinx-autoapi = {version = "*", optional = true }
-setuptools = {version = "*", optional = true }
+Sphinx = "*"
+sphinx-material = "*"
+sphinx-autoapi = "*"
+setuptools = "*"
 
 [tool.poetry.extras]
-stats = ["statsmodels", "rpy2"]
+stats = ["statsmodels"]
 live = ["pyzmq"]
-
 jupyter = ["jupyter", "jupyterthemes"]
-
-sphinx = ["Sphinx", "sphinx-material", "sphinx-autoapi", "setuptools"]
 
 [tool.isort]
 profile = "black"

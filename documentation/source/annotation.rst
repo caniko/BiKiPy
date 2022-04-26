@@ -22,4 +22,4 @@ Label names can be found in the respective experiment section in the documentati
 
 .. _VLC: https://www.videolan.org/vlc/
 .. _snapshots with VLC: https://wiki.videolan.org/Documentation:Snapshots/
-.. _Make Sense: https://www.makesense.ai/
+.. _MakeSense: https://www.makesense.ai/

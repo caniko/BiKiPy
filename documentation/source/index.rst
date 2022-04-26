@@ -37,7 +37,8 @@ Common analytical methods are available in the classes located in :code:`behavio
 
    behaviour/index.rst
    features/index.rst
-   perimeter.rst
+   project_structure/index.rst
+   perimeter/index.rst
    annotation.rst
    math.rst
 
