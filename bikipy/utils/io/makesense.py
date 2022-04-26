@@ -82,7 +82,7 @@ def from_makesense_coco_polygon(
 
 def from_makesense_csv_rectangle(
     data_path: FilePath,
-    image_root: DirectoryPath,
+    image_root: Optional[DirectoryPath] = None,
     reference_point_csv_path: Optional[FilePath] = None,
     no_map: bool = False,
     map_to_image_name: bool = False,
