@@ -29,7 +29,10 @@ QUADRANT_INSPECTION_DIR_NAME = "PiP_quadrant_location_booleans"
 CENTER_INSPECTION_DIR_NAME = "PiP_center_location_booleans"
 
 _TWO_BY_TWO_IN_ENGLISH = {
-    "upper_left": (0,0),"upper_right": (0,1),"lower_left": (0,1),"lower_right": (1,1),
+    "upper_left": (0, 0),
+    "upper_right": (0, 1),
+    "lower_left": (0, 1),
+    "lower_right": (1, 1),
 }
 
 
@@ -78,20 +81,29 @@ class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelM
         for h in range(1, self.rectangle_2d_bin[0]):
             for v in range(1, self.rectangle_2d_bin[1]):
                 quadrant_grid_coordinates = (h, v)
-                quadrant_summary_columns.extend([
-                    *motion_multi_indexer(quadrant_grid_coordinates, level=2),
-                    *perimeter_multi_indexer(quadrant_grid_coordinates, level=2),
-                ])
-        return super().motion_summary_columns + list(pd.MultiIndex.from_product([
-            ["Quadrant"], quadrant_summary_columns
-        ])) + list(pd.MultiIndex.from_product([
-            [""], [
-                *motion_multi_indexer("Center", self._pandas_multi_index_level),
-                *perimeter_multi_indexer("Center", self._pandas_multi_index_level),
-                *motion_multi_indexer("Periphery", self._pandas_multi_index_level),
-                *perimeter_multi_indexer("Periphery", self._pandas_multi_index_level),
-            ]
-        ]))
+                quadrant_summary_columns.extend(
+                    [
+                        *motion_multi_indexer(quadrant_grid_coordinates, level=2),
+                        *perimeter_multi_indexer(quadrant_grid_coordinates, level=2),
+                    ]
+                )
+        return (
+            super().motion_summary_columns
+            + list(pd.MultiIndex.from_product([["Quadrant"], quadrant_summary_columns]))
+            + list(
+                pd.MultiIndex.from_product(
+                    [
+                        [""],
+                        [
+                            *motion_multi_indexer("Center", self._pandas_multi_index_level),
+                            *perimeter_multi_indexer("Center", self._pandas_multi_index_level),
+                            *motion_multi_indexer("Periphery", self._pandas_multi_index_level),
+                            *perimeter_multi_indexer("Periphery", self._pandas_multi_index_level),
+                        ],
+                    ]
+                )
+            )
+        )
 
 
 class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin, ABC):
@@ -135,13 +147,15 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
         horizontal_uniform_distance = self.horizontal_resolution / self.rectangle_2d_bin[0]
         vertical_uniform_distance = self.vertical_resolution / self.rectangle_2d_bin[1]
         result = {}
-        for quadrant_coordinate, corners in _compute_quadrant_grid_coordinates(self.rectangle_2d_bin, self.recording_resolution).items():
+        for quadrant_coordinate, corners in _compute_quadrant_grid_coordinates(
+            self.rectangle_2d_bin, self.recording_resolution
+        ).items():
             result[quadrant_coordinate] = Quadrant(
                 corners=corners,
                 coordinates_per_frame=self.coordinates_per_frame,
                 meters_per_pixel=self.meters_per_pixel,
                 fps=self.fps,
-                quadrant_index=self._quadrant_coordinate_to_index[quadrant_coordinate]
+                quadrant_index=self._quadrant_coordinate_to_index[quadrant_coordinate],
             )
         location_sequence_quadrant = _compute_quadrant_location_sequence(result, self.number_of_frames, self.fps)
         for quadrant in result.values():
@@ -225,17 +239,19 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
 
     @property
     def motion_features(self) -> list:
-        return super().motion_features + [
-            quadrant.motion.values() for quadrant in self.quadrants.values()
-        ] + [
-            *self.motion_center.values(),
-            self.center_entries,
-            self.seconds_on_center,
-            *self.motion_periphery.values(),
-            self.periphery_entries,
-            self.seconds_on_periphery,
-            self.gaussian_center_to_periphery_score
-        ]
+        return (
+            super().motion_features
+            + [quadrant.motion.values() for quadrant in self.quadrants.values()]
+            + [
+                *self.motion_center.values(),
+                self.center_entries,
+                self.seconds_on_center,
+                *self.motion_periphery.values(),
+                self.periphery_entries,
+                self.seconds_on_periphery,
+                self.gaussian_center_to_periphery_score,
+            ]
+        )
 
     def __getattr__(self, item: str) -> Any:
         if item != "quadrants" and not item.startswith("quadrant") and not item == "quadrant_location_sequence":
@@ -307,10 +323,12 @@ def _compute_quadrant_grid_coordinates(rectangle_2d_bin: tuple[int, int], record
             vertical_coordinate_min = vertical_uniform_distance * (v - 1)
             vertical_coordinate_max = vertical_uniform_distance * v
 
-            result[(h, v)] = np.array((
-                (horizontal_coordinate_min, vertical_coordinate_min),
-                (horizontal_coordinate_max, vertical_coordinate_min),
-                (horizontal_coordinate_max, vertical_coordinate_max),
-                (horizontal_coordinate_min, vertical_coordinate_min)
-            ))
+            result[(h, v)] = np.array(
+                (
+                    (horizontal_coordinate_min, vertical_coordinate_min),
+                    (horizontal_coordinate_max, vertical_coordinate_min),
+                    (horizontal_coordinate_max, vertical_coordinate_max),
+                    (horizontal_coordinate_min, vertical_coordinate_min),
+                )
+            )
     return result

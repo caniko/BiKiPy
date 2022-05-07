@@ -31,8 +31,7 @@ class CirclePerimeter(BasePerimeter):
     def from_makesense_line(cls, data_path: FilePath) -> dict[str, Any]:
         return {
             label: cls(center=segment_tip_a, radius=np.linalg.norm(segment_tip_a - segment_tip_b))
-            for label, (segment_tip_a, segment_tip_b)
-            in from_makesense_line(data_path).items()
+            for label, (segment_tip_a, segment_tip_b) in from_makesense_line(data_path).items()
         }
 
     def change_reference(self, new_reference: NDArray, **new_inspect_image_kwargs):

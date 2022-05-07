@@ -4,7 +4,7 @@ from copy import copy
 from functools import cached_property
 from logging import getLogger
 from operator import attrgetter
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import Any, ClassVar, Iterable, Literal, Optional, Sequence, Union
 
 import cv2

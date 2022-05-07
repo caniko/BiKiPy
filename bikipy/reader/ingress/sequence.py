@@ -17,7 +17,7 @@ Rules
         1. Grab a video frame from one of the trial videos
         2. Define the line in MakeSense
         3. Make "Perimeter" directory in the base folder if it doesn't already exist.
-        4. Export as csv and store in the "Perimeter" directory as "meter_pixel_ratio_{meter_length}.csv"; where
+        4. Export as csv and store in the "Perimeter" directory as "meter_pixel_ratio-{meter_length}.csv"; where
            meter_length is the length of the line in meters.
 
 Structure
@@ -28,9 +28,11 @@ Structure
 - Project metadata; .xlsx or .odt, xlsx has best support (apologies to FOSS):
   The table must be in the sheet that is on index 0! The metadata file is stored on the root/base folder.
     - Animal ID column name must be "Animal"
-    - Genetic state column must have the name "Gene"
-    - Optional, "Cohort"
-    - Optional, "Sex"
+    - Optional, any number of generic columns that should be categorized for the animal
+        - Gene
+        - Cohort
+        - Sex
+        - Whatever...
     - Optional, store the usage of a perimeter "Perimeter_{label_of_perimeter}". Row must be empty if there is no
       perimeter. Row must define the label to apply to the perimeter.
     - Make sure your dataset has no junk/invisible characters that might lead to problems with recognizing tags and
@@ -46,22 +48,18 @@ Structure
     - Optionally, for inspection, you can include an image with the perimeter set as the file-stem.
       Optionally, include the uid if it is specific to the subset (delimit!).
 """
-import os
-import pickle
 from glob import iglob
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Union, Literal
+from typing import Optional
 
 import pandas as pd
-import plyer
 import yaml
 from pydantic import validate_arguments, DirectoryPath, FilePath
 
-from bikipy.behaviour.base import BaseExperiment
-from bikipy.perimeter.radial.circle import CirclePerimeter
-from bikipy.reader.ingress.cm_pixel_ratio import MeterPixelRatio
-from bikipy.utils.io.makesense import from_makesense_coco_polygon, from_makesense_csv_rectangle
+from bikipy.behaviour.mapping import NAME_TO_CLASS
+from bikipy.reader.ingress.utils.constant import METADATA_FILENAME, get_project_settings_path, get_perimeter_dir_path
+from bikipy.reader.ingress.utils.meter_pixel_ratio import get_meter_pixel_ratio
 
 logger = getLogger(__name__)
 
@@ -69,27 +67,25 @@ logger = getLogger(__name__)
 @validate_arguments
 def sequence_generate_configuration(
     root_directory: DirectoryPath,
-    experiment_class: BaseExperiment,
-    meter_pixel_ratio_kwargs: Union[float, dict[str, Any]],
+    experiment_name: str,
+    meter_pixel_ratio: Optional[float] = None,
     kinematic_data_file_extension: str = "h5",
-    metadata_filename: str = "metadata.xlsx",
-    animals_have_several_trial_sets: bool = False,
+    animals_have_plural_trial_sets: bool = False,
 ) -> FilePath:
-    meter_pixel_ratio = (
-        MeterPixelRatio(**meter_pixel_ratio_kwargs)
-        if isinstance(meter_pixel_ratio_kwargs, dict)
-        else meter_pixel_ratio_kwargs
-    )
+    experiment_class = NAME_TO_CLASS[experiment_name.strip().lower()]
+
+    meter_pixel_ratio = get_meter_pixel_ratio(meter_pixel_ratio or root_directory)
 
     logger.info(f"Generating experiment configuration at {root_directory}")
 
     animal_ids, trial_set_stage_ids = set(), set()
-    for trial_set_dir in os.listdir(root_directory):
+    for trial_set_dir in root_directory.iterdir():
+        trial_set_dir = str(trial_set_dir)
         animal_id = trial_set_dir.split("-")[0]
-        if animals_have_several_trial_sets and animal_id in animal_ids:
+        if animals_have_plural_trial_sets and animal_id in animal_ids:
             msg = (
                 f"Animal ID {animal_id} is repeated across trial sets. "
-                f"Set animals_have_several_trial_sets to true if this behaviour is expected"
+                f"Set animals_have_plural_trial_sets to true if this behaviour is expected"
             )
             raise ValueError(msg)
         animal_ids.add(animal_id)
@@ -114,7 +110,7 @@ def sequence_generate_configuration(
         )
         raise ValueError(msg)
 
-    with open(metadata_filename, "rb") as in_file:
+    with open(root_directory / METADATA_FILENAME, "rb") as in_file:
         metadata_df = pd.read_excel(in_file)
 
     try:
@@ -130,74 +126,27 @@ def sequence_generate_configuration(
         )
         raise ValueError(msg)
 
-    settings_path = _get_project_settings_path(root_directory)
+    settings_path = get_project_settings_path(root_directory)
     with open(settings_path, "w") as out_file:
         yaml.dump(
             {
+                "ingress_method": "sequence",
                 "meter_pixel_ratio": meter_pixel_ratio,
-                "metadata_filename": metadata_filename,
                 "required_fields": dict.fromkeys(experiment_class.schema()["required"]),
-                "perimeter": {
-                    "perimeter_pickle_file": "perimeters.pickle",
-                    "immutable": {
-                        "perimeters_added": False
-                    }
-                },
+                "perimeter": {"perimeter_pickle_file": "perimeters.pickle", "perimeter_names": },
                 "immutable": {
                     "kinematic_data_file_extension": kinematic_data_file_extension,
                     "experiment_class": experiment_class.__name__,
                     "Total # animals": len(animal_ids),
-                    "animals_have_several_trial_sets": animals_have_several_trial_sets,
+                    "animals_have_plural_trial_sets": animals_have_plural_trial_sets,
                 },
             },
-            out_file
+            out_file,
         )
 
     return settings_path
 
 
 @validate_arguments
-def add_perimeter_from_makesense(
-    root_directory: DirectoryPath, shape: Literal["circle", "rectangle", "polygon", "parallelogram"]
-):
-    perimeter_pickle_path = _get_perimeter_pickle_path(root_directory, _load_settings(root_directory))
-    if perimeter_pickle_path.exists():
-        with open(perimeter_pickle_path, "rb") as in_file:
-            perimeters = pickle.load(in_file)
-    else:
-        perimeters = {}
-
-    perimeter_path = plyer.filechooser.open_file()
-    if not perimeter_path:
-        return print("Cancelled by user")
-    perimeter_path = Path(perimeter_path[0])
-
-    if shape == "circle":
-        perimeters.update(CirclePerimeter.from_makesense_line(perimeter_path))
-    elif shape == "rectangle":
-        perimeters.update(from_makesense_csv_rectangle(perimeter_path))
-    elif shape == "polygon" or shape == "parallelogram":
-        perimeters.update(from_makesense_coco_polygon(perimeter_path, map_to_label=True))
-    else:
-        raise RuntimeError
-
-    with open(perimeter_pickle_path, "wb") as out_file:
-        pickle.dump(perimeters, out_file)
-
-
-@validate_arguments
-def sequence_ingress_method(root_directory: DirectoryPath):
+def analyse_sequence(root_directory: DirectoryPath):
     pass
-
-
-def _get_project_settings_path(root_directory: DirectoryPath):
-    return root_directory / "settings.yaml"
-
-
-def _load_settings(root_directory: DirectoryPath):
-    with open(_get_project_settings_path(root_directory), "r") as in_file:
-        return yaml.load(in_file, yaml.full_load)
-
-
-def _get_perimeter_pickle_path(root_directory: DirectoryPath, settings: dict):
-    return root_directory / settings["perimeter_pickle_file"]

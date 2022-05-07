@@ -18,8 +18,9 @@ from bikipy.behaviour.utils import (
 )
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.typing import Perimeter2D
-from bikipy.utils.math import clockwise_sort_perimeter_centroids
-from bikipy.perimeter.base import PerimeterSet, PolygonPerimeter
+from bikipy.perimeter.base import PerimeterSet
+from bikipy.perimeter.polygon.base import PolygonPerimeter
+from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
 
 logger = getLogger(__name__)
 

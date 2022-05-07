@@ -36,7 +36,7 @@ class CircleAnnotatorQtBase(ABC):
         self.app.exec_()
 
     def setup_signals(self):
-        self.widget.canvas.mpl_connect('button_press_event', self.mousePressEvent)
+        self.widget.canvas.mpl_connect("button_press_event", self.mousePressEvent)
 
     def mousePressEvent(self, e):
         circle_args = [e.xdata, e.ydata, self.horizontalSlider.value()]
