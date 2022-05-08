@@ -4,13 +4,18 @@ from warnings import warn
 
 import numpy as np
 from numba import njit
+from pydantic_numpy import NDArray
 
-from bikipy.utils.math.vector import dot_prod_along_axis_1, fast_unit_vector, unit_vector
+from bikipy.utils.math.vector import (
+    dot_prod_along_axis_1,
+    fast_unit_vector,
+    unit_vector,
+)
 
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}
 
 
-def _find_median_vector(row_vectors: np.ndarray) -> np.ndarray:
+def _find_median_vector(row_vectors: NDArray) -> NDArray:
     """
     Computes the median point from a row vectors
 
@@ -18,12 +23,12 @@ def _find_median_vector(row_vectors: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    row_vectors: np.ndarray
+    row_vectors: NDArray
         Array of row vectors
 
     Returns
     -------
-    np.ndarray
+    NDArray
     """
     return np.array([np.median(component) for component in row_vectors.T])
 
@@ -31,16 +36,16 @@ def _find_median_vector(row_vectors: np.ndarray) -> np.ndarray:
 def clockwise_angel_2d(
     start_vector: Sequence,
     end_vector: Sequence,
-) -> np.ndarray:
+) -> NDArray:
     """
     Computes the counterclockwise angle, [0, 2pi], from start to end in radians
 
     :param start_vector: Array of row vectors in which "the clock starts turning", counterclockwise
     :param end_vector: Array of row vectors in which the clock stops
-    :type start_vector: np.ndarray
-    :type end_vector: np.ndarray
+    :type start_vector: NDArray
+    :type end_vector: NDArray
     :return: counterclockwise angle between start and end vector per frame
-    :rtype: np.ndarray
+    :rtype: NDArray
 
     >>> clockwise_angel_2d((1, 0), (0, 1))
     1.5707963267948966      # pi / 2.
@@ -82,7 +87,7 @@ def clockwise_angel_2d(
     return angles
 
 
-def alternative_inner_angle(a_vector: Sequence, b_vector: Sequence) -> np.ndarray:
+def alternative_inner_angle(a_vector: Sequence, b_vector: Sequence) -> NDArray:
     """
     Computes the inner angle between two vectors, a and b, in radians
 
@@ -91,10 +96,10 @@ def alternative_inner_angle(a_vector: Sequence, b_vector: Sequence) -> np.ndarra
 
     :param a_vector: Array of row vectors in which "the clock starts turning" counter counterclockwise
     :param b_vector: Array of row vectors in which the clock stops
-    :type a_vector: np.ndarray
-    :type b_vector: np.ndarray
+    :type a_vector: NDArray
+    :type b_vector: NDArray
     :return: Inner angle between a and b vector per frame
-    :rtype: np.ndarray
+    :rtype: NDArray
     """
     a_unit_vector = unit_vector(a_vector, force_1_dim=True)
     b_unit_vector = unit_vector(b_vector, force_1_dim=True)
@@ -124,13 +129,13 @@ def inner_angle(vector_set_1, vector_set_2):
 
 
 def compute_angles_from_vectors(
-    row_vectors_point_a: np.ndarray,
-    row_vectors_point_b: np.ndarray,
-    row_vectors_point_c: np.ndarray,
+    row_vectors_point_a: NDArray,
+    row_vectors_point_b: NDArray,
+    row_vectors_point_c: NDArray,
     median_points: Union[str, Sequence, None] = None,
     method: str = "inner",
     degrees: bool = False,
-) -> np.ndarray:
+) -> NDArray:
     """
     Computes the angle between three groups of vectors
 
@@ -140,14 +145,14 @@ def compute_angles_from_vectors(
     :param median_points: Anchor one or several points to their respective median. Information about median computation in _find_median_vector()
     :param method: The method for computing angle, supported methods are inner; counterclockwise.
     :param degrees: If True, convert resulting angle data to degrees
-    :type row_vectors_point_a: np.ndarray
-    :type row_vectors_point_b: np.ndarray
-    :type row_vectors_point_c: np.ndarray
+    :type row_vectors_point_a: NDArray
+    :type row_vectors_point_b: NDArray
+    :type row_vectors_point_c: NDArray
     :type median_points: Iterable, str
     :type method: str
     :type degrees: bool
     :return: Angle per frame
-    :rtype: np.ndarray
+    :rtype: NDArray
     """
 
     points = [

@@ -8,7 +8,7 @@ def feature_scale(
     data: Sequence,
     real_min: Union[float, int, None] = None,
     real_max: Union[float, int, None] = None,
-) -> np.ndarray:
+) -> NDArray:
     """
     Scale the data to [0, 1]; 0 is the smallest and 1 is the highest
 

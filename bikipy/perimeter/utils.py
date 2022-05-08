@@ -1,11 +1,15 @@
-from typing import Optional, Any, Sequence
+from typing import Any, Optional, Sequence
 
 import numpy as np
 from matplotlib import pyplot as plt
 from pydantic import FilePath
+from pydantic_numpy import NDArray
 
-from bikipy.utils.misc import read_makesense_point_csv, read_image, generic_multi_indexer
-from numpy.typing import NDArray
+from bikipy.utils.misc import (
+    generic_multi_indexer,
+    read_image,
+    read_makesense_point_csv,
+)
 
 
 def distance_between_two_perimeters(perimeter_a, perimeter_b):
@@ -42,7 +46,7 @@ def plot_perimeters(
 
     if inspect_image is None:
         for i, perimeter in enumerate(perimeters):
-            if isinstance(perimeter.inspect_image, np.ndarray):
+            if isinstance(perimeter.inspect_image, NDArray):
                 potential_inspect_image = perimeter.inspect_image
                 if i == len(perimeters) - 1 or all(
                     perimeter.inspect_image is None or np.all(potential_inspect_image == perimeter.inspect_image)

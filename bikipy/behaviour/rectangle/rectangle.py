@@ -1,13 +1,13 @@
 import os
 from abc import ABC
 from functools import cached_property, lru_cache
-from pathlib import Path
-from typing import Optional, Any, ClassVar
+from logging import getLogger
+from typing import Any, ClassVar, Optional
 
 import numpy as np
 import pandas as pd
-from numpy.typing import NDArray
-from pydantic import validate_arguments, validator, Field
+from pydantic import Field, validate_arguments, validator
+from pydantic_numpy import NDArray
 from skg import ngauss_fit
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
@@ -23,6 +23,9 @@ from bikipy.feature.motion import (
 )
 from bikipy.perimeter.utils import perimeter_multi_indexer
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
+
+logger = getLogger(__name__)
+
 
 A = 255
 QUADRANT_INSPECTION_DIR_NAME = "PiP_quadrant_location_booleans"
@@ -77,6 +80,10 @@ class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelM
 
     @cached_property
     def motion_summary_columns(self) -> list:
+        if self.recording_resolution is None:
+            logger.info("Recording resolution undefined skipping center/periphery and quadrant computations")
+            return super().motion_summary_columns
+
         quadrant_summary_columns = []
         for h in range(1, self.rectangle_2d_bin[0]):
             for v in range(1, self.rectangle_2d_bin[1]):
@@ -163,7 +170,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
         return result
 
     @property
-    def location_sequence_quadrant(self) -> np.ndarray:
+    def location_sequence_quadrant(self) -> NDArray:
         return _compute_quadrant_location_sequence(self.quadrants, self.number_of_frames, self.fps)
 
     # Center vs Periphery ==============================================================
@@ -239,6 +246,9 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
 
     @property
     def motion_features(self) -> list:
+        if self.recording_resolution is None:
+            return super().motion_features
+
         return (
             super().motion_features
             + [quadrant.motion.values() for quadrant in self.quadrants.values()]
@@ -310,7 +320,7 @@ def _compute_quadrant_location_sequence(quadrants, number_of_frames: int, fps: f
 
 
 @lru_cache
-def _compute_quadrant_grid_coordinates(rectangle_2d_bin: tuple[int, int], recording_resolution: NDArray[int, int]):
+def _compute_quadrant_grid_coordinates(rectangle_2d_bin: tuple[int, int], recording_resolution: NDArray[int]):
     horizontal_resolution, vertical_resolution = recording_resolution
 
     horizontal_uniform_distance = horizontal_resolution / rectangle_2d_bin[0]

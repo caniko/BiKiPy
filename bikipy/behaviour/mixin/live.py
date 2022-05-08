@@ -11,7 +11,7 @@ from pydantic import BaseModel, DirectoryPath, validator
 from tqdm import tqdm
 
 from bikipy.utils.misc import clear_console
-from bikipy.utils.store import RangeDict
+from bikipy.utils.ranged_dict import RangeDict
 
 try:
     import zmq

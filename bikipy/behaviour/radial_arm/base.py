@@ -8,6 +8,7 @@ from typing import ClassVar, Optional
 
 import numpy as np
 from pydantic import validator
+from pydantic_numpy import NDArray
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import (
@@ -244,7 +245,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return 100.0 * alternations / self.sum_of_alternations
 
     @classmethod
-    def with_reference_point(cls, center: Perimeter2D, arms: tuple, reference_point: np.ndarray, **kwargs):
+    def with_reference_point(cls, center: Perimeter2D, arms: tuple, reference_point: NDArray, **kwargs):
         return cls(
             center=center.change_reference(reference_point),
             arms=[arm.change_reference(reference_point) for arm in arms],

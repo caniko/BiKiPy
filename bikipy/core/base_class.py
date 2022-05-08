@@ -7,8 +7,6 @@ from typing import ClassVar, Optional, Union
 import compress_pickle
 from pydantic import BaseModel, DirectoryPath, Extra, Field
 
-from bikipy.utils.typing import OptionalPathTyping
-
 
 class BikipyBase(BaseModel):
     category: ClassVar[Optional[str]] = None
@@ -28,7 +26,7 @@ class BikipyBaseHashable(BikipyBase, ABC):
     timestamp: Union[date, datetime] = Field(default_factory=datetime.now)
     save_root: Optional[DirectoryPath] = None
 
-    def save(self, save_root: OptionalPathTyping = None):
+    def save(self, save_root: Optional[DirectoryPath] = None):
         save_root = Path(save_root or self.save_root)
         assert save_root
         compress_pickle.dump(self, save_root / f"pickle_{self.category}_{self.timestamp}.lzma")

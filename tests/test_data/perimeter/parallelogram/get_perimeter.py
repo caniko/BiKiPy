@@ -1,10 +1,6 @@
 from pathlib import Path
 
-from bikipy.utils.io import (
-    from_makesense_coco_polygon,
-    from_makesense_csv_rectangle,
-)
-
+from bikipy.utils.io import from_makesense_coco_polygon, from_makesense_csv_rectangle
 
 ANNOTATION_DIR = Path(__file__).parent / "annotations"
 

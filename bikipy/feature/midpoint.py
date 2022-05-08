@@ -4,18 +4,19 @@ Note that points in this context is the location of a region of interest across 
 from collections.abc import Sequence
 
 import numpy as np
+from pydantic_numpy import NDArray
 
 
-def compute_midpoint(point_1: Sequence, point_2: Sequence) -> np.ndarray:
+def compute_midpoint(point_1: Sequence, point_2: Sequence) -> NDArray:
     """
     Computes the point(s) between two points, midpoint(s), with respect to the index.
 
     :param point_1: Set of points part of the pair used for computing the midpoint(s)
     :param point_2: Set of points part of the pair used for computing the midpoint(s)
-    :type point_1: np.ndarray
-    :type point_2: np.ndarray
+    :type point_1: NDArray
+    :type point_2: NDArray
     :return: midpoint(s)
-    :rtype: np.ndarray
+    :rtype: NDArray
     """
     point_1, point_2 = np.asarray(point_1), np.asarray(point_2)
 
@@ -42,7 +43,7 @@ def compute_midpoint(point_1: Sequence, point_2: Sequence) -> np.ndarray:
     return compute
 
 
-def recursive_midpoint(point_sets: Sequence[np.ndarray]) -> np.ndarray:
+def recursive_midpoint(point_sets: Sequence[NDArray]) -> NDArray:
     """
     Compute midpoint(s) using last midpoint as first in the pair,
     and the upcoming point as the second in the pair in compute_midpoint.
@@ -54,7 +55,7 @@ def recursive_midpoint(point_sets: Sequence[np.ndarray]) -> np.ndarray:
     :param point_sets: Set of points used for computing the midpoint(s) recursively.
     :type point_sets: Sequence
     :return: midpoint(s)
-    :rtype: np.ndarray
+    :rtype: NDArray
     """
     midpoint = compute_midpoint(point_sets[0], point_sets[1])
     try:

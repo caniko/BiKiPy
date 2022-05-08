@@ -4,16 +4,16 @@ from typing import Any, ClassVar, Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.typing import NDArray
+from pydantic_numpy import NDArray
 
+from bikipy.perimeter.polygon.base import PolygonPerimeter
+from bikipy.perimeter.polygon.parallelogram.draw import parallelogram_input
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 from bikipy.utils.math.vector import (
     normal_from_line_to_point,
     orthogonal_unit_vector,
     unit_vector,
 )
-from bikipy.perimeter.polygon.base import PolygonPerimeter
-from bikipy.perimeter.polygon.parallelogram.draw import parallelogram_input
 
 logger = getLogger(__name__)
 
@@ -27,7 +27,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
         return cls(corners=np.array((*base, *apex)), inspect_image=inspect_image)
 
     @staticmethod
-    def midpoint(close_corner: Sequence[float], far_corner: Sequence[float]) -> np.ndarray:
+    def midpoint(close_corner: Sequence[float], far_corner: Sequence[float]) -> NDArray:
         """
         Find the midpoint of the parallelogram
 
@@ -47,7 +47,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
         return close_corner + (far_corner - close_corner) / 2.0
 
     @staticmethod
-    def sort_vectors(vectors: Sequence) -> np.ndarray:
+    def sort_vectors(vectors: Sequence) -> NDArray:
         vectors = np.asarray(vectors)
 
         assert vectors.shape == (2, 2), (
@@ -130,7 +130,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
     def far_from_origin_side_unit(self):
         return unit_vector(self.far_from_origin_side_vector)
 
-    def base_midpoint_coordinate_unit_vector_magnitudes(self, coordinates: Sequence) -> np.ndarray:
+    def base_midpoint_coordinate_unit_vector_magnitudes(self, coordinates: Sequence) -> NDArray:
         """
         Generate the magnitude of the line segment that goes from origin
         to the defined coordinate
@@ -142,7 +142,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
 
         Returns
         -------
-        np.ndarray, where 1st row is base to midpoint apex magnitudes;
+        NDArray, where 1st row is base to midpoint apex magnitudes;
         2nd row is midpoint apex to coordinate magnitudes
         """
 

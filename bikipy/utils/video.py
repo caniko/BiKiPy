@@ -2,11 +2,10 @@ from pathlib import Path
 from typing import Union
 
 import cv2
+from pydantic import FilePath
 
-from bikipy.utils.typing import PathTyping
 
-
-def get_video_data(video_path: PathTyping, frame_time: Union[str, int, None] = None):
+def get_video_data(video_path: FilePath, frame_time: Union[str, int, None] = None):
     """
     Get a frame from a given relative location, and resolution info of video
 

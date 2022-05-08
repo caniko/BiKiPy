@@ -14,9 +14,9 @@ Test hypothesis:
 TG: Equal
 WT: 3 > 4 > 1 > 2
 """
-from typing import ClassVar, Any
+from typing import Any, ClassVar
 
-from pydantic import validator, root_validator
+from pydantic import root_validator, validator
 
 from bikipy.behaviour.object_recognition.base import (
     GenericObjectRecognitionTrial,

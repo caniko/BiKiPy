@@ -3,22 +3,22 @@ Consider using with classes inheriting from VideoMetadataMixin to define
 abstract methods
 """
 from abc import ABC, abstractmethod
-from functools import cached_property, lru_cache
-from typing import Optional, Union
+from functools import cached_property
+from typing import Optional
 
 import numpy as np
+from pydantic_numpy import NDArray
 
 from bikipy.core.base_class import BikipyBase
-from numpy.typing import NDArray
 
 
 class ResolutionDerivedUnitPerPixelMixin(BikipyBase, ABC):
-    metric_resolution: Union[NDArray, float, None] = None
+    metric_resolution: Optional[NDArray] = None
     manual_meters_per_pixel: Optional[float] = None
 
     @property
     @abstractmethod
-    def recording_resolution(self) -> np.ndarray:
+    def recording_resolution(self) -> NDArray:
         ...
 
     @cached_property

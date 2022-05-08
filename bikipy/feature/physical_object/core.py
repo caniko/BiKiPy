@@ -2,11 +2,12 @@ import os
 from collections import Counter
 from functools import cached_property
 from logging import getLogger
-from typing import Any, Optional, ClassVar
+from typing import Any, ClassVar, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import DirectoryPath, validator
+from pydantic_numpy import NDArray
 
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BikipyBase
@@ -47,15 +48,15 @@ class PhysicalObject(BikipyBase):
         return self.perimeter.best_id
 
     @cached_property
-    def distance_from_per_frame(self) -> np.ndarray:
+    def distance_from_per_frame(self) -> NDArray:
         return np.linalg.norm(self._gaze_travel_direction_point - self.perimeter.centroid, axis=1)
 
     @property
-    def observance_boolean_index(self) -> np.ndarray:
+    def observance_boolean_index(self) -> NDArray:
         return self._perimeter_attention_data[0]
 
     @cached_property
-    def not_observing(self) -> np.ndarray:
+    def not_observing(self) -> NDArray:
         return ~self.observance_boolean_index
 
     @cached_property
@@ -71,19 +72,19 @@ class PhysicalObject(BikipyBase):
         return self.attention_filtered_seconds_observing / self.raw_seconds_observing
 
     @property
-    def attention_proximity_boolean_index(self) -> np.ndarray:
+    def attention_proximity_boolean_index(self) -> NDArray:
         return self._attention_analytics[0]
 
     @property
-    def attention_gaze_boolean_index(self) -> np.ndarray:
+    def attention_gaze_boolean_index(self) -> NDArray:
         return self._attention_analytics[1]
 
     @property
-    def logical_location_and_gaze(self) -> np.ndarray:
+    def logical_location_and_gaze(self) -> NDArray:
         return self._attention_analytics[2]
 
     @property
-    def semi_true_observations(self) -> np.ndarray:
+    def semi_true_observations(self) -> NDArray:
         return self.logical_location_and_gaze
 
     @property
@@ -91,7 +92,7 @@ class PhysicalObject(BikipyBase):
         return self.reader.frames
 
     @property
-    def _gaze_travel_direction_point(self) -> np.ndarray:
+    def _gaze_travel_direction_point(self) -> NDArray:
         return self.reader[self.gaze_travel_direction_point_label]
 
     @cached_property

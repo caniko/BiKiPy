@@ -1,5 +1,5 @@
 import copy
-import os
+import subprocess
 from functools import lru_cache
 from logging import getLogger
 from pathlib import Path, PurePath
@@ -10,9 +10,8 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from numpy import ndarray
-from numpy.typing import NDArray
-
-from bikipy.utils.typing import PathTyping
+from pydantic import FilePath
+from pydantic_numpy import NDArray
 
 logger = getLogger(__name__)
 
@@ -23,12 +22,12 @@ def read_image(image: Any, imread_flagg: Any = None):
         assert image_path.exists(), image_path
         image = cv2.imread(str(image_path), flags=imread_flagg)
     else:
-        assert isinstance(image, ndarray), f"image must be either path or np.ndarray, but got:\n{image}"
+        assert isinstance(image, ndarray), f"image must be either path or NDArray, but got:\n{image}"
 
     return image
 
 
-def read_makesense_point_csv(metadata_path: PathTyping):
+def read_makesense_point_csv(metadata_path: FilePath):
     return pd.read_csv(
         metadata_path,
         header=None,
@@ -37,7 +36,7 @@ def read_makesense_point_csv(metadata_path: PathTyping):
     ).to_numpy()
 
 
-def get_reference_point_from_array(array: np.ndarray):
+def get_reference_point_from_array(array: NDArray):
     return np.array(array[1:3], dtype=float)
 
 
@@ -120,3 +119,12 @@ def clear_console():
 
 def to_tuple(array: NDArray):
     return tuple(map(tuple, array))
+
+
+def get_git_root():
+    return Path(
+        subprocess.Popen(["git", "rev-parse", "--show-toplevel"], stdout=subprocess.PIPE)
+        .communicate()[0]
+        .rstrip()
+        .decode("utf-8")
+    )

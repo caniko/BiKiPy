@@ -1,9 +1,9 @@
-from typing import Optional, Any
+from typing import Any, Optional
 
 import numpy as np
 from matplotlib import pyplot as plt
-from numpy.typing import NDArray
-from pydantic import validator, FilePath
+from pydantic import FilePath, validator
+from pydantic_numpy import NDArray
 
 from bikipy.perimeter.base import BasePerimeter
 from bikipy.perimeter.radial.utils import plot_circle

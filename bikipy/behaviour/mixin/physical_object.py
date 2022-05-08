@@ -6,7 +6,7 @@ import numpy as np
 from pydantic import Field
 
 from bikipy.core.base_class import BikipyBase
-from bikipy.feature.physical_object import PhysicalObjectSet
+from bikipy.feature.physical_object.core import PhysicalObjectSet
 
 
 class PhysicalObjectBaseMixin(BikipyBase, ABC):
@@ -16,7 +16,7 @@ class PhysicalObjectBaseMixin(BikipyBase, ABC):
         None,
         description="The magnitude of the normal between the perimeter and the perimeter given in meters",
     )
-    maximum_radians_inter_gaze_perimeter: float = 1 / 4 * np.pi
+    maximum_radians_inter_gaze_perimeter: float = 1 / 3 * np.pi
     minimum_seconds_attention: float = 0.5
     maximum_seconds_distraction: float = 0.5
 

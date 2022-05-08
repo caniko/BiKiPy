@@ -1,9 +1,9 @@
 from typing import Iterable, Sequence
 
 import numpy as np
-from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+from PyQt5.QtWidgets import QVBoxLayout, QWidget
 
 
 class MplWidget(QWidget):

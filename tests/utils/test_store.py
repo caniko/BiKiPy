@@ -1,4 +1,4 @@
-from bikipy.utils.store import RangeDict
+from bikipy.utils.ranged_dict import RangeDict
 
 
 def test_range_dict():

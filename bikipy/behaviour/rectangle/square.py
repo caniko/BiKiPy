@@ -27,7 +27,7 @@ class SquareEnclosedExperiment(RectangleEnclosedExperiment):
 
 
 class SquareEnclosedTrial(RectangleEnclosedTrial):
-    center_metric_length: float = Field(
+    center_metric_length: Optional[float] = Field(
         description="Length of the square box signifying periphery and inner area " "of the square box"
     )
 

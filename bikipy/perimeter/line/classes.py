@@ -4,11 +4,11 @@ from typing import ClassVar, Literal, Optional, Union
 import numpy as np
 from pydantic import Field
 
-from bikipy.core.base_class import BikipyBase
-
 # 0: Use the x coordinate(s) as the perimeter
 # 1: Use the y coordinate(s) as the perimeter
-from numpy.typing import NDArray
+from pydantic_numpy import NDArray
+
+from bikipy.core.base_class import BikipyBase
 
 ORIENTATION_TO_INDEX = {"vertical": 0, "horizontal": 1}
 INDEX_TO_ORIENTATION = {0: "vertical", 1: "horizontal"}
@@ -55,7 +55,7 @@ class LinePerimeter(BikipyBase):
         """Given name of orientation"""
         return INDEX_TO_ORIENTATION[self.orientation]
 
-    def __mod__(self, other: Sequence) -> np.ndarray:
+    def __mod__(self, other: Sequence) -> NDArray:
         """
         Compute values that are true to the perimeter logic
 
@@ -76,5 +76,5 @@ class LinePerimeter(BikipyBase):
     def __repr__(self):
         return f"{self.logic}{self.location}; {self.orientation_label}"
 
-    def true_values(self, coordinates: np.ndarray) -> np.ndarray:
+    def true_values(self, coordinates: NDArray) -> NDArray:
         return np.asarray(coordinates)[self.location % coordinates]

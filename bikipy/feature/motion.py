@@ -2,14 +2,13 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import cached_property, lru_cache
 from logging import getLogger
-from typing import Iterable, Union, Any
+from typing import Any, Iterable, Union
 
 import numpy as np
 import pandas as pd
+from pydantic_numpy import NDArray
 
 from bikipy.utils.math.calculus import absolute_derivative
-from numpy.typing import NDArray
-
 from bikipy.utils.misc import generic_multi_indexer
 
 logger = getLogger(__name__)
@@ -32,7 +31,7 @@ def displacement_by_frame(
     coordinate_sequence: Sequence[Sequence[float]],
     interpolation_method: str = "akima",
     remove_tails: bool = False,
-) -> np.ndarray:
+) -> NDArray:
     """
     Compute the absolute displacement of the given point from its coordinates across frames.
     The values that are undefined, or "not a number" (NaN), on the tails are removed, and the
@@ -47,7 +46,7 @@ def displacement_by_frame(
 
     Returns
     -------
-    np.ndarray with pixel displacement per frame
+    NDArray with pixel displacement per frame
     """
     if np.all(np.isnan((magnitudes := np.linalg.norm(coordinate_sequence, axis=1)))):
         return absolute_derivative(magnitudes)
@@ -101,10 +100,10 @@ def total_displacement_median_speed_acceleration(
 
 def frozen_frames(
     fps: Union[float, int],
-    rigid_body_node_displacements: Iterable[np.ndarray],
+    rigid_body_node_displacements: Iterable[NDArray],
     second_threshold: float = 1.0,
     metric_displacement_threshold: float = 0.005,
-) -> np.ndarray:
+) -> NDArray:
     """
     Compute the time the rigid body has been frozen or "stood still" throughout
     the trial. The acceleration at these frames should be close to zero.
@@ -127,11 +126,11 @@ def frozen_frames(
     :param second_threshold:
     :param metric_displacement_threshold:
     :type fps: float
-    :type rigid_body_node_displacements: np.ndarray
+    :type rigid_body_node_displacements: NDArray
     :type second_threshold: float
     :type metric_displacement_threshold: float
     :return: Boolean index storing the freezing state of the animal across frames
-    :rtype: np.ndarray
+    :rtype: NDArray
     """
     frame_threshold = round(second_threshold * fps)
 
@@ -256,8 +255,8 @@ def motion_multi_indexer(category: Any, level: int):
 
 
 def get_combined_features_from_merged_motion_island_data(
-    boolean_index: np.ndarray,
-    coordinate_sequence: np.ndarray,
+    boolean_index: NDArray,
+    coordinate_sequence: NDArray,
     meters_per_pixel,
     fps: float,
 ):

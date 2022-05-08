@@ -10,20 +10,19 @@ import pandas as pd
 
 from bikipy.behaviour.object_recognition.base import ObjectField
 from bikipy.behaviour.object_recognition.novel_object_recognition import (
-    CLASS_NAME_VS_CLASS,
     EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME,
     NortExperiment,
-)
-from bikipy.utils.io.general import defer_perimeter_set_from_multi_row_reference
-from bikipy.utils.io import (
-    from_makesense_coco_polygon,
-    reference_point_from_coco_path,
 )
 from bikipy.plugins.belhaj import (
     get_animal_id_vs_apparatus,
     get_animal_id_vs_trial_ids,
     get_trial_id_vs_animal_id,
     get_trial_id_vs_stage,
+)
+from bikipy.utils.io.general import defer_perimeter_set_from_multi_row_reference
+from bikipy.utils.io.makesense import (
+    from_makesense_coco_polygon,
+    reference_point_from_coco_path,
 )
 
 DEEPLABCUT_DIR = Path("/mnt/soma/Projects/Neuroscience/Imen/data/nort")
@@ -121,7 +120,9 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
             }
 
             trial_id_range_vs_exp_meta[trial_id] = trial_data
-            trial_id_vs_trial_class[trial_id] = CLASS_NAME_VS_CLASS[EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME[stage]]
+            trial_id_vs_trial_class[trial_id] = NortExperiment.trial_class_name_to_trial_class[
+                EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME[stage]
+            ]
 
         experiment = NortExperiment(
             stage=str(period_index),
@@ -130,7 +131,7 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
             metric_resolution=0.4,
             gaze_travel_direction_point_label="nose",
             gaze_start_point_label="center_eye",
-            point_label_for_motion_features="torso",
+            object_tracking_label_for_kinematics="torso",
             id_vs_object_field=period_to_field_id_to_object_field[period_name],
             perimeter_border_normal_metric_magnitude=0.03,
             global_center_metric_length=0.2,

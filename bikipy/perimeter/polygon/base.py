@@ -5,20 +5,22 @@ from typing import Any, ClassVar, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.typing import NDArray as NpNDArray
 from pydantic import FilePath, validator
+from pydantic_numpy import NDArray
 
+from bikipy.perimeter.base import BasePerimeter
 from bikipy.utils.math.geometry import clockwise_sort_points, expand_bikipy_perimeter
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
-from bikipy.utils.math.vector import normal_from_line_to_point, point_to_line_segment_distance
-from bikipy.perimeter.base import BasePerimeter
-from numpy.typing import NDArray
+from bikipy.utils.math.vector import (
+    normal_from_line_to_point,
+    point_to_line_segment_distance,
+)
 
 logger = getLogger(__name__)
 
 
 class PolygonPerimeter(BasePerimeter):
-    corners: np.ndarray
+    corners: NDArray
     reference_point_coco_path: Optional[FilePath] = None
     reference_point_array: Optional[NDArray] = None
     inspect_image_path: Optional[FilePath] = None
@@ -30,7 +32,7 @@ class PolygonPerimeter(BasePerimeter):
     _polygon_order: ClassVar[Optional[int]] = None
 
     @validator("corners")
-    def corners_polygon_order_validator(cls, value: NpNDArray):
+    def corners_polygon_order_validator(cls, value: NDArray):
         if cls._polygon_order and (n := len(value)) != int(cls._polygon_order):
             msg = (
                 f"The polygon class is in the {cls._polygon_order}th order. However, "
@@ -93,7 +95,7 @@ class PolygonPerimeter(BasePerimeter):
 
         return normal_from_line_to_point(closest_corner_vectors, closest_corner_start_point, coordinates)
 
-    def coordinate_confinement_boolean_index(self, coordinates: NDArray) -> np.ndarray:
+    def coordinate_confinement_boolean_index(self, coordinates: NDArray) -> NDArray:
         assert self.number_of_corners > 4
         return parallel_point_in_polygon(coordinates, self.corners)
 
@@ -217,7 +219,7 @@ class PolygonPerimeter(BasePerimeter):
         return self.corners.T[1].max()
 
     @classmethod
-    def init_polygon(cls, corners: np.ndarray, **kwargs):
+    def init_polygon(cls, corners: NDArray, **kwargs):
         corners = np.asarray(corners)
         if (number_of_corners := corners.shape[0]) == 3:
             from bikipy.perimeter.polygon.triangular import TriangularPerimeter

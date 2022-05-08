@@ -6,18 +6,17 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pydantic import FilePath
 
-from bikipy.utils.math import clockwise_argsort_points
 from bikipy.perimeter import ParallelogramPerimeter, TriangularPerimeter
 from bikipy.perimeter.base import PerimeterSet, PolygonPerimeter
 from bikipy.utils.io import from_makesense_coco_polygon
+from bikipy.utils.math import clockwise_argsort_points
 from bikipy.utils.misc import read_makesense_point_csv
-from bikipy.utils.typing import PathTyping
 
 logger = getLogger(__name__)
 
 
 def generate_radial_maze_perimeters(
-    line_csv_path: PathTyping,
+    line_csv_path: FilePath,
     center_coco_path: Optional[FilePath] = None,
     triangular_center_object: Optional[TriangularPerimeter] = None,
     inspect: bool = False,

@@ -8,10 +8,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sb
 from pydantic import DirectoryPath
+from pydantic_numpy import NDArray
 
 from bikipy.feature.angle import inner_angle
 from bikipy.perimeter.polygon.base import PolygonPerimeter
-from bikipy.utils.misc import seek_next_file_index, generic_inspection_finalization
+from bikipy.utils.misc import generic_inspection_finalization, seek_next_file_index
 
 SCATTER_ALPHA = 0.55
 logger = getLogger(__name__)
@@ -36,13 +37,13 @@ def proximity_filter(
     :param inspect: If True, generate and view an analytics of the resulting filter
     :param inspection_ax: matplotlib Axes that the inspection plots will (optionally) be saved in
     :type perimeter: PolygonPerimeter
-    :type inside_perimeter_border: np.ndarray
-    :type outside_perimeter: np.ndarray
+    :type inside_perimeter_border: NDArray
+    :type outside_perimeter: NDArray
     :type perimeter_border_normal_pixel_magnitude: float
     :type inspect: bool
     :type inspection_ax: Any
     :return:
-    :rtype: np.ndarray
+    :rtype: NDArray
     """
     # Remove inside_perimeter_border points that aren't inside the perimeter
     inside_perimeter_border = np.asarray(inside_perimeter_border)
@@ -149,7 +150,7 @@ def tolerance_filter(
     fps: float,
     minimum_seconds_attention: float,
     maximum_seconds_distraction: float = 0.5,
-) -> np.ndarray:
+) -> NDArray:
     """
     Filters boolean_index with respect to attention. The filter tolerates distraction, and requires
     minimum_seconds_attention to be fulfilled before accepting the sequence as attention.
@@ -159,11 +160,11 @@ def tolerance_filter(
     :param minimum_seconds_attention: Minimum number of seconds that the sequence has to be True
     for it to be defined as an attention sequence. Filtered sequences will be converted to False.
     :param maximum_seconds_distraction:
-    :type boolean_index: np.ndarray
+    :type boolean_index: NDArray
     :type fps: float
     :type minimum_seconds_attention: float
     :return: Boolean index filtered with respect to attention
-    :rtype np.ndarray
+    :rtype NDArray
     """
 
     boolean_index = np.asarray(boolean_index)

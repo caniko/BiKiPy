@@ -10,7 +10,7 @@ import pandas as pd
 # User defined
 from bikipy.behaviour.radial_arm.y_maze import YMazeExperiment
 from bikipy.perimeter.polygon.radial_maze import generate_radial_maze_perimeters
-from bikipy.utils.store import RangeDict
+from bikipy.utils.ranged_dict import RangeDict
 
 DATASET_LABEL = "phd"
 
@@ -99,7 +99,7 @@ for round_id, data_dirs in enumerate(round_dirs):
         experiment_objs.append(
             (
                 trial := YMazeExperiment(
-                    point_label_for_motion_features="center_eye",
+                    object_tracking_label_for_kinematics="center_eye",
                     common_trial_keyword_arguments=common_trial_keyword_arguments,
                     trial_id_vs_keyword_arguments=trial_id_vs_exp_meta,
                     trial_id_range_vs_keyword_arguments=trial_id_range_vs_area_set,

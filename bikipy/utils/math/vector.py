@@ -4,8 +4,7 @@ from typing import Union
 import numpy as np
 from numba import njit
 from numpy.linalg import LinAlgError
-
-from numpy.typing import NDArray
+from pydantic_numpy import NDArray
 
 
 @njit
@@ -20,7 +19,7 @@ def unit_vector(row_vectors: Sequence, force_1_dim: bool = False) -> NDArray:
 
     Parameters
     ----------
-    row_vectors: np.ndarray-like
+    row_vectors: NDArray-like
         Array of row vector(s)
 
     force_1_dim: bool
@@ -53,12 +52,12 @@ def orthogonal_unit_vector(vector: Sequence) -> NDArray:
 
     Parameters
     ----------
-    vector: np.ndarray-like
+    vector: NDArray-like
         Array of row vector(s)
 
     Returns
     -------
-    np.ndarray
+    NDArray
     """
     vector = np.asarray(vector)
 
@@ -82,9 +81,9 @@ def normal_from_line_to_point(line_vector: Sequence, line_start: Sequence, point
 
     Parameters
     ----------
-    line_vector: np.ndarray-like
-    line_start: np.ndarray-like
-    point: np.ndarray-like
+    line_vector: NDArray-like
+    line_start: NDArray-like
+    point: NDArray-like
 
     Returns
     -------

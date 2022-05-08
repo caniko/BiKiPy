@@ -1,4 +1,3 @@
-import collections.abc as abc
 import os
 from functools import cached_property
 from logging import getLogger
@@ -8,6 +7,7 @@ from typing import Sequence
 import numpy as np
 import pandas as pd
 from pydantic import Field
+from pydantic_numpy import NDArray
 
 from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.reader.base import BaseReader
@@ -142,13 +142,13 @@ class DeepLabCutReader(BaseReader):
     def frames(self):
         return self.df.shape[0]
 
-    def reduce_likelihoods(self, tracked_point_labels: Sequence) -> np.ndarray:
+    def reduce_likelihoods(self, tracked_point_labels: Sequence) -> NDArray:
         """
         Reduce likelihood values by multiplication; R^n to scalar
 
         :param tracked_point_labels: Regions of interest of which will have its
         likelihood values reduced
-        :return: np.ndarray with the reduced likelihood values
+        :return: NDArray with the reduced likelihood values
         """
         return np.multiply.reduce(
             self.raw_df.loc[:, pd.IndexSlice[tracked_point_labels, "likelihood"]].values,

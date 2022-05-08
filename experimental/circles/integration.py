@@ -2,11 +2,9 @@ from abc import ABC, abstractmethod
 from uuid import uuid4
 
 import cv2
-from pydantic import FilePath
-
-from PyQt5 import QtWidgets
-
 from examples.circles.mpl_widget import MplWidget
+from pydantic import FilePath
+from PyQt5 import QtWidgets
 
 
 class CircleAnnotatorQtBase(ABC):

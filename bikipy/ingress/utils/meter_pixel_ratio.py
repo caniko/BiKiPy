@@ -21,19 +21,19 @@ def get_meter_pixel_ratio(wild_object: Union[int, float, PurePath]):
         raise MeterPixelRatioNotFoundError()
     if os.path.isfile(wildpath):
         return from_makesense_reference_line_segment(wildpath, _meter_from_file_stem(wildpath))
-    if os.path.isdir(wildpath) and (perimeter_dir := wildpath / "Perimeter"):
-        for filename in perimeter_dir.iterdir():
-            if str(filename).startswith("meter_pixel_ratio-"):
-                assert filename.suffix == ".csv", f"{filename.suffix} != .csv"
-                return from_makesense_reference_line_segment(filename, _meter_from_file_stem(filename))
+    if os.path.isdir(wildpath) and (perimeter_dir := wildpath / "Perimeter").exists():
+        for file_path in perimeter_dir.iterdir():
+            if str(file_path.stem).startswith("meter_pixel_ratio-"):
+                assert file_path.suffix == ".csv", f"{file_path.suffix} != .csv"
+                return from_makesense_reference_line_segment(file_path, _meter_from_file_stem(file_path))
     raise MeterPixelRatioNotFoundError()
 
 
-def from_makesense_reference_line_segment(csv_path: FilePath, meters: float):
+def from_makesense_reference_line_segment(csv_path: FilePath, meters: float) -> float:
     segment_tip_a, segment_tip_b = from_makesense_line(csv_path, single_row=True)
 
     segment_length = np.linalg.norm(segment_tip_a - segment_tip_b)
-    return segment_length / meters
+    return float(meters / segment_length)
 
 
 def _meter_from_file_stem(file_path: FilePath):

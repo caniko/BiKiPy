@@ -1,15 +1,5 @@
-from typing import Callable
-
 import yaml
 from pydantic import DirectoryPath, FilePath
-
-from bikipy.reader.ingress.sequence import analyse_sequence
-
-METADATA_FILENAME: str = "metadata.xlsx"
-
-INGRESS_TO_ANALYSIS_FUNCTION: dict[str, Callable] = {
-    "sequence": analyse_sequence
-}
 
 
 def get_project_settings_path(root_directory: DirectoryPath) -> FilePath:

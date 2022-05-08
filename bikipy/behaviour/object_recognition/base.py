@@ -1,13 +1,13 @@
 from functools import cached_property
 from logging import getLogger
-from typing import Optional, ClassVar
+from typing import ClassVar, Optional
 
 import pandas as pd
 from pydantic import Field, root_validator
 
 from bikipy.behaviour.mixin.physical_object import (
-    PhysicalObjectExperimentMixin,
     PhysicalObjectBaseMixin,
+    PhysicalObjectExperimentMixin,
 )
 from bikipy.behaviour.rectangle.square import (
     SquareEnclosedExperiment,

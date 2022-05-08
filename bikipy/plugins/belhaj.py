@@ -9,8 +9,8 @@ import numpy as np
 from pandas import DataFrame
 
 from bikipy.behaviour.object_recognition.base import (
-    ObjectRecognitionExperiment,
     ObjectField,
+    ObjectRecognitionExperiment,
 )
 from bikipy.perimeter.polygon.base import PolygonPerimeter
 

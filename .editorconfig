@@ -15,3 +15,6 @@ tab_width = 4
 indent_style = space
 indent_size = 3
 tab_width = 3
+
+[*.yaml]
+indent_size = 2

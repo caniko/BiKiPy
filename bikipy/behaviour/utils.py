@@ -3,6 +3,7 @@ from logging import getLogger
 from typing import Any, Iterable
 
 import numpy as np
+from pydantic_numpy import NDArray
 
 logger = getLogger(__name__)
 
@@ -21,7 +22,7 @@ def feature_2d_multi_indexer(feature: str, groups: Iterable[str]):
 
 
 def reduce_repeating_sequences(
-    repeating_sequence: np.ndarray,
+    repeating_sequence: NDArray,
     frame_tolerance: Any,
     connector_element: Any = None,
 ) -> list[Any, ...]:

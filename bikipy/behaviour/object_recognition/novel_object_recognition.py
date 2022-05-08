@@ -3,13 +3,11 @@ from functools import cached_property
 from logging import getLogger
 from typing import ClassVar, Optional
 
-import pandas as pd
-
 from bikipy.behaviour.mixin.physical_object import PhysicalObjectTrialMixin
 from bikipy.behaviour.object_recognition.base import (
     ObjectField,
-    ObjectRecognitionHabituationTrial,
     ObjectRecognitionExperiment,
+    ObjectRecognitionHabituationTrial,
 )
 from bikipy.behaviour.rectangle.square import SquareEnclosedTrial
 
@@ -104,13 +102,6 @@ class NortNoveltyTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
             self.novelty_preference,
             self.physical_object_set.object_bias_score[1],
         ]
-
-
-CLASS_NAME_VS_CLASS = {
-    "habituation": NortHabituationTrial,
-    "training": NortTrainingTrial,
-    "novelty": NortNoveltyTrial,
-}
 
 
 class NortExperiment(ObjectRecognitionExperiment):

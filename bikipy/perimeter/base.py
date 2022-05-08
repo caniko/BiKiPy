@@ -6,12 +6,12 @@ from typing import Any, ClassVar, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from pydantic import FilePath, root_validator, DirectoryPath
+from pydantic import DirectoryPath, FilePath, root_validator
+from pydantic_numpy import NDArray
 
 from bikipy.core.base_class import BikipyBase, BikipyBaseHashable
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
-from bikipy.utils.misc import read_image, get_reference_point_from_array
-from numpy.typing import NDArray
+from bikipy.utils.misc import get_reference_point_from_array, read_image
 
 logger = getLogger(__name__)
 
@@ -205,7 +205,7 @@ class BasePerimeter(BikipyBaseHashable):
 
         Returns
         -------
-        np.ndarray that stores the sequential perimeter presence across frames
+        NDArray that stores the sequential perimeter presence across frames
         """
 
         coordinates = np.asarray(coordinates)
