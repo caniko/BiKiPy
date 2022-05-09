@@ -49,6 +49,7 @@ Structure
       Optionally, include the uid if it is specific to the subset (delimit!).
 """
 import json
+import pickle
 from logging import getLogger
 from typing import Optional
 
@@ -58,7 +59,7 @@ from pydantic import DirectoryPath, validate_arguments
 
 from bikipy.behaviour.mapping import NAME_TO_CLASS
 from bikipy.ingress.core import init_settings
-from bikipy.ingress.utils.constant import get_project_settings_path
+from bikipy.ingress.utils.constant import get_project_settings_path, load_settings
 from bikipy.ingress.utils.meter_pixel_ratio import get_meter_pixel_ratio
 
 logger = getLogger(__name__)
@@ -150,4 +151,18 @@ def sequence_generate_configuration(
 
 @validate_arguments
 def analyse_sequence(root_directory: DirectoryPath):
-    pass
+    settings = load_settings(root_directory)
+    experiment_class = NAME_TO_CLASS[settings["immutable"]["experiment_class"]]
+    metadata = pd.read_excel(root_directory / settings["immutable"]["metadata_filename"])
+    metadata.set_index("Animal", inplace=True)
+
+    with open(root_directory / "Perimeter" / settings["perimeter"]["perimeter_pickle_file"], "rb") as in_file:
+        perimeters = pickle.load(in_file)
+
+    trial_id_vs_keyword_arguments = {}
+    for i, trial_data_path in enumerate(root_directory.glob(f"**/*{settings['immutable']['kinematic_data_file_extension']}")):
+        animal_id = trial_data_path.parent.name
+        animal_metadata = dict(metadata.loc[animal_id, :])
+        trial_id_vs_keyword_arguments[i] = {
+            "animal_id": trial_data_path.parent.name
+        }

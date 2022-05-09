@@ -8,7 +8,7 @@ def get_project_settings_path(root_directory: DirectoryPath) -> FilePath:
 
 def load_settings(root_directory: DirectoryPath) -> dict:
     with open(get_project_settings_path(root_directory), "r") as in_file:
-        return yaml.load(in_file, yaml.full_load)
+        return yaml.safe_load(in_file)
 
 
 def get_perimeter_dir_path(root_directory: DirectoryPath) -> DirectoryPath:

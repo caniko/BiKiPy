@@ -69,6 +69,7 @@ experiment:
     trial_id_vs_trial_class: object
     video_path: string
 immutable:
+  metadata_filename: metadata.xlsx
   kinematic_data_file_extension: .h5
   experiment_class: NortExperiment
   Number of animals: 52

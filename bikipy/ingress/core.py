@@ -17,7 +17,7 @@ def analyse(root_directory: DirectoryPath, *args, **kwargs) -> None:
         case _:
             msg = f"ingress_method in settings, is set to an invalid value: {settings['ingress_method']}"
             raise ValueError(msg)
-    return ingress_method(*args, **kwargs)
+    return ingress_method(root_directory, *args, **kwargs)
 
 
 def init_settings(
@@ -37,6 +37,7 @@ def init_settings(
         **init_all_perimeters(root_directory, dry_run),
         "experiment": experiment_schema,
         "immutable": {
+            "metadata_filename": "metadata.xlsx",
             "kinematic_data_file_extension": kinematic_data_file_extension,
             "experiment_class": experiment_class.__name__,
             "Number of animals": len(animal_ids),
