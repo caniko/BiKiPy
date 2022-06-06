@@ -38,5 +38,4 @@ def sequence(
         meter_pixel_ratio=meter_pixel_ratio,
         kinematic_data_file_extension=kinematic_data_file_extension,
         animals_have_plural_trial_sets=animals_have_plural_trial_sets,
-        dry_run=dry_run,
     )

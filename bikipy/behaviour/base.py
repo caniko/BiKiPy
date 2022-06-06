@@ -44,7 +44,9 @@ class BaseExperiment(Behaviour):
     trial_id_vs_keyword_arguments: Optional[dict] = None
     trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
     common_trial_keyword_arguments: Optional[dict] = None
-    stage: Optional[str] = Field(description="Experiment stage label, if experiment object is in a sequence of experiment objects")
+    stage: Optional[str] = Field(
+        description="Experiment stage label, if experiment object is in a sequence of experiment objects"
+    )
     inspection_dir: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
 
     trial_classes: ClassVar[tuple[Any]] = Field(..., description="Trial classes designed for this experiment class")
@@ -65,6 +67,11 @@ class BaseExperiment(Behaviour):
     @property
     def is_trial_sequence(cls):
         return len(cls.trial_classes) != 1
+
+    @classmethod
+    @property
+    def trial_class_names(cls):
+        return tuple(trial_class.__name__ for trial_class in cls.trial_classes)
 
     @classmethod
     @property
@@ -206,10 +213,6 @@ class BaseExperiment(Behaviour):
             else:
                 result[trial.stage] = [trial]
         return result
-
-    @cached_property
-    def stages(self):
-        return tuple(self.stage_index_to_trial_objects.keys())
 
     @property
     def trial_id_tuple(self) -> tuple:

@@ -34,9 +34,7 @@ class ObjectField(BikipyBase):
     def __modify_schema__(cls, field_schema):
         # __modify_schema__ should mutate the dict it receives in place,
         # the returned value will be ignored
-        field_schema.update({
-            "type": "bikipy.feature.physical_object.ObjectField"
-        })
+        field_schema.update({"type": "bikipy.feature.physical_object.ObjectField"})
 
     def __len__(self):
         return len(self.perimeters)

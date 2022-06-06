@@ -6,7 +6,7 @@ Designed for experiments that can be segregated into sequential trial-sets.
 Rules
 =====
 - Delimiting is with a dash, "-". Example: 1-Training. Reminder to delimit -> (delimit!)
-- The tracking data is segregated into trial-sets. A trial-set consists of a sequence of trial tracking files.The trial tracking file has the sequence index stored in as a prefix in the file-stem as a number (delimit!). Optionally, for improved readability you can store a sequence label followed by the stage index. Example: 0-Habituation.h5, 1-Training.h5, 2-Test.h5.
+- The tracking data is segregated into trial-sets. A trial-set consists of a sequence of trial tracking files. The trial tracking file has the sequence index stored in as a prefix in the file-stem as a number (delimit!). Optionally, for improved readability you can store a sequence label followed by the stage index. Example: 0-Habituation.h5, 1-Training.h5, 2-Test.h5.
 - Meter pixel ratio must be defined
    - Define it yourself, and plug it into :code:`sequence_generate_configuration()`.
    -  If the experiment is in a confined box, or you know the length of a temporally fixed line in your video:
@@ -18,6 +18,7 @@ Rules
 
 Structure
 =========
+- The dataset must be stored in the "dataset" directory
 - Each trial-set is stored in a directory prefixed with the animal ID (delimit!).
 - Optional, trial-set metadata; yaml format. Stored inside trial-set directory. Fields in metadata:
    - Optional, perimeter_set. Example: perimeter_set: A

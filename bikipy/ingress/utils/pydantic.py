@@ -18,9 +18,7 @@ def name_to_type(fields: Iterable, class_schema: dict):
 
 def extended_schema(class_schema: dict, with_required: bool = True):
     required = name_to_type(class_schema["required"], class_schema)
-    optional = name_to_type(
-        set(class_schema["properties"]).difference(class_schema["required"]), class_schema
-    )
+    optional = name_to_type(set(class_schema["properties"]).difference(class_schema["required"]), class_schema)
     if with_required:
         return {
             "defined": dict.fromkeys(required),
@@ -28,7 +26,4 @@ def extended_schema(class_schema: dict, with_required: bool = True):
             "optional": optional,
         }
 
-    return {
-        "defined": None,
-        "optional": optional
-    }
+    return {"defined": None, "optional": optional}

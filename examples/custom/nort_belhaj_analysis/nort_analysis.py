@@ -111,15 +111,13 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
 
         trial_id_range_vs_exp_meta, trial_id_vs_trial_class = {}, {}
         for trial_id, paths in trial_id_vs_paths.items():
-            trial_data = {
+            trial_id_range_vs_exp_meta[trial_id] = {
                 "coordinate_data_path": paths["data"],
                 "video_path": paths["video"],
                 "stage": (stage := trial_id_vs_stage[trial_id]),
                 "animal_id": (animal_id := exp_vs_animal[trial_id]),
                 "field_id": animal_id_vs_app[animal_id],
             }
-
-            trial_id_range_vs_exp_meta[trial_id] = trial_data
             trial_id_vs_trial_class[trial_id] = NortExperiment.trial_class_name_to_trial_class[
                 EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME[stage]
             ]

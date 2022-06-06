@@ -1,5 +1,5 @@
-import pickle
 import shutil
+from logging import getLogger
 from pathlib import Path
 from typing import Literal
 
@@ -9,7 +9,6 @@ from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from bikipy.ingress.utils.constant import (
     get_perimeter_dir_path,
-    get_perimeter_pickle_path,
     get_project_settings_path,
     load_settings,
 )
@@ -21,37 +20,35 @@ from bikipy.utils.io.makesense import (
 
 SHAPE_TYPING = Literal["circle", "parallelogram", "polygon", "rectangle"]
 ALL_SHAPES = {"circle", "polygon", "parallelogram", "rectangle"}
-PERIMETER_PICKLE_FILE_NAME = "perimeters.pickle"
+
+
+logger = getLogger(__name__)
 
 
 @validate_arguments
-def init_all_perimeters(root_directory: DirectoryPath, dry_run: bool = False) -> dict:
+def detect_perimeters_in_project(root_directory: DirectoryPath) -> list:
     perimeter_dir = get_perimeter_dir_path(root_directory)
-    if not perimeter_dir.exists() and not any(perimeter_dir.glob(r"(perimeter-*")):
-        return {"perimeter": {"perimeter_pickle_file": PERIMETER_PICKLE_FILE_NAME, "info": {}}}
-    perimeters, info = {}, {}
+    detection_data = []
     for filename in perimeter_dir.glob("perimeter-*"):
         shape, label = _get_perimeter_data(root_directory / filename)
-        perimeters[label] = _create_perimeter_object(perimeter_dir / filename, shape)
-        info[label] = shape
+        detection_data.append({"label": label, "shape": shape})
+    if not detection_data:
+        logger.info("No perimeter data was found. Ignore if no perimeters are required for analysis.")
+    return detection_data
 
-    if not dry_run:
-        with open(perimeter_dir / PERIMETER_PICKLE_FILE_NAME, "wb") as out_file:
-            pickle.dump(perimeters, out_file)
-    return {"perimeter": {"perimeter_pickle_file": PERIMETER_PICKLE_FILE_NAME, "info": info}}
+
+@validate_arguments
+def refresh_perimeters_in_project(root_directory: DirectoryPath) -> None:
+    settings = load_settings(root_directory)
+    settings["perimeters"] = detect_perimeters_in_project(root_directory)
+    with open(get_project_settings_path(root_directory), "wb") as in_yaml:
+        yaml.dump(settings, in_yaml)
 
 
 @validate_arguments
 def add_perimeter_from_makesense(root_directory: DirectoryPath, make_copy: bool = True):
     perimeter_dir_path = get_perimeter_dir_path(root_directory)
     settings = load_settings(root_directory)
-    perimeter_pickle_path = get_perimeter_pickle_path(perimeter_dir_path, settings)
-
-    if perimeter_pickle_path.exists():
-        with open(perimeter_pickle_path, "rb") as in_file:
-            perimeters = pickle.load(in_file)
-    else:
-        perimeters = {}
 
     perimeter_path = plyer.filechooser.open_file()
     if not perimeter_path:
@@ -63,12 +60,8 @@ def add_perimeter_from_makesense(root_directory: DirectoryPath, make_copy: bool 
         raise ValueError(msg)
 
     shape, label = _get_perimeter_data(perimeter_path)
-    perimeters[label] = _create_perimeter_object(perimeter_path, shape)
 
-    with open(perimeter_pickle_path, "wb") as out_file:
-        pickle.dump(perimeters, out_file)
-
-    settings["perimeters"]["info"][label] = shape
+    settings["perimeters"].append({"label": label, "shape": shape})
     with open(get_project_settings_path(root_directory), "wb") as in_yaml:
         yaml.dump(settings, in_yaml)
 
@@ -77,7 +70,7 @@ def add_perimeter_from_makesense(root_directory: DirectoryPath, make_copy: bool 
 
 
 @validate_arguments
-def _create_perimeter_object(perimeter_path: FilePath, shape: SHAPE_TYPING):
+def create_perimeter_object(perimeter_path: FilePath, shape: SHAPE_TYPING):
     match shape:
         case "circle":
             return CirclePerimeter.from_makesense_line(perimeter_path)

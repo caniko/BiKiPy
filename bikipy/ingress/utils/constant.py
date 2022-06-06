@@ -12,8 +12,4 @@ def load_settings(root_directory: DirectoryPath) -> dict:
 
 
 def get_perimeter_dir_path(root_directory: DirectoryPath) -> DirectoryPath:
-    return root_directory / "Perimeter"
-
-
-def get_perimeter_pickle_path(root_directory: DirectoryPath, settings: dict) -> FilePath:
-    return get_perimeter_dir_path(root_directory) / settings["perimeter_pickle_file"]
+    return root_directory / "perimeter"

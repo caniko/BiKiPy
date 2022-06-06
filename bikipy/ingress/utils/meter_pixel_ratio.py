@@ -21,7 +21,7 @@ def get_meter_pixel_ratio(wild_object: Union[int, float, PurePath]):
         raise MeterPixelRatioNotFoundError()
     if os.path.isfile(wildpath):
         return from_makesense_reference_line_segment(wildpath, _meter_from_file_stem(wildpath))
-    if os.path.isdir(wildpath) and (perimeter_dir := wildpath / "Perimeter").exists():
+    if os.path.isdir(wildpath) and (perimeter_dir := wildpath / "perimeter").exists():
         for file_path in perimeter_dir.iterdir():
             if str(file_path.stem).startswith("meter_pixel_ratio-"):
                 assert file_path.suffix == ".csv", f"{file_path.suffix} != .csv"
