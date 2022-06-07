@@ -109,7 +109,7 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
             trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(data_path).stem)[0])
             trial_id_vs_paths[trial_id]["data"] = data_path
 
-        trial_id_range_vs_exp_meta, trial_id_vs_trial_class = {}, {}
+        trial_id_range_vs_exp_meta, trial_id_vs_trial_class_name = {}, {}
         for trial_id, paths in trial_id_vs_paths.items():
             trial_id_range_vs_exp_meta[trial_id] = {
                 "coordinate_data_path": paths["data"],
@@ -118,13 +118,13 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
                 "animal_id": (animal_id := exp_vs_animal[trial_id]),
                 "field_id": animal_id_vs_app[animal_id],
             }
-            trial_id_vs_trial_class[trial_id] = NortExperiment.trial_class_name_to_trial_class[
+            trial_id_vs_trial_class_name[trial_id] = NortExperiment.trial_class_name_to_trial_class[
                 EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME[stage]
             ]
 
         experiment = NortExperiment(
             stage=str(period_index),
-            trial_id_vs_trial_class=trial_id_vs_trial_class,
+            trial_id_vs_trial_class_name=trial_id_vs_trial_class_name,
             trial_id_vs_keyword_arguments=trial_id_range_vs_exp_meta,
             metric_resolution=0.4,
             gaze_travel_direction_point_label="nose",

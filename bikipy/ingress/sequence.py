@@ -1,7 +1,5 @@
 import json
 import os
-import pickle
-from functools import lru_cache
 from glob import iglob
 from itertools import count
 from logging import getLogger
@@ -15,6 +13,7 @@ from bikipy.behaviour.mapping import NAME_TO_CLASS
 from bikipy.ingress.core import init_settings
 from bikipy.ingress.utils.constant import get_project_settings_path, load_settings
 from bikipy.ingress.utils.meter_pixel_ratio import get_meter_pixel_ratio
+from bikipy.ingress.utils.perimeter import get_trial_perimeter_label_from_metadata
 
 logger = getLogger(__name__)
 
@@ -74,7 +73,7 @@ def sequence_generate_configuration(
         raise ValueError(msg)
 
     method_settings = {
-        "sequence_index_to_trial_class": {i: trial_class for i, trial_class in enumerate(experiment_class.trial_classes)}
+        "trial_class_name_to_sequence_index": {trial_class_name: i for i, trial_class_name in enumerate(experiment_class.trial_class_names)}
     }
 
     settings = init_settings(
@@ -101,27 +100,38 @@ def sequence_generate_configuration(
 def analyse_sequence(root_directory: DirectoryPath):
     settings = load_settings(root_directory)
     dataset_directory_path = _dataset_directory_path(root_directory)
+
     experiment_class = NAME_TO_CLASS[settings["immutable"]["experiment_class"]]
     metadata = pd.read_excel(root_directory / settings["immutable"]["metadata_filename"])
     metadata.set_index("Animal", inplace=True)
+    if experiment_has_perimeters := "Perimeter" in metadata:
+        perimeters =
 
-    trial_id_vs_trial_class, trial_id_vs_keyword_arguments = {}, {}
+    sequence_index_to_trial_class_name = {
+        i: trial_class_name for i, trial_class_name in settings["trial_class_name_to_sequence_index"].items()
+    }
+
+    trial_id_vs_trial_class_name, trial_id_vs_keyword_arguments = {}, {}
     trial_id_counter = count(start=1)
 
     for animal_id in os.listdir(dataset_directory_path):
         animal_id = str(animal_id)
-        animal_metadata = dict(metadata.loc[animal_id, :])
+        animal_metadata = metadata.loc[animal_id, :]
         for trial_data_filename in iglob(
             str(dataset_directory_path / animal_id / f"*{settings['immutable']['kinematic_data_file_extension']}")
         ):
             trial_id = next(trial_id_counter)
-            sequence_index = trial_data_filename.split("-")[0]
-            trial_class = settings["sequence_index_to_trial_class"][sequence_index]
+            sequence_index = int(trial_data_filename.split("-")[0])
 
+            trial_id_vs_trial_class_name[trial_id] = settings["sequence_index_to_trial_class"][sequence_index]
             trial_id_vs_keyword_arguments[trial_id] = {
                 "animal_id": animal_id,
+                "stage": sequence_index,
+                "coordinate_data_path": trial_data_filename
             }
-            trial_id_vs_trial_class[trial_id] = settings["sequence_index_to_trial_class"][sequence_index]
+            if experiment_has_perimeters:
+                perimeter_label = get_trial_perimeter_label_from_metadata(animal_metadata, sequence_index)
+
 
 
 def _dataset_directory_path(root_directory: DirectoryPath):

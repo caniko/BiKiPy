@@ -1,5 +1,5 @@
 from collections.abc import Sequence as AbcSequence
-from functools import cached_property
+from functools import cached_property, lru_cache
 from typing import Optional, Sequence, Union
 
 from pydantic import Field, validator
@@ -24,8 +24,8 @@ class ObjectField(BikipyBase):
         Each perimeter type defined by the experiment design is a key-value pair, where the value is:
             - dict ->       The key is the stage index, and the value is the respective perimeter; useful when
                             the object is absent in some stages
-            - sequence ->   The sequential definition of a perimeter, the perimeter must be available from stage 0,
-                            and semantically speaking present till stage len(sequence)
+            - sequence ->   The sequence is based on stages; for instance, the perimeter on index 0 belongs to stage 0.
+                            The sequence must have the same length as the number of stages.
             - perimeter ->  The perimeter is located in the same spatial coordinates across all the experiments
         """
     )
@@ -86,6 +86,7 @@ class ObjectField(BikipyBase):
     def labels(self) -> tuple[str]:
         return tuple(self.perimeters)
 
+    @lru_cache
     def derive_physical_object_set(self, stage: int, **physical_object_set_kwargs):
         return PhysicalObjectSet.from_perimeter(*self[stage], **physical_object_set_kwargs)
 

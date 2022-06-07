@@ -40,7 +40,7 @@ class BaseExperiment(Behaviour):
     object_tracking_label_for_kinematics: str = Field(
         ..., description="Tracking label of object used for extracting motion-related features, kinematics"
     )
-    trial_id_vs_trial_class: Optional[dict] = None
+    trial_id_vs_trial_class_name: Optional[dict] = None
     trial_id_vs_keyword_arguments: Optional[dict] = None
     trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
     common_trial_keyword_arguments: Optional[dict] = None
@@ -52,11 +52,11 @@ class BaseExperiment(Behaviour):
     trial_classes: ClassVar[tuple[Any]] = Field(..., description="Trial classes designed for this experiment class")
     _pandas_multi_index_level: ClassVar[int] = 2
 
-    @validator("trial_id_vs_trial_class")
-    def sort_trial_id_vs_trial_class_ascending(cls, value):
+    @validator("trial_id_vs_trial_class_name")
+    def sort_trial_id_vs_trial_class_name_ascending(cls, value):
         return dict(sorted(value.items()))
 
-    @validator("trial_id_vs_trial_class")
+    @validator("trial_id_vs_trial_class_name")
     def sort_trial_id_vs_keyword_arguments_ascending(cls, value):
         return dict(sorted(value.items()))
 
@@ -154,13 +154,13 @@ class BaseExperiment(Behaviour):
     def trial_objects(self) -> list:
         if self.trial_class:
             return [self.trial_class(**self.trial_keyword_arguments(trial_id)) for trial_id in self._trial_id_key_view]
-        elif self.trial_id_vs_trial_class:
+        elif self.trial_id_vs_trial_class_name:
             return [
-                trial_class(**self.trial_keyword_arguments(trial_id))
-                for trial_id, trial_class in self.trial_id_vs_trial_class.items()
+                self.trial_class_name_to_trial_class[trial_class](**self.trial_keyword_arguments(trial_id))
+                for trial_id, trial_class in self.trial_id_vs_trial_class_name.items()
             ]
         else:
-            self._neither_singular_trial_class_or_trial_id_vs_trial_class()
+            self._neither_singular_trial_class_or_trial_id_vs_trial_class_name()
 
     @cached_property
     def trial_class_name_vs_trial_ids(self):
@@ -315,7 +315,7 @@ class BaseExperiment(Behaviour):
     def _feature_frame_columns(self, levels: Optional[int] = None) -> pd.MultiIndex:
         if self.trial_class:
             columns = self.trial_class.feature_summary_column
-        elif self.trial_id_vs_trial_class:
+        elif self.trial_id_vs_trial_class_name:
             columns = sum(
                 (
                     trial_object.feature_summary_column
@@ -325,7 +325,7 @@ class BaseExperiment(Behaviour):
                 [],
             )
         else:
-            self._neither_singular_trial_class_or_trial_id_vs_trial_class()
+            self._neither_singular_trial_class_or_trial_id_vs_trial_class_name()
 
         if levels:
             columns = rise_to_n_levels(columns, levels)
@@ -362,16 +362,16 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _trial_class_vs_trial_ids(self) -> dict:
-        if not self.trial_id_vs_trial_class:
+        if not self.trial_id_vs_trial_class_name:
             msg = (
-                "This experiment object has no trial_id_vs_trial_class, "
+                "This experiment object has no trial_id_vs_trial_class_name, "
                 "this attribute is reserved for experiments with "
                 "several trial classes"
             )
             raise AttributeError(msg)
 
         result = {}
-        for trial_id, trial_class in self.trial_id_vs_trial_class.items():
+        for trial_id, trial_class in self.trial_id_vs_trial_class_name.items():
             if trial_class in result:
                 result[trial_class].append(trial_id)
             else:
@@ -435,10 +435,10 @@ class BaseExperiment(Behaviour):
     def _make_categorical_inspection_dir(self, trial_root_dir: Path):
         pass
 
-    def _neither_singular_trial_class_or_trial_id_vs_trial_class(self):
+    def _neither_singular_trial_class_or_trial_id_vs_trial_class_name(self):
         msg = (
             "Either trial_class has to be singularly defined, "
-            "or trial_id_vs_trial_class have to be exclusively defined"
+            "or trial_id_vs_trial_class_name have to be exclusively defined"
         )
         raise AttributeError(msg)
 

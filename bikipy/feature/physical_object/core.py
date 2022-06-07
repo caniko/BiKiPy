@@ -121,8 +121,8 @@ class PhysicalObject(BikipyBase):
 
 class PhysicalObjectSet(BikipyBase):
     """
-    The physical object set provides useful methods that compute for several objects. Some methods are designed specifically
-    for sets with a specific number of objects, while others are generalized.
+    The physical object set provides useful methods that compute relational features of physical-objects.
+    Some methods are designed specifically for sets with a specific number of objects, while others are general.
     """
 
     physical_objects: tuple[PhysicalObject, ...]

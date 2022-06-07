@@ -76,9 +76,13 @@ html_theme_options = {
     "repo_url": "https://github.com/caniko/BiKiPy",
     "repo_name": project,
     # Visible levels of the global TOC; -1 means unlimited
-    "globaltoc_depth": 3,
+    "globaltoc_depth": -1,
     # If False, expand all TOC entries
-    "globaltoc_collapse": False,
+    "globaltoc_collapse": True,
     # If True, show hidden TOC entries
     "globaltoc_includehidden": False,
+}
+
+html_sidebars = {
+    "**": ["globaltoc.html"]
 }

@@ -33,14 +33,14 @@ Common analytical methods are available in the classes located in :code:`behavio
 
 .. toctree::
    :maxdepth: 3
-   :caption: Contents:
 
-   behaviour/index.rst
-   features/index.rst
-   project_structure/index.rst
-   perimeter/index.rst
-   annotation.rst
-   math.rst
+   behaviour/index
+   features/index
+   project_structure/index
+   project_structure/sequence
+   perimeter/index
+   annotation
+   math
 
 
 .. _kinematics: https://en.wikipedia.org/wiki/Kinematics

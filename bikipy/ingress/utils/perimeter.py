@@ -1,8 +1,9 @@
 import shutil
 from logging import getLogger
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
 
+import pandas as pd
 import plyer
 import yaml
 from pydantic import DirectoryPath, FilePath, validate_arguments
@@ -80,6 +81,21 @@ def create_perimeter_object(perimeter_path: FilePath, shape: SHAPE_TYPING):
             return from_makesense_coco_polygon(perimeter_path, map_to_label=True)
         case _:
             raise ValueError
+
+
+def get_perimeter_objects(root_directory: DirectoryPath) -> list:
+    perimeter_dir = detect_perimeters_in_project(root_directory)
+    detection_data = []
+    for filename in perimeter_dir.glob("perimeter-*"):
+        shape, label = _get_perimeter_data(root_directory / filename)
+        detection_data.append({"label": label, "shape": shape})
+    if not detection_data:
+        logger.info("No perimeter data was found. Ignore if no perimeters are required for analysis.")
+    return detection_data
+
+
+def get_trial_perimeter_label_from_metadata(animal_id_row: pd.DataFrame, stage: Optional[int] = None) -> str:
+    return animal_id_row["Perimeter"][stage] if stage else animal_id_row["Perimeter"]
 
 
 def _get_perimeter_data(perimeter_path: FilePath):
