@@ -3,17 +3,22 @@ import os
 from glob import iglob
 from itertools import count
 from logging import getLogger
+from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 import yaml
 from pydantic import DirectoryPath, validate_arguments
 
-from bikipy.behaviour.mapping import NAME_TO_CLASS
-from bikipy.ingress.core import init_settings
-from bikipy.ingress.utils.constant import get_project_settings_path, load_settings
+from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
+from bikipy.ingress.utils.constant import get_project_settings_path, load_settings, get_dataset_dir_path
+from bikipy.ingress.utils.io import initialize_metadata_data_frame
 from bikipy.ingress.utils.meter_pixel_ratio import get_meter_pixel_ratio
-from bikipy.ingress.utils.perimeter import get_trial_perimeter_label_from_metadata
+from bikipy.ingress.utils.perimeter import (
+    get_trial_perimeter_label_from_metadata,
+    generate_label_to_object_field,
+    perimeter_presence_assertions, get_perimeter_data, create_perimeter_object,
+)
 
 logger = getLogger(__name__)
 
@@ -27,15 +32,16 @@ def sequence_generate_configuration(
     animals_have_plural_trial_sets: bool = False,
     dry_run: bool = False,
 ) -> dict:
-    experiment_class = NAME_TO_CLASS[experiment_name.strip().lower()]
+    from bikipy.ingress.core import init_settings
 
+    experiment_class = EXPERIMENT_NAME_TO_CLASS[experiment_name.strip().lower()]
     meter_pixel_ratio = meter_pixel_ratio or get_meter_pixel_ratio(root_directory)
 
     logger.info(f"Generating experiment configuration at {root_directory}")
 
     animal_ids = set()
     trial_set_stage_ids = []
-    for trial_set_dir in root_directory.iterdir():
+    for trial_set_dir in get_dataset_dir_path(root_directory).iterdir():
         if trial_set_dir.is_file() or trial_set_dir.name == "perimeter":
             continue
         animal_id = trial_set_dir.name.split("-")[0]
@@ -73,7 +79,10 @@ def sequence_generate_configuration(
         raise ValueError(msg)
 
     method_settings = {
-        "trial_class_name_to_sequence_index": {trial_class_name: i for i, trial_class_name in enumerate(experiment_class.trial_class_names)}
+        "ingress_method": "sequence",
+        "sequence_index_to_trial_class_name": {
+            i: trial_class_name for i, trial_class_name in enumerate(experiment_class.trial_class_names)
+        },
     }
 
     settings = init_settings(
@@ -91,47 +100,53 @@ def sequence_generate_configuration(
     else:
         settings_path = get_project_settings_path(root_directory)
         with open(settings_path, "w") as out_file:
-            yaml.dump(settings, out_file, sort_keys=False)
+            yaml.safe_dump(settings, out_file, sort_keys=False)
 
     return settings
 
 
 @validate_arguments
-def analyse_sequence(root_directory: DirectoryPath):
+def analyze_sequence_function_arguments(root_directory: DirectoryPath):
     settings = load_settings(root_directory)
+    metadata = initialize_metadata_data_frame(root_directory, settings)
+
     dataset_directory_path = _dataset_directory_path(root_directory)
 
-    experiment_class = NAME_TO_CLASS[settings["immutable"]["experiment_class"]]
-    metadata = pd.read_excel(root_directory / settings["immutable"]["metadata_filename"])
-    metadata.set_index("Animal", inplace=True)
-    if experiment_has_perimeters := "Perimeter" in metadata:
-        perimeters =
-
-    sequence_index_to_trial_class_name = {
-        i: trial_class_name for i, trial_class_name in settings["trial_class_name_to_sequence_index"].items()
-    }
+    if settings["perimeter_definition_strategy"] == "metadata":
+        label_to_perimeter = generate_label_to_object_field(root_directory)
 
     trial_id_vs_trial_class_name, trial_id_vs_keyword_arguments = {}, {}
     trial_id_counter = count(start=1)
 
     for animal_id in os.listdir(dataset_directory_path):
         animal_id = str(animal_id)
+        animal_dir = dataset_directory_path / animal_id
         animal_metadata = metadata.loc[animal_id, :]
-        for trial_data_filename in iglob(
-            str(dataset_directory_path / animal_id / f"*{settings['immutable']['kinematic_data_file_extension']}")
-        ):
+        for trial_data_filename in animal_dir.glob(f"*{settings['immutable']['kinematic_data_file_extension']}"):
             trial_id = next(trial_id_counter)
-            sequence_index = int(trial_data_filename.split("-")[0])
+            trial_data_filename = Path(trial_data_filename)
+            sequence_index = int(trial_data_filename.stem.split("-")[0])
 
-            trial_id_vs_trial_class_name[trial_id] = settings["sequence_index_to_trial_class"][sequence_index]
+            trial_id_vs_trial_class_name[trial_id] = settings["sequence_index_to_trial_class_name"][sequence_index]
             trial_id_vs_keyword_arguments[trial_id] = {
                 "animal_id": animal_id,
                 "stage": sequence_index,
-                "coordinate_data_path": trial_data_filename
+                "coordinate_data_path": trial_data_filename,
             }
-            if experiment_has_perimeters:
-                perimeter_label = get_trial_perimeter_label_from_metadata(animal_metadata, sequence_index)
-
+            if settings["perimeter_definition_strategy"]:
+                if settings["perimeter_definition_strategy"] == "metadata":
+                    perimeter_data = get_trial_perimeter_label_from_metadata(
+                        animal_metadata, settings, sequence_index
+                    )
+                elif settings["perimeter_definition_strategy"] == "trialwise":
+                    perimeter_data = {}
+                    for perimeter_path in animal_dir.glob(f"perimeter-*-{sequence_index}"):
+                        perimeter_data.update(create_perimeter_object(perimeter_path))
+                trial_id_vs_keyword_arguments[trial_id]["object_field"]
+    return {
+        "trial_id_vs_trial_class_name": trial_id_vs_trial_class_name,
+        "trial_id_vs_keyword_arguments": trial_id_vs_keyword_arguments,
+    }
 
 
 def _dataset_directory_path(root_directory: DirectoryPath):

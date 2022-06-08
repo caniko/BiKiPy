@@ -1,4 +1,4 @@
-from bikipy.ingress.core import analyse
+from bikipy.ingress.core import analyze
 from bikipy.ingress.sequence import sequence_generate_configuration
 from tests.constant import SEQUENCE_NORT_EXAMPLE_PROJECT_PATH
 
@@ -11,7 +11,7 @@ def test_sequence_generate_configuration():
     assert len(settings["perimeter"]["info"]) == 2
 
 
-def test_analyse_sequence():
-    analysis_result = analyse(SEQUENCE_NORT_EXAMPLE_PROJECT_PATH)
+def test_analyze_sequence():
+    analysis_result = analyze(SEQUENCE_NORT_EXAMPLE_PROJECT_PATH)
 
     assert analysis_result

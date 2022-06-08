@@ -12,7 +12,7 @@ def get_video_data(video_path: FilePath, frame_time: Union[str, int, None] = Non
     Parameters
     ----------
     video_path: str
-        Path to video to be analysed
+        Path to video to be analyzed
     frame_time:
         Relative location of the frame used for reference in analysis
 

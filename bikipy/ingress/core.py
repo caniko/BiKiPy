@@ -1,23 +1,61 @@
 from typing import Any
 
-from pydantic import DirectoryPath
+import pandas as pd
+from pydantic import DirectoryPath, validate_arguments
 
-from bikipy.ingress.utils.perimeter import load_settings, detect_perimeters_in_project
+from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
+from bikipy.ingress.mapping import INGRESS_METHOD_NAME_TO_KEYWORD_ARGUMENT_FUNC
+from bikipy.ingress.utils.io import initialize_metadata_data_frame
+from bikipy.ingress.perimeter.perimeter import load_settings, detect_perimeters_in_project
 from bikipy.ingress.utils.pydantic import extended_schema
 from bikipy.reader import DeepLabCutReader
 
 
-def analyse(root_directory: DirectoryPath, *args, **kwargs) -> None:
+@validate_arguments
+def analyze(root_directory: DirectoryPath) -> None:
     settings = load_settings(root_directory)
-    match settings["ingress_method"]:
-        case "sequence":
-            from bikipy.ingress.sequence import analyse_sequence
+    metadata = initialize_metadata_data_frame(root_directory, settings)
 
-            ingress_method = analyse_sequence
-        case _:
-            msg = f"ingress_method in settings, is set to an invalid value: {settings['ingress_method']}"
-            raise ValueError(msg)
-    return ingress_method(root_directory, *args, **kwargs)
+    try:
+        experiment_class = EXPERIMENT_NAME_TO_CLASS[settings["immutable"]["experiment_class"]]
+    except KeyError:
+        msg = (
+            f"experiment_class in settings is set to an invalid value: {settings['immutable']['experiment_class']}; "
+            f"this value should not be changed after initialization of the project."
+        )
+        raise ValueError(msg)
+
+    try:
+        analysis_keyword_arguments_getter = INGRESS_METHOD_NAME_TO_KEYWORD_ARGUMENT_FUNC["sequence"]
+    except KeyError:
+        msg = f"ingress_method in settings is set to an invalid value: {settings['ingress_method']}."
+        raise ValueError(msg)
+
+    experiment = experiment_class(
+        **settings["experiment"]["defined"], **analysis_keyword_arguments_getter(root_directory)
+    )
+    if not experiment.animal_id_indexed_feature_frame:
+        msg = "Something went wrong with the analysis"
+        raise RuntimeError(msg)
+
+    if stageful := settings["stageful_metadata"]:
+        metadata = metadata.swaplevel(axis=1)
+
+    # Add Location_Category level to the column multi-index. We need to this for pd.concat
+    metadata.columns = pd.MultiIndex.from_product([metadata.columns, ["Location_Category"]])
+
+    result_data_frame = pd.concat(
+        (metadata, experiment.animal_id_indexed_feature_frame),
+        axis=1,
+        keys=["Stage"] if stageful else None,
+        # Prepend experiment stage to column MultiIndex:
+        # https://stackoverflow.com/a/42094658/9793651
+        names=["Stage", "Feature", "Location_Category"] if stageful else ["Feature", "Location_Category"],
+    )
+
+    result_dir = root_directory / "result"
+    result_data_frame.to_parquet(result_dir / f"animal_id_indexed_result_data.parquet")
+    result_data_frame.to_excel(result_dir / "animal_id_indexed_result_data")
 
 
 def init_settings(
@@ -34,8 +72,9 @@ def init_settings(
         DeepLabCutReader.schema(), with_required=False
     )["optional"]
     return {
-        "ingress_method": "sequence",
         **method_kwargs,
+        "perimeter_definition_strategy": "metadata",
+        "stageful_metadata": False,
         "meter_pixel_ratio": meter_pixel_ratio,
         "perimeters": detect_perimeters_in_project(root_directory),
         "experiment": experiment_schema,

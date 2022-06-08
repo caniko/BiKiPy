@@ -47,7 +47,7 @@ class ObjectRecognitionExperiment(SquareEnclosedExperiment, PhysicalObjectExperi
 
     @root_validator
     def global_object_field_and_id_vs_object_field_mutually_exclusive(cls, values):
-        if "global_object_field" in values and "id_vs_object_field" in values:
+        if values["global_object_field"] is not None and values["id_vs_object_field"] is not None:
             msg = "global_object_field and id_vs_object_field are mutually exclusive"
             raise ValueError(msg)
         return values

@@ -58,11 +58,11 @@ with pd.ExcelWriter(
         for parameter in PARAMETERS_TO_COMPARE:
             print(parameter)
 
-            # analyse = MANOVA.from_formula(
+            # analyze = MANOVA.from_formula(
             #     f"C(Sex) + C(HCAR1) + C(VXFAD) + C(Treatment) + C(Group) ~ {parameter}",
             #     novelty,
             # )
-            # analyse.mv_test().summary_frame.to_excel(
+            # analyze.mv_test().summary_frame.to_excel(
             #     writer, sheet_name=f"{parameter}_{dataset.stem}"
             # )
 

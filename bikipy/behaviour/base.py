@@ -40,6 +40,7 @@ class BaseExperiment(Behaviour):
     object_tracking_label_for_kinematics: str = Field(
         ..., description="Tracking label of object used for extracting motion-related features, kinematics"
     )
+    manual_trial_ids: Optional[Iterable] = None
     trial_id_vs_trial_class_name: Optional[dict] = None
     trial_id_vs_keyword_arguments: Optional[dict] = None
     trial_id_range_vs_keyword_arguments: Optional[RangeDict] = None
@@ -153,7 +154,7 @@ class BaseExperiment(Behaviour):
     @cached_property
     def trial_objects(self) -> list:
         if self.trial_class:
-            return [self.trial_class(**self.trial_keyword_arguments(trial_id)) for trial_id in self._trial_id_key_view]
+            return [self.trial_class(**self.trial_keyword_arguments(trial_id)) for trial_id in self.trial_ids]
         elif self.trial_id_vs_trial_class_name:
             return [
                 self.trial_class_name_to_trial_class[trial_class](**self.trial_keyword_arguments(trial_id))
@@ -163,8 +164,8 @@ class BaseExperiment(Behaviour):
             self._neither_singular_trial_class_or_trial_id_vs_trial_class_name()
 
     @cached_property
-    def trial_class_name_vs_trial_ids(self):
-        return {trial_class.__name__: trial_ids for trial_class, trial_ids in self._trial_class_vs_trial_ids.items()}
+    def trial_class_name_vstrial_ids(self):
+        return {trial_class.__name__: trial_ids for trial_class, trial_ids in self._trial_class_vstrial_ids.items()}
 
     @cached_property
     def trial_id_vs_trial_object(self) -> dict:
@@ -173,7 +174,7 @@ class BaseExperiment(Behaviour):
     @cached_property
     def trial_class_name_vs_trial_objects(self):
         result = {}
-        for trial_class_name, trial_ids in self._trial_class_vs_trial_ids.items():
+        for trial_class_name, trial_ids in self._trial_class_vstrial_ids.items():
             result[trial_class_name] = [self.trial_id_vs_trial_object[trial_id] for trial_id in trial_ids]
         return result
 
@@ -190,7 +191,7 @@ class BaseExperiment(Behaviour):
         return dict(sorted(result.items()))
 
     @cached_property
-    def animal_id_vs_trial_ids(self) -> dict:
+    def animal_id_vstrial_ids(self) -> dict:
         return {
             animal_id: (trial_object.int_id for trial_object in trial_objects)
             for animal_id, trial_objects in self.animal_id_vs_trial_objects.items()
@@ -214,13 +215,13 @@ class BaseExperiment(Behaviour):
                 result[trial.stage] = [trial]
         return result
 
-    @property
-    def trial_id_tuple(self) -> tuple:
-        return tuple(self._trial_id_key_view)
+    @cached_property
+    def trial_ids(self) -> tuple:
+        return tuple(self.manual_trial_ids) if self.manual_trial_ids else tuple(self.trial_id_vs_keyword_arguments)
 
     @cached_property
     def number_of_trials(self):
-        return len(self._trial_id_key_view)
+        return len(self.trial_ids)
 
     # DataFrame methods
 
@@ -230,21 +231,13 @@ class BaseExperiment(Behaviour):
             self.animal_id_indexed_experiment_specific_feature_frame,
             self.animal_id_indexed_motion_summary_frame,
         )
-        if self.stage:
-            return pd.concat(
-                dataset,
-                axis=1,
-                # Prepend experiment stage to column MultiIndex:
-                # https://stackoverflow.com/a/42094658/9793651
-                keys=[self.stage],
-                names=["Stage", "Feature", "Category"],
-            )
         return pd.concat(
             dataset,
             axis=1,
+            keys=["Stage"] if self.stage else None,
             # Prepend experiment stage to column MultiIndex:
             # https://stackoverflow.com/a/42094658/9793651
-            names=["Feature", "Category"],
+            names=["Stage", "Feature", "Location_Category"] if self.stage else ["Feature", "Location_Category"],
         )
 
     @cached_property
@@ -275,7 +268,7 @@ class BaseExperiment(Behaviour):
 
         result = pd.DataFrame.from_dict(data_dict, orient="index", columns=self._feature_frame_columns())
         result.index.name = "Animal ID"
-        result.columns.names = ["Feature", "Category"]
+        result.columns.names = ["Feature", "Location_Category"]
 
         return result
 
@@ -339,7 +332,7 @@ class BaseExperiment(Behaviour):
     @cached_property
     def _trial_id_series(self) -> pd.Series:
         return pd.Series(
-            self._trial_id_key_view,
+            self.trial_ids,
             name="Trial ID",
             dtype=np.uint16,
         )
@@ -361,7 +354,7 @@ class BaseExperiment(Behaviour):
         return result
 
     @cached_property
-    def _trial_class_vs_trial_ids(self) -> dict:
+    def _trial_class_vstrial_ids(self) -> dict:
         if not self.trial_id_vs_trial_class_name:
             msg = (
                 "This experiment object has no trial_id_vs_trial_class_name, "
@@ -383,12 +376,8 @@ class BaseExperiment(Behaviour):
     def _trial_class_vs_trial_objects(self):
         return {
             trial_class: [self.trial_id_vs_trial_object[trial_id] for trial_id in trial_ids]
-            for trial_class, trial_ids in self._trial_class_vs_trial_ids.items()
+            for trial_class, trial_ids in self._trial_class_vstrial_ids.items()
         }
-
-    @property
-    def _trial_id_key_view(self):
-        return self.trial_id_vs_animal_id.keys()
 
     @cached_property
     def _class_labels(self):
@@ -419,7 +408,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _motion_summary_column_index(self) -> pd.MultiIndex:
-        return pd.MultiIndex.from_tuples(self.motion_summary_columns, names=["Feature", "Category"])
+        return pd.MultiIndex.from_tuples(self.motion_summary_columns, names=["Feature", "Location_Category"])
 
     @cached_property
     def _motion_summary_column_depth(self):

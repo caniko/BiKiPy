@@ -14,7 +14,7 @@ Test hypothesis:
 TG: Equal
 WT: 3 > 4 > 1 > 2
 """
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from pydantic import root_validator, validator
 
@@ -33,7 +33,7 @@ def _four_objects_are_indexes(object_field: ObjectField):
         raise ValueError(msg)
 
 
-class ObjectUpdateTaskTraining(GenericObjectRecognitionTrial):
+class ObjectsInUpdatingLocationsTrainingTrial(GenericObjectRecognitionTrial):
     trial_stage_index: ClassVar[int] = 0
     trial_label: ClassVar[str] = "Training"
 
@@ -45,7 +45,7 @@ class ObjectUpdateTaskTraining(GenericObjectRecognitionTrial):
         return value
 
 
-class ObjectUpdateTaskUpdate(GenericObjectRecognitionTrial):
+class ObjectsInUpdatingLocationsUpdateTrial(GenericObjectRecognitionTrial):
     trial_stage_index: ClassVar[int] = 1
     trial_label: ClassVar[str] = "Update"
 
@@ -57,7 +57,7 @@ class ObjectUpdateTaskUpdate(GenericObjectRecognitionTrial):
         return value
 
 
-class ObjectUpdateTaskTest(GenericObjectRecognitionTrial):
+class ObjectsInUpdatingLocationsTestTrial(GenericObjectRecognitionTrial):
     trial_stage_index: ClassVar[int] = 2
     trial_label: ClassVar[str] = "Test"
 
@@ -69,11 +69,11 @@ class ObjectUpdateTaskTest(GenericObjectRecognitionTrial):
         return value
 
 
-class ObjectUpdateTaskExperiment(ObjectRecognitionExperiment):
+class ObjectsInUpdatingLocationsExperiment(ObjectRecognitionExperiment):
     trial_classes: ClassVar = (
-        ObjectUpdateTaskTraining,
-        ObjectUpdateTaskUpdate,
-        ObjectUpdateTaskTest,
+        ObjectsInUpdatingLocationsTrainingTrial,
+        ObjectsInUpdatingLocationsUpdateTrial,
+        ObjectsInUpdatingLocationsTestTrial,
     )
 
     @root_validator

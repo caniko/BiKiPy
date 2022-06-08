@@ -1,7 +1,7 @@
 import shutil
 from logging import getLogger
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal, Optional, Mapping
 
 import pandas as pd
 import plyer
@@ -19,23 +19,34 @@ from bikipy.utils.io.makesense import (
     from_makesense_csv_rectangle,
 )
 
-SHAPE_TYPING = Literal["circle", "parallelogram", "polygon", "rectangle"]
-ALL_SHAPES = {"circle", "polygon", "parallelogram", "rectangle"}
-
-
 logger = getLogger(__name__)
 
 
 @validate_arguments
-def detect_perimeters_in_project(root_directory: DirectoryPath) -> list:
+def detect_perimeters_in_project(root_directory: DirectoryPath, create_object: bool = False) -> list:
     perimeter_dir = get_perimeter_dir_path(root_directory)
     detection_data = []
     for filename in perimeter_dir.glob("perimeter-*"):
-        shape, label = _get_perimeter_data(root_directory / filename)
-        detection_data.append({"label": label, "shape": shape})
+        perimeter_path = root_directory / filename
+        shape, label = get_perimeter_data(perimeter_path)
+        data = {"label": label, "shape": shape}
+        if create_object:
+            data["perimeter"] = create_perimeter_object(perimeter_path, shape)
+        detection_data.append(data)
     if not detection_data:
-        logger.info("No perimeter data was found. Ignore if no perimeters are required for analysis.")
+        msg = (
+            "No perimeter data was found. Set perimeter strategy to None or "
+            'revise perimeter filenames to the correct format, "perimeter-{label}"'
+        )
+        raise ValueError(msg)
     return detection_data
+
+
+def generate_label_to_object_field(root_directory: DirectoryPath):
+    return {
+        perimeter_data.pop("label"): perimeter_data
+        for perimeter_data in detect_perimeters_in_project(root_directory, create_object=True)
+    }
 
 
 @validate_arguments
@@ -60,7 +71,7 @@ def add_perimeter_from_makesense(root_directory: DirectoryPath, make_copy: bool 
         msg = f"{perimeter_path.name} is already in the project"
         raise ValueError(msg)
 
-    shape, label = _get_perimeter_data(perimeter_path)
+    shape, label = get_perimeter_data(perimeter_path)
 
     settings["perimeters"].append({"label": label, "shape": shape})
     with open(get_project_settings_path(root_directory), "wb") as in_yaml:
@@ -71,8 +82,8 @@ def add_perimeter_from_makesense(root_directory: DirectoryPath, make_copy: bool 
 
 
 @validate_arguments
-def create_perimeter_object(perimeter_path: FilePath, shape: SHAPE_TYPING):
-    match shape:
+def create_perimeter_object(perimeter_path: FilePath, shape: Optional[Literal["circle", "parallelogram", "polygon", "rectangle"]] = None):
+    match shape or get_perimeter_data(perimeter_path)[0]:
         case "circle":
             return CirclePerimeter.from_makesense_line(perimeter_path)
         case "rectangle":
@@ -83,22 +94,11 @@ def create_perimeter_object(perimeter_path: FilePath, shape: SHAPE_TYPING):
             raise ValueError
 
 
-def get_perimeter_objects(root_directory: DirectoryPath) -> list:
-    perimeter_dir = detect_perimeters_in_project(root_directory)
-    detection_data = []
-    for filename in perimeter_dir.glob("perimeter-*"):
-        shape, label = _get_perimeter_data(root_directory / filename)
-        detection_data.append({"label": label, "shape": shape})
-    if not detection_data:
-        logger.info("No perimeter data was found. Ignore if no perimeters are required for analysis.")
-    return detection_data
+def get_trial_perimeter_label_from_metadata(animal_id_row: Mapping, settings: dict, stage: Optional[int] = None) -> str:
+    return animal_id_row["Perimeter"][stage] if settings["stageful_metadata"] and stage else animal_id_row["Perimeter"]
 
 
-def get_trial_perimeter_label_from_metadata(animal_id_row: pd.DataFrame, stage: Optional[int] = None) -> str:
-    return animal_id_row["Perimeter"][stage] if stage else animal_id_row["Perimeter"]
-
-
-def _get_perimeter_data(perimeter_path: FilePath):
+def get_perimeter_data(perimeter_path: FilePath):
     split_file_stem = perimeter_path.stem.split("-")
     assert split_file_stem[0].lower() == "perimeter"
     assert len(split_file_stem) == 3

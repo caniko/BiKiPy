@@ -83,6 +83,4 @@ html_theme_options = {
     "globaltoc_includehidden": False,
 }
 
-html_sidebars = {
-    "**": ["globaltoc.html"]
-}
+html_sidebars = {"**": ["globaltoc.html"]}

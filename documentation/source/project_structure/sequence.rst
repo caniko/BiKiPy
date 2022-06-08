@@ -23,9 +23,8 @@ Definition
 
 Perimeter
 ---------
-- Only MakeSense perimeters are supported. These are stored in the "Perimeter" directory/folder.
-- The file-stem is the perimeter set ID (PID). If a perimeter set is stored in several files you must also include a unique identifier (UID) after the perimeter set ID (delimit!). Opinion: The unique identifier could be a sequence of numbers, letters, or random. Example: A-1.csv; where A is the perimeter set ID and 1 is the unique identifier.
-- Make sure that you don't use the same label for the different perimeters when they are defined in MakeSense. You can change the label in the file if you have to ensure this later.
+Only MakeSense perimeters are supported. These are stored in the "Perimeter" directory/folder.
+
 - Optional, for inspection, you can include an image with the perimeter set as the file-stem. Optionally, include the uid if it is specific to the subset (delimit!).
 
 Metadata
