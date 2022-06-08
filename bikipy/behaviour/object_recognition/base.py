@@ -26,7 +26,6 @@ class ObjectRecognitionExperiment(SquareEnclosedExperiment, PhysicalObjectExperi
         object-presence sequences are defined by dictionary.
         """
     )
-    id_vs_object_field: Optional[dict[int, ObjectField]] = Field(description="Trial ID to ObjectField map")
     first_stage_has_no_object: ClassVar[bool] = True
 
     def trial_keyword_arguments(self, trial_id: int) -> dict:
@@ -36,13 +35,12 @@ class ObjectRecognitionExperiment(SquareEnclosedExperiment, PhysicalObjectExperi
         if self.first_stage_has_no_object and stage == 0:
             return upstream_kwargs
 
+
+
         return {
             **upstream_kwargs,
             **self._physical_object_keyword_arguments,
             "perimeter_border_normal_metric_magnitude": self.perimeter_border_normal_metric_magnitude,
-            "object_field": self.global_object_field[stage]
-            if self.global_object_field
-            else self.id_vs_object_field[upstream_kwargs["field_id"]][stage],
         }
 
     @root_validator
@@ -61,7 +59,7 @@ class ObjectRecognitionHabituationTrial(SquareEnclosedTrial):
 
 
 class GenericObjectRecognitionTrial(SquareEnclosedTrial, PhysicalObjectBaseMixin):
-    object_field: ObjectField
+    object_field: Optional[ObjectField] = None
 
     general_feature_headers: ClassVar[list] = Field(default_factory=list)
     object_feature_headers: ClassVar[list] = Field(default_factory=list)
