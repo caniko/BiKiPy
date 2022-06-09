@@ -19,13 +19,16 @@ class ObjectField(BikipyBase):
     Each stage field can be inspected by using the item getter, <ObjectField object>[stage_id].
     """
 
-    perimeters: dict[str, Union[dict[int, Perimeter2D], Sequence[Perimeter2D], Perimeter2D]] = Field(
+    perimeters: dict[
+        str, Union[Sequence[Perimeter2D], dict[int, Perimeter2D], dict[str, Perimeter2D], Perimeter2D]
+    ] = Field(
         description="""
         Each perimeter type defined by the experiment design is a key-value pair, where the value is:
-            - dict ->       The key is the stage index, and the value is the respective perimeter; useful when
-                            the object is absent in some stages
             - sequence ->   The sequence is based on stages; for instance, the perimeter on index 0 belongs to stage 0.
-                            The sequence must have the same length as the number of stages.
+                            Must have the same length as the number of stages.
+            - dict[int] ->  The key is the stage index, and the value is the respective perimeter; useful when
+                            the object is absent in some stages
+            - dict[str] ->  AUTHOR'S CHOICE. The key is the perimeter label, and the value can be dict[int] or sequence.
             - perimeter ->  The perimeter is located in the same spatial coordinates across all the experiments
         """
     )
@@ -89,6 +92,19 @@ class ObjectField(BikipyBase):
     @lru_cache
     def derive_physical_object_set(self, stage: int, **physical_object_set_kwargs):
         return PhysicalObjectSet.from_perimeter(*self[stage], **physical_object_set_kwargs)
+
+    @classmethod
+    def from_perimeter_set(cls, perimeter_set: PerimeterSet):
+        label_to_perimeter = {}
+        for perimeter in perimeter_set.perimeters:
+            if not perimeter.label:
+                msg = "A perimeter in the provided PerimeterSet has no label"
+                raise ValueError(msg)
+            if perimeter.label in label_to_perimeter:
+                msg = "Duplicate perimeter labels"
+                raise ValueError(msg)
+            label_to_perimeter[perimeter.label] = (perimeter,)
+        return cls(perimeters=label_to_perimeter)
 
     @classmethod
     def nort_format(

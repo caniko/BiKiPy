@@ -7,7 +7,7 @@ from pydantic_numpy import NDArray
 
 from bikipy.perimeter.base import BasePerimeter
 from bikipy.perimeter.radial.utils import plot_circle
-from bikipy.utils.io.makesense import from_makesense_line
+from bikipy.utils.io.makesense import read_makesense_line, get_line_endpoints_from_makesense_row
 from bikipy.utils.math.vector import unit_vector
 
 
@@ -28,11 +28,17 @@ class CirclePerimeter(BasePerimeter):
             raise ValueError(msg)
 
     @classmethod
-    def from_makesense_line(cls, data_path: FilePath) -> dict[str, Any]:
-        return {
-            label: cls(center=segment_tip_a, radius=np.linalg.norm(segment_tip_a - segment_tip_b))
-            for label, (segment_tip_a, segment_tip_b) in from_makesense_line(data_path).items()
-        }
+    def read_makesense_line(cls, data_path: FilePath) -> dict[str, Any]:
+        result = {}
+        for _, row in read_makesense_line(data_path).iterrows():
+            a, b = get_line_endpoints_from_makesense_row(row)
+            perimeter = cls(center=a, radius=np.linalg.norm(a - b))
+
+            if row["image_name"] not in result:
+                result["image_name"] = {}
+            result["image_name"][row["label"]] = perimeter
+
+        return cls._perimeter_set_from_image_name_to_perimeters(result)
 
     def change_reference(self, new_reference: NDArray, **new_inspect_image_kwargs):
         kwargs = self.dict()

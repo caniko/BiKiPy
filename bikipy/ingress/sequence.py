@@ -1,23 +1,26 @@
 import json
 import os
-from glob import iglob
-from itertools import count
 from logging import getLogger
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 import yaml
 from pydantic import DirectoryPath, validate_arguments
 
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
-from bikipy.ingress.utils.constant import get_project_settings_path, load_settings, get_dataset_dir_path
+from bikipy.feature.physical_object.field import ObjectField
+from bikipy.ingress.plugin.center import detect_center_in_perimeter_directory
+from bikipy.ingress.utils.constant import (
+    get_project_settings_path,
+    load_settings,
+    get_dataset_dir_path,
+    get_perimeter_dir_path,
+)
 from bikipy.ingress.utils.io import initialize_metadata_data_frame
-from bikipy.ingress.utils.meter_pixel_ratio import get_meter_pixel_ratio
 from bikipy.ingress.utils.perimeter import (
     get_trial_perimeter_label_from_metadata,
     generate_label_to_object_field,
-    perimeter_presence_assertions, get_perimeter_data, create_perimeter_object,
+    image_name_to_perimeter_set_from_makesense,
 )
 
 logger = getLogger(__name__)
@@ -27,7 +30,6 @@ logger = getLogger(__name__)
 def sequence_generate_configuration(
     root_directory: DirectoryPath,
     experiment_name: str,
-    meter_pixel_ratio: Optional[float] = None,
     kinematic_data_file_extension: str = ".h5",
     animals_have_plural_trial_sets: bool = False,
     dry_run: bool = False,
@@ -35,7 +37,6 @@ def sequence_generate_configuration(
     from bikipy.ingress.core import init_settings
 
     experiment_class = EXPERIMENT_NAME_TO_CLASS[experiment_name.strip().lower()]
-    meter_pixel_ratio = meter_pixel_ratio or get_meter_pixel_ratio(root_directory)
 
     logger.info(f"Generating experiment configuration at {root_directory}")
 
@@ -62,19 +63,18 @@ def sequence_generate_configuration(
         msg = f"The trial sets do not have identical trial stage sequence:\n{trial_set_stage_ids}"
         raise ValueError(msg)
 
-    with open(root_directory / "metadata.xlsx", "rb") as in_file:
-        metadata_df = pd.read_excel(in_file)
+    metadata_df = initialize_metadata_data_frame(root_directory, True)
 
     try:
-        metadata_animal_id_column_set = set(metadata_df.loc[:, "Animal"])
+        metadata_animal_id_column_set = set(metadata_df.index)
     except KeyError:
         msg = f"Animal ID column, Animal, is not defined in the metadata sheet. Defined columns:\n{metadata_df.columns}"
         raise KeyError(msg)
 
-    if metadata_animal_id_column_set != animal_ids:
+    if metadata_animal_id_column_set.issubset(animal_ids):
         msg = (
             "The animal ID sets in the metadata and the trial_set directory names do not match:\n"
-            f"- metadata: {metadata_animal_id_column_set}\n- trial_sets: {animal_ids}"
+            f"- metadata: {sorted(metadata_animal_id_column_set)}\n- trial_sets: {sorted(animal_ids)}"
         )
         raise ValueError(msg)
 
@@ -89,7 +89,6 @@ def sequence_generate_configuration(
         experiment_class,
         method_settings,
         root_directory,
-        meter_pixel_ratio,
         kinematic_data_file_extension,
         animal_ids,
         animals_have_plural_trial_sets,
@@ -108,24 +107,26 @@ def sequence_generate_configuration(
 @validate_arguments
 def analyze_sequence_function_arguments(root_directory: DirectoryPath):
     settings = load_settings(root_directory)
-    metadata = initialize_metadata_data_frame(root_directory, settings)
+    metadata = initialize_metadata_data_frame(root_directory, settings["ingress"]["stageful_metadata"])
 
     dataset_directory_path = _dataset_directory_path(root_directory)
 
-    if settings["perimeter_definition_strategy"] == "metadata":
+    if settings["perimeter"]["perimeter_definition_strategy"] == "metadata":
         label_to_perimeter = generate_label_to_object_field(root_directory)
 
+    if settings["ingress"]["center_definition_strategy"] == "metadata":
+        label_to_center = detect_center_in_perimeter_directory(get_perimeter_dir_path(root_directory))
+
     trial_id_vs_trial_class_name, trial_id_vs_keyword_arguments = {}, {}
-    trial_id_counter = count(start=1)
 
     for animal_id in os.listdir(dataset_directory_path):
-        animal_id = str(animal_id)
-        animal_dir = dataset_directory_path / animal_id
+        animal_id = int(animal_id)
+        animal_dir = dataset_directory_path / str(animal_id)
         animal_metadata = metadata.loc[animal_id, :]
         for trial_data_filename in animal_dir.glob(f"*{settings['immutable']['kinematic_data_file_extension']}"):
-            trial_id = next(trial_id_counter)
             trial_data_filename = Path(trial_data_filename)
             sequence_index = int(trial_data_filename.stem.split("-")[0])
+            trial_id = _define_trial_id(animal_id, sequence_index)
 
             trial_id_vs_trial_class_name[trial_id] = settings["sequence_index_to_trial_class_name"][sequence_index]
             trial_id_vs_keyword_arguments[trial_id] = {
@@ -133,16 +134,21 @@ def analyze_sequence_function_arguments(root_directory: DirectoryPath):
                 "stage": sequence_index,
                 "coordinate_data_path": trial_data_filename,
             }
+            if settings["ingress"]["center_definition_strategy"] == "metadata":
+                trial_id_vs_keyword_arguments[trial_id]["rectangle_center_point"] = label_to_center[
+                    animal_metadata.loc[:, ["Center", sequence_index]]
+                ]
             if settings["perimeter_definition_strategy"]:
                 if settings["perimeter_definition_strategy"] == "metadata":
-                    perimeter_data = get_trial_perimeter_label_from_metadata(
-                        animal_metadata, settings, sequence_index
-                    )
+                    perimeter_set = get_trial_perimeter_label_from_metadata(animal_metadata, settings, sequence_index)
+
                 elif settings["perimeter_definition_strategy"] == "trialwise":
-                    perimeter_data = {}
+                    perimeter_sets = []
                     for perimeter_path in animal_dir.glob(f"perimeter-*-{sequence_index}"):
-                        perimeter_data.update(create_perimeter_object(perimeter_path))
-                trial_id_vs_keyword_arguments[trial_id]["object_field"]
+                        perimeter_sets.append(image_name_to_perimeter_set_from_makesense(perimeter_path))
+                    perimeter_set = sum(perimeter_sets)
+
+                trial_id_vs_keyword_arguments[trial_id]["object_field"] = ObjectField.from_perimeter_set(perimeter_set)
     return {
         "trial_id_vs_trial_class_name": trial_id_vs_trial_class_name,
         "trial_id_vs_keyword_arguments": trial_id_vs_keyword_arguments,
@@ -151,3 +157,7 @@ def analyze_sequence_function_arguments(root_directory: DirectoryPath):
 
 def _dataset_directory_path(root_directory: DirectoryPath):
     return root_directory / "dataset"
+
+
+def _define_trial_id(animal_id: int | str, sequence_index: int | str):
+    return f"{animal_id}-{sequence_index}"

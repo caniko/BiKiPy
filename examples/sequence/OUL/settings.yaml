@@ -1,0 +1,84 @@
+ingress_method: sequence
+sequence_index_to_trial_class_name:
+  0: ObjectsInUpdatingLocationsTrainingTrial
+  1: ObjectsInUpdatingLocationsUpdateTrial
+  2: ObjectsInUpdatingLocationsTestTrial
+meter_pixel_ratio: global_perimeter
+perimeter:
+  perimeter_definition_strategy: trialwise
+ingress:
+  stageful_metadata: true
+  center_definition_strategy: metadata
+experiment:
+  defined:
+    gaze_start_point_label: center_eye
+    gaze_travel_direction_point_label: nose
+    object_tracking_label_for_kinematics: center
+    manual_fps: 30
+    data_import_kwargs:
+      init_from: h5
+      midpoint_groups:
+        center_eye: [ "left_ear", "right_ear"]
+  required:
+    gaze_start_point_label: string
+    gaze_travel_direction_point_label: string
+    object_tracking_label_for_kinematics: string
+  optional:
+    common_trial_keyword_arguments: object
+    data_format_label: string
+    data_import_kwargs:
+      future_scaling: boolean
+      group_label: string
+      int_id: integer
+      label: string
+      manual_fps: number
+      manual_recording_resolution: np.ndarray
+      midpoint_groups: object
+      min_likelihood: number
+      reverse_y_axis: boolean
+      save_root: string
+      timestamp:
+      - type: string
+        format: date
+      - type: string
+        format: date-time
+      video_path: string
+      x_axis_crop_end_point: number
+      y_axis_crop_end_point: number
+    global_center_metric_length: number
+    global_object_field: bikipy.feature.physical_object.ObjectField
+    group_label: string
+    inspection_dir: string
+    int_id: integer
+    label: string
+    manual_fps: number
+    manual_meters_per_pixel: number
+    manual_recording_resolution: np.ndarray
+    manual_trial_ids: array
+    maximum_radians_inter_gaze_perimeter: number
+    maximum_seconds_distraction: number
+    metric_resolution: np.ndarray
+    minimum_seconds_attention: number
+    perimeter_border_normal_metric_magnitude: number
+    rectangle_2d_bin: array
+    save_root: string
+    stage: string
+    timestamp:
+    - type: string
+      format: date
+    - type: string
+      format: date-time
+    trial_id_range_vs_keyword_arguments: RangedDict
+    trial_id_vs_keyword_arguments: object
+    trial_id_vs_trial_class_name: object
+    video_path: string
+immutable:
+  metadata_filename: metadata.xlsx
+  kinematic_data_file_extension: .h5
+  experiment_class: ObjectsInUpdatingLocationsExperiment
+  trial_classes/stages:
+  - ObjectsInUpdatingLocationsTrainingTrial
+  - ObjectsInUpdatingLocationsUpdateTrial
+  - ObjectsInUpdatingLocationsTestTrial
+  Number of animals: 22
+  animals_have_plural_trial_sets: false

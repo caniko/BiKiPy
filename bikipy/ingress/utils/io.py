@@ -1,11 +1,13 @@
+from functools import lru_cache
+
 import pandas as pd
 from pydantic import DirectoryPath
 
 
-def initialize_metadata_data_frame(root_directory: DirectoryPath, settings: dict):
+@lru_cache
+def initialize_metadata_data_frame(root_directory: DirectoryPath, stageful_metadata: bool):
     return pd.read_excel(
-        root_directory / settings["immutable"]["metadata_filename"],
-        index_col="Animal",
-        header=(0, 1) if settings["stageful_metadata"] else 0,
-        names=["Feature", "Stage"] if settings["stageful_metadata"] else None,
+        next(root_directory.glob("metadata.*")),
+        index_col=0,
+        header=(0, 1) if stageful_metadata else 0,
     )

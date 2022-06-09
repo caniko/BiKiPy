@@ -6,10 +6,11 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pydantic import FilePath
 
-from bikipy.perimeter import ParallelogramPerimeter, TriangularPerimeter
-from bikipy.perimeter.base import PerimeterSet, PolygonPerimeter
-from bikipy.utils.io import from_makesense_coco_polygon
-from bikipy.utils.math import clockwise_argsort_points
+from bikipy.perimeter import ParallelogramPerimeter
+from bikipy.perimeter.base import PerimeterSet
+from bikipy.perimeter.polygon.base import PolygonPerimeter
+from bikipy.perimeter.polygon.triangular import TriangularPerimeter
+from bikipy.utils.math.geometry import clockwise_argsort_points
 from bikipy.utils.misc import read_makesense_point_csv
 
 logger = getLogger(__name__)
@@ -28,7 +29,7 @@ def generate_radial_maze_perimeters(
         if not os.path.exists(center_coco_path):
             msg = f"center_coco_path does not exist, {center_coco_path}"
             raise ValueError(msg)
-        center_object = triangular_center_object or from_makesense_coco_polygon(
+        center_object = triangular_center_object or PolygonPerimeter.from_makesense_coco_polygon(
             center_coco_path, single_obj_return=True, **perimeter_kwargs
         )
     else:

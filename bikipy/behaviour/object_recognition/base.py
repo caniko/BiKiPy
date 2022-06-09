@@ -35,13 +35,20 @@ class ObjectRecognitionExperiment(SquareEnclosedExperiment, PhysicalObjectExperi
         if self.first_stage_has_no_object and stage == 0:
             return upstream_kwargs
 
-
-
-        return {
+        result = {
             **upstream_kwargs,
             **self._physical_object_keyword_arguments,
             "perimeter_border_normal_metric_magnitude": self.perimeter_border_normal_metric_magnitude,
         }
+        if self.global_object_field and "object_field" not in result:
+            result["object_field"] = self.global_object_field[stage]
+        elif "object_field" in result:
+            pass
+        else:
+            msg = f"Object field not defined for trial with ID #{trial_id}"
+            raise ValueError(msg)
+
+        return result
 
     @root_validator
     def global_object_field_and_id_vs_object_field_mutually_exclusive(cls, values):

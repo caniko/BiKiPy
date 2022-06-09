@@ -114,8 +114,9 @@ class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelM
 
 
 class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin, ABC):
-    center_box_to_recording_resolution_ratio: Optional[float] = None
     rectangle_2d_bin: tuple[int, int] = (2, 2)
+    center_box_to_recording_resolution_ratio: Optional[float] = None
+    rectangle_center_point: Optional[NDArray] = None
 
     @cached_property
     def _quadrant_coordinate_to_index(self):
@@ -146,6 +147,10 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
         return np.sum(scores) / (A * self.number_of_frames)
 
     @cached_property
+    def center_translation(self):
+        return self.recording_center_pixel - self.rectangle_center_point if self.rectangle_center_point else None
+
+    @cached_property
     def quadrants(self) -> dict[tuple[int, int], Quadrant]:
         """
         Left to right, top to down
@@ -155,7 +160,7 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
         vertical_uniform_distance = self.vertical_resolution / self.rectangle_2d_bin[1]
         result = {}
         for quadrant_coordinate, corners in _compute_quadrant_grid_coordinates(
-            self.rectangle_2d_bin, self.recording_resolution
+            self.rectangle_2d_bin, self.recording_resolution, translation=self.center_translation
         ).items():
             result[quadrant_coordinate] = Quadrant(
                 corners=corners,
@@ -319,8 +324,9 @@ def _compute_quadrant_location_sequence(quadrants, number_of_frames: int, fps: f
     return np.array(reduce_repeating_sequences(result, round(fps * 0.35)))
 
 
-@lru_cache
-def _compute_quadrant_grid_coordinates(rectangle_2d_bin: tuple[int, int], recording_resolution: NDArray[int]):
+def _compute_quadrant_grid_coordinates(
+    rectangle_2d_bin: tuple[int, int], recording_resolution: NDArray[int], translation: Optional[NDArray] = None
+):
     horizontal_resolution, vertical_resolution = recording_resolution
 
     horizontal_uniform_distance = horizontal_resolution / rectangle_2d_bin[0]
@@ -333,7 +339,7 @@ def _compute_quadrant_grid_coordinates(rectangle_2d_bin: tuple[int, int], record
             vertical_coordinate_min = vertical_uniform_distance * (v - 1)
             vertical_coordinate_max = vertical_uniform_distance * v
 
-            result[(h, v)] = np.array(
+            quadrant = np.array(
                 (
                     (horizontal_coordinate_min, vertical_coordinate_min),
                     (horizontal_coordinate_max, vertical_coordinate_min),
@@ -341,4 +347,8 @@ def _compute_quadrant_grid_coordinates(rectangle_2d_bin: tuple[int, int], record
                     (horizontal_coordinate_min, vertical_coordinate_min),
                 )
             )
+            if translation is not None:
+                quadrant += translation
+            result[(h, v)] = quadrant
+
     return result

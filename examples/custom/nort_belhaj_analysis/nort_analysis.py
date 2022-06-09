@@ -13,6 +13,7 @@ from bikipy.behaviour.object_recognition.novel_object_recognition import (
     EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME,
     NortExperiment,
 )
+from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.plugins.belhaj import (
     get_animal_id_vs_apparatus,
     get_animal_id_vs_trial_ids,
@@ -21,8 +22,7 @@ from bikipy.plugins.belhaj import (
 )
 from bikipy.utils.io.general import defer_perimeter_set_from_multi_row_reference
 from bikipy.utils.io.makesense import (
-    from_makesense_coco_polygon,
-    reference_point_from_coco_path,
+    read_makesense_point,
 )
 
 DEEPLABCUT_DIR = Path("/mnt/soma/Projects/Neuroscience/Imen/data/nort")
@@ -45,25 +45,25 @@ EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
 period_to_field_id_to_object_field = {}
 for field_idx in range(1, 5):
-    training_perimeters = from_makesense_coco_polygon(
+    training_perimeters = PolygonPerimeter.from_makesense_coco_polygon(
         IMAGE_DIR / f"training_{field_idx}.json",
         image_root=IMAGE_DIR,
     )
     nort_training_objects = defer_perimeter_set_from_multi_row_reference(
         reference_perimeters=training_perimeters.values(),
-        image_name_to_reference_data=reference_point_from_coco_path(
+        image_name_to_reference_data=read_makesense_point(
             IMAGE_DIR / f"references_training_{field_idx}.csv", single_row=False
         ),
         image_root=IMAGE_DIR,
     )
 
-    novel_perimeters = from_makesense_coco_polygon(
+    novel_perimeters = PolygonPerimeter.from_makesense_coco_polygon(
         IMAGE_DIR / f"novel_{field_idx}.json",
         image_root=IMAGE_DIR,
     )
     nort_novelty_objects = defer_perimeter_set_from_multi_row_reference(
         reference_perimeters=novel_perimeters.values(),
-        image_name_to_reference_data=reference_point_from_coco_path(
+        image_name_to_reference_data=read_makesense_point(
             IMAGE_DIR / f"references_novel_{field_idx}.csv", single_row=False
         ),
         image_root=IMAGE_DIR,

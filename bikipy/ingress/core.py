@@ -6,7 +6,7 @@ from pydantic import DirectoryPath, validate_arguments
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.ingress.mapping import INGRESS_METHOD_NAME_TO_KEYWORD_ARGUMENT_FUNC
 from bikipy.ingress.utils.io import initialize_metadata_data_frame
-from bikipy.ingress.perimeter.perimeter import load_settings, detect_perimeters_in_project
+from bikipy.ingress.utils.perimeter import load_settings, detect_perimeters_in_project
 from bikipy.ingress.utils.pydantic import extended_schema
 from bikipy.reader import DeepLabCutReader
 
@@ -14,7 +14,7 @@ from bikipy.reader import DeepLabCutReader
 @validate_arguments
 def analyze(root_directory: DirectoryPath) -> None:
     settings = load_settings(root_directory)
-    metadata = initialize_metadata_data_frame(root_directory, settings)
+    metadata = initialize_metadata_data_frame(root_directory, settings["ingress"]["stageful_metadata"])
 
     try:
         experiment_class = EXPERIMENT_NAME_TO_CLASS[settings["immutable"]["experiment_class"]]
@@ -62,7 +62,6 @@ def init_settings(
     experiment_class: Any,
     method_kwargs: dict,
     root_directory: DirectoryPath,
-    meter_pixel_ratio: float,
     kinematic_data_file_extension: str,
     animal_ids: set[str],
     animals_have_plural_trial_sets: bool,
@@ -73,10 +72,15 @@ def init_settings(
     )["optional"]
     return {
         **method_kwargs,
-        "perimeter_definition_strategy": "metadata",
-        "stageful_metadata": False,
-        "meter_pixel_ratio": meter_pixel_ratio,
-        "perimeters": detect_perimeters_in_project(root_directory),
+        "meter_pixel_ratio": "global_perimeter",
+        "perimeter": {
+            # metadata, trialwise, None
+            "perimeter_definition_strategy": "metadata",
+        },
+        "ingress": {
+            "stageful_metadata": False,
+            "center_definition_strategy": "metadata",
+        },
         "experiment": experiment_schema,
         "immutable": {
             "metadata_filename": "metadata.xlsx",

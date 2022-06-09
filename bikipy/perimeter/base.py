@@ -11,6 +11,7 @@ from pydantic_numpy import NDArray
 
 from bikipy.core.base_class import BikipyBase, BikipyBaseHashable
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
+from bikipy.utils.io.makesense import read_makesense_point
 from bikipy.utils.misc import get_reference_point_from_array, read_image
 
 logger = getLogger(__name__)
@@ -82,12 +83,10 @@ class BasePerimeter(BikipyBaseHashable):
 
     @property
     def reference_point(self):
-        from bikipy.utils.io import reference_point_from_coco_path
-
         if self.reference_point_array is None and not self.reference_point_coco_path:
             return None
         return (
-            reference_point_from_coco_path(self.reference_point_coco_path)
+            read_makesense_point(self.reference_point_coco_path)
             if self.reference_point_array is None
             else self.reference_point_array
         )
@@ -284,12 +283,33 @@ class BasePerimeter(BikipyBaseHashable):
 
         return self.plot_perimeter(**perimeter_plot_kwargs, ax=ax)
 
+    @staticmethod
+    def perimeter_set_from_image_name_to_perimeters(image_name_to_perimeters: dict):
+        result = {}
+        for image_name, perimeters in image_name_to_perimeters.items():
+            filtered_perimeters, restricted_perimeters = [], []
+            for label, perimeter in perimeters.items():
+                if label.lower().startswith("restricted"):
+                    restricted_perimeters.append(perimeter)
+                else:
+                    filtered_perimeters.append(perimeter)
+            result[image_name] = PerimeterSet(
+                perimeters=filtered_perimeters, restricted_perimeters=restricted_perimeters
+            )
+        return result
+
 
 class PerimeterSet(BikipyBase):
-    perimeters: tuple
-    restricted_perimeters: Optional[tuple] = None
+    perimeters: list
+    restricted_perimeters: Optional[list] = None
 
     category: ClassVar[Optional[str]] = "perimeter"
+
+    def __add__(self, other):
+        return PerimeterSet(
+            perimeters=self.perimeters + other.perimeters,
+            restricted_perimeters=self.restricted_perimeters + other.restricted_perimeters,
+        )
 
     def __getitem__(self, item: Union[str, int]):
         for perimeter in self._all_perimeters:

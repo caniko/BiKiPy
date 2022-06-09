@@ -1,14 +1,18 @@
 import copy
+import json
 from functools import cached_property
 from logging import getLogger
+from pathlib import Path
 from typing import Any, ClassVar, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from pydantic import FilePath, validator
+import pandas as pd
+from pydantic import FilePath, validator, DirectoryPath
 from pydantic_numpy import NDArray
 
 from bikipy.perimeter.base import BasePerimeter
+from bikipy.utils.io.makesense import image_name_to_point_from_makesense
 from bikipy.utils.math.geometry import clockwise_sort_points, expand_bikipy_perimeter
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 from bikipy.utils.math.vector import (
@@ -238,3 +242,88 @@ class PolygonPerimeter(BasePerimeter):
         if self.int_id:
             return f"{self.int_id} {in_string}"
         return in_string
+
+    @classmethod
+    def from_makesense_coco_polygon(
+        cls,
+        data_path: Any,
+        image_root: Optional[DirectoryPath] = None,
+        reference_point_csv_path: Optional[FilePath] = None,
+        **perimeter_kwargs,
+    ) -> dict:
+        logger.debug("Generating PolygonPerimeter from makesense polygon data in coco format")
+
+        with open(data_path, "rb") as in_json:
+            coco = json.load(in_json)
+
+        assert not image_root or (image_root := Path(image_root)).exists()
+
+        # The coco annotations are not sorted with respect to the category IDs
+        coco["annotations"] = sorted(coco["annotations"], key=lambda dictionary: dictionary["category_id"])
+
+        # We don't need to do this, but better to be on the safe side
+        coco["categories"] = sorted(coco["categories"], key=lambda dictionary: dictionary["id"])
+
+        if reference_point_csv_path:
+            image_name_to_reference_point = image_name_to_point_from_makesense(reference_point_csv_path)
+
+        result = {}
+        for annotation in coco["annotations"]:
+            current_kwargs = {}
+            image_name = coco["images"][annotation["image_id"] - 1]["file_name"]
+            label = coco["categories"][annotation["category_id"] - 1]["name"]
+
+            if image_root:
+                assert not any(key in perimeter_kwargs for key in ("inspect_image_path", "inspect_image_array"))
+                current_kwargs["inspect_image_path"] = image_root / image_name
+            if reference_point_csv_path:
+                current_kwargs["reference_point_array"] = image_name_to_reference_point[image_name]
+
+            if image_name not in result:
+                result[image_name] = {}
+
+            result[image_name]["label"] = cls.init_polygon(
+                _coco_polygon_annotation(annotation["segmentation"][0]),
+                label=label,
+                **current_kwargs,
+                **perimeter_kwargs,
+            )
+
+        return image_name_to_point_from_makesense(result)
+
+    @classmethod
+    def from_makesense_csv_rectangle(
+        cls,
+        data_path: FilePath,
+        image_root: Optional[DirectoryPath] = None,
+        reference_point_csv_path: Optional[FilePath] = None,
+        **perimeter_kwargs,
+    ):
+        csv_data = pd.read_csv(data_path, header=None, index_col=0)
+
+        if reference_point_csv_path:
+            image_name_to_reference_point = image_name_to_point_from_makesense(reference_point_csv_path)
+
+        result = {}
+        for label, row in csv_data.iterrows():
+            image_name = row.values[4]
+
+            start = np.array(row[:2]).astype(int)
+            end = start + np.array(row[2:4]).astype(int)
+
+            if image_name not in result:
+                result[image_name] = {}
+
+            result[image_name]["label"] = cls.init_polygon(
+                np.array((start, (start[0], end[1]), end, (end[0], start[1]))),
+                inspect_image_path=image_root / str(image_name) if image_root else None,
+                label=label,
+                reference_point_array=image_name_to_reference_point[image_name] if reference_point_csv_path else None,
+                **perimeter_kwargs,
+            )
+
+        return image_name_to_point_from_makesense(result)
+
+
+def _coco_polygon_annotation(flat_annotation_data: Sequence):
+    return [(flat_annotation_data[i], flat_annotation_data[i + 1]) for i in range(0, len(flat_annotation_data) - 1, 2)]

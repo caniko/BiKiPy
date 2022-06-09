@@ -3,7 +3,7 @@ from collections import abc
 from concurrent.futures import ProcessPoolExecutor
 from functools import cached_property, lru_cache, partial
 from logging import getLogger
-from typing import Any, Generator, Hashable, Iterable, Optional, Union
+from typing import Any, Generator, Hashable, Iterable, Optional, Union, Sequence
 
 import numpy as np
 import pandas as pd
@@ -26,6 +26,9 @@ logger = getLogger(__name__)
 
 class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
     df_path: FilePath = Field(description="Path to kinematic data, that will be " "converted to pd.DataFrame")
+    timestamp_index: Optional[Sequence] = Field(
+        description="Sequence of same length as df that stores the" "timestamp of each index i.e. frame."
+    )
     future_scaling: bool = Field(
         None,
         description="Scales the coordinates with respect to their min and max. " "True requires x_max and y_max",
@@ -49,19 +52,17 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
     @abstractmethod
     def tracked_point_labels(self) -> tuple:
         """
-        :return: tuple storing all regions of interest that are directly tracked,
-                 no midpoints
+        :return: tuple storing all regions of interest that are directly tracked, no midpoints
         """
         pass
 
-    @property
-    @abstractmethod
+    @cached_property
     def augmented(self) -> pd.DataFrame:
         """
-        :return: Tracking and augmented data stored in the same frame. The augmented
-                 data should include midpoints and inner interpolations.
+        :return: Tracking and augmented data stored in the same frame. The augmented data should
+        include midpoints and inner interpolations.
         """
-        ...
+        return self.raw_df.copy()
 
     @property
     def df(self):
@@ -78,7 +79,7 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
 
     @property
     def frames(self):
-        return len(self.raw_df)
+        return len(self.df)
 
     @cached_property
     def tracked_and_midpoint_labels(self):

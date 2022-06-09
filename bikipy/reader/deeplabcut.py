@@ -60,13 +60,13 @@ class DeepLabCutReader(BaseReader):
             logger.debug(
                 f"{self.df_path.suffix}, is not natively supported by DeepLabCut, "
                 f"assuming user has manually cleaned and exported the data file"
-                f"to another format that is supported by BiKiPy.BaseReader. Good luck"
+                f"to another format that is supported by BiKiPy.BaseReader. Fingers crossed"
             )
             return super().raw_df
 
     @cached_property
     def augmented(self):
-        result = self.raw_df.copy()
+        result = super().augmented
 
         if self.x_add or self.y_add:
             result.loc[:, pd.IndexSlice[:, "x"]] += self.x_add

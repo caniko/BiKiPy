@@ -3,7 +3,6 @@ from logging import getLogger
 from pathlib import Path
 from typing import Literal, Optional, Mapping
 
-import pandas as pd
 import plyer
 import yaml
 from pydantic import DirectoryPath, FilePath, validate_arguments
@@ -13,11 +12,10 @@ from bikipy.ingress.utils.constant import (
     get_project_settings_path,
     load_settings,
 )
+from bikipy.perimeter.base import PerimeterSet
+from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.perimeter.radial.circle import CirclePerimeter
-from bikipy.utils.io.makesense import (
-    from_makesense_coco_polygon,
-    from_makesense_csv_rectangle,
-)
+
 
 logger = getLogger(__name__)
 
@@ -31,7 +29,7 @@ def detect_perimeters_in_project(root_directory: DirectoryPath, create_object: b
         shape, label = get_perimeter_data(perimeter_path)
         data = {"label": label, "shape": shape}
         if create_object:
-            data["perimeter"] = create_perimeter_object(perimeter_path, shape)
+            data["perimeter"] = image_name_to_perimeter_set_from_makesense(perimeter_path, shape)
         detection_data.append(data)
     if not detection_data:
         msg = (
@@ -82,16 +80,20 @@ def add_perimeter_from_makesense(root_directory: DirectoryPath, make_copy: bool 
 
 
 @validate_arguments
-def create_perimeter_object(perimeter_path: FilePath, shape: Optional[Literal["circle", "parallelogram", "polygon", "rectangle"]] = None):
+def image_name_to_perimeter_set_from_makesense(
+    perimeter_path: FilePath, shape: Optional[Literal["circle", "parallelogram", "polygon", "rectangle"]] = None
+) -> PerimeterSet:
     match shape or get_perimeter_data(perimeter_path)[0]:
         case "circle":
-            return CirclePerimeter.from_makesense_line(perimeter_path)
+            image_name_to_perimeter_set = CirclePerimeter.read_makesense_line(perimeter_path)
         case "rectangle":
-            return from_makesense_csv_rectangle(perimeter_path)
+            image_name_to_perimeter_set = PolygonPerimeter.from_makesense_csv_rectangle(perimeter_path)
         case "polygon" | "parallelogram":
-            return from_makesense_coco_polygon(perimeter_path, map_to_label=True)
+            image_name_to_perimeter_set = PolygonPerimeter.from_makesense_coco_polygon(perimeter_path)
         case _:
             raise ValueError
+
+    return tuple(image_name_to_perimeter_set.values())[0]
 
 
 def get_trial_perimeter_label_from_metadata(animal_id_row: Mapping, settings: dict, stage: Optional[int] = None) -> str:
