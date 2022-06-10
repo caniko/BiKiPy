@@ -24,5 +24,5 @@ def test_reduce_likelihoods(dlc_test_instance, roi_a, roi_b):
 
 
 @pytest.mark.parametrize("roi", ("left_ear", "right_ear"))
-def test_region_of_interest_vs_boolean_index(dlc_test_instance, roi):
-    assert dlc_test_instance.region_of_interest_vs_boolean_index[roi] is not None
+def test_region_of_interest_to_boolean_index(dlc_test_instance, roi):
+    assert dlc_test_instance.region_of_interest_to_boolean_index[roi] is not None

@@ -5,7 +5,7 @@ from typing import Union
 
 from bikipy.behaviour.base import BaseTrial
 from bikipy.behaviour.mixin.live import LiveTrial
-from bikipy.core.typing import Perimeter2D
+from bikipy.perimeter.typing import AnyPerimeter
 
 logger = getLogger(__name__)
 
@@ -15,13 +15,13 @@ class InfinityMaze(BaseTrial, LiveTrial):
 
     def __init__(
         self,
-        choice: Perimeter2D,
-        reward_left: Perimeter2D,
-        reward_right: Perimeter2D,
-        return_left: Perimeter2D,
-        return_right: Perimeter2D,
-        delay_entry: Perimeter2D,
-        delay_zone: Perimeter2D,
+        choice: AnyPerimeter,
+        reward_left: AnyPerimeter,
+        reward_right: AnyPerimeter,
+        return_left: AnyPerimeter,
+        return_right: AnyPerimeter,
+        delay_entry: AnyPerimeter,
+        delay_zone: AnyPerimeter,
         regression_seconds_tolerance: Union[float, int] = 1.5,
         regression_instance_tolerance: int = 3,
         *args,
@@ -103,11 +103,11 @@ class InfinityMaze(BaseTrial, LiveTrial):
             self.regressed = False
             self._sequential_regressions += 1
 
-        location_string = self._int_id_vs_perimeter_label[location] if location else None
+        location_string = self._int_id_to_perimeter_label[location] if location else None
         if location_string is None:
             pass
         elif "delay_zone" == location_string:
-            self.initiate_countdown(self._loop_number_vs_delay_time[self.loop_number])
+            self.initiate_countdown(self._loop_number_to_delay_time[self.loop_number])
         elif "delay_entry" == location_string:
             if self._last_node == "delay_zone":
                 self.stop_countdown_prematurely()

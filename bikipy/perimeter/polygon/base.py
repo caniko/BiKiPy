@@ -8,7 +8,7 @@ from typing import Any, ClassVar, Optional, Sequence, Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pydantic import FilePath, validator, DirectoryPath
+from pydantic import DirectoryPath, FilePath, validator
 from pydantic_numpy import NDArray
 
 from bikipy.perimeter.base import BasePerimeter

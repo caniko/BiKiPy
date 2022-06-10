@@ -39,7 +39,7 @@ re_referenced = first_annotation.change_reference_with_coco_with_plural_referenc
     IMAGE_PATH / "references.csv", image_root=IMAGE_PATH, map_to_image_names=False
 )
 
-exp_period_vs_perimeter_set = {
+exp_period_to_perimeter_set = {
     "07.06.2020 (1A)": {1: first_annotation.group, 32: re_referenced[0].group},
     "26.08.2020 (2A)": {1: re_referenced[1].group},
     "31.08.2020 (1B)": {1: re_referenced[2].group, 23: re_referenced[3].group},
@@ -68,25 +68,25 @@ for round_id, data_dirs in enumerate(round_dirs):
         stage = data_dir.name
 
         trial_set_date_n_id = stage.split("_")[1]
-        trial_id_range_vs_area_set = RangeDict(exp_period_vs_perimeter_set[trial_set_date_n_id])
+        trial_id_range_to_area_set = RangeDict(exp_period_to_perimeter_set[trial_set_date_n_id])
 
         trial_set_date = trial_set_date_n_id.split(" ")[0]
         day, month, year = map(int, trial_set_date.split("."))
         date_obj = date(year, month, day)
 
-        trial_id_vs_paths = {}
+        trial_id_to_paths = {}
         for video_path in glob(str(data_dir / "*.mp4")):
             trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(video_path).stem)[0])
-            trial_id_vs_paths[trial_id] = {"video": video_path}
+            trial_id_to_paths[trial_id] = {"video": video_path}
         for data_path in glob(str(data_dir / "*.h5")):
             trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(data_path).stem)[0])
-            trial_id_vs_paths[trial_id]["data"] = data_path
+            trial_id_to_paths[trial_id]["data"] = data_path
 
-        trial_id_vs_exp_meta = {}
-        for trial_id, paths in trial_id_vs_paths.items():
+        trial_id_to_exp_meta = {}
+        for trial_id, paths in trial_id_to_paths.items():
             if not np.any(trial_id == metadata_df.iloc[:, metadata_animal_id_cidx]):
                 continue
-            trial_id_vs_exp_meta[trial_id] = {
+            trial_id_to_exp_meta[trial_id] = {
                 "animal_id": int(
                     metadata_df.loc[metadata_df.iloc[:, metadata_animal_id_cidx] == trial_id]["Animal ID"].iloc[0]
                 ),
@@ -101,8 +101,8 @@ for round_id, data_dirs in enumerate(round_dirs):
                 trial := YMazeExperiment(
                     object_tracking_label_for_kinematics="center_eye",
                     common_trial_keyword_arguments=common_trial_keyword_arguments,
-                    trial_id_vs_keyword_arguments=trial_id_vs_exp_meta,
-                    trial_id_range_vs_keyword_arguments=trial_id_range_vs_area_set,
+                    trial_id_to_keyword_arguments=trial_id_to_exp_meta,
+                    trial_id_range_to_keyword_arguments=trial_id_range_to_area_set,
                     stage=stage,
                     int_id=round_id,
                     data_import_kwargs={

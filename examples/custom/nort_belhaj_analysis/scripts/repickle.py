@@ -8,7 +8,7 @@ from pathlib import Path
 
 from bikipy.behaviour.object_recognition.novel_object_recognition import ObjectField
 from bikipy.perimeter.polygon.base import PolygonPerimeter
-from bikipy.plugins.belhaj import round_vs_apparatus_to_general_object_fields
+from bikipy.plugins.belhaj import round_to_apparatus_to_general_object_fields
 
 NORT_EXAMPLE_DIR = Path("").resolve().parent
 IMAGE_DIR = NORT_EXAMPLE_DIR / "data" / "area_images"
@@ -75,15 +75,15 @@ for annotation_obj_path in B_PICKLE_PATHS:
         pickle.dump(gen_poly_seq, outfile)
 
 with open(A_PICKLE_PATH, "rb") as infile:
-    round_vs_field_apparatus = renamed_load(infile)
+    round_to_field_apparatus = renamed_load(infile)
 
-round_keys = [f"round_{num}" for num in range(len(round_vs_field_apparatus))]
-round_vs_field_vs_apparatus = {
-    rem_round: round_vs_apparatus_to_general_object_fields(field_apparatus, convert_from_legacy=True)
-    for rem_round, field_apparatus in zip(round_keys, round_vs_field_apparatus.values())
+round_keys = [f"round_{num}" for num in range(len(round_to_field_apparatus))]
+round_to_field_to_apparatus = {
+    rem_round: round_to_apparatus_to_general_object_fields(field_apparatus, convert_from_legacy=True)
+    for rem_round, field_apparatus in zip(round_keys, round_to_field_apparatus.values())
 }
 
-for (round_number, apparatuses), path in zip(round_vs_field_vs_apparatus.items(), NEW_A_PICKLE_PATHS):
+for (round_number, apparatuses), path in zip(round_to_field_to_apparatus.items(), NEW_A_PICKLE_PATHS):
     for app_id, apparatus in enumerate(apparatuses):
         apparatuses[app_id].constant_object_perimeter.inspect_image = path.parent / f"training_{apparatus.label}.png"
         apparatuses[app_id].variable_object_perimeter.inspect_image = path.parent / f"training_{apparatus.label}.png"

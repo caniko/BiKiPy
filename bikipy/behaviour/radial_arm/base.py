@@ -6,7 +6,6 @@ from logging import getLogger
 from math import ceil
 from typing import ClassVar, Optional
 
-import numpy as np
 from pydantic import validator
 from pydantic_numpy import NDArray
 
@@ -18,7 +17,7 @@ from bikipy.behaviour.utils import (
     unique_with_counts_zipped,
 )
 from bikipy.core.base_class import BikipyBaseHashable
-from bikipy.core.typing import Perimeter2D
+from bikipy.perimeter.typing import AnyPerimeter
 from bikipy.perimeter.base import PerimeterSet
 from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
@@ -70,8 +69,8 @@ class BaseRadialMazeExperiment(BaseExperiment, RadialMazeBase):
 class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
     corridor_meter_width: float
 
-    center: Perimeter2D
-    arms: tuple[Perimeter2D, ...]
+    center: AnyPerimeter
+    arms: tuple[AnyPerimeter, ...]
 
     @validator("center")
     def center_has_1_as_int_id(cls, value):
@@ -102,7 +101,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return [
             self.sum_of_alternations,
             self.spontaneous_alternations,
-            *self.perimeter_vs_seconds_spent.values(),
+            *self.perimeter_to_seconds_spent.values(),
             *self.perimeter_alternations.values(),
             *self.permutation_alternation_distribution.values(),
         ]
@@ -152,7 +151,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return len(self.reduced_without_center) - 2
 
     @cached_property
-    def perimeter_vs_seconds_spent(self) -> dict:
+    def perimeter_to_seconds_spent(self) -> dict:
         """
         The time spent in each area; arms and center
 
@@ -161,7 +160,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         dict, area vs time
         """
 
-        result = copy(self._arm_center_int_id_vs_zero)
+        result = copy(self._arm_center_int_id_to_zero)
         for label, counts in unique_with_counts_zipped(self.alternation_sequence):
             assert label in result, f"{label} is not in {tuple(result.keys())})"
             result[label] = (counts / self.fps) if self.fps else counts
@@ -201,7 +200,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         -------
         dict, permutation vs number of occurrences.
         """
-        distribution = copy(self._arm_permutation_vs_zero)
+        distribution = copy(self._arm_permutation_to_zero)
         for i in range(self.sum_of_alternations):
             current_permutation = self.reduced_without_center[i : i + self.arm_len]
             if all(arm.int_id in current_permutation for arm in self.arms):
@@ -210,7 +209,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         # result = {}
         # for key, value in distribution.items():
         #     semantic_key = "".join(
-        #         [self.perimeter_set.int_id_vs_label[integer] for integer in key]
+        #         [self.perimeter_set.int_id_to_label[integer] for integer in key]
         #     )
         #     result[semantic_key] = value
 
@@ -245,7 +244,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return 100.0 * alternations / self.sum_of_alternations
 
     @classmethod
-    def with_reference_point(cls, center: Perimeter2D, arms: tuple, reference_point: NDArray, **kwargs):
+    def with_reference_point(cls, center: AnyPerimeter, arms: tuple, reference_point: NDArray, **kwargs):
         return cls(
             center=center.change_reference(reference_point),
             arms=[arm.change_reference(reference_point) for arm in arms],
@@ -261,15 +260,15 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         )
 
     @cached_property
-    def _arm_permutation_vs_zero(self):
+    def _arm_permutation_to_zero(self):
         return {arm: 0 for arm in self._arm_int_id_permutations}
 
     @property
     def _arm_center_int_ids(self):
-        return self.perimeter_set.perimeter_vs_int_id
+        return self.perimeter_set.perimeter_to_int_id
 
     @cached_property
-    def _arm_center_int_id_vs_zero(self):
+    def _arm_center_int_id_to_zero(self):
         return {perimeter.int_id: 0 for perimeter in self._arm_center_int_ids}
 
 

@@ -2,11 +2,11 @@ import os
 from abc import ABC
 from functools import cached_property, lru_cache
 from logging import getLogger
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Hashable, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import Field, validate_arguments, validator
+from pydantic import Field, validate_arguments, validator, BaseModel
 from pydantic_numpy import NDArray
 from skg import ngauss_fit
 
@@ -73,7 +73,7 @@ class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelM
 
     _pandas_multi_index_level: ClassVar[int] = 3
 
-    def trial_keyword_arguments(self, trial_id: int) -> dict:
+    def trial_keyword_arguments(self, trial_id: Hashable) -> dict:
         result = super().trial_keyword_arguments(trial_id)
         result["rectangle_2d_bin"] = self.rectangle_2d_bin
         return result
@@ -267,36 +267,6 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
                 self.gaussian_center_to_periphery_score,
             ]
         )
-
-    def __getattr__(self, item: str) -> Any:
-        if item != "quadrants" and not item.startswith("quadrant") and not item == "quadrant_location_sequence":
-            return super(object, self).__getattr__(item)
-
-        quadrant_grid_coordinates = None
-        if self.rectangle_2d_bin == (2, 2) and ("upper" in item or "lower" in item):
-            for english_label, coordinates in _TWO_BY_TWO_IN_ENGLISH.items():
-                if english_label in item:
-                    quadrant_grid_coordinates = coordinates
-                    break
-        values_in_item = item.split("_")
-        if not quadrant_grid_coordinates:
-            quadrant_grid_coordinates = tuple(int(i) for i in values_in_item[1] if i.isdigit())
-        if not quadrant_grid_coordinates:
-            # An exception will be raised
-            return super(object, self).__getattr__(item)
-
-        data_type = values_in_item[2]
-        if data_type == "boolean_index":
-            return self.quadrants[quadrant_grid_coordinates].confinement_boolean_index
-        if data_type == "motion":
-            return self.quadrants[quadrant_grid_coordinates].motion
-        if data_type == "entries":
-            return self.quadrants[quadrant_grid_coordinates].entries
-        if data_type == "secondsPresent":
-            return self.quadrants[quadrant_grid_coordinates].seconds_present
-
-        # An exception will be raised
-        return super(object, self).__getattr__(item)
 
 
 @lru_cache

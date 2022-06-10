@@ -3,18 +3,20 @@ sequence_index_to_trial_class_name:
   0: ObjectsInUpdatingLocationsTrainingTrial
   1: ObjectsInUpdatingLocationsUpdateTrial
   2: ObjectsInUpdatingLocationsTestTrial
-meter_pixel_ratio: global_perimeter
+meter_pixel_ratio: metadata
 perimeter:
-  perimeter_definition_strategy: trialwise
+  label_prefix: object
+  label_suffix: null
 ingress:
   stageful_metadata: true
   center_definition_strategy: metadata
-  absent_from_metadata: ignore
+  perimeter_definition_strategy: trialwise
 experiment:
   defined:
     gaze_start_point_label: center_eye
     gaze_travel_direction_point_label: nose
-    object_tracking_label_for_kinematics: center
+    object_tracking_label_for_kinematics: center_eye
+    manual_recording_resolution: [ 1920, 1080 ]
     manual_fps: 30
     data_import_kwargs:
       init_from: parquet
@@ -69,9 +71,9 @@ experiment:
       format: date
     - type: string
       format: date-time
-    trial_id_range_vs_keyword_arguments: RangedDict
-    trial_id_vs_keyword_arguments: object
-    trial_id_vs_trial_class_name: object
+    trial_id_range_to_keyword_arguments: RangedDict
+    trial_id_to_keyword_arguments: object
+    trial_id_to_trial_class_name: object
     video_path: string
 immutable:
   metadata_filename: metadata.xlsx

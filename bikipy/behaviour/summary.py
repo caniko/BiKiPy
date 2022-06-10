@@ -30,7 +30,7 @@ class StatisticalAnalysis(BikipyBase):
     def __repr__(self):
         return self.analysis_df
 
-    def categorical_vs_feature_pairwise_tukey(self):
+    def categorical_to_feature_pairwise_tukey(self):
         result = []
         for category in self.category_columns:
             for feature_column in self.feature_columns:
@@ -54,7 +54,7 @@ class StatisticalAnalysis(BikipyBase):
                 result.append(tukey_df)
         pd.concat(result).to_excel(self.analysis_path / "tukey.xlsx")
 
-    def categorical_vs_feature_pairwise_bonferroni(self):
+    def categorical_to_feature_pairwise_bonferroni(self):
         results = []
         for category in self.category_columns:
             for feature_column in self.feature_columns:

@@ -1,15 +1,14 @@
 from collections.abc import Sequence as AbcSequence
-from functools import cached_property, lru_cache
-from typing import Optional, Sequence, Any
+from functools import cached_property
+from typing import Optional, Sequence
 
 from pydantic import Field, validator
 
 from bikipy.core.base_class import BikipyBase
-from bikipy.core.typing import Perimeter2D
+from bikipy.perimeter.typing import AnyPerimeter
 from bikipy.feature.physical_object.core import PhysicalObjectSet
-from bikipy.perimeter.base import PerimeterSet, BasePerimeter
+from bikipy.perimeter.base import PerimeterSet
 from bikipy.perimeter.polygon.base import PolygonPerimeter
-from bikipy.perimeter.radial.circle import CirclePerimeter
 
 
 class ObjectField(BikipyBase):
@@ -18,15 +17,16 @@ class ObjectField(BikipyBase):
     of the object recognition trials.
 
     Each stage field can be inspected by using the item getter, <ObjectField object>[stage_id].
-    Perimeter2D
-        | Sequence[Perimeter2D]
-        | dict[int, Perimeter2D]
-        | dict[str, Perimeter2D]
-        | dict[str, Sequence[Perimeter2D]]
-        | dict[str, dict[int, Perimeter2D]]
     """
 
-    perimeters: dict[str, CirclePerimeter] = Field(
+    object_field_perimeter_sequence: (
+        AnyPerimeter
+        | Sequence[AnyPerimeter]
+        | dict[int, AnyPerimeter]
+        | dict[str, AnyPerimeter]
+        | dict[str, Sequence[AnyPerimeter]]
+        | dict[str, dict[int, AnyPerimeter]]
+    ) = Field(
         ...,
         description="""
         Each perimeter type defined by the experiment design is a key-value pair, where the value is:
@@ -46,7 +46,7 @@ class ObjectField(BikipyBase):
         field_schema.update({"type": "bikipy.feature.physical_object.ObjectField"})
 
     def __len__(self):
-        return len(self.perimeters)
+        return len(self.object_field_perimeter_sequence)
 
     def __getitem__(self, stage):
         if not isinstance(stage, int):
@@ -57,7 +57,7 @@ class ObjectField(BikipyBase):
             raise ValueError(msg)
 
         perimeter_set = []
-        for label, perimeter_reference in self.perimeters.items():
+        for label, perimeter_reference in self.object_field_perimeter_sequence.items():
             if isinstance(perimeter_reference, (dict, AbcSequence)):
                 try:
                     perimeter = perimeter_reference[stage]
@@ -74,7 +74,7 @@ class ObjectField(BikipyBase):
 
         return perimeter_set
 
-    @validator("perimeters")
+    @validator("object_field_perimeter_sequence")
     def ensure_label_definition(cls, value):
         for label, perimeter_reference in value.items():
             if isinstance(perimeter_reference, dict):
@@ -92,17 +92,16 @@ class ObjectField(BikipyBase):
         return value
 
     @cached_property
-    def labels(self) -> tuple[str]:
-        return tuple(self.perimeters)
+    def perimeter_labels(self) -> tuple[str]:
+        return tuple(self.object_field_perimeter_sequence)
 
-    @lru_cache
     def derive_physical_object_set(self, stage: int, **physical_object_set_kwargs):
         return PhysicalObjectSet.from_perimeter(*self[stage], **physical_object_set_kwargs)
 
     @classmethod
-    def from_perimeter_set(cls, perimeter_set: PerimeterSet):
+    def from_perimeter_set(cls, perimeter_set: PerimeterSet, with_restricted: bool = False):
         label_to_perimeter = {}
-        for perimeter in perimeter_set.perimeters:
+        for perimeter in perimeter_set.all_perimeters if with_restricted else perimeter_set.perimeters:
             if not perimeter.label:
                 msg = "A perimeter in the provided PerimeterSet has no label"
                 raise ValueError(msg)
@@ -110,18 +109,18 @@ class ObjectField(BikipyBase):
                 msg = "Duplicate perimeter labels"
                 raise ValueError(msg)
             label_to_perimeter[perimeter.label] = perimeter
-        return cls(perimeters=label_to_perimeter)
+        return cls(object_field_perimeter_sequence=label_to_perimeter)
 
     @classmethod
     def nort_format(
         cls,
-        constant_object_perimeter: Perimeter2D,
-        variable_object_perimeter: Perimeter2D,
-        novel_object_perimeter: Perimeter2D,
-        novelty_constant_object_perimeter: Optional[Perimeter2D] = None,
+        constant_object_perimeter: AnyPerimeter,
+        variable_object_perimeter: AnyPerimeter,
+        novel_object_perimeter: AnyPerimeter,
+        novelty_constant_object_perimeter: Optional[AnyPerimeter] = None,
     ):
         return cls(
-            perimeters={
+            object_field_perimeter_sequence={
                 "novel": (variable_object_perimeter, novel_object_perimeter),
                 "constant": (
                     constant_object_perimeter,

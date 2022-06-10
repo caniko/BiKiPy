@@ -1,19 +1,18 @@
+from abc import ABC
 from functools import cached_property
 from logging import getLogger
-from typing import ClassVar, Optional
+from typing import ClassVar, Hashable, Optional
 
 import pandas as pd
 from pydantic import Field, root_validator
 
 from bikipy.behaviour.mixin.physical_object import (
-    PhysicalObjectBaseMixin,
-    PhysicalObjectExperimentMixin,
+    PhysicalObjectExperimentMixin, PhysicalObjectTrialMixin,
 )
 from bikipy.behaviour.rectangle.square import (
     SquareEnclosedExperiment,
     SquareEnclosedTrial,
 )
-from bikipy.feature.physical_object.core import PhysicalObjectSet
 from bikipy.feature.physical_object.field import ObjectField
 
 logger = getLogger(__name__)
@@ -26,13 +25,12 @@ class ObjectRecognitionExperiment(SquareEnclosedExperiment, PhysicalObjectExperi
         object-presence sequences are defined by dictionary.
         """
     )
-    first_stage_has_no_object: ClassVar[bool] = True
+    first_stage_has_no_object: ClassVar[bool] = False
 
-    def trial_keyword_arguments(self, trial_id: int) -> dict:
+    def trial_keyword_arguments(self, trial_id: Hashable) -> dict:
         upstream_kwargs = super().trial_keyword_arguments(trial_id)
-        stage = upstream_kwargs["stage"]
 
-        if self.first_stage_has_no_object and stage == 0:
+        if self.first_stage_has_no_object and upstream_kwargs["stage"] == 0:
             return upstream_kwargs
 
         result = {
@@ -40,20 +38,13 @@ class ObjectRecognitionExperiment(SquareEnclosedExperiment, PhysicalObjectExperi
             **self._physical_object_keyword_arguments,
             "perimeter_border_normal_metric_magnitude": self.perimeter_border_normal_metric_magnitude,
         }
-        if self.global_object_field and "object_field" not in result:
-            result["object_field"] = self.global_object_field[stage]
-        elif "object_field" in result:
-            pass
-        else:
-            msg = f"Object field not defined for trial with ID #{trial_id}"
-            raise ValueError(msg)
 
         return result
 
     @root_validator
-    def global_object_field_and_id_vs_object_field_mutually_exclusive(cls, values):
-        if values["global_object_field"] is not None and values["id_vs_object_field"] is not None:
-            msg = "global_object_field and id_vs_object_field are mutually exclusive"
+    def global_object_field_and_id_to_object_field_mutually_exclusive(cls, values):
+        if values["global_object_field"] is not None and values["id_to_object_field"] is not None:
+            msg = "global_object_field and id_to_object_field are mutually exclusive"
             raise ValueError(msg)
         return values
 
@@ -65,21 +56,9 @@ class ObjectRecognitionHabituationTrial(SquareEnclosedTrial):
     trial_label: ClassVar[str] = "Habituation"
 
 
-class GenericObjectRecognitionTrial(SquareEnclosedTrial, PhysicalObjectBaseMixin):
-    object_field: Optional[ObjectField] = None
-
+class GenericObjectRecognitionTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, ABC):
     general_feature_headers: ClassVar[list] = Field(default_factory=list)
     object_feature_headers: ClassVar[list] = Field(default_factory=list)
-
-    @cached_property
-    def physical_object_set(self) -> PhysicalObjectSet:
-        return self.object_field.derive_physical_object_set(
-            self.trial_stage_index, **self._physical_object_keyword_arguments
-        )
-
-    @cached_property
-    def number_of_objects(self) -> int:
-        return len(self.object_field)
 
     """
     Remember to implement both feature headers and summary for each generic feature you plan to add.
@@ -90,13 +69,13 @@ class GenericObjectRecognitionTrial(SquareEnclosedTrial, PhysicalObjectBaseMixin
     def feature_headers(self) -> list:
         general_feature_headers = []
         # Add generic feature headers ======================================
-        if self.number_of_objects == 2:
+        if self.number_of_physical_objects == 2:
             general_feature_headers.append("Absolute pair discrimination")
         # ==================================================================
         result = pd.MultiIndex.from_product([["General"], general_feature_headers + self.general_feature_headers])
         return result + pd.MultiIndex.from_product(
             [
-                list(self.object_field.labels),
+                list(self.physical_object_labels),
                 [
                     # Add object feature headers =========================================================
                     "Seconds observing",
@@ -110,7 +89,7 @@ class GenericObjectRecognitionTrial(SquareEnclosedTrial, PhysicalObjectBaseMixin
     def general_features(self) -> list:
         generic = []
         # Add generic feature headers ================================================================
-        if self.number_of_objects == 2:
+        if self.number_of_physical_objects == 2:
             generic.append(self.physical_object_set)
         # ============================================================================================
         return generic
@@ -126,5 +105,5 @@ class GenericObjectRecognitionTrial(SquareEnclosedTrial, PhysicalObjectBaseMixin
     @property
     def feature_summary_row(self):
         # Don't inherit this! Inherit general_features and object_features individually
-        assert len(self.object_features) % self.number_of_objects == 0
+        assert len(self.object_features) % self.number_of_physical_objects == 0
         return self.general_features + self.object_features

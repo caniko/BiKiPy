@@ -24,9 +24,9 @@ The following sub-section define setting parameters that are universal across pr
 
 Meter pixel ratio
 ~~~~~~~~~~~~~~~~~
-The meter pixel ratio must be defined to convert pixel distances to metric units:
+The meter pixel ratio must be defined to convert pixel distances to metric units after project initialization. Supported methods:
 
-- Can be defined manually as an argument in :code:`sequence_generate_configuration()`.
+- Can be defined manually in the settings.yaml file.
 - Line segment from video:
    #. Grab a video frame from one of the trial videos
    #. Define the line in MakeSense

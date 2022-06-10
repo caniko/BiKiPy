@@ -42,6 +42,6 @@ def image_name_to_point_from_makesense(data_path: FilePath, return_first_value: 
         if return_first_value:
             return reference_point
 
-        result["image_name"] = reference_point
+        result[row["image_name"]] = reference_point
 
     return result

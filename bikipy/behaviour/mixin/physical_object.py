@@ -6,10 +6,11 @@ import numpy as np
 from pydantic import Field
 
 from bikipy.core.base_class import BikipyBase
+from bikipy.perimeter.typing import AnyPerimeter
 from bikipy.feature.physical_object.core import PhysicalObjectSet
 
 
-class PhysicalObjectBaseMixin(BikipyBase, ABC):
+class PhysicalObjectBaseMixin(BikipyBase):
     gaze_start_point_label: str = Field(description="Label of the eye center in the df")
     gaze_travel_direction_point_label: str = Field(description="Label signifying the area where the gaze vector")
     perimeter_border_normal_metric_magnitude: Optional[float] = Field(
@@ -20,41 +21,22 @@ class PhysicalObjectBaseMixin(BikipyBase, ABC):
     minimum_seconds_attention: float = 0.5
     maximum_seconds_distraction: float = 0.5
 
-    @property
-    @abstractmethod
-    def meters_per_pixel(self):
-        """Used to compute the metric distance from pixel values, and vice versa"""
-        ...
-
-    @property
-    @abstractmethod
-    def video_metadata_can_be_defined(self):
-        ...
-
     @cached_property
     def perimeter_border_normal_pixel_magnitude(self):
         return self.perimeter_border_normal_metric_magnitude / np.mean(self.meters_per_pixel)
 
     @cached_property
     def _physical_object_keyword_arguments(self):
-        try:
-            result = {
-                "gaze_travel_direction_point_label": self.gaze_travel_direction_point_label,
-                "gaze_start_point_label": self.gaze_start_point_label,
-                "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
-                "minimum_seconds_attention": self.minimum_seconds_attention,
-                "maximum_seconds_distraction": self.maximum_seconds_distraction,
-                "inspection_dir": self.inspection_dir,
-            }
-        except AttributeError as e:
-            msg = "The class does not support instancing PhysicalObject"
-            raise NotImplementedError(msg) from e
-
-        if self.video_metadata_can_be_defined:
-            result["fps"] = self.fps
-            result["perimeter_border_normal_pixel_magnitude"] = self.perimeter_border_normal_pixel_magnitude
-
-        return result
+        return {
+            "fps": self.fps,
+            "perimeter_border_normal_pixel_magnitude": self.perimeter_border_normal_pixel_magnitude,
+            "gaze_travel_direction_point_label": self.gaze_travel_direction_point_label,
+            "gaze_start_point_label": self.gaze_start_point_label,
+            "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
+            "minimum_seconds_attention": self.minimum_seconds_attention,
+            "maximum_seconds_distraction": self.maximum_seconds_distraction,
+            "inspection_dir": self.inspection_dir,
+        }
 
 
 class PhysicalObjectExperimentMixin(PhysicalObjectBaseMixin, ABC):
@@ -62,10 +44,24 @@ class PhysicalObjectExperimentMixin(PhysicalObjectBaseMixin, ABC):
 
 
 class PhysicalObjectTrialMixin(PhysicalObjectBaseMixin, ABC):
-    @property
+    @cached_property
     @abstractmethod
-    def physical_object_set(self) -> PhysicalObjectSet:
+    def all_physical_object_perimeters(self) -> tuple[AnyPerimeter, ...]:
         ...
+
+    @cached_property
+    def number_of_physical_objects(self) -> int:
+        return len(self.all_physical_object_perimeters)
+
+    @cached_property
+    def physical_object_labels(self):
+        return tuple(perimeter.label for perimeter in self.all_physical_object_perimeters)
+
+    @cached_property
+    def physical_object_set(self) -> PhysicalObjectSet:
+        return PhysicalObjectSet.from_perimeter(
+            *self.all_physical_object_perimeters, **self._physical_object_keyword_arguments
+        )
 
     @cached_property
     def _physical_object_keyword_arguments(self):

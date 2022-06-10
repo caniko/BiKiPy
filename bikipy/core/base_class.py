@@ -1,25 +1,20 @@
-from abc import ABC
 from datetime import date, datetime
 from functools import cached_property
 from pathlib import Path
 from typing import ClassVar, Optional, Union
 
 import compress_pickle
-from pydantic import BaseModel, DirectoryPath, Extra, Field
+from pydantic import BaseModel, DirectoryPath, Field
 
 
 class BikipyBase(BaseModel):
-    category: ClassVar[Optional[str]] = None
-
     class Config:
-        underscore_attrs_are_private = True
-        arbitrary_types_allowed = True
-        frozen = False
-        extra = Extra.allow
         keep_untouched = (cached_property,)
 
+    category: ClassVar[Optional[str]] = None
 
-class BikipyBaseHashable(BikipyBase, ABC):
+
+class BikipyBaseHashable(BikipyBase):
     int_id: Optional[int] = None
     label: Optional[str] = None
     group_label: Optional[str] = None

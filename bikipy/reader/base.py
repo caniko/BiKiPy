@@ -3,7 +3,7 @@ from collections import abc
 from concurrent.futures import ProcessPoolExecutor
 from functools import cached_property, lru_cache, partial
 from logging import getLogger
-from typing import Any, Generator, Hashable, Iterable, Optional, Union, Sequence
+from typing import Any, Generator, Hashable, Iterable, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -14,7 +14,7 @@ from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.mixin import VideoMetadataMixin
 from bikipy.utils.video import get_video_data
 
-FILE_EXTENSION_VS_PANDAS_READER = {
+FILE_EXTENSION_to_PANDAS_READER = {
     ".parquet": pd.read_parquet,
     ".hdf": pd.read_hdf,
     ".h5": pd.read_hdf,
@@ -87,7 +87,7 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
 
     @cached_property
     def raw_df(self):
-        return FILE_EXTENSION_VS_PANDAS_READER[self.df_path.suffix](self.df_path)
+        return FILE_EXTENSION_to_PANDAS_READER[self.df_path.suffix](self.df_path)
 
     @staticmethod
     def get_info_from_video_path(video_path):
@@ -98,7 +98,7 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
         }
 
     @property
-    def region_of_interest_vs_boolean_index(self):
+    def region_of_interest_to_boolean_index(self):
         raise NotImplementedError
 
     @property
@@ -107,7 +107,7 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
 
     @cached_property
     def valid_point_indices(self):
-        return {roi: np.where(self.region_of_interest_vs_boolean_index[roi])[0] for roi in self.tracked_point_labels}
+        return {roi: np.where(self.region_of_interest_to_boolean_index[roi])[0] for roi in self.tracked_point_labels}
 
     @cached_property
     def valid_tails(self):
@@ -129,7 +129,7 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
     @cached_property
     def validity_ratio(self):
         return {
-            roi: np.sum(self.region_of_interest_vs_boolean_index[roi]) / len(self.raw_df)
+            roi: np.sum(self.region_of_interest_to_boolean_index[roi]) / len(self.raw_df)
             for roi in self.tracked_point_labels
         }
 

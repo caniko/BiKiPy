@@ -14,7 +14,7 @@ from bikipy.behaviour.rectangle.square import SquareEnclosedTrial
 logger = getLogger(__name__)
 
 
-EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME = {
+EXPERIMENT_STAGE_to_TRIAL_CLASS_NAME = {
     "habituation": 0,
     "open_field": 0,
     "training": 1,
@@ -105,6 +105,7 @@ class NortNoveltyTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
 
 
 class NortExperiment(ObjectRecognitionExperiment):
+    first_stage_has_no_object: ClassVar = True
     trial_classes: ClassVar = (
         NortHabituationTrial,
         NortTrainingTrial,

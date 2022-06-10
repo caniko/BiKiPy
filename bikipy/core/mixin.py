@@ -14,10 +14,6 @@ class VideoMetadataMixin(BikipyBase):
     manual_recording_resolution: Optional[NDArray] = None
     manual_fps: Optional[float] = None
 
-    @cached_property
-    def video_metadata_can_be_defined(self):
-        return self.video_path or (self.manual_recording_resolution and self.manual_fps)
-
     @property
     def recording_resolution(self) -> NDArray:
         return self.manual_recording_resolution or self._video_metadata[0]

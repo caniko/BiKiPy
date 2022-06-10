@@ -5,11 +5,8 @@ from matplotlib import pyplot as plt
 from pydantic import FilePath
 from pydantic_numpy import NDArray
 
-from bikipy.utils.misc import (
-    generic_multi_indexer,
-    read_image,
-    read_makesense_point_csv,
-)
+from bikipy.utils.io.makesense import read_makesense_point
+from bikipy.utils.misc import generic_multi_indexer, read_image
 
 
 def distance_between_two_perimeters(perimeter_a, perimeter_b):
@@ -25,7 +22,7 @@ def get_coco_array_from_path_or_array(
         raise ValueError(msg)
 
     if metadata_path:
-        result = read_makesense_point_csv(metadata_path)
+        result = read_makesense_point(metadata_path)
     elif np.any(coco_array):
         result = coco_array
     else:

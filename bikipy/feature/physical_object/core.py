@@ -11,7 +11,7 @@ from pydantic_numpy import NDArray
 
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BikipyBase
-from bikipy.core.typing import Perimeter2D
+from bikipy.perimeter.typing import AnyPerimeter
 from bikipy.feature.attention.main import perimeter_attention
 from bikipy.perimeter.base import PerimeterSet
 
@@ -24,7 +24,7 @@ class PhysicalObject(BikipyBase):
     us to define methods that require the respective attributes, think of it as a union between the classes!
     """
 
-    perimeter: Perimeter2D
+    perimeter: AnyPerimeter
     reader: Any
     gaze_start_point_label: str
     gaze_travel_direction_point_label: str
@@ -179,7 +179,7 @@ class PhysicalObjectSet(BikipyBase):
         overlapping_frames = 0
 
         result = np.zeros(len(self._first_object), dtype=np.uint8)
-        for label, physical_object in self._label_vs_physical_object.items():
+        for label, physical_object in self._label_to_physical_object.items():
             current_boolean_index = physical_object.observance_boolean_index
 
             overlapping_frames += np.sum(current_boolean_index & result)
@@ -206,20 +206,20 @@ class PhysicalObjectSet(BikipyBase):
         return np.array(reduce_repeating_sequences(self.observation_sequence, frame_tolerance=self.fps / 0.35))
 
     @cached_property
-    def physical_object_id_vs_observation_instances(self):
+    def physical_object_id_to_observation_instances(self):
         return {label: count for label, count in np.unique(self.reduced_observation_sequence, return_counts=True)}
 
     @cached_property
     def sum_of_observation_instances(self):
-        return sum(self.physical_object_id_vs_observation_instances.values())
+        return sum(self.physical_object_id_to_observation_instances.values())
 
     @cached_property
     def object_bias_score(self) -> dict:
         if not self.seconds_observing:
-            return self._label_vs_zero
+            return self._label_to_zero
         return {
             label: 100.0 * physical_object.attention_filtered_seconds_observing / self.seconds_observing
-            for label, physical_object in self._label_vs_physical_object.items()
+            for label, physical_object in self._label_to_physical_object.items()
         }
 
     @cached_property
@@ -235,8 +235,8 @@ class PhysicalObjectSet(BikipyBase):
 
         try:
             return (
-                self._label_vs_physical_object["novel"].attention_filtered_seconds_observing
-                - self._label_vs_physical_object["constant"].attention_filtered_seconds_observing
+                self._label_to_physical_object["novel"].attention_filtered_seconds_observing
+                - self._label_to_physical_object["constant"].attention_filtered_seconds_observing
             )
         except KeyError:
             msg = "The physical_objects must have a novel and a constant label " "to compute absolute_discrimination"
@@ -253,7 +253,7 @@ class PhysicalObjectSet(BikipyBase):
         )
 
     @cached_property
-    def _label_vs_physical_object(self) -> dict:
+    def _label_to_physical_object(self) -> dict:
         return {label: physical_object for label, physical_object in zip(self._labels, self.physical_objects)}
 
     def plot(self, ax: Any = None):
@@ -271,8 +271,8 @@ class PhysicalObjectSet(BikipyBase):
         return tuple(range(1, len(self) + 1))
 
     @cached_property
-    def _label_vs_zero(self) -> dict:
-        return {label: 0.0 for label in self._label_vs_physical_object}
+    def _label_to_zero(self) -> dict:
+        return {label: 0.0 for label in self._label_to_physical_object}
 
     @cached_property
     def _first_object(self):

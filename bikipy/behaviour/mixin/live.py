@@ -77,7 +77,7 @@ class LiveTrial(BaseModel, ABC):
         return delay_timings_trial_count, manual_total_loops_per_trial
 
     @cached_property
-    def _loop_number_vs_delay_time(self):
+    def _loop_number_to_delay_time(self):
         return (
             RangeDict(
                 {i: delay_time for i, delay_time in zip(self.delay_timings_trial_count, self.delay_timings)},

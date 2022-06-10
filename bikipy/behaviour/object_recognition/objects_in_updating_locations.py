@@ -16,12 +16,11 @@ WT: 3 > 4 > 1 > 2
 """
 from typing import ClassVar
 
-from pydantic import root_validator, validator
-
 from bikipy.behaviour.object_recognition.base import (
     GenericObjectRecognitionTrial,
     ObjectRecognitionExperiment,
 )
+from bikipy.perimeter.typing import AnyPerimeter
 from bikipy.feature.physical_object.field import ObjectField
 
 
@@ -34,39 +33,41 @@ def _four_objects_are_indexes(object_field: ObjectField):
 
 
 class ObjectsInUpdatingLocationsTrainingTrial(GenericObjectRecognitionTrial):
+    object_1: AnyPerimeter = ...
+    object_2: AnyPerimeter = ...
+
     trial_stage_index: ClassVar[int] = 0
     trial_label: ClassVar[str] = "Training"
 
-    @validator("object_field")
-    def object_field_defined_1_and_2(cls, value):
-        if 1 not in value.perimeters or 2 not in value.perimeters:
-            msg = f"1 and 2 has to be defined in object_field when assigned to {cls.__name__}"
-            raise AttributeError(msg)
-        return value
+    @property
+    def all_physical_object_perimeters(self) -> tuple[AnyPerimeter, ...]:
+        return self.object_1, self.object_2
 
 
 class ObjectsInUpdatingLocationsUpdateTrial(GenericObjectRecognitionTrial):
+    object_1: AnyPerimeter = ...
+    object_4: AnyPerimeter = ...
+
     trial_stage_index: ClassVar[int] = 1
     trial_label: ClassVar[str] = "Update"
 
-    @validator("object_field")
-    def object_field_defined_1_and_4(cls, value):
-        if 1 not in value.perimeters or 4 not in value.perimeters:
-            msg = f"1 and 4 has to be defined in object_field when assigned to {cls.__name__}"
-            raise AttributeError(msg)
-        return value
+    @property
+    def all_physical_object_perimeters(self) -> tuple[AnyPerimeter, ...]:
+        return self.object_1, self.object_4
 
 
 class ObjectsInUpdatingLocationsTestTrial(GenericObjectRecognitionTrial):
+    object_1: AnyPerimeter = ...
+    object_2: AnyPerimeter = ...
+    object_3: AnyPerimeter = ...
+    object_4: AnyPerimeter = ...
+
     trial_stage_index: ClassVar[int] = 2
     trial_label: ClassVar[str] = "Test"
 
-    @validator("object_field")
-    def object_field_defined_all_4(cls, value):
-        if _four_objects_are_indexes(value):
-            msg = f"All 4 objects has to be defined in object_field when assigned to {cls.__name__}"
-            raise AttributeError(msg)
-        return value
+    @property
+    def all_physical_object_perimeters(self) -> tuple[AnyPerimeter, ...]:
+        return self.object_1, self.object_2, self.object_3, self.object_4
 
 
 class ObjectsInUpdatingLocationsExperiment(ObjectRecognitionExperiment):
@@ -75,12 +76,3 @@ class ObjectsInUpdatingLocationsExperiment(ObjectRecognitionExperiment):
         ObjectsInUpdatingLocationsUpdateTrial,
         ObjectsInUpdatingLocationsTestTrial,
     )
-
-    @root_validator
-    def four_objects_must_be_defined_and_are_indexes(cls, values):
-        if "global_object" in values:
-            _four_objects_are_indexes(values["global_object"])
-        else:
-            for object_field in values["id_vs_object_field"].values():
-                _four_objects_are_indexes(object_field)
-        return values

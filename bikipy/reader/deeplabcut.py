@@ -135,7 +135,7 @@ class DeepLabCutReader(BaseReader):
         return *self.tracked_point_labels, *self.midpoint_groups.keys()
 
     @cached_property
-    def region_of_interest_vs_boolean_index(self):
+    def region_of_interest_to_boolean_index(self):
         return {roi: self.df[(roi, "likelihood")].values >= self.min_likelihood for roi in self.tracked_point_labels}
 
     @property

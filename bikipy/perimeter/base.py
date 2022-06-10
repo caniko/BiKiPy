@@ -6,7 +6,7 @@ from typing import Any, ClassVar, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from pydantic import DirectoryPath, FilePath, root_validator
+from pydantic import DirectoryPath, FilePath, root_validator, validate_arguments
 from pydantic_numpy import NDArray
 
 from bikipy.core.base_class import BikipyBase, BikipyBaseHashable
@@ -127,7 +127,7 @@ class BasePerimeter(BikipyBaseHashable):
 
         coco_array = get_coco_array_from_path_or_array(metadata_path, coco_array)
 
-        img_name_vs_reference_points = {row[3]: get_reference_point_from_array(row) for row in coco_array}
+        img_name_to_reference_points = {row[3]: get_reference_point_from_array(row) for row in coco_array}
         if not np.any(self.reference_point):
             msg = "The reference polygon has no reference point"
             raise ValueError(msg)
@@ -135,11 +135,11 @@ class BasePerimeter(BikipyBaseHashable):
         if map_to_image_names:
             return {
                 img_name: _change_reference_loop_func(reference_point, img_name)
-                for img_name, reference_point in img_name_vs_reference_points.items()
+                for img_name, reference_point in img_name_to_reference_points.items()
             }
         return [
             _change_reference_loop_func(reference_point, img_name)
-            for img_name, reference_point in img_name_vs_reference_points.items()
+            for img_name, reference_point in img_name_to_reference_points.items()
         ]
 
     def confined_coordinates(self, coordinates: Sequence, inspect: bool = False, ax: Any = None):
@@ -242,6 +242,12 @@ class BasePerimeter(BikipyBaseHashable):
 
         return presence, valid_indices, boolean_array
 
+    def apply_label_prefix_suffix(self, prefix: Optional[str] = None, suffix: Optional[str] = None) -> None:
+        if prefix:
+            self.label = f"{prefix}_{self.label}"
+        if suffix:
+            self.label = f"{self.label}_{suffix}"
+
     def plot(
         self,
         ax: Any = None,
@@ -312,15 +318,15 @@ class PerimeterSet(BikipyBase):
         )
 
     def __getitem__(self, item: Union[str, int]):
-        for perimeter in self._all_perimeters:
+        for perimeter in self.all_perimeters:
             if perimeter.label == item or perimeter.int_id == item:
                 return perimeter
-        raise KeyError(f"Item was not found, {item} amongst {self._all_perimeters}")
+        raise KeyError(f"Item was not found, {item} amongst {self.all_perimeters}")
 
     @cached_property
     def group(self):
         grouped = {}
-        for perimeter in self._all_perimeters:
+        for perimeter in self.all_perimeters:
             if (label := perimeter.group_label) not in grouped:
                 grouped[label] = [perimeter]
             else:
@@ -340,12 +346,12 @@ class PerimeterSet(BikipyBase):
         """
         :return: The mean of all perimeter centroids in the set
         """
-        return np.mean([perimeter.centroid for perimeter in self.perimeters], axis=0)
+        return np.mean([perimeter.centroid for perimeter in self.all_perimeters], axis=0)
 
     def discrete_confined_coordinates(self, coordinates: Sequence, inspect: bool = False):
         ax = self.plot() if inspect else None
         result = {}
-        for i, perimeter in enumerate(self._all_perimeters):
+        for i, perimeter in enumerate(self.all_perimeters):
             confined_coordinates = perimeter.confined_coordinates(coordinates, ax=ax)
             result[perimeter.best_id or i] = confined_coordinates
         if inspect:
@@ -410,26 +416,26 @@ class PerimeterSet(BikipyBase):
 
         perimeter_set_kwargs = {}
         for perimeter in self.perimeters:
-            image_name_vs_referenced_perimeters = perimeter.change_reference_with_coco_with_plural_references(
+            image_name_to_referenced_perimeters = perimeter.change_reference_with_coco_with_plural_references(
                 coco_array=coco_array, **kwargs
             )
             for (
                 image_name,
                 referenced_perimeter,
-            ) in image_name_vs_referenced_perimeters.items():
+            ) in image_name_to_referenced_perimeters.items():
                 if image_name in perimeter_set_kwargs:
                     perimeter_set_kwargs[image_name]["perimeters"].append(referenced_perimeter)
                 else:
                     perimeter_set_kwargs[image_name] = {"perimeters": [referenced_perimeter]}
 
         for perimeter in self.restricted_perimeters or []:
-            image_name_vs_referenced_perimeters = perimeter.change_reference_with_coco_with_plural_references(
+            image_name_to_referenced_perimeters = perimeter.change_reference_with_coco_with_plural_references(
                 coco_array, **kwargs
             )
             for (
                 image_name,
                 referenced_perimeter,
-            ) in image_name_vs_referenced_perimeters.items():
+            ) in image_name_to_referenced_perimeters.items():
                 if "restricted_perimeters" in perimeter_set_kwargs[image_name]:
                     perimeter_set_kwargs[image_name]["restricted_perimeters"].append(referenced_perimeter)
                 else:
@@ -442,23 +448,35 @@ class PerimeterSet(BikipyBase):
             }
         return [self.__class__(**perimeter_data) for perimeter_data in perimeter_set_kwargs.values()]
 
-    @cached_property
-    def perimeter_vs_int_id(self):
-        return {perimeter: perimeter.int_id for perimeter in self.perimeters}
+    def apply_label_prefix_suffix(self, prefix: Optional[str] = None, suffix: Optional[str] = None) -> None:
+        for perimeter in self.all_perimeters:
+            perimeter.apply_label_prefix_suffix(prefix, suffix)
 
     @cached_property
-    def perimeter_vs_labels(self):
-        return {perimeter: perimeter.labels for perimeter in self.perimeters}
+    def perimeter_to_int_id(self):
+        return {perimeter: perimeter.int_id for perimeter in self.all_perimeters}
 
     @cached_property
-    def int_id_vs_label(self):
-        return {perimeter.int_id: perimeter.labels for perimeter in self.perimeters}
+    def perimeter_to_label(self):
+        return {perimeter: perimeter.label for perimeter in self.all_perimeters}
+
+    @cached_property
+    def int_id_to_perimeter(self):
+        return {perimeter.int_id: perimeter for perimeter in self.all_perimeters}
+
+    @cached_property
+    def label_to_perimeter(self):
+        return {perimeter.label: perimeter for perimeter in self.all_perimeters}
+
+    @cached_property
+    def int_id_to_label(self):
+        return {perimeter.int_id: perimeter.label for perimeter in self.all_perimeters}
 
     @property
     def reference_point(self):
-        expected_reference_point = self._all_perimeters[0].reference_point
+        expected_reference_point = self.all_perimeters[0].reference_point
         if equality := np.all(
-            expected_reference_point == perimeter.reference_point for perimeter in self._all_perimeters
+            expected_reference_point == perimeter.reference_point for perimeter in self.all_perimeters
         ):
             logger.warning("The reference points are different within the perimeter set")
         if not equality or not np.any(expected_reference_point):
@@ -467,21 +485,25 @@ class PerimeterSet(BikipyBase):
 
     @property
     def inspect_image(self):
-        result = self.perimeters[0].inspect_image
-        assert all(result == perimeter.inspect_image for perimeter in self._all_perimeters)
+        result = self.all_perimeters[0].inspect_image
+        assert all(result == perimeter.inspect_image for perimeter in self.all_perimeters)
         return result
 
     @property
     def inspect_image_path(self):
-        result = self.perimeters[0].inspect_image_path
-        assert all(result == perimeter.inspect_image_path for perimeter in self._all_perimeters)
+        result = self.all_perimeters[0].inspect_image_path
+        assert all(result == perimeter.inspect_image_path for perimeter in self.all_perimeters)
         return result
 
     @property
-    def _all_perimeters(self) -> Sequence:
+    def all_perimeters(self) -> Sequence:
         if not self.restricted_perimeters:
             return self.perimeters
         return (
             *self.perimeters,
             *self.restricted_perimeters,
         )
+
+    @property
+    def labels(self):
+        return tuple(perimeter.label for perimeter in self.all_perimeters)

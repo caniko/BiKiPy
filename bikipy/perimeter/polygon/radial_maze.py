@@ -10,8 +10,8 @@ from bikipy.perimeter import ParallelogramPerimeter
 from bikipy.perimeter.base import PerimeterSet
 from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.perimeter.polygon.triangular import TriangularPerimeter
+from bikipy.utils.io.makesense import read_makesense_point
 from bikipy.utils.math.geometry import clockwise_argsort_points
-from bikipy.utils.misc import read_makesense_point_csv
 
 logger = getLogger(__name__)
 
@@ -39,7 +39,7 @@ def generate_radial_maze_perimeters(
     center_object.label = "center"
     center_object.group_label = "center"
 
-    csv_array = read_makesense_point_csv(line_csv_path).T
+    csv_array = read_makesense_point(line_csv_path).T
     labels = csv_array[0]
     number_of_arms = len(labels)
     center_object.int_id = number_of_arms + 1

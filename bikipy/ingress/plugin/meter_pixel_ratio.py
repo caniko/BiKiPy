@@ -1,8 +1,11 @@
 import numpy as np
 from pydantic import DirectoryPath, FilePath
 
-from bikipy.ingress.utils.constant import load_settings, get_perimeter_dir_path
-from bikipy.ingress.utils.io import initialize_metadata_data_frame
+from bikipy.ingress.utils.io import (
+    get_perimeter_dir_path,
+    initialize_metadata_data_frame,
+    load_settings,
+)
 from bikipy.utils.io.makesense import read_first_makesense_line
 
 

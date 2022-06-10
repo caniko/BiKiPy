@@ -5,10 +5,8 @@ from pydantic import DirectoryPath, validate_arguments
 
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.ingress.mapping import INGRESS_METHOD_NAME_TO_KEYWORD_ARGUMENT_FUNC
-from bikipy.ingress.plugin.center import detect_center_in_perimeter_directory
-from bikipy.ingress.utils.constant import get_perimeter_dir_path
 from bikipy.ingress.utils.io import initialize_metadata_data_frame
-from bikipy.ingress.utils.perimeter import load_settings, detect_perimeters_in_project, generate_label_to_object_field
+from bikipy.ingress.utils.perimeter import load_settings
 from bikipy.ingress.utils.pydantic import extended_schema
 from bikipy.reader import DeepLabCutReader
 
@@ -34,6 +32,8 @@ def analyze(root_directory: DirectoryPath) -> None:
         raise ValueError(msg)
 
     experiment_class_kwargs, metadata_index_to_trial_id = analysis_keyword_arguments_getter(root_directory)
+
+
 
     experiment = experiment_class(**settings["experiment"]["defined"], **experiment_class_kwargs)
     if not experiment.animal_id_indexed_feature_frame:
@@ -75,12 +75,13 @@ def init_settings(
         **method_kwargs,
         "meter_pixel_ratio": "global_perimeter",
         "perimeter": {
-            # metadata, trialwise, None
-            "perimeter_definition_strategy": "metadata",
+            "label_prefix": None,
+            "label_suffix": None,
         },
         "ingress": {
             "stageful_metadata": False,
             "center_definition_strategy": "metadata",
+            "perimeter_definition_strategy": "metadata",
         },
         "experiment": experiment_schema,
         "immutable": {

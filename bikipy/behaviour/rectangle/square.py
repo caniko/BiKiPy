@@ -1,6 +1,6 @@
 from functools import cached_property
 from logging import getLogger
-from typing import Any, Optional
+from typing import Any, Hashable, Optional
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -17,7 +17,7 @@ logger = getLogger(__name__)
 class SquareEnclosedExperiment(RectangleEnclosedExperiment):
     global_center_metric_length: Optional[float] = None
 
-    def trial_keyword_arguments(self, trial_id: int) -> dict:
+    def trial_keyword_arguments(self, trial_id: Hashable) -> dict:
         result = super().trial_keyword_arguments(trial_id)
 
         if self.global_center_metric_length:

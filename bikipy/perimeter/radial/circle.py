@@ -7,7 +7,10 @@ from pydantic_numpy import NDArray
 
 from bikipy.perimeter.base import BasePerimeter
 from bikipy.perimeter.radial.utils import plot_circle
-from bikipy.utils.io.makesense import read_makesense_line, get_line_endpoints_from_makesense_row
+from bikipy.utils.io.makesense import (
+    get_line_endpoints_from_makesense_row,
+    read_makesense_line,
+)
 from bikipy.utils.math.vector import unit_vector
 
 

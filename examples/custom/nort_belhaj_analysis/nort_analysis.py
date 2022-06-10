@@ -10,20 +10,18 @@ import pandas as pd
 
 from bikipy.behaviour.object_recognition.base import ObjectField
 from bikipy.behaviour.object_recognition.novel_object_recognition import (
-    EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME,
+    EXPERIMENT_STAGE_to_TRIAL_CLASS_NAME,
     NortExperiment,
 )
 from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.plugins.belhaj import (
-    get_animal_id_vs_apparatus,
-    get_animal_id_vs_trial_ids,
-    get_trial_id_vs_animal_id,
-    get_trial_id_vs_stage,
+    get_animal_id_to_apparatus,
+    get_animal_id_to_trial_ids,
+    get_trial_id_to_animal_id,
+    get_trial_id_to_stage,
 )
 from bikipy.utils.io.general import defer_perimeter_set_from_multi_row_reference
-from bikipy.utils.io.makesense import (
-    read_makesense_point,
-)
+from bikipy.utils.io.makesense import read_makesense_point
 
 DEEPLABCUT_DIR = Path("/mnt/soma/Projects/Neuroscience/Imen/data/nort")
 
@@ -96,41 +94,41 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
 
         exp_metadata_df = pd.read_excel(meta_data, sheet_name=round_index, engine="openpyxl")
 
-        animal_id_vs_app = get_animal_id_vs_apparatus(exp_metadata_df, EXP_ID_REGEX_PATTERN)
-        trial_id_vs_stage = get_trial_id_vs_stage(exp_metadata_df, EXP_ID_REGEX_PATTERN)
-        animal_id_vs_trial_ids = get_animal_id_vs_trial_ids(exp_metadata_df)
-        exp_vs_animal = get_trial_id_vs_animal_id(animal_id_vs_trial_ids)
+        animal_id_to_app = get_animal_id_to_apparatus(exp_metadata_df, EXP_ID_REGEX_PATTERN)
+        trial_id_to_stage = get_trial_id_to_stage(exp_metadata_df, EXP_ID_REGEX_PATTERN)
+        animal_id_to_trial_ids = get_animal_id_to_trial_ids(exp_metadata_df)
+        exp_to_animal = get_trial_id_to_animal_id(animal_id_to_trial_ids)
 
-        trial_id_vs_paths = {}
+        trial_id_to_paths = {}
         for video_path in glob(str(round_dir_path / "**" / "*.mp4")):
             trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(video_path).stem)[0])
-            trial_id_vs_paths[trial_id] = {"video": video_path}
+            trial_id_to_paths[trial_id] = {"video": video_path}
         for data_path in glob(str(round_dir_path / "**" / "*.parquet")):
             trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(data_path).stem)[0])
-            trial_id_vs_paths[trial_id]["data"] = data_path
+            trial_id_to_paths[trial_id]["data"] = data_path
 
-        trial_id_range_vs_exp_meta, trial_id_vs_trial_class_name = {}, {}
-        for trial_id, paths in trial_id_vs_paths.items():
-            trial_id_range_vs_exp_meta[trial_id] = {
+        trial_id_range_to_exp_meta, trial_id_to_trial_class_name = {}, {}
+        for trial_id, paths in trial_id_to_paths.items():
+            trial_id_range_to_exp_meta[trial_id] = {
                 "coordinate_data_path": paths["data"],
                 "video_path": paths["video"],
-                "stage": (stage := trial_id_vs_stage[trial_id]),
-                "animal_id": (animal_id := exp_vs_animal[trial_id]),
-                "field_id": animal_id_vs_app[animal_id],
+                "stage": (stage := trial_id_to_stage[trial_id]),
+                "animal_id": (animal_id := exp_to_animal[trial_id]),
+                "field_id": animal_id_to_app[animal_id],
             }
-            trial_id_vs_trial_class_name[trial_id] = NortExperiment.trial_class_name_to_trial_class[
-                EXPERIMENT_STAGE_VS_TRIAL_CLASS_NAME[stage]
+            trial_id_to_trial_class_name[trial_id] = NortExperiment.trial_class_name_to_trial_class[
+                EXPERIMENT_STAGE_to_TRIAL_CLASS_NAME[stage]
             ]
 
         experiment = NortExperiment(
             stage=str(period_index),
-            trial_id_vs_trial_class_name=trial_id_vs_trial_class_name,
-            trial_id_vs_keyword_arguments=trial_id_range_vs_exp_meta,
+            trial_id_to_trial_class_name=trial_id_to_trial_class_name,
+            trial_id_to_keyword_arguments=trial_id_range_to_exp_meta,
             metric_resolution=0.4,
             gaze_travel_direction_point_label="nose",
             gaze_start_point_label="center_eye",
             object_tracking_label_for_kinematics="torso",
-            id_vs_object_field=period_to_field_id_to_object_field[period_name],
+            id_to_object_field=period_to_field_id_to_object_field[period_name],
             perimeter_border_normal_metric_magnitude=0.03,
             global_center_metric_length=0.2,
             maximum_radians_inter_gaze_perimeter=np.deg2rad(75.0),

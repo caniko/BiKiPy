@@ -31,4 +31,4 @@ for i in range(2):
         identifier=analysis_data[i].stem,
     )
     # summary.category_pair_combinations
-    summary.categorical_vs_feature_pairwise_tukey()
+    summary.categorical_to_feature_pairwise_tukey()

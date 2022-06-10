@@ -4,24 +4,22 @@ from functools import reduce
 from logging import getLogger
 from pathlib import Path
 
-import pandas as pd
 import yaml
 from pydantic import DirectoryPath, validate_arguments
 
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
-from bikipy.feature.physical_object.field import ObjectField
 from bikipy.ingress.plugin.center import detect_center_in_perimeter_directory
-from bikipy.ingress.utils.constant import (
-    get_project_settings_path,
-    load_settings,
+from bikipy.ingress.utils.io import (
     get_dataset_dir_path,
     get_perimeter_dir_path,
+    get_project_settings_path,
+    initialize_metadata_data_frame,
+    load_settings,
 )
-from bikipy.ingress.utils.io import initialize_metadata_data_frame
 from bikipy.ingress.utils.perimeter import (
-    get_trial_perimeter_label_from_metadata,
     generate_label_to_object_field,
-    image_name_to_perimeter_set_from_makesense,
+    get_trial_perimeter_label_from_metadata,
+    partial_first_perimeter_set_from_makesense_from_settings,
 )
 
 logger = getLogger(__name__)
@@ -70,15 +68,17 @@ def sequence_analysis_keyword_arguments(root_directory: DirectoryPath):
     settings = load_settings(root_directory)
     metadata = initialize_metadata_data_frame(root_directory, settings["ingress"]["stageful_metadata"])
 
+    partial_first_perimeter_set_from_makesense = partial_first_perimeter_set_from_makesense_from_settings(settings)
+
     dataset_directory_path = _dataset_directory_path(root_directory)
 
-    if settings["perimeter"]["perimeter_definition_strategy"] == "metadata":
+    if settings["ingress"]["perimeter_definition_strategy"] == "metadata":
         label_to_perimeter = generate_label_to_object_field(root_directory)
 
     if settings["ingress"]["center_definition_strategy"] == "metadata":
         label_to_center = detect_center_in_perimeter_directory(get_perimeter_dir_path(root_directory))
 
-    trial_id_vs_trial_class_name, trial_id_vs_keyword_arguments = {}, {}
+    trial_id_to_trial_class_name, trial_id_to_keyword_arguments = {}, {}
     metadata_index_to_trial_id = {}
 
     for animal_id in os.listdir(dataset_directory_path):
@@ -95,37 +95,45 @@ def sequence_analysis_keyword_arguments(root_directory: DirectoryPath):
             trial_id = _define_trial_id(animal_id, sequence_index)
             trial_ids.append(trial_id)
 
-            trial_id_vs_trial_class_name[trial_id] = settings["sequence_index_to_trial_class_name"][sequence_index]
-            trial_id_vs_keyword_arguments[trial_id] = {
+            trial_id_to_trial_class_name[trial_id] = settings["sequence_index_to_trial_class_name"][sequence_index]
+            trial_id_to_keyword_arguments[trial_id] = {
+                "label": trial_id,
                 "animal_id": animal_id,
                 "stage": sequence_index,
                 "coordinate_data_path": trial_data_filename,
             }
             if settings["ingress"]["center_definition_strategy"] == "metadata":
-                trial_id_vs_keyword_arguments[trial_id]["rectangle_center_point"] = label_to_center[
+                trial_id_to_keyword_arguments[trial_id]["rectangle_center_point"] = label_to_center[
                     animal_metadata.loc[:, ["Center", sequence_index]][0]
                 ]
-            if settings["perimeter"]["perimeter_definition_strategy"]:
-                if settings["perimeter"]["perimeter_definition_strategy"] == "metadata":
+            if settings["ingress"]["perimeter_definition_strategy"]:
+                if settings["ingress"]["perimeter_definition_strategy"] == "metadata":
                     perimeter_set = get_trial_perimeter_label_from_metadata(animal_metadata, settings, sequence_index)
 
-                elif settings["perimeter"]["perimeter_definition_strategy"] == "trialwise":
+                elif settings["ingress"]["perimeter_definition_strategy"] == "trialwise":
                     perimeter_sets = []
                     for perimeter_path in animal_dir.glob(f"{sequence_index}.perimeter*"):
-                        perimeter_sets.append(image_name_to_perimeter_set_from_makesense(perimeter_path))
+                        perimeter_sets.append(partial_first_perimeter_set_from_makesense(perimeter_path))
 
                     if not (length := len(perimeter_sets)):
                         logger.debug(f"No perimeters were found for Animal #{animal_id} for sequence {sequence_index}")
                     else:
                         perimeter_set = reduce(lambda a, b: a + b, perimeter_sets) if length != 1 else perimeter_sets[0]
 
-                trial_id_vs_keyword_arguments[trial_id]["object_field"] = ObjectField.from_perimeter_set(perimeter_set)
+                else:
+                    msg = (
+                        f"{settings['perimeter']['perimeter_definition_strategy']} as perimeter definition strategy "
+                        f"is not supported with the {settings['ingress_method']} ingress method"
+                    )
+                    raise ValueError(msg)
+
+                trial_id_to_keyword_arguments[trial_id].update(perimeter_set.label_to_perimeter)
 
         metadata_index_to_trial_id[animal_id] = tuple(trial_ids)
 
     return {
-        "trial_id_vs_trial_class_name": trial_id_vs_trial_class_name,
-        "trial_id_vs_keyword_arguments": trial_id_vs_keyword_arguments,
+        "trial_id_to_trial_class_name": trial_id_to_trial_class_name,
+        "trial_id_to_keyword_arguments": trial_id_to_keyword_arguments,
     }, metadata_index_to_trial_id
 
 

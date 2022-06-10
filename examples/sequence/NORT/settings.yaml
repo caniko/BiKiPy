@@ -50,7 +50,7 @@ experiment:
     global_center_metric_length: number
     global_object_field: bikipy.feature.physical_object.ObjectField
     group_label: string
-    id_vs_object_field: object
+    id_to_object_field: object
     inspection_dir: string
     int_id: integer
     label: string
@@ -70,9 +70,9 @@ experiment:
       format: date
     - type: string
       format: date-time
-    trial_id_range_vs_keyword_arguments: RangedDict
-    trial_id_vs_keyword_arguments: object
-    trial_id_vs_trial_class_name: object
+    trial_id_range_to_keyword_arguments: RangedDict
+    trial_id_to_keyword_arguments: object
+    trial_id_to_trial_class_name: object
     video_path: string
 immutable:
   metadata_filename: metadata.xlsx

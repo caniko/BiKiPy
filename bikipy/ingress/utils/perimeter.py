@@ -1,13 +1,14 @@
 import shutil
+from functools import partial
 from logging import getLogger
 from pathlib import Path
-from typing import Literal, Optional, Mapping
+from typing import Literal, Mapping, Optional
 
 import plyer
 import yaml
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
-from bikipy.ingress.utils.constant import (
+from bikipy.ingress.utils.io import (
     get_perimeter_dir_path,
     get_project_settings_path,
     load_settings,
@@ -16,12 +17,12 @@ from bikipy.perimeter.base import PerimeterSet
 from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.perimeter.radial.circle import CirclePerimeter
 
-
 logger = getLogger(__name__)
 
 
 @validate_arguments
 def detect_perimeters_in_project(root_directory: DirectoryPath, create_object: bool = False) -> list:
+    settings = load_settings(root_directory)
     perimeter_dir = get_perimeter_dir_path(root_directory)
     detection_data = []
     for filename in perimeter_dir.glob("perimeter-*"):
@@ -29,7 +30,9 @@ def detect_perimeters_in_project(root_directory: DirectoryPath, create_object: b
         shape, label = get_perimeter_data(perimeter_path)
         data = {"label": label, "shape": shape}
         if create_object:
-            data["perimeter"] = image_name_to_perimeter_set_from_makesense(perimeter_path, shape)
+            data["perimeter"] = partial_first_perimeter_set_from_makesense_from_settings(settings)(
+                perimeter_path, shape
+            )
         detection_data.append(data)
     if not detection_data:
         msg = (
@@ -80,8 +83,11 @@ def add_perimeter_from_makesense(root_directory: DirectoryPath, make_copy: bool 
 
 
 @validate_arguments
-def image_name_to_perimeter_set_from_makesense(
-    perimeter_path: FilePath, manual_shape: Optional[Literal["circle", "parallelogram", "polygon", "rectangle"]] = None
+def first_perimeter_set_from_makesense(
+    perimeter_path: FilePath,
+    manual_shape: Optional[Literal["circle", "parallelogram", "polygon", "rectangle"]] = None,
+    label_prefix: Optional[str] = None,
+    label_suffix: Optional[str] = None,
 ) -> PerimeterSet:
     shape, label = get_perimeter_data(perimeter_path)
     match manual_shape or shape:
@@ -94,7 +100,9 @@ def image_name_to_perimeter_set_from_makesense(
         case _:
             raise ValueError
 
-    return tuple(image_name_to_perimeter_set.values())[0]
+    perimeter_set = tuple(image_name_to_perimeter_set.values())[0]
+    perimeter_set.apply_label_prefix_suffix(label_prefix, label_suffix)
+    return perimeter_set
 
 
 def get_trial_perimeter_label_from_metadata(animal_id_row: Mapping, settings: dict, stage: Optional[int] = None) -> str:
@@ -107,3 +115,11 @@ def get_perimeter_data(perimeter_path: FilePath):
     assert len(split_file_stem) == 3
     # return {"shape": split_file_stem[1], "label": split_file_stem[2]}
     return split_file_stem[1:]
+
+
+def partial_first_perimeter_set_from_makesense_from_settings(settings: dict):
+    return partial(
+        first_perimeter_set_from_makesense,
+        label_prefix=settings["perimeter"]["label_prefix"],
+        label_suffix=settings["perimeter"]["label_suffix"],
+    )
