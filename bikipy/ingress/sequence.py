@@ -4,6 +4,7 @@ from functools import reduce
 from logging import getLogger
 from pathlib import Path
 
+import pandas as pd
 import yaml
 from pydantic import DirectoryPath, validate_arguments
 
@@ -27,7 +28,7 @@ logger = getLogger(__name__)
 
 @validate_arguments
 def sequence_generate_configuration(
-    root_directory: DirectoryPath,
+    project_root_dir: DirectoryPath,
     experiment_name: str,
     kinematic_data_file_extension: str = ".h5",
     dry_run: bool = False,
@@ -36,7 +37,7 @@ def sequence_generate_configuration(
 
     experiment_class = EXPERIMENT_NAME_TO_CLASS[experiment_name.strip().lower()]
 
-    logger.info(f"Generating experiment configuration at {root_directory}")
+    logger.info(f"Generating experiment configuration at {project_root_dir}")
 
     method_settings = {
         "ingress_method": "sequence",
@@ -50,13 +51,13 @@ def sequence_generate_configuration(
     }
 
     settings = init_settings(
-        experiment_class, method_settings, root_directory, kinematic_data_file_extension, method_immutable
+        experiment_class, method_settings, project_root_dir, kinematic_data_file_extension, method_immutable
     )
 
     if dry_run:
         print(json.dumps(settings, indent=2))
     else:
-        settings_path = get_project_settings_path(root_directory)
+        settings_path = get_project_settings_path(project_root_dir)
         with open(settings_path, "w") as out_file:
             yaml.safe_dump(settings, out_file, sort_keys=False)
 
@@ -64,23 +65,22 @@ def sequence_generate_configuration(
 
 
 @validate_arguments
-def sequence_analysis_keyword_arguments(root_directory: DirectoryPath):
-    settings = load_settings(root_directory)
-    metadata = initialize_metadata_data_frame(root_directory, settings["ingress"]["stageful_metadata"])
+def sequence_analysis_keyword_arguments(
+    project_root_dir: DirectoryPath, metadata_plugin_name_to_label_to_parameter: dict
+):
+    def get_plugin_index_from_stageful_metadata(feature_sheet_header: str):
+        return animal_metadata.loc[:, [feature_sheet_header, sequence_index]][0]
+
+    def get_plugin_index_from_
+
+    settings = load_settings(project_root_dir)
+    metadata = initialize_metadata_data_frame(project_root_dir, settings["ingress"]["stageful_metadata"])
 
     partial_first_perimeter_set_from_makesense = partial_first_perimeter_set_from_makesense_from_settings(settings)
 
-    dataset_directory_path = _dataset_directory_path(root_directory)
+    dataset_directory_path = _dataset_directory_path(project_root_dir)
 
-    if settings["ingress"]["perimeter_definition_strategy"] == "metadata":
-        label_to_perimeter = generate_label_to_object_field(root_directory)
-
-    if settings["ingress"]["center_definition_strategy"] == "metadata":
-        label_to_center = detect_center_in_perimeter_directory(get_perimeter_dir_path(root_directory))
-
-    trial_id_to_trial_class_name, trial_id_to_keyword_arguments = {}, {}
-    metadata_index_to_trial_id = {}
-
+    trial_id_to_trial_class_name, trial_id_to_keyword_arguments, metadata_index_to_trial_id = {}, {}, {}
     for animal_id in os.listdir(dataset_directory_path):
         animal_id = int(animal_id)
         animal_dir = dataset_directory_path / str(animal_id)
@@ -102,13 +102,21 @@ def sequence_analysis_keyword_arguments(root_directory: DirectoryPath):
                 "stage": sequence_index,
                 "coordinate_data_path": trial_data_filename,
             }
-            if settings["ingress"]["center_definition_strategy"] == "metadata":
-                trial_id_to_keyword_arguments[trial_id]["rectangle_center_point"] = label_to_center[
-                    animal_metadata.loc[:, ["Center", sequence_index]][0]
-                ]
+
+            if settings["ingress"]["meters_per_pixel_definition_strategy"]:
+                if "meters_per_pixel" in metadata_plugin_name_to_label_to_parameter:
+                    trial_id_to_keyword_arguments[trial_id][
+                        "rectangle_meters_per_pixel_point"
+                    ] = metadata_plugin_name_to_label_to_parameter["meters_per_pixel"][
+                        get_plugin_index_from_stageful_metadata("Meters per pixel")
+                    ]
             if settings["ingress"]["perimeter_definition_strategy"]:
-                if settings["ingress"]["perimeter_definition_strategy"] == "metadata":
-                    perimeter_set = get_trial_perimeter_label_from_metadata(animal_metadata, settings, sequence_index)
+                if "perimeter" in metadata_plugin_name_to_label_to_parameter:
+                    trial_id_to_keyword_arguments[trial_id][
+                        "rectangle_center_point"
+                    ] = metadata_plugin_name_to_label_to_parameter["perimeter"][
+                        get_plugin_index_from_stageful_metadata("Perimeter")
+                    ]
 
                 elif settings["ingress"]["perimeter_definition_strategy"] == "trialwise":
                     perimeter_sets = []
@@ -128,6 +136,13 @@ def sequence_analysis_keyword_arguments(root_directory: DirectoryPath):
                     raise ValueError(msg)
 
                 trial_id_to_keyword_arguments[trial_id].update(perimeter_set.label_to_perimeter)
+            if settings["ingress"]["center_definition_strategy"]:
+                if "center" in metadata_plugin_name_to_label_to_parameter:
+                    trial_id_to_keyword_arguments[trial_id][
+                        "rectangle_center_point"
+                    ] = metadata_plugin_name_to_label_to_parameter["center"][
+                        get_plugin_index_from_stageful_metadata("Center")
+                    ]
 
         metadata_index_to_trial_id[animal_id] = tuple(trial_ids)
 
@@ -140,7 +155,7 @@ def sequence_analysis_keyword_arguments(root_directory: DirectoryPath):
 def verify_project_structure():
     animal_ids = set()
     trial_set_stage_ids = []
-    for trial_set_dir in get_dataset_dir_path(root_directory).iterdir():
+    for trial_set_dir in get_dataset_dir_path(project_root_dir).iterdir():
         if trial_set_dir.is_file() or trial_set_dir.name == "perimeter":
             continue
         animal_id = trial_set_dir.name.split("-")[0]
@@ -161,7 +176,7 @@ def verify_project_structure():
         msg = f"The trial sets do not have identical trial stage sequence:\n{trial_set_stage_ids}"
         raise ValueError(msg)
 
-    metadata_df = initialize_metadata_data_frame(root_directory, True)
+    metadata_df = initialize_metadata_data_frame(project_root_dir, True)
 
     try:
         metadata_animal_id_column_set = set(metadata_df.index)
@@ -177,16 +192,16 @@ def verify_project_structure():
         raise ValueError(msg)
 
 
-def _animal_ids(root_directory: DirectoryPath):
+def _animal_ids(project_root_dir: DirectoryPath):
     animal_ids = set()
-    for trial_set_dir in get_dataset_dir_path(root_directory).iterdir():
+    for trial_set_dir in get_dataset_dir_path(project_root_dir).iterdir():
         if trial_set_dir.is_dir():
             animal_ids.add(trial_set_dir.name.split("-")[0])
     return animal_ids
 
 
-def _dataset_directory_path(root_directory: DirectoryPath):
-    return root_directory / "dataset"
+def _dataset_directory_path(project_root_dir: DirectoryPath):
+    return project_root_dir / "dataset"
 
 
 def _define_trial_id(animal_id: int | str, sequence_index: int | str):

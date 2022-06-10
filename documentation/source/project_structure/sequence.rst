@@ -18,7 +18,7 @@ Definition
    #. Grab a video frame from one of the trial videos
    #. Define the line in MakeSense
    #. Make "Perimeter" directory in the base folder if it doesn't already exist.
-   #. Export as csv and store in the "Perimeter" directory as "meter_pixel_ratio_{meter_length}.csv"; where meter_length is the length of the line in meters.
+   #. Export as csv and store in the "Perimeter" directory as "meters_per_pixel_{meter_length}.csv"; where meter_length is the length of the line in meters.
 - TODO: The metric units of the video resolution can be approximated
 
 Perimeter

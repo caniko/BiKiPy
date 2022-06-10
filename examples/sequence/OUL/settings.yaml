@@ -3,12 +3,12 @@ sequence_index_to_trial_class_name:
   0: ObjectsInUpdatingLocationsTrainingTrial
   1: ObjectsInUpdatingLocationsUpdateTrial
   2: ObjectsInUpdatingLocationsTestTrial
-meter_pixel_ratio: metadata
 perimeter:
   label_prefix: object
   label_suffix: null
 ingress:
   stageful_metadata: true
+  meters_per_pixel_definition_strategy: metadata
   center_definition_strategy: metadata
   perimeter_definition_strategy: trialwise
 experiment:

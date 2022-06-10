@@ -5,7 +5,7 @@ sequence_index_to_trial_class_name:
   2: NortNoveltyTrial
 stageful_metadata: false
 perimeter_definition_strategy: metadata
-meter_pixel_ratio: 6.535942128293105e-05
+meters_per_pixel: 6.535942128293105e-05
 perimeters:
 - label: flipped
   shape: rectangle

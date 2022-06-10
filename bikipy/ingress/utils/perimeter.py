@@ -105,10 +105,6 @@ def first_perimeter_set_from_makesense(
     return perimeter_set
 
 
-def get_trial_perimeter_label_from_metadata(animal_id_row: Mapping, settings: dict, stage: Optional[int] = None) -> str:
-    return animal_id_row["Perimeter"][stage] if settings["stageful_metadata"] and stage else animal_id_row["Perimeter"]
-
-
 def get_perimeter_data(perimeter_path: FilePath):
     split_file_stem = perimeter_path.stem.split("-")
     assert split_file_stem[0].lower().endswith("perimeter")

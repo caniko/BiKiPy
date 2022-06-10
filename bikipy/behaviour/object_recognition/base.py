@@ -7,7 +7,8 @@ import pandas as pd
 from pydantic import Field, root_validator
 
 from bikipy.behaviour.mixin.physical_object import (
-    PhysicalObjectExperimentMixin, PhysicalObjectTrialMixin,
+    PhysicalObjectExperimentMixin,
+    PhysicalObjectTrialMixin,
 )
 from bikipy.behaviour.rectangle.square import (
     SquareEnclosedExperiment,
