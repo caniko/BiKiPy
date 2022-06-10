@@ -11,7 +11,4 @@ def file_to_timeseries_sequence(file_path):
     return np.concatenate(([0], array))
 
 
-merge_timestamps_with_dlc(
-    "/home/can/Projects/bikipy/examples/sequence/OUL/dataset",
-    file_to_timeseries_sequence
-)
+merge_timestamps_with_dlc("/home/can/Projects/bikipy/examples/sequence/OUL/dataset", file_to_timeseries_sequence)

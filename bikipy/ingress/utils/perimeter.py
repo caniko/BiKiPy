@@ -81,11 +81,12 @@ def add_perimeter_from_makesense(root_directory: DirectoryPath, make_copy: bool 
 
 @validate_arguments
 def image_name_to_perimeter_set_from_makesense(
-    perimeter_path: FilePath, shape: Optional[Literal["circle", "parallelogram", "polygon", "rectangle"]] = None
+    perimeter_path: FilePath, manual_shape: Optional[Literal["circle", "parallelogram", "polygon", "rectangle"]] = None
 ) -> PerimeterSet:
-    match shape or get_perimeter_data(perimeter_path)[0]:
+    shape, label = get_perimeter_data(perimeter_path)
+    match manual_shape or shape:
         case "circle":
-            image_name_to_perimeter_set = CirclePerimeter.read_makesense_line(perimeter_path)
+            image_name_to_perimeter_set = CirclePerimeter.from_makesense_line(perimeter_path)
         case "rectangle":
             image_name_to_perimeter_set = PolygonPerimeter.from_makesense_csv_rectangle(perimeter_path)
         case "polygon" | "parallelogram":
@@ -102,7 +103,7 @@ def get_trial_perimeter_label_from_metadata(animal_id_row: Mapping, settings: di
 
 def get_perimeter_data(perimeter_path: FilePath):
     split_file_stem = perimeter_path.stem.split("-")
-    assert split_file_stem[0].lower() == "perimeter"
+    assert split_file_stem[0].lower().endswith("perimeter")
     assert len(split_file_stem) == 3
     # return {"shape": split_file_stem[1], "label": split_file_stem[2]}
     return split_file_stem[1:]

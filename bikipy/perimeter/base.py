@@ -63,10 +63,10 @@ class BasePerimeter(BikipyBaseHashable):
 
     @root_validator(pre=True)
     def mutually_exclusive(cls, values):
-        if all(key in values for key in ("inspect_image_path", "inspect_image_array")):
+        if all(key in values and values[key] for key in ("inspect_image_path", "inspect_image_array")):
             msg = "inspect_image_path and inspect_image_array must be defined " "mutually exclusive"
             raise AttributeError(msg)
-        if all(key in values for key in ("reference_point_coco_path", "reference_point_array")):
+        if all(key in values and values[key] for key in ("reference_point_coco_path", "reference_point_array")):
             msg = "reference_point_coco_path and reference_point_array must be " "defined mutually exclusive"
             raise AttributeError(msg)
         return values
@@ -289,7 +289,7 @@ class BasePerimeter(BikipyBaseHashable):
         for image_name, perimeters in image_name_to_perimeters.items():
             filtered_perimeters, restricted_perimeters = [], []
             for label, perimeter in perimeters.items():
-                if label.lower().startswith("restricted"):
+                if isinstance(label, str) and label.lower().startswith("restricted"):
                     restricted_perimeters.append(perimeter)
                 else:
                     filtered_perimeters.append(perimeter)

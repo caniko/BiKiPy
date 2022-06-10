@@ -1,12 +1,14 @@
-from typing import Any
+from typing import Any, Optional
 
 import pandas as pd
 from pydantic import DirectoryPath, validate_arguments
 
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.ingress.mapping import INGRESS_METHOD_NAME_TO_KEYWORD_ARGUMENT_FUNC
+from bikipy.ingress.plugin.center import detect_center_in_perimeter_directory
+from bikipy.ingress.utils.constant import get_perimeter_dir_path
 from bikipy.ingress.utils.io import initialize_metadata_data_frame
-from bikipy.ingress.utils.perimeter import load_settings, detect_perimeters_in_project
+from bikipy.ingress.utils.perimeter import load_settings, detect_perimeters_in_project, generate_label_to_object_field
 from bikipy.ingress.utils.pydantic import extended_schema
 from bikipy.reader import DeepLabCutReader
 
@@ -26,14 +28,14 @@ def analyze(root_directory: DirectoryPath) -> None:
         raise ValueError(msg)
 
     try:
-        analysis_keyword_arguments_getter = INGRESS_METHOD_NAME_TO_KEYWORD_ARGUMENT_FUNC["sequence"]
+        analysis_keyword_arguments_getter = INGRESS_METHOD_NAME_TO_KEYWORD_ARGUMENT_FUNC[settings["ingress_method"]]
     except KeyError:
         msg = f"ingress_method in settings is set to an invalid value: {settings['ingress_method']}."
         raise ValueError(msg)
 
-    experiment = experiment_class(
-        **settings["experiment"]["defined"], **analysis_keyword_arguments_getter(root_directory)
-    )
+    experiment_class_kwargs, metadata_index_to_trial_id = analysis_keyword_arguments_getter(root_directory)
+
+    experiment = experiment_class(**settings["experiment"]["defined"], **experiment_class_kwargs)
     if not experiment.animal_id_indexed_feature_frame:
         msg = "Something went wrong with the analysis"
         raise RuntimeError(msg)
@@ -63,8 +65,7 @@ def init_settings(
     method_kwargs: dict,
     root_directory: DirectoryPath,
     kinematic_data_file_extension: str,
-    animal_ids: set[str],
-    animals_have_plural_trial_sets: bool,
+    method_immutable: Optional[dict] = None,
 ):
     experiment_schema = extended_schema(experiment_class.schema())
     experiment_schema["optional"]["data_import_kwargs"] = extended_schema(
@@ -87,7 +88,6 @@ def init_settings(
             "kinematic_data_file_extension": kinematic_data_file_extension,
             "experiment_class": experiment_class.__name__,
             "trial_classes/stages": experiment_class.trial_class_names,
-            "Number of animals": len(animal_ids),
-            "animals_have_plural_trial_sets": animals_have_plural_trial_sets,
+            "method_specific": method_immutable,
         },
     }

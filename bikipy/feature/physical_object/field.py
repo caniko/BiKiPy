@@ -1,14 +1,15 @@
 from collections.abc import Sequence as AbcSequence
 from functools import cached_property, lru_cache
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Any
 
 from pydantic import Field, validator
 
 from bikipy.core.base_class import BikipyBase
 from bikipy.core.typing import Perimeter2D
 from bikipy.feature.physical_object.core import PhysicalObjectSet
-from bikipy.perimeter.base import PerimeterSet
+from bikipy.perimeter.base import PerimeterSet, BasePerimeter
 from bikipy.perimeter.polygon.base import PolygonPerimeter
+from bikipy.perimeter.radial.circle import CirclePerimeter
 
 
 class ObjectField(BikipyBase):
@@ -17,11 +18,16 @@ class ObjectField(BikipyBase):
     of the object recognition trials.
 
     Each stage field can be inspected by using the item getter, <ObjectField object>[stage_id].
+    Perimeter2D
+        | Sequence[Perimeter2D]
+        | dict[int, Perimeter2D]
+        | dict[str, Perimeter2D]
+        | dict[str, Sequence[Perimeter2D]]
+        | dict[str, dict[int, Perimeter2D]]
     """
 
-    perimeters: dict[
-        str, Union[Sequence[Perimeter2D], dict[int, Perimeter2D], dict[str, Perimeter2D], Perimeter2D]
-    ] = Field(
+    perimeters: dict[str, CirclePerimeter] = Field(
+        ...,
         description="""
         Each perimeter type defined by the experiment design is a key-value pair, where the value is:
             - sequence ->   The sequence is based on stages; for instance, the perimeter on index 0 belongs to stage 0.
@@ -30,7 +36,7 @@ class ObjectField(BikipyBase):
                             the object is absent in some stages
             - dict[str] ->  AUTHOR'S CHOICE. The key is the perimeter label, and the value can be dict[int] or sequence.
             - perimeter ->  The perimeter is located in the same spatial coordinates across all the experiments
-        """
+        """,
     )
 
     @classmethod
@@ -103,7 +109,7 @@ class ObjectField(BikipyBase):
             if perimeter.label in label_to_perimeter:
                 msg = "Duplicate perimeter labels"
                 raise ValueError(msg)
-            label_to_perimeter[perimeter.label] = (perimeter,)
+            label_to_perimeter[perimeter.label] = perimeter
         return cls(perimeters=label_to_perimeter)
 
     @classmethod

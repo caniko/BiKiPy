@@ -1,10 +1,10 @@
 from collections.abc import Sequence
-from typing import Any, Union
+from typing import Any, Optional
 
 import matplotlib.pyplot as plt
 from PIL import Image
 
-from bikipy.perimeter.linear.classes import LinePerimeter
+from bikipy.perimeter import LinePerimeter
 from bikipy.utils.video import get_video_data
 
 

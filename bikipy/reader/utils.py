@@ -12,7 +12,7 @@ def merge_timestamps_with_dlc(
     file_to_timestamp_series: Callable,
     timestamp_file_lookup_expression: str = "*-timestamp*",
     coordinate_file_lookup_expression: str = "*.parquet",
-    delimiter: str = "-"
+    delimiter: str = "-",
 ):
     def get_first_delimited_value_from_str(string: str):
         return string.split(delimiter)[0]
@@ -29,7 +29,10 @@ def merge_timestamps_with_dlc(
 
         for coord_file in dataset_unit_dir.glob(coordinate_file_lookup_expression):
             timestamped_df_path = coord_file.with_name(f"{coord_file.stem}-timestamped.parquet")
-            if timestamped_df_path.exists() or get_first_delimited_value_from_str(coord_file.stem) not in label_to_timestamp:
+            if (
+                timestamped_df_path.exists()
+                or get_first_delimited_value_from_str(coord_file.stem) not in label_to_timestamp
+            ):
                 continue
 
             timestamp_label = get_first_delimited_value_from_str(coord_file.stem)

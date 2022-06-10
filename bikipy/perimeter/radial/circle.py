@@ -28,17 +28,17 @@ class CirclePerimeter(BasePerimeter):
             raise ValueError(msg)
 
     @classmethod
-    def read_makesense_line(cls, data_path: FilePath) -> dict[str, Any]:
+    def from_makesense_line(cls, data_path: FilePath) -> dict[str, Any]:
         result = {}
         for _, row in read_makesense_line(data_path).iterrows():
             a, b = get_line_endpoints_from_makesense_row(row)
-            perimeter = cls(center=a, radius=np.linalg.norm(a - b))
+            perimeter = cls(center=a, radius=np.linalg.norm(a - b), label=row["label"])
 
             if row["image_name"] not in result:
-                result["image_name"] = {}
-            result["image_name"][row["label"]] = perimeter
+                result[row["image_name"]] = {}
+            result[row["image_name"]][row["label"]] = perimeter
 
-        return cls._perimeter_set_from_image_name_to_perimeters(result)
+        return cls.perimeter_set_from_image_name_to_perimeters(result)
 
     def change_reference(self, new_reference: NDArray, **new_inspect_image_kwargs):
         kwargs = self.dict()
