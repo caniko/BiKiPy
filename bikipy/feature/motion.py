@@ -23,7 +23,7 @@ summary_motion_features = (
 _zero_return = {feature: 0.0 for feature in summary_motion_features}
 
 
-def units_pixels_per_second_frame(meters_per_pixel: Union[float, int], fps: Union[float, int]):
+def units_pixels_per_second_frame(meters_per_pixel: float, fps: float):
     return meters_per_pixel * fps
 
 
@@ -99,7 +99,7 @@ def total_displacement_median_speed_acceleration(
 
 
 def frozen_frames(
-    fps: Union[float, int],
+    fps: float,
     rigid_body_node_displacements: Iterable[NDArray],
     second_threshold: float = 1.0,
     metric_displacement_threshold: float = 0.005,
@@ -192,7 +192,7 @@ class Motion:
 
     @cached_property
     def metric_displacement_by_frame(self):
-        if isinstance(self.meters_per_pixel, (float, int)):
+        if isinstance(self.meters_per_pixel, float):
             displacement = displacement_by_frame(self.coordinate_sequence)
             return displacement * self.meters_per_pixel
         else:

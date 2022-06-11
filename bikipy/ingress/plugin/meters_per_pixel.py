@@ -29,11 +29,11 @@ def detect_global_meters_per_pixel_in_perimeter_directory(perimeter_dir: Directo
     return tuple(detect_meters_per_pixel_in_perimeter_directory(perimeter_dir).values())[0]
 
 
-def validate_metadata_meters_per_pixel_strategy(root_directory: DirectoryPath):
-    settings = load_settings(root_directory)
-    # perimeter_dir = get_perimeter_directory_path(root_directory)
+def validate_metadata_meters_per_pixel_strategy(project_root_directory: DirectoryPath):
+    settings = load_settings(project_root_directory)
+    # perimeter_dir = get_perimeter_directory_path(project_root_directory)
 
-    metadata = initialize_metadata_data_frame(root_directory, settings["ingress"]["stageful_metadata"])
+    metadata = initialize_metadata_data_frame(project_root_directory, settings["ingress"]["stageful_metadata"])
     if "Meter Pixel Ratio" not in metadata:
         msg = 'Meter Pixel Ratio must be defined in metadata when utilizing the "metadata" strategy'
         raise ValueError(msg)

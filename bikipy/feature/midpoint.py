@@ -7,7 +7,7 @@ import numpy as np
 from pydantic_numpy import NDArray
 
 
-def compute_midpoint(point_1: Sequence, point_2: Sequence) -> NDArray:
+def compute_midpoint(point_1: NDArray, point_2: NDArray) -> NDArray:
     """
     Computes the point(s) between two points, midpoint(s), with respect to the index.
 
@@ -65,23 +65,3 @@ def recursive_midpoint(point_sets: Sequence[NDArray]) -> NDArray:
         pass
 
     return midpoint
-
-
-def midpoint_deeplabcut_df_computation(df, point_group_names_set, min_likelihood: float = None):
-    result = {}
-    for group_subset_names in point_group_names_set:
-        likelihood = reduce_likelihoods(df, group_subset_names)
-
-        points = [get_region_of_interest_data(df, point_name) for point_name in group_subset_names]
-
-        compute_result = recursive_midpoint(points)
-
-        if min_likelihood:
-            compute_result[np.where(likelihood < min_likelihood)[0]] = np.nan
-
-        result[f"mid-{'-'.join(group_subset_names)}"] = {
-            "midpoint": compute_result.copy(),
-            "likelihood": likelihood.copy(),
-        }
-
-    return result

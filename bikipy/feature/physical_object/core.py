@@ -133,6 +133,9 @@ class PhysicalObjectSet(BikipyBase):
     def __len__(self):
         return len(self.physical_objects)
 
+    def __getitem__(self, item):
+        return self.label_to_physical_object[item]
+
     @classmethod
     def from_perimeter(cls, *perimeters, **kwargs):
         return cls(physical_objects=tuple(PhysicalObject(perimeter=perimeter, **kwargs) for perimeter in perimeters))
@@ -179,7 +182,7 @@ class PhysicalObjectSet(BikipyBase):
         overlapping_frames = 0
 
         result = np.zeros(len(self._first_object), dtype=np.uint8)
-        for label, physical_object in self._label_to_physical_object.items():
+        for label, physical_object in self.label_to_physical_object.items():
             current_boolean_index = physical_object.observance_boolean_index
 
             overlapping_frames += np.sum(current_boolean_index & result)
@@ -219,28 +222,8 @@ class PhysicalObjectSet(BikipyBase):
             return self._label_to_zero
         return {
             label: 100.0 * physical_object.attention_filtered_seconds_observing / self.seconds_observing
-            for label, physical_object in self._label_to_physical_object.items()
+            for label, physical_object in self.label_to_physical_object.items()
         }
-
-    @cached_property
-    def nort_absolute_discrimination(self) -> float:
-        """
-        Definition: <frames observing novel object> - <frames observing constant object>
-
-        :return:
-        """
-        if len(self.physical_objects) != 2:
-            msg = f"NORT absolute discrimination requires that the object number of the set is 2, not {len(self)}"
-            raise AttributeError(msg)
-
-        try:
-            return (
-                self._label_to_physical_object["novel"].attention_filtered_seconds_observing
-                - self._label_to_physical_object["constant"].attention_filtered_seconds_observing
-            )
-        except KeyError:
-            msg = "The physical_objects must have a novel and a constant label " "to compute absolute_discrimination"
-            raise AttributeError(msg)
 
     @cached_property
     def absolute_pair_discrimination(self) -> float:
@@ -253,8 +236,8 @@ class PhysicalObjectSet(BikipyBase):
         )
 
     @cached_property
-    def _label_to_physical_object(self) -> dict:
-        return {label: physical_object for label, physical_object in zip(self._labels, self.physical_objects)}
+    def label_to_physical_object(self) -> dict:
+        return {physical_object.label: physical_object for label, physical_object in self.physical_objects}
 
     def plot(self, ax: Any = None):
         if not ax:
@@ -265,14 +248,8 @@ class PhysicalObjectSet(BikipyBase):
         return ax
 
     @cached_property
-    def _labels(self):
-        if self._first_object.label:
-            return tuple(physical_object.label for physical_object in self.physical_objects)
-        return tuple(range(1, len(self) + 1))
-
-    @cached_property
     def _label_to_zero(self) -> dict:
-        return {label: 0.0 for label in self._label_to_physical_object}
+        return {label: 0.0 for label in self.label_to_physical_object}
 
     @cached_property
     def _first_object(self):
@@ -303,38 +280,4 @@ class PhysicalObjectSet(BikipyBase):
                 f"{', '.join((physical_object.fps for physical_object in value))}"
             )
             raise AttributeError(msg)
-        return value
-
-    @validator("physical_objects", pre=True)
-    def ids_are_unique(cls, value):
-        object_labels = (physical_object.label for physical_object in value)
-
-        labels_set = set(object_labels)
-        len_unique = len(labels_set)
-
-        len_total = len(value)
-
-        if len_total != len_unique:
-            msg = (
-                f"At least two of the label values are equal, these labels are "
-                f"mutually exclusive in {cls.__class__.__name__}:\n"
-                f"{', '.join(object_labels)}"
-            )
-            raise AttributeError(msg)
-        if None in labels_set and len_unique != 1:
-            msg = "Either none or all of PhysicalObjects need to have their labels" "defined"
-            raise AttributeError(msg)
-        if labels_set != set(range(1, len_total + 1)):
-            msg = (
-                "labels must be incremental. IDs that do not follow this rule " "must be stored in the label attribute"
-            )
-            raise AttributeError(msg)
-
-        object_labels = (physical_object.label for physical_object in value)
-        label_set = set(object_labels)
-        counter = Counter(object_labels)
-        if any(counter[value] > 1 for value in label_set if value is not None):
-            msg = "labels need to be unique with the exception of None"
-            raise AttributeError(msg)
-
         return value

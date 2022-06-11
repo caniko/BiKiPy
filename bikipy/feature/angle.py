@@ -110,7 +110,6 @@ def alternative_inner_angle(a_vector: Sequence, b_vector: Sequence) -> NDArray:
     )
 
 
-@njit(cache=True, nogil=True)
 def inner_angle(vector_set_1, vector_set_2):
     """Returns the angle in radians between given vectors"""
     result = []
@@ -193,7 +192,7 @@ def compute_angles_from_vectors(
     return computation
 
 
-def angles_between_0_2pi(angles: np.array):
+def angles_between_0_2pi(angles: NDArray):
     angles = np.asarray(angles)
 
     boolean_indexes = np.abs(angles) >= 2.0 * np.pi

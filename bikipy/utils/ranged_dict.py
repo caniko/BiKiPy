@@ -25,10 +25,10 @@ class RangeDict(UserDict):
     def __init__(
         self,
         class_dict: Optional[dict] = None,
-        allow_less_than_first_key: Union[float, int, bool] = False,
+        allow_less_than_first_key: Union[float, bool] = False,
         **kwargs,
     ):
-        if not isinstance(allow_less_than_first_key, (bool, int, float)):
+        if not isinstance(allow_less_than_first_key, (bool, float)):
             msg = "allow_less_than_first_key can either be bool, int, or float"
             raise TypeError(msg)
 
@@ -38,7 +38,7 @@ class RangeDict(UserDict):
         super().__init__(class_dict, **kwargs)
 
     @lru_cache
-    def find_key_range(self, value: Union[float, int]):
+    def find_key_range(self, value: float):
         for number in self.descending:
             if number <= value:
                 return number
@@ -53,18 +53,18 @@ class RangeDict(UserDict):
         msg = f"Provided key is less than the first key in the RangeDict; {value}"
         raise KeyError(msg)
 
-    def __getitem__(self, key: Union[float, int]):
+    def __getitem__(self, key: float):
         try:
             return super().__getitem__(key)
         except KeyError:
             return super().__getitem__(self.find_key_range(key))
 
-    def __setitem__(self, key: Union[float, int], value: Any):
-        if not isinstance(key, (float, int)):
+    def __setitem__(self, key: float, value: Any):
+        if not isinstance(key, float):
             msg = "Keys in RangeDict(s) have to be either integer or float"
             raise TypeError(msg)
 
-        if isinstance(self.allow_less_than_first_key, (int, float)):
+        if isinstance(self.allow_less_than_first_key, float):
             assert (
                 key > self.allow_less_than_first_key
             ), f"key >= allow_less_than_first_key; {key} >= {self.allow_less_than_first_key}"

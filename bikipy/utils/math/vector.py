@@ -2,18 +2,16 @@ from collections.abc import Sequence
 from typing import Union
 
 import numpy as np
-from numba import njit
 from numpy.linalg import LinAlgError
 from pydantic_numpy import NDArray
 
 
-@njit
 def fast_unit_vector(vector: NDArray) -> NDArray:
     """Returns the unit vector of the vector."""
     return vector / np.linalg.norm(vector)
 
 
-def unit_vector(row_vectors: Sequence, force_1_dim: bool = False) -> NDArray:
+def unit_vector(row_vectors: NDArray, force_1_dim: bool = False) -> NDArray:
     """
     Computes unit vector, i.e. vector/<norm of the vector>
 

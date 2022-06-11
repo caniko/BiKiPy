@@ -12,7 +12,7 @@ def unique_with_counts_zipped(array):
     return zip(*np.unique(array, return_counts=True))
 
 
-def exclude_value_from_sequence(sequence: Iterable, exclude: Any):
+def exclude_value_from_sequence(sequence: Sequence, exclude: Any):
     sequence = np.asarray(sequence)
     return sequence[sequence != exclude]
 

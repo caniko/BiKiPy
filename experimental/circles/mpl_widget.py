@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QVBoxLayout, QWidget
 
 
 class MplWidget(QWidget):
-    def __init__(self, overlay_image: np.array, parent=None):
+    def __init__(self, overlay_image: NDArray, parent=None):
 
         QWidget.__init__(self, parent)
 

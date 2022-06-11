@@ -1,12 +1,11 @@
 import os
-from abc import ABC
 from functools import cached_property, lru_cache
 from logging import getLogger
-from typing import Any, ClassVar, Hashable, Optional
+from typing import ClassVar, Hashable, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, Field, validate_arguments, validator
+from pydantic import Field, validate_arguments, validator
 from pydantic_numpy import NDArray
 from skg import ngauss_fit
 
@@ -286,8 +285,8 @@ def _compute_quadrant_location_sequence(quadrants, number_of_frames: int, fps: f
 
 
 def _compute_quadrant_grid_coordinates(
-    rectangle_2d_bin: tuple[int, int], recording_resolution: NDArray[int], translation: Optional[NDArray] = None
-):
+    rectangle_2d_bin: tuple[int, int], recording_resolution: NDArray, translation: Optional[NDArray] = None
+) -> NDArray:
     horizontal_resolution, vertical_resolution = recording_resolution
 
     horizontal_uniform_distance = horizontal_resolution / rectangle_2d_bin[0]

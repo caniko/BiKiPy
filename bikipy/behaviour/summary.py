@@ -21,7 +21,7 @@ class StatisticalAnalysis(BikipyBase):
     category_columns: tuple[str, ...]
     feature_columns: tuple
     identifier: str
-    root_directory_path: DirectoryPath
+    project_root_directory: DirectoryPath
 
     @validator("metadata_df")
     def ensure_metadata_df_is_clean(cls, value):
@@ -105,7 +105,7 @@ class StatisticalAnalysis(BikipyBase):
     @property
     def analysis_path(self):
         os.makedirs(
-            (result := self.root_directory_path / f"{self.identifier}_statistics"),
+            (result := self.project_root_directory / f"{self.identifier}_statistics"),
             exist_ok=True,
         )
         return result

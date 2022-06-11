@@ -1,13 +1,14 @@
 from collections.abc import Sequence
-from typing import Union
+from typing import Optional
 
 import numpy as np
+from pydantic_numpy import NDArray
 
 
 def feature_scale(
     data: Sequence,
-    real_min: Union[float, int, None] = None,
-    real_max: Union[float, int, None] = None,
+    real_min: Optional[float] = None,
+    real_max: Optional[float] = None,
 ) -> NDArray:
     """
     Scale the data to [0, 1]; 0 is the smallest and 1 is the highest

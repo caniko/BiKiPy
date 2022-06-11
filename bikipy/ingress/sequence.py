@@ -1,5 +1,5 @@
 import json
-from functools import reduce
+from functools import cached_property, reduce
 from logging import getLogger
 from pathlib import Path
 
@@ -18,15 +18,27 @@ logger = getLogger(__name__)
 
 
 class SequenceIngress(BaseIngress):
+    @cached_property
     def _experiment_class_kwargs_metadata_index_to_trial_id_getter(self):
         def get_plugin_index_from_stageful_metadata(feature_sheet_header: str):
-            return animal_metadata.loc[:, [feature_sheet_header, sequence_index]][0]
+            feature_column = animal_metadata[feature_sheet_header]
+
+            if not self.stageful_metadata:
+                return feature_column
+
+            if len(feature_column) == 1:
+                return feature_column[0]
+            return feature_column[sequence_index]
 
         trial_id_to_trial_class_name, trial_id_to_keyword_arguments, metadata_index_to_trial_id = {}, {}, {}
         for animal_dir in self.dataset_directory_path.iterdir():
             animal_id = int(animal_dir.stem)
 
-            animal_metadata = self.metadata.loc[animal_id, :]
+            try:
+                animal_metadata = self.metadata.loc[animal_id, :]
+            except KeyError:
+                logger.debug(f"Animal ID {animal_id} is absent from the metadata index, skipping the trial-set")
+                continue
 
             trial_ids = []
             for trial_data_filename in animal_dir.glob(f"*{self.kinematic_data_file_extension}"):
@@ -40,7 +52,7 @@ class SequenceIngress(BaseIngress):
                     sequence_index
                 ]
                 trial_id_to_keyword_arguments[trial_id] = {
-                    "label": trial_id,
+                    # "label": trial_id,    Already in BaseExperiment
                     "animal_id": animal_id,
                     "stage": sequence_index,
                     "coordinate_data_path": trial_data_filename,
@@ -50,7 +62,7 @@ class SequenceIngress(BaseIngress):
                     if self.settings["ingress"][keyring["ingress_key"]] != "metadata":
                         continue
 
-                    trial_id_to_keyword_arguments[trial_id][keyring["code_key"]] = self.get_plugin_parameter(
+                    trial_id_to_keyword_arguments[trial_id][keyring["bikipy_trial_key"]] = self.get_plugin_parameter(
                         keyring["code_key"], get_plugin_index_from_stageful_metadata
                     )
 
@@ -111,7 +123,7 @@ class SequenceIngress(BaseIngress):
 
 @validate_arguments
 def sequence_generate_configuration(
-    project_root_dir: DirectoryPath,
+    project_root_directory: DirectoryPath,
     experiment_name: str,
     kinematic_data_file_extension: str = ".h5",
     dry_run: bool = False,
@@ -120,7 +132,7 @@ def sequence_generate_configuration(
 
     experiment_class = EXPERIMENT_NAME_TO_CLASS[experiment_name.strip().lower()]
 
-    logger.info(f"Generating experiment configuration at {project_root_dir}")
+    logger.info(f"Generating experiment configuration at {project_root_directory}")
 
     method_settings = {
         "ingress_method": "sequence",
@@ -134,26 +146,26 @@ def sequence_generate_configuration(
     }
 
     settings = init_settings(
-        experiment_class, method_settings, project_root_dir, kinematic_data_file_extension, method_immutable
+        experiment_class, method_settings, project_root_directory, kinematic_data_file_extension, method_immutable
     )
 
     if dry_run:
         print(json.dumps(settings, indent=2))
     else:
-        settings_path = get_project_settings_path(project_root_dir)
+        settings_path = get_project_settings_path(project_root_directory)
         with open(settings_path, "w") as out_file:
             yaml.safe_dump(settings, out_file, sort_keys=False)
 
     return settings
 
 
-def _animal_ids(project_root_dir: DirectoryPath):
+def _animal_ids(project_root_directory: DirectoryPath):
     animal_ids = set()
-    for trial_set_dir in get_dataset_directory_path(project_root_dir).iterdir():
+    for trial_set_dir in get_dataset_directory_path(project_root_directory).iterdir():
         if trial_set_dir.is_dir():
             animal_ids.add(trial_set_dir.name.split("-")[0])
     return animal_ids
 
 
 def _define_trial_id(animal_id: int | str, sequence_index: int | str):
-    return f"{animal_id}-{sequence_index}"
+    return f"{animal_id}_{sequence_index}"

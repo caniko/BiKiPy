@@ -1,7 +1,7 @@
 import numpy as np
 
 from bikipy.feature.attention import proximity_filter
-from bikipy.utils.math import expand_parallelogram
+from bikipy.utils.math.geometry import expand_parallelogram
 from tests.test_data.perimeter.parallelogram.get_perimeter import (
     parallelogram_perimeter_coco_test_object,
 )

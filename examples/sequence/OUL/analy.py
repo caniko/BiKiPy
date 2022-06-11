@@ -1,3 +1,3 @@
-from bikipy.ingress.core import analyze
+from bikipy.ingress.core import analyze_and_save
 
-analyze(".")
+analyze_and_save(".")

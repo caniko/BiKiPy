@@ -1,34 +1,19 @@
-from abc import ABC
 from functools import cached_property
 from logging import getLogger
 from typing import ClassVar, Optional
 
-from bikipy.behaviour.mixin.physical_object import PhysicalObjectTrialMixin
-from bikipy.behaviour.object_recognition.base import (
-    ObjectField,
-    ObjectRecognitionExperiment,
-    ObjectRecognitionHabituationTrial,
+from bikipy.behaviour.mixin.physical_object import (
+    PhysicalObjectHabituationTrialMixin,
+    SquarePhysicalObjectTrial,
+    SquarePhysicalObjectExperiment,
 )
 from bikipy.behaviour.rectangle.square import SquareEnclosedTrial
+from bikipy.perimeter.typing import AnyPerimeter
 
 logger = getLogger(__name__)
 
 
-EXPERIMENT_STAGE_to_TRIAL_CLASS_NAME = {
-    "habituation": 0,
-    "open_field": 0,
-    "training": 1,
-    "1": 1,
-    "t1": 1,
-    "novelty": 2,
-    "2": 2,
-    "t2": 2,
-    "test": 2,
-    "novelty_observation": 2,
-}
-
-
-class NortHabituationTrial(ObjectRecognitionHabituationTrial):
+class NortHabituationTrial(SquareEnclosedTrial, PhysicalObjectHabituationTrialMixin):
     pass
 
 
@@ -36,78 +21,93 @@ class NortOpenField(NortHabituationTrial):
     pass
 
 
-class NortPhysicalObjectFieldMixin(PhysicalObjectTrialMixin, ABC):
-    object_field: ObjectField
+class NortTrainingTrial(SquarePhysicalObjectTrial):
+    variable: AnyPerimeter
+    familiar: AnyPerimeter
 
-    @property
-    def physical_object_constant(self):
-        return self.physical_object_set.physical_objects[1]
+    physical_object_labels: ClassVar[list[str, ...]] = ["variable", "familiar"]
 
-
-class NortTrainingTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
-    trial_stage_index: ClassVar[Optional[int]] = 1
+    experiment_sequence_index: ClassVar[Optional[int]] = 1
     trial_label: ClassVar[str] = "Training"
 
-    feature_headers: ClassVar[list] = ["Seconds observing"]
-
-    @cached_property
-    def physical_object_set(self):
-        return self.object_field.nort_training_set(self._physical_object_keyword_arguments)
-
     @property
-    def physical_object_variable(self):
-        return self.physical_object_set.physical_objects[0]
-
-    # @property
-    # def physical_object_constant(self):
-    #     return self.physical_object_set.physical_objects[1]
-
-    @property
-    def feature_summary_row(self):
-        return [self.physical_object_set.seconds_observing]
+    def all_physical_object_perimeters(self):
+        return self.variable, self.familiar
 
 
-class NortNoveltyTrial(SquareEnclosedTrial, NortPhysicalObjectFieldMixin):
-    trial_stage_index: ClassVar[Optional[int]] = 2
+class NortNoveltyTrial(SquarePhysicalObjectTrial):
+    novel: AnyPerimeter
+    familiar: AnyPerimeter
+
+    physical_object_labels: ClassVar[list[str, ...]] = ["novel", "familiar"]
+
+    experiment_sequence_index: ClassVar[Optional[int]] = 2
     trial_label: ClassVar[str] = "Novelty"
 
-    feature_headers: ClassVar[list] = [
-        "Absolute discrimination",
-        "Discrimination index",
-        "Novelty preference",
-        "Object bias score",
-    ]
-
-    @cached_property
-    def physical_object_set(self):
-        return self.object_field.nort_novelty_set(self._physical_object_keyword_arguments)
-
+    @classmethod
     @property
-    def physical_object_novel(self):
-        return self.physical_object_set.physical_objects[0]
-
-    @cached_property
-    def discrimination_index(self):
-        return self.physical_object_set.nort_absolute_discrimination / self.experiment_seconds
-
-    @cached_property
-    def novelty_preference(self):
-        return 100.0 * self.physical_object_novel.attention_filtered_seconds_observing / self.experiment_seconds
+    def feature_headers(cls) -> list[str]:
+        return super().feature_headers + [
+            "Absolute discrimination",
+            "Discrimination index",
+            "Novelty preference",
+            "Object bias score",
+        ]
 
     @property
     def feature_summary_row(self):
-        return [
-            self.physical_object_set.nort_absolute_discrimination,
+        return super().feature_summary_row + [
+            self.nort_absolute_discrimination,
             self.discrimination_index,
             self.novelty_preference,
             self.physical_object_set.object_bias_score[1],
         ]
 
+    @property
+    def all_physical_object_perimeters(self):
+        return self.novel, self.familiar
 
-class NortExperiment(ObjectRecognitionExperiment):
+    @cached_property
+    def discrimination_index(self):
+        return self.nort_absolute_discrimination / self.experiment_seconds
+
+    @cached_property
+    def novelty_preference(self):
+        return 100.0 * self.physical_object_set["novel"].attention_filtered_seconds_observing / self.experiment_seconds
+
+    @cached_property
+    def nort_absolute_discrimination(self) -> float:
+        """
+        Definition: <frames observing novel object> - <frames observing constant object>
+
+        :return:
+        """
+        try:
+            return (
+                self.physical_object_set["novel"].attention_filtered_seconds_observing
+                - self.physical_object_set["constant"].attention_filtered_seconds_observing
+            )
+        except KeyError:
+            msg = "The physical_objects must have a novel and a constant label " "to compute absolute_discrimination"
+            raise AttributeError(msg)
+
+
+class NortExperiment(SquarePhysicalObjectExperiment):
     first_stage_has_no_object: ClassVar = True
     trial_classes: ClassVar = (
         NortHabituationTrial,
         NortTrainingTrial,
         NortNoveltyTrial,
     )
+    experiment_stage_name_to_sequence_index: ClassVar[dict[str, int]] = {
+        "habituation": 0,
+        "open_field": 0,
+        "training": 1,
+        "1": 1,
+        "t1": 1,
+        "novelty": 2,
+        "2": 2,
+        "t2": 2,
+        "test": 2,
+        "novelty_observation": 2,
+    }

@@ -8,6 +8,7 @@ perimeter:
   label_suffix: null
 ingress:
   stageful_metadata: true
+  skip_absent_trials_absent_from_metadata_index: True
   meters_per_pixel_definition_strategy: metadata
   center_definition_strategy: metadata
   perimeter_definition_strategy: trialwise
@@ -16,6 +17,7 @@ experiment:
     gaze_start_point_label: center_eye
     gaze_travel_direction_point_label: nose
     object_tracking_label_for_kinematics: center_eye
+    perimeter_border_normal_metric_magnitude: 0.02
     manual_recording_resolution: [ 1920, 1080 ]
     manual_fps: 30
     data_import_kwargs:

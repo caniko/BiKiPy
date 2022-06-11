@@ -49,7 +49,7 @@ def proximity_filter(
     inside_perimeter_border = np.asarray(inside_perimeter_border)
     outside_perimeter = np.asarray(outside_perimeter)
 
-    perimeter_border = perimeter.expand(perimeter_border_normal_pixel_magnitude=perimeter_border_normal_pixel_magnitude)
+    perimeter_border = perimeter.expand(perimeter_border_normal_pixel_magnitude)
 
     inside_perimeter_border_boolean_index = perimeter_border.coordinate_confinement_boolean_index(
         coordinates=inside_perimeter_border
@@ -107,10 +107,7 @@ def gaze_direction_filter(
     ), np.asarray(gaze_start_point_label)
     eye_to_nose_vector = gaze_travel_direction_point_label - gaze_start_point_label
 
-    (
-        _closest_corner_start_point,
-        closest_corner_vectors,
-    ) = perimeter.closest_sides_to_coordinates(gaze_start_point_label)
+    closest_corner_vectors = perimeter.closest_sides_to_coordinates(gaze_start_point_label)
 
     inner_angles = inner_angle(closest_corner_vectors.astype(np.float32), eye_to_nose_vector.astype(np.float32))
 

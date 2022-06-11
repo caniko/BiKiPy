@@ -29,7 +29,7 @@ logger = getLogger(__name__)
 
 class LiveTrial(BaseModel, ABC):
     save_root: DirectoryPath
-    delay_timings: tuple[Union[float, int]]
+    delay_timings: tuple[float]
     delay_timings_trial_count: Union[tuple[int], int]
     manual_total_loops_per_trial: Optional[int] = None
 
@@ -53,9 +53,9 @@ class LiveTrial(BaseModel, ABC):
     def ensure_delay_timings_trial_count_and_delay_timings_have_eq_len(cls, delay_timings_trial_count, delay_timings):
         if isinstance(delay_timings_trial_count, collections_Sequence):
             assert len(delay_timings_trial_count) == len(delay_timings)
-            assert all(isinstance(timing, (float, int)) for timing in delay_timings_trial_count)
+            assert all(isinstance(timing, float) for timing in delay_timings_trial_count)
             delay_timings_trial_count = tuple(delay_timings_trial_count)
-        elif isinstance(delay_timings_trial_count, (float, int)):
+        elif isinstance(delay_timings_trial_count, float):
             delay_timings_trial_count = tuple(delay_timings_trial_count for _ in range(len(delay_timings)))
         return delay_timings_trial_count, delay_timings
 

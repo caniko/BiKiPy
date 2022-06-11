@@ -51,7 +51,7 @@ class PolygonPerimeter(BasePerimeter):
     def __repr__(self):
         return super().__repr__() + f"\n\tcorners={self.corners}"
 
-    def expand(self, perimeter_border_normal_pixel_magnitude: Union[float, int]):
+    def expand(self, perimeter_border_normal_pixel_magnitude: float):
         """
         :param perimeter_border_normal_pixel_magnitude: The magnitude of the normal between
             the perimeter and the perimeter given in pixels
@@ -83,13 +83,11 @@ class PolygonPerimeter(BasePerimeter):
 
         closest_index = np.where(closest_boolean_index)[1]
 
-        closest_corner_start_point = np.zeros((closest_distance.shape[0], 2), dtype=np.float32)
         closest_corner_vectors = np.zeros((closest_distance.shape[0], 2), dtype=np.float32)
         for i in range(self.number_of_corners):
-            closest_corner_start_point[closest_index == i] = self.corners[i]
             closest_corner_vectors[closest_index == i] = self.perimeter_corner_to_next_clockwise_corner_vectors[i]
 
-        return closest_corner_start_point, closest_corner_vectors
+        return closest_corner_vectors
 
     def closest_perimeter_points_to_coordinates(self, coordinates: Sequence):
         (
@@ -122,7 +120,7 @@ class PolygonPerimeter(BasePerimeter):
 
     def plot_perimeter(
         self,
-        perimeter_border_normal_pixel_magnitude: Union[float, int, None] = None,
+        perimeter_border_normal_pixel_magnitude: Optional[float] = None,
         ax: Any = None,
         include_geometric_legend: bool = False,
         colormap: Any = None,

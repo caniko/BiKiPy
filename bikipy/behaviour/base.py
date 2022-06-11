@@ -31,7 +31,7 @@ LABEL_to_DATA_READER = {"deeplabcut": DeepLabCutReader}
 
 
 class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
-    center_point: Optional[NDArray] = None
+    center: Optional[NDArray] = None
 
     data_import_kwargs: Optional[dict] = None
     data_format_label: Literal["deeplabcut"] = "deeplabcut"
@@ -44,13 +44,10 @@ class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
 
     @cached_property
     def center_translation(self):
-        return self.recording_center_pixel - self.center_point if self.center_point else None
+        return self.recording_center_pixel - self.center if self.center is not None else None
 
 
 class BaseExperiment(Behaviour):
-    object_tracking_label_for_kinematics: str = Field(
-        ..., description="Tracking label of object used for extracting motion-related features, kinematics"
-    )
     manual_trial_ids: Optional[tuple] = None
     trial_id_to_trial_class_name: Optional[dict] = None
     trial_id_to_keyword_arguments: Optional[dict] = None
@@ -101,9 +98,9 @@ class BaseExperiment(Behaviour):
             raise AttributeError(msg)
 
         try:
-            return {trial_class.trial_stage_index: trial_class for trial_class in cls.trial_classes}
+            return {trial_class.experiment_sequence_index: trial_class for trial_class in cls.trial_classes}
         except AttributeError:
-            msg = "trial_stage_index must be defined for each trial class when working with a sequence of trial classes"
+            msg = "experiment_sequence_index must be defined for each trial class when working with a sequence of trial classes"
             raise AttributeError(msg)
 
     @classmethod
@@ -119,19 +116,14 @@ class BaseExperiment(Behaviour):
         try:
             return {trial_class.__name__: trial_class for trial_class in cls.trial_classes}
         except AttributeError:
-            msg = "trial_stage_index must be defined for each trial class when working with a sequence of trial classes"
+            msg = "experiment_sequence_index must be defined for each trial class when working with a sequence of trial classes"
             raise AttributeError(msg)
 
     def trial_keyword_arguments(self, trial_id: Hashable) -> dict:
         """
         Function useful for customizing initiation parameters for trial objects
         """
-        result = {
-            "object_tracking_label_for_kinematics": self.object_tracking_label_for_kinematics,
-            "data_format_label": self.data_format_label,
-            "manual_recording_resolution": self.recording_resolution,
-            "manual_fps": self.fps,
-        }
+        result = {"data_format_label": self.data_format_label}
 
         if self.common_trial_keyword_arguments:
             result.update(self.common_trial_keyword_arguments)
@@ -276,7 +268,7 @@ class BaseExperiment(Behaviour):
             with ProcessPoolExecutor() as executor:
                 for animal_id, trial_objects in self.animal_id_to_trial_objects.items():
                     trial_objects = [
-                        trial_object for trial_object in copy(trial_objects) if trial_object._trial_has_feature_frame
+                        trial_object for trial_object in copy(trial_objects) if trial_object.trial_has_defined_features
                     ]
                     data_dict[animal_id] = sum(
                         list(executor.map(attrgetter("feature_summary_row"), trial_objects)),
@@ -288,7 +280,7 @@ class BaseExperiment(Behaviour):
                     (
                         trial_object.feature_summary_row
                         for trial_object in trial_objects
-                        if trial_object._trial_has_feature_frame
+                        if trial_object.trial_has_defined_features
                     ),
                     [],
                 )
@@ -330,17 +322,17 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _at_least_one_trial_class_has_features(self):
-        return any(trial_class.feature_summary_column for trial_class in self.trial_classes)
+        return any(not trial_class.feature_summary_column.empty for trial_class in self.trial_classes)
 
     def _feature_frame_columns(self, levels: Optional[int] = None) -> pd.MultiIndex:
-        if self.trial_class:
+        if not self.is_trial_sequence:
             columns = self.trial_class.feature_summary_column
         elif self.trial_id_to_trial_class_name:
             columns = sum(
                 (
-                    trial_object.feature_summary_column
+                    list(trial_object.feature_summary_column)
                     for trial_object in self.trial_classes
-                    if trial_object._trial_has_feature_frame
+                    if trial_object.trial_has_defined_features
                 ),
                 [],
             )
@@ -397,7 +389,7 @@ class BaseExperiment(Behaviour):
             else:
                 result[trial_class] = [trial_id]
 
-        return dict(sorted(result.items(), key=lambda trial_c: trial_c[0].trial_stage_index))
+        return dict(sorted(result.items(), key=lambda trial_c: trial_c[0].experiment_sequence_index))
 
     @cached_property
     def _trial_class_to_trial_objects(self):
@@ -480,19 +472,29 @@ class BaseTrial(Behaviour):
     # Class variables
     category: ClassVar[Optional[str]] = "trial"
 
-    trial_stage_index: ClassVar[Optional[int]] = None
-    trial_label: ClassVar[str] = ""
+    experiment_sequence_index: ClassVar[Optional[int]] = None
+    trial_label: ClassVar[Optional[str]] = None
 
     second_tolerance: ClassVar[float] = 0.15
 
-    feature_headers: ClassVar[Optional[list[str]]] = None
     trial_has_video_space_for_analysis: ClassVar[bool] = False
 
-    @cached_property
-    def feature_summary_column(self):
-        if not self.trial_label:
-            return self.feature_headers
-        return pd.MultiIndex.from_product([self.trial_label], self.feature_headers)
+    @classmethod
+    @property
+    def feature_headers(cls):
+        return []
+
+    @classmethod
+    @property
+    def feature_summary_column(cls):
+        if not cls.trial_label:
+            return cls.feature_headers
+        return pd.MultiIndex.from_product([[cls.trial_label], cls.feature_headers])
+
+    @classmethod
+    @property
+    def trial_has_defined_features(cls) -> bool:
+        return bool(cls.feature_headers)
 
     @property
     def motion_features(self) -> list:
@@ -650,8 +652,3 @@ class BaseTrial(Behaviour):
     @cached_property
     def _frame_tolerance(self) -> int:
         return round(self.second_tolerance * self.fps)
-
-    @classmethod
-    @property
-    def _trial_has_feature_frame(cls) -> bool:
-        return cls.feature_summary_column is not None

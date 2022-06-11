@@ -23,7 +23,7 @@ LOGIC_TO_FUNC = {
 
 
 class LinePerimeter(BikipyBase):
-    location: Union[float, int] = Field(description="The location given in pixels")
+    location: float = Field(description="The location given in pixels")
     orientation: Union[str, int] = Field(
         description=(
             "A lower and an upper perimeter can be defined.\n"
@@ -55,7 +55,7 @@ class LinePerimeter(BikipyBase):
         """Given name of orientation"""
         return INDEX_TO_ORIENTATION[self.orientation]
 
-    def __mod__(self, other: Sequence) -> NDArray:
+    def __mod__(self, other: NDArray) -> NDArray:
         """
         Compute values that are true to the perimeter logic
 

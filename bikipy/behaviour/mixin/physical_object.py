@@ -1,35 +1,53 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Optional
+from typing import Optional, ClassVar
 
 import numpy as np
-from pydantic import Field
+from pydantic import Field, DirectoryPath, BaseModel
 
+from bikipy.behaviour.rectangle.square import SquareEnclosedExperiment, SquareEnclosedTrial
 from bikipy.core.base_class import BikipyBase
 from bikipy.feature.physical_object.core import PhysicalObjectSet
 from bikipy.perimeter.typing import AnyPerimeter
 
 
-class PhysicalObjectBaseMixin(BikipyBase):
-    gaze_start_point_label: str = Field(description="Label of the eye center in the df")
-    gaze_travel_direction_point_label: str = Field(description="Label signifying the area where the gaze vector")
+class PhysicalObjectBaseMixin(BikipyBase, ABC):
+    gaze_start_point_label: Optional[str] = Field(description="Label of the eye center in the df")
+    gaze_travel_direction_point_label: Optional[str] = Field(
+        description="Label signifying the area where the gaze vector"
+    )
     perimeter_border_normal_metric_magnitude: Optional[float] = Field(
-        None,
         description="The magnitude of the normal between the perimeter and the perimeter given in meters",
     )
+
     maximum_radians_inter_gaze_perimeter: float = 1 / 3 * np.pi
     minimum_seconds_attention: float = 0.5
     maximum_seconds_distraction: float = 0.5
 
+    inspection_dir: Optional[DirectoryPath] = None
+
+    @property
+    @abstractmethod
+    def video_metadata_can_be_defined(self) -> bool:
+        ...
+
+    @property
+    @abstractmethod
+    def meters_per_pixel(self):
+        ...
+
+    @property
+    @abstractmethod
+    def fps(self) -> float:
+        ...
+
     @cached_property
     def perimeter_border_normal_pixel_magnitude(self):
-        return self.perimeter_border_normal_metric_magnitude / np.mean(self.meters_per_pixel)
+        return self.perimeter_border_normal_metric_magnitude / self.meters_per_pixel
 
     @cached_property
     def _physical_object_keyword_arguments(self):
-        return {
-            "fps": self.fps,
-            "perimeter_border_normal_pixel_magnitude": self.perimeter_border_normal_pixel_magnitude,
+        result = {
             "gaze_travel_direction_point_label": self.gaze_travel_direction_point_label,
             "gaze_start_point_label": self.gaze_start_point_label,
             "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
@@ -38,24 +56,40 @@ class PhysicalObjectBaseMixin(BikipyBase):
             "inspection_dir": self.inspection_dir,
         }
 
+        if self.video_metadata_can_be_defined:
+            result["perimeter_border_normal_pixel_magnitude"] = self.perimeter_border_normal_pixel_magnitude
+
+        try:
+            result["fps"] = self.fps
+        except AttributeError:
+            pass
+
+        return result
+
 
 class PhysicalObjectExperimentMixin(PhysicalObjectBaseMixin, ABC):
     pass
 
 
 class PhysicalObjectTrialMixin(PhysicalObjectBaseMixin, ABC):
+    gaze_start_point_label: str = Field(..., description="Label of the eye center in the df")
+    gaze_travel_direction_point_label: str = Field(..., description="Label signifying the area where the gaze vector")
+    perimeter_border_normal_metric_magnitude: float = Field(
+        ...,
+        description="The magnitude of the normal between the perimeter and the perimeter given in meters",
+    )
+
+    physical_object_labels: ClassVar[list[str, ...]] = []
+
     @cached_property
     @abstractmethod
     def all_physical_object_perimeters(self) -> tuple[AnyPerimeter, ...]:
         ...
 
-    @cached_property
-    def number_of_physical_objects(self) -> int:
-        return len(self.all_physical_object_perimeters)
-
-    @cached_property
-    def physical_object_labels(self):
-        return tuple(perimeter.label for perimeter in self.all_physical_object_perimeters)
+    @classmethod
+    @property
+    def number_of_physical_objects(cls):
+        return len(cls.physical_object_labels)
 
     @cached_property
     def physical_object_set(self) -> PhysicalObjectSet:
@@ -68,3 +102,25 @@ class PhysicalObjectTrialMixin(PhysicalObjectBaseMixin, ABC):
         result = super()._physical_object_keyword_arguments
         result["reader"] = self.reader
         return result
+
+
+class SquarePhysicalObjectExperiment(SquareEnclosedExperiment, PhysicalObjectExperimentMixin):
+    pass
+
+
+class SquarePhysicalObjectTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, ABC):
+    @classmethod
+    @property
+    def feature_headers(cls) -> list[str]:
+        return ["Seconds observing"]
+
+    @property
+    def feature_summary_row(self):
+        return [self.physical_object_set.seconds_observing]
+
+
+class PhysicalObjectHabituationTrialMixin(BaseModel):
+    """The purpose of this stage is to generate reference data for proceeding experiments with objects."""
+
+    experiment_sequence_index: ClassVar[Optional[int]] = 0
+    trial_label: ClassVar[str] = "Habituation"

@@ -21,14 +21,15 @@ class CirclePerimeter(BasePerimeter):
     @validator("center")
     def center_vector_is_2d(cls, value):
         if value.shape == (2,):
-            return value
+            pass
         elif value.shape == (1, 2):
-            return value[0]
+            value = value[0]
         elif value.shape == (2, 1):
-            return value.T[0]
+            value = value.T[0]
         else:
             msg = f"The center of {cls.__name__} must be a single coordinate tuple"
             raise ValueError(msg)
+        return value.astype(float)
 
     @classmethod
     def from_makesense_line(cls, data_path: FilePath) -> dict[str, Any]:
@@ -59,7 +60,7 @@ class CirclePerimeter(BasePerimeter):
         return plot_circle(self.radius, ax if ax else plt.subplots()[1])
 
     def coordinate_confinement_boolean_index(self, coordinates: NDArray, *args, **kwargs):
-        distance_of_point_from_center = np.linalg.norm(coordinates - self.center, axis=0)
+        distance_of_point_from_center = np.linalg.norm(coordinates - self.center)
         return np.abs(distance_of_point_from_center) <= self.radius
 
     def expand(self, additional: float):

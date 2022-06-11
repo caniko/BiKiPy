@@ -16,27 +16,17 @@ WT: 3 > 4 > 1 > 2
 """
 from typing import ClassVar
 
-from bikipy.behaviour.object_recognition.base import (
-    GenericObjectRecognitionTrial,
-    ObjectRecognitionExperiment,
-)
-from bikipy.feature.physical_object.field import ObjectField
+from bikipy.behaviour.mixin.physical_object import SquarePhysicalObjectExperiment, SquarePhysicalObjectTrial
 from bikipy.perimeter.typing import AnyPerimeter
 
 
-def _four_objects_are_indexes(object_field: ObjectField):
-    if any(i not in object_field.perimeters for i in (1, 2, 3, 4)):
-        msg = (
-            f"The object_field does not define the required labels for the experiment: {object_field.perimeters.keys()}"
-        )
-        raise ValueError(msg)
-
-
-class ObjectsInUpdatingLocationsTrainingTrial(GenericObjectRecognitionTrial):
+class ObjectsInUpdatingLocationsTrainingTrial(SquarePhysicalObjectTrial):
     object_1: AnyPerimeter = ...
     object_2: AnyPerimeter = ...
 
-    trial_stage_index: ClassVar[int] = 0
+    physical_object_labels: ClassVar[list[str, ...]] = ["object_1", "object_2"]
+
+    experiment_sequence_index: ClassVar[int] = 0
     trial_label: ClassVar[str] = "Training"
 
     @property
@@ -44,11 +34,13 @@ class ObjectsInUpdatingLocationsTrainingTrial(GenericObjectRecognitionTrial):
         return self.object_1, self.object_2
 
 
-class ObjectsInUpdatingLocationsUpdateTrial(GenericObjectRecognitionTrial):
+class ObjectsInUpdatingLocationsUpdateTrial(SquarePhysicalObjectTrial):
     object_1: AnyPerimeter = ...
     object_4: AnyPerimeter = ...
 
-    trial_stage_index: ClassVar[int] = 1
+    physical_object_labels: ClassVar[list[str, ...]] = ["object_1", "object_4"]
+
+    experiment_sequence_index: ClassVar[int] = 1
     trial_label: ClassVar[str] = "Update"
 
     @property
@@ -56,13 +48,15 @@ class ObjectsInUpdatingLocationsUpdateTrial(GenericObjectRecognitionTrial):
         return self.object_1, self.object_4
 
 
-class ObjectsInUpdatingLocationsTestTrial(GenericObjectRecognitionTrial):
+class ObjectsInUpdatingLocationsTestTrial(SquarePhysicalObjectTrial):
     object_1: AnyPerimeter = ...
     object_2: AnyPerimeter = ...
     object_3: AnyPerimeter = ...
     object_4: AnyPerimeter = ...
 
-    trial_stage_index: ClassVar[int] = 2
+    physical_object_labels: ClassVar[list[str, ...]] = ["object_1", "object_2", "object_3", "object_4"]
+
+    experiment_sequence_index: ClassVar[int] = 2
     trial_label: ClassVar[str] = "Test"
 
     @property
@@ -70,7 +64,7 @@ class ObjectsInUpdatingLocationsTestTrial(GenericObjectRecognitionTrial):
         return self.object_1, self.object_2, self.object_3, self.object_4
 
 
-class ObjectsInUpdatingLocationsExperiment(ObjectRecognitionExperiment):
+class ObjectsInUpdatingLocationsExperiment(SquarePhysicalObjectExperiment):
     trial_classes: ClassVar = (
         ObjectsInUpdatingLocationsTrainingTrial,
         ObjectsInUpdatingLocationsUpdateTrial,

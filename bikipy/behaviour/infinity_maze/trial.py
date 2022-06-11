@@ -22,7 +22,7 @@ class InfinityMaze(BaseTrial, LiveTrial):
         return_right: AnyPerimeter,
         delay_entry: AnyPerimeter,
         delay_zone: AnyPerimeter,
-        regression_seconds_tolerance: Union[float, int] = 1.5,
+        regression_seconds_tolerance: float = 1.5,
         regression_instance_tolerance: int = 3,
         *args,
         **kwargs,

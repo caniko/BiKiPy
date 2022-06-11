@@ -37,7 +37,7 @@ class BasePerimeter(BikipyBaseHashable):
     @abstractmethod
     def plot_perimeter(
         self,
-        perimeter_border_normal_pixel_magnitude: Union[float, int, None] = None,
+        perimeter_border_normal_pixel_magnitude: Optional[float] = None,
         ax: Any = None,
         include_geometric_legend: bool = False,
         colormap: Any = None,
