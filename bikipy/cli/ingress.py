@@ -1,11 +1,12 @@
 import os
+from pathlib import Path
 from typing import Optional
 
 import click
 from pydantic import DirectoryPath, validate_arguments
 
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
-from bikipy.ingress.mapping import INGRESS_METHOD_NAME_TO_INIT_FUNC
+from bikipy.ingress import INGRESS_METHOD_NAME_TO_INIT_FUNC
 
 
 @click.group
@@ -36,7 +37,7 @@ def init(
     animals_have_plural_trial_sets: bool = False,
     dry_run: bool = False,
 ) -> None:
-    root_directory = root_directory or os.curdir
+    root_directory = root_directory or Path(os.curdir)
     if (root_directory / "settings.yaml").exists() and input(
         "Project has already been initialised, overwrite settings? y/N "
     ).strip().lower() != "y":

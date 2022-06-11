@@ -85,11 +85,11 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
     period_name = f"{period_letter}{period_index}"
     experiment_root_data_path = DEEPLABCUT_DIR / f"Experiment_{period_index}"
     meta_data = DATA_DIR / f"nort_round_{period_index}.xlsx"
-    for round_part_dir_name in os.listdir(experiment_root_data_path):
-        round_dir_path = experiment_root_data_path / round_part_dir_name
-        round_index = int(round_part_dir_name.split("_")[0][-1]) - 1
+    for round_part_directory_name in os.listdir(experiment_root_data_path):
+        round_directory_path = experiment_root_data_path / round_part_directory_name
+        round_index = int(round_part_directory_name.split("_")[0][-1]) - 1
 
-        day, month, year = round_dir_path.name.split("_")[1].split(".")
+        day, month, year = round_directory_path.name.split("_")[1].split(".")
         date = datetime.date(int(year), int(month), int(day))
 
         exp_metadata_df = pd.read_excel(meta_data, sheet_name=round_index, engine="openpyxl")
@@ -100,10 +100,10 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
         exp_to_animal = get_trial_id_to_animal_id(animal_id_to_trial_ids)
 
         trial_id_to_paths = {}
-        for video_path in glob(str(round_dir_path / "**" / "*.mp4")):
+        for video_path in glob(str(round_directory_path / "**" / "*.mp4")):
             trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(video_path).stem)[0])
             trial_id_to_paths[trial_id] = {"video": video_path}
-        for data_path in glob(str(round_dir_path / "**" / "*.parquet")):
+        for data_path in glob(str(round_directory_path / "**" / "*.parquet")):
             trial_id = int(EXP_ID_REGEX_PATTERN.findall(Path(data_path).stem)[0])
             trial_id_to_paths[trial_id]["data"] = data_path
 

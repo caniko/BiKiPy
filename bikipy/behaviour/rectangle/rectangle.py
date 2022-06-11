@@ -6,15 +6,11 @@ from typing import Any, ClassVar, Hashable, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import Field, validate_arguments, validator, BaseModel
+from pydantic import BaseModel, Field, validate_arguments, validator
 from pydantic_numpy import NDArray
 from skg import ngauss_fit
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
-from bikipy.behaviour.mixin.meters_per_pixel.resolution_derived import (
-    ResolutionDerivedUnitPerPixelMixin,
-    ResolutionDerivedUnitPerPixelTrialMixin,
-)
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BikipyBase
 from bikipy.feature.motion import (
@@ -68,7 +64,7 @@ class Quadrant(BikipyBase):
         )
 
 
-class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelMixin):
+class RectangleEnclosedExperiment(BaseExperiment):
     rectangle_2d_bin: tuple[int, int] = (2, 2)
 
     _pandas_multi_index_level: ClassVar[int] = 3
@@ -113,10 +109,9 @@ class RectangleEnclosedExperiment(BaseExperiment, ResolutionDerivedUnitPerPixelM
         )
 
 
-class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin, ABC):
+class RectangleEnclosedTrial(BaseTrial):
     rectangle_2d_bin: tuple[int, int] = (2, 2)
     center_box_to_recording_resolution_ratio: Optional[float] = None
-    rectangle_center_point: Optional[NDArray] = None
 
     @cached_property
     def _quadrant_coordinate_to_index(self):
@@ -145,10 +140,6 @@ class RectangleEnclosedTrial(BaseTrial, ResolutionDerivedUnitPerPixelTrialMixin,
         func = gaussian_scoring_field(self.tuple_recording_resolution)
         scores = np.array([func(*coordinate) for coordinate in self.coordinates_per_frame])
         return np.sum(scores) / (A * self.number_of_frames)
-
-    @cached_property
-    def center_translation(self):
-        return self.recording_center_pixel - self.rectangle_center_point if self.rectangle_center_point else None
 
     @cached_property
     def quadrants(self) -> dict[tuple[int, int], Quadrant]:

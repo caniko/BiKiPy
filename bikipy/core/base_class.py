@@ -9,6 +9,7 @@ from pydantic import BaseModel, DirectoryPath, Field
 
 class BikipyBase(BaseModel):
     class Config:
+        underscore_attrs_are_private = True
         keep_untouched = (cached_property,)
 
     category: ClassVar[Optional[str]] = None

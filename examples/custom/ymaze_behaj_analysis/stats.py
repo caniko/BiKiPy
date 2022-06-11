@@ -27,7 +27,7 @@ for i in range(2):
         metadata_df=metadata_df,
         category_columns=metadata_df.columns[1:6].to_list(),
         feature_columns=("Alternations", "Spontaneous alternations"),
-        root_dir_path=RESULTS_STATS_DIR,
+        root_directory_path=RESULTS_STATS_DIR,
         identifier=analysis_data[i].stem,
     )
     # summary.category_pair_combinations

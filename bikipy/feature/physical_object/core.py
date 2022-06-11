@@ -11,9 +11,9 @@ from pydantic_numpy import NDArray
 
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BikipyBase
-from bikipy.perimeter.typing import AnyPerimeter
 from bikipy.feature.attention.main import perimeter_attention
 from bikipy.perimeter.base import PerimeterSet
+from bikipy.perimeter.typing import AnyPerimeter
 
 logger = getLogger(__name__)
 

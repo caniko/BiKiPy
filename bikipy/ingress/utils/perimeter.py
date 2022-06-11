@@ -9,7 +9,7 @@ import yaml
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from bikipy.ingress.utils.io import (
-    get_perimeter_dir_path,
+    get_perimeter_directory_path,
     get_project_settings_path,
     load_settings,
 )
@@ -23,7 +23,7 @@ logger = getLogger(__name__)
 @validate_arguments
 def detect_perimeters_in_project(root_directory: DirectoryPath, create_object: bool = False) -> list:
     settings = load_settings(root_directory)
-    perimeter_dir = get_perimeter_dir_path(root_directory)
+    perimeter_dir = get_perimeter_directory_path(root_directory)
     detection_data = []
     for filename in perimeter_dir.glob("perimeter-*"):
         perimeter_path = root_directory / filename
@@ -60,14 +60,14 @@ def refresh_perimeters_in_project(root_directory: DirectoryPath) -> None:
 
 @validate_arguments
 def add_perimeter_from_makesense(root_directory: DirectoryPath, make_copy: bool = True):
-    perimeter_dir_path = get_perimeter_dir_path(root_directory)
+    perimeter_directory_path = get_perimeter_directory_path(root_directory)
     settings = load_settings(root_directory)
 
     perimeter_path = plyer.filechooser.open_file()
     if not perimeter_path:
         return print("Cancelled by user")
     perimeter_path = Path(perimeter_path[0])
-    new_perimeter_in_project_path = perimeter_dir_path / perimeter_path.name
+    new_perimeter_in_project_path = perimeter_directory_path / perimeter_path.name
     if new_perimeter_in_project_path.exists():
         msg = f"{perimeter_path.name} is already in the project"
         raise ValueError(msg)
@@ -79,7 +79,7 @@ def add_perimeter_from_makesense(root_directory: DirectoryPath, make_copy: bool 
         yaml.dump(settings, in_yaml)
 
     if make_copy:
-        shutil.copyfile(perimeter_path, perimeter_dir_path / perimeter_path.name)
+        shutil.copyfile(perimeter_path, perimeter_directory_path / perimeter_path.name)
 
 
 @validate_arguments
@@ -111,11 +111,3 @@ def get_perimeter_data(perimeter_path: FilePath):
     assert len(split_file_stem) == 3
     # return {"shape": split_file_stem[1], "label": split_file_stem[2]}
     return split_file_stem[1:]
-
-
-def partial_first_perimeter_set_from_makesense_from_settings(settings: dict):
-    return partial(
-        first_perimeter_set_from_makesense,
-        label_prefix=settings["perimeter"]["label_prefix"],
-        label_suffix=settings["perimeter"]["label_suffix"],
-    )

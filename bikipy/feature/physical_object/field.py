@@ -5,10 +5,10 @@ from typing import Optional, Sequence
 from pydantic import Field, validator
 
 from bikipy.core.base_class import BikipyBase
-from bikipy.perimeter.typing import AnyPerimeter
 from bikipy.feature.physical_object.core import PhysicalObjectSet
 from bikipy.perimeter.base import PerimeterSet
 from bikipy.perimeter.polygon.base import PolygonPerimeter
+from bikipy.perimeter.typing import AnyPerimeter
 
 
 class ObjectField(BikipyBase):

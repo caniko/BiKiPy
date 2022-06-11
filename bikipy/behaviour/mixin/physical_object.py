@@ -6,8 +6,8 @@ import numpy as np
 from pydantic import Field
 
 from bikipy.core.base_class import BikipyBase
-from bikipy.perimeter.typing import AnyPerimeter
 from bikipy.feature.physical_object.core import PhysicalObjectSet
+from bikipy.perimeter.typing import AnyPerimeter
 
 
 class PhysicalObjectBaseMixin(BikipyBase):

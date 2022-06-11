@@ -20,8 +20,8 @@ from bikipy.behaviour.object_recognition.base import (
     GenericObjectRecognitionTrial,
     ObjectRecognitionExperiment,
 )
-from bikipy.perimeter.typing import AnyPerimeter
 from bikipy.feature.physical_object.field import ObjectField
+from bikipy.perimeter.typing import AnyPerimeter
 
 
 def _four_objects_are_indexes(object_field: ObjectField):

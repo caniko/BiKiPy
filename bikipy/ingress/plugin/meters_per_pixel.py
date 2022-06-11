@@ -2,11 +2,7 @@ import numpy as np
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from bikipy.ingress.plugin.utils import get_file_label_from_3rd_str_in_split
-from bikipy.ingress.utils.io import (
-    get_perimeter_dir_path,
-    initialize_metadata_data_frame,
-    load_settings,
-)
+from bikipy.ingress.utils.io import initialize_metadata_data_frame, load_settings
 from bikipy.utils.io.makesense import read_first_makesense_line
 
 
@@ -35,7 +31,7 @@ def detect_global_meters_per_pixel_in_perimeter_directory(perimeter_dir: Directo
 
 def validate_metadata_meters_per_pixel_strategy(root_directory: DirectoryPath):
     settings = load_settings(root_directory)
-    # perimeter_dir = get_perimeter_dir_path(root_directory)
+    # perimeter_dir = get_perimeter_directory_path(root_directory)
 
     metadata = initialize_metadata_data_frame(root_directory, settings["ingress"]["stageful_metadata"])
     if "Meter Pixel Ratio" not in metadata:

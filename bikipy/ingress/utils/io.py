@@ -23,9 +23,9 @@ def load_settings(root_directory: DirectoryPath) -> dict:
         return yaml.safe_load(in_file)
 
 
-def get_dataset_dir_path(root_directory: DirectoryPath) -> DirectoryPath:
+def get_dataset_directory_path(root_directory: DirectoryPath) -> DirectoryPath:
     return root_directory / "dataset"
 
 
-def get_perimeter_dir_path(root_directory: DirectoryPath) -> DirectoryPath:
+def get_perimeter_directory_path(root_directory: DirectoryPath) -> DirectoryPath:
     return root_directory / "perimeter"

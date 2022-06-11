@@ -31,28 +31,20 @@ LABEL_to_DATA_READER = {"deeplabcut": DeepLabCutReader}
 
 
 class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
-    manual_recording_resolution: NDArray
-    manual_fps: float
+    center_point: Optional[NDArray] = None
+
     data_import_kwargs: Optional[dict] = None
     data_format_label: Literal["deeplabcut"] = "deeplabcut"
 
     _live: ClassVar[bool] = False
 
-    @property
-    def recording_resolution(self) -> NDArray:
-        return self.manual_recording_resolution
+    @cached_property
+    def recording_center_pixel(self) -> NDArray:
+        return self.recording_resolution / 2.0
 
-    @property
-    def horizontal_resolution(self):
-        return self.recording_resolution[0]
-
-    @property
-    def vertical_resolution(self):
-        return self.recording_resolution[1]
-
-    @property
-    def fps(self):
-        return self.manual_fps
+    @cached_property
+    def center_translation(self):
+        return self.recording_center_pixel - self.center_point if self.center_point else None
 
 
 class BaseExperiment(Behaviour):
@@ -137,6 +129,8 @@ class BaseExperiment(Behaviour):
         result = {
             "object_tracking_label_for_kinematics": self.object_tracking_label_for_kinematics,
             "data_format_label": self.data_format_label,
+            "manual_recording_resolution": self.recording_resolution,
+            "manual_fps": self.fps,
         }
 
         if self.common_trial_keyword_arguments:
@@ -531,10 +525,6 @@ class BaseTrial(Behaviour):
     @cached_property
     def experiment_seconds(self) -> int:
         return self.coordinates_per_frame.shape[0] / self.fps
-
-    @cached_property
-    def recording_center_pixel(self) -> NDArray:
-        return self.recording_resolution / 2.0
 
     @cached_property
     def motion(self) -> Motion:

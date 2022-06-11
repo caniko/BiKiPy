@@ -17,9 +17,9 @@ def merge_timestamps_with_dlc(
     def get_first_delimited_value_from_str(string: str):
         return string.split(delimiter)[0]
 
-    for dataset_unit_dir_name in os.listdir(dataset_dir):
-        print(dataset_unit_dir_name)
-        dataset_unit_dir = dataset_dir / str(dataset_unit_dir_name)
+    for dataset_unit_directory_name in os.listdir(dataset_dir):
+        print(dataset_unit_directory_name)
+        dataset_unit_dir = dataset_dir / str(dataset_unit_directory_name)
 
         label_to_timestamp, label_to_timestamp_path = {}, {}
         for timestamp_file in dataset_unit_dir.glob(timestamp_file_lookup_expression):
