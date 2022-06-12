@@ -1,9 +1,11 @@
-from collections.abc import Sequence
 from logging import getLogger
-from typing import Any, Iterable
+from typing import Any, Iterable, Sequence
 
 import numpy as np
+from pydantic import validate_arguments
 from pydantic_numpy import NDArray
+
+from bikipy.core.typing import NDArrayFp64
 
 logger = getLogger(__name__)
 
@@ -12,8 +14,8 @@ def unique_with_counts_zipped(array):
     return zip(*np.unique(array, return_counts=True))
 
 
-def exclude_value_from_sequence(sequence: Sequence, exclude: Any):
-    sequence = np.asarray(sequence)
+@validate_arguments
+def exclude_value_from_sequence(sequence: NDArrayFp64, exclude: Any):
     return sequence[sequence != exclude]
 
 
@@ -21,6 +23,7 @@ def feature_2d_multi_indexer(feature: str, groups: Iterable[str]):
     return [(str(feature), str(group)) for group in groups]
 
 
+@validate_arguments
 def reduce_repeating_sequences(
     repeating_sequence: NDArray,
     frame_tolerance: Any,

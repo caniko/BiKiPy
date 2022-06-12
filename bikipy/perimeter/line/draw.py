@@ -1,9 +1,9 @@
-from collections.abc import Sequence
 from typing import Any, Optional
 
 import matplotlib.pyplot as plt
 from PIL import Image
 
+from bikipy.core.typing import NDArrayFp64
 from bikipy.perimeter import LinePerimeter
 from bikipy.utils.video import get_video_data
 
@@ -11,7 +11,7 @@ from bikipy.utils.video import get_video_data
 def borders_on_image(
     img: Any,
     orientation: str,
-    resolution: Optional[Sequence] = None,
+    resolution: Optional[NDArrayFp64] = None,
 ):
     """
     Initialize class using data from a sample frame/image
@@ -22,7 +22,7 @@ def borders_on_image(
         object containing the image that will be used to determine the perimeter location
     orientation: str; {"vertical", "horizontal"}
         The orientation of the perimeter used for analysis
-    resolution: Sequence
+    resolution: NDArrayFp64
         The respective resolution of the frame.
 
     Returns

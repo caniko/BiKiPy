@@ -1,4 +1,4 @@
-from typing import Iterable, Sequence
+from typing import Iterable
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QVBoxLayout, QWidget
 
 
 class MplWidget(QWidget):
-    def __init__(self, overlay_image: NDArray, parent=None):
+    def __init__(self, overlay_image: NDArrayFp64, parent=None):
 
         QWidget.__init__(self, parent)
 

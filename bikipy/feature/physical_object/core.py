@@ -1,5 +1,4 @@
 import os
-from collections import Counter
 from functools import cached_property
 from logging import getLogger
 from typing import Any, ClassVar, Optional
@@ -7,10 +6,10 @@ from typing import Any, ClassVar, Optional
 import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import DirectoryPath, validator
-from pydantic_numpy import NDArray
 
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BikipyBase
+from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.feature.attention.main import perimeter_attention
 from bikipy.perimeter.base import PerimeterSet
 from bikipy.perimeter.typing import AnyPerimeter
@@ -40,23 +39,18 @@ class PhysicalObject(BikipyBase):
 
     @property
     def label(self):
-        """
-        Caveat:
-            - NORT: An explicit label for variable, constant, and novel object must be provided
-        :return:
-        """
         return self.perimeter.best_id
 
     @cached_property
-    def distance_from_per_frame(self) -> NDArray:
+    def distance_from_per_frame(self) -> NDArrayFp64:
         return np.linalg.norm(self._gaze_travel_direction_point - self.perimeter.centroid, axis=1)
 
     @property
-    def observance_boolean_index(self) -> NDArray:
+    def observance_boolean_index(self) -> NDArrayBool:
         return self._perimeter_attention_data[0]
 
     @cached_property
-    def not_observing(self) -> NDArray:
+    def not_observing(self) -> NDArrayFp64:
         return ~self.observance_boolean_index
 
     @cached_property
@@ -72,19 +66,19 @@ class PhysicalObject(BikipyBase):
         return self.attention_filtered_seconds_observing / self.raw_seconds_observing
 
     @property
-    def attention_proximity_boolean_index(self) -> NDArray:
+    def attention_proximity_boolean_index(self) -> NDArrayFp64:
         return self._attention_analytics[0]
 
     @property
-    def attention_gaze_boolean_index(self) -> NDArray:
+    def attention_gaze_boolean_index(self) -> NDArrayFp64:
         return self._attention_analytics[1]
 
     @property
-    def logical_location_and_gaze(self) -> NDArray:
+    def logical_location_and_gaze(self) -> NDArrayFp64:
         return self._attention_analytics[2]
 
     @property
-    def semi_true_observations(self) -> NDArray:
+    def semi_true_observations(self) -> NDArrayFp64:
         return self.logical_location_and_gaze
 
     @property
@@ -92,7 +86,7 @@ class PhysicalObject(BikipyBase):
         return self.reader.frames
 
     @property
-    def _gaze_travel_direction_point(self) -> NDArray:
+    def _gaze_travel_direction_point(self) -> NDArrayFp64:
         return self.reader[self.gaze_travel_direction_point_label]
 
     @cached_property
@@ -130,7 +124,7 @@ class PhysicalObjectSet(BikipyBase):
     overlapping_frame_to_total_frame_warning_ratio: ClassVar[float] = 0.05
 
     @cached_property
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.physical_objects)
 
     def __getitem__(self, item):

@@ -167,9 +167,7 @@ class BaseIngress(BikipyBase, ABC):
             keys=["Stage"] if self.stageful_metadata else None,
             # Prepend experiment stage to column MultiIndex:
             # https://stackoverflow.com/a/42094658/9793651
-            names=["Stage", "Feature", "Location_Category"]
-            if self.stageful_metadata
-            else ["Feature", "Location_Category"],
+            names=self.experiment.column_multi_index_names,
         )
 
     @yaspin(Spinners.pong, text="Analyzing experiment data...")

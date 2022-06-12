@@ -3,9 +3,10 @@ from concurrent.futures import ProcessPoolExecutor
 from copy import copy
 from functools import cached_property
 from logging import getLogger
+from numbers import Integral
 from operator import attrgetter
 from pathlib import Path
-from typing import Any, ClassVar, Hashable, Iterable, Literal, Optional, Sequence, Union
+from typing import Any, ClassVar, Hashable, Iterable, Literal, Optional, Sequence
 
 import cv2
 import matplotlib.pyplot as plt
@@ -19,6 +20,7 @@ from pydantic_numpy import NDArray
 from bikipy import ENABLE_PROCESS_POOLING
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.mixin import VideoMetadataMixin
+from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.feature.motion import Motion, motion_multi_indexer
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.misc import rise_to_n_levels
@@ -31,7 +33,7 @@ LABEL_to_DATA_READER = {"deeplabcut": DeepLabCutReader}
 
 
 class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
-    center: Optional[NDArray] = None
+    center: Optional[NDArrayInt16] = None
 
     data_import_kwargs: Optional[dict] = None
     data_format_label: Literal["deeplabcut"] = "deeplabcut"
@@ -39,7 +41,7 @@ class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
     _live: ClassVar[bool] = False
 
     @cached_property
-    def recording_center_pixel(self) -> NDArray:
+    def recording_center_pixel(self) -> NDArrayInt16:
         return self.recording_resolution / 2.0
 
     @cached_property
@@ -59,7 +61,6 @@ class BaseExperiment(Behaviour):
     inspection_dir: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
 
     trial_classes: ClassVar[tuple[Any]] = Field(..., description="Trial classes designed for this experiment class")
-    _pandas_multi_index_level: ClassVar[int] = 2
 
     @validator("trial_id_to_trial_class_name")
     def sort_trial_id_to_trial_class_name_ascending(cls, value):
@@ -229,14 +230,25 @@ class BaseExperiment(Behaviour):
         return result
 
     @cached_property
-    def trial_ids(self) -> tuple:
+    def trial_ids(self) -> NDArray:
         if self.manual_trial_ids:
-            return self.manual_trial_ids
-        if self.trial_class:
-            return tuple(self.trial_id_to_keyword_arguments)
-        if self.trial_id_to_trial_class_name:
-            return tuple(self.trial_id_to_trial_class_name)
-        self._neither_singular_trial_class_or_trial_id_to_trial_class_name()
+            result = self.manual_trial_ids
+        elif self.trial_class:
+            result = tuple(self.trial_id_to_keyword_arguments)
+        elif self.trial_id_to_trial_class_name:
+            result = tuple(self.trial_id_to_trial_class_name)
+        else:
+            self._neither_singular_trial_class_or_trial_id_to_trial_class_name()
+
+        first_trial_id = result[0]
+        first_type = type(first_trial_id)
+        if not all(isinstance(trial_id, first_type) for trial_id in result):
+            msg = "The Trial IDs must have the same type"
+            raise AttributeError(msg)
+
+        # TODO: Infer dtype
+
+        return result
 
     @cached_property
     def number_of_trials(self):
@@ -256,7 +268,7 @@ class BaseExperiment(Behaviour):
             keys=["Stage"] if self.stage else None,
             # Prepend experiment stage to column MultiIndex:
             # https://stackoverflow.com/a/42094658/9793651
-            names=["Stage", "Feature", "Location_Category"] if self.stage else ["Feature", "Location_Category"],
+            names=self.column_multi_index_names,
         )
 
     @cached_property
@@ -318,6 +330,14 @@ class BaseExperiment(Behaviour):
             index=self._trial_id_series,
         )
 
+    @cached_property
+    def motion_summary_columns(self) -> list:
+        return motion_multi_indexer("All", self._pandas_multi_index_level)
+
+    @cached_property
+    def column_multi_index_names(self):
+        return ["Feature", "Location_Category"] if self.stage is None else ["Stage", "Feature", "Location_Category"]
+
     # Private methods
 
     @cached_property
@@ -350,11 +370,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _trial_id_series(self) -> pd.Series:
-        return pd.Series(
-            self.trial_ids,
-            name="Trial ID",
-            dtype=np.uint16,
-        )
+        return pd.Series(self.trial_ids, name="Trial ID")
 
     @cached_property
     def _trial_id_indexed_animal_ids(self) -> pd.Series:
@@ -362,7 +378,6 @@ class BaseExperiment(Behaviour):
             self.trial_id_to_animal_id.values(),
             index=self._trial_id_series,  # derived from self.trial_id_to_animal_id
             name="Animal ID",
-            dtype=np.uint16,
         ).sort_index()
 
     def _trial_id_animal_id(self, levels: Optional[int] = None) -> pd.DataFrame:
@@ -427,7 +442,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _motion_summary_column_index(self) -> pd.MultiIndex:
-        return pd.MultiIndex.from_tuples(self.motion_summary_columns, names=["Feature", "Location_Category"])
+        return pd.MultiIndex.from_tuples(self.motion_summary_columns, names=self.column_multi_index_names)
 
     @cached_property
     def _motion_summary_column_depth(self):
@@ -437,8 +452,8 @@ class BaseExperiment(Behaviour):
         return result
 
     @cached_property
-    def motion_summary_columns(self) -> list:
-        return motion_multi_indexer("All", self._pandas_multi_index_level)
+    def _pandas_multi_index_level(self) -> int:
+        return len(self.column_multi_index_names)
 
     def _make_categorical_inspection_dir(self, trial_root_dir: Path):
         pass
@@ -457,7 +472,7 @@ class BaseTrial(Behaviour):
     object_tracking_label_for_kinematics: Optional[str] = Field(
         ..., description="Label of the node that will be used to track general animal movement"
     )
-    rigid_nodes_freezing: Optional[Sequence[Union[str, int]]] = Field(
+    rigid_nodes_freezing: Optional[Sequence[str | int]] = Field(
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
     )
     stage: Optional[str] = Field(description="The semantic stage of the experiment")
@@ -517,24 +532,26 @@ class BaseTrial(Behaviour):
         )
 
     @property
-    def coordinates_per_frame(self) -> NDArray:
+    def framewise_confined_coordinates(self) -> NDArrayFp64:
         return self.reader[self.object_tracking_label_for_kinematics]
 
     @cached_property
     def number_of_frames(self) -> int:
-        return len(self.coordinates_per_frame)
+        return len(self.framewise_confined_coordinates)
 
     @cached_property
     def experiment_seconds(self) -> int:
-        return self.coordinates_per_frame.shape[0] / self.fps
+        return self.framewise_confined_coordinates.shape[0] / self.fps
 
     @cached_property
     def motion(self) -> Motion:
-        return Motion(self.coordinates_per_frame, self.meters_per_pixel, self.fps)
+        return Motion(
+            coordinate_sequence=self.framewise_confined_coordinates, meters_per_pixel=self.meters_per_pixel, fps=self.fps
+        )
 
     # PolygonPerimeter
 
-    def detect_confined_perimeter(self, coordinate: NDArray) -> NDArray:
+    def detect_confined_perimeter(self, coordinate: NDArrayFp64) -> NDArrayFp64:
         """
         This function is used to determine current location of subject.
 
@@ -583,7 +600,7 @@ class BaseTrial(Behaviour):
 
         writer.close()
 
-    def _process_frame(self, frame: NDArray, frame_index: int) -> NDArray:
+    def _process_frame(self, frame: NDArrayFp64, frame_index: int) -> NDArrayFp64:
         if self.trial_has_video_space_for_analysis:
             return cv2.hconcat(
                 (
@@ -593,19 +610,19 @@ class BaseTrial(Behaviour):
             )
         return self._overlay_video_frame(frame, frame_index)
 
-    def _overlay_video_frame(self, frame: NDArray, frame_index: int) -> NDArray:
+    def _overlay_video_frame(self, frame: NDArrayFp64, frame_index: int) -> NDArrayFp64:
         fig, ax = plt.subplots()
         canvas = FigureCanvas(fig)
 
         ax.imshow(frame)
-        ax.scatter(*self.coordinates_per_frame[frame_index])
+        ax.scatter(*self.framewise_confined_coordinates[frame_index])
         ax.axis("off")
 
         canvas.draw()
 
         return np.frombuffer(canvas.tostring_rgb(), dtype="uint8")
 
-    def _create_analysis_frame(self, frame_index: int) -> NDArray:
+    def _create_analysis_frame(self, frame_index: int) -> NDArrayFp64:
         raise NotImplemented("The analysis space is a work in progress")
 
     @cached_property
@@ -646,7 +663,7 @@ class BaseTrial(Behaviour):
         return f"trial_{self.best_id}.jpg"
 
     @cached_property
-    def _uint_zeros_based_on_frame_length(self) -> NDArray:
+    def _uint_zeros_based_on_frame_length(self) -> NDArrayFp64:
         return np.zeros(self.number_of_frames, dtype=np.uint8)
 
     @cached_property

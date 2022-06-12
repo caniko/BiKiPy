@@ -44,7 +44,7 @@ def generate_radial_maze_perimeters(
     number_of_arms = len(labels)
     center_object.int_id = number_of_arms + 1
 
-    line_dataset = csv_array[1:5].T.astype(np.float32)
+    line_dataset = csv_array[1:5].T
     lines = np.array([np.array_split(line, 2) for line in line_dataset])
     line_midpoints = np.array([np.mean(line, axis=0) for line in lines])
 

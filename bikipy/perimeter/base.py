@@ -2,14 +2,14 @@ from abc import abstractmethod
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, ClassVar, Optional, Sequence, Union
+from typing import Any, ClassVar, Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import DirectoryPath, FilePath, root_validator, validate_arguments
-from pydantic_numpy import NDArray
 
 from bikipy.core.base_class import BikipyBase, BikipyBaseHashable
+from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
 from bikipy.utils.io.makesense import read_makesense_point
 from bikipy.utils.misc import get_reference_point_from_array, read_image
@@ -19,18 +19,18 @@ logger = getLogger(__name__)
 
 class BasePerimeter(BikipyBaseHashable):
     reference_point_coco_path: Optional[FilePath] = None
-    reference_point_array: Optional[NDArray] = None
+    reference_point_array: Optional[NDArrayInt16] = None
     inspect_image_path: Optional[FilePath] = None
-    inspect_image_array: Optional[NDArray] = None
+    inspect_image_array: Optional[NDArrayFp64] = None
 
     category: ClassVar[Optional[str]] = "perimeter"
 
     @abstractmethod
-    def coordinate_confinement_boolean_index(self, coordinates: NDArray):
+    def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64):
         ...
 
     @abstractmethod
-    def change_reference(self, new_reference: Optional[NDArray], **new_inspect_image_kwargs):
+    def change_reference(self, new_reference: Optional[NDArrayFp64], **new_inspect_image_kwargs):
         """"""
         ...
 
@@ -47,7 +47,7 @@ class BasePerimeter(BikipyBaseHashable):
     @staticmethod
     def _new_inspect_image(
         perimeter,
-        new_inspect_image: Optional[NDArray] = None,
+        new_inspect_image: Optional[NDArrayFp64] = None,
         new_inspect_image_path: Optional[FilePath] = None,
     ):
         if new_inspect_image_path:
@@ -98,7 +98,7 @@ class BasePerimeter(BikipyBaseHashable):
     def change_reference_with_coco(
         self,
         metadata_path: Optional[FilePath] = None,
-        coco_array: Optional[NDArray] = None,
+        coco_array: Optional[NDArrayFp64] = None,
         **kwargs,
     ):
         coco_array = get_coco_array_from_path_or_array(metadata_path, coco_array)
@@ -115,7 +115,7 @@ class BasePerimeter(BikipyBaseHashable):
     def change_reference_with_coco_with_plural_references(
         self,
         metadata_path: Optional[FilePath] = None,
-        coco_array: Optional[NDArray] = None,
+        coco_array: Optional[NDArrayFp64] = None,
         image_root: Optional[DirectoryPath] = None,
         map_to_image_names: bool = True,
     ):
@@ -142,9 +142,10 @@ class BasePerimeter(BikipyBaseHashable):
             for img_name, reference_point in img_name_to_reference_points.items()
         ]
 
-    def confined_coordinates(self, coordinates: Sequence, inspect: bool = False, ax: Any = None):
+    @validate_arguments
+    def framewise_confined_coordinates(self, coordinates: NDArrayFp64, inspect: bool = False, ax: Any = None):
         """
-        self.confined_coordinates to fetch confined coordinates within
+        self.framewise_confined_coordinates to fetch confined coordinates within
         the respective perimeter
 
         Parameters
@@ -159,7 +160,6 @@ class BasePerimeter(BikipyBaseHashable):
         -------
 
         """
-        coordinates = np.asarray(coordinates)
         coordinate_confinement_boolean_index = coordinates[self.coordinate_confinement_boolean_index(coordinates)]
         if inspect or ax:
             if not ax:
@@ -177,7 +177,7 @@ class BasePerimeter(BikipyBaseHashable):
     @classmethod
     def detect_sequential_border_presence(
         cls,
-        coordinates: Sequence[Sequence[float]],
+        coordinates: NDArrayFp64,
         superior_poly_border_instances: Optional[Sequence],
         inferior_poly_border_instances: Optional[Sequence] = None,
         clean_outliers: bool = True,
@@ -187,7 +187,7 @@ class BasePerimeter(BikipyBaseHashable):
 
         Parameters
         ----------
-        coordinates: Sequence
+        coordinates: NDArrayFp64
             Coordinates that will have their confinement tested
 
         superior_poly_border_instances: Sequence
@@ -204,7 +204,7 @@ class BasePerimeter(BikipyBaseHashable):
 
         Returns
         -------
-        NDArray that stores the sequential perimeter presence across frames
+        NDArrayFp64 that stores the sequential perimeter presence across frames
         """
 
         coordinates = np.asarray(coordinates)
@@ -251,7 +251,7 @@ class BasePerimeter(BikipyBaseHashable):
     def plot(
         self,
         ax: Any = None,
-        coordinates: Optional[Sequence] = None,
+        coordinates: Optional[NDArrayFp64] = None,
         perimeter_plot_kwargs: Optional[dict] = None,
     ):
         """
@@ -317,7 +317,7 @@ class PerimeterSet(BikipyBase):
             restricted_perimeters=self.restricted_perimeters + other.restricted_perimeters,
         )
 
-    def __getitem__(self, item: Union[str, int]):
+    def __getitem__(self, item: str | int):
         for perimeter in self.all_perimeters:
             if perimeter.label == item or perimeter.int_id == item:
                 return perimeter
@@ -348,17 +348,17 @@ class PerimeterSet(BikipyBase):
         """
         return np.mean([perimeter.centroid for perimeter in self.all_perimeters], axis=0)
 
-    def discrete_confined_coordinates(self, coordinates: Sequence, inspect: bool = False):
+    def discrete_framewise_confined_coordinates(self, coordinates: NDArrayFp64, inspect: bool = False):
         ax = self.plot() if inspect else None
         result = {}
         for i, perimeter in enumerate(self.all_perimeters):
-            confined_coordinates = perimeter.confined_coordinates(coordinates, ax=ax)
-            result[perimeter.best_id or i] = confined_coordinates
+            framewise_confined_coordinates = perimeter.framewise_confined_coordinates(coordinates, ax=ax)
+            result[perimeter.best_id or i] = framewise_confined_coordinates
         if inspect:
             plt.show()
         return result
 
-    def combined_confined_coordinates(self, coordinates: Sequence):
+    def combined_framewise_confined_coordinates(self, coordinates: NDArrayFp64):
         present = np.any([perimeter.coordinate_confinement_boolean_index(coordinates) for perimeter in self.perimeters])
         if self.restricted_perimeters:
             present = present & ~np.any(
@@ -369,8 +369,8 @@ class PerimeterSet(BikipyBase):
             )
         return present
 
-    def coordinate_confinement_boolean_index(self, coordinates: Sequence):
-        return self.combined_confined_coordinates(coordinates)
+    def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64):
+        return self.combined_framewise_confined_coordinates(coordinates)
 
     def change_reference(self, **perimeter_change_reference_kwargs):
         return self.__class__(
@@ -388,7 +388,7 @@ class PerimeterSet(BikipyBase):
     def change_reference_with_coco(
         self,
         metadata_path: Optional[FilePath] = None,
-        coco_array: Optional[NDArray] = None,
+        coco_array: Optional[NDArrayFp64] = None,
     ):
         coco_array = get_coco_array_from_path_or_array(metadata_path, coco_array)
 
@@ -408,7 +408,7 @@ class PerimeterSet(BikipyBase):
     def change_reference_with_coco_with_plural_references(
         self,
         metadata_path: Optional[FilePath] = None,
-        coco_array: Optional[NDArray] = None,
+        coco_array: Optional[NDArrayFp64] = None,
         map_to_image_names: bool = True,
         **kwargs,
     ):

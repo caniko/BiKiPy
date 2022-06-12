@@ -12,6 +12,7 @@ from pydantic import Field, FilePath
 from bikipy import ENABLE_PROCESS_POOLING
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.mixin import VideoMetadataMixin
+from bikipy.core.typing import NDArrayBool
 from bikipy.utils.video import get_video_data
 
 FILE_EXTENSION_to_PANDAS_READER = {
@@ -47,14 +48,14 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
 
     @abstractmethod
     def _isolate_coordinates(self, key: Union[Iterable[Hashable], Hashable]):
-        pass
+        ...
 
     @abstractmethod
     def tracked_point_labels(self) -> tuple:
         """
         :return: tuple storing all regions of interest that are directly tracked, no midpoints
         """
-        pass
+        ...
 
     @cached_property
     def augmented(self) -> pd.DataFrame:
@@ -98,11 +99,7 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
         }
 
     @property
-    def region_of_interest_to_boolean_index(self):
-        raise NotImplementedError
-
-    @property
-    def tracked_point_labels(self) -> tuple:
+    def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:
         raise NotImplementedError
 
     @cached_property

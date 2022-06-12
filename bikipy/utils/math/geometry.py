@@ -1,13 +1,14 @@
-from collections.abc import Sequence
 from functools import lru_cache
+from typing import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
 
+from bikipy.core.typing import NDArrayFp64
 from bikipy.feature.angle import clockwise_angel_2d
 
 
-def clockwise_argsort_points(points: Sequence):
+def clockwise_argsort_points(points: NDArrayFp64):
     points = np.asarray(points)
     assert points.ndim == 2
     centroid = np.mean(points, axis=0)
@@ -15,7 +16,7 @@ def clockwise_argsort_points(points: Sequence):
     return np.argsort(clockwise_angel_2d((0.0, 1.0), points - centroid))
 
 
-def clockwise_sort_points(points: Sequence, inspect: bool = False):
+def clockwise_sort_points(points: NDArrayFp64, inspect: bool = False):
     # Sort from top-right point
     points = np.asarray(points)
     result = points[clockwise_argsort_points(points)]

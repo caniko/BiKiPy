@@ -4,7 +4,7 @@ from collections import Sequence as collections_Sequence
 from datetime import datetime
 from functools import cached_property
 from logging import getLogger
-from typing import Optional, Union
+from typing import Optional
 
 import numpy as np
 from pydantic import BaseModel, DirectoryPath, validator
@@ -30,7 +30,7 @@ logger = getLogger(__name__)
 class LiveTrial(BaseModel, ABC):
     save_root: DirectoryPath
     delay_timings: tuple[float]
-    delay_timings_trial_count: Union[tuple[int], int]
+    delay_timings_trial_count: tuple[int] | int
     manual_total_loops_per_trial: Optional[int] = None
 
     node_sequence: list = []
@@ -130,7 +130,7 @@ class LiveTrial(BaseModel, ABC):
                     continue
 
                 location = self.detect_confined_perimeter(
-                    np.array(coordinate_str.split(data_delimiter), dtype=np.float32)
+                    np.array(coordinate_str.split(data_delimiter), dtype=np.float64)
                 )
                 logger.debug(f"Coordinates: {coordinate_str}\n" f"Timestamp: {timestamp_str}\n" f"Location: {location}")
                 self.localize_loop_func(location, datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S.%f"))

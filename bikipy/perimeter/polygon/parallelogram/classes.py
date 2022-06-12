@@ -4,8 +4,8 @@ from typing import Any, ClassVar, Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
-from pydantic_numpy import NDArray
 
+from bikipy.core.typing import NDArrayFp64
 from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.perimeter.polygon.parallelogram.draw import parallelogram_input
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
@@ -27,7 +27,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
         return cls(corners=np.array((*base, *apex)), inspect_image=inspect_image)
 
     @staticmethod
-    def midpoint(close_corner: Sequence[float], far_corner: Sequence[float]) -> NDArray:
+    def midpoint(close_corner: NDArrayFp64, far_corner: NDArrayFp64) -> NDArrayFp64:
         """
         Find the midpoint of the parallelogram
 
@@ -47,7 +47,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
         return close_corner + (far_corner - close_corner) / 2.0
 
     @staticmethod
-    def sort_vectors(vectors: Sequence) -> NDArray:
+    def sort_vectors(vectors: NDArrayFp64) -> NDArrayFp64:
         vectors = np.asarray(vectors)
 
         assert vectors.shape == (2, 2), (
@@ -130,7 +130,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
     def far_from_origin_side_unit(self):
         return unit_vector(self.far_from_origin_side_vector)
 
-    def base_midpoint_coordinate_unit_vector_magnitudes(self, coordinates: Sequence) -> NDArray:
+    def base_midpoint_coordinate_unit_vector_magnitudes(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         """
         Generate the magnitude of the line segment that goes from origin
         to the defined coordinate
@@ -142,7 +142,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
 
         Returns
         -------
-        NDArray, where 1st row is base to midpoint apex magnitudes;
+        NDArrayFp64, where 1st row is base to midpoint apex magnitudes;
         2nd row is midpoint apex to coordinate magnitudes
         """
 
@@ -155,7 +155,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
 
         return np.squeeze(np.hsplit(magnitudes, 2))
 
-    def coordinate_confinement_boolean_index(self, coordinates: NDArray, *args, **kwargs):
+    def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64, *args, **kwargs):
         return parallel_point_in_polygon(coordinates, self.corners)
         # return points_in_parallelogram(
         #     self.corners[3],
@@ -171,7 +171,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
         cls,
         inspect_image: Any,
         n: int,
-        object_kwargs: Optional[Sequence] = None,
+        object_kwargs: Optional[dict] = None,
     ):
         return [cls(inspect_image=inspect_image, **object_kwargs[i]) for i in range(int(n))]
 

@@ -16,11 +16,14 @@ WT: 3 > 4 > 1 > 2
 """
 from typing import ClassVar
 
-from bikipy.behaviour.mixin.physical_object import SquarePhysicalObjectExperiment, SquarePhysicalObjectTrial
+from bikipy.behaviour.mixin.physical_object import (
+    RectanglePhysicalObjectExperiment,
+    RectanglePhysicalObjectTrial,
+)
 from bikipy.perimeter.typing import AnyPerimeter
 
 
-class ObjectsInUpdatingLocationsTrainingTrial(SquarePhysicalObjectTrial):
+class ObjectsInUpdatingLocationsTrainingTrial(RectanglePhysicalObjectTrial):
     object_1: AnyPerimeter = ...
     object_2: AnyPerimeter = ...
 
@@ -34,7 +37,7 @@ class ObjectsInUpdatingLocationsTrainingTrial(SquarePhysicalObjectTrial):
         return self.object_1, self.object_2
 
 
-class ObjectsInUpdatingLocationsUpdateTrial(SquarePhysicalObjectTrial):
+class ObjectsInUpdatingLocationsUpdateTrial(RectanglePhysicalObjectTrial):
     object_1: AnyPerimeter = ...
     object_4: AnyPerimeter = ...
 
@@ -48,7 +51,7 @@ class ObjectsInUpdatingLocationsUpdateTrial(SquarePhysicalObjectTrial):
         return self.object_1, self.object_4
 
 
-class ObjectsInUpdatingLocationsTestTrial(SquarePhysicalObjectTrial):
+class ObjectsInUpdatingLocationsTestTrial(RectanglePhysicalObjectTrial):
     object_1: AnyPerimeter = ...
     object_2: AnyPerimeter = ...
     object_3: AnyPerimeter = ...
@@ -64,7 +67,7 @@ class ObjectsInUpdatingLocationsTestTrial(SquarePhysicalObjectTrial):
         return self.object_1, self.object_2, self.object_3, self.object_4
 
 
-class ObjectsInUpdatingLocationsExperiment(SquarePhysicalObjectExperiment):
+class ObjectsInUpdatingLocationsExperiment(RectanglePhysicalObjectExperiment):
     trial_classes: ClassVar = (
         ObjectsInUpdatingLocationsTrainingTrial,
         ObjectsInUpdatingLocationsUpdateTrial,

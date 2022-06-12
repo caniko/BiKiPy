@@ -1,36 +1,29 @@
-from collections.abc import Sequence
-from typing import Union
-
 import numpy as np
 from numpy.linalg import LinAlgError
-from pydantic_numpy import NDArray
+from pydantic import validate_arguments
+
+from bikipy.core.typing import NDArrayFp64
 
 
-def fast_unit_vector(vector: NDArray) -> NDArray:
-    """Returns the unit vector of the vector."""
-    return vector / np.linalg.norm(vector)
-
-
-def unit_vector(row_vectors: NDArray, force_1_dim: bool = False) -> NDArray:
+@validate_arguments
+def unit_vector(row_vectors: NDArrayFp64, force_1_dim: bool = False) -> NDArrayFp64:
     """
     Computes unit vector, i.e. vector/<norm of the vector>
 
     Parameters
     ----------
-    row_vectors: NDArray-like
+    row_vectors: NDArrayFp64-like
         Array of row vector(s)
 
     force_1_dim: bool
-        If True, make sure that the results are sent back as a sequence within an array
+        If True, make sure that the results are sent back as a NDArrayFp64 within an array
         important when working with single vectors within functions that expect
-        a sequence of vectors
+        a NDArrayFp64 of vectors
 
     Returns
     -------
     All unit vectors along the rows of row_vectors
     """
-    row_vectors = np.asarray(row_vectors)
-
     if len(row_vectors.shape) != 2:
         # Single vector
         result = row_vectors / np.linalg.norm(row_vectors)
@@ -44,33 +37,33 @@ def unit_vector(row_vectors: NDArray, force_1_dim: bool = False) -> NDArray:
     return (row_vectors.T / np.linalg.norm(row_vectors, axis=1)).T
 
 
-def orthogonal_unit_vector(vector: Sequence) -> NDArray:
+@validate_arguments
+def orthogonal_unit_vector(vector: NDArrayFp64) -> NDArrayFp64:
     """
     Computes the orthogonal unit vector of the given 2D vector
 
     Parameters
     ----------
-    vector: NDArray-like
+    vector: NDArrayFp64-like
         Array of row vector(s)
 
     Returns
     -------
-    NDArray
+    NDArrayFp64
     """
-    vector = np.asarray(vector)
-
     if vector.shape == (2,):
         return unit_vector((-vector[1], vector[0]))
     else:
         return unit_vector(np.array((-vector.T[1], vector.T[0])).T)
 
 
-def dot_prod_along_axis_1(vector_a: NDArray, vector_b: NDArray) -> NDArray:
+@validate_arguments
+def dot_prod_along_axis_1(vector_a: NDArrayFp64, vector_b: NDArrayFp64) -> NDArrayFp64:
     # np.einsum("ij,ij->i", vector_a, vector_b)
     return np.nansum(vector_a * vector_b, axis=1)
 
 
-def normal_from_line_to_point(line_vector: Sequence, line_start: Sequence, point: Sequence):
+def normal_from_line_to_point(line_vector: NDArrayFp64, line_start: NDArrayFp64, point: NDArrayFp64):
     """
     Computes the magnitude of two vectors. Vector nr. 1 with line vector as unit,
     from 'line_start' to the beginning of the normal, and,
@@ -79,9 +72,9 @@ def normal_from_line_to_point(line_vector: Sequence, line_start: Sequence, point
 
     Parameters
     ----------
-    line_vector: NDArray-like
-    line_start: NDArray-like
-    point: NDArray-like
+    line_vector: NDArrayFp64-like
+    line_start: NDArrayFp64-like
+    point: NDArrayFp64-like
 
     Returns
     -------
@@ -107,7 +100,7 @@ def normal_from_line_to_point(line_vector: Sequence, line_start: Sequence, point
     return sol
 
 
-def distance_between_line_and_point(*args, **kwargs) -> NDArray:
+def distance_between_line_and_point(*args, **kwargs) -> NDArrayFp64:
     """
     Compute distance between point and a line.
 
@@ -116,7 +109,8 @@ def distance_between_line_and_point(*args, **kwargs) -> NDArray:
     return normal_from_line_to_point(*args, **kwargs)[1]
 
 
-def point_to_line_segment_distance(points, line_segment):
+@validate_arguments
+def point_to_line_segment_distance(points: NDArrayFp64, line_segment: NDArrayFp64):
     point_x, point_y = np.asarray(points).T
     segment_start_x, segment_start_y = line_segment[0]
     segment_end_x, segment_end_y = line_segment[1]
@@ -131,7 +125,7 @@ def point_to_line_segment_distance(points, line_segment):
 
     param = np.full_like(dot, -1.0) if len_sq == 0 else dot / len_sq
 
-    xx = np.zeros_like(param, dtype=np.float32)
+    xx = np.zeros_like(param, dtype=np.float64)
     yy = np.zeros_like(param).copy()
 
     param_less_than_0 = param < 0
@@ -153,7 +147,8 @@ def point_to_line_segment_distance(points, line_segment):
     return np.sqrt(dx**2 + dy**2)
 
 
-def closest_line_to_point(line_vectors: Sequence, line_starts: Sequence, point: Sequence):
+@validate_arguments
+def closest_line_to_point(line_vectors: NDArrayFp64, line_starts: NDArrayFp64, point: NDArrayFp64):
     distances = [
         distance_between_line_and_point(line_vector, line_start, point)
         for line_vector, line_start in zip(line_vectors, line_starts)
@@ -162,12 +157,13 @@ def closest_line_to_point(line_vectors: Sequence, line_starts: Sequence, point: 
     return distances[closest_index], closest_index
 
 
+@validate_arguments
 def intersection_between_two_lines(
-    vector_a: Sequence,
-    vector_b: Sequence,
-    vector_a_start: Sequence,
-    vector_b_start: Sequence,
-) -> Union[NDArray, bool]:
+    vector_a: NDArrayFp64,
+    vector_b: NDArrayFp64,
+    vector_a_start: NDArrayFp64,
+    vector_b_start: NDArrayFp64,
+) -> NDArrayFp64 | None:
     """
     Compute the intersection between two lines designated by a starting point
     and a direction/unit vector
@@ -178,18 +174,18 @@ def intersection_between_two_lines(
 
     Parameters
     ----------
-    vector_a: Sequence
+    vector_a: NDArrayFp64
         Unit vector of line A
-    vector_b: Sequence
+    vector_b: NDArrayFp64
         Unit vector of line B
-    vector_a_start: Sequence
+    vector_a_start: NDArrayFp64
         Origin or starting point of line A
-    vector_b_start: Sequence
+    vector_b_start: NDArrayFp64
         Origin or starting point of line B
 
     Returns
     -------
-    Sequence: The intersection point between lina A and B
+    NDArrayFp64: The intersection point between lina A and B
     """
     rhs = np.array(((vector_a[0], -vector_b[0]), (vector_a[1], -vector_b[1])))
     lhs = np.array(
@@ -201,4 +197,4 @@ def intersection_between_two_lines(
     try:
         return np.linalg.solve(rhs, lhs).T[0]
     except LinAlgError:
-        return False
+        return None

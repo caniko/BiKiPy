@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sb
 from pydantic import DirectoryPath
-from pydantic_numpy import NDArray
 
+from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.feature.angle import inner_angle
 from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.utils.misc import generic_inspection_finalization, seek_next_file_index
@@ -20,12 +20,12 @@ logger = getLogger(__name__)
 
 def proximity_filter(
     perimeter: PolygonPerimeter,
-    inside_perimeter_border: Sequence[Sequence[float]],
-    outside_perimeter: Sequence[Sequence[float]],
+    inside_perimeter_border: NDArrayFp64,
+    outside_perimeter: NDArrayFp64,
     perimeter_border_normal_pixel_magnitude: float,
     inspect: bool = False,
     inspection_ax: Any = None,
-) -> Sequence[bool]:
+) -> NDArrayBool:
     """
     Filter with respect to proximity rules. (1) The inside_perimeter_border has to be in front of perimeter, but inside the perimeter;
     (2) the outside_perimeter is outside of the perimeter.
@@ -37,13 +37,13 @@ def proximity_filter(
     :param inspect: If True, generate and view an analytics of the resulting filter
     :param inspection_ax: matplotlib Axes that the inspection plots will (optionally) be saved in
     :type perimeter: PolygonPerimeter
-    :type inside_perimeter_border: NDArray
-    :type outside_perimeter: NDArray
+    :type inside_perimeter_border: NDArrayFp64
+    :type outside_perimeter: NDArrayFp64
     :type perimeter_border_normal_pixel_magnitude: float
     :type inspect: bool
     :type inspection_ax: Any
     :return:
-    :rtype: NDArray
+    :rtype: NDArrayFp64
     """
     # Remove inside_perimeter_border points that aren't inside the perimeter
     inside_perimeter_border = np.asarray(inside_perimeter_border)
@@ -96,8 +96,8 @@ def proximity_filter(
 
 def gaze_direction_filter(
     perimeter: PolygonPerimeter,
-    gaze_travel_direction_point_label: Sequence[Sequence[float]],
-    gaze_start_point_label: Sequence[Sequence[float]],
+    gaze_travel_direction_point_label: str,
+    gaze_start_point_label: str,
     max_radians: float,
     inspect: bool = False,
     inspection_ax: Any = None,
@@ -109,7 +109,7 @@ def gaze_direction_filter(
 
     closest_corner_vectors = perimeter.closest_sides_to_coordinates(gaze_start_point_label)
 
-    inner_angles = inner_angle(closest_corner_vectors.astype(np.float32), eye_to_nose_vector.astype(np.float32))
+    inner_angles = inner_angle(closest_corner_vectors, eye_to_nose_vector)
 
     result = inner_angles <= max_radians
 
@@ -143,11 +143,11 @@ def gaze_direction_filter(
 
 
 def tolerance_filter(
-    boolean_index: Sequence[bool],
+    boolean_index: NDArrayBool,
     fps: float,
     minimum_seconds_attention: float,
     maximum_seconds_distraction: float = 0.5,
-) -> NDArray:
+) -> NDArrayFp64:
     """
     Filters boolean_index with respect to attention. The filter tolerates distraction, and requires
     minimum_seconds_attention to be fulfilled before accepting the sequence as attention.
@@ -157,11 +157,11 @@ def tolerance_filter(
     :param minimum_seconds_attention: Minimum number of seconds that the sequence has to be True
     for it to be defined as an attention sequence. Filtered sequences will be converted to False.
     :param maximum_seconds_distraction:
-    :type boolean_index: NDArray
+    :type boolean_index: NDArrayFp64
     :type fps: float
     :type minimum_seconds_attention: float
     :return: Boolean index filtered with respect to attention
-    :rtype NDArray
+    :rtype NDArrayFp64
     """
 
     boolean_index = np.asarray(boolean_index)
@@ -226,14 +226,14 @@ def tolerance_filter(
 
 def perimeter_attention(
     perimeter: PolygonPerimeter,
-    eye_center: Sequence[Sequence[float]],
-    nose: Sequence[Sequence[float]],
+    eye_center: NDArrayFp64,
+    nose: NDArrayFp64,
     fps: float,
     perimeter_border_normal_pixel_magnitude: float,
     maximum_radians_inter_gaze_perimeter: float = 0.25 * np.pi,
     minimum_seconds_attention: float = 0.5,
     maximum_seconds_distraction: float = 0.5,
-    inspect: Union[bool, DirectoryPath] = False,
+    inspect: bool | DirectoryPath = False,
 ) -> tuple:
     """
 

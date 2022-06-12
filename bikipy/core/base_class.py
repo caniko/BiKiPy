@@ -19,7 +19,7 @@ class BikipyBaseHashable(BikipyBase):
     int_id: Optional[int] = None
     label: Optional[str] = None
     group_label: Optional[str] = None
-    timestamp: Union[date, datetime] = Field(default_factory=datetime.now)
+    timestamp: datetime = Field(default_factory=datetime.now)
     save_root: Optional[DirectoryPath] = None
 
     def save(self, save_root: Optional[DirectoryPath] = None):

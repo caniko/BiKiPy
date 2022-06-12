@@ -1,5 +1,5 @@
 import numpy as np
 
 
-def absolute_derivative(sequence):
+def np_abs_diff(sequence):
     return np.abs(np.diff(sequence, axis=0))

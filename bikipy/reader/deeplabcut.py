@@ -7,8 +7,8 @@ from typing import Sequence
 import numpy as np
 import pandas as pd
 from pydantic import Field
-from pydantic_numpy import NDArray
 
+from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.reader.base import BaseReader
 
@@ -47,7 +47,7 @@ class DeepLabCutReader(BaseReader):
         return np.delete(self.df[item].values, 2, 1)
 
     @cached_property
-    def raw_df(self):
+    def raw_df(self) -> pd.DataFrame:
         if not self._df_needs_to_be_cleaned:
             return super().raw_df
 
@@ -65,7 +65,7 @@ class DeepLabCutReader(BaseReader):
             return super().raw_df
 
     @cached_property
-    def augmented(self):
+    def augmented(self) -> pd.DataFrame:
         result = super().augmented
 
         if self.x_add or self.y_add:
@@ -127,28 +127,28 @@ class DeepLabCutReader(BaseReader):
         return result
 
     @property
-    def tracked_point_labels(self) -> tuple:
+    def tracked_point_labels(self) -> tuple[str, ...]:
         return tuple(self.raw_df.columns.levels[0])
 
     @cached_property
-    def tracked_and_midpoint_labels(self):
+    def tracked_and_midpoint_labels(self) -> tuple[str, ...]:
         return *self.tracked_point_labels, *self.midpoint_groups.keys()
 
     @cached_property
-    def region_of_interest_to_boolean_index(self):
+    def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:
         return {roi: self.df[(roi, "likelihood")].values >= self.min_likelihood for roi in self.tracked_point_labels}
 
     @property
-    def frames(self):
+    def frames(self) -> int:
         return self.df.shape[0]
 
-    def reduce_likelihoods(self, tracked_point_labels: Sequence) -> NDArray:
+    def reduce_likelihoods(self, tracked_point_labels: Sequence) -> NDArrayFp64:
         """
         Reduce likelihood values by multiplication; R^n to scalar
 
         :param tracked_point_labels: Regions of interest of which will have its
         likelihood values reduced
-        :return: NDArray with the reduced likelihood values
+        :return: NDArrayFp64 with the reduced likelihood values
         """
         return np.multiply.reduce(
             self.raw_df.loc[:, pd.IndexSlice[tracked_point_labels, "likelihood"]].values,

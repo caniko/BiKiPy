@@ -1,7 +1,6 @@
 import datetime
 from logging import getLogger
 from math import floor
-from typing import Union
 
 from bikipy.behaviour.base import BaseTrial
 from bikipy.behaviour.mixin.live import LiveTrial

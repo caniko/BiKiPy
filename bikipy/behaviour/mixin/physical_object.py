@@ -1,11 +1,14 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Optional, ClassVar
+from typing import ClassVar, Optional
 
 import numpy as np
-from pydantic import Field, DirectoryPath, BaseModel
+from pydantic import BaseModel, DirectoryPath, Field
 
-from bikipy.behaviour.rectangle.square import SquareEnclosedExperiment, SquareEnclosedTrial
+from bikipy.behaviour.rectangle import (
+    RectangleEnclosedExperiment,
+    RectangleEnclosedTrial,
+)
 from bikipy.core.base_class import BikipyBase
 from bikipy.feature.physical_object.core import PhysicalObjectSet
 from bikipy.perimeter.typing import AnyPerimeter
@@ -104,11 +107,11 @@ class PhysicalObjectTrialMixin(PhysicalObjectBaseMixin, ABC):
         return result
 
 
-class SquarePhysicalObjectExperiment(SquareEnclosedExperiment, PhysicalObjectExperimentMixin):
+class RectanglePhysicalObjectExperiment(RectangleEnclosedExperiment, PhysicalObjectExperimentMixin):
     pass
 
 
-class SquarePhysicalObjectTrial(SquareEnclosedTrial, PhysicalObjectTrialMixin, ABC):
+class RectanglePhysicalObjectTrial(RectangleEnclosedTrial, PhysicalObjectTrialMixin, ABC):
     @classmethod
     @property
     def feature_headers(cls) -> list[str]:

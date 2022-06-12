@@ -1,22 +1,23 @@
 """
 Note that points in this context is the location of a region of interest across time.
 """
-from collections.abc import Sequence
+from typing import Sequence
 
 import numpy as np
-from pydantic_numpy import NDArray
+
+from bikipy.core.typing import NDArrayFp64
 
 
-def compute_midpoint(point_1: NDArray, point_2: NDArray) -> NDArray:
+def compute_midpoint(point_1: NDArrayFp64, point_2: NDArrayFp64) -> NDArrayFp64:
     """
     Computes the point(s) between two points, midpoint(s), with respect to the index.
 
     :param point_1: Set of points part of the pair used for computing the midpoint(s)
     :param point_2: Set of points part of the pair used for computing the midpoint(s)
-    :type point_1: NDArray
-    :type point_2: NDArray
+    :type point_1: NDArrayFp64
+    :type point_2: NDArrayFp64
     :return: midpoint(s)
-    :rtype: NDArray
+    :rtype: NDArrayFp64
     """
     point_1, point_2 = np.asarray(point_1), np.asarray(point_2)
 
@@ -43,7 +44,7 @@ def compute_midpoint(point_1: NDArray, point_2: NDArray) -> NDArray:
     return compute
 
 
-def recursive_midpoint(point_sets: Sequence[NDArray]) -> NDArray:
+def recursive_midpoint(point_sets: Sequence[NDArrayFp64]) -> NDArrayFp64:
     """
     Compute midpoint(s) using last midpoint as first in the pair,
     and the upcoming point as the second in the pair in compute_midpoint.
@@ -55,7 +56,7 @@ def recursive_midpoint(point_sets: Sequence[NDArray]) -> NDArray:
     :param point_sets: Set of points used for computing the midpoint(s) recursively.
     :type point_sets: Sequence
     :return: midpoint(s)
-    :rtype: NDArray
+    :rtype: NDArrayFp64
     """
     midpoint = compute_midpoint(point_sets[0], point_sets[1])
     try:

@@ -7,11 +7,9 @@ from typing import Any, Union
 
 import cv2
 import numpy as np
-import pandas as pd
 from matplotlib import pyplot as plt
-from numpy import ndarray
-from pydantic import FilePath
-from pydantic_numpy import NDArray
+
+from bikipy.core.typing import NDArrayFp64
 
 logger = getLogger(__name__)
 
@@ -22,12 +20,12 @@ def read_image(image: Any, imread_flagg: Any = None):
         assert image_path.exists(), image_path
         image = cv2.imread(str(image_path), flags=imread_flagg)
     else:
-        assert isinstance(image, ndarray), f"image must be either path or NDArray, but got:\n{image}"
+        assert isinstance(image, NDArrayFp64), f"image must be either path or NDArrayFp64, but got:\n{image}"
 
     return image
 
 
-def get_reference_point_from_array(array: NDArray):
+def get_reference_point_from_array(array: NDArrayFp64):
     return np.array(array[1:3], dtype=float)
 
 
@@ -79,14 +77,16 @@ def rise_to_n_levels(columns, n_levels: int):
 
 @lru_cache
 def generic_multi_indexer(*basis_labels):
-    number_of_levels = len(basis_labels)
+    number_of_levels = 1 if isinstance(basis_labels[0], str) else len(basis_labels[0])
+    assert not any(number_of_levels != 1 if isinstance(label, str) else len(label) for label in basis_labels)
 
-    def result(category: Any, level: int):
-        if level < number_of_levels:
-            msg = f"At least {number_of_levels} levels; provided={level}"
+    def result(category: Any, desired_nlevel: int):
+        # if desired_nlevel < number_of_levels:
+        if (number_of_levels_to_add := desired_nlevel - number_of_levels - 1) < 0:
+            msg = f"Desired number of levels, {desired_nlevel}, is lower than the initial, {number_of_levels}"
             raise ValueError(msg)
-        levels_to_add = ["" for _ in range(level - number_of_levels)]
-        return [(category, basis_label, *levels_to_add) for basis_label in basis_labels]
+        levels_to_add = ["" for _ in range(number_of_levels_to_add)]
+        return [(category, label, *levels_to_add) for label in basis_labels]
 
     return result
 
@@ -108,7 +108,7 @@ def clear_console():
     print("\033c\033[3J", end="")
 
 
-def to_tuple(array: NDArray):
+def to_tuple(array: NDArrayFp64):
     return tuple(map(tuple, array))
 
 

@@ -3,9 +3,9 @@ from typing import Optional
 
 import numpy as np
 from pydantic import FilePath
-from pydantic_numpy import NDArray
 
 from bikipy.core.base_class import BikipyBase
+from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.utils.video import get_video_data
 
 
@@ -13,10 +13,10 @@ class VideoMetadataMixin(BikipyBase):
     video_path: Optional[FilePath] = None
 
     manual_fps: Optional[float] = None
-    manual_recording_resolution: Optional[NDArray] = None
-    manual_meters_per_pixel: Optional[float | NDArray] = None
+    manual_recording_resolution: Optional[NDArrayFp64] = None
+    manual_meters_per_pixel: Optional[float | NDArrayFp64] = None
 
-    metric_resolution: Optional[NDArray] = None
+    metric_resolution: Optional[NDArrayFp64] = None
 
     @cached_property
     def video_metadata_can_be_defined(self) -> bool:
@@ -43,7 +43,7 @@ class VideoMetadataMixin(BikipyBase):
         return self.metric_resolution / self.recording_resolution
 
     @cached_property
-    def recording_resolution(self) -> NDArray:
+    def recording_resolution(self) -> NDArrayInt16:
         return (
             self.manual_recording_resolution
             if self.manual_recording_resolution is not None
@@ -67,7 +67,7 @@ class VideoMetadataMixin(BikipyBase):
         return self.manual_fps or self._video_metadata[1]
 
     @cached_property
-    def _video_metadata(self) -> tuple:
+    def _video_metadata(self) -> tuple[NDArrayInt16, float]:
         if not self.video_path:
             msg = (
                 "Video metadata, FPS and resolution, must be defined. "

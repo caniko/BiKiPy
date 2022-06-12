@@ -3,8 +3,8 @@ from typing import Any, Optional, Sequence
 import numpy as np
 from matplotlib import pyplot as plt
 from pydantic import FilePath
-from pydantic_numpy import NDArray
 
+from bikipy.core.typing import NDArrayFp64
 from bikipy.utils.io.makesense import read_makesense_point
 from bikipy.utils.misc import generic_multi_indexer, read_image
 
@@ -15,7 +15,7 @@ def distance_between_two_perimeters(perimeter_a, perimeter_b):
 
 def get_coco_array_from_path_or_array(
     metadata_path: Optional[FilePath] = None,
-    coco_array: Optional[NDArray] = None,
+    coco_array: Optional[NDArrayFp64] = None,
 ):
     msg = "metadata_path and coco_array are defined mutually exclusive"
     if metadata_path and np.any(coco_array):
@@ -43,7 +43,7 @@ def plot_perimeters(
 
     if inspect_image is None:
         for i, perimeter in enumerate(perimeters):
-            if isinstance(perimeter.inspect_image, NDArray):
+            if isinstance(perimeter.inspect_image, NDArrayFp64):
                 potential_inspect_image = perimeter.inspect_image
                 if i == len(perimeters) - 1 or all(
                     perimeter.inspect_image is None or np.all(potential_inspect_image == perimeter.inspect_image)

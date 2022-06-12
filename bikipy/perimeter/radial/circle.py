@@ -3,8 +3,8 @@ from typing import Any, Optional
 import numpy as np
 from matplotlib import pyplot as plt
 from pydantic import FilePath, validator
-from pydantic_numpy import NDArray
 
+from bikipy.core.typing import NDArrayFp64
 from bikipy.perimeter.base import BasePerimeter
 from bikipy.perimeter.radial.utils import plot_circle
 from bikipy.utils.io.makesense import (
@@ -15,7 +15,7 @@ from bikipy.utils.math.vector import unit_vector
 
 
 class CirclePerimeter(BasePerimeter):
-    center: NDArray
+    center: NDArrayFp64
     radius: float
 
     @validator("center")
@@ -44,7 +44,7 @@ class CirclePerimeter(BasePerimeter):
 
         return cls.perimeter_set_from_image_name_to_perimeters(result)
 
-    def change_reference(self, new_reference: NDArray, **new_inspect_image_kwargs):
+    def change_reference(self, new_reference: NDArrayFp64, **new_inspect_image_kwargs):
         kwargs = self.dict()
         kwargs["center"] += new_reference - self.reference_point_array
         kwargs["reference_point_array"] = new_reference
@@ -59,7 +59,7 @@ class CirclePerimeter(BasePerimeter):
     ):
         return plot_circle(self.radius, ax if ax else plt.subplots()[1])
 
-    def coordinate_confinement_boolean_index(self, coordinates: NDArray, *args, **kwargs):
+    def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64, *args, **kwargs):
         distance_of_point_from_center = np.linalg.norm(coordinates - self.center)
         return np.abs(distance_of_point_from_center) <= self.radius
 
@@ -68,6 +68,6 @@ class CirclePerimeter(BasePerimeter):
         kwargs["radius"] += additional
         return self.__class__(**kwargs)
 
-    def closest_sides_to_coordinates(self, coordinates: NDArray):
+    def closest_sides_to_coordinates(self, coordinates: NDArrayFp64):
         line_unit_vector = unit_vector(coordinates - self.center)
         return self.center + line_unit_vector * self.radius

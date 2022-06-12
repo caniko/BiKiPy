@@ -7,7 +7,6 @@ from math import ceil
 from typing import ClassVar, Optional
 
 from pydantic import validator
-from pydantic_numpy import NDArray
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import (
@@ -17,6 +16,7 @@ from bikipy.behaviour.utils import (
     unique_with_counts_zipped,
 )
 from bikipy.core.base_class import BikipyBaseHashable
+from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.perimeter.base import PerimeterSet
 from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.perimeter.typing import AnyPerimeter
@@ -127,15 +127,15 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return self._border_presence_data[0]
 
     @property
-    def valid_indices(self):
+    def valid_indices(self) -> NDArrayBool:
         return self._border_presence_data[1]
 
     @property
-    def valid_boolean_index(self):
+    def valid_boolean_index(self) -> NDArrayBool:
         return self._border_presence_data[2]
 
     @cached_property
-    def invalid_boolean_index(self):
+    def invalid_boolean_index(self) -> NDArrayBool:
         return ~self.valid_boolean_index
 
     @cached_property
@@ -244,7 +244,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return 100.0 * alternations / self.sum_of_alternations
 
     @classmethod
-    def with_reference_point(cls, center: AnyPerimeter, arms: tuple, reference_point: NDArray, **kwargs):
+    def with_reference_point(cls, center: AnyPerimeter, arms: tuple, reference_point: NDArrayFp64, **kwargs):
         return cls(
             center=center.change_reference(reference_point),
             arms=[arm.change_reference(reference_point) for arm in arms],
@@ -254,7 +254,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
     @cached_property
     def _border_presence_data(self):
         return PolygonPerimeter.detect_sequential_border_presence(
-            self.coordinates_per_frame,
+            self.framewise_confined_coordinates,
             self.arms,
             inferior_poly_border_instances=[self.center],
         )

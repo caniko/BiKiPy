@@ -1,14 +1,13 @@
-from collections.abc import Sequence
-from dataclasses import dataclass
-from functools import cached_property, lru_cache
+from functools import cached_property
 from logging import getLogger
-from typing import Any, Iterable, Union
+from typing import Any, Iterable
 
 import numpy as np
 import pandas as pd
-from pydantic_numpy import NDArray
 
-from bikipy.utils.math.calculus import absolute_derivative
+from bikipy.core.base_class import BikipyBase
+from bikipy.core.typing import NDArrayBool, NDArrayFp64
+from bikipy.utils.math.calculus import np_abs_diff
 from bikipy.utils.misc import generic_multi_indexer
 
 logger = getLogger(__name__)
@@ -28,29 +27,17 @@ def units_pixels_per_second_frame(meters_per_pixel: float, fps: float):
 
 
 def displacement_by_frame(
-    coordinate_sequence: Sequence[Sequence[float]],
+    coordinate_sequence: NDArrayFp64,
     interpolation_method: str = "akima",
     remove_tails: bool = False,
-) -> NDArray:
+) -> NDArrayFp64:
     """
     Compute the absolute displacement of the given point from its coordinates across frames.
-    The values that are undefined, or "not a number" (NaN), on the tails are removed, and the
-    undefined values that perimeter defined values are interpolate.
-
-    Parameters
-    ----------
-    coordinate_sequence
-        The respective coordinate sequence
-    interpolation_method
-    remove_tails
-
-    Returns
-    -------
-    NDArray with pixel displacement per frame
+    The values on the tails are removed if they are undefined or "not a number" (NaN). The
+    undefined values are interpolated.
     """
     if np.all(np.isnan((magnitudes := np.linalg.norm(coordinate_sequence, axis=1)))):
-        return absolute_derivative(magnitudes)
-
+        return np_abs_diff(magnitudes)
     logger.debug("Interpolating data as there are non-finite values in the location data")
 
     magnitudes_series = pd.Series(magnitudes)
@@ -63,12 +50,12 @@ def displacement_by_frame(
     if remove_tails:
         magnitudes_series.dropna(inplace=True)
 
-    return absolute_derivative(magnitudes_series.values)
+    return np_abs_diff(magnitudes_series.values)
 
 
 def total_displacement_median_speed_acceleration(
-    coordinate_sequence: Sequence[Sequence[float]],
-    meters_per_pixel: Union[Sequence, float],
+    coordinate_sequence: NDArrayFp64,
+    meters_per_pixel: NDArrayFp64 | float,
     fps: float,
 ) -> tuple:
     """
@@ -91,8 +78,8 @@ def total_displacement_median_speed_acceleration(
     if np.any(displacement):
         return (
             np.sum(displacement),
-            np.nanmedian((speed := absolute_derivative(displacement) * fps)),
-            np.nanmedian(absolute_derivative(speed)),
+            np.nanmedian((speed := np_abs_diff(displacement) * fps)),
+            np.nanmedian(np_abs_diff(speed)),
         )
     else:
         return 0, 0, 0
@@ -100,10 +87,10 @@ def total_displacement_median_speed_acceleration(
 
 def frozen_frames(
     fps: float,
-    rigid_body_node_displacements: Iterable[NDArray],
+    rigid_body_node_displacements: Iterable[NDArrayFp64],
     second_threshold: float = 1.0,
     metric_displacement_threshold: float = 0.005,
-) -> NDArray:
+) -> NDArrayFp64:
     """
     Compute the time the rigid body has been frozen or "stood still" throughout
     the trial. The acceleration at these frames should be close to zero.
@@ -126,11 +113,11 @@ def frozen_frames(
     :param second_threshold:
     :param metric_displacement_threshold:
     :type fps: float
-    :type rigid_body_node_displacements: NDArray
+    :type rigid_body_node_displacements: NDArrayFp64
     :type second_threshold: float
     :type metric_displacement_threshold: float
     :return: Boolean index storing the freezing state of the animal across frames
-    :rtype: NDArray
+    :rtype: NDArrayFp64
     """
     frame_threshold = round(second_threshold * fps)
 
@@ -184,19 +171,14 @@ def frozen_frames(
     return logical_and_thresholding
 
 
-@dataclass
-class Motion:
-    coordinate_sequence: NDArray
-    meters_per_pixel: Union[float, NDArray]
+class Motion(BikipyBase):
+    coordinate_sequence: NDArrayFp64
+    meters_per_pixel: float | NDArrayFp64
     fps: float
 
     @cached_property
     def metric_displacement_by_frame(self):
-        if isinstance(self.meters_per_pixel, float):
-            displacement = displacement_by_frame(self.coordinate_sequence)
-            return displacement * self.meters_per_pixel
-        else:
-            return displacement_by_frame(self.coordinate_sequence * self.meters_per_pixel)
+        return displacement_by_frame(self.coordinate_sequence * self.meters_per_pixel)
 
     @cached_property
     def total_displacement(self):
@@ -206,7 +188,7 @@ class Motion:
     def speed(self):
         if not self.total_displacement:
             return np.nan
-        return absolute_derivative(self.metric_displacement_by_frame) * self.fps
+        return np_abs_diff(self.metric_displacement_by_frame) * self.fps
 
     @cached_property
     def median_speed(self):
@@ -215,7 +197,7 @@ class Motion:
         return np.nanmedian(self.speed)
 
     @cached_property
-    def frozen_boolean_index(self):
+    def frozen_boolean_index(self) -> NDArrayBool:
         if not self.total_displacement:
             return np.nan
         return frozen_frames(self.fps, (self.metric_displacement_by_frame,))
@@ -230,7 +212,7 @@ class Motion:
     def acceleration(self):
         if not self.total_displacement:
             return np.nan
-        return absolute_derivative(self.speed)
+        return np_abs_diff(self.speed)
 
     @cached_property
     def median_acceleration(self):
@@ -255,10 +237,11 @@ def motion_multi_indexer(category: Any, level: int):
 
 
 def get_combined_features_from_merged_motion_island_data(
-    boolean_index: NDArray,
-    coordinate_sequence: NDArray,
+    boolean_index: NDArrayBool,
+    coordinate_sequence: NDArrayFp64,
     meters_per_pixel,
     fps: float,
+    minimum_seconds_of_data: float = 4.0,
 ):
     def motion_object_from_slice(slice_start, slice_end) -> list:
         return Motion(
@@ -267,26 +250,40 @@ def get_combined_features_from_merged_motion_island_data(
             fps=fps,
         ).to_list
 
-    if not np.any(boolean_index):
+    def find_index_start_n_end(starting_index: int = 0):
+        new_start, new_end = indexes[starting_index], indexes[starting_index := starting_index + 1]
+        while new_end - new_start > fps:
+            new_start, new_end = indexes[starting_index], indexes[starting_index := starting_index + 1]
+        return starting_index + 1, new_start, new_end
+
+    number_of_frames = np.sum(boolean_index)
+    minimum_frames = minimum_seconds_of_data * fps
+    if number_of_frames < minimum_frames:
         return _zero_return
 
-    indices = np.where(boolean_index)[0]
+    indexes = np.where(boolean_index)[0]
 
+    i, start, end = find_index_start_n_end()
     motion_features = []
-    start, previous = indices[0], indices[0]
-    for i in indices[1:]:
-        if i != previous + 1 and i - start >= 4:
-            motion_features.append(motion_object_from_slice(start, i))
-            start = i
-        previous = i
-    if (end := indices[-1] + 1) - start >= 4:
+    while i < number_of_frames:
+        potential_end = indexes[i]
+        next_step_from_end = end + 1
+        if potential_end == next_step_from_end:
+            end = potential_end
+        elif potential_end < next_step_from_end:
+            if potential_end - end > minimum_frames:
+                motion_features.append(motion_object_from_slice(start, end))
+                i, start, end = find_index_start_n_end(i)
+                continue
+            else:
+                end = potential_end
+        i += 1
+
+    if (end := indexes[-1] + 1) - start >= 4:
         motion_features.append(motion_object_from_slice(start, end))
 
-    try:
-        if not np.any(motion_features[0]):
-            return _zero_return
-    except:
-        print(1)
+    if not motion_features or not np.any(motion_features[0]):
+        return _zero_return
 
     return {
         "total_displacement": sum(motion_feature[0] for motion_feature in motion_features),

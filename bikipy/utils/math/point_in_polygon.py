@@ -1,25 +1,25 @@
 from pathlib import PurePath
-from typing import Optional, Sequence
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numba
 import numpy as np
 from numba import njit
-from pydantic_numpy import NDArray
 from seaborn import set_theme
 
+from bikipy.core.typing import NDArrayFp64, NDArrayBool
 from bikipy.utils.math.vector import dot_prod_along_axis_1, orthogonal_unit_vector
 from bikipy.utils.misc import generic_inspection_finalization
 
 
-def points_in_parallelogram(
-    ab_mid_corner: NDArray,
-    corner_a: NDArray,
-    corner_b: NDArray,
-    coordinates: NDArray,
+def inaccurate_points_in_parallelogram(
+    ab_mid_corner: NDArrayFp64,
+    corner_a: NDArrayFp64,
+    corner_b: NDArrayFp64,
+    coordinates: NDArrayFp64,
     inspect: Optional[PurePath] = None,
-    inspect_image: Optional[NDArray] = None,
-) -> NDArray:
+    inspect_image: Optional[NDArrayFp64] = None,
+) -> NDArrayBool:
     """
     Algebraic solver for finding points contained inside the respective parallelogram.
 
@@ -69,15 +69,15 @@ def points_in_parallelogram(
     return boolean_index
 
 
-def parallel_point_in_polygon(points: Sequence, polygon: Sequence):
+def parallel_point_in_polygon(points: NDArrayFp64, polygon: NDArrayFp64) -> NDArrayBool:
     return _is_inside_sm_parallel(
-        np.asarray(points, dtype=np.float32),
-        np.ascontiguousarray(polygon, dtype=np.float32),
+        np.asarray(points, dtype=np.float64),
+        np.ascontiguousarray(polygon, dtype=np.float64),
     )
 
 
-@njit(cache=True)
-def _is_inside_sm(point: NDArray, polygon: NDArray):
+@njit(cache=True, nogil=True)
+def _is_inside_sm(point: NDArrayFp64, polygon: NDArrayFp64):
     length = len(polygon) - 1
     dy2 = point[1] - polygon[0][1]
     intersections = 0
@@ -115,7 +115,7 @@ def _is_inside_sm(point: NDArray, polygon: NDArray):
 
 
 @njit(parallel=True, cache=True)
-def _is_inside_sm_parallel(points: NDArray, polygon: NDArray):
+def _is_inside_sm_parallel(points: NDArrayFp64, polygon: NDArrayFp64) -> NDArrayBool:
     ln = len(points)
     result = np.empty(ln, dtype=numba.boolean)
     for i in numba.prange(ln):

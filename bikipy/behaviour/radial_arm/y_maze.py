@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Any, ClassVar, Optional, Sequence
+from typing import Any, ClassVar, Optional
 
 import matplotlib.pyplot as plt
 from pydantic import BaseModel
@@ -8,6 +8,7 @@ from bikipy.behaviour.radial_arm.base import (
     BaseRadialMazeExperiment,
     BaseRadialMazeTrial,
 )
+from bikipy.core.typing import NDArrayFp64
 
 logger = getLogger(__name__)
 
@@ -20,7 +21,7 @@ class YMazeTrial(BaseYMaze, BaseRadialMazeTrial):
     def plot(
         self,
         ax: Any = None,
-        points: Optional[Sequence] = None,
+        points: Optional[NDArrayFp64] = None,
         invalid: bool = False,
     ):
         if points and invalid:
@@ -39,7 +40,7 @@ class YMazeTrial(BaseYMaze, BaseRadialMazeTrial):
             bin=True,
             points=(
                 points
-                or self.coordinates_per_frame[self.invalid_boolean_index if invalid else self.valid_boolean_index]
+                or self.framewise_confined_coordinates[self.invalid_boolean_index if invalid else self.valid_boolean_index]
             ),
         )
 

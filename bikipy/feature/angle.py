@@ -1,21 +1,16 @@
-from collections.abc import Sequence
-from typing import Union
+from typing import Optional, Sequence
 from warnings import warn
 
 import numpy as np
 from numba import njit
-from pydantic_numpy import NDArray
 
-from bikipy.utils.math.vector import (
-    dot_prod_along_axis_1,
-    fast_unit_vector,
-    unit_vector,
-)
+from bikipy.core.typing import NDArrayFp64
+from bikipy.utils.math.vector import dot_prod_along_axis_1, unit_vector
 
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}
 
 
-def _find_median_vector(row_vectors: NDArray) -> NDArray:
+def _find_median_vector(row_vectors: NDArrayFp64) -> NDArrayFp64:
     """
     Computes the median point from a row vectors
 
@@ -23,29 +18,29 @@ def _find_median_vector(row_vectors: NDArray) -> NDArray:
 
     Parameters
     ----------
-    row_vectors: NDArray
+    row_vectors: NDArrayFp64
         Array of row vectors
 
     Returns
     -------
-    NDArray
+    NDArrayFp64
     """
     return np.array([np.median(component) for component in row_vectors.T])
 
 
 def clockwise_angel_2d(
-    start_vector: Sequence,
-    end_vector: Sequence,
-) -> NDArray:
+    start_vector: NDArrayFp64,
+    end_vector: NDArrayFp64,
+) -> NDArrayFp64:
     """
     Computes the counterclockwise angle, [0, 2pi], from start to end in radians
 
     :param start_vector: Array of row vectors in which "the clock starts turning", counterclockwise
     :param end_vector: Array of row vectors in which the clock stops
-    :type start_vector: NDArray
-    :type end_vector: NDArray
+    :type start_vector: NDArrayFp64
+    :type end_vector: NDArrayFp64
     :return: counterclockwise angle between start and end vector per frame
-    :rtype: NDArray
+    :rtype: NDArrayFp64
 
     >>> clockwise_angel_2d((1, 0), (0, 1))
     1.5707963267948966      # pi / 2.
@@ -87,7 +82,7 @@ def clockwise_angel_2d(
     return angles
 
 
-def alternative_inner_angle(a_vector: Sequence, b_vector: Sequence) -> NDArray:
+def alternative_inner_angle(a_vector: NDArrayFp64, b_vector: NDArrayFp64) -> NDArrayFp64:
     """
     Computes the inner angle between two vectors, a and b, in radians
 
@@ -96,10 +91,10 @@ def alternative_inner_angle(a_vector: Sequence, b_vector: Sequence) -> NDArray:
 
     :param a_vector: Array of row vectors in which "the clock starts turning" counter counterclockwise
     :param b_vector: Array of row vectors in which the clock stops
-    :type a_vector: NDArray
-    :type b_vector: NDArray
+    :type a_vector: NDArrayFp64
+    :type b_vector: NDArrayFp64
     :return: Inner angle between a and b vector per frame
-    :rtype: NDArray
+    :rtype: NDArrayFp64
     """
     a_unit_vector = unit_vector(a_vector, force_1_dim=True)
     b_unit_vector = unit_vector(b_vector, force_1_dim=True)
@@ -110,31 +105,47 @@ def alternative_inner_angle(a_vector: Sequence, b_vector: Sequence) -> NDArray:
     )
 
 
-def inner_angle(vector_set_1, vector_set_2):
+def inner_angle(vector_set_1: NDArrayFp64, vector_set_2: NDArrayFp64):
     """Returns the angle in radians between given vectors"""
-    result = []
-    for i in range(len(vector_set_2)):
-        v1_u = fast_unit_vector(vector_set_1[i])
-        v2_u = fast_unit_vector(vector_set_2[i])
-        minor = np.linalg.det(np.stack((v1_u[-2:], v2_u[-2:])))
-        if minor == 0:
-            sign = 1
-        else:
-            sign = -np.sign(minor)
-        dot_p = np.dot(v1_u, v2_u)
-        dot_p = min(max(dot_p, -1.0), 1.0)
-        result.append(sign * np.arccos(dot_p))
-    return np.array(result)
+    # TODO: https://github.com/numba/numba/pull/7785
+
+    @njit(cache=True, nogil=True)
+    def inner_angle_numba():
+        index_is_undefined = np.isnan(v1_magnitudes) | np.isnan(v2_magnitudes)
+
+        result = []
+        for i in range(len(vector_set_1)):
+            if index_is_undefined[i]:
+                result.append(np.nan)
+                continue
+
+            v1_u = vector_set_1[i] / v1_magnitudes[i]
+            v2_u = vector_set_2[i] / v2_magnitudes[i]
+            unit_vstack = np.stack((v1_u[-2:], v2_u[-2:]))
+            minor = np.linalg.det(unit_vstack)
+            if minor == 0:
+                sign = 1
+            else:
+                sign = -np.sign(minor)
+            dot_p = np.dot(v1_u, v2_u)
+            dot_p = min(max(dot_p, -1.0), 1.0)
+            result.append(sign * np.arccos(dot_p))
+        return np.array(result)
+
+    v1_magnitudes = np.linalg.norm(vector_set_1, axis=1)
+    v2_magnitudes = np.linalg.norm(vector_set_2, axis=1)
+
+    return inner_angle_numba()
 
 
 def compute_angles_from_vectors(
-    row_vectors_point_a: NDArray,
-    row_vectors_point_b: NDArray,
-    row_vectors_point_c: NDArray,
-    median_points: Union[str, Sequence, None] = None,
+    row_vectors_point_a: NDArrayFp64,
+    row_vectors_point_b: NDArrayFp64,
+    row_vectors_point_c: NDArrayFp64,
+    median_points: Optional[Sequence[str] | str] = None,
     method: str = "inner",
     degrees: bool = False,
-) -> NDArray:
+) -> NDArrayFp64:
     """
     Computes the angle between three groups of vectors
 
@@ -144,14 +155,14 @@ def compute_angles_from_vectors(
     :param median_points: Anchor one or several points to their respective median. Information about median computation in _find_median_vector()
     :param method: The method for computing angle, supported methods are inner; counterclockwise.
     :param degrees: If True, convert resulting angle data to degrees
-    :type row_vectors_point_a: NDArray
-    :type row_vectors_point_b: NDArray
-    :type row_vectors_point_c: NDArray
+    :type row_vectors_point_a: NDArrayFp64
+    :type row_vectors_point_b: NDArrayFp64
+    :type row_vectors_point_c: NDArrayFp64
     :type median_points: Iterable, str
     :type method: str
     :type degrees: bool
     :return: Angle per frame
-    :rtype: NDArray
+    :rtype: NDArrayFp64
     """
 
     points = [
@@ -192,7 +203,7 @@ def compute_angles_from_vectors(
     return computation
 
 
-def angles_between_0_2pi(angles: NDArray):
+def angles_between_0_2pi(angles: NDArrayFp64):
     angles = np.asarray(angles)
 
     boolean_indexes = np.abs(angles) >= 2.0 * np.pi

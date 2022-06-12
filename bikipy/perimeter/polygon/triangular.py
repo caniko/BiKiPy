@@ -1,9 +1,8 @@
-from collections.abc import Sequence
-from typing import ClassVar, Optional, Union
+from typing import ClassVar, Optional
 
 import numpy as np
-from pydantic_numpy import NDArray
 
+from bikipy.core.typing import NDArrayFp64
 from bikipy.perimeter.polygon.base import PolygonPerimeter
 
 
@@ -22,7 +21,7 @@ class TriangularPerimeter(PolygonPerimeter):
     def apex(self):
         return self.corners[2]
 
-    def coordinate_confinement_boolean_index(self, coordinates: NDArray) -> NDArray:
+    def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         """
         indices of the coordinates that are inside the respective perimeter
 
@@ -33,7 +32,7 @@ class TriangularPerimeter(PolygonPerimeter):
 
         Returns
         -------
-        NDArray of all the indices
+        NDArrayFp64 of all the indices
         """
         coord_x_comp, coord_y_comp = np.asarray(coordinates).T
 
