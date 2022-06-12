@@ -115,7 +115,7 @@ class RectanglePhysicalObjectTrial(RectangleEnclosedTrial, PhysicalObjectTrialMi
     @classmethod
     @property
     def feature_headers(cls) -> list[str]:
-        return ["Seconds observing"]
+        return ["SecondsObserving"]
 
     @property
     def feature_summary_row(self):

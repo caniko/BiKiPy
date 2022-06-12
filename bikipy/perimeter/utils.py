@@ -68,4 +68,4 @@ def plot_perimeters(
 
 
 def perimeter_multi_indexer(category: Any, level: int):
-    return generic_multi_indexer("Seconds present", "Entries")(category, level)
+    return generic_multi_indexer("SecondsPresent")(category, level)

@@ -91,9 +91,9 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return [
             ("Alternations", ""),
             ("Spontaneous alternations", ""),
-            *feature_2d_multi_indexer("Seconds in area", area_designations),
-            *feature_2d_multi_indexer("Area alternations", area_designations),
-            *feature_2d_multi_indexer("Permutation alternation", cls._arm_label_permutations_as_string),
+            *feature_2d_multi_indexer("SecondsInArea", area_designations),
+            *feature_2d_multi_indexer("AreaAlternations", area_designations),
+            *feature_2d_multi_indexer("PermutationAlternation", cls._arm_label_permutations_as_string),
         ]
 
     @property

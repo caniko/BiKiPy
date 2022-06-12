@@ -546,7 +546,9 @@ class BaseTrial(Behaviour):
     @cached_property
     def motion(self) -> Motion:
         return Motion(
-            coordinate_sequence=self.framewise_confined_coordinates, meters_per_pixel=self.meters_per_pixel, fps=self.fps
+            coordinate_sequence=self.framewise_confined_coordinates,
+            meters_per_pixel=self.meters_per_pixel,
+            fps=self.fps,
         )
 
     # PolygonPerimeter

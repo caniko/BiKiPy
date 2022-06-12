@@ -50,7 +50,7 @@ class Quadrant(BikipyBase):
         return np.sum(self.confinement_boolean_index) / self.fps
 
     @cached_property
-    def motion(self) -> dict:
+    def motion(self) -> dict[str, float]:
         return get_combined_features_from_merged_motion_island_data(
             self.confinement_boolean_index,
             self.framewise_confined_coordinates,
@@ -69,7 +69,7 @@ class RectangleEnclosedExperiment(BaseExperiment):
         result["center_box_to_recording_resolution_ratio"] = self.center_box_to_recording_resolution_ratio
         return result
 
-    @property
+    @cached_property
     def quadrant_grid_coordinates(self):
         result = []
         for h in range(1, self.rectangle_2d_bin[0] + 1):
@@ -80,21 +80,19 @@ class RectangleEnclosedExperiment(BaseExperiment):
     @cached_property
     def motion_summary_columns(self) -> list:
         quadrant_summary_columns = []
-        for h in range(1, self.rectangle_2d_bin[0]+1):
-            for v in range(1, self.rectangle_2d_bin[1]+1):
-                quadrant_grid_coordinates = (h, v)
-                quadrant_summary_columns.extend(
-                    [
-                        *motion_multi_indexer(quadrant_grid_coordinates, level=self._pandas_multi_index_level),
-                        *perimeter_multi_indexer(quadrant_grid_coordinates, level=self._pandas_multi_index_level),
-                    ]
-                )
-        result = (
-            super().motion_summary_columns
-            + [["Gaussian", "CenterToPeriphery"]]
-            + list(pd.MultiIndex.from_product([["Quadrant"], quadrant_summary_columns]))
-            + list(pd.MultiIndex.from_product([["QuadrantEntries"], self.quadrant_grid_coordinates]))
-        )
+        for quadrant_grid_coordinate in self.quadrant_grid_coordinates:
+            quadrant_summary_columns.extend(
+                [
+                    *motion_multi_indexer(quadrant_grid_coordinate, level=self._pandas_multi_index_level),
+                    *perimeter_multi_indexer(quadrant_grid_coordinate, level=self._pandas_multi_index_level),
+                ]
+            )
+        result = [
+            *super().motion_summary_columns,
+            ["Gaussian", "CenterToPeriphery"],
+            *pd.MultiIndex.from_product([["Quadrant"], quadrant_summary_columns]),
+            *pd.MultiIndex.from_product([["QuadrantEntries"], self.quadrant_grid_coordinates]),
+        ]
         if self.center_box_to_recording_resolution_ratio:
             result += list(
                 pd.MultiIndex.from_product(
@@ -138,7 +136,11 @@ class RectangleEnclosedTrial(BaseTrial):
     def gaussian_center_to_periphery_score(self):
         func = gaussian_scoring_field(self.tuple_recording_resolution)
         scores = np.array(
-            [func(*coordinate) for coordinate in self.framewise_confined_coordinates if not np.any(np.isnan(coordinate))]
+            [
+                func(*coordinate)
+                for coordinate in self.framewise_confined_coordinates
+                if not np.any(np.isnan(coordinate))
+            ]
         )
         return np.sum(scores) / (A * self.number_of_frames)
 
@@ -147,10 +149,10 @@ class RectangleEnclosedTrial(BaseTrial):
         horizontal_uniform_distance = self.horizontal_resolution / self.rectangle_2d_bin[0]
         vertical_uniform_distance = self.vertical_resolution / self.rectangle_2d_bin[1]
         result = {}
-        for h in range(1, self.rectangle_2d_bin[0]):
+        for h in range(1, self.rectangle_2d_bin[0] + 1):
             horizontal_coordinate_min = horizontal_uniform_distance * (h - 1)
             horizontal_coordinate_max = horizontal_uniform_distance * h
-            for v in range(1, self.rectangle_2d_bin[1]):
+            for v in range(1, self.rectangle_2d_bin[1] + 1):
                 vertical_coordinate_min = vertical_uniform_distance * (v - 1)
                 vertical_coordinate_max = vertical_uniform_distance * v
 
@@ -297,13 +299,13 @@ class RectangleEnclosedTrial(BaseTrial):
 
         quadrant_motion_values = []
         for quadrant in self.quadrant_grid_coordinate_to_quadrant.values():
-            quadrant_motion_values.extend(list(quadrant.motion.values()))
+            quadrant_motion_values.extend(quadrant.motion.values())
 
         result = [
             *super().motion_features,
             self.gaussian_center_to_periphery_score,
             *quadrant_motion_values,
-            *self.quadrant_grid_coordinate_to_entries.values()
+            *self.quadrant_grid_coordinate_to_entries.values(),
         ]
 
         if self.center_box_to_recording_resolution_ratio:
@@ -317,6 +319,7 @@ class RectangleEnclosedTrial(BaseTrial):
                     self.seconds_on_periphery,
                 ]
             )
+
         return result
 
 
