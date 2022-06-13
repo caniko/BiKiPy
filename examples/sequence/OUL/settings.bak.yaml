@@ -9,7 +9,7 @@ perimeter:
   label_suffix: null
 ingress:
   stageful_metadata: true
-  skip_absent_trials_absent_from_metadata_index: True
+  skip_absent_trials_absent_from_metadata_index: true
   meters_per_pixel_definition_strategy: metadata
   center_definition_strategy: metadata
   perimeter_definition_strategy: trialwise

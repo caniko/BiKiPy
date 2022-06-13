@@ -11,7 +11,7 @@ from pydantic import DirectoryPath, validate_arguments
 
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.feature.angle import inner_angle
-from bikipy.perimeter.typing import AnyPerimeter
+from bikipy.perimeter.base import AnyPerimeter
 from bikipy.utils.misc import generic_inspection_finalization
 
 SCATTER_ALPHA = 0.55

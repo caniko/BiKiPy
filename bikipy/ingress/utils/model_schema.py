@@ -1,7 +1,5 @@
 from functools import reduce
-from typing import Any, Iterable, Sequence
-
-from bikipy.perimeter.typing import AnyPerimeter
+from typing import Any, Iterable
 
 
 def field_name_to_metadata(fields: Iterable, class_schema: dict) -> dict:
@@ -41,7 +39,7 @@ def extended_schema(model_class: Any, with_optional: bool = True, with_required:
     if with_optional:
         result["optional"] = optional
 
-    return result
+    return {"defined": dict.fromkeys(defined), **result}
 
 
 def extended_group_schema(model_classes: Iterable, *args, **kwargs) -> dict:
@@ -61,4 +59,5 @@ def extended_group_schema(model_classes: Iterable, *args, **kwargs) -> dict:
                 if name not in specific:
                     specific[name] = {}
                 specific[name][component] = {k: v for k, v in schema[component].items() if k in difference}
+
     return {"common": common, "specific": specific}

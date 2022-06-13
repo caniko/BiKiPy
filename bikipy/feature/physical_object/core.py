@@ -16,8 +16,7 @@ from bikipy.feature.attention.main import (
     proximity_filter,
     tolerance_filter,
 )
-from bikipy.perimeter.base import PerimeterSet
-from bikipy.perimeter.typing import AnyPerimeter
+from bikipy.perimeter.base import AnyPerimeter, PerimeterSet
 
 logger = getLogger(__name__)
 

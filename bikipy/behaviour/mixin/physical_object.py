@@ -13,7 +13,7 @@ from bikipy.behaviour.rectangle import (
 )
 from bikipy.core.base_class import BikipyBase
 from bikipy.feature.physical_object.core import PhysicalObjectSet
-from bikipy.perimeter.typing import AnyPerimeter
+from bikipy.perimeter.base import AnyPerimeter
 
 
 class PhysicalObjectBaseMixin(BikipyBase, ABC):

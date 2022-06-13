@@ -3,10 +3,9 @@ from concurrent.futures import ProcessPoolExecutor
 from copy import copy
 from functools import cached_property
 from logging import getLogger
-from numbers import Integral
 from operator import attrgetter
 from pathlib import Path
-from typing import Any, ClassVar, Hashable, Iterable, Literal, Optional, Sequence
+from typing import Any, ClassVar, Hashable, Iterable, Literal, Optional, Sequence, TypeVar
 
 import cv2
 import matplotlib.pyplot as plt
@@ -49,6 +48,216 @@ class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
         return self.recording_center_pixel - self.center if self.center is not None else None
 
 
+class BaseTrial(Behaviour):
+    coordinate_data_path: FilePath = Field(..., description="Path to file storing coordinate data")
+    animal_id: int = Field(..., description="The ID of the animal in the trial")
+    object_tracking_label_for_kinematics: Optional[str] = Field(
+        ..., description="Label of the node that will be used to track general animal movement"
+    )
+    rigid_nodes_freezing: Optional[Sequence[str | int]] = Field(
+        description="Nodes that should remain during freeze/immobility, most often due to fear.",
+    )
+    stage: Optional[str] = Field(description="The semantic stage of the experiment")
+    inspection_dir: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
+    inspect_image: Optional[FilePath] = Field(
+        description="Image to use as background in the plots for visualising the analysis data",
+    )
+    # Variables for trials with zones, see doc for more info.
+    perimeters: Optional[Sequence] = None
+    trial_start_perimeter: Optional[str] = None
+
+    # Class variables
+    category: ClassVar[Optional[str]] = "trial"
+
+    experiment_sequence_index: ClassVar[Optional[int]] = None
+    trial_label: ClassVar[Optional[str]] = None
+
+    second_tolerance: ClassVar[float] = 0.15
+
+    trial_has_video_space_for_analysis: ClassVar[bool] = False
+
+    @classmethod
+    @property
+    def feature_headers(cls):
+        raise NotImplemented()
+
+    @classmethod
+    @property
+    def feature_summary_column(cls):
+        if not cls.trial_label:
+            return cls.feature_headers
+        return pd.MultiIndex.from_product([[cls.trial_label], cls.feature_headers])
+
+    @classmethod
+    @property
+    def trial_has_defined_features(cls) -> bool:
+        return bool(cls.feature_headers)
+
+    @property
+    def motion_features(self) -> list:
+        return self.motion.to_list
+
+    @cached_property
+    def reader(self):
+        try:
+            reader_init_func = LABEL_to_DATA_READER[self.data_format_label]
+        except KeyError as e:
+            msg = (
+                f"{self.data_format_label} as a format for data ingestion has "
+                f"no implementation. Choose from: {LABEL_to_DATA_READER.keys()}"
+            )
+            raise NotImplemented(msg) from e
+
+        return reader_init_func(
+            df_path=self.coordinate_data_path,
+            **self._reader_init_kwargs,
+        )
+
+    @property
+    def framewise_confined_coordinates(self) -> NDArrayFp64:
+        return self.reader[self.object_tracking_label_for_kinematics]
+
+    @cached_property
+    def number_of_frames(self) -> int:
+        return len(self.framewise_confined_coordinates)
+
+    @cached_property
+    def experiment_seconds(self) -> int:
+        return self.framewise_confined_coordinates.shape[0] / self.fps
+
+    @cached_property
+    def motion(self) -> Motion:
+        return Motion(
+            coordinate_sequence=self.framewise_confined_coordinates,
+            meters_per_pixel=self.meters_per_pixel,
+            fps=self.fps,
+        )
+
+    # PolygonPerimeter
+
+    def detect_confined_perimeter(self, coordinate: NDArrayFp64) -> NDArrayFp64:
+        """
+        This function is used to determine current location of subject.
+
+        :param coordinate:
+        :return:
+        """
+
+        coordinate = np.expand_dims(coordinate, 0)
+        for label, perimeter in self._int_id_to_perimeter.items():
+            if perimeter.coordinate_confinement_boolean_index(coordinate):
+                logger.info(f"Location: {label}, {coordinate}")
+                return label
+        logger.debug(f"Location could not be determined, {coordinate}")
+
+    def render_analytical_video(self):
+        if not self.video_path:
+            msg = "video_path needs to be defined to render analytical video"
+            raise AttributeError(msg)
+
+        cap = cv2.VideoCapture(str(self.video_path))
+        writer = VideoWriter(
+            filename=self.video_path.with_name(f"{self.video_path.stem}_analysis.mp4"),
+            fps=round(self.fps * 0.75),
+        )
+        success, frame = cap.read()
+        assert success
+
+        i = 0
+        frames = []
+        if ENABLE_PROCESS_POOLING:
+            with ProcessPoolExecutor() as executor:
+                while success:
+                    frames.append(executor.submit(self._process_frame, frame, i))
+                    success, frame = cap.read()
+                    i += 1
+
+                for frame in frames:
+                    writer.add(frame.result())
+        else:
+            logger.debug("Process pooling is disabled, will create video with one core")
+            while success:
+                frame = self._process_frame(frame, i)
+                writer.add(frame)
+                success, frame = cap.read()
+                i += 1
+
+        writer.close()
+
+    def _process_frame(self, frame: NDArrayFp64, frame_index: int) -> NDArrayFp64:
+        if self.trial_has_video_space_for_analysis:
+            return cv2.hconcat(
+                (
+                    self._overlay_video_frame(frame, frame_index),
+                    self._create_analysis_frame(frame_index),
+                )
+            )
+        return self._overlay_video_frame(frame, frame_index)
+
+    def _overlay_video_frame(self, frame: NDArrayFp64, frame_index: int) -> NDArrayFp64:
+        fig, ax = plt.subplots()
+        canvas = FigureCanvas(fig)
+
+        ax.imshow(frame)
+        ax.scatter(*self.framewise_confined_coordinates[frame_index])
+        ax.axis("off")
+
+        canvas.draw()
+
+        return np.frombuffer(canvas.tostring_rgb(), dtype="uint8")
+
+    def _create_analysis_frame(self, frame_index: int) -> NDArrayFp64:
+        raise NotImplemented("The analysis space is a work in progress")
+
+    @cached_property
+    def _reader_init_kwargs(self):
+        return self.data_import_kwargs
+
+    @cached_property
+    def _int_id_to_perimeter(self) -> dict:
+        self._validate_perimeters_object()
+        return {perimeter.int_id: perimeter for perimeter in self.perimeters}
+
+    def _validate_perimeters_object(self) -> None:
+        if not self.perimeters:
+            msg = "perimeters is not defined as an object variable, " "which is required for _int_id_to_perimeter"
+            raise AttributeError(msg)
+
+    @cached_property
+    def _perimeter_label_to_int_id(self) -> dict:
+        self._validate_perimeters_object()
+        return {label: i for i, label in enumerate(self.perimeters, start=1)}
+
+    @cached_property
+    def _int_id_to_perimeter_label(self) -> dict:
+        self._validate_perimeters_object()
+        return {i: label for i, label in enumerate(self.perimeters, start=1)}
+
+    @property
+    def _start_int_id(self) -> int:
+        return self._perimeter_label_to_int_id[self.trial_start_perimeter]
+
+    def _perimeter_label_sequence_to_int_id(self, label_sequence: Iterable) -> tuple:
+        return tuple(self._perimeter_label_to_int_id[label] for label in label_sequence)
+
+    # Miscellaneous
+
+    @cached_property
+    def _inspection_image_name(self):
+        return f"trial_{self.best_id}.jpg"
+
+    @cached_property
+    def _uint_zeros_based_on_frame_length(self) -> NDArrayFp64:
+        return np.zeros(self.number_of_frames, dtype=np.uint8)
+
+    @cached_property
+    def _frame_tolerance(self) -> int:
+        return round(self.second_tolerance * self.fps)
+
+
+Trial = TypeVar("Trial", bound=BaseTrial)
+
+
 class BaseExperiment(Behaviour):
     manual_trial_ids: Optional[tuple] = None
     trial_id_to_trial_class_name: Optional[dict] = None
@@ -75,17 +284,17 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def is_trial_sequence(cls):
+    def is_trial_sequence(cls) -> bool:
         return len(cls.trial_classes) != 1
 
     @classmethod
     @property
-    def trial_class_names(cls):
+    def trial_class_names(cls) -> tuple[str]:
         return tuple(trial_class.__name__ for trial_class in cls.trial_classes)
 
     @classmethod
     @property
-    def trial_class(cls):
+    def trial_class(cls) -> "Trial":
         if not cls.is_trial_sequence:
             msg = f"{cls.__name__}: trial_class attribute can only be utilized when there is only one Trial class"
             raise AttributeError(msg)
@@ -93,7 +302,7 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def stage_index_to_trial_class(cls):
+    def stage_index_to_trial_class(cls) -> dict[int, Trial]:
         if not cls.is_trial_sequence:
             msg = f"{cls.__name__}: stage_index_to_trial_class is undefined in non-sequential experiment classes"
             raise AttributeError(msg)
@@ -106,7 +315,7 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def trial_class_name_to_trial_class(cls):
+    def trial_class_name_to_trial_class(cls) -> dict[str, Trial]:
         if not cls.is_trial_sequence:
             msg = (
                 f"{cls.__name__}: trial_class_name_to_trial_class attribute can only be utilized when "
@@ -157,7 +366,7 @@ class BaseExperiment(Behaviour):
         return result
 
     @cached_property
-    def trial_objects(self) -> list:
+    def trial_objects(self) -> list[Trial]:
         result, bad_trial_ids_to_error_msg = [], {}
         for trial_id in self.trial_ids:
             trial_class = (
@@ -178,22 +387,22 @@ class BaseExperiment(Behaviour):
         return result
 
     @cached_property
-    def trial_class_name_to_trial_ids(self):
+    def trial_class_name_to_trial_ids(self) -> dict[str, Trial]:
         return {trial_class.__name__: trial_ids for trial_class, trial_ids in self._trial_class_vstrial_ids.items()}
 
     @cached_property
-    def trial_id_to_trial_object(self) -> dict:
+    def trial_id_to_trial_object(self) -> dict[Hashable, Trial]:
         return {trial.int_id: trial for trial in self.trial_objects}
 
     @cached_property
-    def trial_class_name_to_trial_objects(self):
+    def trial_class_name_to_trial_objects(self) -> dict[str, Trial]:
         result = {}
         for trial_class_name, trial_ids in self._trial_class_vstrial_ids.items():
             result[trial_class_name] = [self.trial_id_to_trial_object[trial_id] for trial_id in trial_ids]
         return result
 
     @cached_property
-    def animal_id_to_trial_objects(self) -> dict:
+    def animal_id_to_trial_objects(self) -> dict[Hashable, Trial]:
         result = {}
         for trial in self.trial_objects:
             if trial.animal_id in result:
@@ -205,7 +414,7 @@ class BaseExperiment(Behaviour):
         return dict(sorted(result.items()))
 
     @cached_property
-    def animal_id_vstrial_ids(self) -> dict:
+    def animal_id_to_trial_ids(self) -> dict:
         return {
             animal_id: (trial_object.int_id for trial_object in trial_objects)
             for animal_id, trial_objects in self.animal_id_to_trial_objects.items()
@@ -217,7 +426,7 @@ class BaseExperiment(Behaviour):
         return dict(sorted(result.items(), key=lambda item: item[1]))
 
     @cached_property
-    def stage_index_to_trial_objects(self) -> dict:
+    def stage_index_to_trial_objects(self) -> dict[int, Trial]:
         result = {}
         for trial in self.trial_objects:
             if trial.stage in result:
@@ -227,7 +436,7 @@ class BaseExperiment(Behaviour):
         return result
 
     @cached_property
-    def trial_ids(self) -> NDArray:
+    def trial_ids(self) -> tuple:
         if self.manual_trial_ids:
             result = self.manual_trial_ids
         elif self.trial_class:
@@ -248,7 +457,7 @@ class BaseExperiment(Behaviour):
         return result
 
     @cached_property
-    def number_of_trials(self):
+    def number_of_trials(self) -> int:
         return len(self.trial_ids)
 
     # DataFrame methods
@@ -463,208 +672,4 @@ class BaseExperiment(Behaviour):
         raise AttributeError(msg)
 
 
-class BaseTrial(Behaviour):
-    coordinate_data_path: FilePath = Field(..., description="Path to file storing coordinate data")
-    animal_id: int = Field(..., description="The ID of the animal in the trial")
-    object_tracking_label_for_kinematics: Optional[str] = Field(
-        ..., description="Label of the node that will be used to track general animal movement"
-    )
-    rigid_nodes_freezing: Optional[Sequence[str | int]] = Field(
-        description="Nodes that should remain during freeze/immobility, most often due to fear.",
-    )
-    stage: Optional[str] = Field(description="The semantic stage of the experiment")
-    inspection_dir: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
-    inspect_image: Optional[FilePath] = Field(
-        description="Image to use as background in the plots for visualising the analysis data",
-    )
-    # Variables for trials with zones, see doc for more info.
-    perimeters: Optional[Sequence] = None
-    trial_start_perimeter: Optional[str] = None
-
-    # Class variables
-    category: ClassVar[Optional[str]] = "trial"
-
-    experiment_sequence_index: ClassVar[Optional[int]] = None
-    trial_label: ClassVar[Optional[str]] = None
-
-    second_tolerance: ClassVar[float] = 0.15
-
-    trial_has_video_space_for_analysis: ClassVar[bool] = False
-
-    @classmethod
-    @property
-    def feature_headers(cls):
-        raise NotImplemented()
-
-    @classmethod
-    @property
-    def feature_summary_column(cls):
-        if not cls.trial_label:
-            return cls.feature_headers
-        return pd.MultiIndex.from_product([[cls.trial_label], cls.feature_headers])
-
-    @classmethod
-    @property
-    def trial_has_defined_features(cls) -> bool:
-        return bool(cls.feature_headers)
-
-    @property
-    def motion_features(self) -> list:
-        return self.motion.to_list
-
-    @cached_property
-    def reader(self):
-        try:
-            reader_init_func = LABEL_to_DATA_READER[self.data_format_label]
-        except KeyError as e:
-            msg = (
-                f"{self.data_format_label} as a format for data ingestion has "
-                f"no implementation. Choose from: {LABEL_to_DATA_READER.keys()}"
-            )
-            raise NotImplemented(msg) from e
-
-        return reader_init_func(
-            df_path=self.coordinate_data_path,
-            **self._reader_init_kwargs,
-        )
-
-    @property
-    def framewise_confined_coordinates(self) -> NDArrayFp64:
-        return self.reader[self.object_tracking_label_for_kinematics]
-
-    @cached_property
-    def number_of_frames(self) -> int:
-        return len(self.framewise_confined_coordinates)
-
-    @cached_property
-    def experiment_seconds(self) -> int:
-        return self.framewise_confined_coordinates.shape[0] / self.fps
-
-    @cached_property
-    def motion(self) -> Motion:
-        return Motion(
-            coordinate_sequence=self.framewise_confined_coordinates,
-            meters_per_pixel=self.meters_per_pixel,
-            fps=self.fps,
-        )
-
-    # PolygonPerimeter
-
-    def detect_confined_perimeter(self, coordinate: NDArrayFp64) -> NDArrayFp64:
-        """
-        This function is used to determine current location of subject.
-
-        :param coordinate:
-        :return:
-        """
-
-        coordinate = np.expand_dims(coordinate, 0)
-        for label, perimeter in self._int_id_to_perimeter.items():
-            if perimeter.coordinate_confinement_boolean_index(coordinate):
-                logger.info(f"Location: {label}, {coordinate}")
-                return label
-        logger.debug(f"Location could not be determined, {coordinate}")
-
-    def render_analytical_video(self):
-        if not self.video_path:
-            msg = "video_path needs to be defined to render analytical video"
-            raise AttributeError(msg)
-
-        cap = cv2.VideoCapture(str(self.video_path))
-        writer = VideoWriter(
-            filename=self.video_path.with_name(f"{self.video_path.stem}_analysis.mp4"),
-            fps=round(self.fps * 0.75),
-        )
-        success, frame = cap.read()
-        assert success
-
-        i = 0
-        frames = []
-        if ENABLE_PROCESS_POOLING:
-            with ProcessPoolExecutor() as executor:
-                while success:
-                    frames.append(executor.submit(self._process_frame, frame, i))
-                    success, frame = cap.read()
-                    i += 1
-
-                for frame in frames:
-                    writer.add(frame.result())
-        else:
-            logger.debug("Process pooling is disabled, will create video with one core")
-            while success:
-                frame = self._process_frame(frame, i)
-                writer.add(frame)
-                success, frame = cap.read()
-                i += 1
-
-        writer.close()
-
-    def _process_frame(self, frame: NDArrayFp64, frame_index: int) -> NDArrayFp64:
-        if self.trial_has_video_space_for_analysis:
-            return cv2.hconcat(
-                (
-                    self._overlay_video_frame(frame, frame_index),
-                    self._create_analysis_frame(frame_index),
-                )
-            )
-        return self._overlay_video_frame(frame, frame_index)
-
-    def _overlay_video_frame(self, frame: NDArrayFp64, frame_index: int) -> NDArrayFp64:
-        fig, ax = plt.subplots()
-        canvas = FigureCanvas(fig)
-
-        ax.imshow(frame)
-        ax.scatter(*self.framewise_confined_coordinates[frame_index])
-        ax.axis("off")
-
-        canvas.draw()
-
-        return np.frombuffer(canvas.tostring_rgb(), dtype="uint8")
-
-    def _create_analysis_frame(self, frame_index: int) -> NDArrayFp64:
-        raise NotImplemented("The analysis space is a work in progress")
-
-    @cached_property
-    def _reader_init_kwargs(self):
-        return self.data_import_kwargs
-
-    @cached_property
-    def _int_id_to_perimeter(self) -> dict:
-        self._validate_perimeters_object()
-        return {perimeter.int_id: perimeter for perimeter in self.perimeters}
-
-    def _validate_perimeters_object(self) -> None:
-        if not self.perimeters:
-            msg = "perimeters is not defined as an object variable, " "which is required for _int_id_to_perimeter"
-            raise AttributeError(msg)
-
-    @cached_property
-    def _perimeter_label_to_int_id(self) -> dict:
-        self._validate_perimeters_object()
-        return {label: i for i, label in enumerate(self.perimeters, start=1)}
-
-    @cached_property
-    def _int_id_to_perimeter_label(self) -> dict:
-        self._validate_perimeters_object()
-        return {i: label for i, label in enumerate(self.perimeters, start=1)}
-
-    @property
-    def _start_int_id(self) -> int:
-        return self._perimeter_label_to_int_id[self.trial_start_perimeter]
-
-    def _perimeter_label_sequence_to_int_id(self, label_sequence: Iterable) -> tuple:
-        return tuple(self._perimeter_label_to_int_id[label] for label in label_sequence)
-
-    # Miscellaneous
-
-    @cached_property
-    def _inspection_image_name(self):
-        return f"trial_{self.best_id}.jpg"
-
-    @cached_property
-    def _uint_zeros_based_on_frame_length(self) -> NDArrayFp64:
-        return np.zeros(self.number_of_frames, dtype=np.uint8)
-
-    @cached_property
-    def _frame_tolerance(self) -> int:
-        return round(self.second_tolerance * self.fps)
+Experiment = TypeVar("Experiment", bound=BaseExperiment)

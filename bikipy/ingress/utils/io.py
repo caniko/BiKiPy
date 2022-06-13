@@ -14,18 +14,22 @@ def initialize_metadata_data_frame(project_root_directory: DirectoryPath, stagef
     )
 
 
+@lru_cache(1)
 def get_project_settings_path(project_root_directory: DirectoryPath) -> FilePath:
     return project_root_directory / "settings.yaml"
 
 
+@lru_cache(1)
 def load_settings(project_root_directory: DirectoryPath) -> dict:
     with open(get_project_settings_path(project_root_directory), "r") as in_file:
         return yaml.safe_load(in_file)
 
 
+@lru_cache(1)
 def get_dataset_directory_path(project_root_directory: DirectoryPath) -> DirectoryPath:
     return project_root_directory / "dataset"
 
 
+@lru_cache(1)
 def get_perimeter_directory_path(project_root_directory: DirectoryPath) -> DirectoryPath:
     return project_root_directory / "perimeter"

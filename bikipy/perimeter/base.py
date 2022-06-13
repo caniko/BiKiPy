@@ -2,11 +2,11 @@ from abc import abstractmethod
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, ClassVar, Optional, Sequence
+from typing import Any, ClassVar, Literal, Optional, Sequence, TypeVar
 
 import matplotlib.pyplot as plt
 import numpy as np
-from pydantic import DirectoryPath, FilePath, root_validator, validate_arguments
+from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments
 
 from bikipy.core.base_class import BikipyBase, BikipyBaseHashable
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
@@ -16,9 +16,15 @@ from bikipy.utils.misc import get_reference_point_from_array, read_image
 
 logger = getLogger(__name__)
 
+StringPerimeterShapes = Literal["circle", "parallelogram", "polygon", "rectangle"]
+
 
 class BasePerimeter(BikipyBaseHashable):
-    impenetrable: bool = False
+    impenetrable: bool = Field(
+        False,
+        description="Signifies the impenetrability of the perimeter. "
+        "Usually because the perimeter is insurmountable or slippery",
+    )
 
     reference_point_coco_path: Optional[FilePath] = None
     reference_point_array: Optional[NDArrayInt16] = None
@@ -292,7 +298,7 @@ class BasePerimeter(BikipyBaseHashable):
         return self.plot_perimeter(**perimeter_plot_kwargs, ax=ax)
 
     @staticmethod
-    def perimeter_set_from_image_name_to_perimeters(image_name_to_perimeters: dict):
+    def perimeter_set_from_image_name_to_perimeters(image_name_to_perimeters: "dict[str, AnyPerimeter]"):
         result = {}
         for image_name, perimeters in image_name_to_perimeters.items():
             filtered_perimeters, restricted_perimeters = [], []
@@ -307,9 +313,12 @@ class BasePerimeter(BikipyBaseHashable):
         return result
 
 
+AnyPerimeter = TypeVar("AnyPerimeter", bound=BasePerimeter)
+
+
 class PerimeterSet(BikipyBase):
-    perimeters: list
-    restricted_perimeters: Optional[list] = None
+    perimeters: list[AnyPerimeter]
+    restricted_perimeters: Optional[list[AnyPerimeter]] = None
 
     category: ClassVar[Optional[str]] = "perimeter"
 
@@ -498,14 +507,14 @@ class PerimeterSet(BikipyBase):
         return result
 
     @property
-    def all_perimeters(self) -> Sequence:
+    def all_perimeters(self) -> tuple[AnyPerimeter, ...]:
         if not self.restricted_perimeters:
-            return self.perimeters
+            return (self.perimeters,)
         return (
             *self.perimeters,
             *self.restricted_perimeters,
         )
 
     @property
-    def labels(self):
+    def labels(self) -> tuple:
         return tuple(perimeter.label for perimeter in self.all_perimeters)

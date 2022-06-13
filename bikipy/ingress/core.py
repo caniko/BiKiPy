@@ -18,13 +18,24 @@ from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
 )
 from bikipy.ingress.plugin.perimeter import (
-    first_perimeter_set_from_makesense,
     generate_label_to_object_field,
+    get_perimeter_data,
 )
-from bikipy.ingress.utils.io import get_project_settings_path
+from bikipy.ingress.utils.io import (
+    get_dataset_directory_path,
+    get_perimeter_directory_path,
+    get_project_settings_path,
+    load_settings,
+)
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
-from bikipy.perimeter.base import BasePerimeter
-from bikipy.perimeter.typing import AnyPerimeter
+from bikipy.perimeter.base import (
+    AnyPerimeter,
+    BasePerimeter,
+    PerimeterSet,
+    StringPerimeterShapes,
+)
+from bikipy.perimeter.polygon.base import PolygonPerimeter
+from bikipy.perimeter.radial.circle import CirclePerimeter
 from bikipy.reader import DeepLabCutReader
 
 
@@ -113,10 +124,9 @@ class BaseIngress(BikipyBase, ABC):
 
     # I/O ============================
 
-    @cached_property
+    @property
     def settings(self) -> dict:
-        with open(self.settings_path, "r") as in_file:
-            return yaml.safe_load(in_file)
+        return load_settings(self.project_root_directory)
 
     @cached_property
     def metadata(self) -> pd.DataFrame:
@@ -130,31 +140,23 @@ class BaseIngress(BikipyBase, ABC):
 
     @property
     def settings_path(self) -> FilePath:
-        return self.project_root_directory / "settings.yaml"
+        return get_project_settings_path(self.project_root_directory)
 
-    @cached_property
+    @property
     def dataset_directory_path(self) -> DirectoryPath:
-        return self.project_root_directory / "dataset"
+        return get_dataset_directory_path(self.project_root_directory)
 
-    @cached_property
+    @property
     def perimeter_directory_path(self) -> DirectoryPath:
-        return self.project_root_directory / "perimeter"
+        return get_perimeter_directory_path(self.project_root_directory)
 
-    @cached_property
+    @property
     def result_directory_path(self) -> DirectoryPath:
         result_directory = self.project_root_directory / "result"
         result_directory.mkdir(exist_ok=True)
         return result_directory
 
     # Constants =============================
-
-    @cached_property
-    def partial_first_perimeter_set_from_makesense_from_settings(self):
-        return partial(
-            first_perimeter_set_from_makesense,
-            label_prefix=self.settings["perimeter"]["label_prefix"],
-            label_suffix=self.settings["perimeter"]["label_suffix"],
-        )
 
     @property
     def stageful_metadata(self):
@@ -173,13 +175,69 @@ class BaseIngress(BikipyBase, ABC):
     def _define_experiment_data(self):
         self._experiment_class_kwargs_and_metadata_index_to_trial_id_and_metadata_index_to_trial_id_define_function()
 
-        self._common_trial_keyword_arguments.update(self.settings["experiment"]["defined"])
+        for field, value in self.settings["trial"]["common"]["defined"].items():
+            if not np.any(value):
+                if any(
+                    field in keyword_arguments and np.any(keyword_arguments[field])
+                    for keyword_arguments in self._trial_id_to_keyword_arguments.values()
+                ):
+                    msg = f"Field, {field}, has been defined in settings, yet is also defined by the ingress method"
+                    raise ValueError(msg)
+                self._common_trial_keyword_arguments[field] = value
+
+        for trial_class_name, dataset in self.settings["trial"]["specific"].items():
+            if not dataset["defined"]:
+                continue
+            self.experiment.
 
         self._experiment_data_defined = True
 
-    def register_perimeter_to_trial_id(self, trial_id: Hashable, label_to_perimeter: dict[Hashable, AnyPerimeter]):
+    @validate_arguments
+    def detect_perimeters_in_project(self, create_object: bool = False) -> list:
+        detection_data = []
+        for filename in self.perimeter_directory_path.glob("perimeter-*"):
+            perimeter_path = self.project_root_directory / filename
+
+            shape, label = get_perimeter_data(perimeter_path)
+            data = {"label": label, "shape": shape}
+
+            if create_object:
+                data["perimeter"] = self.first_perimeter_set_from_makesense(perimeter_path)
+            detection_data.append(data)
+        if not detection_data:
+            msg = (
+                "No perimeter data was found. Set perimeter strategy to None or "
+                'revise perimeter filenames to the correct format, "perimeter-{label}"'
+            )
+            raise ValueError(msg)
+        return detection_data
+
+    @validate_arguments
+    def first_perimeter_set_from_makesense(
+        self,
+        perimeter_path: FilePath,
+        manual_shape: Optional[StringPerimeterShapes] = None,
+    ) -> PerimeterSet:
+        shape, label = get_perimeter_data(perimeter_path)
+        match manual_shape or shape:
+            case "circle":
+                image_name_to_perimeter_set = CirclePerimeter.from_makesense_line(perimeter_path)
+            case "rectangle":
+                image_name_to_perimeter_set = PolygonPerimeter.from_makesense_csv_rectangle(perimeter_path)
+            case "polygon" | "parallelogram":
+                image_name_to_perimeter_set = PolygonPerimeter.from_makesense_coco_polygon(perimeter_path)
+            case _:
+                raise ValueError
+
+        perimeter_set = tuple(image_name_to_perimeter_set.values())[0]
+        perimeter_set.apply_label_prefix_suffix(self.settings["label_prefix"], self.settings["label_suffix"])
+        return perimeter_set
+
+    def register_perimeter_to_trial_id(self, trial_id: Hashable, label_to_perimeter: dict[str, AnyPerimeter]):
         for perimeter in label_to_perimeter.values():
-            perimeter.impenetrable = self.settings["perimeter"]["impenetrable"]
+            for field, value in self.settings["perimeter"]["defined"].items():
+                if not np.any(value):
+                    perimeter.__setattr__(field, value)
         self._trial_id_to_keyword_arguments[trial_id].update(label_to_perimeter)
 
     def get_plugin_parameter(self, parameter_label: str, metadata_index_getter: Callable):
@@ -190,6 +248,10 @@ class BaseIngress(BikipyBase, ABC):
 
     @cached_property
     def experiment(self):
+        intersection = set(self.settings["experiment"]["defined"]).intersection(self.experiment_class_kwargs)
+        if intersection:
+            msg = f"The setting defines fields defined by the ingress method:\n{intersection}"
+            raise ValueError(msg)
         return self.experiment_class(**self.experiment_class_kwargs)
 
     # Client-side functions ===============================
@@ -230,7 +292,7 @@ def init_settings(
         "perimeter": {
             "label_prefix": None,
             "label_suffix": None,
-            "fields": extended_schema(BasePerimeter, with_optional=False),
+            "fields": extended_schema(BasePerimeter),
         },
         "ingress": {
             "stageful_metadata": False,

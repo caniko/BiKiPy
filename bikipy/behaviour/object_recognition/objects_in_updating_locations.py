@@ -20,7 +20,7 @@ from bikipy.behaviour.mixin.physical_object import (
     RectanglePhysicalObjectExperiment,
     RectanglePhysicalObjectTrial,
 )
-from bikipy.perimeter.typing import AnyPerimeter
+from bikipy.perimeter.base import AnyPerimeter
 
 
 class ObjectsInUpdatingLocationsTrainingTrial(RectanglePhysicalObjectTrial):

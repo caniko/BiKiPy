@@ -8,7 +8,7 @@ from bikipy.behaviour.mixin.physical_object import (
     RectanglePhysicalObjectTrial,
 )
 from bikipy.behaviour.rectangle import RectangleEnclosedTrial
-from bikipy.perimeter.typing import AnyPerimeter
+from bikipy.perimeter.base import AnyPerimeter
 
 logger = getLogger(__name__)
 

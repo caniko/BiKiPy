@@ -4,7 +4,7 @@ from math import floor
 
 from bikipy.behaviour.base import BaseTrial
 from bikipy.behaviour.mixin.live import LiveTrial
-from bikipy.perimeter.typing import AnyPerimeter
+from bikipy.perimeter.base import AnyPerimeter
 
 logger = getLogger(__name__)
 

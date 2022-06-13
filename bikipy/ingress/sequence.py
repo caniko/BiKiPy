@@ -1,18 +1,13 @@
-import json
-from functools import cached_property, reduce
+from functools import reduce
 from logging import getLogger
 from pathlib import Path
 
-import yaml
 from pydantic import DirectoryPath, validate_arguments
 
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.ingress.core import BaseIngress
 from bikipy.ingress.plugin import PLUGIN_NAME_TO_KEYRING
-from bikipy.ingress.utils.io import (
-    get_dataset_directory_path,
-    get_project_settings_path,
-)
+from bikipy.ingress.utils.io import get_dataset_directory_path
 
 logger = getLogger(__name__)
 
@@ -67,9 +62,7 @@ class SequenceIngress(BaseIngress):
                 if self.settings["ingress"]["perimeter_definition_strategy"] == "trialwise":
                     perimeter_sets = []
                     for perimeter_path in animal_dir.glob(f"{sequence_index}.perimeter*"):
-                        perimeter_sets.append(
-                            self.partial_first_perimeter_set_from_makesense_from_settings(perimeter_path)
-                        )
+                        perimeter_sets.append(self.first_perimeter_set_from_makesense(perimeter_path))
 
                     if length := len(perimeter_sets):
                         perimeter_set = reduce(lambda a, b: a + b, perimeter_sets) if length != 1 else perimeter_sets[0]

@@ -7,23 +7,43 @@ sequence_index_to_trial_class_name:
 perimeter:
   label_prefix: null
   label_suffix: null
-  fields: {}
+  fields:
+    defined:
+      impenetrable: True
+    optional:
+      group_label: string
+      impenetrable: boolean -> False
+      inspect_image_array: np.ndarray[name='inspect_image_array_0' type=dobble required=True]
+      inspect_image_path: string
+      int_id: integer
+      label: string
+      reference_point_array: np.ndarray[name='reference_point_array_0' type=short
+        required=True]
+      reference_point_coco_path: string
+      save_root: string
+      timestamp: string
 ingress:
-  stageful_metadata: false
-  skip_absent_trials_absent_from_metadata_index: false
-  meters_per_pixel_definition_strategy: global_perimeter
+  stageful_metadata: true
+  skip_absent_trials_absent_from_metadata_index: true
+  meters_per_pixel_definition_strategy: metadata
   perimeter_definition_strategy: metadata
-  center_definition_strategy: null
+  center_definition_strategy: trialwise
 trial:
   common:
+    defined:
+      animal_id: null
+      coordinate_data_path: null
+      gaze_start_point_label: null
+      gaze_travel_direction_point_label: null
+      object_1: null
+      object_tracking_label_for_kinematics: null
+      perimeter_border_normal_metric_magnitude: null
     required:
       animal_id: integer
       coordinate_data_path: string
       gaze_start_point_label: string
       gaze_travel_direction_point_label: string
-      object_1: '[{''$ref'': ''#/definitions/PerimeterSet''}, {''$ref'': ''#/definitions/CirclePerimeter''},
-        {''$ref'': ''#/definitions/PolygonPerimeter''}, {''$ref'': ''#/definitions/ParallelogramPerimeter''},
-        {''$ref'': ''#/definitions/TriangularPerimeter''}]'
+      object_1: None
       object_tracking_label_for_kinematics: string
       perimeter_border_normal_metric_magnitude: number
     optional:
@@ -54,27 +74,36 @@ trial:
       video_path: string
   specific:
     ObjectsInUpdatingLocationsTrainingTrial:
+      defined:
+        object_2: null
       required:
-        object_2: '[{''$ref'': ''#/definitions/PerimeterSet''}, {''$ref'': ''#/definitions/CirclePerimeter''},
-          {''$ref'': ''#/definitions/PolygonPerimeter''}, {''$ref'': ''#/definitions/ParallelogramPerimeter''},
-          {''$ref'': ''#/definitions/TriangularPerimeter''}]'
+        object_2: None
     ObjectsInUpdatingLocationsUpdateTrial:
+      defined:
+        object_4: null
       required:
-        object_4: '[{''$ref'': ''#/definitions/PerimeterSet''}, {''$ref'': ''#/definitions/CirclePerimeter''},
-          {''$ref'': ''#/definitions/PolygonPerimeter''}, {''$ref'': ''#/definitions/ParallelogramPerimeter''},
-          {''$ref'': ''#/definitions/TriangularPerimeter''}]'
+        object_4: None
     ObjectsInUpdatingLocationsTestTrial:
+      defined:
+        object_2: null
+        object_3: null
+        object_4: null
       required:
-        object_2: '[{''$ref'': ''#/definitions/PerimeterSet''}, {''$ref'': ''#/definitions/CirclePerimeter''},
-          {''$ref'': ''#/definitions/PolygonPerimeter''}, {''$ref'': ''#/definitions/ParallelogramPerimeter''},
-          {''$ref'': ''#/definitions/TriangularPerimeter''}]'
-        object_3: '[{''$ref'': ''#/definitions/PerimeterSet''}, {''$ref'': ''#/definitions/CirclePerimeter''},
-          {''$ref'': ''#/definitions/PolygonPerimeter''}, {''$ref'': ''#/definitions/ParallelogramPerimeter''},
-          {''$ref'': ''#/definitions/TriangularPerimeter''}]'
-        object_4: '[{''$ref'': ''#/definitions/PerimeterSet''}, {''$ref'': ''#/definitions/CirclePerimeter''},
-          {''$ref'': ''#/definitions/PolygonPerimeter''}, {''$ref'': ''#/definitions/ParallelogramPerimeter''},
-          {''$ref'': ''#/definitions/TriangularPerimeter''}]'
+        object_2: None
+        object_3: None
+        object_4: None
 experiment:
+  defined:
+    gaze_start_point_label: center_eye
+    gaze_travel_direction_point_label: nose
+    object_tracking_label_for_kinematics: center_eye
+    perimeter_border_normal_metric_magnitude: 0.02
+    manual_recording_resolution: [ 1920, 1080 ]
+    manual_fps: 30
+    data_import_kwargs:
+      init_from: parquet
+      midpoint_groups:
+        center_eye: [ "left_ear", "right_ear" ]
   optional:
     center: np.ndarray[name='center_0' type=short required=True]
     common_trial_keyword_arguments: object
@@ -136,24 +165,24 @@ immutable:
   method_specific:
     detected_animal_ids:
     - '304'
-    - '161'
-    - '162'
-    - '384'
-    - '163'
-    - '119'
-    - '116'
     - '137'
-    - '160'
-    - '117'
     - '381'
-    - '120'
-    - '136'
-    - '382'
-    - '211'
-    - '305'
-    - '118'
-    - '206'
+    - '162'
+    - '121'
+    - '116'
     - '207'
     - '383'
+    - '206'
+    - '118'
     - '210'
-    - '121'
+    - '117'
+    - '382'
+    - '305'
+    - '160'
+    - '119'
+    - '136'
+    - '161'
+    - '384'
+    - '163'
+    - '211'
+    - '120'
