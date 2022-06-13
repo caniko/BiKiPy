@@ -39,13 +39,14 @@ class SequenceIngress(BaseIngress):
                 sequence_index = int(trial_data_filename.stem.split(".")[0])
 
                 trial_id = _define_trial_id(animal_id, sequence_index)
+                trial_id = int(trial_id) if trial_id.isdigit() else trial_id
                 trial_ids.append(trial_id)
 
                 self._trial_id_to_trial_class_name[trial_id] = self.settings["sequence_index_to_trial_class_name"][
                     sequence_index
                 ]
                 self._trial_id_to_keyword_arguments[trial_id] = {
-                    # "label": trial_id,    Already in BaseExperiment
+                    "label": trial_id,
                     "animal_id": animal_id,
                     "stage": sequence_index,
                     "coordinate_data_path": trial_data_filename,
@@ -59,7 +60,7 @@ class SequenceIngress(BaseIngress):
                         keyring["bikipy_trial_key"]
                     ] = self.get_plugin_parameter(keyring["code_key"], get_plugin_index_from_stageful_metadata)
 
-                if self.settings["ingress"]["perimeter_definition_strategy"] == "trialwise":
+                if self.settings["ingress"]["perimeter_definition_strategy"] == "trial-wise":
                     perimeter_sets = []
                     for perimeter_path in animal_dir.glob(f"{sequence_index}.perimeter*"):
                         perimeter_sets.append(self.first_perimeter_set_from_makesense(perimeter_path))

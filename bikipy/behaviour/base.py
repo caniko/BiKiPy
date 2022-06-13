@@ -14,7 +14,6 @@ import pandas as pd
 import pydantic
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from pydantic import DirectoryPath, Field, FilePath, validator
-from pydantic_numpy import NDArray
 
 from bikipy import ENABLE_PROCESS_POOLING
 from bikipy.core.base_class import BikipyBaseHashable
@@ -333,7 +332,10 @@ class BaseExperiment(Behaviour):
         """
         Function useful for customizing initiation parameters for trial objects
         """
-        result = {"data_format_label": self.data_format_label}
+        result = {
+            **self.video_metadata,
+            "data_format_label": self.data_format_label
+        }
 
         if self.common_trial_keyword_arguments:
             result.update(self.common_trial_keyword_arguments)
@@ -346,11 +348,6 @@ class BaseExperiment(Behaviour):
             result.update(self.trial_id_range_to_keyword_arguments[trial_id])
 
         assert result["coordinate_data_path"]
-
-        if hasattr(self, "metric_resolution"):
-            result["metric_resolution"] = self.metric_resolution
-        if self.data_import_kwargs:
-            result["data_import_kwargs"] = self.data_import_kwargs
 
         if "animal_id" not in result:
             result["animal_id"] = trial_id

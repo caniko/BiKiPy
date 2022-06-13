@@ -509,11 +509,8 @@ class PerimeterSet(BikipyBase):
     @property
     def all_perimeters(self) -> tuple[AnyPerimeter, ...]:
         if not self.restricted_perimeters:
-            return (self.perimeters,)
-        return (
-            *self.perimeters,
-            *self.restricted_perimeters,
-        )
+            return self.perimeters
+        return *self.perimeters, *self.restricted_perimeters
 
     @property
     def labels(self) -> tuple:

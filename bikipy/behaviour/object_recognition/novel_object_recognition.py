@@ -4,10 +4,9 @@ from typing import ClassVar, Optional
 
 from bikipy.behaviour.mixin.physical_object import (
     PhysicalObjectHabituationTrialMixin,
-    RectanglePhysicalObjectExperiment,
-    RectanglePhysicalObjectTrial,
+    PhysicalObjectTrialMixin,
 )
-from bikipy.behaviour.rectangle import RectangleEnclosedTrial
+from bikipy.behaviour.rectangle import RectangleEnclosedTrial, RectangleEnclosedExperiment
 from bikipy.perimeter.base import AnyPerimeter
 
 logger = getLogger(__name__)
@@ -21,7 +20,7 @@ class NortOpenField(NortHabituationTrial):
     pass
 
 
-class NortTrainingTrial(RectanglePhysicalObjectTrial):
+class NortTrainingTrial(PhysicalObjectTrialMixin):
     variable: AnyPerimeter
     familiar: AnyPerimeter
 
@@ -35,7 +34,7 @@ class NortTrainingTrial(RectanglePhysicalObjectTrial):
         return self.variable, self.familiar
 
 
-class NortNoveltyTrial(RectanglePhysicalObjectTrial):
+class NortNoveltyTrial(PhysicalObjectTrialMixin):
     novel: AnyPerimeter
     familiar: AnyPerimeter
 
@@ -92,7 +91,7 @@ class NortNoveltyTrial(RectanglePhysicalObjectTrial):
             raise AttributeError(msg)
 
 
-class NortExperiment(RectanglePhysicalObjectExperiment):
+class NortExperiment(RectangleEnclosedExperiment):
     first_stage_has_no_object: ClassVar = True
     trial_classes: ClassVar = (
         NortHabituationTrial,

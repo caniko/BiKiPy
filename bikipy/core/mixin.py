@@ -19,6 +19,15 @@ class VideoMetadataMixin(BikipyBase):
     metric_resolution: Optional[NDArrayFp64] = None
 
     @cached_property
+    def video_metadata(self):
+        return {
+            "manual_meter_per_pixel": self.meters_per_pixel if self.video_metadata_can_be_defined else None,
+            "manual_fps": self.fps,
+            "manual_recording_resolution": self.recording_resolution,
+            "metric_resolution": self.metric_resolution
+        }
+
+    @cached_property
     def video_metadata_can_be_defined(self) -> bool:
         return bool(
             self.manual_fps is not None
@@ -47,7 +56,7 @@ class VideoMetadataMixin(BikipyBase):
         return (
             self.manual_recording_resolution
             if self.manual_recording_resolution is not None
-            else self._video_metadata[0]
+            else self._video_metadata_from_file[0]
         )
 
     @cached_property
@@ -64,10 +73,10 @@ class VideoMetadataMixin(BikipyBase):
 
     @property
     def fps(self) -> float:
-        return self.manual_fps or self._video_metadata[1]
+        return self.manual_fps or self._video_metadata_from_file[1]
 
     @cached_property
-    def _video_metadata(self) -> tuple[NDArrayInt16, float]:
+    def _video_metadata_from_file(self) -> tuple[NDArrayInt16, float]:
         if not self.video_path:
             msg = (
                 "Video metadata, FPS and resolution, must be defined. "

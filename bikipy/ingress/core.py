@@ -18,7 +18,6 @@ from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
 )
 from bikipy.ingress.plugin.perimeter import (
-    generate_label_to_object_field,
     get_perimeter_data,
 )
 from bikipy.ingress.utils.io import (
@@ -61,13 +60,9 @@ class BaseIngress(BikipyBase, ABC):
         ...
 
     @property
-    def experiment_class_name(self):
-        return self.settings["immutable"]["experiment_class"]
-
-    @property
     def experiment_class(self):
         try:
-            return EXPERIMENT_NAME_TO_CLASS[self.experiment_class_name]
+            return EXPERIMENT_NAME_TO_CLASS[self.settings["immutable"]["experiment_class"]]
         except KeyError:
             msg = (
                 f"experiment_class in settings is set to an invalid value: "
@@ -115,7 +110,7 @@ class BaseIngress(BikipyBase, ABC):
     def metadata_plugin_name_to_label_to_parameter(self) -> dict[str, dict]:
         result = {}
         if self.settings["ingress"]["perimeter_definition_strategy"] == "metadata":
-            result["perimeter"] = generate_label_to_object_field(self.project_root_directory)
+            result["perimeter"] = self.generate_label_to_object_field()
         if self.settings["ingress"]["center_definition_strategy"] == "metadata":
             result["center"] = detect_center_in_perimeter_directory(self.perimeter_directory_path)
         if self.settings["ingress"]["meters_per_pixel_definition_strategy"] == "metadata":
@@ -176,7 +171,7 @@ class BaseIngress(BikipyBase, ABC):
         self._experiment_class_kwargs_and_metadata_index_to_trial_id_and_metadata_index_to_trial_id_define_function()
 
         for field, value in self.settings["trial"]["common"]["defined"].items():
-            if not np.any(value):
+            if value is not None:
                 if any(
                     field in keyword_arguments and np.any(keyword_arguments[field])
                     for keyword_arguments in self._trial_id_to_keyword_arguments.values()
@@ -185,10 +180,10 @@ class BaseIngress(BikipyBase, ABC):
                     raise ValueError(msg)
                 self._common_trial_keyword_arguments[field] = value
 
-        for trial_class_name, dataset in self.settings["trial"]["specific"].items():
-            if not dataset["defined"]:
-                continue
-            self.experiment.
+        # TODO
+        # for trial_class_name, dataset in self.settings["trial"]["specific"].items():
+        #     if not dataset["defined"]:
+        #         continue
 
         self._experiment_data_defined = True
 
@@ -212,6 +207,12 @@ class BaseIngress(BikipyBase, ABC):
             raise ValueError(msg)
         return detection_data
 
+    def generate_label_to_object_field(self):
+        return {
+            perimeter_data.pop("label"): perimeter_data
+            for perimeter_data in self.detect_perimeters_in_project(create_object=True)
+        }
+
     @validate_arguments
     def first_perimeter_set_from_makesense(
         self,
@@ -230,12 +231,14 @@ class BaseIngress(BikipyBase, ABC):
                 raise ValueError
 
         perimeter_set = tuple(image_name_to_perimeter_set.values())[0]
-        perimeter_set.apply_label_prefix_suffix(self.settings["label_prefix"], self.settings["label_suffix"])
+        perimeter_set.apply_label_prefix_suffix(
+            self.settings["perimeter"]["label_prefix"], self.settings["perimeter"]["label_suffix"]
+        )
         return perimeter_set
 
     def register_perimeter_to_trial_id(self, trial_id: Hashable, label_to_perimeter: dict[str, AnyPerimeter]):
         for perimeter in label_to_perimeter.values():
-            for field, value in self.settings["perimeter"]["defined"].items():
+            for field, value in self.settings["perimeter"]["fields"]["defined"].items():
                 if not np.any(value):
                     perimeter.__setattr__(field, value)
         self._trial_id_to_keyword_arguments[trial_id].update(label_to_perimeter)
@@ -252,7 +255,7 @@ class BaseIngress(BikipyBase, ABC):
         if intersection:
             msg = f"The setting defines fields defined by the ingress method:\n{intersection}"
             raise ValueError(msg)
-        return self.experiment_class(**self.experiment_class_kwargs)
+        return self.experiment_class(**self.settings["experiment"]["defined"], **self.experiment_class_kwargs)
 
     # Client-side functions ===============================
 
@@ -289,11 +292,6 @@ def init_settings(
 
     settings = {
         **method_kwargs,
-        "perimeter": {
-            "label_prefix": None,
-            "label_suffix": None,
-            "fields": extended_schema(BasePerimeter),
-        },
         "ingress": {
             "stageful_metadata": False,
             "skip_absent_trials_absent_from_metadata_index": False,
@@ -301,8 +299,13 @@ def init_settings(
             "perimeter_definition_strategy": "metadata",
             "center_definition_strategy": None,
         },
-        "trial": extended_group_schema(experiment_class.trial_classes),
+        "perimeter": {
+            "label_prefix": None,
+            "label_suffix": None,
+            "fields": extended_schema(BasePerimeter),
+        },
         "experiment": experiment_schema,
+        "trial": extended_group_schema(experiment_class.trial_classes),
         "immutable": {
             "metadata_filename": "metadata.xlsx",
             "kinematic_data_file_extension": kinematic_data_file_extension,

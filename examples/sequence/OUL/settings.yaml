@@ -4,12 +4,18 @@ sequence_index_to_trial_class_name:
   0: ObjectsInUpdatingLocationsTrainingTrial
   1: ObjectsInUpdatingLocationsUpdateTrial
   2: ObjectsInUpdatingLocationsTestTrial
+ingress:
+  stageful_metadata: false
+  skip_absent_trials_absent_from_metadata_index: true
+  meters_per_pixel_definition_strategy: metadata
+  perimeter_definition_strategy: trial-wise
+  center_definition_strategy: metadata
 perimeter:
-  label_prefix: null
+  label_prefix: object
   label_suffix: null
   fields:
     defined:
-      impenetrable: True
+      impenetrable: true
     optional:
       group_label: string
       impenetrable: boolean -> False
@@ -22,82 +28,8 @@ perimeter:
       reference_point_coco_path: string
       save_root: string
       timestamp: string
-ingress:
-  stageful_metadata: true
-  skip_absent_trials_absent_from_metadata_index: true
-  meters_per_pixel_definition_strategy: metadata
-  perimeter_definition_strategy: metadata
-  center_definition_strategy: trialwise
-trial:
-  common:
-    defined:
-      animal_id: null
-      coordinate_data_path: null
-      gaze_start_point_label: null
-      gaze_travel_direction_point_label: null
-      object_1: null
-      object_tracking_label_for_kinematics: null
-      perimeter_border_normal_metric_magnitude: null
-    required:
-      animal_id: integer
-      coordinate_data_path: string
-      gaze_start_point_label: string
-      gaze_travel_direction_point_label: string
-      object_1: None
-      object_tracking_label_for_kinematics: string
-      perimeter_border_normal_metric_magnitude: number
-    optional:
-      center: np.ndarray[name='center_0' type=short required=True]
-      data_format_label: string -> deeplabcut
-      data_import_kwargs: object
-      group_label: string
-      inspect_image: string
-      inspection_dir: string
-      int_id: integer
-      label: string
-      manual_fps: number
-      manual_meters_per_pixel: '[{''type'': ''number''}, {''allOf'': [{''type'': ''dobble''}],
-        ''type'': "np.ndarray[name=''manual_meters_per_pixel_pydantic_numpy.ndarray.NDArray[pydantic_numpy.dtype.dobble]_0''
-        type=dobble required=True]"}]'
-      manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0'
-        type=dobble required=True]
-      maximum_radians_inter_gaze_perimeter: number -> 1.0471975511965976
-      maximum_seconds_distraction: number -> 0.5
-      metric_resolution: np.ndarray[name='metric_resolution_0' type=dobble required=True]
-      minimum_seconds_attention: number -> 0.5
-      perimeters: array
-      rigid_nodes_freezing: array
-      save_root: string
-      stage: string
-      timestamp: string
-      trial_start_perimeter: string
-      video_path: string
-  specific:
-    ObjectsInUpdatingLocationsTrainingTrial:
-      defined:
-        object_2: null
-      required:
-        object_2: None
-    ObjectsInUpdatingLocationsUpdateTrial:
-      defined:
-        object_4: null
-      required:
-        object_4: None
-    ObjectsInUpdatingLocationsTestTrial:
-      defined:
-        object_2: null
-        object_3: null
-        object_4: null
-      required:
-        object_2: None
-        object_3: None
-        object_4: None
 experiment:
   defined:
-    gaze_start_point_label: center_eye
-    gaze_travel_direction_point_label: nose
-    object_tracking_label_for_kinematics: center_eye
-    perimeter_border_normal_metric_magnitude: 0.02
     manual_recording_resolution: [ 1920, 1080 ]
     manual_fps: 30
     data_import_kwargs:
@@ -106,6 +38,7 @@ experiment:
         center_eye: [ "left_ear", "right_ear" ]
   optional:
     center: np.ndarray[name='center_0' type=short required=True]
+    center_box_to_recording_resolution_ratio: number
     common_trial_keyword_arguments: object
     data_format_label: string -> deeplabcut
     data_import_kwargs:
@@ -129,8 +62,6 @@ experiment:
       video_path: string
       x_axis_crop_end_point: number -> 0.0
       y_axis_crop_end_point: number -> 0.0
-    gaze_start_point_label: string
-    gaze_travel_direction_point_label: string
     group_label: string
     inspection_dir: string
     int_id: integer
@@ -142,11 +73,8 @@ experiment:
     manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0' type=dobble
       required=True]
     manual_trial_ids: array
-    maximum_radians_inter_gaze_perimeter: number -> 1.0471975511965976
-    maximum_seconds_distraction: number -> 0.5
     metric_resolution: np.ndarray[name='metric_resolution_0' type=dobble required=True]
-    minimum_seconds_attention: number -> 0.5
-    perimeter_border_normal_metric_magnitude: number
+    rectangle_2d_bin: array -> (2, 2)
     save_root: string
     stage: string
     timestamp: string
@@ -154,9 +82,45 @@ experiment:
     trial_id_to_keyword_arguments: object
     trial_id_to_trial_class_name: object
     video_path: string
+trial:
+  common:
+    defined:
+      gaze_start_point_label: center_eye
+      gaze_travel_direction_point_label: nose
+      object_tracking_label_for_kinematics: center_eye
+      perimeter_border_normal_metric_magnitude: 0.02
+    required:
+      object_1: None
+    optional:
+      gaze_start_point_label: string
+      gaze_travel_direction_point_label: string
+      maximum_radians_inter_gaze_perimeter: number -> 1.0471975511965976
+      maximum_seconds_distraction: number -> 0.5
+      minimum_seconds_attention: number -> 0.5
+      perimeter_border_normal_metric_magnitude: number
+  specific:
+    ObjectsInUpdatingLocationsTrainingTrial:
+      defined:
+        object_2: null
+      required:
+        object_2: None
+    ObjectsInUpdatingLocationsUpdateTrial:
+      defined:
+        object_4: null
+      required:
+        object_4: None
+    ObjectsInUpdatingLocationsTestTrial:
+      defined:
+        object_2: null
+        object_3: null
+        object_4: null
+      required:
+        object_2: None
+        object_3: None
+        object_4: None
 immutable:
   metadata_filename: metadata.xlsx
-  kinematic_data_file_extension: .h5
+  kinematic_data_file_extension: .parquet
   experiment_class: ObjectsInUpdatingLocationsExperiment
   trial_classes/stages:
   - ObjectsInUpdatingLocationsTrainingTrial
@@ -164,25 +128,25 @@ immutable:
   - ObjectsInUpdatingLocationsTestTrial
   method_specific:
     detected_animal_ids:
-    - '304'
-    - '137'
-    - '381'
+    - '211'
+    - '207'
+    - '163'
+    - '206'
+    - '116'
+    - '117'
+    - '160'
     - '162'
     - '121'
-    - '116'
-    - '207'
-    - '383'
-    - '206'
-    - '118'
     - '210'
-    - '117'
-    - '382'
-    - '305'
-    - '160'
-    - '119'
+    - '118'
+    - '384'
     - '136'
     - '161'
-    - '384'
-    - '163'
-    - '211'
     - '120'
+    - '305'
+    - '381'
+    - '137'
+    - '119'
+    - '304'
+    - '383'
+    - '382'
