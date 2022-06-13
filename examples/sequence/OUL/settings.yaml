@@ -1,89 +1,159 @@
 ingress_method: sequence
+animal-ID_absent_from_metadata: ignore
 sequence_index_to_trial_class_name:
   0: ObjectsInUpdatingLocationsTrainingTrial
   1: ObjectsInUpdatingLocationsUpdateTrial
   2: ObjectsInUpdatingLocationsTestTrial
 perimeter:
-  label_prefix: object
+  label_prefix: null
   label_suffix: null
+  fields: {}
 ingress:
-  stageful_metadata: true
-  skip_absent_trials_absent_from_metadata_index: True
-  meters_per_pixel_definition_strategy: metadata
-  center_definition_strategy: metadata
-  perimeter_definition_strategy: trialwise
+  stageful_metadata: false
+  skip_absent_trials_absent_from_metadata_index: false
+  meters_per_pixel_definition_strategy: global_perimeter
+  perimeter_definition_strategy: metadata
+  center_definition_strategy: null
+trial:
+  common:
+    required:
+      animal_id: integer
+      coordinate_data_path: string
+      gaze_start_point_label: string
+      gaze_travel_direction_point_label: string
+      object_1: '[{''$ref'': ''#/definitions/PerimeterSet''}, {''$ref'': ''#/definitions/CirclePerimeter''},
+        {''$ref'': ''#/definitions/PolygonPerimeter''}, {''$ref'': ''#/definitions/ParallelogramPerimeter''},
+        {''$ref'': ''#/definitions/TriangularPerimeter''}]'
+      object_tracking_label_for_kinematics: string
+      perimeter_border_normal_metric_magnitude: number
+    optional:
+      center: np.ndarray[name='center_0' type=short required=True]
+      data_format_label: string -> deeplabcut
+      data_import_kwargs: object
+      group_label: string
+      inspect_image: string
+      inspection_dir: string
+      int_id: integer
+      label: string
+      manual_fps: number
+      manual_meters_per_pixel: '[{''type'': ''number''}, {''allOf'': [{''type'': ''dobble''}],
+        ''type'': "np.ndarray[name=''manual_meters_per_pixel_pydantic_numpy.ndarray.NDArray[pydantic_numpy.dtype.dobble]_0''
+        type=dobble required=True]"}]'
+      manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0'
+        type=dobble required=True]
+      maximum_radians_inter_gaze_perimeter: number -> 1.0471975511965976
+      maximum_seconds_distraction: number -> 0.5
+      metric_resolution: np.ndarray[name='metric_resolution_0' type=dobble required=True]
+      minimum_seconds_attention: number -> 0.5
+      perimeters: array
+      rigid_nodes_freezing: array
+      save_root: string
+      stage: string
+      timestamp: string
+      trial_start_perimeter: string
+      video_path: string
+  specific:
+    ObjectsInUpdatingLocationsTrainingTrial:
+      required:
+        object_2: '[{''$ref'': ''#/definitions/PerimeterSet''}, {''$ref'': ''#/definitions/CirclePerimeter''},
+          {''$ref'': ''#/definitions/PolygonPerimeter''}, {''$ref'': ''#/definitions/ParallelogramPerimeter''},
+          {''$ref'': ''#/definitions/TriangularPerimeter''}]'
+    ObjectsInUpdatingLocationsUpdateTrial:
+      required:
+        object_4: '[{''$ref'': ''#/definitions/PerimeterSet''}, {''$ref'': ''#/definitions/CirclePerimeter''},
+          {''$ref'': ''#/definitions/PolygonPerimeter''}, {''$ref'': ''#/definitions/ParallelogramPerimeter''},
+          {''$ref'': ''#/definitions/TriangularPerimeter''}]'
+    ObjectsInUpdatingLocationsTestTrial:
+      required:
+        object_2: '[{''$ref'': ''#/definitions/PerimeterSet''}, {''$ref'': ''#/definitions/CirclePerimeter''},
+          {''$ref'': ''#/definitions/PolygonPerimeter''}, {''$ref'': ''#/definitions/ParallelogramPerimeter''},
+          {''$ref'': ''#/definitions/TriangularPerimeter''}]'
+        object_3: '[{''$ref'': ''#/definitions/PerimeterSet''}, {''$ref'': ''#/definitions/CirclePerimeter''},
+          {''$ref'': ''#/definitions/PolygonPerimeter''}, {''$ref'': ''#/definitions/ParallelogramPerimeter''},
+          {''$ref'': ''#/definitions/TriangularPerimeter''}]'
+        object_4: '[{''$ref'': ''#/definitions/PerimeterSet''}, {''$ref'': ''#/definitions/CirclePerimeter''},
+          {''$ref'': ''#/definitions/PolygonPerimeter''}, {''$ref'': ''#/definitions/ParallelogramPerimeter''},
+          {''$ref'': ''#/definitions/TriangularPerimeter''}]'
 experiment:
-  defined:
-    gaze_start_point_label: center_eye
-    gaze_travel_direction_point_label: nose
-    object_tracking_label_for_kinematics: center_eye
-    perimeter_border_normal_metric_magnitude: 0.02
-    manual_recording_resolution: [ 1920, 1080 ]
-    manual_fps: 30
-    data_import_kwargs:
-      init_from: parquet
-      midpoint_groups:
-        center_eye: [ "left_ear", "right_ear"]
-  required:
-    gaze_start_point_label: string
-    gaze_travel_direction_point_label: string
-    object_tracking_label_for_kinematics: string
   optional:
+    center: np.ndarray[name='center_0' type=short required=True]
     common_trial_keyword_arguments: object
-    data_format_label: string
+    data_format_label: string -> deeplabcut
     data_import_kwargs:
       future_scaling: boolean
       group_label: string
       int_id: integer
       label: string
       manual_fps: number
-      manual_recording_resolution: np.ndarray
+      manual_meters_per_pixel: '[{''type'': ''number''}, {''allOf'': [{''type'': ''dobble''}],
+        ''type'': "np.ndarray[name=''manual_meters_per_pixel_pydantic_numpy.ndarray.NDArray[pydantic_numpy.dtype.dobble]_0''
+        type=dobble required=True]"}]'
+      manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0'
+        type=dobble required=True]
+      metric_resolution: np.ndarray[name='metric_resolution_0' type=dobble required=True]
       midpoint_groups: object
-      min_likelihood: number
-      reverse_y_axis: boolean
+      min_likelihood: number -> 0.8
+      reverse_y_axis: boolean -> False
       save_root: string
-      timestamp:
-      - type: string
-        format: date
-      - type: string
-        format: date-time
+      timestamp: string
+      timestamp_index: array
       video_path: string
-      x_axis_crop_end_point: number
-      y_axis_crop_end_point: number
-    global_center_metric_length: number
-    global_object_field: bikipy.feature.physical_object.ObjectField
+      x_axis_crop_end_point: number -> 0.0
+      y_axis_crop_end_point: number -> 0.0
+    gaze_start_point_label: string
+    gaze_travel_direction_point_label: string
     group_label: string
     inspection_dir: string
     int_id: integer
     label: string
     manual_fps: number
-    manual_meters_per_pixel: number
-    manual_recording_resolution: np.ndarray
+    manual_meters_per_pixel: '[{''type'': ''number''}, {''allOf'': [{''type'': ''dobble''}],
+      ''type'': "np.ndarray[name=''manual_meters_per_pixel_pydantic_numpy.ndarray.NDArray[pydantic_numpy.dtype.dobble]_0''
+      type=dobble required=True]"}]'
+    manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0' type=dobble
+      required=True]
     manual_trial_ids: array
-    maximum_radians_inter_gaze_perimeter: number
-    maximum_seconds_distraction: number
-    metric_resolution: np.ndarray
-    minimum_seconds_attention: number
+    maximum_radians_inter_gaze_perimeter: number -> 1.0471975511965976
+    maximum_seconds_distraction: number -> 0.5
+    metric_resolution: np.ndarray[name='metric_resolution_0' type=dobble required=True]
+    minimum_seconds_attention: number -> 0.5
     perimeter_border_normal_metric_magnitude: number
-    rectangle_2d_bin: array
     save_root: string
     stage: string
-    timestamp:
-    - type: string
-      format: date
-    - type: string
-      format: date-time
+    timestamp: string
     trial_id_range_to_keyword_arguments: RangedDict
     trial_id_to_keyword_arguments: object
     trial_id_to_trial_class_name: object
     video_path: string
 immutable:
   metadata_filename: metadata.xlsx
-  kinematic_data_file_extension: .parquet
+  kinematic_data_file_extension: .h5
   experiment_class: ObjectsInUpdatingLocationsExperiment
   trial_classes/stages:
   - ObjectsInUpdatingLocationsTrainingTrial
   - ObjectsInUpdatingLocationsUpdateTrial
   - ObjectsInUpdatingLocationsTestTrial
-  Number of animals: 22
-  animals_have_plural_trial_sets: false
+  method_specific:
+    detected_animal_ids:
+    - '304'
+    - '161'
+    - '162'
+    - '384'
+    - '163'
+    - '119'
+    - '116'
+    - '137'
+    - '160'
+    - '117'
+    - '381'
+    - '120'
+    - '136'
+    - '382'
+    - '211'
+    - '305'
+    - '118'
+    - '206'
+    - '207'
+    - '383'
+    - '210'
+    - '121'
