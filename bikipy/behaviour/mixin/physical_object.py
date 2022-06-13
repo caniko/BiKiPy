@@ -3,8 +3,10 @@ from functools import cached_property
 from typing import ClassVar, Optional
 
 import numpy as np
+import pandas as pd
 from pydantic import BaseModel, DirectoryPath, Field
 
+from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.rectangle import (
     RectangleEnclosedExperiment,
     RectangleEnclosedTrial,
@@ -107,19 +109,22 @@ class PhysicalObjectTrialMixin(PhysicalObjectBaseMixin, ABC):
         return result
 
 
-class RectanglePhysicalObjectExperiment(RectangleEnclosedExperiment, PhysicalObjectExperimentMixin):
+class RectanglePhysicalObjectExperiment(BaseExperiment, PhysicalObjectExperimentMixin):
     pass
 
 
-class RectanglePhysicalObjectTrial(RectangleEnclosedTrial, PhysicalObjectTrialMixin, ABC):
+class RectanglePhysicalObjectTrial(BaseTrial, PhysicalObjectTrialMixin, ABC):
     @classmethod
     @property
     def feature_headers(cls) -> list[str]:
-        return ["SecondsObserving"]
+        return list(pd.MultiIndex.from_product([["SecondsObserving"], ["All", *cls.physical_object_labels]]))
 
     @property
     def feature_summary_row(self):
-        return [self.physical_object_set.seconds_observing]
+        return [
+            self.physical_object_set.seconds_observing,
+            *self.physical_object_set.object_specific_observation.values(),
+        ]
 
 
 class PhysicalObjectHabituationTrialMixin(BaseModel):

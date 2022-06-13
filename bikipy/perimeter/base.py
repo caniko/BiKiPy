@@ -18,6 +18,8 @@ logger = getLogger(__name__)
 
 
 class BasePerimeter(BikipyBaseHashable):
+    impenetrable: bool = False
+
     reference_point_coco_path: Optional[FilePath] = None
     reference_point_array: Optional[NDArrayInt16] = None
     inspect_image_path: Optional[FilePath] = None

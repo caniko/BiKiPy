@@ -10,7 +10,12 @@ from pydantic import DirectoryPath, validator
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BikipyBase
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
-from bikipy.feature.attention.main import perimeter_attention
+from bikipy.feature.attention.main import (
+    gaze_direction_filter,
+    perimeter_attention,
+    proximity_filter,
+    tolerance_filter,
+)
 from bikipy.perimeter.base import PerimeterSet
 from bikipy.perimeter.typing import AnyPerimeter
 
@@ -45,10 +50,6 @@ class PhysicalObject(BikipyBase):
     def distance_from_per_frame(self) -> NDArrayFp64:
         return np.linalg.norm(self._gaze_travel_direction_point - self.perimeter.centroid, axis=1)
 
-    @property
-    def observance_boolean_index(self) -> NDArrayBool:
-        return self._perimeter_attention_data[0]
-
     @cached_property
     def not_observing(self) -> NDArrayFp64:
         return ~self.observance_boolean_index
@@ -65,21 +66,43 @@ class PhysicalObject(BikipyBase):
     def filtered_raw_observation_ratio(self) -> float:
         return self.attention_filtered_seconds_observing / self.raw_seconds_observing
 
-    @property
-    def attention_proximity_boolean_index(self) -> NDArrayFp64:
-        return self._attention_analytics[0]
+    @cached_property
+    def attention_proximity_boolean_index(self) -> NDArrayBool:
+        return proximity_filter(
+            self.perimeter,
+            self._gaze_travel_direction_point,
+            self.reader[self.gaze_start_point_label],
+            self.perimeter_border_normal_pixel_magnitude,
+        )
 
-    @property
-    def attention_gaze_boolean_index(self) -> NDArrayFp64:
-        return self._attention_analytics[1]
+    @cached_property
+    def attention_gaze_boolean_index(self) -> NDArrayBool:
+        return gaze_direction_filter(
+            self.perimeter,
+            self._gaze_travel_direction_point,
+            self.reader[self.gaze_start_point_label],
+            self.maximum_radians_inter_gaze_perimeter,
+            # **gaze_filter_kwargs,         # TODO: See perimeter_attention
+        )[0]
 
-    @property
+    @cached_property
     def logical_location_and_gaze(self) -> NDArrayFp64:
-        return self._attention_analytics[2]
+        return self.attention_proximity_boolean_index & self.attention_gaze_boolean_index
 
-    @property
-    def semi_true_observations(self) -> NDArrayFp64:
-        return self.logical_location_and_gaze
+    @cached_property
+    def observance_boolean_index(self) -> NDArrayBool:
+        return (
+            np.zeros_like(self.logical_location_and_gaze, dtype=bool)
+            if np.sum(self.logical_location_and_gaze) < self.fps
+            else np.array(
+                tolerance_filter(
+                    self.logical_location_and_gaze,
+                    self.fps,
+                    self.minimum_seconds_attention,
+                    self.maximum_seconds_distraction,
+                )
+            )
+        )
 
     @property
     def temporal_resolution(self) -> int:
@@ -91,11 +114,6 @@ class PhysicalObject(BikipyBase):
 
     @cached_property
     def _perimeter_attention_data(self) -> tuple:
-        if self.inspection_dir:
-            if not (
-                perimeter_dir := self.inspection_dir / f"PhyObj_attention_perimeter-{self.perimeter.best_id}"
-            ).exists():
-                os.mkdir(perimeter_dir)
         return perimeter_attention(
             self.perimeter,
             self._gaze_travel_direction_point,
@@ -105,12 +123,7 @@ class PhysicalObject(BikipyBase):
             self.maximum_radians_inter_gaze_perimeter,
             self.minimum_seconds_attention,
             self.maximum_seconds_distraction,
-            inspect=perimeter_dir / f"id_{self.label}.jpg" if self.inspection_dir else None,
         )
-
-    @property
-    def _attention_analytics(self):
-        return self._perimeter_attention_data
 
 
 class PhysicalObjectSet(BikipyBase):
@@ -181,7 +194,7 @@ class PhysicalObjectSet(BikipyBase):
 
             overlapping_frames += np.sum(current_boolean_index & result)
 
-            result[current_boolean_index] = label
+            result[current_boolean_index] = int(label.split("_")[1])  # TODO: Revert
 
         if overlapping_frames:
             ratio = overlapping_frames / self.frames
@@ -200,11 +213,14 @@ class PhysicalObjectSet(BikipyBase):
 
     @cached_property
     def reduced_observation_sequence(self):
-        return np.array(reduce_repeating_sequences(self.observation_sequence, frame_tolerance=self.fps / 0.35))
+        return np.array(reduce_repeating_sequences(self.observation_sequence, frame_tolerance=round(self.fps / 0.35)))
 
     @cached_property
     def physical_object_id_to_observation_instances(self):
-        return {label: count for label, count in np.unique(self.reduced_observation_sequence, return_counts=True)}
+        return {
+            label: count
+            for label, count in np.dstack(np.unique(self.reduced_observation_sequence, return_counts=True))[0]
+        }
 
     @cached_property
     def sum_of_observation_instances(self):
@@ -231,7 +247,7 @@ class PhysicalObjectSet(BikipyBase):
 
     @cached_property
     def label_to_physical_object(self) -> dict:
-        return {physical_object.label: physical_object for label, physical_object in self.physical_objects}
+        return {physical_object.label: physical_object for physical_object in self.physical_objects}
 
     def plot(self, ax: Any = None):
         if not ax:

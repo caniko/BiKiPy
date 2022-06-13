@@ -4,6 +4,7 @@ from warnings import warn
 import numpy as np
 from numba import njit
 
+from bikipy import ENABLE_NUMBA
 from bikipy.core.typing import NDArrayFp64
 from bikipy.utils.math.vector import dot_prod_along_axis_1, unit_vector
 
@@ -109,8 +110,7 @@ def inner_angle(vector_set_1: NDArrayFp64, vector_set_2: NDArrayFp64):
     """Returns the angle in radians between given vectors"""
     # TODO: https://github.com/numba/numba/pull/7785
 
-    @njit(cache=True, nogil=True)
-    def inner_angle_numba():
+    def inner_angle_func():
         index_is_undefined = np.isnan(v1_magnitudes) | np.isnan(v2_magnitudes)
 
         result = []
@@ -135,7 +135,7 @@ def inner_angle(vector_set_1: NDArrayFp64, vector_set_2: NDArrayFp64):
     v1_magnitudes = np.linalg.norm(vector_set_1, axis=1)
     v2_magnitudes = np.linalg.norm(vector_set_2, axis=1)
 
-    return inner_angle_numba()
+    return njit(parallel=True, cache=True)(inner_angle_func)() if ENABLE_NUMBA else inner_angle_func()
 
 
 def compute_angles_from_vectors(

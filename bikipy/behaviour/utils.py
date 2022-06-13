@@ -26,7 +26,7 @@ def feature_2d_multi_indexer(feature: str, groups: Iterable[str]):
 @validate_arguments
 def reduce_repeating_sequences(
     repeating_sequence: NDArray,
-    frame_tolerance: Any,
+    frame_tolerance: int,
     connector_element: Any = None,
 ) -> list[Any, ...]:
     """

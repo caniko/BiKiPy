@@ -213,11 +213,8 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def trial_id_to_animal_id(self) -> dict:
-        result = {}
-        for animal_id, trial_objects in self.animal_id_to_trial_objects.items():
-            for trial_object in trial_objects:
-                result[trial_object.int_id] = animal_id
-        return dict(sorted(result.items()))
+        result = {trial_id: kwargs["animal_id"] for trial_id, kwargs in self.trial_id_to_keyword_arguments.items()}
+        return dict(sorted(result.items(), key=lambda item: item[1]))
 
     @cached_property
     def stage_index_to_trial_objects(self) -> dict:
@@ -497,7 +494,7 @@ class BaseTrial(Behaviour):
     @classmethod
     @property
     def feature_headers(cls):
-        return []
+        raise NotImplemented()
 
     @classmethod
     @property

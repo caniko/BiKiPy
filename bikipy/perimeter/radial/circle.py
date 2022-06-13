@@ -60,7 +60,7 @@ class CirclePerimeter(BasePerimeter):
         return plot_circle(self.radius, ax if ax else plt.subplots()[1])
 
     def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64, *args, **kwargs):
-        distance_of_point_from_center = np.linalg.norm(coordinates - self.center)
+        distance_of_point_from_center = np.linalg.norm(coordinates - self.center, axis=1)
         return np.abs(distance_of_point_from_center) <= self.radius
 
     def expand(self, additional: float):

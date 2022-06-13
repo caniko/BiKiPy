@@ -1,6 +1,7 @@
+import json
 from abc import ABC, abstractmethod
 from functools import cached_property, partial
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Hashable, Optional
 
 import numpy as np
 import pandas as pd
@@ -20,16 +21,28 @@ from bikipy.ingress.plugin.perimeter import (
     first_perimeter_set_from_makesense,
     generate_label_to_object_field,
 )
-from bikipy.ingress.utils.pydantic import extended_schema
+from bikipy.ingress.utils.io import get_project_settings_path
+from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
+from bikipy.perimeter.base import BasePerimeter
+from bikipy.perimeter.typing import AnyPerimeter
 from bikipy.reader import DeepLabCutReader
 
 
 class BaseIngress(BikipyBase, ABC):
     project_root_directory: DirectoryPath
 
-    @cached_property
+    _trial_id_to_keyword_arguments: dict[Hashable, dict[str, Any]] = {}
+    _common_trial_keyword_arguments: dict[str, Any] = {}
+    _trial_id_to_trial_class_name: dict[Hashable, str] = {}
+    _metadata_index_to_trial_id: dict = {}
+
+    _experiment_data_defined: bool = False
+
+    class Config:
+        underscore_attrs_are_private = True
+
     @abstractmethod
-    def _experiment_class_kwargs_metadata_index_to_trial_id_getter(self):
+    def _experiment_class_kwargs_and_metadata_index_to_trial_id_and_metadata_index_to_trial_id_define_function(self):
         ...
 
     @abstractmethod
@@ -52,18 +65,36 @@ class BaseIngress(BikipyBase, ABC):
             )
             raise ValueError(msg)
 
-    @property
+    @cached_property
     def experiment_class_kwargs(self):
-        result = self._experiment_class_kwargs_metadata_index_to_trial_id_getter[0]
-        if "common_trial_keyword_arguments" in result:
-            result["common_trial_keyword_arguments"].update(self.settings["experiment"]["defined"])
-        else:
-            result["common_trial_keyword_arguments"] = self.settings["experiment"]["defined"]
-        return result
+        return {
+            "trial_id_to_keyword_arguments": self.trial_id_to_keyword_arguments,
+            "common_trial_keyword_arguments": self.common_trial_keyword_arguments,
+            "trial_id_to_trial_class_name": self.trial_id_to_trial_class_name,
+        }
+
+    @property
+    def trial_id_to_keyword_arguments(self):
+        self._define_experiment_data_if_not_defined()
+        return self._trial_id_to_keyword_arguments
+
+    @property
+    def common_trial_keyword_arguments(self):
+        if not self._experiment_data_defined:
+            self._define_experiment_data()
+        return self._common_trial_keyword_arguments
+
+    @property
+    def trial_id_to_trial_class_name(self):
+        if not self._experiment_data_defined:
+            self._define_experiment_data()
+        return self._trial_id_to_trial_class_name
 
     @property
     def metadata_index_to_trial_id(self):
-        return self._experiment_class_kwargs_metadata_index_to_trial_id_getter[1]
+        if not self._experiment_data_defined:
+            self._define_experiment_data()
+        return self._metadata_index_to_trial_id
 
     @property
     def ingress_method(self):
@@ -89,22 +120,13 @@ class BaseIngress(BikipyBase, ABC):
 
     @cached_property
     def metadata(self) -> pd.DataFrame:
-        return pd.read_excel(
+        df = pd.read_excel(
             next(self.project_root_directory.glob("metadata.*")),
             index_col=0,
             header=(0, 1) if self.stageful_metadata else 0,
         )
-
-    @cached_property
-    def metadata_for_analysis_data_frame(self):
-        result = self.metadata.copy()
-        if self.stageful_metadata:
-            result = self.metadata.swaplevel(axis=1)
-
-        # Add Location_Category level to the column multi-index. We need to this for pd.concat
-        result.columns = pd.MultiIndex.from_product([result.columns, ["Location_Category"]])
-
-        return result
+        df.columns.names = ["Feature", "Location_Category"] if self.stageful_metadata else ["Feature"]
+        return df
 
     @property
     def settings_path(self) -> FilePath:
@@ -142,6 +164,24 @@ class BaseIngress(BikipyBase, ABC):
     def kinematic_data_file_extension(self):
         return self.settings["immutable"]["kinematic_data_file_extension"]
 
+    # Backend functions =================================
+
+    def _define_experiment_data_if_not_defined(self):
+        if not self._experiment_data_defined:
+            self._define_experiment_data()
+
+    def _define_experiment_data(self):
+        self._experiment_class_kwargs_and_metadata_index_to_trial_id_and_metadata_index_to_trial_id_define_function()
+
+        self._common_trial_keyword_arguments.update(self.settings["experiment"]["defined"])
+
+        self._experiment_data_defined = True
+
+    def register_perimeter_to_trial_id(self, trial_id: Hashable, label_to_perimeter: dict[Hashable, AnyPerimeter]):
+        for perimeter in label_to_perimeter.values():
+            perimeter.impenetrable = self.settings["perimeter"]["impenetrable"]
+        self._trial_id_to_keyword_arguments[trial_id].update(label_to_perimeter)
+
     def get_plugin_parameter(self, parameter_label: str, metadata_index_getter: Callable):
         parameter_indexes = PLUGIN_NAME_TO_KEYRING[parameter_label]
         return self.metadata_plugin_name_to_label_to_parameter[parameter_indexes["code_key"]][
@@ -156,13 +196,9 @@ class BaseIngress(BikipyBase, ABC):
 
     @cached_property
     def analysis_df(self) -> pd.DataFrame:
-        if not self.experiment.animal_id_indexed_feature_frame:
-            msg = "Something went wrong with the analysis"
-            raise RuntimeError(msg)
-
         np.seterr(all="ignore")
         return pd.concat(
-            (self.metadata_for_analysis_data_frame, self.experiment.animal_id_indexed_feature_frame),
+            (self.metadata, self.experiment.animal_id_indexed_feature_frame),
             axis=1,
             keys=["Stage"] if self.stageful_metadata else None,
             # Prepend experiment stage to column MultiIndex:
@@ -173,24 +209,28 @@ class BaseIngress(BikipyBase, ABC):
     @yaspin(Spinners.pong, text="Analyzing experiment data...")
     def save_analysis_data(self):
         self.analysis_df.to_parquet(self.result_directory_path / f"animal_id_indexed_result_data.parquet")
-        self.analysis_df.to_excel(self.result_directory_path / "animal_id_indexed_result_data")
+        self.analysis_df.to_excel(self.result_directory_path / "animal_id_indexed_result_data.xlsx")
 
 
 def init_settings(
+    project_root_directory: DirectoryPath,
     experiment_class: Any,
     method_kwargs: dict,
     kinematic_data_file_extension: str,
     method_immutable: Optional[dict] = None,
+    dry_run: bool = False,
 ):
-    experiment_schema = extended_schema(experiment_class.schema())
-    experiment_schema["optional"]["data_import_kwargs"] = extended_schema(
-        DeepLabCutReader.schema(), with_required=False
-    )["optional"]
-    return {
+    experiment_schema = extended_schema(experiment_class)
+    experiment_schema["optional"]["data_import_kwargs"] = extended_schema(DeepLabCutReader, with_required=False)[
+        "optional"
+    ]
+
+    settings = {
         **method_kwargs,
         "perimeter": {
             "label_prefix": None,
             "label_suffix": None,
+            "fields": extended_schema(BasePerimeter, with_optional=False),
         },
         "ingress": {
             "stageful_metadata": False,
@@ -199,6 +239,7 @@ def init_settings(
             "perimeter_definition_strategy": "metadata",
             "center_definition_strategy": None,
         },
+        "trial": extended_group_schema(experiment_class.trial_classes),
         "experiment": experiment_schema,
         "immutable": {
             "metadata_filename": "metadata.xlsx",
@@ -208,6 +249,15 @@ def init_settings(
             "method_specific": method_immutable,
         },
     }
+
+    if dry_run:
+        print(json.dumps(settings, indent=2))
+    else:
+        settings_path = get_project_settings_path(project_root_directory)
+        with open(settings_path, "w") as out_file:
+            yaml.safe_dump(settings, out_file, sort_keys=False)
+
+    return settings
 
 
 @validate_arguments
@@ -222,4 +272,7 @@ def auto_define_ingress_object(project_root_directory: DirectoryPath):
 
 
 def analyze_and_save(project_root_directory: DirectoryPath):
-    auto_define_ingress_object(project_root_directory).save_analysis_data()
+    ingress = auto_define_ingress_object(project_root_directory)
+    ingress.experiment.animal_id_indexed_experiment_specific_feature_frame.to_excel(
+        ingress.result_directory_path / "features.xlsx"
+    )

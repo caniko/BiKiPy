@@ -88,7 +88,7 @@ def total_displacement_median_speed_acceleration(
 def frozen_frames(
     fps: float,
     rigid_body_node_displacements: Iterable[NDArrayFp64],
-    second_threshold: float = 1.0,
+    second_threshold: float = 3.0,
     metric_displacement_threshold: float = 0.005,
 ) -> NDArrayFp64:
     """
@@ -177,30 +177,36 @@ class Motion(BikipyBase):
     fps: float
 
     @cached_property
-    def metric_displacement_by_frame(self):
+    def int_fps(self) -> int:
+        return round(self.fps)
+
+    @cached_property
+    def meters_per_frame(self):
         return displacement_by_frame(self.coordinate_sequence * self.meters_per_pixel)
 
     @cached_property
-    def total_displacement(self):
-        return np.nansum(self.metric_displacement_by_frame)
+    def meters_per_second(self):
+        result = []
+        i = self.int_fps
+        while i + self.int_fps < self.meters_per_frame.size:
+            result.append(np.sum(self.meters_per_frame[i : (i := i + self.int_fps)]))
+        return np.array(result)
 
     @cached_property
-    def speed(self):
-        if not self.total_displacement:
-            return np.nan
-        return np_abs_diff(self.metric_displacement_by_frame) * self.fps
+    def total_displacement(self):
+        return np.nansum(self.meters_per_frame)
 
     @cached_property
     def median_speed(self):
         if not self.total_displacement:
             return np.nan
-        return np.nanmedian(self.speed)
+        return np.nanmedian(self.meters_per_second)
 
     @cached_property
     def frozen_boolean_index(self) -> NDArrayBool:
         if not self.total_displacement:
             return np.nan
-        return frozen_frames(self.fps, (self.metric_displacement_by_frame,))
+        return frozen_frames(self.fps, (self.meters_per_frame,))
 
     @cached_property
     def freezing_time(self):
@@ -212,7 +218,7 @@ class Motion(BikipyBase):
     def acceleration(self):
         if not self.total_displacement:
             return np.nan
-        return np_abs_diff(self.speed)
+        return np_abs_diff(self.meters_per_second)
 
     @cached_property
     def median_acceleration(self):
@@ -231,9 +237,9 @@ class Motion(BikipyBase):
 
 
 def motion_multi_indexer(category: Any, level: int):
-    return generic_multi_indexer(
-        "Displacement", "Median_speed", "Median_speed", "Median_acceleration", "Freezing time"
-    )(category, level)
+    return generic_multi_indexer("Displacement", "Median_speed", "Median_acceleration", "Freezing time")(
+        category, level
+    )
 
 
 def get_combined_features_from_merged_motion_island_data(

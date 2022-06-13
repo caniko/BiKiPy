@@ -18,8 +18,7 @@ logger = getLogger(__name__)
 
 
 class SequenceIngress(BaseIngress):
-    @cached_property
-    def _experiment_class_kwargs_metadata_index_to_trial_id_getter(self):
+    def _experiment_class_kwargs_and_metadata_index_to_trial_id_and_metadata_index_to_trial_id_define_function(self):
         def get_plugin_index_from_stageful_metadata(feature_sheet_header: str):
             feature_column = animal_metadata[feature_sheet_header]
 
@@ -30,7 +29,6 @@ class SequenceIngress(BaseIngress):
                 return feature_column[0]
             return feature_column[sequence_index]
 
-        trial_id_to_trial_class_name, trial_id_to_keyword_arguments, metadata_index_to_trial_id = {}, {}, {}
         for animal_dir in self.dataset_directory_path.iterdir():
             animal_id = int(animal_dir.stem)
 
@@ -48,10 +46,10 @@ class SequenceIngress(BaseIngress):
                 trial_id = _define_trial_id(animal_id, sequence_index)
                 trial_ids.append(trial_id)
 
-                trial_id_to_trial_class_name[trial_id] = self.settings["sequence_index_to_trial_class_name"][
+                self._trial_id_to_trial_class_name[trial_id] = self.settings["sequence_index_to_trial_class_name"][
                     sequence_index
                 ]
-                trial_id_to_keyword_arguments[trial_id] = {
+                self._trial_id_to_keyword_arguments[trial_id] = {
                     # "label": trial_id,    Already in BaseExperiment
                     "animal_id": animal_id,
                     "stage": sequence_index,
@@ -62,9 +60,9 @@ class SequenceIngress(BaseIngress):
                     if self.settings["ingress"][keyring["ingress_key"]] != "metadata":
                         continue
 
-                    trial_id_to_keyword_arguments[trial_id][keyring["bikipy_trial_key"]] = self.get_plugin_parameter(
-                        keyring["code_key"], get_plugin_index_from_stageful_metadata
-                    )
+                    self._trial_id_to_keyword_arguments[trial_id][
+                        keyring["bikipy_trial_key"]
+                    ] = self.get_plugin_parameter(keyring["code_key"], get_plugin_index_from_stageful_metadata)
 
                 if self.settings["ingress"]["perimeter_definition_strategy"] == "trialwise":
                     perimeter_sets = []
@@ -79,14 +77,9 @@ class SequenceIngress(BaseIngress):
                         msg = f"No perimeters were found for Animal #{animal_id} for sequence {sequence_index}"
                         raise ValueError(msg)
 
-                    trial_id_to_keyword_arguments[trial_id].update(perimeter_set.label_to_perimeter)
+                    self.register_perimeter_to_trial_id(trial_id, perimeter_set.label_to_perimeter)
 
-            metadata_index_to_trial_id[animal_id] = tuple(trial_ids)
-
-        return {
-            "trial_id_to_trial_class_name": trial_id_to_trial_class_name,
-            "trial_id_to_keyword_arguments": trial_id_to_keyword_arguments,
-        }, metadata_index_to_trial_id
+            self._metadata_index_to_trial_id[animal_id] = tuple(trial_ids)
 
     def verify_project_structure(self):
         animal_ids = set()
@@ -142,21 +135,17 @@ def sequence_generate_configuration(
         },
     }
     method_immutable = {
-        "detected_animal_ids": _animal_ids,
+        "detected_animal_ids": list(_animal_ids(project_root_directory)),
     }
 
-    settings = init_settings(
-        experiment_class, method_settings, project_root_directory, kinematic_data_file_extension, method_immutable
+    return init_settings(
+        project_root_directory,
+        experiment_class,
+        method_settings,
+        kinematic_data_file_extension,
+        method_immutable,
+        dry_run,
     )
-
-    if dry_run:
-        print(json.dumps(settings, indent=2))
-    else:
-        settings_path = get_project_settings_path(project_root_directory)
-        with open(settings_path, "w") as out_file:
-            yaml.safe_dump(settings, out_file, sort_keys=False)
-
-    return settings
 
 
 def _animal_ids(project_root_directory: DirectoryPath):

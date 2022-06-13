@@ -7,7 +7,8 @@ import numpy as np
 from numba import njit
 from seaborn import set_theme
 
-from bikipy.core.typing import NDArrayFp64, NDArrayBool
+from bikipy import ENABLE_NUMBA
+from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.utils.math.vector import dot_prod_along_axis_1, orthogonal_unit_vector
 from bikipy.utils.misc import generic_inspection_finalization
 
@@ -70,13 +71,12 @@ def inaccurate_points_in_parallelogram(
 
 
 def parallel_point_in_polygon(points: NDArrayFp64, polygon: NDArrayFp64) -> NDArrayBool:
-    return _is_inside_sm_parallel(
+    return is_inside_sm_parallel(
         np.asarray(points, dtype=np.float64),
         np.ascontiguousarray(polygon, dtype=np.float64),
     )
 
 
-@njit(cache=True, nogil=True)
 def _is_inside_sm(point: NDArrayFp64, polygon: NDArrayFp64):
     length = len(polygon) - 1
     dy2 = point[1] - polygon[0][1]
@@ -114,10 +114,23 @@ def _is_inside_sm(point: NDArrayFp64, polygon: NDArrayFp64):
     return intersections & 1
 
 
-@njit(parallel=True, cache=True)
-def _is_inside_sm_parallel(points: NDArrayFp64, polygon: NDArrayFp64) -> NDArrayBool:
-    ln = len(points)
-    result = np.empty(ln, dtype=numba.boolean)
-    for i in numba.prange(ln):
-        result[i] = _is_inside_sm(points[i], polygon)
-    return result
+if ENABLE_NUMBA:
+    is_inside_sm = njit(parallel=True, cache=True)(_is_inside_sm)
+
+    @njit(parallel=True, cache=True)
+    def is_inside_sm_parallel(points: NDArrayFp64, polygon: NDArrayFp64) -> NDArrayBool:
+        ln = len(points)
+        result = np.empty(ln, dtype=numba.boolean)
+        for i in numba.prange(ln):
+            result[i] = is_inside_sm(points[i], polygon)
+        return result
+
+else:
+    is_inside_sm = _is_inside_sm
+
+    def is_inside_sm_parallel(points: NDArrayFp64, polygon: NDArrayFp64) -> NDArrayBool:
+        ln = len(points)
+        result = np.empty(ln, dtype=bool)
+        for i in range(ln):
+            result[i] = is_inside_sm(points[i], polygon)
+        return result

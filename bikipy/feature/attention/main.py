@@ -2,24 +2,25 @@
 2D kinematic filters, 3D not supported.
 """
 from logging import getLogger
-from typing import Any, Sequence, Union
+from typing import Any, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sb
-from pydantic import DirectoryPath
+from pydantic import DirectoryPath, validate_arguments
 
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.feature.angle import inner_angle
-from bikipy.perimeter.polygon.base import PolygonPerimeter
-from bikipy.utils.misc import generic_inspection_finalization, seek_next_file_index
+from bikipy.perimeter.typing import AnyPerimeter
+from bikipy.utils.misc import generic_inspection_finalization
 
 SCATTER_ALPHA = 0.55
 logger = getLogger(__name__)
 
 
+@validate_arguments
 def proximity_filter(
-    perimeter: PolygonPerimeter,
+    perimeter: AnyPerimeter,
     inside_perimeter_border: NDArrayFp64,
     outside_perimeter: NDArrayFp64,
     perimeter_border_normal_pixel_magnitude: float,
@@ -36,7 +37,7 @@ def proximity_filter(
     :param perimeter_border_normal_pixel_magnitude: The magnitude of the normal between the perimeter and the perimeter given in pixels
     :param inspect: If True, generate and view an analytics of the resulting filter
     :param inspection_ax: matplotlib Axes that the inspection plots will (optionally) be saved in
-    :type perimeter: PolygonPerimeter
+    :type perimeter: AnyPerimeter
     :type inside_perimeter_border: NDArrayFp64
     :type outside_perimeter: NDArrayFp64
     :type perimeter_border_normal_pixel_magnitude: float
@@ -46,17 +47,17 @@ def proximity_filter(
     :rtype: NDArrayFp64
     """
     # Remove inside_perimeter_border points that aren't inside the perimeter
-    inside_perimeter_border = np.asarray(inside_perimeter_border)
-    outside_perimeter = np.asarray(outside_perimeter)
-
     perimeter_border = perimeter.expand(perimeter_border_normal_pixel_magnitude)
 
-    inside_perimeter_border_boolean_index = perimeter_border.coordinate_confinement_boolean_index(
-        coordinates=inside_perimeter_border
-    )
-    outside_perimeter_boolean_index = ~perimeter.coordinate_confinement_boolean_index(outside_perimeter)
+    if perimeter.impenetrable:
+        result = perimeter_border.coordinate_confinement_boolean_index(coordinates=inside_perimeter_border)
+    else:
+        inside_perimeter_border_boolean_index = perimeter_border.coordinate_confinement_boolean_index(
+            coordinates=inside_perimeter_border
+        )
+        outside_perimeter_boolean_index = ~perimeter.coordinate_confinement_boolean_index(outside_perimeter)
 
-    result = inside_perimeter_border_boolean_index & outside_perimeter_boolean_index
+        result = inside_perimeter_border_boolean_index & outside_perimeter_boolean_index
 
     if inspection_ax is not None or inspect:
         if inspection_ax is None:
@@ -88,14 +89,11 @@ def proximity_filter(
         if not inspection_ax:
             plt.show()
 
-    return result, (
-        inside_perimeter_border_boolean_index,
-        outside_perimeter_boolean_index,
-    )
+    return result
 
 
 def gaze_direction_filter(
-    perimeter: PolygonPerimeter,
+    perimeter: AnyPerimeter,
     gaze_travel_direction_point_label: str,
     gaze_start_point_label: str,
     max_radians: float,
@@ -142,12 +140,13 @@ def gaze_direction_filter(
     return result, closest_corner_vectors
 
 
+@validate_arguments
 def tolerance_filter(
     boolean_index: NDArrayBool,
     fps: float,
     minimum_seconds_attention: float,
     maximum_seconds_distraction: float = 0.5,
-) -> NDArrayFp64:
+) -> NDArrayBool:
     """
     Filters boolean_index with respect to attention. The filter tolerates distraction, and requires
     minimum_seconds_attention to be fulfilled before accepting the sequence as attention.
@@ -224,8 +223,9 @@ def tolerance_filter(
     return attention_boolean_index
 
 
+@validate_arguments
 def perimeter_attention(
-    perimeter: PolygonPerimeter,
+    perimeter: AnyPerimeter,
     eye_center: NDArrayFp64,
     nose: NDArrayFp64,
     fps: float,
@@ -239,7 +239,7 @@ def perimeter_attention(
 
     Parameters
     ----------
-    perimeter: PolygonPerimeter
+    perimeter: AnyPerimeter
     eye_center: Sequence
         Points across time defining the position between the eyes of the animal
     nose: Sequence
@@ -259,10 +259,6 @@ def perimeter_attention(
     -------
 
     """
-    eye_center, nose = np.asarray(eye_center), np.asarray(nose)
-    fps = float(fps)
-    maximum_radians_inter_gaze_perimeter = float(maximum_radians_inter_gaze_perimeter)
-
     if inspect:
         if perimeter.inspect_image is None:
             fig, axes = plt.subplots(nrows=2, ncols=2)
@@ -278,10 +274,7 @@ def perimeter_attention(
     else:
         loc_filter_kwargs, gaze_filter_kwargs = {}, {}
 
-    proximity_filtered, (
-        proximity_inside_perimeter_border_boolean_index,
-        proximity_outside_perimeter_boolean_index,
-    ) = proximity_filter(
+    proximity_filtered = proximity_filter(
         perimeter,
         nose,
         eye_center,
@@ -348,8 +341,6 @@ def perimeter_attention(
         ),
         (
             # Arrays for making video
-            proximity_inside_perimeter_border_boolean_index,
-            proximity_outside_perimeter_boolean_index,
             gaze_closest_vectors,
         ),
     )
