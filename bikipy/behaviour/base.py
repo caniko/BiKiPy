@@ -457,11 +457,7 @@ class BaseExperiment(Behaviour):
                 self.animal_id_to_trial_objects.items(), desc="Computing motion features"
             ):
                 data_dict[animal_id] = chain_lists_to_tuple(
-                    (
-                        trial_object.motion_features
-                        for trial_object in trial_objects
-                        if trial_object.trial_has_defined_features
-                    )
+                    (trial_object.motion_features for trial_object in trial_objects)
                 )
                 break
 
