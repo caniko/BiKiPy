@@ -17,7 +17,7 @@ experiment:
     gaze_travel_direction_point_label: nose
     object_tracking_label_for_kinematics: center
     manual_fps: 30
-    data_import_kwargs:
+    data_reader_kwargs:
       init_from: h5
       midpoint_groups:
         center_eye: [ "left_ear", "right_ear" ]
@@ -28,7 +28,7 @@ experiment:
   optional:
     common_trial_keyword_arguments: object
     data_format_label: string
-    data_import_kwargs:
+    data_reader_kwargs:
       future_scaling: boolean
       group_label: string
       int_id: integer

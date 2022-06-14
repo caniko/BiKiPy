@@ -295,7 +295,7 @@ class BasePerimeter(BikipyBaseHashable):
 
         ax.set_title(self.best_id)
 
-        return self.plot_perimeter(**perimeter_plot_kwargs, ax=ax)
+        return self.plot_perimeter(**perimeter_plot_kwargs if perimeter_plot_kwargs else {}, ax=ax)
 
     @staticmethod
     def perimeter_set_from_image_name_to_perimeters(image_name_to_perimeters: "dict[str, AnyPerimeter]"):

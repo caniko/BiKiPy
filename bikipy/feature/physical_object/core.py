@@ -90,16 +90,12 @@ class PhysicalObject(BikipyBase):
 
     @cached_property
     def observance_boolean_index(self) -> NDArrayBool:
-        return (
-            np.zeros_like(self.logical_location_and_gaze, dtype=bool)
-            if np.sum(self.logical_location_and_gaze) < self.fps
-            else np.array(
-                tolerance_filter(
-                    self.logical_location_and_gaze,
-                    self.fps,
-                    self.minimum_seconds_attention,
-                    self.maximum_seconds_distraction,
-                )
+        return np.array(
+            tolerance_filter(
+                self.logical_location_and_gaze,
+                self.fps,
+                self.minimum_seconds_attention,
+                self.maximum_seconds_distraction,
             )
         )
 
@@ -156,7 +152,7 @@ class PhysicalObjectSet(BikipyBase):
         return len(self._first_object)
 
     @property
-    def fps(self):
+    def fps(self) -> float:
         return self._first_object.fps
 
     @cached_property

@@ -24,7 +24,7 @@ class VideoMetadataMixin(BikipyBase):
             "manual_meter_per_pixel": self.meters_per_pixel if self.video_metadata_can_be_defined else None,
             "manual_fps": self.fps,
             "manual_recording_resolution": self.recording_resolution,
-            "metric_resolution": self.metric_resolution
+            "metric_resolution": self.metric_resolution,
         }
 
     @cached_property

@@ -135,7 +135,7 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
             minimum_seconds_attention=2.0,
             maximum_seconds_distraction=0.5,
             # inspection_dir=inspection_dir,
-            data_import_kwargs={
+            data_reader_kwargs={
                 "init_from": "parquet",
                 "midpoint_groups": {
                     "center_eye": ("left_ear", "right_ear"),

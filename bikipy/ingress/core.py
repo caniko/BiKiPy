@@ -234,13 +234,14 @@ class BaseIngress(BikipyBase, ABC):
         perimeter_set.apply_label_prefix_suffix(
             self.settings["perimeter"]["label_prefix"], self.settings["perimeter"]["label_suffix"]
         )
+        for perimeter in perimeter_set.all_perimeters:
+            for field, value in self.settings["perimeter"]["fields"]["defined"].items():
+                if value is not None:
+                    perimeter.__setattr__(field, value)
+
         return perimeter_set
 
     def register_perimeter_to_trial_id(self, trial_id: Hashable, label_to_perimeter: dict[str, AnyPerimeter]):
-        for perimeter in label_to_perimeter.values():
-            for field, value in self.settings["perimeter"]["fields"]["defined"].items():
-                if not np.any(value):
-                    perimeter.__setattr__(field, value)
         self._trial_id_to_keyword_arguments[trial_id].update(label_to_perimeter)
 
     def get_plugin_parameter(self, parameter_label: str, metadata_index_getter: Callable):
@@ -286,7 +287,7 @@ def init_settings(
     dry_run: bool = False,
 ):
     experiment_schema = extended_schema(experiment_class)
-    experiment_schema["optional"]["data_import_kwargs"] = extended_schema(DeepLabCutReader, with_required=False)[
+    experiment_schema["optional"]["data_reader_kwargs"] = extended_schema(DeepLabCutReader, with_required=False)[
         "optional"
     ]
 

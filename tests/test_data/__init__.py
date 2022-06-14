@@ -7,7 +7,7 @@ EXPERIMENT_KWARGS = {
     "gaze_travel_direction_point_label": "nose",
     "object_tracking_label_for_kinematics": "center_eye",
     "perimeter_border_normal_metric_magnitude": 0.02,
-    "data_import_kwargs": {"init_from": "parquet", "midpoint_groups": {"center_eye": ["left_ear", "right_ear"]}},
+    "data_reader_kwargs": {"init_from": "parquet", "midpoint_groups": {"center_eye": ["left_ear", "right_ear"]}},
     "trial_id_to_keyword_arguments": {
         1: {
             "coordinate_data_path": path_to_this_directory / "test_tracking.csv",

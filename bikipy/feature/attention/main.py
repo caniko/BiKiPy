@@ -50,7 +50,10 @@ def proximity_filter(
     perimeter_border = perimeter.expand(perimeter_border_normal_pixel_magnitude)
 
     if perimeter.impenetrable:
-        result = perimeter_border.coordinate_confinement_boolean_index(coordinates=inside_perimeter_border)
+        inside_perimeter_border_boolean_index = perimeter_border.coordinate_confinement_boolean_index(
+            coordinates=inside_perimeter_border
+        )
+        result = inside_perimeter_border_boolean_index
     else:
         inside_perimeter_border_boolean_index = perimeter_border.coordinate_confinement_boolean_index(
             coordinates=inside_perimeter_border
@@ -72,16 +75,29 @@ def proximity_filter(
         perimeter.plot(ax=ax)
 
         not_result = ~result
-        ax.scatter(
-            *inside_perimeter_border[inside_perimeter_border_boolean_index & not_result].T,
-            alpha=SCATTER_ALPHA,
-            label="Nose valid, invalid outside_perimeter",
-        )
-        ax.scatter(
-            *inside_perimeter_border[outside_perimeter_boolean_index & not_result].T,
-            alpha=SCATTER_ALPHA,
-            label="Center of mass valid, invalid inside_perimeter_border",
-        )
+        if perimeter.impenetrable:
+            ax.scatter(
+                *inside_perimeter_border[result].T,
+                alpha=SCATTER_ALPHA,
+                label="Valid",
+            )
+            ax.scatter(
+                *inside_perimeter_border[not_result].T,
+                alpha=SCATTER_ALPHA,
+                label="Invalid",
+            )
+        else:
+            ax.scatter(
+                *inside_perimeter_border[inside_perimeter_border_boolean_index & not_result].T,
+                alpha=SCATTER_ALPHA,
+                label="Nose valid, invalid outside_perimeter",
+            )
+            ax.scatter(
+                *inside_perimeter_border[outside_perimeter_boolean_index & not_result].T,
+                alpha=SCATTER_ALPHA,
+                label="Center of mass valid, invalid inside_perimeter_border",
+            )
+
         ax.scatter(*inside_perimeter_border[result].T, alpha=SCATTER_ALPHA, label="Valid")
 
         ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=3)
@@ -97,7 +113,7 @@ def gaze_direction_filter(
     gaze_travel_direction_point_label: str,
     gaze_start_point_label: str,
     max_radians: float,
-    inspect: bool = False,
+    inspect: bool = True,
     inspection_ax: Any = None,
 ):
     gaze_travel_direction_point_label, gaze_start_point_label = np.asarray(
@@ -134,7 +150,7 @@ def gaze_direction_filter(
 
         ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=2)
 
-        if not ax:
+        if not inspection_ax:
             plt.show()
 
     return result, closest_corner_vectors
@@ -163,9 +179,8 @@ def tolerance_filter(
     :rtype NDArrayFp64
     """
 
-    boolean_index = np.asarray(boolean_index)
-
-    fps = float(fps)
+    if np.sum(boolean_index) < fps:
+        return np.zeros_like(boolean_index, dtype=bool)
 
     distraction_tolerance = round(maximum_seconds_distraction * fps)
     minimum_frames_attention = round(minimum_seconds_attention * fps)

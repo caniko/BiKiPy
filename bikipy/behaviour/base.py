@@ -31,9 +31,6 @@ LABEL_to_DATA_READER = {"deeplabcut": DeepLabCutReader}
 
 
 class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
-    center: Optional[NDArrayInt16] = None
-
-    data_import_kwargs: Optional[dict] = None
     data_format_label: Literal["deeplabcut"] = "deeplabcut"
 
     _live: ClassVar[bool] = False
@@ -49,6 +46,7 @@ class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
 
 class BaseTrial(Behaviour):
     coordinate_data_path: FilePath = Field(..., description="Path to file storing coordinate data")
+    data_reader_kwargs: dict
     animal_id: int = Field(..., description="The ID of the animal in the trial")
     object_tracking_label_for_kinematics: Optional[str] = Field(
         ..., description="Label of the node that will be used to track general animal movement"
@@ -56,6 +54,7 @@ class BaseTrial(Behaviour):
     rigid_nodes_freezing: Optional[Sequence[str | int]] = Field(
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
     )
+    center: Optional[NDArrayInt16] = None
     stage: Optional[str] = Field(description="The semantic stage of the experiment")
     inspection_dir: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
     inspect_image: Optional[FilePath] = Field(
@@ -74,11 +73,6 @@ class BaseTrial(Behaviour):
     second_tolerance: ClassVar[float] = 0.15
 
     trial_has_video_space_for_analysis: ClassVar[bool] = False
-
-    @classmethod
-    @property
-    def feature_headers(cls):
-        raise NotImplemented()
 
     @classmethod
     @property
@@ -210,7 +204,7 @@ class BaseTrial(Behaviour):
 
     @cached_property
     def _reader_init_kwargs(self):
-        return self.data_import_kwargs
+        return self.data_reader_kwargs
 
     @cached_property
     def _int_id_to_perimeter(self) -> dict:
@@ -332,10 +326,7 @@ class BaseExperiment(Behaviour):
         """
         Function useful for customizing initiation parameters for trial objects
         """
-        result = {
-            **self.video_metadata,
-            "data_format_label": self.data_format_label
-        }
+        result = {**self.video_metadata, "data_format_label": self.data_format_label}
 
         if self.common_trial_keyword_arguments:
             result.update(self.common_trial_keyword_arguments)

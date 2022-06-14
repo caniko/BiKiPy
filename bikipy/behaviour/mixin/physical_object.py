@@ -32,6 +32,16 @@ class PhysicalObjectTrialMixin(BikipyBase, ABC):
     def all_physical_object_perimeters(self) -> tuple[AnyPerimeter, ...]:
         ...
 
+    @cached_property
+    @abstractmethod
+    def video_metadata_can_be_defined(self) -> bool:
+        ...
+
+    @property
+    @abstractmethod
+    def fps(self) -> float:
+        ...
+
     @classmethod
     @property
     def number_of_physical_objects(cls):
@@ -52,6 +62,7 @@ class PhysicalObjectTrialMixin(BikipyBase, ABC):
     @cached_property
     def _physical_object_keyword_arguments(self):
         result = {
+            "reader": self.reader,
             "gaze_travel_direction_point_label": self.gaze_travel_direction_point_label,
             "gaze_start_point_label": self.gaze_start_point_label,
             "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
@@ -80,12 +91,6 @@ class PhysicalObjectTrialMixin(BikipyBase, ABC):
     def perimeter_border_normal_pixel_magnitude(self):
         return self.perimeter_border_normal_metric_magnitude / self.meters_per_pixel
 
-    @cached_property
-    def _physical_object_keyword_arguments(self):
-        result = super()._physical_object_keyword_arguments
-        result["reader"] = self.reader
-        return result
-
 
 class PhysicalObjectHabituationTrialMixin(BaseModel):
     """The purpose of this stage is to generate reference data for proceeding experiments with objects."""
@@ -94,5 +99,5 @@ class PhysicalObjectHabituationTrialMixin(BaseModel):
     trial_label: ClassVar[str] = "Habituation"
 
 
-class RectangleEnclosedPhysicalObjectTrial(PhysicalObjectTrialMixin, BaseTrial, ABC):
+class RectangleEnclosedPhysicalObjectTrial(BaseTrial, PhysicalObjectTrialMixin, ABC):
     pass
