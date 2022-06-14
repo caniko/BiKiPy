@@ -6,7 +6,7 @@ from numba import njit
 
 from bikipy import ENABLE_NUMBA
 from bikipy.core.typing import NDArrayFp64
-from bikipy.utils.math.vector import dot_prod_along_axis_1, unit_vector
+from bikipy.utils.math.vector import dot_prod_along_axis_1_1d, unit_vector
 
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}
 
@@ -77,7 +77,7 @@ def clockwise_angel_2d(
         ]
     )
 
-    dot_products = dot_prod_along_axis_1(end_vector, start_vector)
+    dot_products = dot_prod_along_axis_1_1d(end_vector, start_vector)
     angles = np.arctan2(np.abs(determinants), dot_products)
     angles[determinants < 0.0] = 2.0 * np.pi - angles[determinants < 0.0]
     return angles
@@ -101,7 +101,7 @@ def alternative_inner_angle(a_vector: NDArrayFp64, b_vector: NDArrayFp64) -> NDA
     b_unit_vector = unit_vector(b_vector, force_1_dim=True)
 
     return np.arccos(
-        dot_prod_along_axis_1(a_unit_vector, b_unit_vector)
+        dot_prod_along_axis_1_1d(a_unit_vector, b_unit_vector)
         / (np.linalg.norm(a_unit_vector, axis=1) * np.linalg.norm(b_unit_vector, axis=1))
     )
 

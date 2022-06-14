@@ -116,9 +116,9 @@ class RectangleEnclosedTrial(BaseTrial):
 
     @cached_property
     def _quadrant_inspection_dir(self):
-        return self.inspection_dir / QUADRANT_INSPECTION_DIR_NAME
+        return self.inspect_directory / QUADRANT_INSPECTION_DIR_NAME
 
-    @validator("inspection_dir")
+    @validator("inspect_directory")
     def make_categorical_inspection_sub_dirs(cls, value):
         if value and not (quadrant_dir := value / QUADRANT_INSPECTION_DIR_NAME).exists():
             os.mkdir(quadrant_dir)

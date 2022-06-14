@@ -9,7 +9,7 @@ from seaborn import set_theme
 
 from bikipy import ENABLE_NUMBA
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
-from bikipy.utils.math.vector import dot_prod_along_axis_1, orthogonal_unit_vector
+from bikipy.utils.math.vector import dot_prod_along_axis_1_1d, orthogonal_unit_vector
 from bikipy.utils.misc import generic_inspection_finalization
 
 
@@ -41,12 +41,12 @@ def inaccurate_points_in_parallelogram(
 
     # oca = Orthogonal corner-a vector
     normalised_oca = np.sign(np.dot(orthogonal_ca_vector, cb_vector)) * orthogonal_ca_vector
-    oca_cc_dot = dot_prod_along_axis_1(normalised_oca, c_coord_vectors)
+    oca_cc_dot = dot_prod_along_axis_1_1d(normalised_oca, c_coord_vectors)
     orthogonal_oca_bool = np.logical_and(0 <= oca_cc_dot, oca_cc_dot <= np.dot(normalised_oca, cb_vector))
 
     # oca = Orthogonal corner-b vector
     normalised_ocb = np.sign(np.dot(orthogonal_cb_vector, ca_vector)) * orthogonal_cb_vector
-    ocb_cc_dot = dot_prod_along_axis_1(normalised_ocb, c_coord_vectors)
+    ocb_cc_dot = dot_prod_along_axis_1_1d(normalised_ocb, c_coord_vectors)
     orthogonal_ocb_bool = np.logical_and(0 <= ocb_cc_dot, ocb_cc_dot <= np.dot(normalised_ocb, ca_vector))
 
     boolean_index = orthogonal_oca_bool & orthogonal_ocb_bool

@@ -34,10 +34,10 @@ RESULT_DIR = WORKING_DIR / "results"
 if not RESULT_DIR.exists():
     os.mkdir(RESULT_DIR)
 
-inspection_dir = WORKING_DIR / "inspect"
-if inspection_dir.exists():
-    rmtree(inspection_dir)
-os.mkdir(inspection_dir)
+inspect_directory = WORKING_DIR / "inspect"
+if inspect_directory.exists():
+    rmtree(inspect_directory)
+os.mkdir(inspect_directory)
 
 EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
@@ -134,7 +134,7 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
             maximum_radians_inter_gaze_perimeter=np.deg2rad(75.0),
             minimum_seconds_attention=2.0,
             maximum_seconds_distraction=0.5,
-            # inspection_dir=inspection_dir,
+            # inspect_directory=inspect_directory,
             data_reader_kwargs={
                 "init_from": "parquet",
                 "midpoint_groups": {

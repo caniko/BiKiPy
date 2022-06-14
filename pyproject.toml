@@ -32,6 +32,8 @@ numba = "*"
 
 matplotlib = "^3.2.2"
 seaborn = "*"
+PySide6 = "*"
+
 ffmpeg-python = "^0.2.0"
 opencv-python-headless = "^4.5"
 

@@ -15,10 +15,10 @@ FILE_EXTENSION = "parquet"
 MOTION_PARAMETERS = ("Displacement", "Median_speed", "Median_acceleration")
 
 PARAMETERS_TO_COMPARE = (
-    ("Training", "Seconds observing", ""),
-    ("Novelty", "Discrimination index", ""),
-    ("Novelty", "Novelty preference", ""),
-    ("Novelty", "Object bias score", ""),
+    ("Training", "SecondsObserving", ""),
+    ("Novelty", "DiscriminationIndex", ""),
+    ("Novelty", "NoveltyPreference", ""),
+    ("Novelty", "ObjectBiasScore", ""),
 )
 meta_dfs = (
     pd.read_excel(DATA_DIR / "nort_round_1.xlsx", index_col="Test", sheet_name="NORT_02.06.2020"),

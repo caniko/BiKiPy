@@ -3,7 +3,7 @@ from collections import abc
 from concurrent.futures import ProcessPoolExecutor
 from functools import cached_property, lru_cache, partial
 from logging import getLogger
-from typing import Any, Generator, Hashable, Iterable, Optional, Sequence, Union
+from typing import Any, Generator, Hashable, Iterable, Optional, Sequence, Union, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -176,6 +176,9 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
         else:
             for data_path, label in zip(data_path, labels):
                 yield kwarg_loaded_init(data_path, label=label)
+
+
+Reader = TypeVar("Reader", bound=BaseReader)
 
 
 @lru_cache

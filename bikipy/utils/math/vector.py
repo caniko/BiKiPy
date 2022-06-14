@@ -1,7 +1,13 @@
+from typing import Callable
+
+import numba
 import numpy as np
+from numba import njit, jit
 from numpy.linalg import LinAlgError
 from pydantic import validate_arguments
+from pydantic_numpy import NDArray
 
+from bikipy import ENABLE_NUMBA
 from bikipy.core.typing import NDArrayFp64
 
 
@@ -58,7 +64,7 @@ def orthogonal_unit_vector(vector: NDArrayFp64) -> NDArrayFp64:
 
 
 @validate_arguments
-def dot_prod_along_axis_1(vector_a: NDArrayFp64, vector_b: NDArrayFp64) -> NDArrayFp64:
+def dot_prod_along_axis_1_1d(vector_a: NDArrayFp64, vector_b: NDArrayFp64) -> NDArrayFp64:
     # np.einsum("ij,ij->i", vector_a, vector_b)
     return np.nansum(vector_a * vector_b, axis=1)
 
@@ -198,3 +204,45 @@ def intersection_between_two_lines(
         return np.linalg.solve(rhs, lhs).T[0]
     except LinAlgError:
         return None
+
+
+@validate_arguments
+def numpy_bin(data: NDArray, axis: int, bin_step: int, bin_size: int, reducer: Callable = np.nanmean) -> NDArray:
+    arg_dims = np.arange(data.ndim)
+    arg_dims[0], arg_dims[axis] = arg_dims[axis], arg_dims[0]
+    data = data.transpose(arg_dims)
+    data = [
+        reducer(np.take(data, np.arange(int(i * bin_step), int(i * bin_step + bin_size)), 0), 0)
+        for i in np.arange(data.shape[axis] // bin_step)
+    ]
+    return np.array(data).transpose(arg_dims)
+
+
+def rotation_matrix_from_radians(radians: NDArrayFp64) -> NDArrayFp64:
+    cos, sin = np.cos(radians), np.sin(radians)
+    return np.ascontiguousarray(([cos, -sin], [sin, cos])).transpose(2, 0, 1)
+
+
+if ENABLE_NUMBA:
+
+    # rotation_matrix_from_radians = jit(cache=True)(rotation_matrix_from_radians)
+
+    def rotate_vectors_with_angle(vectors: NDArrayFp64, angles: NDArrayFp64) -> NDArrayFp64:
+        return rotate_vectors_with_angle(vectors, rotation_matrix_from_radians(angles))
+
+    @njit(parallel=True, nogil=True, cache=True)
+    def rotate_vectors_with_rotation_matrix(vectors: NDArrayFp64, rotation_matrices: NDArrayFp64) -> NDArrayFp64:
+        result = np.empty_like(vectors)
+        for i in numba.prange(len(vectors)):
+            result[i] = np.dot(vectors[i], rotation_matrices[i])
+        return result
+
+else:
+
+    def rotate_vectors_with_angle(vectors: NDArrayFp64, angles: NDArrayFp64) -> NDArrayFp64:
+        return np.array(
+            [
+                np.dot(vector, rotation_matrix)
+                for vector, rotation_matrix in zip(vectors, rotation_matrix_from_radians(angles))
+            ]
+        )

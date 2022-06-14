@@ -1,22 +1,23 @@
-import os
 from functools import cached_property
 from logging import getLogger
+from pathlib import Path
 from typing import Any, ClassVar, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
-from pydantic import DirectoryPath, validator
+from pydantic import validator
 
+from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BikipyBase
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.feature.attention.main import (
     gaze_direction_filter,
-    perimeter_attention,
     proximity_filter,
     tolerance_filter,
 )
 from bikipy.perimeter.base import AnyPerimeter, PerimeterSet
+from bikipy.reader.base import Reader
 
 logger = getLogger(__name__)
 
@@ -28,7 +29,7 @@ class PhysicalObject(BikipyBase):
     """
 
     perimeter: AnyPerimeter
-    reader: Any
+    reader: Reader
     gaze_start_point_label: str
     gaze_travel_direction_point_label: str
     fps: float
@@ -36,7 +37,11 @@ class PhysicalObject(BikipyBase):
     maximum_radians_inter_gaze_perimeter: float
     minimum_seconds_attention: float
     maximum_seconds_distraction: float
-    inspection_dir: Optional[DirectoryPath] = None
+
+    inspect_figure_file_path: Optional[Path] = None
+    _fig: Any = None
+    _axes: Any = None
+    _exporting_figure: bool = False
 
     def __len__(self) -> int:
         return self.temporal_resolution
@@ -51,11 +56,11 @@ class PhysicalObject(BikipyBase):
 
     @cached_property
     def not_observing(self) -> NDArrayFp64:
-        return ~self.observance_boolean_index
+        return ~self.attention_observance_boolean_index
 
     @cached_property
     def attention_filtered_seconds_observing(self) -> float:
-        return np.sum(self.observance_boolean_index) / self.fps
+        return np.sum(self.attention_observance_boolean_index) / self.fps
 
     @cached_property
     def raw_seconds_observing(self) -> float:
@@ -70,8 +75,9 @@ class PhysicalObject(BikipyBase):
         return proximity_filter(
             self.perimeter,
             self._gaze_travel_direction_point,
-            self.reader[self.gaze_start_point_label],
+            self._gaze_start_point,
             self.perimeter_border_normal_pixel_magnitude,
+            **self._attention_proximity_filter_kwargs,
         )
 
     @cached_property
@@ -79,46 +85,98 @@ class PhysicalObject(BikipyBase):
         return gaze_direction_filter(
             self.perimeter,
             self._gaze_travel_direction_point,
-            self.reader[self.gaze_start_point_label],
+            self._gaze_start_point,
             self.maximum_radians_inter_gaze_perimeter,
-            # **gaze_filter_kwargs,         # TODO: See perimeter_attention
-        )[0]
+            **self._gaze_filter_kwargs,
+        )
 
     @cached_property
     def logical_location_and_gaze(self) -> NDArrayFp64:
         return self.attention_proximity_boolean_index & self.attention_gaze_boolean_index
 
     @cached_property
-    def observance_boolean_index(self) -> NDArrayBool:
-        return np.array(
-            tolerance_filter(
-                self.logical_location_and_gaze,
-                self.fps,
-                self.minimum_seconds_attention,
-                self.maximum_seconds_distraction,
-            )
+    def attention_observance_boolean_index(self) -> NDArrayBool:
+        result = tolerance_filter(
+            self.logical_location_and_gaze,
+            self.fps,
+            self.minimum_seconds_attention,
+            self.maximum_seconds_distraction,
         )
+
+        if self.inspect_figure_file_path and not self._exporting_figure:
+            self.inspect_attention()
+
+        return result
+
+    def inspect_attention(self):
+        self._exporting_figure = True
+
+        for rows in self.attention_axes:
+            for ax in rows:
+                self.perimeter.plot_perimeter(
+                    ax=ax, perimeter_border_normal_pixel_magnitude=self.perimeter_border_normal_pixel_magnitude
+                )
+
+        self.attention_axes[1][0].scatter(
+            *self._gaze_travel_direction_point[self.logical_location_and_gaze].T,
+            alpha=MATPLOTLIB_SCATTER_ALPHA,
+        )
+
+        self.attention_axes[1][1].scatter(
+            *self._gaze_travel_direction_point[self.attention_observance_boolean_index].T,
+            alpha=MATPLOTLIB_SCATTER_ALPHA,
+        )
+
+        plt.tight_layout()
+        plt.savefig(self.inspect_figure_file_path, dpi=550)
+        plt.close(self.attention_fig)
 
     @property
     def temporal_resolution(self) -> int:
         return self.reader.frames
 
     @property
-    def _gaze_travel_direction_point(self) -> NDArrayFp64:
-        return self.reader[self.gaze_travel_direction_point_label]
+    def attention_fig(self):
+        if self._fig is not None:
+            return self._fig
+        self._init_matplotlib()
+        return self._fig
+
+    @property
+    def attention_axes(self):
+        if self._axes is not None:
+            return self._axes
+        self._init_matplotlib()
+        return self._axes
+
+    def _init_matplotlib(self):
+        if self.perimeter.inspect_image is None:
+            self._fig, self._axes = plt.subplots(nrows=2, ncols=2, dpi=500)
+        else:
+            x, y = self.perimeter.inspect_image.shape[:2]
+            self._fig, self._axes = plt.subplots(nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0), dpi=500)
+
+        self.attention_axes[1][0].set_title("proximity_filtered & gaze_filtered")
+        self.attention_axes[1][1].set_title("Observation")
+
+        self._fig.gca().invert_yaxis()
+        self._fig.suptitle("Observation cumulative filtration analysis")
 
     @cached_property
-    def _perimeter_attention_data(self) -> tuple:
-        return perimeter_attention(
-            self.perimeter,
-            self._gaze_travel_direction_point,
-            self.reader[self.gaze_start_point_label],
-            self.fps,
-            self.perimeter_border_normal_pixel_magnitude,
-            self.maximum_radians_inter_gaze_perimeter,
-            self.minimum_seconds_attention,
-            self.maximum_seconds_distraction,
-        )
+    def _attention_proximity_filter_kwargs(self) -> dict:
+        return {"inspection_ax": self.attention_axes[0][0]} if self.inspect_figure_file_path else {}
+
+    @cached_property
+    def _gaze_filter_kwargs(self) -> dict:
+        return {"inspection_ax": self.attention_axes[0][1]} if self.inspect_figure_file_path else {}
+
+    @cached_property
+    def _gaze_start_point(self) -> NDArrayFp64:
+        return self.reader[self.gaze_start_point_label]
+
+    @cached_property
+    def _gaze_travel_direction_point(self) -> NDArrayFp64:
+        return self.reader[self.gaze_travel_direction_point_label]
 
 
 class PhysicalObjectSet(BikipyBase):
@@ -158,7 +216,7 @@ class PhysicalObjectSet(BikipyBase):
     @cached_property
     def observing_per_frame(self):
         return np.logical_or.reduce(
-            [physical_object.observance_boolean_index for physical_object in self.physical_objects]
+            [physical_object.attention_observance_boolean_index for physical_object in self.physical_objects]
         )
 
     @cached_property
@@ -185,7 +243,7 @@ class PhysicalObjectSet(BikipyBase):
 
         result = np.zeros(len(self._first_object), dtype=np.uint8)
         for label, physical_object in self.label_to_physical_object.items():
-            current_boolean_index = physical_object.observance_boolean_index
+            current_boolean_index = physical_object.attention_observance_boolean_index
 
             overlapping_frames += np.sum(current_boolean_index & result)
 

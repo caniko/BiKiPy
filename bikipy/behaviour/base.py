@@ -2,6 +2,7 @@ import os
 from concurrent.futures import ProcessPoolExecutor
 from copy import copy
 from functools import cached_property
+from itertools import chain
 from logging import getLogger
 from operator import attrgetter
 from pathlib import Path
@@ -56,7 +57,7 @@ class BaseTrial(Behaviour):
     )
     center: Optional[NDArrayInt16] = None
     stage: Optional[str] = Field(description="The semantic stage of the experiment")
-    inspection_dir: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
+    inspect_directory: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
     inspect_image: Optional[FilePath] = Field(
         description="Image to use as background in the plots for visualising the analysis data",
     )
@@ -76,15 +77,11 @@ class BaseTrial(Behaviour):
 
     @classmethod
     @property
-    def feature_summary_column(cls):
-        if not cls.trial_label:
-            return cls.feature_headers
-        return pd.MultiIndex.from_product([[cls.trial_label], cls.feature_headers])
-
-    @classmethod
-    @property
     def trial_has_defined_features(cls) -> bool:
-        return bool(cls.feature_headers)
+        try:
+            return bool(cls.feature_headers)
+        except AttributeError:
+            return False
 
     @property
     def motion_features(self) -> list:
@@ -260,7 +257,7 @@ class BaseExperiment(Behaviour):
     stage: Optional[str] = Field(
         description="Experiment stage label, if experiment object is in a sequence of experiment objects"
     )
-    inspection_dir: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
+    inspect_directory: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
 
     trial_classes: ClassVar[tuple[Any]] = Field(..., description="Trial classes designed for this experiment class")
 
@@ -343,13 +340,7 @@ class BaseExperiment(Behaviour):
         if "animal_id" not in result:
             result["animal_id"] = trial_id
 
-        if self.inspection_dir:
-            if "stage" in result:
-                result["inspection_dir"] = self.inspection_dir / result["stage"]
-                if not result["inspection_dir"].exists():
-                    os.mkdir(result["inspection_dir"])
-            else:
-                result["inspection_dir"] = self.inspection_dir
+        result["inspect_directory"] = self.inspect_directory
 
         return result
 
@@ -462,7 +453,7 @@ class BaseExperiment(Behaviour):
             keys=["Stage"] if self.stage else None,
             # Prepend experiment stage to column MultiIndex:
             # https://stackoverflow.com/a/42094658/9793651
-            names=self.column_multi_index_names,
+            names=self.feature_column_multi_index_names,
         )
 
     @cached_property
@@ -493,7 +484,7 @@ class BaseExperiment(Behaviour):
 
         result = pd.DataFrame.from_dict(data_dict, orient="index", columns=self._feature_frame_columns())
         result.index.name = "Animal ID"
-        result.columns.names = ["Feature", "Location_Category"]
+        result.columns.names = self.feature_column_multi_index_names
 
         return result
 
@@ -528,33 +519,40 @@ class BaseExperiment(Behaviour):
     def motion_summary_columns(self) -> list:
         return motion_multi_indexer("All", self._pandas_multi_index_level)
 
-    @cached_property
-    def column_multi_index_names(self):
-        return ["Feature", "Location_Category"] if self.stage is None else ["Stage", "Feature", "Location_Category"]
-
-    # Private methods
-
-    @cached_property
-    def _at_least_one_trial_class_has_features(self):
-        return any(not trial_class.feature_summary_column.empty for trial_class in self.trial_classes)
-
-    def _feature_frame_columns(self, levels: Optional[int] = None) -> pd.MultiIndex:
-        if not self.is_trial_sequence:
-            columns = self.trial_class.feature_summary_column
-        elif self.trial_id_to_trial_class_name:
-            columns = sum(
-                (
-                    list(trial_object.feature_summary_column)
-                    for trial_object in self.trial_classes
-                    if trial_object.trial_has_defined_features
-                ),
-                [],
+    @classmethod
+    @property
+    def feature_column_multi_index(cls):
+        chained_feature_headers = chain(
+            *(
+                trial_class.feature_headers
+                for trial_class in cls.trial_classes
+                if trial_class.trial_has_defined_features
             )
-        else:
-            self._neither_singular_trial_class_or_trial_id_to_trial_class_name()
+        )
+        feature_headers = tuple(chained_feature_headers)
+        if not feature_headers:
+            return None
+        match max_level := max(len(feature_header) for feature_header in feature_headers):
+            case 2:
+                names = ["Feature", "Location/Category"]
+            case 3:
+                names = ["Stage", "Feature", "Location/Category"]
+            case _:
+                msg = f"The highest level in the feature_column_multi_index is too high, {max_level}:\n{', '.join(feature_headers)}"
+                raise AttributeError(msg)
+        return pd.MultiIndex.from_tuples(feature_headers, names=names)
 
-        if levels:
-            columns = rise_to_n_levels(columns, levels)
+    @classmethod
+    @property
+    def feature_column_multi_index_names(cls):
+        return cls.feature_column_multi_index.names
+
+    @classmethod
+    @property
+    def _at_least_one_trial_class_has_features(cls):
+        return cls.feature_column_multi_index is not None
+
+    def fit_feature_column_multi_index_to_nlevels(self, levels: Optional[int] = None) -> pd.MultiIndex:
 
         return pd.MultiIndex.from_tuples(columns)
 
@@ -636,7 +634,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _motion_summary_column_index(self) -> pd.MultiIndex:
-        return pd.MultiIndex.from_tuples(self.motion_summary_columns, names=self.column_multi_index_names)
+        return pd.MultiIndex.from_tuples(self.motion_summary_columns, names=self.feature_column_multi_index_names)
 
     @cached_property
     def _motion_summary_column_depth(self):
@@ -647,7 +645,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _pandas_multi_index_level(self) -> int:
-        return len(self.column_multi_index_names)
+        return len(self.feature_column_multi_index_names)
 
     def _make_categorical_inspection_dir(self, trial_root_dir: Path):
         pass

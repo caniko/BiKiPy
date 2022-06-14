@@ -1,14 +1,15 @@
+import os
 from abc import ABC, abstractmethod
-from functools import cached_property
+from functools import cached_property, lru_cache
 from typing import ClassVar, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import Field, BaseModel
+from pydantic import Field, BaseModel, DirectoryPath
 
 from bikipy.behaviour.base import BaseTrial
 from bikipy.core.base_class import BikipyBase
-from bikipy.feature.physical_object.core import PhysicalObjectSet
+from bikipy.feature.physical_object import PhysicalObjectSet
 from bikipy.perimeter.base import AnyPerimeter
 
 
@@ -24,6 +25,8 @@ class PhysicalObjectTrialMixin(BikipyBase, ABC):
     maximum_radians_inter_gaze_perimeter: float = 1 / 3 * np.pi
     minimum_seconds_attention: float = 0.5
     maximum_seconds_distraction: float = 0.5
+
+    physical_object_inspect: bool = False
 
     physical_object_labels: ClassVar[list[str, ...]] = []
 
@@ -68,7 +71,6 @@ class PhysicalObjectTrialMixin(BikipyBase, ABC):
             "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
             "minimum_seconds_attention": self.minimum_seconds_attention,
             "maximum_seconds_distraction": self.maximum_seconds_distraction,
-            "inspection_dir": self.inspection_dir,
         }
 
         if self.video_metadata_can_be_defined:
@@ -78,6 +80,14 @@ class PhysicalObjectTrialMixin(BikipyBase, ABC):
             result["fps"] = self.fps
         except AttributeError:
             pass
+
+        if self.physical_object_inspect:
+            if not self.inspect_directory:
+                msg = "Physical object inspection is set to True, yet inspect_directory is undefined"
+                raise AttributeError(msg)
+            result["inspect_figure_file_path"] = (
+                _physical_object_inspection_dir(self.inspect_directory) / f"{self.label}.png"
+            )
 
         return result
 
@@ -101,3 +111,10 @@ class PhysicalObjectHabituationTrialMixin(BaseModel):
 
 class RectangleEnclosedPhysicalObjectTrial(BaseTrial, PhysicalObjectTrialMixin, ABC):
     pass
+
+
+@lru_cache(1)
+def _physical_object_inspection_dir(global_inspection_dir: DirectoryPath) -> DirectoryPath:
+    result = global_inspection_dir / "physical_object"
+    result.mkdir(exist_ok=True)
+    return result

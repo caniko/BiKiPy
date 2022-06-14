@@ -25,6 +25,7 @@ from bikipy.ingress.utils.io import (
     get_perimeter_directory_path,
     get_project_settings_path,
     load_settings,
+    get_inspect_directory_path,
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
 from bikipy.perimeter.base import (
@@ -47,9 +48,6 @@ class BaseIngress(BikipyBase, ABC):
     _metadata_index_to_trial_id: dict = {}
 
     _experiment_data_defined: bool = False
-
-    class Config:
-        underscore_attrs_are_private = True
 
     @abstractmethod
     def _experiment_class_kwargs_and_metadata_index_to_trial_id_and_metadata_index_to_trial_id_define_function(self):
@@ -144,6 +142,10 @@ class BaseIngress(BikipyBase, ABC):
     @property
     def perimeter_directory_path(self) -> DirectoryPath:
         return get_perimeter_directory_path(self.project_root_directory)
+
+    @property
+    def inspect_directory_path(self) -> DirectoryPath:
+        return get_inspect_directory_path(self.project_root_directory)
 
     @property
     def result_directory_path(self) -> DirectoryPath:
@@ -256,7 +258,11 @@ class BaseIngress(BikipyBase, ABC):
         if intersection:
             msg = f"The setting defines fields defined by the ingress method:\n{intersection}"
             raise ValueError(msg)
-        return self.experiment_class(**self.settings["experiment"]["defined"], **self.experiment_class_kwargs)
+        return self.experiment_class(
+            **self.settings["experiment"]["defined"],
+            **self.experiment_class_kwargs,
+            inspect_directory=self.inspect_directory_path,
+        )
 
     # Client-side functions ===============================
 

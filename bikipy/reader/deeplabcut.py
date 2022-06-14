@@ -79,9 +79,7 @@ class DeepLabCutReader(BaseReader):
                     group_points = [
                         result.loc[:, pd.IndexSlice[component_name, ("x", "y")]].values for component_name in group
                     ]
-                    midpoint_x, midpoint_y = recursive_midpoint(group_points).T
-                    midpoint_data[(name, "x")] = midpoint_x
-                    midpoint_data[(name, "y")] = midpoint_y
+                    midpoint_data[(name, "x")], midpoint_data[(name, "y")] = recursive_midpoint(group_points).T
                     midpoint_data[(name, "likelihood")] = self.reduce_likelihoods(group)
                 elif all(component in self.tracked_and_midpoint_labels for component in group):
                     midpoint_based_midpoints[name] = group
@@ -116,12 +114,10 @@ class DeepLabCutReader(BaseReader):
                     else:
                         new_midpoint_likelihood = component_likelihood
 
-                midpoint_x, midpoint_y = recursive_midpoint(group_points).T
-                midpoint_data[(name, "x")] = midpoint_x
-                midpoint_data[(name, "y")] = midpoint_y
+                midpoint_data[(name, "x")], midpoint_data[(name, "y")] = recursive_midpoint(group_points).T
                 midpoint_data[(name, "likelihood")] = new_midpoint_likelihood.T[0]
 
-            midpoint_df = pd.DataFrame.from_dict(midpoint_data)
+            midpoint_df = pd.DataFrame.from_dict(midpoint_data).set_index(result.index)
             result = pd.concat((result, midpoint_df), axis=1)
 
         return result

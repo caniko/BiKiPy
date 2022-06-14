@@ -205,5 +205,7 @@ modules.xml
 ### Excel
 *.ods#
 *.xlsx#
-/examples/sequence/NORT/dataset/
-/examples/sequence/OUL/dataset/
+
+### Example data
+dataset/
+inspect/

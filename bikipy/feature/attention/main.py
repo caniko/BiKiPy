@@ -9,12 +9,13 @@ import numpy as np
 import seaborn as sb
 from pydantic import DirectoryPath, validate_arguments
 
+from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.feature.angle import inner_angle
 from bikipy.perimeter.base import AnyPerimeter
+from bikipy.utils.math.vector import dot_prod_along_axis_1_1d, rotate_vectors_with_angle
 from bikipy.utils.misc import generic_inspection_finalization
 
-SCATTER_ALPHA = 0.55
 logger = getLogger(__name__)
 
 
@@ -65,44 +66,43 @@ def proximity_filter(
     if inspection_ax is not None or inspect:
         if inspection_ax is None:
             sb.set_theme(style="darkgrid")
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(dpi=300)
             if np.any(perimeter.inspect_image):
                 ax.imshow(perimeter.inspect_image)
         else:
             ax = inspection_ax
 
-        ax.set_title("Location filter")
         perimeter.plot(ax=ax)
+        ax.set_title("Proximity filter")
+
+        ax.scatter(*inside_perimeter_border[result].T, marker=",", alpha=MATPLOTLIB_SCATTER_ALPHA, label="Valid")
 
         not_result = ~result
         if perimeter.impenetrable:
             ax.scatter(
-                *inside_perimeter_border[result].T,
-                alpha=SCATTER_ALPHA,
-                label="Valid",
-            )
-            ax.scatter(
                 *inside_perimeter_border[not_result].T,
-                alpha=SCATTER_ALPHA,
+                marker=",",
+                alpha=MATPLOTLIB_SCATTER_ALPHA,
                 label="Invalid",
             )
         else:
             ax.scatter(
                 *inside_perimeter_border[inside_perimeter_border_boolean_index & not_result].T,
-                alpha=SCATTER_ALPHA,
+                marker=",",
+                alpha=MATPLOTLIB_SCATTER_ALPHA,
                 label="Nose valid, invalid outside_perimeter",
             )
             ax.scatter(
                 *inside_perimeter_border[outside_perimeter_boolean_index & not_result].T,
-                alpha=SCATTER_ALPHA,
+                marker=",",
+                alpha=MATPLOTLIB_SCATTER_ALPHA,
                 label="Center of mass valid, invalid inside_perimeter_border",
             )
-
-        ax.scatter(*inside_perimeter_border[result].T, alpha=SCATTER_ALPHA, label="Valid")
 
         ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=3)
 
         if not inspection_ax:
+            plt.tight_layout()
             plt.show()
 
     return result
@@ -110,50 +110,61 @@ def proximity_filter(
 
 def gaze_direction_filter(
     perimeter: AnyPerimeter,
-    gaze_travel_direction_point_label: str,
-    gaze_start_point_label: str,
+    gaze_travel_direction_point: NDArrayFp64,
+    gaze_start_point: NDArrayFp64,
     max_radians: float,
-    inspect: bool = True,
+    inspect: bool = False,
     inspection_ax: Any = None,
-):
-    gaze_travel_direction_point_label, gaze_start_point_label = np.asarray(
-        gaze_travel_direction_point_label
-    ), np.asarray(gaze_start_point_label)
-    eye_to_nose_vector = gaze_travel_direction_point_label - gaze_start_point_label
+) -> NDArrayBool:
+    gaze_vector = gaze_travel_direction_point - gaze_start_point
 
-    closest_corner_vectors = perimeter.closest_sides_to_coordinates(gaze_start_point_label)
+    closest_corner_vectors = perimeter.closest_sides_to_coordinates(gaze_start_point)
+    inner_angles = inner_angle(closest_corner_vectors, gaze_vector)
 
-    inner_angles = inner_angle(closest_corner_vectors, eye_to_nose_vector)
-
-    result = inner_angles <= max_radians
+    result = np.abs(inner_angles) <= max_radians
 
     if inspection_ax is not None or inspect:
         if inspection_ax is None:
             sb.set_theme(style="darkgrid")
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(dpi=500)
         else:
             ax = inspection_ax
 
-        ax.set_title("Gaze direction filter")
-        perimeter.plot(ax=ax)
+        rotated_eye_to_nose_vector = rotate_vectors_with_angle(gaze_vector, inner_angles)
 
-        ax.scatter(
-            *gaze_travel_direction_point_label[result].T,
-            alpha=SCATTER_ALPHA,
+        perimeter.plot(ax=ax)
+        ax.set_title("Gaze direction filter")
+
+        ax.quiver(
+            *gaze_travel_direction_point[result].T,
+            *rotated_eye_to_nose_vector[result].T,
+            angles="xy",
+            scale_units="xy",
+            scale=0.8,
+            alpha=MATPLOTLIB_SCATTER_ALPHA,
             label="Valid",
+            color="b",
         )
-        ax.scatter(
-            *gaze_travel_direction_point_label[~result].T,
-            alpha=SCATTER_ALPHA,
+
+        not_result = ~result
+        ax.quiver(
+            *gaze_travel_direction_point[not_result].T,
+            *rotated_eye_to_nose_vector[not_result].T,
+            angles="xy",
+            scale_units="xy",
+            scale=0.8,
+            alpha=MATPLOTLIB_SCATTER_ALPHA,
             label="Invalid",
+            color="r",
         )
 
         ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=2)
 
         if not inspection_ax:
+            plt.tight_layout()
             plt.show()
 
-    return result, closest_corner_vectors
+    return result
 
 
 @validate_arguments
@@ -333,13 +344,13 @@ def perimeter_attention(
         axes[1][0].set_title("proximity_filtered & gaze_filtered")
         axes[1][0].scatter(
             *nose[semi_true_observations].T,
-            alpha=SCATTER_ALPHA,
+            alpha=MATPLOTLIB_SCATTER_ALPHA,
         )
 
         axes[1][1].set_title("BasePerimeter observation")
         axes[1][1].scatter(
             *nose[perimeter_observation].T,
-            alpha=SCATTER_ALPHA,
+            alpha=MATPLOTLIB_SCATTER_ALPHA,
         )
 
         plt.tight_layout()

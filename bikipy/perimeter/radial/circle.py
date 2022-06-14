@@ -52,7 +52,7 @@ class CirclePerimeter(BasePerimeter):
 
     def plot_perimeter(
         self,
-        additional: Optional[float] = None,
+        perimeter_border_normal_pixel_magnitude: Optional[float] = None,
         ax: Any = None,
         include_geometric_legend: bool = False,
         colormap: Any = None,
@@ -63,11 +63,11 @@ class CirclePerimeter(BasePerimeter):
         distance_of_point_from_center = np.linalg.norm(coordinates - self.center, axis=1)
         return np.abs(distance_of_point_from_center) <= self.radius
 
-    def expand(self, additional: float):
+    def expand(self, perimeter_border_normal_pixel_magnitude: float):
         kwargs = self.dict()
-        kwargs["radius"] += additional
+        kwargs["radius"] += perimeter_border_normal_pixel_magnitude
         return self.__class__(**kwargs)
 
     def closest_sides_to_coordinates(self, coordinates: NDArrayFp64):
-        line_unit_vector = unit_vector(coordinates - self.center)
-        return self.center + line_unit_vector * self.radius
+        center_to_coord_unit = unit_vector(coordinates - self.center)
+        return unit_vector(self.center + self.radius * center_to_coord_unit - coordinates)
