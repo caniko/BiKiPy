@@ -96,7 +96,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         ]
 
     @property
-    def feature_summary_row(self) -> list:
+    def feature_df_rows(self) -> list:
         return [
             self.sum_of_alternations,
             self.spontaneous_alternations,

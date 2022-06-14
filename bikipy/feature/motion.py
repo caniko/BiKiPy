@@ -7,8 +7,8 @@ import pandas as pd
 
 from bikipy.core.base_class import BikipyBase
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
+from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.calculus import np_abs_diff
-from bikipy.utils.misc import generic_multi_indexer
 
 logger = getLogger(__name__)
 
@@ -237,9 +237,7 @@ class Motion(BikipyBase):
 
 
 def motion_multi_indexer(category: Any, level: int):
-    return generic_multi_indexer("Displacement", "Median_speed", "Median_acceleration", "Freezing time")(
-        category, level
-    )
+    return generic_multi_indexer("Displacement", "MedianSpeed", "MedianAcceleration", "FreezingTime")(category, level)
 
 
 def get_combined_features_from_merged_motion_island_data(

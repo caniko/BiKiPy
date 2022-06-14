@@ -1,14 +1,12 @@
 import json
 from abc import ABC, abstractmethod
-from functools import cached_property, partial
+from functools import cached_property
 from typing import Any, Callable, Hashable, Optional
 
 import numpy as np
 import pandas as pd
 import yaml
 from pydantic import DirectoryPath, FilePath, validate_arguments
-from yaspin import yaspin
-from yaspin.spinners import Spinners
 
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.core.base_class import BikipyBase
@@ -17,15 +15,13 @@ from bikipy.ingress.plugin.center import detect_center_in_perimeter_directory
 from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
 )
-from bikipy.ingress.plugin.perimeter import (
-    get_perimeter_data,
-)
+from bikipy.ingress.plugin.perimeter import get_perimeter_data
 from bikipy.ingress.utils.io import (
     get_dataset_directory_path,
+    get_inspect_directory_path,
     get_perimeter_directory_path,
     get_project_settings_path,
     load_settings,
-    get_inspect_directory_path,
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
 from bikipy.perimeter.base import (
@@ -270,7 +266,7 @@ class BaseIngress(BikipyBase, ABC):
     def analysis_df(self) -> pd.DataFrame:
         np.seterr(all="ignore")
         return pd.concat(
-            (self.metadata, self.experiment.animal_id_indexed_feature_frame),
+            (self.metadata, self.experiment.combined_feature_motion_df),
             axis=1,
             keys=["Stage"] if self.stageful_metadata else None,
             # Prepend experiment stage to column MultiIndex:
@@ -278,7 +274,6 @@ class BaseIngress(BikipyBase, ABC):
             names=self.experiment.column_multi_index_names,
         )
 
-    @yaspin(Spinners.pong, text="Analyzing experiment data...")
     def save_analysis_data(self):
         self.analysis_df.to_parquet(self.result_directory_path / f"animal_id_indexed_result_data.parquet")
         self.analysis_df.to_excel(self.result_directory_path / "animal_id_indexed_result_data.xlsx")
@@ -344,7 +339,4 @@ def auto_define_ingress_object(project_root_directory: DirectoryPath):
 
 
 def analyze_and_save(project_root_directory: DirectoryPath):
-    ingress = auto_define_ingress_object(project_root_directory)
-    ingress.experiment.animal_id_indexed_experiment_specific_feature_frame.to_excel(
-        ingress.result_directory_path / "features.xlsx"
-    )
+    ingress = auto_define_ingress_object(project_root_directory).experiment.animal_id_indexed_motion_df

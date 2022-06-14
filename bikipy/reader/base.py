@@ -3,7 +3,16 @@ from collections import abc
 from concurrent.futures import ProcessPoolExecutor
 from functools import cached_property, lru_cache, partial
 from logging import getLogger
-from typing import Any, Generator, Hashable, Iterable, Optional, Sequence, Union, TypeVar
+from typing import (
+    Any,
+    Generator,
+    Hashable,
+    Iterable,
+    Optional,
+    Sequence,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 import pandas as pd

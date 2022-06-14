@@ -6,7 +6,10 @@ from bikipy.behaviour.mixin.physical_object import (
     PhysicalObjectHabituationTrialMixin,
     PhysicalObjectTrialMixin,
 )
-from bikipy.behaviour.rectangle import RectangleEnclosedTrial, RectangleEnclosedExperiment
+from bikipy.behaviour.rectangle import (
+    RectangleEnclosedExperiment,
+    RectangleEnclosedTrial,
+)
 from bikipy.perimeter.base import AnyPerimeter
 
 logger = getLogger(__name__)
@@ -54,8 +57,8 @@ class NortNoveltyTrial(PhysicalObjectTrialMixin):
         ]
 
     @property
-    def feature_summary_row(self):
-        return super().feature_summary_row + [
+    def feature_df_rows(self):
+        return super().feature_df_rows + [
             self.nort_absolute_discrimination,
             self.discrimination_index,
             self.novelty_preference,

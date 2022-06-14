@@ -81,7 +81,7 @@ experiment:
 trial:
   common:
     defined:
-      physical_object_inspect: true
+      physical_object_inspect: false
       gaze_start_point_label: center_eye
       gaze_travel_direction_point_label: nose
       object_tracking_label_for_kinematics: center_eye

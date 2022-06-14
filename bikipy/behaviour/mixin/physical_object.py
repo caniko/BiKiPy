@@ -5,7 +5,7 @@ from typing import ClassVar, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import Field, BaseModel, DirectoryPath
+from pydantic import BaseModel, DirectoryPath, Field
 
 from bikipy.behaviour.base import BaseTrial
 from bikipy.core.base_class import BikipyBase
@@ -56,7 +56,7 @@ class PhysicalObjectTrialMixin(BikipyBase, ABC):
         return list(pd.MultiIndex.from_product([["SecondsObserving"], ["All", *cls.physical_object_labels]]))
 
     @property
-    def feature_summary_row(self):
+    def feature_df_rows(self):
         return [
             self.physical_object_set.seconds_observing,
             *self.physical_object_set.object_specific_observation.values(),

@@ -1,20 +1,25 @@
-import os
 from concurrent.futures import ProcessPoolExecutor
 from copy import copy
 from functools import cached_property
-from itertools import chain
 from logging import getLogger
 from operator import attrgetter
-from pathlib import Path
-from typing import Any, ClassVar, Hashable, Iterable, Literal, Optional, Sequence, TypeVar
+from typing import (
+    Any,
+    ClassVar,
+    Hashable,
+    Iterable,
+    Literal,
+    Optional,
+    Sequence,
+    TypeVar,
+)
 
-import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pydantic
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from pydantic import DirectoryPath, Field, FilePath, validator
+from pydantic import DirectoryPath, Field, FilePath, ValidationError, validator
+from tqdm import tqdm
+from yaspin import yaspin
+from yaspin.spinners import Spinners
 
 from bikipy import ENABLE_PROCESS_POOLING
 from bikipy.core.base_class import BikipyBaseHashable
@@ -22,13 +27,16 @@ from bikipy.core.mixin import VideoMetadataMixin
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.feature.motion import Motion, motion_multi_indexer
 from bikipy.reader.deeplabcut import DeepLabCutReader
-from bikipy.utils.misc import rise_to_n_levels
+from bikipy.utils.collection_utils import (
+    chain_lists_to_tuple,
+    copycat_assumes_levels_of_icon,
+    max_len_in_iterable,
+)
 from bikipy.utils.ranged_dict import RangeDict
-from bikipy.utils.render_video import VideoWriter
-
-logger = getLogger(__name__)
 
 LABEL_to_DATA_READER = {"deeplabcut": DeepLabCutReader}
+
+logger = getLogger(__name__)
 
 
 class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
@@ -38,11 +46,22 @@ class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
 
     @cached_property
     def recording_center_pixel(self) -> NDArrayInt16:
-        return self.recording_resolution / 2.0
+        return np.round(self.recording_resolution / 2)
 
     @cached_property
     def center_translation(self):
         return self.recording_center_pixel - self.center if self.center is not None else None
+
+    @staticmethod
+    def _multi_index_names(index_content: Iterable):
+        match max_level := max_len_in_iterable(index_content):
+            case 2:
+                return ["Feature", "Location/Category"]
+            case 3:
+                return ["Stage", "Feature", "Location/Category"]
+            case _:
+                msg = f"The highest level in the feature_column_index is too high, {max_level}:\n{', '.join(index_content)}"
+                raise AttributeError(msg)
 
 
 class BaseTrial(Behaviour):
@@ -82,6 +101,13 @@ class BaseTrial(Behaviour):
             return bool(cls.feature_headers)
         except AttributeError:
             return False
+
+    @classmethod
+    @property
+    def motion_column_index_levels(cls):
+        if cls.experiment_sequence_index:
+            return 3
+        return 2
 
     @property
     def motion_features(self) -> list:
@@ -124,80 +150,6 @@ class BaseTrial(Behaviour):
         )
 
     # PolygonPerimeter
-
-    def detect_confined_perimeter(self, coordinate: NDArrayFp64) -> NDArrayFp64:
-        """
-        This function is used to determine current location of subject.
-
-        :param coordinate:
-        :return:
-        """
-
-        coordinate = np.expand_dims(coordinate, 0)
-        for label, perimeter in self._int_id_to_perimeter.items():
-            if perimeter.coordinate_confinement_boolean_index(coordinate):
-                logger.info(f"Location: {label}, {coordinate}")
-                return label
-        logger.debug(f"Location could not be determined, {coordinate}")
-
-    def render_analytical_video(self):
-        if not self.video_path:
-            msg = "video_path needs to be defined to render analytical video"
-            raise AttributeError(msg)
-
-        cap = cv2.VideoCapture(str(self.video_path))
-        writer = VideoWriter(
-            filename=self.video_path.with_name(f"{self.video_path.stem}_analysis.mp4"),
-            fps=round(self.fps * 0.75),
-        )
-        success, frame = cap.read()
-        assert success
-
-        i = 0
-        frames = []
-        if ENABLE_PROCESS_POOLING:
-            with ProcessPoolExecutor() as executor:
-                while success:
-                    frames.append(executor.submit(self._process_frame, frame, i))
-                    success, frame = cap.read()
-                    i += 1
-
-                for frame in frames:
-                    writer.add(frame.result())
-        else:
-            logger.debug("Process pooling is disabled, will create video with one core")
-            while success:
-                frame = self._process_frame(frame, i)
-                writer.add(frame)
-                success, frame = cap.read()
-                i += 1
-
-        writer.close()
-
-    def _process_frame(self, frame: NDArrayFp64, frame_index: int) -> NDArrayFp64:
-        if self.trial_has_video_space_for_analysis:
-            return cv2.hconcat(
-                (
-                    self._overlay_video_frame(frame, frame_index),
-                    self._create_analysis_frame(frame_index),
-                )
-            )
-        return self._overlay_video_frame(frame, frame_index)
-
-    def _overlay_video_frame(self, frame: NDArrayFp64, frame_index: int) -> NDArrayFp64:
-        fig, ax = plt.subplots()
-        canvas = FigureCanvas(fig)
-
-        ax.imshow(frame)
-        ax.scatter(*self.framewise_confined_coordinates[frame_index])
-        ax.axis("off")
-
-        canvas.draw()
-
-        return np.frombuffer(canvas.tostring_rgb(), dtype="uint8")
-
-    def _create_analysis_frame(self, frame_index: int) -> NDArrayFp64:
-        raise NotImplemented("The analysis space is a work in progress")
 
     @cached_property
     def _reader_init_kwargs(self):
@@ -355,7 +307,7 @@ class BaseExperiment(Behaviour):
             )
             try:
                 result.append(trial_class(**self.trial_keyword_arguments(trial_id)))
-            except pydantic.error_wrappers.ValidationError as e:
+            except ValidationError as e:
                 bad_trial_ids_to_error_msg[trial_id] = str(e)
                 continue
         if bad_trial_ids_to_error_msg:
@@ -367,7 +319,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def trial_class_name_to_trial_ids(self) -> dict[str, Trial]:
-        return {trial_class.__name__: trial_ids for trial_class, trial_ids in self._trial_class_vstrial_ids.items()}
+        return {trial_class.__name__: trial_ids for trial_class, trial_ids in self._trial_class_to_trial_ids.items()}
 
     @cached_property
     def trial_id_to_trial_object(self) -> dict[Hashable, Trial]:
@@ -375,10 +327,10 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def trial_class_name_to_trial_objects(self) -> dict[str, Trial]:
-        result = {}
-        for trial_class_name, trial_ids in self._trial_class_vstrial_ids.items():
-            result[trial_class_name] = [self.trial_id_to_trial_object[trial_id] for trial_id in trial_ids]
-        return result
+        return {
+            trial_class_name: [self.trial_id_to_trial_object[trial_id] for trial_id in trial_ids]
+            for trial_class_name, trial_ids in self._trial_class_to_trial_ids.items()
+        }
 
     @cached_property
     def animal_id_to_trial_objects(self) -> dict[Hashable, Trial]:
@@ -439,126 +391,141 @@ class BaseExperiment(Behaviour):
     def number_of_trials(self) -> int:
         return len(self.trial_ids)
 
-    # DataFrame methods
+    # DataFrame methods =========================================
 
     @cached_property
-    def animal_id_indexed_feature_frame(self) -> pd.DataFrame:
-        dataset = (
-            self.animal_id_indexed_experiment_specific_feature_frame,
-            self.animal_id_indexed_motion_summary_frame,
-        )
+    def combined_feature_motion_df(self) -> pd.DataFrame:
         return pd.concat(
-            dataset,
+            (
+                self.feature_df_fit_to_motion_index,
+                self.motion_df_fit_to_feature_index,
+            ),
             axis=1,
-            keys=["Stage"] if self.stage else None,
-            # Prepend experiment stage to column MultiIndex:
-            # https://stackoverflow.com/a/42094658/9793651
-            names=self.feature_column_multi_index_names,
         )
 
     @cached_property
-    def animal_id_indexed_experiment_specific_feature_frame(self) -> pd.DataFrame:
-        assert self._at_least_one_trial_class_has_features
+    def animal_id_indexed_feature_df(self) -> pd.DataFrame:
+        assert self.experiment_has_features
 
         data_dict = {}
         if ENABLE_PROCESS_POOLING:
-            with ProcessPoolExecutor() as executor:
-                for animal_id, trial_objects in self.animal_id_to_trial_objects.items():
-                    trial_objects = [
-                        trial_object for trial_object in copy(trial_objects) if trial_object.trial_has_defined_features
-                    ]
-                    data_dict[animal_id] = sum(
-                        list(executor.map(attrgetter("feature_summary_row"), trial_objects)),
-                        [],
-                    )
+            with yaspin(Spinners.pong, text="Computing experiment features..."):
+                with ProcessPoolExecutor() as executor:
+                    for animal_id, trial_objects in self.animal_id_to_trial_objects.items():
+                        trial_objects = [
+                            trial_object
+                            for trial_object in copy(trial_objects)
+                            if trial_object.trial_has_defined_features
+                        ]
+                        data_dict[animal_id] = chain_lists_to_tuple(
+                            executor.map(attrgetter("feature_df_rows"), trial_objects)
+                        )
         else:
-            for animal_id, trial_objects in self.animal_id_to_trial_objects.items():
-                data_dict[animal_id] = sum(
+            for animal_id, trial_objects in tqdm(
+                self.animal_id_to_trial_objects.items(), desc="Computing experiment features"
+            ):
+                data_dict[animal_id] = chain_lists_to_tuple(
                     (
-                        trial_object.feature_summary_row
+                        trial_object.feature_df_rows
                         for trial_object in trial_objects
                         if trial_object.trial_has_defined_features
-                    ),
-                    [],
+                    )
                 )
 
-        result = pd.DataFrame.from_dict(data_dict, orient="index", columns=self._feature_frame_columns())
+        result = pd.DataFrame.from_dict(data_dict, orient="index", columns=self.feature_column_index)
         result.index.name = "Animal ID"
-        result.columns.names = self.feature_column_multi_index_names
 
         return result
 
     @cached_property
-    def animal_id_indexed_motion_summary_frame(self) -> pd.DataFrame:
-        return (
-            pd.merge(
-                self._trial_id_animal_id(self.motion_summary_frame.columns.nlevels),
-                self.motion_summary_frame,
-                on="Trial ID",
-            )
-            .drop("Trial ID", axis=1)
-            .set_index("Animal ID")
-            .sort_index()
-        )
-
-    @cached_property
-    def motion_summary_frame(self) -> pd.DataFrame:
+    def animal_id_indexed_motion_df(self) -> pd.DataFrame:
+        data_dict = {}
         if ENABLE_PROCESS_POOLING:
-            with ProcessPoolExecutor() as executor:
-                rows = executor.map(attrgetter("motion_features"), self.trial_objects)
+            with yaspin(Spinners.pong, text="Computing motion features..."):
+                with ProcessPoolExecutor() as executor:
+                    for animal_id, trial_objects in self.animal_id_to_trial_objects.items():
+                        trial_objects = [
+                            trial_object
+                            for trial_object in copy(trial_objects)
+                            if trial_object.trial_has_defined_features
+                        ]
+                        data_dict[animal_id] = chain_lists_to_tuple(
+                            list(executor.map(attrgetter("motion_features"), trial_objects)),
+                        )
         else:
-            rows = [trial_object.motion_features for trial_object in self.trial_objects]
+            for animal_id, trial_objects in tqdm(
+                self.animal_id_to_trial_objects.items(), desc="Computing motion features"
+            ):
+                data_dict[animal_id] = chain_lists_to_tuple(
+                    (
+                        trial_object.motion_features
+                        for trial_object in trial_objects
+                        if trial_object.trial_has_defined_features
+                    )
+                )
+                break
 
-        return pd.DataFrame(
-            rows,
-            columns=self._motion_summary_column_index,
-            index=self._trial_id_series,
-        )
+        result = pd.DataFrame.from_dict(data_dict, orient="index", columns=self.motion_column_index)
+        result.index.name = "Animal ID"
+
+        return result
+
+    # Motion <-> Feature fitting ===================================
 
     @cached_property
-    def motion_summary_columns(self) -> list:
-        return motion_multi_indexer("All", self._pandas_multi_index_level)
+    def feature_df_fit_to_motion_index(self) -> pd.DataFrame:
+        if self.motion_column_index.levels <= self.feature_column_index.levels:
+            return self.animal_id_indexed_feature_df
+        return copycat_assumes_levels_of_icon(self.animal_id_indexed_feature_df, self.animal_id_indexed_motion_df)
+
+    @cached_property
+    def motion_df_fit_to_feature_index(self) -> pd.DataFrame:
+        if self.motion_column_index.levels >= self.feature_column_index.levels:
+            return self.animal_id_indexed_motion_df
+        return copycat_assumes_levels_of_icon(self.animal_id_indexed_motion_df, self.animal_id_indexed_feature_df)
+
+    # DataFrame helper methods =====================================
 
     @classmethod
     @property
-    def feature_column_multi_index(cls):
-        chained_feature_headers = chain(
-            *(
-                trial_class.feature_headers
-                for trial_class in cls.trial_classes
-                if trial_class.trial_has_defined_features
-            )
+    def feature_column_index(cls) -> pd.MultiIndex:
+        feature_headers = chain_lists_to_tuple(
+            (trial_class.feature_headers for trial_class in cls.trial_classes if trial_class.trial_has_defined_features)
         )
-        feature_headers = tuple(chained_feature_headers)
         if not feature_headers:
-            return None
-        match max_level := max(len(feature_header) for feature_header in feature_headers):
-            case 2:
-                names = ["Feature", "Location/Category"]
-            case 3:
-                names = ["Stage", "Feature", "Location/Category"]
-            case _:
-                msg = f"The highest level in the feature_column_multi_index is too high, {max_level}:\n{', '.join(feature_headers)}"
-                raise AttributeError(msg)
-        return pd.MultiIndex.from_tuples(feature_headers, names=names)
+            msg = f"{cls.__name__} does not have any features, yet feature column index was called"
+            raise AttributeError(msg)
+
+        return pd.MultiIndex.from_tuples(feature_headers, names=cls._multi_index_names(feature_headers))
 
     @classmethod
     @property
-    def feature_column_multi_index_names(cls):
-        return cls.feature_column_multi_index.names
+    def experiment_has_features(cls) -> bool:
+        return cls.feature_column_index is not None
 
     @classmethod
     @property
-    def _at_least_one_trial_class_has_features(cls):
-        return cls.feature_column_multi_index is not None
+    def feature_column_index_names(cls):
+        return cls.feature_column_index.names
 
-    def fit_feature_column_multi_index_to_nlevels(self, levels: Optional[int] = None) -> pd.MultiIndex:
+    @classmethod
+    @property
+    def motion_column_headers(cls) -> list[tuple[str, ...], ...]:
+        return motion_multi_indexer("All", cls.feature_column_index.nlevels)
 
-        return pd.MultiIndex.from_tuples(columns)
+    @classmethod
+    @property
+    def motion_column_index(cls) -> pd.MultiIndex:
+        return pd.MultiIndex.from_tuples(
+            cls.motion_column_headers, names=cls._multi_index_names(cls.motion_column_headers)
+        )
 
-    @staticmethod
-    def _feature_2d_multi_indexer(feature: str, category) -> tuple:
-        return tuple([(feature, category) for category in category])
+    @classmethod
+    @property
+    def motion_column_index_levels(cls) -> int:
+        return max((trial_class.motion_column_index_levels for trial_class in cls.trial_classes))
+
+    # Helper methods =====================================
 
     @cached_property
     def _trial_id_series(self) -> pd.Series:
@@ -572,15 +539,8 @@ class BaseExperiment(Behaviour):
             name="Animal ID",
         ).sort_index()
 
-    def _trial_id_animal_id(self, levels: Optional[int] = None) -> pd.DataFrame:
-        result = self._trial_id_indexed_animal_ids.reset_index()
-        if levels:
-            columns = rise_to_n_levels(result.columns, levels)
-            result.columns = columns
-        return result
-
     @cached_property
-    def _trial_class_vstrial_ids(self) -> dict:
+    def _trial_class_to_trial_ids(self) -> dict:
         if not self.trial_id_to_trial_class_name:
             msg = (
                 "This experiment object has no trial_id_to_trial_class_name, "
@@ -602,54 +562,14 @@ class BaseExperiment(Behaviour):
     def _trial_class_to_trial_objects(self):
         return {
             trial_class: [self.trial_id_to_trial_object[trial_id] for trial_id in trial_ids]
-            for trial_class, trial_ids in self._trial_class_vstrial_ids.items()
+            for trial_class, trial_ids in self._trial_class_to_trial_ids.items()
         }
 
     @cached_property
     def _class_labels(self):
         return tuple(trial_class.trial_label for trial_class in self.trial_classes)
 
-    def _difference_warning(self, other, attribute: str):
-        if (self_attr := getattr(self, attribute)) == (other_attr := getattr(other, attribute)):
-            return
-        logger.warning(f"Joining experiments {self.best_id} & {other.best_id}: " f"{self_attr} != {other_attr}")
-
-    @cached_property
-    def _trial_id_column_index(self):
-        return (
-            "Trial ID",
-            *["" for _ in range(self._motion_summary_column_depth - 1)],
-        )
-
-    @cached_property
-    def _animal_id_column_index(self):
-        return (
-            "Animal ID",
-            *["" for _ in range(self._motion_summary_column_depth - 1)],
-        )
-
-    @cached_property
-    def _animal_id_key_view(self):
-        return self.animal_id_to_trial_objects.keys()
-
-    @cached_property
-    def _motion_summary_column_index(self) -> pd.MultiIndex:
-        return pd.MultiIndex.from_tuples(self.motion_summary_columns, names=self.feature_column_multi_index_names)
-
-    @cached_property
-    def _motion_summary_column_depth(self):
-        motion_summary_column_index_list = list(self._motion_summary_column_index)
-        result = len(motion_summary_column_index_list[0])
-        assert all(result == len(column) for column in motion_summary_column_index_list[1:])
-        return result
-
-    @cached_property
-    def _pandas_multi_index_level(self) -> int:
-        return len(self.feature_column_multi_index_names)
-
-    def _make_categorical_inspection_dir(self, trial_root_dir: Path):
-        pass
-
+    @staticmethod
     def _neither_singular_trial_class_or_trial_id_to_trial_class_name(self):
         msg = (
             "Either trial_class has to be singularly defined, "

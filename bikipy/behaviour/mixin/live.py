@@ -10,6 +10,7 @@ import numpy as np
 from pydantic import BaseModel, DirectoryPath, validator
 from tqdm import tqdm
 
+from bikipy.core.typing import NDArrayFp64
 from bikipy.utils.misc import clear_console
 from bikipy.utils.ranged_dict import RangeDict
 
@@ -86,6 +87,14 @@ class LiveTrial(BaseModel, ABC):
             if self.delay_timings
             else {}
         )
+
+    def detect_confined_perimeter(self, coordinate: NDArrayFp64) -> NDArrayFp64:
+        coordinate = np.expand_dims(coordinate, 0)
+        for label, perimeter in self._int_id_to_perimeter.items():
+            if perimeter.coordinate_confinement_boolean_index(coordinate):
+                logger.info(f"Location: {label}, {coordinate}")
+                return label
+        logger.debug(f"Location could not be determined, {coordinate}")
 
     @cached_property
     def total_loops_per_trial(self):

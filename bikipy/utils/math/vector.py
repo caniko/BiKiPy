@@ -2,7 +2,7 @@ from typing import Callable
 
 import numba
 import numpy as np
-from numba import njit, jit
+from numba import jit, njit
 from numpy.linalg import LinAlgError
 from pydantic import validate_arguments
 from pydantic_numpy import NDArray

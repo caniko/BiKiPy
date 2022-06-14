@@ -130,7 +130,7 @@ with pd.ExcelWriter(
 ) as writer:
     for i, experiment_objs in enumerate(experiment_obj_sets):
         df = pd.concat(
-            [experiment.animal_id_indexed_feature_frame for experiment in experiment_objs],
+            [experiment.full_experiment_df for experiment in experiment_objs],
             axis=1,
         )
 

@@ -48,49 +48,6 @@ def seek_next_file_index(filepath: Union[PurePath, str]) -> PurePath:
     return new_filepath
 
 
-def rise_to_n_levels(columns, n_levels: int):
-    """
-    Used to equate two pandas dataframes in terms of their column levels before merge
-
-    :param columns:
-    :param n_levels:
-    :return:
-    """
-    column_array = np.array(columns)
-    if len(column_array.shape) == 1:
-        column_array = np.expand_dims(column_array, 1)
-
-    if n_levels < column_array.shape[1]:
-        msg = "Can not reduce the number of levels that are natively defined" "in index"
-        raise ValueError(msg)
-
-    return to_tuple(
-        np.concatenate(
-            (
-                column_array,
-                [["" for _ in range(n_levels - column_array.shape[1])]] * len(column_array),
-            ),
-            axis=1,
-        )
-    )
-
-
-@lru_cache
-def generic_multi_indexer(*basis_labels):
-    number_of_levels = 1 if isinstance(basis_labels[0], str) else len(basis_labels[0])
-    assert not any(number_of_levels != 1 if isinstance(label, str) else len(label) for label in basis_labels)
-
-    def result(category: Any, desired_nlevel: int):
-        # if desired_nlevel < number_of_levels:
-        if (number_of_levels_to_add := desired_nlevel - number_of_levels - 1) < 0:
-            msg = f"Desired number of levels, {desired_nlevel}, is lower than the initial, {number_of_levels}"
-            raise ValueError(msg)
-        levels_to_add = ["" for _ in range(number_of_levels_to_add)]
-        return [(category, label, *levels_to_add) for label in basis_labels]
-
-    return result
-
-
 def directory_incrementor(path: Path):
     path = Path(path)
     i = 2
@@ -106,10 +63,6 @@ def clear_console():
     :return:
     """
     print("\033c\033[3J", end="")
-
-
-def to_tuple(array: NDArrayFp64):
-    return tuple(map(tuple, array))
 
 
 def get_git_root():

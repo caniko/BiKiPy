@@ -1,7 +1,7 @@
 import os
 from functools import cached_property, lru_cache
 from logging import getLogger
-from typing import ClassVar, Hashable, Optional
+from typing import Any, ClassVar, Hashable, Optional
 
 import numpy as np
 import pandas as pd
@@ -17,6 +17,7 @@ from bikipy.feature.motion import (
     motion_multi_indexer,
 )
 from bikipy.perimeter.utils import perimeter_multi_indexer
+from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 
 logger = getLogger(__name__)
@@ -32,6 +33,12 @@ _TWO_BY_TWO_IN_ENGLISH = {
     "lower_left": (0, 1),
     "lower_right": (1, 1),
 }
+
+
+def motion_multi_indexer_for_quadrant(category: Any, level: int):
+    return generic_multi_indexer(
+        "Displacement", "MedianSpeed", "MedianAcceleration", "FreezingTime", "Entries", "SecondsPresent"
+    )(category, level)
 
 
 class Quadrant(BikipyBase):
@@ -60,53 +67,41 @@ class Quadrant(BikipyBase):
 
 
 class RectangleEnclosedExperiment(BaseExperiment):
-    rectangle_2d_bin: tuple[int, int] = (2, 2)
-    center_box_to_recording_resolution_ratio: Optional[float] = None
+    center_box_to_recording_resolution_ratio: ClassVar[Optional[float]] = None
+    rectangle_2d_bin: ClassVar[tuple[int, int]] = (2, 2)
+
+    @classmethod
+    @property
+    def quadrant_grid_coordinates(cls):
+        result = []
+        for h in range(1, cls.rectangle_2d_bin[0] + 1):
+            for v in range(1, cls.rectangle_2d_bin[1] + 1):
+                result.append((h, v))
+        return result
+
+    @classmethod
+    @property
+    def motion_column_headers(cls) -> list:
+        quadrant_summary_columns = []
+        for quadrant_grid_coordinate in cls.quadrant_grid_coordinates:
+            category = f"Quadrant{quadrant_grid_coordinate}"
+            quadrant_summary_columns.extend(
+                motion_multi_indexer_for_quadrant(category, cls.feature_column_index.nlevels)
+            )
+        result = [*super().motion_column_headers, ["Gaussian", "CenterToPeriphery"], *quadrant_summary_columns]
+        if cls.center_box_to_recording_resolution_ratio:
+            result += [
+                *motion_multi_indexer("Center", cls.motion_column_index_levels),
+                *perimeter_multi_indexer("Center", cls.motion_column_index_levels),
+                *motion_multi_indexer("Periphery", cls.motion_column_index_levels),
+                *perimeter_multi_indexer("Periphery", cls.motion_column_index_levels),
+            ]
+        return result
 
     def trial_keyword_arguments(self, trial_id: Hashable) -> dict:
         result = super().trial_keyword_arguments(trial_id)
         result["rectangle_2d_bin"] = self.rectangle_2d_bin
         result["center_box_to_recording_resolution_ratio"] = self.center_box_to_recording_resolution_ratio
-        return result
-
-    @cached_property
-    def quadrant_grid_coordinates(self):
-        result = []
-        for h in range(1, self.rectangle_2d_bin[0] + 1):
-            for v in range(1, self.rectangle_2d_bin[1] + 1):
-                result.append((h, v))
-        return result
-
-    @cached_property
-    def motion_summary_columns(self) -> list:
-        quadrant_summary_columns = []
-        for quadrant_grid_coordinate in self.quadrant_grid_coordinates:
-            quadrant_summary_columns.extend(
-                [
-                    *motion_multi_indexer(quadrant_grid_coordinate, level=self._pandas_multi_index_level),
-                    *perimeter_multi_indexer(quadrant_grid_coordinate, level=self._pandas_multi_index_level),
-                ]
-            )
-        result = [
-            *super().motion_summary_columns,
-            ["Gaussian", "CenterToPeriphery"],
-            *pd.MultiIndex.from_product([["Quadrant"], quadrant_summary_columns]),
-            *pd.MultiIndex.from_product([["QuadrantEntries"], self.quadrant_grid_coordinates]),
-        ]
-        if self.center_box_to_recording_resolution_ratio:
-            result += list(
-                pd.MultiIndex.from_product(
-                    [
-                        [""],
-                        [
-                            *motion_multi_indexer("Center", self._pandas_multi_index_level),
-                            *perimeter_multi_indexer("Center", self._pandas_multi_index_level),
-                            *motion_multi_indexer("Periphery", self._pandas_multi_index_level),
-                            *perimeter_multi_indexer("Periphery", self._pandas_multi_index_level),
-                        ],
-                    ]
-                )
-            )
         return result
 
 
@@ -220,6 +215,13 @@ class RectangleEnclosedTrial(BaseTrial):
             result[quadrant_grid_coordinate] = np.sum(self.location_sequence_quadrant == quadrant_index)
         return result
 
+    @cached_property
+    def quadrant_grid_coordinate_to_seconds_present(self):
+        return {
+            quadrant_grid_coordinate: quadrant.seconds_present
+            for quadrant_grid_coordinate, quadrant in self.quadrant_grid_coordinate_to_quadrant.items()
+        }
+
     # Center vs Periphery ==============================================================
     @cached_property
     def center_rectangle_corners(self) -> NDArrayFp64:
@@ -298,8 +300,11 @@ class RectangleEnclosedTrial(BaseTrial):
             return super().motion_features
 
         quadrant_motion_values = []
-        for quadrant in self.quadrant_grid_coordinate_to_quadrant.values():
-            quadrant_motion_values.extend(quadrant.motion.values())
+        for (qgc_i, quadrant), (qgc_ii, entries) in zip(
+            self.quadrant_grid_coordinate_to_quadrant.items(), self.quadrant_grid_coordinate_to_entries.items()
+        ):
+            assert qgc_i == qgc_ii
+            quadrant_motion_values.extend(*quadrant.motion.values(), entries, quadrant.seconds_present)
 
         result = [
             *super().motion_features,

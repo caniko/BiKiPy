@@ -16,10 +16,7 @@ WT: 3 > 4 > 1 > 2
 """
 from typing import ClassVar
 
-from bikipy.behaviour.base import BaseExperiment
-from bikipy.behaviour.mixin.physical_object import (
-    RectangleEnclosedPhysicalObjectTrial,
-)
+from bikipy.behaviour.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
 from bikipy.behaviour.rectangle import RectangleEnclosedExperiment
 from bikipy.perimeter.base import AnyPerimeter
 

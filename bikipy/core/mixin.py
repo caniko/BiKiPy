@@ -13,7 +13,7 @@ class VideoMetadataMixin(BikipyBase):
     video_path: Optional[FilePath] = None
 
     manual_fps: Optional[float] = None
-    manual_recording_resolution: Optional[NDArrayFp64] = None
+    manual_recording_resolution: Optional[NDArrayInt16] = None
     manual_meters_per_pixel: Optional[float | NDArrayFp64] = None
 
     metric_resolution: Optional[NDArrayFp64] = None
