@@ -1,6 +1,7 @@
 import json
 import pickle
 from abc import ABC, abstractmethod
+from copy import deepcopy, copy
 from functools import cached_property
 from typing import Any, Callable, Hashable, Optional, TypeVar, Iterable, ClassVar
 
@@ -17,7 +18,7 @@ from bikipy.ingress.plugin.center import detect_center_in_perimeter_directory
 from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
 )
-from bikipy.ingress.plugin.perimeter import get_perimeter_data
+from bikipy.ingress.plugin.perimeter import get_perimeter_data, get_perimeter_name_df
 from bikipy.ingress.utils.io import (
     get_dataset_directory_path,
     get_inspect_directory_path,
@@ -313,7 +314,17 @@ class BaseIngress(BikipyBase, ABC):
         return perimeter_set
 
     def register_perimeter_to_trial_id(self, trial_id: Hashable, label_to_perimeter: dict[str, AnyPerimeter]):
-        self._trial_id_to_keyword_arguments[trial_id].update(label_to_perimeter)
+        if self.settings["ingress"]["perimeter_naming_strategy"] == "metadata":
+            df = get_perimeter_name_df()
+            for label, perimeter in label_to_perimeter.items():
+                new_label = df.loc[trial_id, label]
+
+                new_perimeter = copy(perimeter)
+                new_perimeter.label = new_label
+
+                self._trial_id_to_keyword_arguments[trial_id][new_label] = new_perimeter
+        else:
+            self._trial_id_to_keyword_arguments[trial_id].update(label_to_perimeter)
 
     def get_plugin_parameter(self, parameter_label: str, metadata_index_getter: Callable):
         parameter_indexes = PLUGIN_NAME_TO_KEYRING[parameter_label]
@@ -351,13 +362,20 @@ class BaseIngress(BikipyBase, ABC):
 
     @cached_property
     def analysis_df(self) -> pd.DataFrame:
-        np.seterr(all="ignore")
-        return pd.concat(
-            (self.metadata_fit_to_combined_feature_motion_df, self.combined_feature_motion_df_fit_to_metadata), axis=1
+        df = pd.concat(
+            (self.metadata_fit_to_combined_feature_motion_df, self.combined_feature_motion_df_fit_to_metadata),
+            axis=1,
         )
+        df.columns.names = ["Stage", "Feature", "Location/Category"] if self.experiment.is_trial_sequence else ["Feature", "Location/Category"]
+        # df.columns.levels[2].astype(str)
+
+        df.index.names = ["Animal ID"]
+        df.index = df.index.astype(str)
+
+        return df
 
     def save_analysis_data(self):
-        self.analysis_df.to_parquet(self.result_directory_path / f"animal_id_indexed_result_data.parquet")
+        # self.analysis_df.to_parquet(self.result_directory_path / f"animal_id_indexed_result_data.parquet")
         self.analysis_df.to_excel(self.result_directory_path / "animal_id_indexed_result_data.xlsx")
 
     # Private methods ===============================

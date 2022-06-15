@@ -1,4 +1,5 @@
 import shutil
+from functools import lru_cache
 from logging import getLogger
 from pathlib import Path
 
@@ -25,10 +26,11 @@ def get_perimeter_data(perimeter_path: FilePath):
     return split_file_stem[1:]
 
 
-def get_trial_id_to_perimeter_name_to_ascribed_perimeter_name(project_root_directory: DirectoryPath):
-    perimeter_directory_path = get_perimeter_directory_path(project_root_directory)
+@lru_cache(1)
+def get_perimeter_name_df(project_root_directory: DirectoryPath):
     assert load_settings(project_root_directory)["ingress"]["perimeter_naming_strategy"] == "metadata"
-    df = pd.read_excel(infer_metadata_path, index_col=0)
+    df = pd.read_excel(infer_metadata_path(project_root_directory), sheet_name="perimeter_label", index_col=0)
+    return df
 
 
 @validate_arguments

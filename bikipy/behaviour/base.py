@@ -53,7 +53,7 @@ class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
         return self.recording_center_pixel - self.center if self.center is not None else None
 
     @staticmethod
-    def _multi_index_names(index_content: Iterable):
+    def multi_index_names(index_content: Iterable):
         match max_level := max_len_in_iterable(index_content):
             case 2:
                 return ["Feature", "Location/Category"]
@@ -86,6 +86,7 @@ class BaseTrial(Behaviour):
         description="Only affective if crop_time_seconds is not 0.0. "
         "Will crop from start instead when set to False",
     )
+
     # Variables for trials with zones, see doc for more info.
     perimeters: Optional[Sequence] = None
     trial_start_perimeter: Optional[str] = None
@@ -231,6 +232,7 @@ class BaseExperiment(Behaviour):
         description="Experiment stage label, if experiment object is in a sequence of experiment objects"
     )
     inspect_directory: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
+    compute_only_one_df_row: bool = Field(False, description="Used to rapidly generate combo df during debugging")
 
     trial_classes: ClassVar[tuple[Any]] = Field(..., description="Trial classes designed for this experiment class")
 
@@ -467,6 +469,8 @@ class BaseExperiment(Behaviour):
                         if trial_object.trial_has_defined_features
                     )
                 )
+                if self.compute_only_one_df_row:
+                    break
 
         result = pd.DataFrame.from_dict(data_dict, orient="index", columns=self.feature_column_index)
         result.index.name = "Animal ID"
@@ -495,6 +499,8 @@ class BaseExperiment(Behaviour):
                 data_dict[animal_id] = chain_lists_to_tuple(
                     (trial_object.motion_features for trial_object in trial_objects)
                 )
+                if self.compute_only_one_df_row:
+                    break
 
         result = pd.DataFrame.from_dict(data_dict, orient="index", columns=self.animal_motion_column_index)
         result.index.name = "Animal ID"
@@ -505,13 +511,13 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def feature_df_fit_to_motion_index(self) -> pd.DataFrame:
-        if self.motion_column_index.nlevels <= self.feature_column_index.nlevels:
+        if self.feature_column_index.nlevels >= self.animal_motion_column_index.nlevels:
             return self.animal_id_indexed_feature_df
         return copycat_assumes_levels_of_icon(self.animal_id_indexed_feature_df, self.animal_id_indexed_motion_df)
 
     @cached_property
     def motion_df_fit_to_feature_index(self) -> pd.DataFrame:
-        if self.motion_column_index.nlevels >= self.feature_column_index.nlevels:
+        if self.animal_motion_column_index.nlevels >= self.feature_column_index.nlevels:
             return self.animal_id_indexed_motion_df
         return copycat_assumes_levels_of_icon(self.animal_id_indexed_motion_df, self.animal_id_indexed_feature_df)
 
@@ -527,7 +533,7 @@ class BaseExperiment(Behaviour):
             msg = f"{cls.__name__} does not have any features, yet feature column index was called"
             raise AttributeError(msg)
 
-        return pd.MultiIndex.from_tuples(feature_headers, names=cls._multi_index_names(feature_headers))
+        return pd.MultiIndex.from_tuples(feature_headers, names=cls.multi_index_names(feature_headers))
 
     @classmethod
     @property
@@ -543,7 +549,7 @@ class BaseExperiment(Behaviour):
     @property
     def motion_column_index(cls) -> pd.MultiIndex:
         return pd.MultiIndex.from_tuples(
-            cls.motion_column_headers, names=cls._multi_index_names(cls.motion_column_headers)
+            cls.motion_column_headers, names=cls.multi_index_names(cls.motion_column_headers)
         )
 
     @classmethod

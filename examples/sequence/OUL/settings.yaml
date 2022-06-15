@@ -115,7 +115,7 @@ trial:
         object_4: None
     ObjectsInUpdatingLocationsTestTrial:
       defined:
-        crop_time_seconds: 300
+        crop_time_seconds: 900
       required:
         object_2: None
         object_3: None

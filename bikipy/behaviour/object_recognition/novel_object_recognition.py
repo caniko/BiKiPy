@@ -16,19 +16,20 @@ logger = getLogger(__name__)
 
 
 class NortHabituationTrial(RectangleEnclosedTrial, PhysicalObjectHabituationTrialMixin):
-    pass
+    experiment_class_name = "NortExperiment"
 
 
 class NortOpenField(NortHabituationTrial):
     pass
 
 
-class NortTrainingTrial(PhysicalObjectTrialMixin):
+class NortTrainingTrial(RectangleEnclosedTrial, PhysicalObjectTrialMixin):
     variable: AnyPerimeter
     familiar: AnyPerimeter
 
     physical_object_labels: ClassVar[list[str, ...]] = ["variable", "familiar"]
 
+    experiment_class_name = "NortExperiment"
     trial_label: ClassVar[str] = "Training"
 
     @property
@@ -36,12 +37,13 @@ class NortTrainingTrial(PhysicalObjectTrialMixin):
         return self.variable, self.familiar
 
 
-class NortNoveltyTrial(PhysicalObjectTrialMixin):
+class NortNoveltyTrial(RectangleEnclosedTrial, PhysicalObjectTrialMixin):
     novel: AnyPerimeter
     familiar: AnyPerimeter
 
     physical_object_labels: ClassVar[list[str, ...]] = ["novel", "familiar"]
 
+    experiment_class_name = "NortExperiment"
     trial_label: ClassVar[str] = "Novelty"
 
     @classmethod
