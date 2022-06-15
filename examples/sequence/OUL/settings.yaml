@@ -1,15 +1,17 @@
 ingress_method: sequence
-animal-ID_absent_from_metadata: ignore
-sequence_index_to_trial_class_name:
-  0: ObjectsInUpdatingLocationsTrainingTrial
-  1: ObjectsInUpdatingLocationsUpdateTrial
-  2: ObjectsInUpdatingLocationsTestTrial
 ingress:
-  stageful_metadata: false
+  stageful_metadata: true
   skip_absent_trials_absent_from_metadata_index: true
   meters_per_pixel_definition_strategy: metadata
+  perimeter_naming_strategy: null
   perimeter_definition_strategy: trial-wise
+  crop_time_definition_strategy: null
   center_definition_strategy: metadata
+  animal-ID_absent_from_metadata: ignore
+  sequence_index_to_trial_class_name:
+    0: ObjectsInUpdatingLocationsTrainingTrial
+    1: ObjectsInUpdatingLocationsUpdateTrial
+    2: ObjectsInUpdatingLocationsTestTrial
 perimeter:
   label_prefix: object
   label_suffix: null
@@ -88,6 +90,7 @@ trial:
       perimeter_border_normal_metric_magnitude: 0.02
       data_reader_kwargs:
         init_from: parquet
+        crop_from_end: false
         midpoint_groups:
           center_eye: [ "left_ear", "right_ear" ]
     required:
@@ -102,19 +105,17 @@ trial:
   specific:
     ObjectsInUpdatingLocationsTrainingTrial:
       defined:
-        object_2: null
+        crop_time_seconds: 900
       required:
         object_2: None
     ObjectsInUpdatingLocationsUpdateTrial:
       defined:
-        object_4: null
+        crop_time_seconds: 300
       required:
         object_4: None
     ObjectsInUpdatingLocationsTestTrial:
       defined:
-        object_2: null
-        object_3: null
-        object_4: null
+        crop_time_seconds: 300
       required:
         object_2: None
         object_3: None

@@ -5,10 +5,15 @@ import yaml
 from pydantic import DirectoryPath, FilePath
 
 
-@lru_cache
-def initialize_metadata_data_frame(project_root_directory: DirectoryPath, stageful_metadata: bool):
+@lru_cache(1)
+def infer_metadata_path(project_root_directory: DirectoryPath):
+    return next(project_root_directory.glob("metadata.*"))
+
+
+@lru_cache(1)
+def initialize_metadata_data_frame(project_root_directory: DirectoryPath, stageful_metadata: bool) -> pd.DataFrame:
     return pd.read_excel(
-        next(project_root_directory.glob("metadata.*")),
+        infer_metadata_path(project_root_directory),
         index_col=0,
         header=(0, 1) if stageful_metadata else 0,
     )

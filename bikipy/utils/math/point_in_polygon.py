@@ -115,7 +115,7 @@ def _is_inside_sm(point: NDArrayFp64, polygon: NDArrayFp64):
 
 
 if ENABLE_NUMBA:
-    is_inside_sm = njit(parallel=True, cache=True)(_is_inside_sm)
+    is_inside_sm = njit(nogil=True, cache=True)(_is_inside_sm)
 
     @njit(parallel=True, cache=True)
     def is_inside_sm_parallel(points: NDArrayFp64, polygon: NDArrayFp64) -> NDArrayBool:

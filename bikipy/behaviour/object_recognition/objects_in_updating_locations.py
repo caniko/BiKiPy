@@ -29,6 +29,7 @@ class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTri
 
     experiment_sequence_index: ClassVar[int] = 0
     trial_label: ClassVar[str] = "Training"
+    experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
 
     @property
     def all_physical_object_perimeters(self) -> tuple[AnyPerimeter, ...]:

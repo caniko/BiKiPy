@@ -2,6 +2,7 @@ from itertools import chain
 from typing import Any, Iterable, Sequence
 
 import pandas as pd
+from pydantic import validate_arguments
 
 from bikipy.core.typing import NDArray
 
@@ -18,12 +19,19 @@ def ndarray_to_tuple(array: NDArray):
     return tuple(map(tuple, array))
 
 
-def add_n_levels_to_multi_index(multi_index: pd.Index, n_levels: int, on_start: bool = True) -> pd.MultiIndex:
+def add_n_levels_to_multi_index(multi_index: pd.Index | pd.MultiIndex, n_levels: int, on_start: bool = True) -> pd.MultiIndex:
     multi_index_as_tuples = list(multi_index)
     levels_to_add = ("" for _ in range(n_levels))
-    if on_start:
-        return pd.MultiIndex.from_tuples([(*levels_to_add, *headers) for headers in multi_index_as_tuples])
-    return pd.MultiIndex.from_tuples([(*headers, *levels_to_add) for headers in multi_index_as_tuples])
+
+    if isinstance(multi_index, pd.MultiIndex):
+        if on_start:
+            return pd.MultiIndex.from_tuples([(*levels_to_add, *headers) for headers in multi_index_as_tuples])
+        return pd.MultiIndex.from_tuples([(*headers, *levels_to_add) for headers in multi_index_as_tuples])
+
+    elif isinstance(multi_index, pd.Index):
+        if on_start:
+            return pd.MultiIndex.from_tuples([(*levels_to_add, headers) for headers in multi_index_as_tuples])
+        return pd.MultiIndex.from_tuples([(headers, *levels_to_add) for headers in multi_index_as_tuples])
 
 
 def copycat_assumes_levels_of_icon(copycat: pd.DataFrame, icon: pd.DataFrame):

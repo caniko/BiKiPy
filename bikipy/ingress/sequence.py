@@ -1,6 +1,7 @@
 from functools import reduce
 from logging import getLogger
 from pathlib import Path
+from typing import ClassVar
 
 from pydantic import DirectoryPath, validate_arguments
 
@@ -13,6 +14,8 @@ logger = getLogger(__name__)
 
 
 class SequenceIngress(BaseIngress):
+    ingress_method: ClassVar[str] = "sequence"
+
     def _experiment_class_kwargs_and_metadata_index_to_trial_id_and_metadata_index_to_trial_id_define_function(self):
         def get_plugin_index_from_stageful_metadata(feature_sheet_header: str):
             feature_column = animal_metadata[feature_sheet_header]
@@ -42,7 +45,7 @@ class SequenceIngress(BaseIngress):
                 trial_id = int(trial_id) if trial_id.isdigit() else trial_id
                 trial_ids.append(trial_id)
 
-                self._trial_id_to_trial_class_name[trial_id] = self.settings["sequence_index_to_trial_class_name"][
+                self._trial_id_to_trial_class_name[trial_id] = self.settings["ingress"]["sequence_index_to_trial_class_name"][
                     sequence_index
                 ]
                 self._trial_id_to_keyword_arguments[trial_id] = {
@@ -122,10 +125,10 @@ def sequence_generate_configuration(
     logger.info(f"Generating experiment configuration at {project_root_directory}")
 
     method_settings = {
-        "ingress_method": "sequence",
         "animal-ID_absent_from_metadata": "ignore",  # TODO
         "sequence_index_to_trial_class_name": {
-            i: trial_class_name for i, trial_class_name in enumerate(experiment_class.trial_class_names)
+            sequence_index: trial_class_name
+            for sequence_index, trial_class_name in enumerate(experiment_class.trial_class_names)
         },
     }
     method_immutable = {
@@ -133,6 +136,7 @@ def sequence_generate_configuration(
     }
 
     return init_settings(
+        "sequence",
         project_root_directory,
         experiment_class,
         method_settings,

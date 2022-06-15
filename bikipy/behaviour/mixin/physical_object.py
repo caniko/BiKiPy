@@ -104,7 +104,6 @@ class PhysicalObjectTrialMixin(BikipyBase, ABC):
 class PhysicalObjectHabituationTrialMixin(BaseModel):
     """The purpose of this stage is to generate reference data for proceeding experiments with objects."""
 
-    experiment_sequence_index: ClassVar[Optional[int]] = 0
     trial_label: ClassVar[str] = "Habituation"
 
 

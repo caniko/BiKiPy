@@ -80,10 +80,10 @@ class BaseTrial(Behaviour):
     inspect_image: Optional[FilePath] = Field(
         description="Image to use as background in the plots for visualising the analysis data",
     )
-    cropping_time_seconds: float = 0.0
+    crop_time_seconds: float = 0.0
     crop_from_end: bool = Field(
         True,
-        description="Only affective if cropping_time_seconds is not 0.0. "
+        description="Only affective if crop_time_seconds is not 0.0. "
         "Will crop from start instead when set to False",
     )
     # Variables for trials with zones, see doc for more info.
@@ -91,9 +91,9 @@ class BaseTrial(Behaviour):
     trial_start_perimeter: Optional[str] = None
 
     # Class variables
+    experiment_class_name: ClassVar[str]
     category: ClassVar[Optional[str]] = "trial"
 
-    experiment_sequence_index: ClassVar[Optional[int]] = None
     trial_label: ClassVar[Optional[str]] = None
 
     second_tolerance: ClassVar[float] = 0.15
@@ -102,11 +102,23 @@ class BaseTrial(Behaviour):
 
     @classmethod
     @property
+    def experiment_class(cls) -> "Experiment":
+        from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
+
+        return EXPERIMENT_NAME_TO_CLASS[cls.experiment_class_name]
+
+    @classmethod
+    @property
     def trial_has_defined_features(cls) -> bool:
         try:
             return bool(cls.feature_headers)
         except AttributeError:
             return False
+
+    @classmethod
+    @property
+    def experiment_sequence_index(cls) -> int:
+        return cls.experiment_class.trial_class_name_to_sequence_index[cls.__name__]
 
     @classmethod
     @property
@@ -137,8 +149,8 @@ class BaseTrial(Behaviour):
 
     @cached_property
     def reader_init_kwargs(self):
-        if self.cropping_time_seconds:
-            self.data_reader_kwargs["cropping_time_seconds"] = self.fps * self.cropping_time_seconds
+        if self.crop_time_seconds:
+            self.data_reader_kwargs["crop_frames"] = round(self.fps * self.crop_time_seconds)
         return self.data_reader_kwargs
 
     @property
@@ -210,10 +222,11 @@ Trial = TypeVar("Trial", bound=BaseTrial)
 
 class BaseExperiment(Behaviour):
     manual_trial_ids: Optional[tuple] = None
-    trial_id_to_trial_class_name: Optional[dict] = None
-    trial_id_to_keyword_arguments: Optional[dict] = None
+    trial_id_to_trial_class_name: Optional[dict] = Field(default_factory=dict)
+    trial_id_to_keyword_arguments: Optional[dict] = Field(default_factory=dict)
+    trial_class_name_to_keyword_arguments: Optional[dict] = Field(default_factory=dict)
     trial_id_range_to_keyword_arguments: Optional[RangeDict] = None
-    common_trial_keyword_arguments: Optional[dict] = None
+    common_trial_keyword_arguments: Optional[dict] = Field(default_factory=dict)
     stage: Optional[str] = Field(
         description="Experiment stage label, if experiment object is in a sequence of experiment objects"
     )
@@ -234,8 +247,13 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
+    def trial_sequence_length(cls) -> int:
+        return len(cls.trial_classes)
+
+    @classmethod
+    @property
     def is_trial_sequence(cls) -> bool:
-        return len(cls.trial_classes) != 1
+        return cls.trial_sequence_length != 1
 
     @classmethod
     @property
@@ -258,10 +276,15 @@ class BaseExperiment(Behaviour):
             raise AttributeError(msg)
 
         try:
-            return {trial_class.experiment_sequence_index: trial_class for trial_class in cls.trial_classes}
+            return {i: trial_class for i, trial_class in enumerate(cls.trial_classes)}
         except AttributeError:
             msg = "experiment_sequence_index must be defined for each trial class when working with a sequence of trial classes"
             raise AttributeError(msg)
+
+    @classmethod
+    @property
+    def stage_index_to_trial_class_name(cls):
+        return {i: trial_class.__name__ for i, trial_class in cls.stage_index_to_trial_class.items()}
 
     @classmethod
     @property
@@ -287,8 +310,13 @@ class BaseExperiment(Behaviour):
 
         if self.common_trial_keyword_arguments:
             result.update(self.common_trial_keyword_arguments)
+
+        if (trial_class_name := self.trial_id_to_trial_class_name[trial_id]) in self.trial_class_name_to_keyword_arguments:
+            result.update(self.trial_class_name_to_keyword_arguments[trial_class_name])
+
         if self.trial_id_to_keyword_arguments:
             result.update(self.trial_id_to_keyword_arguments[trial_id])
+
         if self.trial_id_range_to_keyword_arguments:
             if not isinstance(trial_id, int):
                 msg = "Trial IDs must be integers when trial_id_range_to_keyword_arguments is used"
@@ -508,11 +536,6 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def feature_column_index_names(cls):
-        return cls.feature_column_index.names
-
-    @classmethod
-    @property
     def motion_column_headers(cls) -> list[tuple[str, ...], ...]:
         return motion_multi_indexer("All", cls.feature_column_index.nlevels)
 
@@ -526,7 +549,10 @@ class BaseExperiment(Behaviour):
     @classmethod
     @property
     def animal_motion_column_index(cls) -> pd.MultiIndex:
-        return pd.MultiIndex.from_product([list(cls.trial_class_names), list(cls.motion_column_index)])
+        tuples = []
+        for trial_class in cls.trial_class_names:
+            tuples.extend((trial_class, *column) for column in cls.motion_column_index)
+        return pd.MultiIndex.from_tuples(tuples)
 
     @classmethod
     @property

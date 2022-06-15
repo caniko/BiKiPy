@@ -80,7 +80,7 @@ class DeepLabCutReader(BaseReader):
                         result.loc[:, pd.IndexSlice[component_name, ("x", "y")]].values for component_name in group
                     ]
                     midpoint_data[(name, "x")], midpoint_data[(name, "y")] = recursive_midpoint(group_points).T
-                    midpoint_data[(name, "likelihood")] = self.reduce_likelihoods(group)
+                    midpoint_data[(name, "likelihood")] = self.reduce_likelihoods(result, group)
                 elif all(component in self.tracked_and_midpoint_labels for component in group):
                     midpoint_based_midpoints[name] = group
                 else:
@@ -138,7 +138,8 @@ class DeepLabCutReader(BaseReader):
     def frames(self) -> int:
         return self.df.shape[0]
 
-    def reduce_likelihoods(self, tracked_point_labels: Sequence) -> NDArrayFp64:
+    @staticmethod
+    def reduce_likelihoods(df: pd.DataFrame, tracked_point_labels: Sequence) -> NDArrayFp64:
         """
         Reduce likelihood values by multiplication; R^n to scalar
 
@@ -147,7 +148,7 @@ class DeepLabCutReader(BaseReader):
         :return: NDArrayFp64 with the reduced likelihood values
         """
         return np.multiply.reduce(
-            self.raw_df.loc[:, pd.IndexSlice[tracked_point_labels, "likelihood"]].values,
+            df.loc[:, pd.IndexSlice[tracked_point_labels, "likelihood"]].values,
             axis=1,
         )
 

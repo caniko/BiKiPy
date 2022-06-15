@@ -2,6 +2,7 @@ import shutil
 from logging import getLogger
 from pathlib import Path
 
+import pandas as pd
 import plyer
 import yaml
 from pydantic import DirectoryPath, FilePath, validate_arguments
@@ -10,9 +11,24 @@ from bikipy.ingress.utils.io import (
     get_perimeter_directory_path,
     get_project_settings_path,
     load_settings,
+    infer_metadata_path,
 )
 
 logger = getLogger(__name__)
+
+
+def get_perimeter_data(perimeter_path: FilePath):
+    split_file_stem = perimeter_path.stem.split("-")
+    assert split_file_stem[0].lower().endswith("perimeter")
+    assert len(split_file_stem) == 3
+    # return {"shape": split_file_stem[1], "label": split_file_stem[2]}
+    return split_file_stem[1:]
+
+
+def get_trial_id_to_perimeter_name_to_ascribed_perimeter_name(project_root_directory: DirectoryPath):
+    perimeter_directory_path = get_perimeter_directory_path(project_root_directory)
+    assert load_settings(project_root_directory)["ingress"]["perimeter_naming_strategy"] == "metadata"
+    df = pd.read_excel(infer_metadata_path, index_col=0)
 
 
 @validate_arguments
@@ -37,11 +53,3 @@ def add_perimeter_from_makesense(project_root_directory: DirectoryPath, make_cop
 
     if make_copy:
         shutil.copyfile(perimeter_path, perimeter_directory_path / perimeter_path.name)
-
-
-def get_perimeter_data(perimeter_path: FilePath):
-    split_file_stem = perimeter_path.stem.split("-")
-    assert split_file_stem[0].lower().endswith("perimeter")
-    assert len(split_file_stem) == 3
-    # return {"shape": split_file_stem[1], "label": split_file_stem[2]}
-    return split_file_stem[1:]

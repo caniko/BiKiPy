@@ -17,4 +17,10 @@ PLUGIN_NAME_TO_KEYRING = {
         "bikipy_trial_key": "center",
         "human_readable_index": "Center",
     },
+    "crop_time": {
+        "ingress_key": "crop_time_definition_strategy",
+        "code_key": "crop_time",
+        "bikipy_trial_key": "crop_time_seconds",
+        "human_readable_index": "CropTime",
+    }
 }

@@ -1,7 +1,7 @@
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -185,7 +185,7 @@ class PhysicalObjectSet(BikipyBase):
     Some methods are designed specifically for sets with a specific number of objects, while others are general.
     """
 
-    physical_objects: tuple[PhysicalObject, ...]
+    physical_objects: Sequence
 
     overlapping_frame_to_total_frame_warning_ratio: ClassVar[float] = 0.05
 

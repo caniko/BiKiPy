@@ -29,7 +29,6 @@ class NortTrainingTrial(PhysicalObjectTrialMixin):
 
     physical_object_labels: ClassVar[list[str, ...]] = ["variable", "familiar"]
 
-    experiment_sequence_index: ClassVar[Optional[int]] = 1
     trial_label: ClassVar[str] = "Training"
 
     @property
@@ -43,7 +42,6 @@ class NortNoveltyTrial(PhysicalObjectTrialMixin):
 
     physical_object_labels: ClassVar[list[str, ...]] = ["novel", "familiar"]
 
-    experiment_sequence_index: ClassVar[Optional[int]] = 2
     trial_label: ClassVar[str] = "Novelty"
 
     @classmethod

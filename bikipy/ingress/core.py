@@ -1,7 +1,8 @@
 import json
+import pickle
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Any, Callable, Hashable, Optional, TypeVar
+from typing import Any, Callable, Hashable, Optional, TypeVar, Iterable, ClassVar
 
 import numpy as np
 import pandas as pd
@@ -34,17 +35,22 @@ from bikipy.perimeter.base import (
 from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.perimeter.radial.circle import CirclePerimeter
 from bikipy.reader import DeepLabCutReader
+from bikipy.utils.collection_utils import copycat_assumes_levels_of_icon, add_n_levels_to_multi_index
 
 
 class BaseIngress(BikipyBase, ABC):
     project_root_directory: DirectoryPath
 
-    _trial_id_to_keyword_arguments: dict[Hashable, dict[str, Any]] = {}
-    _common_trial_keyword_arguments: dict[str, Any] = {}
     _trial_id_to_trial_class_name: dict[Hashable, str] = {}
+    _common_trial_keyword_arguments: dict[str, Any] = {}
+    _trial_id_to_keyword_arguments: dict[Hashable, dict[str, Any]] = {}
+    _trial_class_name_to_keyword_arguments: dict[str, Any] = {}
+
     _metadata_index_to_trial_id: dict = {}
 
     _experiment_data_defined: bool = False
+
+    ingress_method: ClassVar[str]
 
     @abstractmethod
     def _experiment_class_kwargs_and_metadata_index_to_trial_id_and_metadata_index_to_trial_id_define_function(self):
@@ -55,9 +61,13 @@ class BaseIngress(BikipyBase, ABC):
         ...
 
     @property
+    def experiment_name(self) -> str:
+        return self.settings["immutable"]["experiment_class"]
+
+    @property
     def experiment_class(self):
         try:
-            return EXPERIMENT_NAME_TO_CLASS[self.settings["immutable"]["experiment_class"]]
+            return EXPERIMENT_NAME_TO_CLASS[self.experiment_name]
         except KeyError:
             msg = (
                 f"experiment_class in settings is set to an invalid value: "
@@ -69,21 +79,11 @@ class BaseIngress(BikipyBase, ABC):
     @cached_property
     def experiment_class_kwargs(self):
         return {
-            "trial_id_to_keyword_arguments": self.trial_id_to_keyword_arguments,
-            "common_trial_keyword_arguments": self.common_trial_keyword_arguments,
             "trial_id_to_trial_class_name": self.trial_id_to_trial_class_name,
+            "common_trial_keyword_arguments": self.common_trial_keyword_arguments,
+            "trial_id_to_keyword_arguments": self.trial_id_to_keyword_arguments,
+            "trial_class_name_to_keyword_arguments": self.trial_class_name_to_keyword_arguments,
         }
-
-    @property
-    def trial_id_to_keyword_arguments(self):
-        self._define_experiment_data_if_not_defined()
-        return self._trial_id_to_keyword_arguments
-
-    @property
-    def common_trial_keyword_arguments(self):
-        if not self._experiment_data_defined:
-            self._define_experiment_data()
-        return self._common_trial_keyword_arguments
 
     @property
     def trial_id_to_trial_class_name(self):
@@ -92,32 +92,91 @@ class BaseIngress(BikipyBase, ABC):
         return self._trial_id_to_trial_class_name
 
     @property
+    def common_trial_keyword_arguments(self):
+        if not self._experiment_data_defined:
+            self._define_experiment_data()
+        return self._common_trial_keyword_arguments
+
+    @property
+    def trial_id_to_keyword_arguments(self):
+        self._define_experiment_data_if_not_defined()
+        return self._trial_id_to_keyword_arguments
+
+    @property
+    def trial_class_name_to_keyword_arguments(self):
+        self._define_experiment_data_if_not_defined()
+        return self._trial_class_name_to_keyword_arguments
+
+    @property
     def metadata_index_to_trial_id(self):
         if not self._experiment_data_defined:
             self._define_experiment_data()
         return self._metadata_index_to_trial_id
 
-    @property
-    def ingress_method(self):
-        return self.settings["ingress_method"]
+    def _register_to_trial_class_name_to_keyword_arguments(
+        self, setting_key: str, from_stage_index: bool = False
+    ):
+        for trial_class_name, value in self.settings.items():
+            if from_stage_index:
+                trial_class_name = self.experiment_class.stage_index_to_trial_class_name[trial_class_name]
+            assert trial_class_name in self.experiment_class.trial_class_names
+
+            if trial_class_name not in self._trial_class_name_to_keyword_arguments:
+                self._trial_class_name_to_keyword_arguments[trial_class_name] = {}
+            self._trial_class_name_to_keyword_arguments[trial_class_name][setting_key] = value
 
     @cached_property
-    def metadata_plugin_name_to_label_to_parameter(self) -> dict[str, dict]:
+    def plugin_name_to_label_to_parameter(self) -> dict[str, dict]:
         result = {}
-        if self.settings["ingress"]["perimeter_definition_strategy"] == "metadata":
-            # trial-wise, None
-            result["perimeter"] = self.generate_label_to_object_field()
-        if self.settings["ingress"]["perimeter_naming_strategy"] == "metadata":
-            # metadata, None
-            result["perimeter_name"] = detect_meters_per_pixel_in_perimeter_directory(self.perimeter_directory_path)
-        if self.settings["ingress"]["center_definition_strategy"] == "metadata":
-            # TODO: trial-wise
-            # None
-            result["center"] = detect_center_in_perimeter_directory(self.perimeter_directory_path)
-        if self.settings["ingress"]["meters_per_pixel_definition_strategy"] == "metadata":
-            # TODO: trial-wise
-            # None
-            result["meters_per_pixel"] = detect_meters_per_pixel_in_perimeter_directory(self.perimeter_directory_path)
+        match self.settings["ingress"]["meters_per_pixel_definition_strategy"]:
+            case "metadata":
+                result["meters_per_pixel"] = detect_meters_per_pixel_in_perimeter_directory(self.perimeter_directory_path)
+            case "trial-wise":
+                # TODO
+                pass
+            case None:
+                pass
+            case _:
+                self._raise_unsupported_plugin_method(
+                    "meters_per_pixel_definition_strategy", ("metadata", "trial-wise", None)
+                )
+
+        match self.settings["ingress"]["perimeter_definition_strategy"]:
+            case "metadata":
+                result["perimeter"] = self.generate_label_to_object_field()
+            case "trial-wise" | None:
+                pass
+            case _:
+                self._raise_unsupported_plugin_method("perimeter_definition_strategy", ("metadata", None))
+
+        match self.settings["ingress"]["perimeter_naming_strategy"]:
+            case "metadata":
+                result["perimeter"] = self.generate_label_to_object_field()
+            case None:
+                pass
+            case _:
+                self._raise_unsupported_plugin_method("perimeter_naming_strategy", ("metadata", None))
+
+        match self.settings["ingress"]["center_definition_strategy"]:
+            case "metadata":
+                result["center"] = detect_center_in_perimeter_directory(self.perimeter_directory_path)
+            case "trial-wise":
+                # TODO
+                pass
+            case None:
+                pass
+            case _:
+                self._raise_unsupported_plugin_method("center_definition_strategy", ("metadata", "trial-wise", None))
+
+        match self.settings["ingress"]["crop_time_definition_strategy"]:
+            case "metadata":
+                # TODO
+                pass
+            case None:
+                pass
+            case _:
+                self._raise_unsupported_plugin_method("perimeter_definition_strategy", ("metadata", None))
+
         return result
 
     # I/O ============================
@@ -187,10 +246,15 @@ class BaseIngress(BikipyBase, ABC):
                     raise ValueError(msg)
                 self._common_trial_keyword_arguments[field] = value
 
-        # TODO
-        # for trial_class_name, dataset in self.settings["trial"]["specific"].items():
-        #     if not dataset["defined"]:
-        #         continue
+        for trial_class_name, dataset in self.settings["trial"]["specific"].items():
+            if not dataset["defined"]:
+                continue
+            if trial_class_name not in self._trial_class_name_to_keyword_arguments:
+                self._trial_class_name_to_keyword_arguments[trial_class_name] = {}
+            for field, value in dataset["defined"].items():
+                trial_class_dict = self._trial_class_name_to_keyword_arguments[trial_class_name]
+                if field not in trial_class_dict or not trial_class_dict[field]:
+                    self._trial_class_name_to_keyword_arguments[trial_class_name][field] = value
 
         self._experiment_data_defined = True
 
@@ -253,7 +317,7 @@ class BaseIngress(BikipyBase, ABC):
 
     def get_plugin_parameter(self, parameter_label: str, metadata_index_getter: Callable):
         parameter_indexes = PLUGIN_NAME_TO_KEYRING[parameter_label]
-        return self.metadata_plugin_name_to_label_to_parameter[parameter_indexes["code_key"]][
+        return self.plugin_name_to_label_to_parameter[parameter_indexes["code_key"]][
             metadata_index_getter(parameter_indexes["human_readable_index"])
         ]
 
@@ -269,29 +333,46 @@ class BaseIngress(BikipyBase, ABC):
             inspect_directory=self.inspect_directory_path,
         )
 
+    # Motion <-> Feature fitting ===================================
+
+    @cached_property
+    def combined_feature_motion_df_fit_to_metadata(self) -> pd.DataFrame:
+        if self.experiment.combined_feature_motion_df.columns.nlevels >= self.metadata.columns.nlevels:
+            return self.experiment.combined_feature_motion_df
+        return copycat_assumes_levels_of_icon(self.experiment.combined_feature_motion_df, self.metadata)
+
+    @cached_property
+    def metadata_fit_to_combined_feature_motion_df(self) -> pd.DataFrame:
+        if self.metadata.columns.nlevels >= self.experiment.combined_feature_motion_df.columns.nlevels:
+            return self.metadata
+        return copycat_assumes_levels_of_icon(self.metadata, self.experiment.combined_feature_motion_df)
+
     # Client-side functions ===============================
 
     @cached_property
     def analysis_df(self) -> pd.DataFrame:
         np.seterr(all="ignore")
         return pd.concat(
-            (self.metadata, self.experiment.combined_feature_motion_df),
-            axis=1,
-            keys=["Stage"] if self.stageful_metadata else None,
-            # Prepend experiment stage to column MultiIndex:
-            # https://stackoverflow.com/a/42094658/9793651
-            names=self.experiment.column_multi_index_names,
+            (self.metadata_fit_to_combined_feature_motion_df, self.combined_feature_motion_df_fit_to_metadata), axis=1
         )
 
     def save_analysis_data(self):
         self.analysis_df.to_parquet(self.result_directory_path / f"animal_id_indexed_result_data.parquet")
         self.analysis_df.to_excel(self.result_directory_path / "animal_id_indexed_result_data.xlsx")
 
+    # Private methods ===============================
+
+    @staticmethod
+    def _raise_unsupported_plugin_method(plugin_name: str, supported_methods: Iterable[str]) -> None:
+        msg = f"{plugin_name} only supports: {', '.join(supported_methods)}"
+        raise ValueError(msg)
+
 
 Ingress = TypeVar("Ingress", bound=BaseIngress)
 
 
 def init_settings(
+    ingress_method: str,
     project_root_directory: DirectoryPath,
     experiment_class: Any,
     method_kwargs: dict,
@@ -305,12 +386,14 @@ def init_settings(
     ]
 
     settings = {
-        **method_kwargs,
+        "ingress_method": ingress_method,
         "ingress": {
+            **method_kwargs,
             "stageful_metadata": False,
             "skip_absent_trials_absent_from_metadata_index": False,
             "meters_per_pixel_definition_strategy": "global_perimeter",
             "perimeter_definition_strategy": "metadata",
+            "perimeter_naming_strategy": None,
             "center_definition_strategy": None,
         },
         "perimeter": {

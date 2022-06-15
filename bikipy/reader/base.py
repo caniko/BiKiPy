@@ -47,10 +47,10 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
         ),
     )
 
-    cropping_time_seconds: float = 0.0
+    crop_frames: int = 0
     crop_from_end: bool = Field(
         True,
-        description="Only affective if cropping_time_seconds is not 0.0. "
+        description="Only affective if crop_frames is not 0. "
         "Will crop from start instead when set to False",
     )
 
@@ -72,11 +72,11 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
         include midpoints and inner interpolations.
         """
         cloned_df = self.raw_df.copy()
-        if self.cropping_time_seconds:
+        if self.crop_frames and self.crop_frames < self.raw_frames:
             if self.crop_from_end:
-                cloned_df = cloned_df.iloc[self.raw_frames - self.cropping_time_seconds:]
+                cloned_df = cloned_df.iloc[self.raw_frames - self.crop_frames :]
             else:
-                cloned_df = cloned_df.iloc[:self.cropping_time_seconds]
+                cloned_df = cloned_df.iloc[: self.crop_frames]
         return cloned_df
 
     @property
