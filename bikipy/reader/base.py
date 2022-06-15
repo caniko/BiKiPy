@@ -3,20 +3,12 @@ from collections import abc
 from concurrent.futures import ProcessPoolExecutor
 from functools import cached_property, lru_cache, partial
 from logging import getLogger
-from typing import (
-    Any,
-    Generator,
-    Hashable,
-    Iterable,
-    Optional,
-    Sequence,
-    TypeVar,
-    Union,
-)
+from typing import Any, Generator, Hashable, Iterable, Optional, Sequence, TypeVar
 
 import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath
+from pydantic_numpy import NDArray
 
 from bikipy import ENABLE_PROCESS_POOLING
 from bikipy.core.base_class import BikipyBaseHashable
@@ -55,12 +47,19 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
         ),
     )
 
+    cropping_time_seconds: float = 0.0
+    crop_from_end: bool = Field(
+        True,
+        description="Only affective if cropping_time_seconds is not 0.0. "
+        "Will crop from start instead when set to False",
+    )
+
     @abstractmethod
-    def _isolate_coordinates(self, key: Union[Iterable[Hashable], Hashable]):
+    def _isolate_coordinates(self, key: Iterable[Hashable] | Hashable) -> pd.DataFrame:
         ...
 
     @abstractmethod
-    def tracked_point_labels(self) -> tuple:
+    def tracked_point_labels(self) -> tuple[str, ...]:
         """
         :return: tuple storing all regions of interest that are directly tracked, no midpoints
         """
@@ -72,15 +71,21 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
         :return: Tracking and augmented data stored in the same frame. The augmented data should
         include midpoints and inner interpolations.
         """
-        return self.raw_df.copy()
+        cloned_df = self.raw_df.copy()
+        if self.cropping_time_seconds:
+            if self.crop_from_end:
+                cloned_df = cloned_df.iloc[self.raw_frames - self.cropping_time_seconds:]
+            else:
+                cloned_df = cloned_df.iloc[:self.cropping_time_seconds]
+        return cloned_df
 
     @property
-    def df(self):
+    def df(self) -> pd.DataFrame:
         return self.augmented
 
-    def __getitem__(self, query: Union[Iterable[Hashable], Hashable]):
+    def __getitem__(self, query: Iterable[Hashable] | Hashable) -> pd.DataFrame:
         if not isinstance(query, str) and isinstance(query, abc.Iterable):
-            return [self._isolate_coordinates(item) for item in query]
+            return pd.merge([self._isolate_coordinates(item) for item in query], axis=1)
         else:
             if query not in self.tracked_and_midpoint_labels:
                 msg = f"'{query}' is not in object DataFrame (self.summary_frame)"
@@ -88,19 +93,23 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
             return self._isolate_coordinates(query)
 
     @property
-    def frames(self):
+    def raw_frames(self) -> int:
+        return len(self.raw_df)
+
+    @property
+    def frames(self) -> int:
         return len(self.df)
 
     @cached_property
-    def tracked_and_midpoint_labels(self):
+    def tracked_and_midpoint_labels(self) -> tuple[str, ...]:
         return tuple(*self.tracked_point_labels, *self.midpoint_groups)
 
     @cached_property
-    def raw_df(self):
+    def raw_df(self) -> pd.DataFrame:
         return FILE_EXTENSION_to_PANDAS_READER[self.df_path.suffix](self.df_path)
 
     @staticmethod
-    def get_info_from_video_path(video_path):
+    def get_info_from_video_path(video_path) -> dict:
         _frame, x_res, y_res, fps = get_video_data(video_path)
         return {
             "recording_resolution": (x_res, y_res),
@@ -112,11 +121,11 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
         raise NotImplementedError
 
     @cached_property
-    def valid_point_indices(self):
+    def valid_point_indices(self) -> dict[str, NDArray]:
         return {roi: np.where(self.region_of_interest_to_boolean_index[roi])[0] for roi in self.tracked_point_labels}
 
     @cached_property
-    def valid_tails(self):
+    def valid_tails(self) -> dict[str, tuple[int, int]]:
         return {
             item: (
                 self.valid_point_indices[item][0],
@@ -126,26 +135,26 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
         }
 
     @cached_property
-    def valid_slices(self):
+    def valid_slices(self) -> dict[str, slice]:
         return {
             item: slice(self.valid_point_indices[item][0], self.valid_point_indices[item][-1])
             for item in self.tracked_point_labels
         }
 
     @cached_property
-    def validity_ratio(self):
+    def validity_ratio(self) -> dict[str, float]:
         return {
             roi: np.sum(self.region_of_interest_to_boolean_index[roi]) / len(self.raw_df)
             for roi in self.tracked_point_labels
         }
 
     @property
-    def x_add(self):
+    def x_add(self) -> float:
         # The only component that effects x is x_axis_crop_end_point
         return self.x_axis_crop_end_point
 
     @cached_property
-    def y_add(self):
+    def y_add(self) -> float:
         add_y = 0
         if self.reverse_y_axis:
             add_y -= self.vertical_resolution
@@ -191,7 +200,7 @@ Reader = TypeVar("Reader", bound=BaseReader)
 
 
 @lru_cache
-def _find_longest_tails(valid_tails, items, as_slice: bool = True):
+def _find_longest_tails(valid_tails, items, as_slice: bool = True) -> slice | tuple[int, int]:
     left_valid_tails, right_valid_tails = np.array([valid_tails[item] for item in items]).T
 
     result = (left_valid_tails.max(), right_valid_tails.min())

@@ -1,13 +1,12 @@
-import os
 from abc import ABC, abstractmethod
 from functools import cached_property, lru_cache
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, Any
 
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel, DirectoryPath, Field
 
-from bikipy.behaviour.base import BaseTrial
+from bikipy.behaviour.rectangle import RectangleEnclosedTrial
 from bikipy.core.base_class import BikipyBase
 from bikipy.feature.physical_object import PhysicalObjectSet
 from bikipy.perimeter.base import AnyPerimeter
@@ -47,7 +46,7 @@ class PhysicalObjectTrialMixin(BikipyBase, ABC):
 
     @classmethod
     @property
-    def number_of_physical_objects(cls):
+    def number_of_physical_objects(cls) -> int:
         return len(cls.physical_object_labels)
 
     @classmethod
@@ -56,14 +55,14 @@ class PhysicalObjectTrialMixin(BikipyBase, ABC):
         return list(pd.MultiIndex.from_product([["SecondsObserving"], ["All", *cls.physical_object_labels]]))
 
     @property
-    def feature_df_rows(self):
+    def feature_df_rows(self) -> list:
         return [
             self.physical_object_set.seconds_observing,
             *self.physical_object_set.object_specific_observation.values(),
         ]
 
     @cached_property
-    def _physical_object_keyword_arguments(self):
+    def _physical_object_keyword_arguments(self) -> dict[str, Any]:
         result = {
             "reader": self.reader,
             "gaze_travel_direction_point_label": self.gaze_travel_direction_point_label,
@@ -98,7 +97,7 @@ class PhysicalObjectTrialMixin(BikipyBase, ABC):
         )
 
     @cached_property
-    def perimeter_border_normal_pixel_magnitude(self):
+    def perimeter_border_normal_pixel_magnitude(self) -> float:
         return self.perimeter_border_normal_metric_magnitude / self.meters_per_pixel
 
 
@@ -109,7 +108,7 @@ class PhysicalObjectHabituationTrialMixin(BaseModel):
     trial_label: ClassVar[str] = "Habituation"
 
 
-class RectangleEnclosedPhysicalObjectTrial(BaseTrial, PhysicalObjectTrialMixin, ABC):
+class RectangleEnclosedPhysicalObjectTrial(RectangleEnclosedTrial, PhysicalObjectTrialMixin, ABC):
     pass
 
 

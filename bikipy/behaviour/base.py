@@ -80,6 +80,12 @@ class BaseTrial(Behaviour):
     inspect_image: Optional[FilePath] = Field(
         description="Image to use as background in the plots for visualising the analysis data",
     )
+    cropping_time_seconds: float = 0.0
+    crop_from_end: bool = Field(
+        True,
+        description="Only affective if cropping_time_seconds is not 0.0. "
+        "Will crop from start instead when set to False",
+    )
     # Variables for trials with zones, see doc for more info.
     perimeters: Optional[Sequence] = None
     trial_start_perimeter: Optional[str] = None
@@ -126,8 +132,14 @@ class BaseTrial(Behaviour):
 
         return reader_init_func(
             df_path=self.coordinate_data_path,
-            **self._reader_init_kwargs,
+            **self.reader_init_kwargs,
         )
+
+    @cached_property
+    def reader_init_kwargs(self):
+        if self.cropping_time_seconds:
+            self.data_reader_kwargs["cropping_time_seconds"] = self.fps * self.cropping_time_seconds
+        return self.data_reader_kwargs
 
     @property
     def framewise_confined_coordinates(self) -> NDArrayFp64:
@@ -150,10 +162,6 @@ class BaseTrial(Behaviour):
         )
 
     # PolygonPerimeter
-
-    @cached_property
-    def _reader_init_kwargs(self):
-        return self.data_reader_kwargs
 
     @cached_property
     def _int_id_to_perimeter(self) -> dict:
@@ -459,9 +467,8 @@ class BaseExperiment(Behaviour):
                 data_dict[animal_id] = chain_lists_to_tuple(
                     (trial_object.motion_features for trial_object in trial_objects)
                 )
-                break
 
-        result = pd.DataFrame.from_dict(data_dict, orient="index", columns=self.motion_column_index)
+        result = pd.DataFrame.from_dict(data_dict, orient="index", columns=self.animal_motion_column_index)
         result.index.name = "Animal ID"
 
         return result
@@ -470,13 +477,13 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def feature_df_fit_to_motion_index(self) -> pd.DataFrame:
-        if self.motion_column_index.levels <= self.feature_column_index.levels:
+        if self.motion_column_index.nlevels <= self.feature_column_index.nlevels:
             return self.animal_id_indexed_feature_df
         return copycat_assumes_levels_of_icon(self.animal_id_indexed_feature_df, self.animal_id_indexed_motion_df)
 
     @cached_property
     def motion_df_fit_to_feature_index(self) -> pd.DataFrame:
-        if self.motion_column_index.levels >= self.feature_column_index.levels:
+        if self.motion_column_index.nlevels >= self.feature_column_index.nlevels:
             return self.animal_id_indexed_motion_df
         return copycat_assumes_levels_of_icon(self.animal_id_indexed_motion_df, self.animal_id_indexed_feature_df)
 
@@ -515,6 +522,11 @@ class BaseExperiment(Behaviour):
         return pd.MultiIndex.from_tuples(
             cls.motion_column_headers, names=cls._multi_index_names(cls.motion_column_headers)
         )
+
+    @classmethod
+    @property
+    def animal_motion_column_index(cls) -> pd.MultiIndex:
+        return pd.MultiIndex.from_product([list(cls.trial_class_names), list(cls.motion_column_index)])
 
     @classmethod
     @property

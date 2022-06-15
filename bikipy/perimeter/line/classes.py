@@ -1,4 +1,4 @@
-from typing import ClassVar, Literal, Optional, Union
+from typing import ClassVar, Literal, Optional
 
 import numpy as np
 from pydantic import Field
@@ -23,7 +23,7 @@ LOGIC_TO_FUNC = {
 
 class LinePerimeter(BikipyBase):
     location: float = Field(description="The location given in pixels")
-    orientation: Union[str, int] = Field(
+    orientation: str | int = Field(
         description=(
             "A lower and an upper perimeter can be defined.\n"
             "The border_corners can be oriented both horizontally (horizontal) and vertically (vertical).\n"

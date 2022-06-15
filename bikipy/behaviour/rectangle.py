@@ -1,17 +1,16 @@
-import os
 from functools import cached_property, lru_cache
 from logging import getLogger
 from typing import Any, ClassVar, Hashable, Optional
 
 import numpy as np
-import pandas as pd
-from pydantic import validate_arguments, validator
+from pydantic import validate_arguments, validator, DirectoryPath
+from pydantic_numpy import NDArray
 from skg import ngauss_fit
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BikipyBase
-from bikipy.core.typing import NDArrayBool, NDArrayFp64
+from bikipy.core.typing import NDArrayBool, NDArrayFp64, NDArrayInt16
 from bikipy.feature.motion import (
     get_combined_features_from_merged_motion_island_data,
     motion_multi_indexer,
@@ -21,7 +20,7 @@ from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 
 logger = getLogger(__name__)
-
+quadrant_grid_typing = tuple[int, int]
 
 A = 255
 QUADRANT_INSPECTION_DIR_NAME = "PiP_quadrant_location_booleans"
@@ -106,29 +105,29 @@ class RectangleEnclosedExperiment(BaseExperiment):
 
 
 class RectangleEnclosedTrial(BaseTrial):
-    rectangle_2d_bin: tuple[int, int] = (2, 2)
+    rectangle_2d_bin: quadrant_grid_typing = (2, 2)
     center_box_to_recording_resolution_ratio: Optional[float] = None
-
-    @cached_property
-    def _quadrant_inspection_dir(self):
-        return self.inspect_directory / QUADRANT_INSPECTION_DIR_NAME
 
     @validator("inspect_directory")
     def make_categorical_inspection_sub_dirs(cls, value):
         if value and not (quadrant_dir := value / QUADRANT_INSPECTION_DIR_NAME).exists():
-            os.mkdir(quadrant_dir)
+            quadrant_dir.mkdir()
             for current_quadrant in (
                 "upper_left",
                 "upper_right",
                 "lower_right",
                 "lower_left",
             ):
-                os.mkdir(quadrant_dir / current_quadrant)
-            os.mkdir(value / CENTER_INSPECTION_DIR_NAME)
+                (quadrant_dir / current_quadrant).mkdir()
+            (value / CENTER_INSPECTION_DIR_NAME).mkdir()
         return value
 
     @cached_property
-    def gaussian_center_to_periphery_score(self):
+    def _quadrant_inspection_dir(self) -> DirectoryPath:
+        return self.inspect_directory / QUADRANT_INSPECTION_DIR_NAME
+
+    @cached_property
+    def gaussian_center_to_periphery_score(self) -> float:
         func = gaussian_scoring_field(self.tuple_recording_resolution)
         scores = np.array(
             [
@@ -140,7 +139,7 @@ class RectangleEnclosedTrial(BaseTrial):
         return np.sum(scores) / (A * self.number_of_frames)
 
     @cached_property
-    def quadrant_grid_coordinate_to_corners(self):
+    def quadrant_grid_coordinate_to_corners(self) -> dict[quadrant_grid_typing, NDArrayFp64]:
         horizontal_uniform_distance = self.horizontal_resolution / self.rectangle_2d_bin[0]
         vertical_uniform_distance = self.vertical_resolution / self.rectangle_2d_bin[1]
         result = {}
@@ -165,21 +164,21 @@ class RectangleEnclosedTrial(BaseTrial):
         return result
 
     @cached_property
-    def quadrant_index_to_quadrant_grid_coordinate(self):
+    def quadrant_index_to_quadrant_grid_coordinate(self) -> dict[int, quadrant_grid_typing]:
         return {
             i: quadrant_grid_coordinate
             for i, quadrant_grid_coordinate in enumerate(self.quadrant_grid_coordinate_to_corners, start=1)
         }
 
     @cached_property
-    def quadrant_grid_coordinate_to_quadrant_index(self):
+    def quadrant_grid_coordinate_to_quadrant_index(self) -> dict[quadrant_grid_typing, int]:
         return {
             quadrant_grid_coordinate: i
             for i, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items()
         }
 
     @cached_property
-    def quadrant_grid_coordinate_to_quadrant(self) -> dict[tuple[int, int], Quadrant]:
+    def quadrant_grid_coordinate_to_quadrant(self) -> dict[quadrant_grid_typing, Quadrant]:
         """
         Left to right, top to down
         :return:
@@ -209,14 +208,14 @@ class RectangleEnclosedTrial(BaseTrial):
         return np.array(reduce_repeating_sequences(raw_location_sequence_quadrant, round(self.fps * 0.35)))
 
     @cached_property
-    def quadrant_grid_coordinate_to_entries(self):
+    def quadrant_grid_coordinate_to_entries(self) -> dict[quadrant_grid_typing, int]:
         result = {}
         for quadrant_index, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items():
             result[quadrant_grid_coordinate] = np.sum(self.location_sequence_quadrant == quadrant_index)
         return result
 
     @cached_property
-    def quadrant_grid_coordinate_to_seconds_present(self):
+    def quadrant_grid_coordinate_to_seconds_present(self) -> dict[quadrant_grid_typing, float]:
         return {
             quadrant_grid_coordinate: quadrant.seconds_present
             for quadrant_grid_coordinate, quadrant in self.quadrant_grid_coordinate_to_quadrant.items()
@@ -266,7 +265,7 @@ class RectangleEnclosedTrial(BaseTrial):
         )
 
     @cached_property
-    def location_sequence_center_periphery(self):
+    def location_sequence_center_periphery(self) -> NDArray:
         # 1 is center, 2 is periphery, 0 is unknown
         location_sequence_center_periphery = np.zeros_like(self.center_boolean_index, dtype=np.uint8)
         location_sequence_center_periphery[self.center_boolean_index] = 1
@@ -279,19 +278,19 @@ class RectangleEnclosedTrial(BaseTrial):
         )
 
     @cached_property
-    def center_entries(self):
+    def center_entries(self) -> int:
         return np.sum(self.location_sequence_center_periphery == 1)
 
     @cached_property
-    def periphery_entries(self):
+    def periphery_entries(self) -> int:
         return np.sum(self.location_sequence_center_periphery == 2)
 
     @cached_property
-    def seconds_on_center(self):
+    def seconds_on_center(self) -> int:
         return np.sum(self.center_boolean_index) / self.fps
 
     @cached_property
-    def seconds_on_periphery(self):
+    def seconds_on_periphery(self) -> int:
         return np.sum(self.periphery_boolean_index) / self.fps
 
     @property
@@ -304,13 +303,12 @@ class RectangleEnclosedTrial(BaseTrial):
             self.quadrant_grid_coordinate_to_quadrant.items(), self.quadrant_grid_coordinate_to_entries.items()
         ):
             assert qgc_i == qgc_ii
-            quadrant_motion_values.extend(*quadrant.motion.values(), entries, quadrant.seconds_present)
+            quadrant_motion_values.extend((*quadrant.motion.values(), entries, quadrant.seconds_present))
 
         result = [
             *super().motion_features,
             self.gaussian_center_to_periphery_score,
             *quadrant_motion_values,
-            *self.quadrant_grid_coordinate_to_entries.values(),
         ]
 
         if self.center_box_to_recording_resolution_ratio:
@@ -330,8 +328,8 @@ class RectangleEnclosedTrial(BaseTrial):
 
 @lru_cache
 @validate_arguments
-def gaussian_scoring_field(resolution: tuple[float, float], scale: int = 4):
-    resolution = np.array(resolution, dtype=int) * scale
+def gaussian_scoring_field(resolution: NDArrayInt16, scale: int = 4):
+    resolution *= scale
 
     model = ngauss_fit.model(
         x=np.indices(resolution, dtype=float),

@@ -1,13 +1,14 @@
 import json
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Any, Callable, Hashable, Optional
+from typing import Any, Callable, Hashable, Optional, TypeVar
 
 import numpy as np
 import pandas as pd
 import yaml
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
+from bikipy.behaviour.base import Experiment
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.core.base_class import BikipyBase
 from bikipy.ingress.plugin import PLUGIN_NAME_TO_KEYRING
@@ -104,10 +105,18 @@ class BaseIngress(BikipyBase, ABC):
     def metadata_plugin_name_to_label_to_parameter(self) -> dict[str, dict]:
         result = {}
         if self.settings["ingress"]["perimeter_definition_strategy"] == "metadata":
+            # trial-wise, None
             result["perimeter"] = self.generate_label_to_object_field()
+        if self.settings["ingress"]["perimeter_naming_strategy"] == "metadata":
+            # metadata, None
+            result["perimeter_name"] = detect_meters_per_pixel_in_perimeter_directory(self.perimeter_directory_path)
         if self.settings["ingress"]["center_definition_strategy"] == "metadata":
+            # TODO: trial-wise
+            # None
             result["center"] = detect_center_in_perimeter_directory(self.perimeter_directory_path)
         if self.settings["ingress"]["meters_per_pixel_definition_strategy"] == "metadata":
+            # TODO: trial-wise
+            # None
             result["meters_per_pixel"] = detect_meters_per_pixel_in_perimeter_directory(self.perimeter_directory_path)
         return result
 
@@ -165,7 +174,7 @@ class BaseIngress(BikipyBase, ABC):
         if not self._experiment_data_defined:
             self._define_experiment_data()
 
-    def _define_experiment_data(self):
+    def _define_experiment_data(self) -> None:
         self._experiment_class_kwargs_and_metadata_index_to_trial_id_and_metadata_index_to_trial_id_define_function()
 
         for field, value in self.settings["trial"]["common"]["defined"].items():
@@ -249,7 +258,7 @@ class BaseIngress(BikipyBase, ABC):
         ]
 
     @cached_property
-    def experiment(self):
+    def experiment(self) -> Experiment:
         intersection = set(self.settings["experiment"]["defined"]).intersection(self.experiment_class_kwargs)
         if intersection:
             msg = f"The setting defines fields defined by the ingress method:\n{intersection}"
@@ -279,6 +288,9 @@ class BaseIngress(BikipyBase, ABC):
         self.analysis_df.to_excel(self.result_directory_path / "animal_id_indexed_result_data.xlsx")
 
 
+Ingress = TypeVar("Ingress", bound=BaseIngress)
+
+
 def init_settings(
     project_root_directory: DirectoryPath,
     experiment_class: Any,
@@ -286,7 +298,7 @@ def init_settings(
     kinematic_data_file_extension: str,
     method_immutable: Optional[dict] = None,
     dry_run: bool = False,
-):
+) -> dict[str, str | dict]:
     experiment_schema = extended_schema(experiment_class)
     experiment_schema["optional"]["data_reader_kwargs"] = extended_schema(DeepLabCutReader, with_required=False)[
         "optional"
@@ -328,7 +340,7 @@ def init_settings(
 
 
 @validate_arguments
-def auto_define_ingress_object(project_root_directory: DirectoryPath):
+def auto_define_ingress_object(project_root_directory: DirectoryPath) -> Ingress:
     from bikipy.ingress import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
 
     with open(project_root_directory / "settings.yaml", "r") as in_file:
@@ -339,4 +351,4 @@ def auto_define_ingress_object(project_root_directory: DirectoryPath):
 
 
 def analyze_and_save(project_root_directory: DirectoryPath):
-    ingress = auto_define_ingress_object(project_root_directory).experiment.animal_id_indexed_motion_df
+    auto_define_ingress_object(project_root_directory).save_analysis_data()

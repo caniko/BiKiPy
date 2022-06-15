@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from functools import cached_property
 from pathlib import Path
-from typing import ClassVar, Optional, Union
+from typing import ClassVar, Optional
 
 import compress_pickle
 from pydantic import BaseModel, DirectoryPath, Field
