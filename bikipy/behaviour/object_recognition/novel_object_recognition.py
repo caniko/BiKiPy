@@ -1,9 +1,8 @@
 from functools import cached_property
 from logging import getLogger
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from bikipy.behaviour.mixin.physical_object import (
-    PhysicalObjectHabituationTrialMixin,
     PhysicalObjectTrialMixin,
 )
 from bikipy.behaviour.rectangle import (
@@ -13,14 +12,6 @@ from bikipy.behaviour.rectangle import (
 from bikipy.perimeter.base import AnyPerimeter
 
 logger = getLogger(__name__)
-
-
-class NortHabituationTrial(RectangleEnclosedTrial, PhysicalObjectHabituationTrialMixin):
-    experiment_class_name = "NortExperiment"
-
-
-class NortOpenField(NortHabituationTrial):
-    pass
 
 
 class NortTrainingTrial(RectangleEnclosedTrial, PhysicalObjectTrialMixin):
@@ -48,12 +39,12 @@ class NortNoveltyTrial(RectangleEnclosedTrial, PhysicalObjectTrialMixin):
 
     @classmethod
     @property
-    def feature_headers(cls) -> list[str]:
+    def feature_headers(cls) -> list[tuple[str, ...]]:
         return super().feature_headers + [
-            "Absolute discrimination",
-            "Discrimination index",
-            "Novelty preference",
-            "Object bias score",
+            ("AbsoluteDiscrimination", "novel-constant"),
+            ("DiscriminationIndex", "novel-constant"),
+            ("NoveltyPreference", "novel-constant"),
+            ("ObjectBiasScore", "novel-constant"),
         ]
 
     @property
@@ -97,7 +88,6 @@ class NortNoveltyTrial(RectangleEnclosedTrial, PhysicalObjectTrialMixin):
 class NortExperiment(RectangleEnclosedExperiment):
     first_stage_has_no_object: ClassVar = True
     trial_classes: ClassVar = (
-        NortHabituationTrial,
         NortTrainingTrial,
         NortNoveltyTrial,
     )

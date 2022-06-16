@@ -28,7 +28,7 @@ class SequenceIngress(BaseIngress):
             return feature_column[sequence_index]
 
         for animal_dir in self.dataset_directory_path.iterdir():
-            animal_id = int(animal_dir.stem)
+            animal_id = int(animal_dir.stem) if animal_dir.stem.isdigit() else animal_dir.stem
 
             try:
                 animal_metadata = self.metadata.loc[animal_id, :]
@@ -45,9 +45,9 @@ class SequenceIngress(BaseIngress):
                 trial_id = int(trial_id) if trial_id.isdigit() else trial_id
                 trial_ids.append(trial_id)
 
-                self._trial_id_to_trial_class_name[trial_id] = self.settings["ingress"]["sequence_index_to_trial_class_name"][
-                    sequence_index
-                ]
+                self._trial_id_to_trial_class_name[trial_id] = self.settings["ingress"][
+                    "sequence_index_to_trial_class_name"
+                ][sequence_index]
                 self._trial_id_to_keyword_arguments[trial_id] = {
                     "label": trial_id,
                     "animal_id": animal_id,

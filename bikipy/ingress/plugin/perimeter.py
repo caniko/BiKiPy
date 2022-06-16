@@ -11,8 +11,8 @@ from pydantic import DirectoryPath, FilePath, validate_arguments
 from bikipy.ingress.utils.io import (
     get_perimeter_directory_path,
     get_project_settings_path,
-    load_settings,
     infer_metadata_path,
+    load_settings,
 )
 
 logger = getLogger(__name__)

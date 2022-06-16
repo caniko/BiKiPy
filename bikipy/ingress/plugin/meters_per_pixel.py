@@ -16,17 +16,16 @@ def from_makesense_reference_line_segment(data_path: FilePath) -> float:
 
 
 @validate_arguments
-def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath):
+def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath, return_first: bool = True):
+    mpr_file_iterator = perimeter_dir.glob("meters_per_pixel-*.csv")
+    if return_first:
+        return from_makesense_reference_line_segment(next(mpr_file_iterator))
     return {
         get_file_label_from_3rd_str_in_split(meters_per_pixel_file_path): from_makesense_reference_line_segment(
             meters_per_pixel_file_path
         )
-        for meters_per_pixel_file_path in perimeter_dir.glob("meters_per_pixel-*.csv")
+        for meters_per_pixel_file_path in mpr_file_iterator
     }
-
-
-def detect_global_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath):
-    return tuple(detect_meters_per_pixel_in_perimeter_directory(perimeter_dir).values())[0]
 
 
 def validate_metadata_meters_per_pixel_strategy(project_root_directory: DirectoryPath):

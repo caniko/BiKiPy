@@ -19,7 +19,9 @@ def ndarray_to_tuple(array: NDArray):
     return tuple(map(tuple, array))
 
 
-def add_n_levels_to_multi_index(multi_index: pd.Index | pd.MultiIndex, n_levels: int, on_start: bool = True) -> pd.MultiIndex:
+def add_n_levels_to_multi_index(
+    multi_index: pd.Index | pd.MultiIndex, n_levels: int, on_start: bool = True
+) -> pd.MultiIndex:
     multi_index_as_tuples = list(multi_index)
     levels_to_add = ["" for _ in range(n_levels)]
 

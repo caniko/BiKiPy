@@ -22,5 +22,5 @@ PLUGIN_NAME_TO_KEYRING = {
         "code_key": "crop_time",
         "bikipy_trial_key": "crop_time_seconds",
         "human_readable_index": "CropTime",
-    }
+    },
 }

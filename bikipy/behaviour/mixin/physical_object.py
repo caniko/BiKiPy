@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import cached_property, lru_cache
-from typing import ClassVar, Optional, Any
+from typing import Any, ClassVar, Optional
 
 import numpy as np
 import pandas as pd
@@ -51,7 +51,7 @@ class PhysicalObjectTrialMixin(BikipyBase, ABC):
 
     @classmethod
     @property
-    def feature_headers(cls) -> list[str]:
+    def feature_headers(cls) -> list[tuple[str, ...]]:
         return list(pd.MultiIndex.from_product([["SecondsObserving"], ["All", *cls.physical_object_labels]]))
 
     @property

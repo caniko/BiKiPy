@@ -1,9 +1,9 @@
 import json
 import pickle
 from abc import ABC, abstractmethod
-from copy import deepcopy, copy
+from copy import copy, deepcopy
 from functools import cached_property
-from typing import Any, Callable, Hashable, Optional, TypeVar, Iterable, ClassVar
+from typing import Any, Callable, ClassVar, Hashable, Iterable, Optional, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -34,9 +34,12 @@ from bikipy.perimeter.base import (
     StringPerimeterShapes,
 )
 from bikipy.perimeter.polygon.base import PolygonPerimeter
+from bikipy.perimeter.polygon.parallelogram import ParallelogramPerimeter
 from bikipy.perimeter.radial.circle import CirclePerimeter
 from bikipy.reader import DeepLabCutReader
-from bikipy.utils.collection_utils import copycat_assumes_levels_of_icon, add_n_levels_to_multi_index
+from bikipy.utils.collection_utils import (
+    copycat_assumes_levels_of_icon,
+)
 
 
 class BaseIngress(BikipyBase, ABC):
@@ -114,9 +117,7 @@ class BaseIngress(BikipyBase, ABC):
             self._define_experiment_data()
         return self._metadata_index_to_trial_id
 
-    def _register_to_trial_class_name_to_keyword_arguments(
-        self, setting_key: str, from_stage_index: bool = False
-    ):
+    def _register_to_trial_class_name_to_keyword_arguments(self, setting_key: str, from_stage_index: bool = False):
         for trial_class_name, value in self.settings.items():
             if from_stage_index:
                 trial_class_name = self.experiment_class.stage_index_to_trial_class_name[trial_class_name]
@@ -127,11 +128,26 @@ class BaseIngress(BikipyBase, ABC):
             self._trial_class_name_to_keyword_arguments[trial_class_name][setting_key] = value
 
     @cached_property
-    def plugin_name_to_label_to_parameter(self) -> dict[str, dict]:
+    def activate_plugins_and_parse_metadata_plugins(self) -> dict[str, dict]:
+        """
+        This method initializes all the plugins that have been activated in the settings.yaml file.
+        
+        Plugins that have metadata strategies often requires knowledge about the state. The state includes whatever 
+        is relevant to the ingress method during parameter retrieval, but most often is just limited to 
+        trial_id or animal_id. See get_plugin_parameter for more information.
+
+        :return: dict[str, dict]: plugin_name
+        """
         result = {}
         match self.settings["ingress"]["meters_per_pixel_definition_strategy"]:
+            case "global_perimeter":
+                self._common_trial_keyword_arguments["manual_meters_per_pixel"] = detect_meters_per_pixel_in_perimeter_directory(
+                    self.perimeter_directory_path, return_first=True
+                )
             case "metadata":
-                result["meters_per_pixel"] = detect_meters_per_pixel_in_perimeter_directory(self.perimeter_directory_path)
+                result["meters_per_pixel"] = detect_meters_per_pixel_in_perimeter_directory(
+                    self.perimeter_directory_path
+                )
             case "trial-wise":
                 # TODO
                 pass
@@ -296,7 +312,7 @@ class BaseIngress(BikipyBase, ABC):
             case "circle":
                 image_name_to_perimeter_set = CirclePerimeter.from_makesense_line(perimeter_path)
             case "rectangle":
-                image_name_to_perimeter_set = PolygonPerimeter.from_makesense_csv_rectangle(perimeter_path)
+                image_name_to_perimeter_set = ParallelogramPerimeter.from_makesense_csv_rectangle(perimeter_path)
             case "polygon" | "parallelogram":
                 image_name_to_perimeter_set = PolygonPerimeter.from_makesense_coco_polygon(perimeter_path)
             case _:
@@ -326,10 +342,21 @@ class BaseIngress(BikipyBase, ABC):
         else:
             self._trial_id_to_keyword_arguments[trial_id].update(label_to_perimeter)
 
-    def get_plugin_parameter(self, parameter_label: str, metadata_index_getter: Callable):
+    def get_plugin_parameter(self, parameter_label: str, metadata_index_getter: Callable, *args, **kwargs):
+        """
+        Method that retrieves plugin parameters from the metadata file. This requires the use of a metadata_index_getter
+        that is defined for each ingress method.
+        
+        One may define constants ahead of function call with `functools.partial` to the metadata_index_getter.
+        Additionally, *args and **kwargs in this function are relayed to the getter.
+
+        :param parameter_label: 
+        :param metadata_index_getter: 
+        :return: 
+        """
         parameter_indexes = PLUGIN_NAME_TO_KEYRING[parameter_label]
-        return self.plugin_name_to_label_to_parameter[parameter_indexes["code_key"]][
-            metadata_index_getter(parameter_indexes["human_readable_index"])
+        return self.activate_plugins_and_parse_metadata_plugins[parameter_indexes["code_key"]][
+            metadata_index_getter(parameter_indexes["human_readable_index"], *args, **kwargs)
         ]
 
     @cached_property
@@ -366,7 +393,11 @@ class BaseIngress(BikipyBase, ABC):
             (self.metadata_fit_to_combined_feature_motion_df, self.combined_feature_motion_df_fit_to_metadata),
             axis=1,
         )
-        df.columns.names = ["Stage", "Feature", "Location/Category"] if self.experiment.is_trial_sequence else ["Feature", "Location/Category"]
+        df.columns.names = (
+            ["Stage", "Feature", "Location/Category"]
+            if self.experiment.is_trial_sequence
+            else ["Feature", "Location/Category"]
+        )
         # df.columns.levels[2].astype(str)
 
         df.index.names = ["Animal ID"]

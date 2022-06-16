@@ -3,7 +3,7 @@ from logging import getLogger
 from typing import Any, ClassVar, Hashable, Optional
 
 import numpy as np
-from pydantic import validate_arguments, validator, DirectoryPath
+from pydantic import DirectoryPath, validate_arguments, validator
 from pydantic_numpy import NDArray
 from skg import ngauss_fit
 

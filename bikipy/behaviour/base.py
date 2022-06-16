@@ -83,8 +83,7 @@ class BaseTrial(Behaviour):
     crop_time_seconds: float = 0.0
     crop_from_end: bool = Field(
         True,
-        description="Only affective if crop_time_seconds is not 0.0. "
-        "Will crop from start instead when set to False",
+        description="Only affective if crop_time_seconds is not 0.0. " "Will crop from start instead when set to False",
     )
 
     # Variables for trials with zones, see doc for more info.
@@ -313,7 +312,9 @@ class BaseExperiment(Behaviour):
         if self.common_trial_keyword_arguments:
             result.update(self.common_trial_keyword_arguments)
 
-        if (trial_class_name := self.trial_id_to_trial_class_name[trial_id]) in self.trial_class_name_to_keyword_arguments:
+        if (
+            trial_class_name := self.trial_id_to_trial_class_name[trial_id]
+        ) in self.trial_class_name_to_keyword_arguments:
             result.update(self.trial_class_name_to_keyword_arguments[trial_class_name])
 
         if self.trial_id_to_keyword_arguments:
@@ -526,14 +527,14 @@ class BaseExperiment(Behaviour):
     @classmethod
     @property
     def feature_column_index(cls) -> pd.MultiIndex:
-        feature_headers = chain_lists_to_tuple(
+        all_feature_headers = chain_lists_to_tuple(
             (trial_class.feature_headers for trial_class in cls.trial_classes if trial_class.trial_has_defined_features)
         )
-        if not feature_headers:
+        if not all_feature_headers:
             msg = f"{cls.__name__} does not have any features, yet feature column index was called"
             raise AttributeError(msg)
 
-        return pd.MultiIndex.from_tuples(feature_headers, names=cls.multi_index_names(feature_headers))
+        return pd.MultiIndex.from_tuples(all_feature_headers, names=cls.multi_index_names(all_feature_headers))
 
     @classmethod
     @property

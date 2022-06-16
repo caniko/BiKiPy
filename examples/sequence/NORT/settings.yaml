@@ -6,11 +6,11 @@ ingress:
   perimeter_definition_strategy: metadata
   perimeter_naming_strategy: metadata
   center_definition_strategy: null
+  crop_time_definition_strategy: null
   animal-ID_absent_from_metadata: ignore
   sequence_index_to_trial_class_name:
-    0: NortHabituationTrial
-    1: NortTrainingTrial
-    2: NortNoveltyTrial
+    0: NortTrainingTrial
+    1: NortNoveltyTrial
 perimeter:
   label_prefix: null
   label_suffix: null
@@ -30,6 +30,8 @@ perimeter:
       timestamp: string
 experiment:
   defined:
+    compute_only_one_df_row: true
+    manual_recording_resolution: [ 920, 830 ]
     manual_fps: 30
     data_reader_kwargs:
       init_from: parquet

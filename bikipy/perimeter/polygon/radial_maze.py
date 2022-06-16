@@ -6,9 +6,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pydantic import FilePath
 
-from bikipy.perimeter import ParallelogramPerimeter
 from bikipy.perimeter.base import PerimeterSet
 from bikipy.perimeter.polygon.base import PolygonPerimeter
+from bikipy.perimeter.polygon.parallelogram import ParallelogramPerimeter
 from bikipy.perimeter.polygon.triangular import TriangularPerimeter
 from bikipy.utils.io.makesense import read_makesense_point
 from bikipy.utils.math.geometry import clockwise_argsort_points

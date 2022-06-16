@@ -310,7 +310,7 @@ class PolygonPerimeter(BasePerimeter):
             if image_name not in result:
                 result[image_name] = {}
 
-            result[image_name]["label"] = cls.init_polygon(
+            result[image_name][label] = cls.init_polygon(
                 np.array((start, (start[0], end[1]), end, (end[0], start[1]))),
                 inspect_image_path=image_root / str(image_name) if image_root else None,
                 label=label,
@@ -318,7 +318,7 @@ class PolygonPerimeter(BasePerimeter):
                 **perimeter_kwargs,
             )
 
-        return image_name_to_point_from_makesense(result)
+        return cls.perimeter_set_from_image_name_to_perimeters(result)
 
 
 def _coco_polygon_annotation(flat_annotation_data: Sequence):
