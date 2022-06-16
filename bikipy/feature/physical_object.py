@@ -6,6 +6,7 @@ from typing import Any, ClassVar, Optional, Sequence
 import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import validator
+from pydantic_numpy import NDArray
 
 from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.behaviour.utils import reduce_repeating_sequences
@@ -18,6 +19,7 @@ from bikipy.feature.attention.main import (
 )
 from bikipy.perimeter.base import AnyPerimeter, PerimeterSet
 from bikipy.reader.base import Reader
+from bikipy.utils.image import save_plt_fig_cv
 
 logger = getLogger(__name__)
 
@@ -38,6 +40,7 @@ class PhysicalObject(BikipyBase):
     minimum_seconds_attention: float
     maximum_seconds_distraction: float
 
+    inspect_image: Optional[NDArray] = None
     inspect_figure_file_path: Optional[Path] = None
     _fig: Any = None
     _axes: Any = None
@@ -128,7 +131,7 @@ class PhysicalObject(BikipyBase):
         )
 
         plt.tight_layout()
-        plt.savefig(self.inspect_figure_file_path, dpi=550)
+        save_plt_fig_cv(self.attention_fig, self.inspect_figure_file_path)
         plt.close(self.attention_fig)
 
     @property
@@ -150,11 +153,18 @@ class PhysicalObject(BikipyBase):
         return self._axes
 
     def _init_matplotlib(self):
-        if self.perimeter.inspect_image is None:
-            self._fig, self._axes = plt.subplots(nrows=2, ncols=2, dpi=500)
+        if self.inspect_image is not None:
+            x, y = self.inspect_image.shape[:2]
+            self._fig, self._axes = plt.subplots(nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0), dpi=300)
+        # if self.perimeter.inspect_image is None:
+        #     self._fig, self._axes = plt.subplots(nrows=2, ncols=2, dpi=500)
         else:
             x, y = self.perimeter.inspect_image.shape[:2]
-            self._fig, self._axes = plt.subplots(nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0), dpi=500)
+            self._fig, self._axes = plt.subplots(nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0), dpi=300)
+
+        for row_ax in self._axes:
+            for col_ax in row_ax:
+                col_ax.imshow(self.inspect_image)
 
         self.attention_axes[1][0].set_title("proximity_filtered & gaze_filtered")
         self.attention_axes[1][1].set_title("Observation")
@@ -186,6 +196,8 @@ class PhysicalObjectSet(BikipyBase):
     """
 
     physical_objects: Sequence
+
+    inspect_image: Optional[NDArray] = None
 
     overlapping_frame_to_total_frame_warning_ratio: ClassVar[float] = 0.05
 

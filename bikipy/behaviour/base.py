@@ -15,10 +15,12 @@ from typing import (
     TypeVar,
 )
 
+import cv2
 import numpy as np
 import pandas as pd
 from compress_pickle import compress_pickle
 from pydantic import DirectoryPath, Field, FilePath, ValidationError, validator
+from pydantic_numpy import NDArray
 from tqdm import tqdm
 from yaspin import yaspin
 from yaspin.spinners import Spinners
@@ -79,7 +81,7 @@ class BaseTrial(Behaviour):
     center: Optional[NDArrayInt16] = None
     stage: Optional[str] = Field(description="The semantic stage of the experiment")
     inspect_directory: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
-    inspect_image: Optional[FilePath] = Field(
+    inspect_image: Optional[NDArray] = Field(
         description="Image to use as background in the plots for visualising the analysis data",
     )
     crop_time_seconds: float = 0.0
@@ -233,6 +235,7 @@ class BaseExperiment(Behaviour):
         description="Experiment stage label, if experiment object is in a sequence of experiment objects"
     )
     inspect_directory: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
+    inspect_image_path: Optional[FilePath] = Field(description="Used globally")
     compute_only_one_df_row: bool = Field(False, description="Used to rapidly generate combo df during debugging")
 
     trial_classes: ClassVar[tuple[Any]] = Field(..., description="Trial classes designed for this experiment class")
@@ -339,6 +342,8 @@ class BaseExperiment(Behaviour):
             result["animal_id"] = trial_id
 
         result["inspect_directory"] = self.inspect_directory
+        if "inspect_image" not in result:
+            result["inspect_image"] = self._initialized_inspect_image
 
         return result
 
@@ -620,6 +625,12 @@ class BaseExperiment(Behaviour):
     @cached_property
     def _class_labels(self):
         return tuple(trial_class.trial_label for trial_class in self.trial_classes)
+
+    @cached_property
+    def _initialized_inspect_image(self) -> NDArray | None:
+        if not self.inspect_image_path:
+            return None
+        return cv2.imread(str(self.inspect_image_path))
 
     @staticmethod
     def _neither_singular_trial_class_or_trial_id_to_trial_class_name(self):

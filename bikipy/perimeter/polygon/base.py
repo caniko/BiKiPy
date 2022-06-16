@@ -70,7 +70,7 @@ class PolygonPerimeter(BasePerimeter):
 
         return border_obj
 
-    def closest_sides_to_coordinates(self, coordinates: NDArrayFp64):
+    def closest_sides_to_coordinates(self, coordinates: NDArrayFp64, inspect: bool = True):
         distance_sets = np.array(
             [
                 point_to_line_segment_distance(coordinates, line_segment_pair)
@@ -86,6 +86,10 @@ class PolygonPerimeter(BasePerimeter):
         closest_corner_vectors = np.zeros((closest_distance.shape[0], 2), dtype=np.float64)
         for i in range(self.number_of_corners):
             closest_corner_vectors[closest_index == i] = self.perimeter_corner_to_next_clockwise_corner_vectors[i]
+
+        if inspect:
+            plt.scatter(*coordinates[0].T)
+
 
         return closest_corner_vectors
 

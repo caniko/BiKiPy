@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Any, Iterable, Sequence, Optional
+from typing import Any, Iterable, Optional, Sequence
 
 import pandas as pd
 from pydantic import validate_arguments

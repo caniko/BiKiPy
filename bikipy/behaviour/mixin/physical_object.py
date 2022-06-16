@@ -81,6 +81,7 @@ class PhysicalObjectTrialMixin(BikipyBase, ABC):
             result["inspect_figure_file_path"] = (
                 _physical_object_inspection_dir(self.inspect_directory) / f"{self.label}.png"
             )
+            result["inspect_image"] = self.inspect_image
 
         return result
 
