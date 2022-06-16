@@ -27,8 +27,11 @@ class SequenceIngress(BaseIngress):
                 return feature_column[0]
             return feature_column[sequence_index]
 
+        waiting = True
         for animal_dir in self.dataset_directory_path.iterdir():
             animal_id = int(animal_dir.stem) if animal_dir.stem.isdigit() else animal_dir.stem
+            if waiting or animal_id != "OP722":
+                waiting = False
 
             try:
                 animal_metadata = self.metadata.loc[animal_id, :]
@@ -63,18 +66,27 @@ class SequenceIngress(BaseIngress):
                         keyring["bikipy_trial_key"]
                     ] = self.get_plugin_parameter(keyring["code_key"], get_plugin_index_from_stageful_metadata)
 
-                if self.settings["ingress"]["perimeter_definition_strategy"] == "trial-wise":
-                    perimeter_sets = []
-                    for perimeter_path in animal_dir.glob(f"{sequence_index}.perimeter*"):
-                        perimeter_sets.append(self.first_perimeter_set_from_makesense(perimeter_path))
+                match self.settings["ingress"]["perimeter_definition_strategy"]:
+                    case "trial-wise":
+                        perimeter_sets = []
+                        for perimeter_path in animal_dir.glob(f"{sequence_index}.perimeter*"):
+                            perimeter_sets.append(self.first_perimeter_set_from_makesense(perimeter_path))
 
-                    if length := len(perimeter_sets):
-                        perimeter_set = reduce(lambda a, b: a + b, perimeter_sets) if length != 1 else perimeter_sets[0]
-                    else:
-                        msg = f"No perimeters were found for Animal #{animal_id} for sequence {sequence_index}"
-                        raise ValueError(msg)
+                        if length := len(perimeter_sets):
+                            perimeter_set = (
+                                reduce(lambda a, b: a + b, perimeter_sets) if length != 1 else perimeter_sets[0]
+                            )
+                        else:
+                            msg = f"No perimeters were found for Animal #{animal_id} for sequence {sequence_index}"
+                            raise ValueError(msg)
 
-                    self.register_perimeter_to_trial_id(trial_id, perimeter_set.label_to_perimeter)
+                        self.register_perimeter_to_trial_id(trial_id, perimeter_set.label_to_perimeter)
+
+                    case "metadata":
+                        for perimeter_data in self.detect_perimeters_in_perimeter_directory:
+                            self.register_perimeter_to_trial_id(
+                                trial_id, perimeter_data["perimeter"].label_to_perimeter
+                            )
 
             self._metadata_index_to_trial_id[animal_id] = tuple(trial_ids)
 

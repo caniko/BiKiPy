@@ -70,15 +70,9 @@ class PhysicalObjectTrialMixin(BikipyBase, ABC):
             "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
             "minimum_seconds_attention": self.minimum_seconds_attention,
             "maximum_seconds_distraction": self.maximum_seconds_distraction,
+            "perimeter_border_normal_pixel_magnitude": self.perimeter_border_normal_pixel_magnitude,
+            "fps": self.fps,
         }
-
-        if self.video_metadata_can_be_defined:
-            result["perimeter_border_normal_pixel_magnitude"] = self.perimeter_border_normal_pixel_magnitude
-
-        try:
-            result["fps"] = self.fps
-        except AttributeError:
-            pass
 
         if self.physical_object_inspect:
             if not self.inspect_directory:

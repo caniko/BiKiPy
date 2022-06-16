@@ -58,7 +58,7 @@ class PolygonPerimeter(BasePerimeter):
         :return:
         """
         if self._polygon_order == 4:
-            from bikipy.perimeter import ParallelogramPerimeter
+            from bikipy.perimeter.polygon.parallelogram import ParallelogramPerimeter
 
             border_obj = ParallelogramPerimeter(
                 corners=expand_bikipy_perimeter(self, perimeter_border_normal_pixel_magnitude),

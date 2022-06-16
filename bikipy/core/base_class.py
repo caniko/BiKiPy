@@ -20,12 +20,6 @@ class BikipyBaseHashable(BikipyBase):
     label: Optional[str] = None
     group_label: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.now)
-    save_root: Optional[DirectoryPath] = None
-
-    def save(self, save_root: Optional[DirectoryPath] = None):
-        save_root = Path(save_root or self.save_root)
-        assert save_root
-        compress_pickle.dump(self, save_root / f"pickle_{self.category}_{self.timestamp}.lzma")
 
     @property
     def _hash_key(self):

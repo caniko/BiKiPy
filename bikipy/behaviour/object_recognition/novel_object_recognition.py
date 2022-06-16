@@ -2,9 +2,7 @@ from functools import cached_property
 from logging import getLogger
 from typing import ClassVar
 
-from bikipy.behaviour.mixin.physical_object import (
-    PhysicalObjectTrialMixin,
-)
+from bikipy.behaviour.mixin.physical_object import PhysicalObjectTrialMixin
 from bikipy.behaviour.rectangle import (
     RectangleEnclosedExperiment,
     RectangleEnclosedTrial,
@@ -41,10 +39,11 @@ class NortNoveltyTrial(RectangleEnclosedTrial, PhysicalObjectTrialMixin):
     @property
     def feature_headers(cls) -> list[tuple[str, ...]]:
         return super().feature_headers + [
-            ("AbsoluteDiscrimination", "novel-constant"),
-            ("DiscriminationIndex", "novel-constant"),
-            ("NoveltyPreference", "novel-constant"),
-            ("ObjectBiasScore", "novel-constant"),
+            ("AbsoluteDiscrimination", "novel-familiar"),
+            ("DiscriminationIndex", "novel-familiar"),
+            ("NoveltyPreference", "novel-familiar"),
+            ("ObjectBiasScore", "familiar"),
+            ("ObjectBiasScore", "novel"),
         ]
 
     @property
@@ -53,7 +52,7 @@ class NortNoveltyTrial(RectangleEnclosedTrial, PhysicalObjectTrialMixin):
             self.nort_absolute_discrimination,
             self.discrimination_index,
             self.novelty_preference,
-            self.physical_object_set.object_bias_score[1],
+            *self.physical_object_set.object_bias_score.values(),
         ]
 
     @property
@@ -71,17 +70,17 @@ class NortNoveltyTrial(RectangleEnclosedTrial, PhysicalObjectTrialMixin):
     @cached_property
     def nort_absolute_discrimination(self) -> float:
         """
-        Definition: <frames observing novel object> - <frames observing constant object>
+        Definition: <frames observing novel object> - <frames observing familiar object>
 
         :return:
         """
         try:
             return (
                 self.physical_object_set["novel"].attention_filtered_seconds_observing
-                - self.physical_object_set["constant"].attention_filtered_seconds_observing
+                - self.physical_object_set["familiar"].attention_filtered_seconds_observing
             )
         except KeyError:
-            msg = "The physical_objects must have a novel and a constant label " "to compute absolute_discrimination"
+            msg = "The physical_objects must have a novel and a familiar label " "to compute absolute_discrimination"
             raise AttributeError(msg)
 
 

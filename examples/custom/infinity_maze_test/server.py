@@ -16,7 +16,6 @@ maze = InfinityMaze(
     delay_timings_trial_count=2,
     inspect_image_path="maze_example.png",
     fps=30,
-    save_root=ROOT / "results",
 )
 
 maze.application()

@@ -16,7 +16,7 @@ def from_makesense_reference_line_segment(data_path: FilePath) -> float:
 
 
 @validate_arguments
-def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath, return_first: bool = True):
+def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath, return_first: bool = False):
     mpr_file_iterator = perimeter_dir.glob("meters_per_pixel-*.csv")
     if return_first:
         return from_makesense_reference_line_segment(next(mpr_file_iterator))

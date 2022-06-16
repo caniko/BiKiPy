@@ -77,7 +77,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
         return np.diff(self.base)
 
     @cached_property
-    def base_mindpoint(self):
+    def base_midpoint(self):
         return self.midpoint(*self.base)
 
     @property
@@ -89,12 +89,12 @@ class ParallelogramPerimeter(PolygonPerimeter):
         return np.diff(self.apex)
 
     @cached_property
-    def apex_mindpoint(self):
+    def apex_midpoint(self):
         return self.midpoint(*self.apex)
 
     @cached_property
     def midline_vector(self):
-        return self.apex_mindpoint - self.base_mindpoint
+        return self.apex_midpoint - self.base_midpoint
 
     @cached_property
     def midline_unit(self):
@@ -142,7 +142,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
 
         coordinates = np.asarray(coordinates)
         magnitudes = np.apply_along_axis(
-            lambda x: normal_from_line_to_point(self.midline_unit, self.base_mindpoint, x),
+            lambda x: normal_from_line_to_point(self.midline_unit, self.base_midpoint, x),
             1,
             coordinates,
         )
@@ -161,7 +161,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
     ):
         return [cls(inspect_image=inspect_image, **object_kwargs[i]) for i in range(int(n))]
 
-    def plot_parallelogram_labels(self, *args, **kwargs):
+    def plot_parallelogram_labels(self, *args, legend: bool = False, **kwargs):
         ax = super().plot(*args, **kwargs)
 
         ax.plot(
@@ -176,14 +176,15 @@ class ParallelogramPerimeter(PolygonPerimeter):
             (self.base[1][0], self.apex[1][0]),
             (self.base[1][1], self.apex[1][1]),
             "-g",
-            (self.base_mindpoint[0], self.apex_mindpoint[0]),
-            (self.base_mindpoint[1], self.apex_mindpoint[1]),
+            (self.base_midpoint[0], self.apex_midpoint[0]),
+            (self.base_midpoint[1], self.apex_midpoint[1]),
             "-k",
         )
-        plt.legend(
-            ("Base", "Apex", "Close Feet", "Far Feet", "Midline"),
-            bbox_to_anchor=(1.04, 0.5),
-            loc="center left",
-        )
+        if legend:
+            plt.legend(
+                ("Base", "Apex", "Close Feet", "Far Feet", "Midline"),
+                bbox_to_anchor=(1.04, 0.5),
+                loc="center left",
+            )
 
         return ax

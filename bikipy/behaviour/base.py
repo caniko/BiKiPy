@@ -3,6 +3,7 @@ from copy import copy
 from functools import cached_property
 from logging import getLogger
 from operator import attrgetter
+from pathlib import Path
 from typing import (
     Any,
     ClassVar,
@@ -16,6 +17,7 @@ from typing import (
 
 import numpy as np
 import pandas as pd
+from compress_pickle import compress_pickle
 from pydantic import DirectoryPath, Field, FilePath, ValidationError, validator
 from tqdm import tqdm
 from yaspin import yaspin
@@ -67,7 +69,7 @@ class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
 class BaseTrial(Behaviour):
     coordinate_data_path: FilePath = Field(..., description="Path to file storing coordinate data")
     data_reader_kwargs: dict
-    animal_id: int = Field(..., description="The ID of the animal in the trial")
+    animal_id: Hashable = Field(..., description="The ID of the animal in the trial")
     object_tracking_label_for_kinematics: Optional[str] = Field(
         ..., description="Label of the node that will be used to track general animal movement"
     )
@@ -128,8 +130,8 @@ class BaseTrial(Behaviour):
         return 2
 
     @property
-    def motion_features(self) -> list:
-        return self.motion.to_list
+    def motion_features(self) -> tuple:
+        return self.motion.as_tuple
 
     @cached_property
     def reader(self):
@@ -245,6 +247,11 @@ class BaseExperiment(Behaviour):
 
     def __getitem__(self, item: int):
         return self.trial_id_to_trial_object[item]
+
+    def save(self):
+        self.combined_feature_motion_df
+        save_root = self.inspect_directory or Path(".").resolve()
+        compress_pickle.dump(self, save_root / f"experiment.pickle.lzma")
 
     @classmethod
     @property
@@ -431,6 +438,10 @@ class BaseExperiment(Behaviour):
         return len(self.trial_ids)
 
     # DataFrame methods =========================================
+
+    @cached_property
+    def trial_id_feature_motion_df(self):
+        pass
 
     @cached_property
     def combined_feature_motion_df(self) -> pd.DataFrame:

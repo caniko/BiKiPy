@@ -53,51 +53,21 @@ def displacement_by_frame(
     return np_abs_diff(magnitudes_series.values)
 
 
-def total_displacement_median_speed_acceleration(
-    coordinate_sequence: NDArrayFp64,
-    meters_per_pixel: NDArrayFp64 | float,
-    fps: float,
-) -> tuple:
-    """
-
-    Parameters
-    ----------
-    coordinate_sequence
-    meters_per_pixel
-    fps
-
-    Returns
-    -------
-    (total displacement, speed per frame, acceleration per frame)
-    """
-    displacement = (
-        displacement_by_frame(coordinate_sequence) * meters_per_pixel
-        if isinstance(meters_per_pixel, float)
-        else displacement_by_frame(coordinate_sequence * np.asarray(meters_per_pixel))
-    )
-    if np.any(displacement):
-        return (
-            np.sum(displacement),
-            np.nanmedian((speed := np_abs_diff(displacement) * fps)),
-            np.nanmedian(np_abs_diff(speed)),
-        )
-    else:
-        return 0, 0, 0
-
-
 def frozen_frames(
     fps: float,
     rigid_body_node_displacements: Iterable[NDArrayFp64],
-    second_threshold: float = 3.0,
+    second_threshold: float = 1.0,
     metric_displacement_threshold: float = 0.005,
 ) -> NDArrayFp64:
     """
     Compute the time the rigid body has been frozen or "stood still" throughout
     the trial. The acceleration at these frames should be close to zero.
 
-    Formal definition: Given that the body is immobile up to a certain tolerance,
-    defined by metric_displacement_threshold, for longer than the defined second threshold
-    define the respective sequence as frozen. True = Frozen; False = Mobile
+    Formal definition:
+    1. The body is immobile within the defined upper boundary, metric_displacement_threshold
+    2. For a longer time than the defined second threshold, the sequence is defined as frozen.
+
+    True = Frozen; False = Mobile
 
     Method:
         #. Filter each node in the rigid body discretely with both thresholds
@@ -186,11 +156,10 @@ class Motion(BikipyBase):
 
     @cached_property
     def meters_per_second(self):
-        result = []
-        i = self.int_fps
-        while i + self.int_fps < self.meters_per_frame.size:
-            result.append(np.sum(self.meters_per_frame[i : (i := i + self.int_fps)]))
-        return np.array(result)
+        return [
+            np.nansum(self.meters_per_frame[i : i + self.int_fps])
+            for i in range(0, self.meters_per_frame.size, self.int_fps)
+        ]
 
     @cached_property
     def total_displacement(self):
@@ -227,13 +196,8 @@ class Motion(BikipyBase):
         return np.nanmedian(self.acceleration)
 
     @property
-    def to_list(self):
-        return [
-            self.total_displacement,
-            self.median_speed,
-            self.median_acceleration,
-            self.freezing_time,
-        ]
+    def as_tuple(self) -> tuple:
+        return self.total_displacement, self.median_speed, self.median_acceleration, self.freezing_time
 
 
 def motion_multi_indexer(category: Any, level: int):
@@ -247,12 +211,12 @@ def get_combined_features_from_merged_motion_island_data(
     fps: float,
     minimum_seconds_of_data: float = 4.0,
 ):
-    def motion_object_from_slice(slice_start, slice_end) -> list:
+    def motion_object_from_slice(slice_start, slice_end) -> Motion:
         return Motion(
             coordinate_sequence=coordinate_sequence[slice_start:slice_end],
             meters_per_pixel=meters_per_pixel,
             fps=fps,
-        ).to_list
+        )
 
     def find_index_start_n_end(starting_index: int = 0):
         new_start, new_end = indexes[starting_index], indexes[starting_index := starting_index + 1]
@@ -266,32 +230,58 @@ def get_combined_features_from_merged_motion_island_data(
         return _zero_return
 
     indexes = np.where(boolean_index)[0]
+    third_of_a_second = fps / 3.0
 
-    i, start, end = find_index_start_n_end()
-    motion_features = []
+    last_index = number_of_frames - 1
+    i, start, _end = find_index_start_n_end()
+
+    data = []
     while i < number_of_frames:
         potential_end = indexes[i]
-        next_step_from_end = end + 1
-        if potential_end == next_step_from_end:
-            end = potential_end
-        elif potential_end < next_step_from_end:
-            if potential_end - end > minimum_frames:
-                motion_features.append(motion_object_from_slice(start, end))
+        next_step_from_previous_end = indexes[i - 1] + 1
+        if potential_end == next_step_from_previous_end:
+            pass
+        elif potential_end > next_step_from_previous_end:
+            jump_length = potential_end - next_step_from_previous_end
+            if jump_length <= third_of_a_second:
+                end = potential_end
+
+                # Look ahead before committing to end index
+                if i != last_index and end - indexes[i + 1] < third_of_a_second:
+                    i += 1
+                    continue
+
+            else:
+                end = indexes[i - 1]
+
+            if (slice_len := end - start) > minimum_frames:
+                motion = motion_object_from_slice(start, end)
+                if not np.isnan(motion.median_acceleration):
+                    data.append((*motion.as_tuple, slice_len))
+
+                if i == last_index:
+                    break
+
                 i, start, end = find_index_start_n_end(i)
                 continue
-            else:
-                end = potential_end
+        else:  # potential_end < next_step_from_previous_end
+            msg = "potential_end < next_step_from_end cannot be true in a sorted index"
+            raise RuntimeError(msg)
+
         i += 1
 
-    if (end := indexes[-1] + 1) - start >= 4:
-        motion_features.append(motion_object_from_slice(start, end))
-
-    if not motion_features or not np.any(motion_features[0]):
+    if not data:
         return _zero_return
 
+    df = pd.DataFrame(
+        data, columns=["total_displacement", "median_speed", "median_acceleration", "freezing_time", "weight"]
+    )
+    # Making sure to not have any np.nans before np.average
+    df.dropna(axis=0, how="any", thresh=None, subset=None, inplace=True)
+
     return {
-        "total_displacement": sum(motion_feature[0] for motion_feature in motion_features),
-        "median_speed": np.nanmean([motion_feature[1] for motion_feature in motion_features]),
-        "median_acceleration": np.nanmean([motion_feature[2] for motion_feature in motion_features]),
-        "freezing_time": sum(motion_feature[3] for motion_feature in motion_features),
+        "total_displacement": df["total_displacement"].sum(),
+        "median_speed": np.average(df["median_speed"], weights=df["weight"]),
+        "median_acceleration": np.average(df["median_acceleration"], weights=df["weight"]),
+        "freezing_time": df["freezing_time"].sum(),
     }

@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Any, Iterable, Sequence
+from typing import Any, Iterable, Sequence, Optional
 
 import pandas as pd
 from pydantic import validate_arguments
@@ -20,10 +20,10 @@ def ndarray_to_tuple(array: NDArray):
 
 
 def add_n_levels_to_multi_index(
-    multi_index: pd.Index | pd.MultiIndex, n_levels: int, on_start: bool = True
+    multi_index: pd.Index | pd.MultiIndex, n_levels: int, on_start: bool = True, filler: Optional[str] = None
 ) -> pd.MultiIndex:
     multi_index_as_tuples = list(multi_index)
-    levels_to_add = ["" for _ in range(n_levels)]
+    levels_to_add = [filler or "" for _ in range(n_levels)]
 
     if isinstance(multi_index, pd.MultiIndex):
         if on_start:
@@ -36,10 +36,12 @@ def add_n_levels_to_multi_index(
         return pd.MultiIndex.from_tuples([(headers, *levels_to_add) for headers in multi_index_as_tuples])
 
 
-def copycat_assumes_levels_of_icon(copycat: pd.DataFrame, icon: pd.DataFrame):
+def copycat_assumes_levels_of_icon(copycat: pd.DataFrame, icon: pd.DataFrame, filler: Optional[str] = None):
     assert copycat.columns.nlevels < icon.columns.nlevels
     clone_df = copycat.copy()
-    clone_df.columns = add_n_levels_to_multi_index(clone_df.columns, icon.columns.nlevels - copycat.columns.nlevels)
+    clone_df.columns = add_n_levels_to_multi_index(
+        clone_df.columns, icon.columns.nlevels - copycat.columns.nlevels, filler
+    )
     clone_df.columns.names = icon.columns.names
     return clone_df
 

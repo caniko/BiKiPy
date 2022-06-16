@@ -29,7 +29,6 @@ logger = getLogger(__name__)
 
 
 class LiveTrial(BaseModel, ABC):
-    save_root: DirectoryPath
     delay_timings: tuple[float]
     delay_timings_trial_count: tuple[int] | int
     manual_total_loops_per_trial: Optional[int] = None

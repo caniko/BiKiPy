@@ -32,6 +32,7 @@ perimeter:
       timestamp: string
 experiment:
   defined:
+    compute_only_one_df_row: true
     manual_recording_resolution: [ 1920, 1080 ]
     manual_fps: 30
   optional:
@@ -115,7 +116,7 @@ trial:
         object_4: None
     ObjectsInUpdatingLocationsTestTrial:
       defined:
-        crop_time_seconds: 900
+        crop_time_seconds: 300
       required:
         object_2: None
         object_3: None

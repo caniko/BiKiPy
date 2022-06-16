@@ -17,12 +17,13 @@ from bikipy.feature.motion import (
 )
 from bikipy.perimeter.utils import perimeter_multi_indexer
 from bikipy.utils.collection_utils import generic_multi_indexer
+from bikipy.utils.math.geometry import clockwise_sort_points
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 
 logger = getLogger(__name__)
 quadrant_grid_typing = tuple[int, int]
 
-A = 255
+A = 1
 QUADRANT_INSPECTION_DIR_NAME = "PiP_quadrant_location_booleans"
 CENTER_INSPECTION_DIR_NAME = "PiP_center_location_booleans"
 
@@ -49,7 +50,7 @@ class Quadrant(BikipyBase):
 
     @cached_property
     def confinement_boolean_index(self) -> NDArrayBool:
-        return parallel_point_in_polygon(self.framewise_confined_coordinates, self.corners)
+        return parallel_point_in_polygon(self.framewise_confined_coordinates, clockwise_sort_points(self.corners))
 
     @cached_property
     def seconds_present(self) -> float:
@@ -87,7 +88,11 @@ class RectangleEnclosedExperiment(BaseExperiment):
             quadrant_summary_columns.extend(
                 motion_multi_indexer_for_quadrant(category, cls.feature_column_index.nlevels)
             )
-        result = [*super().motion_column_headers, ["Gaussian", "CenterToPeriphery"], *quadrant_summary_columns]
+        result = [
+            *super().motion_column_headers,
+            # ["Gaussian", "CenterToPeriphery"],
+            *quadrant_summary_columns,
+        ]
         if cls.center_box_to_recording_resolution_ratio:
             result += [
                 *motion_multi_indexer("Center", cls.motion_column_index_levels),
@@ -307,7 +312,7 @@ class RectangleEnclosedTrial(BaseTrial):
 
         result = [
             *super().motion_features,
-            self.gaussian_center_to_periphery_score,
+            # self.gaussian_center_to_periphery_score,
             *quadrant_motion_values,
         ]
 
@@ -328,7 +333,7 @@ class RectangleEnclosedTrial(BaseTrial):
 
 @lru_cache
 @validate_arguments
-def gaussian_scoring_field(resolution: NDArrayInt16, scale: int = 4):
+def gaussian_scoring_field(resolution: NDArrayInt16, scale: int = 1):
     resolution *= scale
 
     model = ngauss_fit.model(
