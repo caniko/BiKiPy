@@ -63,7 +63,7 @@ class CirclePerimeter(BasePerimeter):
         distance_of_point_from_center = np.linalg.norm(coordinates - self.center, axis=1)
         return np.abs(distance_of_point_from_center) <= self.radius
 
-    def expand(self, perimeter_border_normal_pixel_magnitude: float):
+    def expand(self, perimeter_border_normal_pixel_magnitude: float | NDArrayFp64):
         kwargs = self.dict()
         kwargs["radius"] += perimeter_border_normal_pixel_magnitude
         return self.__class__(**kwargs)

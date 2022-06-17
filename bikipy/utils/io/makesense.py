@@ -6,11 +6,15 @@ from pydantic import FilePath
 logger = getLogger(__name__)
 
 
-def read_makesense_line(data_path: FilePath) -> pd.DataFrame:
-    return pd.read_csv(
+def read_makesense_line(data_path: FilePath, invert_y: bool = True) -> pd.DataFrame:
+    result = pd.read_csv(
         data_path,
         names=("label", "1x", "1y", "2x", "2y", "image_name", "x_res", "y_res"),
     )
+    if invert_y:
+        result.loc[:, "1y"] = result["y_res"] - result.loc[:, "1y"]
+        result.loc[:, "2y"] = result["y_res"] - result.loc[:, "2y"]
+    return result
 
 
 def get_line_endpoints_from_makesense_row(row: pd.Series) -> tuple:
@@ -21,11 +25,14 @@ def read_first_makesense_line(data_path: FilePath) -> tuple:
     return get_line_endpoints_from_makesense_row(read_makesense_line(data_path).iloc[0])
 
 
-def read_makesense_point(data_path: FilePath) -> pd.DataFrame:
-    return pd.read_csv(
+def read_makesense_point(data_path: FilePath, invert_y: bool = True) -> pd.DataFrame:
+    result = pd.read_csv(
         data_path,
         names=("label", "x", "y", "image_name", "x_res", "y_res"),
     )
+    if invert_y:
+        result.loc[:, "y"] = result["y_res"] - result.loc[:, "y"]
+    return result
 
 
 def get_point_from_makesense_row(row: pd.Series):

@@ -122,11 +122,10 @@ def inner_angle(vector_set_1: NDArrayFp64, vector_set_2: NDArrayFp64):
             v1_u = vector_set_1[i] / v1_magnitudes[i]
             v2_u = vector_set_2[i] / v2_magnitudes[i]
             unit_vstack = np.stack((v1_u[-2:], v2_u[-2:]))
+
             minor = np.linalg.det(unit_vstack)
-            if minor == 0:
-                sign = 1
-            else:
-                sign = -np.sign(minor)
+            sign = 1 if minor == 0 else -np.sign(minor)
+
             dot_p = np.dot(v1_u, v2_u)
             dot_p = min(max(dot_p, -1.0), 1.0)
             result.append(sign * np.arccos(dot_p))
@@ -138,7 +137,7 @@ def inner_angle(vector_set_1: NDArrayFp64, vector_set_2: NDArrayFp64):
     return njit(parallel=True, cache=True)(inner_angle_func)() if ENABLE_NUMBA else inner_angle_func()
 
 
-def compute_angles_from_vectors(
+def compute_angles_from_points_abc(
     row_vectors_point_a: NDArrayFp64,
     row_vectors_point_b: NDArrayFp64,
     row_vectors_point_c: NDArrayFp64,
@@ -203,16 +202,21 @@ def compute_angles_from_vectors(
     return computation
 
 
-def angles_between_0_2pi(angles: NDArrayFp64):
-    angles = np.asarray(angles)
+def angle_from_a_to_b(vector_a: NDArrayFp64, vector_b: NDArrayFp64) -> NDArrayFp64:
+    b_x, b_y = vector_b.T
+    vector_p = np.array([-b_y, b_x]).T
 
-    boolean_indexes = np.abs(angles) >= 2.0 * np.pi
-    angles[boolean_indexes] = 2.0 * np.pi - angles[boolean_indexes]
+    b_coord = dot_prod_along_axis_1_1d(vector_a, vector_b)
+    p_coord = dot_prod_along_axis_1_1d(vector_a, vector_p)
 
-    return angles
+    return np.arctan2(p_coord, b_coord)
 
 
 ANGLE_METHOD_TO_FUNC = {
     "inner": inner_angle,
     "counterclockwise": clockwise_angel_2d,
 }
+
+
+if ENABLE_NUMBA:
+    angle_from_a_to_b = njit(cache=True)(angle_from_a_to_b)

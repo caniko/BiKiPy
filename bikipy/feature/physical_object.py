@@ -1,7 +1,7 @@
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, ClassVar, Optional, Sequence
+from typing import Any, ClassVar, Optional, Sequence, Iterable
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,7 +11,7 @@ from pydantic_numpy import NDArray
 from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BikipyBase
-from bikipy.core.typing import NDArrayBool, NDArrayFp64
+from bikipy.core.typing import NDArrayBool, NDArrayFp64, NDArrayInt16
 from bikipy.feature.attention.main import (
     gaze_direction_filter,
     proximity_filter,
@@ -35,11 +35,12 @@ class PhysicalObject(BikipyBase):
     gaze_start_point_label: str
     gaze_travel_direction_point_label: str
     fps: float
-    perimeter_border_normal_pixel_magnitude: float
+    perimeter_border_normal_pixel_magnitude: float | NDArrayFp64
     maximum_radians_inter_gaze_perimeter: float
     minimum_seconds_attention: float
     maximum_seconds_distraction: float
 
+    recording_resolution: Optional[NDArrayInt16] = None
     inspect_image: Optional[NDArray] = None
     inspect_figure_file_path: Optional[Path] = None
     _fig: Any = None
@@ -155,16 +156,16 @@ class PhysicalObject(BikipyBase):
     def _init_matplotlib(self):
         if self.inspect_image is not None:
             x, y = self.inspect_image.shape[:2]
-            self._fig, self._axes = plt.subplots(nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0), dpi=300)
-        # if self.perimeter.inspect_image is None:
-        #     self._fig, self._axes = plt.subplots(nrows=2, ncols=2, dpi=500)
-        else:
-            x, y = self.perimeter.inspect_image.shape[:2]
-            self._fig, self._axes = plt.subplots(nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0), dpi=300)
+            self._fig, self._axes = plt.subplots(nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0))
 
-        for row_ax in self._axes:
-            for col_ax in row_ax:
-                col_ax.imshow(self.inspect_image)
+            for row_ax in self._axes:
+                for col_ax in row_ax:
+                    col_ax.imshow(self.inspect_image)
+        # elif self.recording_resolution is not None:
+        #     x, y = self.recording_resolution
+        #     self._fig, self._axes = plt.subplots(nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0))
+        else:
+            self._fig, self._axes = plt.subplots(nrows=2, ncols=2, dpi=500)
 
         self.attention_axes[1][0].set_title("proximity_filtered & gaze_filtered")
         self.attention_axes[1][1].set_title("Observation")
@@ -216,6 +217,15 @@ class PhysicalObjectSet(BikipyBase):
     def from_perimeter_set(cls, perimeter_set: PerimeterSet):
         assert not perimeter_set.restricted_perimeters
         return cls.from_perimeter(*perimeter_set.perimeters)
+
+    @classmethod
+    def from_bikipy_trial(cls, perimeters: Iterable[AnyPerimeter], trial_class):
+        return cls(
+            physical_objects=tuple(
+                PhysicalObject(perimeter=perimeter, **trial_class.physical_object_keyword_arguments)
+                for perimeter in perimeters
+            )
+        )
 
     @cached_property
     def frames(self) -> int:

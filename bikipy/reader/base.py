@@ -39,7 +39,7 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
     x_axis_crop_end_point: float = Field(0.0, description="")
     y_axis_crop_end_point: float = Field(0.0, description="")
     reverse_y_axis: bool = Field(
-        False,
+        True,
         description=(
             "if True will invert the y-axis. Useful when the user wants to work in "
             "traditional Cartesian coordinate system where the origin is on "

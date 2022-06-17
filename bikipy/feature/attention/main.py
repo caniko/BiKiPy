@@ -11,9 +11,8 @@ from pydantic import DirectoryPath, validate_arguments
 
 from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
-from bikipy.feature.angle import inner_angle
+from bikipy.feature.angle import angle_from_a_to_b
 from bikipy.perimeter.base import AnyPerimeter
-from bikipy.utils.math.vector import dot_prod_along_axis_1_1d, rotate_vectors_with_angle
 from bikipy.utils.misc import generic_inspection_finalization
 
 logger = getLogger(__name__)
@@ -24,7 +23,7 @@ def proximity_filter(
     perimeter: AnyPerimeter,
     inside_perimeter_border: NDArrayFp64,
     outside_perimeter: NDArrayFp64,
-    perimeter_border_normal_pixel_magnitude: float,
+    perimeter_border_normal_pixel_magnitude: float | NDArrayFp64,
     inspect: bool = False,
     inspection_ax: Any = None,
 ) -> NDArrayBool:
@@ -41,7 +40,7 @@ def proximity_filter(
     :type perimeter: AnyPerimeter
     :type inside_perimeter_border: NDArrayFp64
     :type outside_perimeter: NDArrayFp64
-    :type perimeter_border_normal_pixel_magnitude: float
+    :type perimeter_border_normal_pixel_magnitude: float | NDArrayFp64
     :type inspect: bool
     :type inspection_ax: Any
     :return:
@@ -119,9 +118,10 @@ def gaze_direction_filter(
     gaze_vector = gaze_travel_direction_point - gaze_start_point
 
     closest_corner_vectors = perimeter.closest_sides_to_coordinates(gaze_start_point)
-    inner_angles = inner_angle(closest_corner_vectors, gaze_vector)
 
-    result = np.abs(inner_angles) <= max_radians
+    angles = angle_from_a_to_b(gaze_vector, closest_corner_vectors)
+
+    result = angles <= max_radians
 
     if inspection_ax is not None or inspect:
         if inspection_ax is None:
@@ -130,17 +130,17 @@ def gaze_direction_filter(
         else:
             ax = inspection_ax
 
-        rotated_eye_to_nose_vector = rotate_vectors_with_angle(gaze_vector, inner_angles)
+        # rotated_eye_to_nose_vector = rotate_vectors_with_angle(gaze_vector, inner_angles)
 
         perimeter.plot(ax=ax)
         ax.set_title("Gaze direction filter")
 
         ax.quiver(
             *gaze_travel_direction_point[result].T,
-            *rotated_eye_to_nose_vector[result].T,
+            *closest_corner_vectors[result].T,
             angles="xy",
             scale_units="xy",
-            scale=0.8,
+            scale=1.0,
             alpha=MATPLOTLIB_SCATTER_ALPHA,
             label="Valid",
             color="b",
@@ -149,10 +149,10 @@ def gaze_direction_filter(
         not_result = ~result
         ax.quiver(
             *gaze_travel_direction_point[not_result].T,
-            *rotated_eye_to_nose_vector[not_result].T,
+            *closest_corner_vectors[not_result].T,
             angles="xy",
             scale_units="xy",
-            scale=0.8,
+            scale=1.0,
             alpha=MATPLOTLIB_SCATTER_ALPHA,
             label="Invalid",
             color="r",
@@ -255,7 +255,7 @@ def perimeter_attention(
     eye_center: NDArrayFp64,
     nose: NDArrayFp64,
     fps: float,
-    perimeter_border_normal_pixel_magnitude: float,
+    perimeter_border_normal_pixel_magnitude: float | NDArrayFp64,
     maximum_radians_inter_gaze_perimeter: float = 0.25 * np.pi,
     minimum_seconds_attention: float = 0.5,
     maximum_seconds_distraction: float = 0.5,

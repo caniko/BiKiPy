@@ -79,7 +79,7 @@ class VideoMetadataMixin(BikipyBase):
     def _video_metadata_from_file(self) -> tuple[NDArrayInt16, float]:
         if not self.video_path:
             msg = (
-                "Video metadata, FPS and resolution, must be defined. "
+                "Requested attribute, could be: FPS or resolution, could not be defined. "
                 "Either define these manually (manual_fps, manual_recording_resolution), or provide path to video"
             )
             raise AttributeError(msg)

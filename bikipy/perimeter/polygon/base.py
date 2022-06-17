@@ -51,7 +51,7 @@ class PolygonPerimeter(BasePerimeter):
     def __repr__(self):
         return super().__repr__() + f"\n\tcorners={self.corners}"
 
-    def expand(self, perimeter_border_normal_pixel_magnitude: float):
+    def expand(self, perimeter_border_normal_pixel_magnitude: float | NDArrayFp64):
         """
         :param perimeter_border_normal_pixel_magnitude: The magnitude of the normal between
             the perimeter and the perimeter given in pixels
@@ -89,7 +89,6 @@ class PolygonPerimeter(BasePerimeter):
 
         if inspect:
             plt.scatter(*coordinates[0].T)
-
 
         return closest_corner_vectors
 

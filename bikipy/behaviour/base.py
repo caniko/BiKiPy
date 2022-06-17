@@ -152,7 +152,8 @@ class BaseTrial(Behaviour):
         )
 
     @cached_property
-    def reader_init_kwargs(self):
+    def reader_init_kwargs(self) -> dict:
+        self.data_reader_kwargs["manual_recording_resolution"] = self.recording_resolution
         if self.crop_time_seconds:
             self.data_reader_kwargs["crop_frames"] = round(self.fps * self.crop_time_seconds)
         return self.data_reader_kwargs

@@ -151,22 +151,22 @@ class Motion(BikipyBase):
         return round(self.fps)
 
     @cached_property
-    def meters_per_frame(self):
+    def meters_per_frame(self) -> NDArrayFp64:
         return displacement_by_frame(self.coordinate_sequence * self.meters_per_pixel)
 
     @cached_property
-    def meters_per_second(self):
+    def meters_per_second(self) -> NDArrayFp64:
         return [
             np.nansum(self.meters_per_frame[i : i + self.int_fps])
             for i in range(0, self.meters_per_frame.size, self.int_fps)
         ]
 
     @cached_property
-    def total_displacement(self):
+    def total_displacement(self) -> float:
         return np.nansum(self.meters_per_frame)
 
     @cached_property
-    def median_speed(self):
+    def median_speed(self) -> float:
         if not self.total_displacement:
             return np.nan
         return np.nanmedian(self.meters_per_second)
@@ -178,25 +178,25 @@ class Motion(BikipyBase):
         return frozen_frames(self.fps, (self.meters_per_frame,))
 
     @cached_property
-    def freezing_time(self):
+    def freezing_time(self) -> float:
         if not self.total_displacement:
             return np.nan
         return np.nansum(self.frozen_boolean_index) / self.fps
 
     @cached_property
-    def acceleration(self):
+    def acceleration(self) -> NDArrayFp64:
         if not self.total_displacement:
             return np.nan
         return np_abs_diff(self.meters_per_second)
 
     @cached_property
-    def median_acceleration(self):
+    def median_acceleration(self) -> float:
         if not self.total_displacement:
             return np.nan
         return np.nanmedian(self.acceleration)
 
     @property
-    def as_tuple(self) -> tuple:
+    def as_tuple(self) -> tuple[float, float, float, float]:
         return self.total_displacement, self.median_speed, self.median_acceleration, self.freezing_time
 
 
