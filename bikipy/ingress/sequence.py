@@ -122,6 +122,12 @@ class SequenceIngress(BaseIngress):
             )
             raise ValueError(msg)
 
+    @property
+    def method_settings(self):
+        return sequence_generate_configuration(
+            self.project_root_directory, self.experiment_name, self.kinematic_data_file_extension
+        )
+
 
 @validate_arguments
 def sequence_generate_configuration(

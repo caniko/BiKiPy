@@ -1,7 +1,7 @@
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, ClassVar, Optional, Sequence, Iterable
+from typing import Any, ClassVar, Iterable, Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -34,13 +34,11 @@ class PhysicalObject(BikipyBase):
     reader: Reader
     gaze_start_point_label: str
     gaze_travel_direction_point_label: str
-    fps: float
     perimeter_border_normal_pixel_magnitude: float | NDArrayFp64
     maximum_radians_inter_gaze_perimeter: float
     minimum_seconds_attention: float
     maximum_seconds_distraction: float
 
-    recording_resolution: Optional[NDArrayInt16] = None
     inspect_image: Optional[NDArray] = None
     inspect_figure_file_path: Optional[Path] = None
     _fig: Any = None
@@ -49,6 +47,10 @@ class PhysicalObject(BikipyBase):
 
     def __len__(self) -> int:
         return self.temporal_resolution
+
+    @cached_property
+    def video(self):
+        return self.perimeter.video
 
     @property
     def label(self):
@@ -64,11 +66,11 @@ class PhysicalObject(BikipyBase):
 
     @cached_property
     def attention_filtered_seconds_observing(self) -> float:
-        return np.sum(self.attention_observance_boolean_index) / self.fps
+        return np.sum(self.attention_observance_boolean_index) / self.video.fps
 
     @cached_property
     def raw_seconds_observing(self) -> float:
-        return np.sum(self.logical_location_and_gaze) / self.fps
+        return np.sum(self.logical_location_and_gaze) / self.video.fps
 
     @cached_property
     def filtered_raw_observation_ratio(self) -> float:
@@ -91,6 +93,7 @@ class PhysicalObject(BikipyBase):
             self._gaze_travel_direction_point,
             self._gaze_start_point,
             self.maximum_radians_inter_gaze_perimeter,
+            inspect_video=self.video,
             **self._gaze_filter_kwargs,
         )
 
@@ -102,7 +105,7 @@ class PhysicalObject(BikipyBase):
     def attention_observance_boolean_index(self) -> NDArrayBool:
         result = tolerance_filter(
             self.logical_location_and_gaze,
-            self.fps,
+            self.video.fps,
             self.minimum_seconds_attention,
             self.maximum_seconds_distraction,
         )
@@ -154,16 +157,17 @@ class PhysicalObject(BikipyBase):
         return self._axes
 
     def _init_matplotlib(self):
-        if self.inspect_image is not None:
-            x, y = self.inspect_image.shape[:2]
-            self._fig, self._axes = plt.subplots(nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0))
+        if self.inspect_image is not None or self.video.frame is not None:
+            image = self.inspect_image if self.inspect_image is not None else self.video.frame
+            x, y = image.shape[:2]
+            self._fig, self._axes = plt.subplots(nrows=2, ncols=2, figsize=(x / 10.0, y / 10.0))
 
             for row_ax in self._axes:
                 for col_ax in row_ax:
                     col_ax.imshow(self.inspect_image)
-        # elif self.recording_resolution is not None:
-        #     x, y = self.recording_resolution
-        #     self._fig, self._axes = plt.subplots(nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0))
+        elif self.video.recording_resolution is not None:
+            x, y = self.recording_resolution
+            self._fig, self._axes = plt.subplots(nrows=2, ncols=2, figsize=(x / 10.0, y / 10.0))
         else:
             self._fig, self._axes = plt.subplots(nrows=2, ncols=2, dpi=500)
 
@@ -247,11 +251,11 @@ class PhysicalObjectSet(BikipyBase):
 
     @cached_property
     def seconds_observing(self):
-        return np.sum(self.observing_per_frame) / self.fps
+        return np.sum(self.observing_per_frame) / self.video.fps
 
     @cached_property
     def seconds_not_observing(self):
-        return np.sum(self.not_observing_per_frame) / self.fps
+        return np.sum(self.not_observing_per_frame) / self.video.fps
 
     @cached_property
     def object_specific_observation(self) -> dict[Any, int]:
@@ -288,7 +292,9 @@ class PhysicalObjectSet(BikipyBase):
 
     @cached_property
     def reduced_observation_sequence(self):
-        return np.array(reduce_repeating_sequences(self.observation_sequence, frame_tolerance=round(self.fps / 0.35)))
+        return np.array(
+            reduce_repeating_sequences(self.observation_sequence, frame_tolerance=round(self.video.fps / 0.35))
+        )
 
     @cached_property
     def physical_object_id_to_observation_instances(self):

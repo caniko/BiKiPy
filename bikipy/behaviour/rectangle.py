@@ -61,7 +61,6 @@ class Quadrant(BikipyBase):
         return get_combined_features_from_merged_motion_island_data(
             self.confinement_boolean_index,
             self.framewise_confined_coordinates,
-            self.meters_per_pixel,
             self.fps,
         )
 
@@ -256,7 +255,6 @@ class RectangleEnclosedTrial(BaseTrial):
         return get_combined_features_from_merged_motion_island_data(
             self.center_boolean_index,
             self.framewise_confined_coordinates,
-            self.meters_per_pixel,
             self.fps,
         )
 
@@ -265,7 +263,6 @@ class RectangleEnclosedTrial(BaseTrial):
         return get_combined_features_from_merged_motion_island_data(
             self.periphery_boolean_index,
             self.framewise_confined_coordinates,
-            self.meters_per_pixel,
             self.fps,
         )
 

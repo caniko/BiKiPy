@@ -63,6 +63,19 @@ def analyze(project_root_directory: Optional[DirectoryPath] = None) -> None:
 
 @cli_root.command()
 @click.argument("project_root_directory")
+@click.option("-x", "--delete_outdated", help="Outdated field will be removed", is_flag=True)
+@click.option("-d", "--dry_run", is_flag=True)
+@validate_arguments
+def update(
+    project_root_directory: Optional[DirectoryPath] = None, delete_outdated: bool = False, dry_run: bool = False
+) -> None:
+    auto_define_ingress_object(_define_project_root_directory(project_root_directory)).update_settings(
+        delete_outdated=delete_outdated, dry_run=dry_run
+    )
+
+
+@cli_root.command()
+@click.argument("project_root_directory")
 @validate_arguments
 def verify(project_root_directory: Optional[DirectoryPath] = None) -> None:
     auto_define_ingress_object(_define_project_root_directory(project_root_directory)).verify_project_structure()

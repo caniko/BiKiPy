@@ -226,7 +226,7 @@ def rotation_matrix_from_radians(radians: NDArrayFp64) -> NDArrayFp64:
 if ENABLE_NUMBA:
 
     # rotation_matrix_from_radians = jit(cache=True)(rotation_matrix_from_radians)
-    orthogonal_unit_vector = njit(cache=True)(orthogonal_unit_vector)
+    orthogonal_unit_vector = njit(cache=True)
 
     def rotate_vectors_with_angle(vectors: NDArrayFp64, angles: NDArrayFp64) -> NDArrayFp64:
         return rotate_vectors_with_angle(vectors, rotation_matrix_from_radians(angles))

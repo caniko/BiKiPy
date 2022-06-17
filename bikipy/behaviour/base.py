@@ -27,8 +27,8 @@ from yaspin.spinners import Spinners
 
 from bikipy import ENABLE_PROCESS_POOLING
 from bikipy.core.base_class import BikipyBaseHashable
-from bikipy.core.mixin import VideoMetadataMixin
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
+from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_multi_indexer
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.collection_utils import (
@@ -70,8 +70,8 @@ class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
 
 class BaseTrial(Behaviour):
     coordinate_data_path: FilePath = Field(..., description="Path to file storing coordinate data")
-    data_reader_kwargs: dict
-    animal_id: Hashable = Field(..., description="The ID of the animal in the trial")
+    reader_kwargs: dict
+    animal_id: str | int = Field(..., description="The ID of the animal in the trial")
     object_tracking_label_for_kinematics: Optional[str] = Field(
         ..., description="Label of the node that will be used to track general animal movement"
     )
@@ -148,15 +148,9 @@ class BaseTrial(Behaviour):
 
         return reader_init_func(
             df_path=self.coordinate_data_path,
-            **self.reader_init_kwargs,
+            video=self.video,
+            **self.reader_kwargs,
         )
-
-    @cached_property
-    def reader_init_kwargs(self) -> dict:
-        self.data_reader_kwargs["manual_recording_resolution"] = self.recording_resolution
-        if self.crop_time_seconds:
-            self.data_reader_kwargs["crop_frames"] = round(self.fps * self.crop_time_seconds)
-        return self.data_reader_kwargs
 
     @property
     def framewise_confined_coordinates(self) -> NDArrayFp64:
@@ -174,7 +168,6 @@ class BaseTrial(Behaviour):
     def motion(self) -> Motion:
         return Motion(
             coordinate_sequence=self.framewise_confined_coordinates,
-            meters_per_pixel=self.meters_per_pixel,
             fps=self.fps,
         )
 
@@ -225,7 +218,7 @@ class BaseTrial(Behaviour):
 Trial = TypeVar("Trial", bound=BaseTrial)
 
 
-class BaseExperiment(Behaviour):
+class BaseExperiment(Behaviour, VideoMetadataMixin):
     manual_trial_ids: Optional[tuple] = None
     trial_id_to_trial_class_name: Optional[dict] = Field(default_factory=dict)
     trial_id_to_keyword_arguments: Optional[dict] = Field(default_factory=dict)

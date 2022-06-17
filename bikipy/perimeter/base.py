@@ -10,6 +10,7 @@ from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_ar
 
 from bikipy.core.base_class import BikipyBase, BikipyBaseHashable
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
+from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
 from bikipy.utils.io.makesense import read_makesense_point
 from bikipy.utils.misc import get_reference_point_from_array, read_image
@@ -20,6 +21,7 @@ StringPerimeterShapes = Literal["circle", "parallelogram", "polygon", "rectangle
 
 
 class BasePerimeter(BikipyBaseHashable):
+    video: VideoMetadata
     impenetrable: bool = Field(
         False,
         description="Signifies the impenetrability of the perimeter. "

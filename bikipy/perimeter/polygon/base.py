@@ -24,7 +24,7 @@ logger = getLogger(__name__)
 
 
 class PolygonPerimeter(BasePerimeter):
-    corners: NDArrayFp64
+    corners_in_pixels: NDArrayFp64
     reference_point_coco_path: Optional[FilePath] = None
     reference_point_array: Optional[NDArrayInt16] = None
     inspect_image_path: Optional[FilePath] = None
@@ -35,7 +35,7 @@ class PolygonPerimeter(BasePerimeter):
 
     _polygon_order: ClassVar[Optional[int]] = None
 
-    @validator("corners")
+    @validator("corners_in_pixels")
     def corners_polygon_order_validator(cls, value: NDArrayFp64):
         if cls._polygon_order and (n := len(value)) != int(cls._polygon_order):
             msg = (
@@ -50,6 +50,10 @@ class PolygonPerimeter(BasePerimeter):
 
     def __repr__(self):
         return super().__repr__() + f"\n\tcorners={self.corners}"
+
+    @cached_property
+    def corners(self):
+        return self.corners_in_pixels * self.video.meters_per_pixel
 
     def expand(self, perimeter_border_normal_pixel_magnitude: float | NDArrayFp64):
         """

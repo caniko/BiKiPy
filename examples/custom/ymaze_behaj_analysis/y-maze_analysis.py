@@ -105,7 +105,7 @@ for round_id, data_dirs in enumerate(round_dirs):
                     trial_id_range_to_keyword_arguments=trial_id_range_to_area_set,
                     stage=stage,
                     int_id=round_id,
-                    data_reader_kwargs={
+                    reader_kwargs={
                         "init_from": "hdf",
                         "x_axis_crop_end_point": 95.0,
                         "y_axis_crop_end_point": 75.0,

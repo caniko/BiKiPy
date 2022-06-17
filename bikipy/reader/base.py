@@ -12,8 +12,8 @@ from pydantic_numpy import NDArray
 
 from bikipy import ENABLE_PROCESS_POOLING
 from bikipy.core.base_class import BikipyBaseHashable
-from bikipy.core.mixin import VideoMetadataMixin
 from bikipy.core.typing import NDArrayBool
+from bikipy.core.video import VideoMetadata
 from bikipy.utils.video import get_video_data
 
 FILE_EXTENSION_to_PANDAS_READER = {
@@ -26,7 +26,7 @@ FILE_EXTENSION_to_PANDAS_READER = {
 logger = getLogger(__name__)
 
 
-class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
+class BaseReader(BikipyBaseHashable, ABC):
     df_path: FilePath = Field(description="Path to kinematic data, that will be " "converted to pd.DataFrame")
     timestamp_index: Optional[Sequence] = Field(
         description="Sequence of same length as df that stores the" "timestamp of each index i.e. frame."
@@ -35,6 +35,7 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
         None,
         description="Scales the coordinates with respect to their min and max. " "True requires x_max and y_max",
     )
+    video: VideoMetadata
     midpoint_groups: Optional[dict] = Field(description="labels that consist of groups that should have their")
     x_axis_crop_end_point: float = Field(0.0, description="")
     y_axis_crop_end_point: float = Field(0.0, description="")
@@ -47,7 +48,7 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
         ),
     )
 
-    crop_frames: int = 0
+    crop_time_seconds: float = 0.0
     crop_from_end: bool = Field(
         True,
         description="Only affective if crop_frames is not 0. " "Will crop from start instead when set to False",
@@ -63,6 +64,15 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
         :return: tuple storing all regions of interest that are directly tracked, no midpoints
         """
         ...
+
+    @property
+    @abstractmethod
+    def meters_augmented(self) -> pd.DataFrame:
+        ...
+
+    @cached_property
+    def crop_frames(self) -> int:
+        return round(self.video.fps * self.crop_time_seconds)
 
     @cached_property
     def augmented(self) -> pd.DataFrame:
@@ -80,7 +90,7 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
 
     @property
     def df(self) -> pd.DataFrame:
-        return self.augmented
+        return self.meters_augmented
 
     def __getitem__(self, query: Iterable[Hashable] | Hashable) -> pd.DataFrame:
         if not isinstance(query, str) and isinstance(query, abc.Iterable):
@@ -156,7 +166,7 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
     def y_add(self) -> float:
         add_y = 0
         if self.reverse_y_axis:
-            add_y -= self.vertical_resolution
+            add_y -= self.video.vertical_resolution
         if self.y_axis_crop_end_point:
             add_y += self.y_axis_crop_end_point
         return add_y

@@ -1,3 +1,4 @@
+from functools import cached_property
 from typing import Any, Optional
 
 import numpy as np
@@ -15,10 +16,14 @@ from bikipy.utils.math.vector import unit_vector
 
 
 class CirclePerimeter(BasePerimeter):
-    center: NDArrayFp64
+    center_in_pixels: NDArrayFp64
     radius: float
 
-    @validator("center")
+    @cached_property
+    def corners(self):
+        return self.center_in_pixels * self.video.meters_per_pixel
+
+    @validator("center_in_pixels")
     def center_vector_is_2d(cls, value):
         if value.shape == (2,):
             pass
@@ -69,5 +74,4 @@ class CirclePerimeter(BasePerimeter):
         return self.__class__(**kwargs)
 
     def closest_sides_to_coordinates(self, coordinates: NDArrayFp64):
-        center_to_coord_unit = unit_vector(coordinates - self.center)
-        return unit_vector(self.center + self.radius * center_to_coord_unit - coordinates)
+        return unit_vector(coordinates - self.center)

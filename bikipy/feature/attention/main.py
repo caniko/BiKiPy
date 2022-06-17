@@ -2,7 +2,7 @@
 2D kinematic filters, 3D not supported.
 """
 from logging import getLogger
-from typing import Any, Sequence
+from typing import Any, Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,7 +11,12 @@ from pydantic import DirectoryPath, validate_arguments
 
 from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
-from bikipy.feature.angle import angle_from_a_to_b
+from bikipy.core.video import (
+    VideoMetadata,
+    convert_meters_to_pixels,
+    inspect_video_is_none_during_inspection,
+)
+from bikipy.feature.angle import angle_from_a_to_b, inner_angle
 from bikipy.perimeter.base import AnyPerimeter
 from bikipy.utils.misc import generic_inspection_finalization
 
@@ -24,6 +29,7 @@ def proximity_filter(
     inside_perimeter_border: NDArrayFp64,
     outside_perimeter: NDArrayFp64,
     perimeter_border_normal_pixel_magnitude: float | NDArrayFp64,
+    inspect_video: Optional[VideoMetadata] = None,
     inspect: bool = False,
     inspection_ax: Any = None,
 ) -> NDArrayBool:
@@ -63,6 +69,8 @@ def proximity_filter(
         result = inside_perimeter_border_boolean_index & outside_perimeter_boolean_index
 
     if inspection_ax is not None or inspect:
+        inspect_video_is_none_during_inspection(inspect_video)
+
         if inspection_ax is None:
             sb.set_theme(style="darkgrid")
             fig, ax = plt.subplots(dpi=300)
@@ -71,28 +79,30 @@ def proximity_filter(
         else:
             ax = inspection_ax
 
+        inside_perimeter_border_pixels = convert_meters_to_pixels(inside_perimeter_border, inspect_video)
+
         perimeter.plot(ax=ax)
         ax.set_title("Proximity filter")
 
-        ax.scatter(*inside_perimeter_border[result].T, marker=",", alpha=MATPLOTLIB_SCATTER_ALPHA, label="Valid")
+        ax.scatter(*inside_perimeter_border_pixels[result].T, marker=",", alpha=MATPLOTLIB_SCATTER_ALPHA, label="Valid")
 
         not_result = ~result
         if perimeter.impenetrable:
             ax.scatter(
-                *inside_perimeter_border[not_result].T,
+                *inside_perimeter_border_pixels[not_result].T,
                 marker=",",
                 alpha=MATPLOTLIB_SCATTER_ALPHA,
                 label="Invalid",
             )
         else:
             ax.scatter(
-                *inside_perimeter_border[inside_perimeter_border_boolean_index & not_result].T,
+                *inside_perimeter_border_pixels[inside_perimeter_border_boolean_index & not_result].T,
                 marker=",",
                 alpha=MATPLOTLIB_SCATTER_ALPHA,
                 label="Nose valid, invalid outside_perimeter",
             )
             ax.scatter(
-                *inside_perimeter_border[outside_perimeter_boolean_index & not_result].T,
+                *inside_perimeter_border_pixels[outside_perimeter_boolean_index & not_result].T,
                 marker=",",
                 alpha=MATPLOTLIB_SCATTER_ALPHA,
                 label="Center of mass valid, invalid inside_perimeter_border",
@@ -112,32 +122,42 @@ def gaze_direction_filter(
     gaze_travel_direction_point: NDArrayFp64,
     gaze_start_point: NDArrayFp64,
     max_radians: float,
+    inspect_video: Optional[VideoMetadata] = None,
     inspect: bool = False,
     inspection_ax: Any = None,
 ) -> NDArrayBool:
     gaze_vector = gaze_travel_direction_point - gaze_start_point
 
-    closest_corner_vectors = perimeter.closest_sides_to_coordinates(gaze_start_point)
+    closest_corner_vectors = perimeter.closest_sides_to_coordinates(gaze_travel_direction_point)
 
-    angles = angle_from_a_to_b(gaze_vector, closest_corner_vectors)
+    direction_point_is_closer_than_start_point = np.linalg.norm(
+        closest_corner_vectors - gaze_travel_direction_point, axis=1
+    ) >= np.linalg.norm(closest_corner_vectors - gaze_start_point, axis=1)
 
-    result = angles <= max_radians
+    inner_angles = inner_angle(closest_corner_vectors, gaze_vector)
+
+    result = direction_point_is_closer_than_start_point & (np.abs(inner_angles) <= max_radians)
 
     if inspection_ax is not None or inspect:
+        inspect_video_is_none_during_inspection(inspect_video)
+
         if inspection_ax is None:
             sb.set_theme(style="darkgrid")
             fig, ax = plt.subplots(dpi=500)
         else:
             ax = inspection_ax
 
-        # rotated_eye_to_nose_vector = rotate_vectors_with_angle(gaze_vector, inner_angles)
+        gaze_travel_direction_point_pixels = convert_meters_to_pixels(
+            gaze_travel_direction_point, inspect_video.pixels_per_meter
+        )
+        closest_corner_vectors_pixels = convert_meters_to_pixels(closest_corner_vectors, inspect_video.pixels_per_meter)
 
         perimeter.plot(ax=ax)
         ax.set_title("Gaze direction filter")
 
         ax.quiver(
-            *gaze_travel_direction_point[result].T,
-            *closest_corner_vectors[result].T,
+            *gaze_travel_direction_point_pixels[result].T,
+            *closest_corner_vectors_pixels[result].T,
             angles="xy",
             scale_units="xy",
             scale=1.0,
@@ -148,8 +168,8 @@ def gaze_direction_filter(
 
         not_result = ~result
         ax.quiver(
-            *gaze_travel_direction_point[not_result].T,
-            *closest_corner_vectors[not_result].T,
+            *gaze_travel_direction_point_pixels[not_result].T,
+            *closest_corner_vectors_pixels[not_result].T,
             angles="xy",
             scale_units="xy",
             scale=1.0,

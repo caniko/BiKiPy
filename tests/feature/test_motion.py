@@ -7,7 +7,6 @@ from bikipy.feature.motion import (
 
 
 def test_get_combined_features_from_merged_motion_island_data():
-    meters_per_pixel = 0.1
     fps = 15
 
     print(
@@ -22,7 +21,6 @@ def test_get_combined_features_from_merged_motion_island_data():
                 (4, 0),
                 (5, 0),
             ],
-            meters_per_pixel=meters_per_pixel,
             fps=fps,
         )
     )

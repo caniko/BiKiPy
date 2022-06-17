@@ -1,5 +1,6 @@
-import numpy as np
 from math import sqrt
+
+import numpy as np
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from bikipy.core.typing import NDArrayFp64
@@ -28,16 +29,18 @@ def from_makesense_reference_line_segment(data_path: FilePath) -> NDArrayFp64:
     pixel_a, pixel_b = point_i_and_point_ii[magnitude_argsort]
 
     pixel_ab_vector = np.abs(pixel_b - pixel_a)
-    pixel_ab_ratio = np.divide(*pixel_ab_vector)    # a-b intersects on the origin
+    pixel_ab_ratio = np.divide(*pixel_ab_vector)  # a-b intersects on the origin
 
-    meter_y = sqrt(meters ** 2 / (1 + pixel_ab_ratio))
-    meter_x = sqrt(meters ** 2 - meter_y ** 2)
-    
+    meter_y = sqrt(meters**2 / (1 + pixel_ab_ratio))
+    meter_x = sqrt(meters**2 - meter_y**2)
+
     return np.array([meter_x / pixel_a, meter_y / pixel_b])
 
 
 @validate_arguments
-def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath, return_first: bool = False) -> NDArrayFp64 | dict[str, NDArrayFp64]:
+def detect_meters_per_pixel_in_perimeter_directory(
+    perimeter_dir: DirectoryPath, return_first: bool = False
+) -> NDArrayFp64 | dict[str, NDArrayFp64]:
     mpr_file_iterator = perimeter_dir.glob("meters_per_pixel-*.csv")
     if return_first:
         return from_makesense_reference_line_segment(next(mpr_file_iterator))

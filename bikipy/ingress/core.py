@@ -62,6 +62,11 @@ class BaseIngress(BikipyBase, ABC):
         ...
 
     @property
+    @abstractmethod
+    def method_settings(self):
+        ...
+
+    @property
     def experiment_name(self) -> str:
         return self.settings["immutable"]["experiment_class"]
 
@@ -401,6 +406,51 @@ class BaseIngress(BikipyBase, ABC):
         self.analysis_df
         self.analysis_df.to_excel(self.result_directory_path / "animal_id_indexed_result_data.xlsx")
 
+    def update_settings(self, delete_outdated: bool = False, dry_run: bool = False) -> None:
+        def update_settings_dict(new_settings_dict: dict, old_settings_dict: dict):
+            if not old_settings_dict:
+                return new_settings_dict
+
+            old_fields = set(old_settings_dict)
+            new_fields = set(new_settings_dict)
+
+            for field in new_fields.difference(old_fields):
+                old_settings_dict[field] = new_settings_dict[field]
+
+            if not delete_outdated:
+                old_settings_dict = {"outdated": {}, **old_settings_dict}
+            for field in old_fields.difference(new_fields):
+                old_settings_dict["outdated"][field] = old_settings_dict[field]
+                if delete_outdated:
+                    del old_settings_dict[field]
+
+            return old_settings_dict
+
+        new_settings = init_settings(self.ingress_method, self.project_root_directory, self.experiment_class, self.kinematic_data_file_extension)
+        updated_settings = update_settings_dict(new_settings, self.settings)
+
+        for new_field, value in new_settings.items():
+            if isinstance(value, dict) and new_field in self.settings:
+                continue
+
+            if "defined" in value:
+                updated_settings[new_field]["defined"] = update_settings_dict(
+                    value["defined"], self.settings[new_field]["defined"]
+                )
+            elif new_field == "trial":
+                for trial_field, trial_value in value["trial"]:
+                    updated_settings["trial"][trial_field] = update_settings_dict(trial_value, self.settings[new_field])
+            else:
+                updated_settings[new_field] = update_settings_dict(value, self.settings[new_field])
+
+        if dry_run:
+            print(json.dumps(updated_settings, indent=2))
+        else:
+            with open(self.settings_path, "w") as out_file:
+                yaml.safe_dump(updated_settings, out_file, sort_keys=False)
+
+        return updated_settings
+
     # Private methods ===============================
 
     @staticmethod
@@ -416,20 +466,23 @@ def init_settings(
     ingress_method: str,
     project_root_directory: DirectoryPath,
     experiment_class: Any,
-    method_kwargs: dict,
     kinematic_data_file_extension: str,
+    method_kwargs: Optional[dict] = None,
     method_immutable: Optional[dict] = None,
     dry_run: bool = False,
+    silent: bool = False,
 ) -> dict[str, str | dict]:
+    reader_schema = extended_schema(DeepLabCutReader, with_required=False)
+
     experiment_schema = extended_schema(experiment_class)
-    experiment_schema["optional"]["data_reader_kwargs"] = extended_schema(DeepLabCutReader, with_required=False)[
-        "optional"
-    ]
+    experiment_schema["optional"]["reader_kwargs"] = reader_schema
+
+    trial_schema = extended_group_schema(experiment_class.trial_classes)
 
     settings = {
         "ingress_method": ingress_method,
         "ingress": {
-            **method_kwargs,
+            **(method_kwargs or {}),
             "stageful_metadata": False,
             "skip_absent_trials_absent_from_metadata_index": False,
             "meters_per_pixel_definition_strategy": "global_perimeter",
@@ -437,13 +490,14 @@ def init_settings(
             "perimeter_naming_strategy": None,
             "center_definition_strategy": None,
         },
+        "reader_kwargs": extended_group_schema(experiment_class.trial_classes),
         "perimeter": {
             "label_prefix": None,
             "label_suffix": None,
             "fields": extended_schema(BasePerimeter),
         },
         "experiment": experiment_schema,
-        "trial": extended_group_schema(experiment_class.trial_classes),
+        "trial": trial_schema,
         "immutable": {
             "metadata_filename": "metadata.xlsx",
             "kinematic_data_file_extension": kinematic_data_file_extension,
@@ -454,7 +508,8 @@ def init_settings(
     }
 
     if dry_run:
-        print(json.dumps(settings, indent=2))
+        if not silent:
+            print(json.dumps(settings, indent=2))
     else:
         settings_path = get_project_settings_path(project_root_directory)
         with open(settings_path, "w") as out_file:

@@ -56,7 +56,7 @@ experiment:
     trial_id_to_keyword_arguments: object
     trial_id_to_trial_class_name: object
     video_path: string
-    data_reader_kwargs:
+    reader_kwargs:
       crop_from_end: boolean -> True
       crop_time_seconds: number -> 0.0
       future_scaling: boolean
@@ -86,7 +86,7 @@ trial:
       object_tracking_label_for_kinematics: center
       maximum_radians_inter_gaze_perimeter: 0.7853981633974483
       perimeter_border_normal_metric_magnitude: 0.005
-      data_reader_kwargs:
+      reader_kwargs:
         init_from: parquet
         midpoint_groups:
           center_eye: [ "left_ear", "right_ear" ]

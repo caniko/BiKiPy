@@ -122,6 +122,13 @@ class DeepLabCutReader(BaseReader):
 
         return result
 
+    @cached_property
+    def meters_augmented(self) -> pd.DataFrame:
+        result = self.meters_augmented.copy()
+        result.loc[:, pd.IndexSlice[:, "x"]] = result.loc[:, pd.IndexSlice[:, "x"]] * self.video.meters_per_pixel
+        result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] * self.video.meters_per_pixel
+        return result
+
     @property
     def tracked_point_labels(self) -> tuple[str, ...]:
         return tuple(self.raw_df.columns.levels[0])

@@ -143,7 +143,6 @@ def frozen_frames(
 
 class Motion(BikipyBase):
     coordinate_sequence: NDArrayFp64
-    meters_per_pixel: float | NDArrayFp64
     fps: float
 
     @cached_property
@@ -152,7 +151,7 @@ class Motion(BikipyBase):
 
     @cached_property
     def meters_per_frame(self) -> NDArrayFp64:
-        return displacement_by_frame(self.coordinate_sequence * self.meters_per_pixel)
+        return displacement_by_frame(self.coordinate_sequence)
 
     @cached_property
     def meters_per_second(self) -> NDArrayFp64:
@@ -207,16 +206,18 @@ def motion_multi_indexer(category: Any, level: int):
 def get_combined_features_from_merged_motion_island_data(
     boolean_index: NDArrayBool,
     coordinate_sequence: NDArrayFp64,
-    meters_per_pixel,
     fps: float,
     minimum_seconds_of_data: float = 4.0,
 ):
+    """
+    The purpose of this function is to deal with islands of data that need to be aggregated for analysis. These islands
+    of data have to be merged arbitrarily.
+
+    A simple merge would make the computation of speed and acceleration wrong.
+    """
+
     def motion_object_from_slice(slice_start, slice_end) -> Motion:
-        return Motion(
-            coordinate_sequence=coordinate_sequence[slice_start:slice_end],
-            meters_per_pixel=meters_per_pixel,
-            fps=fps,
-        )
+        return Motion(coordinate_sequence=coordinate_sequence[slice_start:slice_end], fps=fps)
 
     def find_index_start_n_end(starting_index: int = 0):
         new_start, new_end = indexes[starting_index], indexes[starting_index := starting_index + 1]
