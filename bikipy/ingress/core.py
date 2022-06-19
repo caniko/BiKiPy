@@ -48,7 +48,6 @@ class BaseIngress(BikipyBase, ABC):
     _trial_class_name_to_keyword_arguments: dict[str, Any] = {}
 
     _metadata_index_to_trial_id: dict = {}
-
     _experiment_data_defined: bool = False
 
     ingress_method: ClassVar[str]
@@ -81,6 +80,16 @@ class BaseIngress(BikipyBase, ABC):
                 f"this value should not be changed after initialization of the project."
             )
             raise ValueError(msg)
+
+    @cached_property
+    def reader_kwargs(self) -> dict:
+        result = {}
+        # Data source priority in ascending order
+        if "reader_kwargs" in self.settings["trial"]["common"]["defined"]:
+            result.update(self.settings["trial"]["common"]["defined"])
+        if "reader_kwargs" in self.settings["reader_kwargs"]:
+            result.update(self.settings["reader_kwargs"]["defined"])
+        return result
 
     @cached_property
     def experiment_class_kwargs(self):
@@ -420,33 +429,43 @@ class BaseIngress(BikipyBase, ABC):
             if not delete_outdated:
                 old_settings_dict = {"outdated": {}, **old_settings_dict}
             for field in old_fields.difference(new_fields):
-                old_settings_dict["outdated"][field] = old_settings_dict[field]
                 if delete_outdated:
                     del old_settings_dict[field]
+                else:
+                    old_settings_dict["outdated"][field] = old_settings_dict[field]
 
             return old_settings_dict
 
-        new_settings = init_settings(self.ingress_method, self.project_root_directory, self.experiment_class, self.kinematic_data_file_extension)
+        new_settings = init_settings(
+            self.ingress_method,
+            self.project_root_directory,
+            self.experiment_class,
+            self.kinematic_data_file_extension,
+            dry_run=True,
+            silent=True,
+        )
         updated_settings = update_settings_dict(new_settings, self.settings)
 
         for new_field, value in new_settings.items():
-            if isinstance(value, dict) and new_field in self.settings:
+            if not (isinstance(value, dict) and new_field in self.settings):
                 continue
 
             if "defined" in value:
                 updated_settings[new_field]["defined"] = update_settings_dict(
-                    value["defined"], self.settings[new_field]["defined"]
+                    value, self.settings[new_field]
                 )
             elif new_field == "trial":
-                for trial_field, trial_value in value["trial"]:
-                    updated_settings["trial"][trial_field] = update_settings_dict(trial_value, self.settings[new_field])
+                for trial_field, trial_value in value.items():
+                    updated_settings[trial_field] = update_settings_dict(trial_value, self.settings[new_field])
             else:
                 updated_settings[new_field] = update_settings_dict(value, self.settings[new_field])
+
+        updated_settings = {field: updated_settings[field] for field in new_settings}
 
         if dry_run:
             print(json.dumps(updated_settings, indent=2))
         else:
-            with open(self.settings_path, "w") as out_file:
+            with open(self.settings_path.with_stem("test"), "w") as out_file:
                 yaml.safe_dump(updated_settings, out_file, sort_keys=False)
 
         return updated_settings
@@ -472,13 +491,6 @@ def init_settings(
     dry_run: bool = False,
     silent: bool = False,
 ) -> dict[str, str | dict]:
-    reader_schema = extended_schema(DeepLabCutReader, with_required=False)
-
-    experiment_schema = extended_schema(experiment_class)
-    experiment_schema["optional"]["reader_kwargs"] = reader_schema
-
-    trial_schema = extended_group_schema(experiment_class.trial_classes)
-
     settings = {
         "ingress_method": ingress_method,
         "ingress": {
@@ -490,14 +502,14 @@ def init_settings(
             "perimeter_naming_strategy": None,
             "center_definition_strategy": None,
         },
-        "reader_kwargs": extended_group_schema(experiment_class.trial_classes),
         "perimeter": {
             "label_prefix": None,
             "label_suffix": None,
             "fields": extended_schema(BasePerimeter),
         },
-        "experiment": experiment_schema,
-        "trial": trial_schema,
+        "reader_kwargs": extended_schema(DeepLabCutReader, with_required=False),
+        "trial": extended_group_schema(experiment_class.trial_classes),
+        "experiment": extended_schema(experiment_class),
         "immutable": {
             "metadata_filename": "metadata.xlsx",
             "kinematic_data_file_extension": kinematic_data_file_extension,

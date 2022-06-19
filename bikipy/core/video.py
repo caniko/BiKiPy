@@ -12,7 +12,7 @@ import numpy as np
 from pydantic import FilePath
 
 from bikipy.core.base_class import BikipyBase
-from bikipy.core.typing import NDArrayFp64, NDArrayInt8, NDArrayInt16
+from bikipy.core.typing import NDArrayFp64, NDArrayUint8, NDArrayInt16
 from bikipy.utils.video import get_video_data
 
 
@@ -98,13 +98,13 @@ class VideoMetadata(_VideoMetadataBase):
         return self.manual_fps or self._video_metadata_from_file[1]
 
     @property
-    def frame(self) -> NDArrayInt8 | None:
+    def frame(self) -> NDArrayUint8 | None:
         if not self.video_path:
             return None
         return self._video_metadata_from_file[2]
 
     @cached_property
-    def _video_metadata_from_file(self) -> tuple[NDArrayInt16, float, NDArrayInt8]:
+    def _video_metadata_from_file(self) -> tuple[NDArrayInt16, float, NDArrayUint8]:
         if not self.video_path:
             msg = (
                 "Requested attribute, could be: FPS, resolution, or frame could not be defined. "

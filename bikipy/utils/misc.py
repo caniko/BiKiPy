@@ -14,19 +14,24 @@ from bikipy.core.typing import NDArrayFp64
 logger = getLogger(__name__)
 
 
-def read_image(image: Any, imread_flagg: Any = None):
-    if isinstance(image, (PurePath, str)):
-        image_path = Path(image).resolve()
-        assert image_path.exists(), image_path
-        image = cv2.imread(str(image_path), flags=imread_flagg)
-    else:
-        assert isinstance(image, NDArrayFp64), f"image must be either path or NDArrayFp64, but got:\n{image}"
+def dict_deepmerge(source: dict, destination: dict) -> dict:
+    """
+    run me with nosetests --with-doctest file.py
 
-    return image
+    >>> a = { 'first' : { 'all_rows' : { 'pass' : 'dog', 'number' : '1' } } }
+    >>> b = { 'first' : { 'all_rows' : { 'fail' : 'cat', 'number' : '5' } } }
+    >>> merge(b, a) == { 'first' : { 'all_rows' : { 'pass' : 'dog', 'fail' : 'cat', 'number' : '5' } } }
+    True
+    """
+    for key, value in source.items():
+        if isinstance(value, dict):
+            # get node or create one
+            node = destination.setdefault(key, {})
+            dict_deepmerge(value, node)
+        else:
+            destination[key] = value
 
-
-def get_reference_point_from_array(array: NDArrayFp64):
-    return np.array(array[1:3], dtype=float)
+    return destination
 
 
 def generic_inspection_finalization(inspect):
