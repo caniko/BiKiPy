@@ -12,7 +12,6 @@ from pydantic import DirectoryPath, FilePath, validate_arguments
 from bikipy.behaviour.base import Experiment
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.core.base_class import BikipyBase
-from bikipy.core.video import VideoMetadata
 from bikipy.ingress.plugin import PLUGIN_NAME_TO_KEYRING
 from bikipy.ingress.plugin.center import detect_center_in_perimeter_directory
 from bikipy.ingress.plugin.meters_per_pixel import (
@@ -36,9 +35,6 @@ from bikipy.perimeter.base import (
     StringPerimeterShapes,
     perimeter_set_from_makesense,
 )
-from bikipy.perimeter.polygon.base import PolygonPerimeter
-from bikipy.perimeter.polygon.parallelogram import ParallelogramPerimeter
-from bikipy.perimeter.radial.circle import CirclePerimeter
 from bikipy.reader import DeepLabCutReader
 from bikipy.utils.collection_utils import copycat_assumes_levels_of_icon
 

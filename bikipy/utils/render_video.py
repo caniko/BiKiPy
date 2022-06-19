@@ -1,7 +1,7 @@
 # Courtesy of https://github.com/kylemcdonald/python-utils/blob/master/ffmpeg.py
 import ffmpeg
 import numpy as np
-from pydantic import Field, FilePath
+from pydantic import Field, FilePath, PositiveInt
 from pydantic.dataclasses import dataclass
 
 
@@ -9,7 +9,7 @@ from pydantic.dataclasses import dataclass
 class VideoWriter:
     filename: FilePath
     video_codec: str = Field(default="hevc_nvenc")
-    fps: int = 30
+    fps: PositiveInt = 30
     in_pix_fmt: str = "rgb24"
     out_pix_fmt: str = "yuv420p"
     extra_input_args: dict = Field(default_factory=dict)
