@@ -13,7 +13,7 @@ from pydantic_numpy import NDArray
 from bikipy import ENABLE_PROCESS_POOLING
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.typing import NDArrayBool
-from bikipy.core.video import VideoMetadata
+from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.utils.video import get_video_data
 
 FILE_EXTENSION_to_PANDAS_READER = {
@@ -26,7 +26,7 @@ FILE_EXTENSION_to_PANDAS_READER = {
 logger = getLogger(__name__)
 
 
-class BaseReader(BikipyBaseHashable, ABC):
+class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
     df_path: FilePath = Field(description="Path to kinematic data, that will be " "converted to pd.DataFrame")
     timestamp_index: Optional[Sequence] = Field(
         description="Sequence of same length as df that stores the" "timestamp of each index i.e. frame."
@@ -35,7 +35,6 @@ class BaseReader(BikipyBaseHashable, ABC):
         None,
         description="Scales the coordinates with respect to their min and max. " "True requires x_max and y_max",
     )
-    video: VideoMetadata
     midpoint_groups: Optional[dict] = Field(description="labels that consist of groups that should have their")
     x_axis_crop_end_point: float = Field(0.0, description="")
     y_axis_crop_end_point: float = Field(0.0, description="")

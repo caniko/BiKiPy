@@ -48,9 +48,9 @@ class SequenceIngress(BaseIngress):
                 trial_id = int(trial_id) if trial_id.isdigit() else trial_id
                 trial_ids.append(trial_id)
 
-                self._trial_id_to_trial_class_name[trial_id] = self.settings["ingress"][
-                    "sequence_index_to_trial_class_name"
-                ][sequence_index]
+                self._trial_id_to_trial_class_name[trial_id] = self.experiment_class.stage_index_to_trial_class_name[
+                    sequence_index
+                ]
                 self._trial_id_to_keyword_arguments[trial_id] = {
                     "label": trial_id,
                     "animal_id": animal_id,

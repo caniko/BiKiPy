@@ -10,19 +10,17 @@ from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_ar
 
 from bikipy.core.base_class import BikipyBase, BikipyBaseHashable
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
-from bikipy.core.video import VideoMetadata
+from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
 from bikipy.utils.image import read_image
-from bikipy.utils.io.makesense import read_makesense_point
-
+from bikipy.utils.io.makesense import read_makesense_point, get_point_from_makesense_row
 
 logger = getLogger(__name__)
 
 StringPerimeterShapes = Literal["circle", "parallelogram", "polygon", "rectangle"]
 
 
-class BasePerimeter(BikipyBaseHashable):
-    video: VideoMetadata
+class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
     impenetrable: bool = Field(
         False,
         description="Signifies the impenetrability of the perimeter. "
@@ -518,3 +516,24 @@ class PerimeterSet(BikipyBase):
     @property
     def labels(self) -> tuple:
         return tuple(perimeter.label for perimeter in self.all_perimeters)
+
+
+@validate_arguments
+def perimeter_set_from_makesense(
+    perimeter_path: FilePath, shape: Optional[StringPerimeterShapes] = None, **perimeter_kwargs
+) -> dict[str, PerimeterSet]:
+    match shape:
+        case "circle":
+            from bikipy.perimeter.radial.circle import CirclePerimeter
+
+            return CirclePerimeter.from_makesense_line(perimeter_path, **perimeter_kwargs)
+        case "rectangle" | "parallelogram":
+            from bikipy.perimeter.polygon.parallelogram import ParallelogramPerimeter
+
+            return ParallelogramPerimeter.from_makesense_csv_rectangle(perimeter_path, **perimeter_kwargs)
+        case "polygon":
+            from bikipy.perimeter.polygon.base import PolygonPerimeter
+
+            return PolygonPerimeter.from_makesense_coco_polygon(perimeter_path, **perimeter_kwargs)
+        case _:
+            raise ValueError

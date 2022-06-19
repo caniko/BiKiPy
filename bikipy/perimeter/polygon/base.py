@@ -12,7 +12,7 @@ from pydantic import DirectoryPath, FilePath, validator
 
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.perimeter.base import BasePerimeter
-from bikipy.utils.io.makesense import image_name_to_point_from_makesense
+from bikipy.utils.io.makesense import image_name_to_point_from_makesense, read_makesense_rectangle
 from bikipy.utils.math.geometry import clockwise_sort_points, expand_bikipy_perimeter
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 from bikipy.utils.math.vector import (
@@ -302,18 +302,19 @@ class PolygonPerimeter(BasePerimeter):
         reference_point_csv_path: Optional[FilePath] = None,
         **perimeter_kwargs,
     ):
-        csv_data = pd.read_csv(data_path, header=None, index_col=0)
+        logger.debug("Generating PolygonPerimeter from makesense polygon data in coco format")
+
+        csv_data = read_makesense_rectangle(data_path)
 
         if reference_point_csv_path:
             image_name_to_reference_point = image_name_to_point_from_makesense(reference_point_csv_path)
 
         result = {}
         for label, row in csv_data.iterrows():
-            image_name = row.values[4]
+            start = np.array(row[1:3], dtype=int)
+            end = start + np.array(row[3:5], dtype=int)
 
-            start = np.array(row[:2]).astype(int)
-            end = start + np.array(row[2:4]).astype(int)
-
+            image_name = row["image_name"]
             if image_name not in result:
                 result[image_name] = {}
 
@@ -322,6 +323,7 @@ class PolygonPerimeter(BasePerimeter):
                 inspect_image_path=image_root / str(image_name) if image_root else None,
                 label=label,
                 reference_point_array=image_name_to_reference_point[image_name] if reference_point_csv_path else None,
+                manual_recording_resolution=np.array((row["x_res"], row["y_res"]), dtype=float),
                 **perimeter_kwargs,
             )
 

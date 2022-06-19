@@ -12,12 +12,14 @@ from pydantic import DirectoryPath, FilePath, validate_arguments
 from bikipy.behaviour.base import Experiment
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.core.base_class import BikipyBase
+from bikipy.core.video import VideoMetadata
 from bikipy.ingress.plugin import PLUGIN_NAME_TO_KEYRING
 from bikipy.ingress.plugin.center import detect_center_in_perimeter_directory
 from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
 )
 from bikipy.ingress.plugin.perimeter import get_perimeter_data, get_perimeter_name_df
+from bikipy.ingress.utils import settings
 from bikipy.ingress.utils.io import (
     get_dataset_directory_path,
     get_inspect_directory_path,
@@ -26,11 +28,13 @@ from bikipy.ingress.utils.io import (
     load_settings,
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
+from bikipy.ingress.utils.settings import get_definable_settings
 from bikipy.perimeter.base import (
     AnyPerimeter,
     BasePerimeter,
     PerimeterSet,
     StringPerimeterShapes,
+    perimeter_set_from_makesense,
 )
 from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.perimeter.polygon.parallelogram import ParallelogramPerimeter
@@ -64,6 +68,15 @@ class BaseIngress(BikipyBase, ABC):
     @abstractmethod
     def method_settings(self):
         ...
+
+    @classmethod
+    def from_project_root_directory(cls, project_root_directory: DirectoryPath):
+        kwargs = {"project_root_directory": project_root_directory}
+        match auto_define_ingress_object(project_root_directory).ingress_method:
+            case "sequence":
+                from bikipy.ingress import SequenceIngress
+
+                return SequenceIngress(**kwargs)
 
     @property
     def experiment_name(self) -> str:
@@ -192,15 +205,6 @@ class BaseIngress(BikipyBase, ABC):
             case _:
                 self._raise_unsupported_plugin_method("center_definition_strategy", ("metadata", "trial-wise", None))
 
-        match self.settings["ingress"]["crop_time_definition_strategy"]:
-            case "metadata":
-                # TODO
-                pass
-            case None:
-                pass
-            case _:
-                self._raise_unsupported_plugin_method("perimeter_definition_strategy", ("metadata", None))
-
         return result
 
     # I/O ============================
@@ -322,15 +326,10 @@ class BaseIngress(BikipyBase, ABC):
         manual_shape: Optional[StringPerimeterShapes] = None,
     ) -> PerimeterSet:
         shape, label = get_perimeter_data(perimeter_path)
-        match manual_shape or shape:
-            case "circle":
-                image_name_to_perimeter_set = CirclePerimeter.from_makesense_line(perimeter_path)
-            case "rectangle":
-                image_name_to_perimeter_set = ParallelogramPerimeter.from_makesense_csv_rectangle(perimeter_path)
-            case "polygon" | "parallelogram":
-                image_name_to_perimeter_set = PolygonPerimeter.from_makesense_coco_polygon(perimeter_path)
-            case _:
-                raise ValueError
+
+        image_name_to_perimeter_set = perimeter_set_from_makesense(
+            perimeter_path, manual_shape or shape, manual_meters_per_pixel=self.settings
+        )
 
         perimeter_set = tuple(image_name_to_perimeter_set.values())[0]
         perimeter_set.apply_label_prefix_suffix(
@@ -415,27 +414,7 @@ class BaseIngress(BikipyBase, ABC):
         self.analysis_df
         self.analysis_df.to_excel(self.result_directory_path / "animal_id_indexed_result_data.xlsx")
 
-    def update_settings(self, delete_outdated: bool = False, dry_run: bool = False) -> None:
-        def update_settings_dict(new_settings_dict: dict, old_settings_dict: dict):
-            if not old_settings_dict:
-                return new_settings_dict
-
-            old_fields = set(old_settings_dict)
-            new_fields = set(new_settings_dict)
-
-            for field in new_fields.difference(old_fields):
-                old_settings_dict[field] = new_settings_dict[field]
-
-            if not delete_outdated:
-                old_settings_dict = {"outdated": {}, **old_settings_dict}
-            for field in old_fields.difference(new_fields):
-                if delete_outdated:
-                    del old_settings_dict[field]
-                else:
-                    old_settings_dict["outdated"][field] = old_settings_dict[field]
-
-            return old_settings_dict
-
+    def update_settings(self, delete_outdated: bool = False, dry_run: bool = False) -> dict:
         new_settings = init_settings(
             self.ingress_method,
             self.project_root_directory,
@@ -444,31 +423,38 @@ class BaseIngress(BikipyBase, ABC):
             dry_run=True,
             silent=True,
         )
-        updated_settings = update_settings_dict(new_settings, self.settings)
 
-        for new_field, value in new_settings.items():
-            if not (isinstance(value, dict) and new_field in self.settings):
-                continue
+        kwargs = {"delete_outdated": delete_outdated}
 
-            if "defined" in value:
-                updated_settings[new_field]["defined"] = update_settings_dict(
-                    value, self.settings[new_field]
-                )
-            elif new_field == "trial":
-                for trial_field, trial_value in value.items():
-                    updated_settings[trial_field] = update_settings_dict(trial_value, self.settings[new_field])
-            else:
-                updated_settings[new_field] = update_settings_dict(value, self.settings[new_field])
+        new_settings["ingress"] = settings.update_dictionary(
+            self.settings["ingress"], new_settings["ingress"], **kwargs
+        )
+        new_settings["perimeter"] = settings.update_dictionary(
+            self.settings["perimeter"], new_settings["perimeter"], **kwargs
+        )
+        # new_settings["reader_kwargs"] = settings.update_defined_values(
+        #     self.settings["reader_kwargs"], new_settings["reader_kwargs"], **kwargs
+        # )
 
-        updated_settings = {field: updated_settings[field] for field in new_settings}
+        new_settings["trial"]["common"] = settings.update_defined_values(
+            self.settings["trial"]["common"], new_settings["trial"]["common"], **kwargs
+        )
+        common_settings_between_trials = get_definable_settings(new_settings["trial"]["common"])
+        for trial_class_name, trial_class_settings in new_settings["trial"]["specific"].items():
+            new_settings["trial"]["specific"][trial_class_name] = settings.update_defined_values(
+                self.settings["trial"]["specific"][trial_class_name],
+                trial_class_settings,
+                common_settings=common_settings_between_trials,
+                **kwargs,
+            )
 
         if dry_run:
-            print(json.dumps(updated_settings, indent=2))
+            print(json.dumps(new_settings, indent=2))
         else:
-            with open(self.settings_path.with_stem("test"), "w") as out_file:
-                yaml.safe_dump(updated_settings, out_file, sort_keys=False)
+            with open(self.settings_path, "w") as out_file:
+                yaml.safe_dump(new_settings, out_file, sort_keys=False)
 
-        return updated_settings
+        return new_settings
 
     # Private methods ===============================
 
@@ -491,7 +477,7 @@ def init_settings(
     dry_run: bool = False,
     silent: bool = False,
 ) -> dict[str, str | dict]:
-    settings = {
+    generic_settings = {
         "ingress_method": ingress_method,
         "ingress": {
             **(method_kwargs or {}),
@@ -521,13 +507,13 @@ def init_settings(
 
     if dry_run:
         if not silent:
-            print(json.dumps(settings, indent=2))
+            print(json.dumps(generic_settings, indent=2))
     else:
         settings_path = get_project_settings_path(project_root_directory)
         with open(settings_path, "w") as out_file:
-            yaml.safe_dump(settings, out_file, sort_keys=False)
+            yaml.safe_dump(generic_settings, out_file, sort_keys=False)
 
-    return settings
+    return generic_settings
 
 
 @validate_arguments
@@ -542,4 +528,4 @@ def auto_define_ingress_object(project_root_directory: DirectoryPath) -> Ingress
 
 
 def analyze_and_save(project_root_directory: DirectoryPath):
-    auto_define_ingress_object(project_root_directory).save_analysis_data()
+    BaseIngress.from_project_root_directory(project_root_directory).save_analysis_data()

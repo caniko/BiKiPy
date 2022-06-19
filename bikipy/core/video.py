@@ -128,6 +128,20 @@ class VideoMetadataMixin(_VideoMetadataBase):
         return VideoMetadata(**self.video_metadata)
 
 
+def video_metadata_from_object_or_metric_and_recording(
+    video: Optional[VideoMetadata] = None,
+    metric_resolution: Optional[float | NDArrayFp64] = None,
+    recording_resolution: Optional[NDArrayFp64] = None,
+    exclusive: bool = False,
+) -> VideoMetadata:
+    if video:
+        if exclusive and metric_resolution is not None or recording_resolution is not None:
+            msg = "metric_resolution and recording_resolution vs video must be defined exclusively"
+            raise ValueError(msg)
+        return video
+    return VideoMetadata(metric_resolution=metric_resolution, manual_recording_resolution=recording_resolution)
+
+
 def convert_meters_to_pixels(data: NDArrayFp64, video: VideoMetadata) -> NDArrayFp64:
     return data * video.pixels_per_meter
 

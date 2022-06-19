@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 from pydantic import FilePath, validator
 
 from bikipy.core.typing import NDArrayFp64
+from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.base import BasePerimeter
 from bikipy.perimeter.radial.utils import plot_circle
 from bikipy.utils.io.makesense import (
@@ -37,11 +38,18 @@ class CirclePerimeter(BasePerimeter):
         return value.astype(float)
 
     @classmethod
-    def from_makesense_line(cls, data_path: FilePath) -> dict[str, Any]:
+    def from_makesense_line(cls, data_path: FilePath, **perimeter_kwargs) -> dict[str, Any]:
         result = {}
         for _, row in read_makesense_line(data_path).iterrows():
             a, b = get_line_endpoints_from_makesense_row(row)
-            perimeter = cls(center=a, radius=np.linalg.norm(a - b), label=row["label"])
+
+            perimeter = cls(
+                center_in_pixels=a,
+                radius=np.linalg.norm(a - b),
+                label=row["label"],
+                manual_recording_resolution=np.array((row["x_res"], row["y_res"]), dtype=float),
+                **perimeter_kwargs,
+            )
 
             if row["image_name"] not in result:
                 result[row["image_name"]] = {}
