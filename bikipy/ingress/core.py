@@ -19,7 +19,7 @@ from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
     first_meters_per_pixel_in_perimeter_directory,
 )
-from bikipy.ingress.plugin.perimeter import get_perimeter_data, get_perimeter_name_df
+from bikipy.ingress.plugin.perimeter import get_perimeter_data
 from bikipy.ingress.utils import settings
 from bikipy.ingress.utils.io import (
     get_dataset_directory_path,

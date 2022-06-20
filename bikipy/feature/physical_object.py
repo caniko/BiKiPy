@@ -50,7 +50,7 @@ class PhysicalObject(BikipyBase):
 
     @cached_property
     def video(self):
-        return self.perimeter.video
+        return self.perimeter.video + self.reader.video
 
     @property
     def label(self):

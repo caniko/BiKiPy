@@ -56,8 +56,6 @@ class PhysicalObjectTrialMixin(BikipyBase):
             "minimum_seconds_attention": self.minimum_seconds_attention,
             "maximum_seconds_distraction": self.maximum_seconds_distraction,
             "perimeter_border_normal_pixel_magnitude": self.perimeter_border_normal_pixel_magnitude,
-            "fps": self.fps,
-            "recording_resolution": self.recording_resolution,
         }
 
         if self.physical_object_inspect:

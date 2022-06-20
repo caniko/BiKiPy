@@ -1,6 +1,6 @@
 from concurrent.futures import ProcessPoolExecutor
 from copy import copy
-from functools import cached_property
+from functools import cached_property, reduce
 from logging import getLogger
 from operator import attrgetter
 from pathlib import Path
@@ -28,9 +28,9 @@ from yaspin.spinners import Spinners
 from bikipy import ENABLE_PROCESS_POOLING
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
-from bikipy.core.video import VideoMetadataMixin
+from bikipy.core.video import VideoMetadataMixin, VideoMetadata
 from bikipy.feature.motion import Motion, motion_multi_indexer
-from bikipy.perimeter.base import PerimeterSet
+from bikipy.perimeter.base import PerimeterSet, AnyPerimeter
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.collection_utils import (
     chain_lists_to_tuple,
@@ -131,6 +131,18 @@ class BaseTrial(Behaviour):
         if cls.experiment_stage_index:
             return 3
         return 2
+
+    @cached_property
+    def perimeters(self) -> list[AnyPerimeter]:
+        return []
+
+    @cached_property
+    def video(self):
+        video = super().video
+        if self.manual_video:
+            return video
+
+        perimeter_video_metadata = reduce(VideoMetadata.join, )
 
     @property
     def motion_features(self) -> tuple:

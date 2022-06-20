@@ -28,13 +28,36 @@ class _VideoMetadataBase(BikipyBase):
 
 
 class VideoMetadata(_VideoMetadataBase):
+    def __add__(self, other: "VideoMetadata"):
+        return self.join(self, other)
+
+    @classmethod
+    def join(cls, master: "VideoMetadata", slave: "VideoMetadata", ignore_incongruent: bool = False) -> "VideoMetadata":
+        common = set(master).intersection(slave.manual_video_metadata)
+        if not ignore_incongruent and any(not np.any(master.manual_video_metadata[key] == slave.manual_video_metadata) for key in common):
+            msg = "self and other are incongruent, something wrong with dataset"
+            raise ValueError(msg)
+        new_metadata = slave.manual_video_metadata
+        new_metadata.update(master.manual_video_metadata)
+        return cls(**new_metadata)
+
     @cached_property
     def video_metadata(self):
+        result = {}
+        if self.video_metadata_can_be_defined:
+            result["meters_per_pixel"] = self.meters_per_pixel
+        if self.fps:
+            result["fps"] = self.fps
+        if self.recording_resolution is not None:
+            result["recording_resolution"] = self.recording_resolution
+        if self.metric_resolution is not None:
+            result["metric_resolution"] = self.metric_resolution
+        return result
+
+    @cached_property
+    def manual_video_metadata(self):
         return {
-            "manual_meter_per_pixel": self.meters_per_pixel if self.video_metadata_can_be_defined else None,
-            "manual_fps": self.fps,
-            "manual_recording_resolution": self.recording_resolution,
-            "metric_resolution": self.metric_resolution,
+            f"manual_{key}" if key != "metric_resolution" else key: value for key, value in self.video_metadata.items()
         }
 
     @cached_property
@@ -118,7 +141,6 @@ class VideoMetadataMixin(_VideoMetadataBase):
             manual_recording_resolution=self.manual_recording_resolution,
             metric_resolution=self.metric_resolution,
         )
-        assert new_video.video_metadata_can_be_defined
         return new_video
 
     @property
@@ -153,5 +175,8 @@ def convert_meters_to_pixels(data: NDArrayFp64, video: VideoMetadata) -> NDArray
 
 def inspect_video_is_none_during_inspection(inspect_video: VideoMetadata | None):
     if inspect_video is None:
-        msg = "inspect_video is required to map the result from pixels to meters; required for generating inspection figure"
+        msg = (
+            "inspect_video is required to map the result from pixels to meters; "
+            "required for generating inspection figure"
+        )
         raise ValueError(msg)
