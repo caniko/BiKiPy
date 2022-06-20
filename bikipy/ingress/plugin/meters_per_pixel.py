@@ -1,3 +1,4 @@
+from functools import lru_cache
 from math import sqrt
 
 import numpy as np
@@ -9,6 +10,11 @@ from bikipy.ingress.utils.io import initialize_metadata_data_frame, load_setting
 from bikipy.utils.io.makesense import read_first_makesense_line
 
 
+def meters_per_pixel_file_name_to_value(file_path: FilePath, *args, **kwargs):
+    return from_makesense_reference_line_segment(file_path)
+
+
+@lru_cache
 def from_makesense_reference_line_segment(data_path: FilePath) -> NDArrayFp64:
     meters = float(data_path.stem.split("-")[1])
 
@@ -29,21 +35,18 @@ def from_makesense_reference_line_segment(data_path: FilePath) -> NDArrayFp64:
     pixel_a, pixel_b = point_i_and_point_ii[magnitude_argsort]
 
     pixel_ab_vector = np.abs(pixel_b - pixel_a)
+    pixel_x, pixel_y = pixel_ab_vector
     pixel_ab_ratio = np.divide(*pixel_ab_vector)  # a-b intersects on the origin
 
     meter_y = sqrt(meters**2 / (1 + pixel_ab_ratio))
     meter_x = sqrt(meters**2 - meter_y**2)
 
-    return np.array([meter_x / pixel_a, meter_y / pixel_b])
+    return np.array([meter_x / pixel_x, meter_y / pixel_y])
 
 
-@validate_arguments
-def detect_meters_per_pixel_in_perimeter_directory(
-    perimeter_dir: DirectoryPath, return_first: bool = False
-) -> NDArrayFp64 | dict[str, NDArrayFp64]:
+@lru_cache
+def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath) -> dict[str, NDArrayFp64]:
     mpr_file_iterator = perimeter_dir.glob("meters_per_pixel-*.csv")
-    if return_first:
-        return from_makesense_reference_line_segment(next(mpr_file_iterator))
     return {
         get_file_label_from_3rd_str_in_split(meters_per_pixel_file_path): from_makesense_reference_line_segment(
             meters_per_pixel_file_path
@@ -52,9 +55,15 @@ def detect_meters_per_pixel_in_perimeter_directory(
     }
 
 
+def first_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath):
+    return detect_meters_per_pixel_in_perimeter_directory(
+        next(iter(detect_meters_per_pixel_in_perimeter_directory(perimeter_dir).values()))
+    )
+
+
 def validate_metadata_meters_per_pixel_strategy(project_root_directory: DirectoryPath):
     settings = load_settings(project_root_directory)
-    # perimeter_dir = get_perimeter_directory_path(project_root_directory)
+    # perimeter_dir = get_plugin_directory_path(project_root_directory)
 
     metadata = initialize_metadata_data_frame(project_root_directory, settings["ingress"]["stageful_metadata"])
     if "Meter Pixel Ratio" not in metadata:

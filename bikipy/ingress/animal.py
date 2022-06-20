@@ -1,52 +1,32 @@
-from functools import reduce
 from logging import getLogger
 from pathlib import Path
 from typing import ClassVar
 
-from pydantic import DirectoryPath, validate_arguments
+from pydantic import DirectoryPath, validate_arguments, FilePath
 
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.ingress.core import BaseIngress
-from bikipy.ingress.plugin import PLUGIN_NAME_TO_KEYRING
 from bikipy.ingress.utils.io import get_dataset_directory_path
 
 logger = getLogger(__name__)
 
 
-class SequenceIngress(BaseIngress):
-    ingress_method: ClassVar[str] = "sequence"
+class AnimalIngress(BaseIngress):
+    ingress_method: ClassVar[str] = "animal"
 
-    def _experiment_class_kwargs_and_metadata_index_to_trial_id_and_metadata_index_to_trial_id_define_function(self):
-        def get_plugin_index_from_stageful_metadata(feature_sheet_header: str):
-            feature_column = animal_metadata[feature_sheet_header]
+    def _ingress_reader(self):
+        def sequence_index_from_file_path(file_path: FilePath) -> int:
+            return int(file_path.stem.split(".")[0])
 
-            if not self.stageful_metadata:
-                return feature_column
-
-            if len(feature_column) == 1:
-                return feature_column[0]
-            return feature_column[sequence_index]
-
-        waiting = True
         for animal_dir in self.dataset_directory_path.iterdir():
             animal_id = int(animal_dir.stem) if animal_dir.stem.isdigit() else animal_dir.stem
-            if waiting or animal_id != "OP722":
-                waiting = False
 
-            try:
-                animal_metadata = self.metadata.loc[animal_id, :]
-            except KeyError:
-                logger.debug(f"Animal ID {animal_id} is absent from the metadata index, skipping the trial-set")
-                continue
-
-            trial_ids = []
             for trial_data_filename in animal_dir.glob(f"*{self.kinematic_data_file_extension}"):
                 trial_data_filename = Path(trial_data_filename)
-                sequence_index = int(trial_data_filename.stem.split(".")[0])
+                sequence_index = sequence_index_from_file_path(trial_data_filename)
 
                 trial_id = _define_trial_id(animal_id, sequence_index)
                 trial_id = int(trial_id) if trial_id.isdigit() else trial_id
-                trial_ids.append(trial_id)
 
                 self._trial_id_to_trial_class_name[trial_id] = self.experiment_class.stage_index_to_trial_class_name[
                     sequence_index
@@ -57,38 +37,11 @@ class SequenceIngress(BaseIngress):
                     "stage": sequence_index,
                     "coordinate_data_path": trial_data_filename,
                 }
-
-                for plugin_name, keyring in PLUGIN_NAME_TO_KEYRING.items():
-                    if self.settings["ingress"][keyring["ingress_key"]] != "metadata":
-                        continue
-
-                    self._trial_id_to_keyword_arguments[trial_id][
-                        keyring["bikipy_trial_key"]
-                    ] = self.get_plugin_parameter(keyring["code_key"], get_plugin_index_from_stageful_metadata)
-
-                match self.settings["ingress"]["perimeter_definition_strategy"]:
-                    case "trial-wise":
-                        perimeter_sets = []
-                        for perimeter_path in animal_dir.glob(f"{sequence_index}.perimeter*"):
-                            perimeter_sets.append(self.first_perimeter_set_from_makesense(perimeter_path))
-
-                        if length := len(perimeter_sets):
-                            perimeter_set = (
-                                reduce(lambda a, b: a + b, perimeter_sets) if length != 1 else perimeter_sets[0]
-                            )
-                        else:
-                            msg = f"No perimeters were found for Animal #{animal_id} for sequence {sequence_index}"
-                            raise ValueError(msg)
-
-                        self.register_perimeter_to_trial_id(trial_id, perimeter_set.label_to_perimeter)
-
-                    case "metadata":
-                        for perimeter_data in self.detect_perimeters_in_perimeter_directory:
-                            self.register_perimeter_to_trial_id(
-                                trial_id, perimeter_data["perimeter"].label_to_perimeter
-                            )
-
-            self._metadata_index_to_trial_id[animal_id] = tuple(trial_ids)
+                for plugin_info in self._trial_wise_plugins:
+                    for plugin_data_file in animal_dir.glob(f"*{plugin_info['code_key']}*"):
+                        self._trial_id_to_keyword_arguments[trial_id][plugin_info["bikipy_trial_key"]] = plugin_info[
+                            "file_path_to_value"
+                        ](plugin_data_file, trial_id, self)
 
     def verify_project_structure(self):
         animal_ids = set()
@@ -154,7 +107,7 @@ def sequence_generate_configuration(
     }
 
     return init_settings(
-        "sequence",
+        "animal",
         project_root_directory,
         experiment_class,
         method_settings,

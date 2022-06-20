@@ -5,6 +5,7 @@ from functools import cached_property
 from typing import Any, Callable, ClassVar, Hashable, Iterable, Optional, TypeVar
 
 import numpy as np
+import openpyxl
 import pandas as pd
 import yaml
 from pydantic import DirectoryPath, FilePath, validate_arguments
@@ -12,24 +13,24 @@ from pydantic import DirectoryPath, FilePath, validate_arguments
 from bikipy.behaviour.base import Experiment
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.core.base_class import BikipyBase
-from bikipy.ingress.plugin import PLUGIN_NAME_TO_KEYRING
-from bikipy.ingress.plugin.center import detect_center_in_perimeter_directory
+from bikipy.core.typing import NDArrayFp64
+from bikipy.ingress.plugin import ingress_key_to_plugin_name
 from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
+    first_meters_per_pixel_in_perimeter_directory,
 )
 from bikipy.ingress.plugin.perimeter import get_perimeter_data, get_perimeter_name_df
 from bikipy.ingress.utils import settings
 from bikipy.ingress.utils.io import (
     get_dataset_directory_path,
     get_inspect_directory_path,
-    get_perimeter_directory_path,
+    get_plugin_directory_path,
     get_project_settings_path,
     load_settings,
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
 from bikipy.ingress.utils.settings import get_definable_settings
 from bikipy.perimeter.base import (
-    AnyPerimeter,
     BasePerimeter,
     PerimeterSet,
     StringPerimeterShapes,
@@ -47,13 +48,12 @@ class BaseIngress(BikipyBase, ABC):
     _trial_id_to_keyword_arguments: dict[Hashable, dict[str, Any]] = {}
     _trial_class_name_to_keyword_arguments: dict[str, Any] = {}
 
-    _metadata_index_to_trial_id: dict = {}
     _experiment_data_defined: bool = False
 
     ingress_method: ClassVar[str]
 
     @abstractmethod
-    def _experiment_class_kwargs_and_metadata_index_to_trial_id_and_metadata_index_to_trial_id_define_function(self):
+    def _ingress_reader(self):
         ...
 
     @abstractmethod
@@ -69,10 +69,10 @@ class BaseIngress(BikipyBase, ABC):
     def from_project_root_directory(cls, project_root_directory: DirectoryPath):
         kwargs = {"project_root_directory": project_root_directory}
         match auto_define_ingress_object(project_root_directory).ingress_method:
-            case "sequence":
-                from bikipy.ingress import SequenceIngress
+            case "animal":
+                from bikipy.ingress import AnimalIngress
 
-                return SequenceIngress(**kwargs)
+                return AnimalIngress(**kwargs)
 
     @property
     def experiment_name(self) -> str:
@@ -141,67 +141,12 @@ class BaseIngress(BikipyBase, ABC):
         for trial_class_name, value in self.settings.items():
             if from_stage_index:
                 trial_class_name = self.experiment_class.stage_index_to_trial_class_name[trial_class_name]
+
             assert trial_class_name in self.experiment_class.trial_class_names
 
             if trial_class_name not in self._trial_class_name_to_keyword_arguments:
                 self._trial_class_name_to_keyword_arguments[trial_class_name] = {}
             self._trial_class_name_to_keyword_arguments[trial_class_name][setting_key] = value
-
-    @cached_property
-    def activate_plugins_and_parse_metadata_plugins(self) -> dict[str, dict]:
-        """
-        This method initializes all the plugins that have been activated in the settings.yaml file.
-
-        Plugins that have metadata strategies often requires knowledge about the state. The state includes whatever
-        is relevant to the ingress method during parameter retrieval, but most often is just limited to
-        trial_id or animal_id. See get_plugin_parameter for more information.
-
-        :return: dict[str, dict]: plugin_name
-        """
-        result = {}
-        match self.settings["ingress"]["meters_per_pixel_definition_strategy"]:
-            case "metadata":
-                result["meters_per_pixel"] = detect_meters_per_pixel_in_perimeter_directory(
-                    self.perimeter_directory_path
-                )
-            case "trial-wise":
-                # TODO
-                pass
-            case None:
-                pass
-            case _:
-                self._raise_unsupported_plugin_method(
-                    "meters_per_pixel_definition_strategy", ("metadata", "trial-wise", None)
-                )
-
-        match self.settings["ingress"]["perimeter_definition_strategy"]:
-            case "metadata":
-                pass
-            case "trial-wise" | None:
-                pass
-            case _:
-                self._raise_unsupported_plugin_method("perimeter_definition_strategy", ("metadata", None))
-
-        match self.settings["ingress"]["perimeter_naming_strategy"]:
-            case "metadata":
-                pass
-            case None:
-                pass
-            case _:
-                self._raise_unsupported_plugin_method("perimeter_naming_strategy", ("metadata", None))
-
-        match self.settings["ingress"]["center_definition_strategy"]:
-            case "metadata":
-                result["center"] = detect_center_in_perimeter_directory(self.perimeter_directory_path)
-            case "trial-wise":
-                # TODO
-                pass
-            case None:
-                pass
-            case _:
-                self._raise_unsupported_plugin_method("center_definition_strategy", ("metadata", "trial-wise", None))
-
-        return result
 
     # I/O ============================
 
@@ -211,13 +156,50 @@ class BaseIngress(BikipyBase, ABC):
 
     @cached_property
     def metadata(self) -> pd.DataFrame:
-        df = pd.read_excel(
-            next(self.project_root_directory.glob("metadata.*")),
-            index_col=0,
-            header=(0, 1) if self.stageful_metadata else 0,
-        )
-        df.columns.names = ["Feature", "Location_Category"] if self.stageful_metadata else ["Feature"]
-        return df
+        metadata_path = next(self.project_root_directory.glob("metadata.*"))
+        sheet_names = openpyxl.load_workbook(metadata_path, read_only=True).sheetnames
+
+        if "animal" in sheet_names:
+            animal_df = pd.read_excel(
+                metadata_path,
+                sheet_name="animal",
+                index_col=0,
+            )
+            animal_df.columns.names = ["Animal"]
+        else:
+            animal_df = None
+
+        if "trial_id" in sheet_names:
+            trial_id_df = pd.read_excel(
+                metadata_path,
+                sheet_name="trial_id",
+                index_col=0,
+            )
+            trial_id_df.index.names = ["Trial"]
+
+            assert "Animal" in trial_id_df, "Animal ID column must be present trial_id and animal metadata sheets"
+
+            trial_id_df = trial_id_df.join(animal_df, how="inner")
+
+        elif "animal_sequence" in sheet_names:
+            trial_id_df = pd.read_excel(
+                metadata_path,
+                sheet_name="animal_sequence",
+                index_col=[0, 1],
+            )
+            trial_id_df.index.names = ["Animal", "Sequence"]
+            trial_id_df = trial_id_df.join(animal_df, how="inner")
+
+            trial_id_df["Animal"] = trial_id_df.index.get_level_values(level="Animal")
+
+            trial_id_df.index = trial_id_df.index.map(lambda idx: f"{idx[0]}_{idx[1]}")
+            trial_id_df.index.names = ["Trial"]
+
+        else:
+            msg = "Either trial_id or animal_sequence sheet must be defined in metadata"
+            raise ValueError(msg)
+
+        return trial_id_df
 
     @property
     def settings_path(self) -> FilePath:
@@ -228,8 +210,8 @@ class BaseIngress(BikipyBase, ABC):
         return get_dataset_directory_path(self.project_root_directory)
 
     @property
-    def perimeter_directory_path(self) -> DirectoryPath:
-        return get_perimeter_directory_path(self.project_root_directory)
+    def plugin_directory_path(self) -> DirectoryPath:
+        return get_plugin_directory_path(self.project_root_directory)
 
     @property
     def inspect_directory_path(self) -> DirectoryPath:
@@ -244,10 +226,6 @@ class BaseIngress(BikipyBase, ABC):
     # Constants =============================
 
     @property
-    def stageful_metadata(self):
-        return self.settings["ingress"]["stageful_metadata"]
-
-    @property
     def kinematic_data_file_extension(self):
         return self.settings["immutable"]["kinematic_data_file_extension"]
 
@@ -258,7 +236,18 @@ class BaseIngress(BikipyBase, ABC):
             self._define_experiment_data()
 
     def _define_experiment_data(self) -> None:
-        self._experiment_class_kwargs_and_metadata_index_to_trial_id_and_metadata_index_to_trial_id_define_function()
+        if self._metadata_plugins:
+            for plugin_info in self._metadata_plugins:
+                label_to_file_path = {
+                    file_path.stem.split("-")[-1]: file_path
+                    for file_path in self.plugin_directory_path.glob(f"{plugin_info['code_key']}*")
+                }
+                for trial_id, row in self.metadata.iterrows():
+                    self._trial_id_to_keyword_arguments[trial_id] = plugin_info["file_path_to_value"](
+                        label_to_file_path[row[plugin_info["human_readable_index"]]], self, trial_id
+                    )
+
+        self._ingress_reader()
 
         for field, value in self.settings["trial"]["common"]["defined"].items():
             if value is not None:
@@ -280,92 +269,22 @@ class BaseIngress(BikipyBase, ABC):
                 if field not in trial_class_dict or not trial_class_dict[field]:
                     self._trial_class_name_to_keyword_arguments[trial_class_name][field] = value
 
-        if self.settings["ingress"]["meters_per_pixel_definition_strategy"] == "global_perimeter":
-            self._common_trial_keyword_arguments[
-                "manual_meters_per_pixel"
-            ] = detect_meters_per_pixel_in_perimeter_directory(self.perimeter_directory_path, return_first=True)
-
         self._experiment_data_defined = True
 
     @cached_property
-    def detect_perimeters_in_perimeter_directory(self) -> list:
-        detection_data = []
-        for filename in self.perimeter_directory_path.glob("perimeter-*"):
-            perimeter_path = self.project_root_directory / filename
+    def _trial_wise_plugins(self) -> list[str, ...]:
+        return [
+            ingress_key_to_plugin_name[ingress_key]
+            for ingress_key, strategy in self.settings["ingress"].items()
+            if strategy == "trial-wise"
+        ]
 
-            shape, label = get_perimeter_data(perimeter_path)
-            data = {
-                "perimeter": self.first_perimeter_set_from_makesense(perimeter_path),
-                "label": label,
-                "shape": shape,
-            }
-
-            detection_data.append(data)
-        if not detection_data:
-            msg = (
-                "No perimeter data was found. Set perimeter strategy to None or "
-                'revise perimeter filenames to the correct format, "perimeter-{label}"'
-            )
-            raise ValueError(msg)
-        return detection_data
-
-    def generate_label_to_object_field(self):
-        return {
-            perimeter_data.pop("label"): perimeter_data
-            for perimeter_data in self.detect_perimeters_in_perimeter_directory
-        }
-
-    @validate_arguments
-    def first_perimeter_set_from_makesense(
-        self,
-        perimeter_path: FilePath,
-        manual_shape: Optional[StringPerimeterShapes] = None,
-    ) -> PerimeterSet:
-        shape, label = get_perimeter_data(perimeter_path)
-
-        image_name_to_perimeter_set = perimeter_set_from_makesense(
-            perimeter_path, manual_shape or shape, manual_meters_per_pixel=self.settings
-        )
-
-        perimeter_set = tuple(image_name_to_perimeter_set.values())[0]
-        perimeter_set.apply_label_prefix_suffix(
-            self.settings["perimeter"]["label_prefix"], self.settings["perimeter"]["label_suffix"]
-        )
-        for perimeter in perimeter_set.all_perimeters:
-            for field, value in self.settings["perimeter"]["fields"]["defined"].items():
-                if value is not None:
-                    perimeter.__setattr__(field, value)
-
-        return perimeter_set
-
-    def register_perimeter_to_trial_id(self, trial_id: Hashable, label_to_perimeter: dict[str, AnyPerimeter]):
-        if self.settings["ingress"]["perimeter_naming_strategy"] == "metadata":
-            df = get_perimeter_name_df(self.project_root_directory)
-            for label, perimeter in label_to_perimeter.items():
-                new_label = df.loc[trial_id, label]
-
-                new_perimeter = copy(perimeter)
-                new_perimeter.label = new_label
-
-                self._trial_id_to_keyword_arguments[trial_id][new_label] = new_perimeter
-        else:
-            self._trial_id_to_keyword_arguments[trial_id].update(label_to_perimeter)
-
-    def get_plugin_parameter(self, parameter_label: str, metadata_index_getter: Callable, *args, **kwargs):
-        """
-        Method that retrieves plugin parameters from the metadata file. This requires the use of a metadata_index_getter
-        that is defined for each ingress method.
-
-        One may define constants ahead of function call with `functools.partial` to the metadata_index_getter.
-        Additionally, *args and **kwargs in this function are relayed to the getter.
-
-        :param parameter_label:
-        :param metadata_index_getter:
-        :return:
-        """
-        parameter_indexes = PLUGIN_NAME_TO_KEYRING[parameter_label]
-        return self.activate_plugins_and_parse_metadata_plugins[parameter_indexes["code_key"]][
-            metadata_index_getter(parameter_indexes["human_readable_index"], *args, **kwargs)
+    @cached_property
+    def _metadata_plugins(self) -> list[dict[str, str | Callable], ...]:
+        return [
+            ingress_key_to_plugin_name[ingress_key]
+            for ingress_key, strategy in self.settings["ingress"].items()
+            if strategy == "metadata"
         ]
 
     @cached_property
@@ -451,6 +370,42 @@ class BaseIngress(BikipyBase, ABC):
                 yaml.safe_dump(new_settings, out_file, sort_keys=False)
 
         return new_settings
+
+    # Plugin methods ==============================
+
+    @validate_arguments
+    def first_perimeter_set_from_makesense(
+        self,
+        perimeter_path: FilePath,
+        trial_id: str | int,
+        manual_shape: Optional[StringPerimeterShapes] = None,
+    ) -> PerimeterSet:
+        shape, label = get_perimeter_data(perimeter_path)
+
+        image_name_to_perimeter_set = perimeter_set_from_makesense(
+            perimeter_path, manual_shape or shape, manual_meters_per_pixel=self._get_meter_per_pixel(trial_id)
+        )
+
+        perimeter_set = tuple(image_name_to_perimeter_set.values())[0]
+        perimeter_set.apply_label_prefix_suffix(
+            self.settings["perimeter"]["label_prefix"], self.settings["perimeter"]["label_suffix"]
+        )
+        for perimeter in perimeter_set.all_perimeters:
+            for field, value in self.settings["perimeter"]["fields"]["defined"].items():
+                if value is not None:
+                    perimeter.__setattr__(field, value)
+
+        return perimeter_set
+
+    def _get_meter_per_pixel(self, trial_id: str | int) -> NDArrayFp64:
+        match self.settings["ingress"]["meters_per_pixel_definition_strategy"]:
+            case "global_perimeter":
+                return first_meters_per_pixel_in_perimeter_directory(self.plugin_directory_path)
+            case "metadata":
+                file_label = self.metadata.loc["MetersPerPixel"][trial_id]
+                return detect_meters_per_pixel_in_perimeter_directory(self.plugin_directory_path)[file_label]
+            case "trial-wise":
+                return self.trial_id_to_keyword_arguments[trial_id]["manual_meters_per_pixel"]
 
     # Private methods ===============================
 

@@ -1,6 +1,10 @@
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
-from bikipy.utils.io.makesense import image_name_to_point_from_makesense
+from bikipy.utils.io.makesense import image_name_to_point_from_makesense, read_first_makesense_line
+
+
+def center_file_path_to_value(file_path: FilePath, *args, **kwargs):
+    return read_first_makesense_line(file_path)
 
 
 @validate_arguments

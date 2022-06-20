@@ -1,4 +1,4 @@
-ingress_method: sequence
+ingress_method: animal
 ingress:
   stageful_metadata: true
   skip_absent_trials_absent_from_metadata_index: true

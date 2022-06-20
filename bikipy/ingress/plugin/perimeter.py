@@ -1,21 +1,19 @@
-import shutil
 from functools import lru_cache
 from logging import getLogger
-from pathlib import Path
 
 import pandas as pd
-import plyer
-import yaml
-from pydantic import DirectoryPath, FilePath, validate_arguments
+from pydantic import DirectoryPath, FilePath
 
 from bikipy.ingress.utils.io import (
-    get_perimeter_directory_path,
-    get_project_settings_path,
     infer_metadata_path,
     load_settings,
 )
 
 logger = getLogger(__name__)
+
+
+def perimeter_file_path_to_value(file_path: FilePath, trial_id: str | int, ingress, *args, **kwargs):
+    return ingress.first_perimeter_set_from_makesense(file_path, trial_id)
 
 
 def get_perimeter_data(perimeter_path: FilePath):
@@ -31,27 +29,3 @@ def get_perimeter_name_df(project_root_directory: DirectoryPath):
     assert load_settings(project_root_directory)["ingress"]["perimeter_naming_strategy"] == "metadata"
     df = pd.read_excel(infer_metadata_path(project_root_directory), sheet_name="perimeter_label", index_col=0)
     return df
-
-
-@validate_arguments
-def add_perimeter_from_makesense(project_root_directory: DirectoryPath, make_copy: bool = True):
-    perimeter_directory_path = get_perimeter_directory_path(project_root_directory)
-    settings = load_settings(project_root_directory)
-
-    perimeter_path = plyer.filechooser.open_file()
-    if not perimeter_path:
-        return print("Cancelled by user")
-    perimeter_path = Path(perimeter_path[0])
-    new_perimeter_in_project_path = perimeter_directory_path / perimeter_path.name
-    if new_perimeter_in_project_path.exists():
-        msg = f"{perimeter_path.name} is already in the project"
-        raise ValueError(msg)
-
-    shape, label = get_perimeter_data(perimeter_path)
-
-    settings["perimeters"].append({"label": label, "shape": shape})
-    with open(get_project_settings_path(project_root_directory), "wb") as in_yaml:
-        yaml.dump(settings, in_yaml)
-
-    if make_copy:
-        shutil.copyfile(perimeter_path, perimeter_directory_path / perimeter_path.name)

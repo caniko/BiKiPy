@@ -44,8 +44,8 @@ def get_dataset_directory_path(project_root_directory: DirectoryPath) -> Directo
 
 @lru_cache(1)
 @validate_arguments
-def get_perimeter_directory_path(project_root_directory: DirectoryPath) -> DirectoryPath:
-    result = project_root_directory / "perimeter"
+def get_plugin_directory_path(project_root_directory: DirectoryPath) -> DirectoryPath:
+    result = project_root_directory / "plugin_files"
     result.mkdir(exist_ok=True)
     return result
 

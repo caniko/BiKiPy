@@ -44,6 +44,7 @@ logger = getLogger(__name__)
 
 
 class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
+    center: Optional[NDArrayInt16]
     data_format_label: Literal["deeplabcut"] = "deeplabcut"
 
     _live: ClassVar[bool] = False
@@ -78,7 +79,6 @@ class BaseTrial(Behaviour):
     rigid_nodes_freezing: Optional[Sequence[str | int]] = Field(
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
     )
-    center: Optional[NDArrayInt16]
     stage: Optional[str] = Field(description="The semantic stage of the experiment")
     inspect_directory: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
     inspect_image: Optional[NDArray] = Field(
