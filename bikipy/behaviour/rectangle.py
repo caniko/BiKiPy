@@ -66,7 +66,7 @@ class Quadrant(BikipyBase):
 
 
 class RectangleEnclosedExperiment(BaseExperiment):
-    center_box_to_recording_resolution_ratio: ClassVar[Optional[float]] = None
+    center_box_to_recording_resolution_ratio: ClassVar[Optional[float]]
     rectangle_2d_bin: ClassVar[tuple[int, int]] = (2, 2)
 
     @classmethod
@@ -110,7 +110,7 @@ class RectangleEnclosedExperiment(BaseExperiment):
 
 class RectangleEnclosedTrial(BaseTrial):
     rectangle_2d_bin: quadrant_grid_typing = (2, 2)
-    center_box_to_recording_resolution_ratio: Optional[float] = None
+    center_box_to_recording_resolution_ratio: Optional[float]
 
     @validator("inspect_directory")
     def make_categorical_inspection_sub_dirs(cls, value):
@@ -354,7 +354,7 @@ def _compute_quadrant_location_sequence(quadrants, number_of_frames: int, fps: f
 
 
 def _compute_quadrant_grid_coordinates(
-    rectangle_2d_bin: tuple[int, int], recording_resolution: tuple[int, int], translation: Optional[NDArrayFp64] = None
+    rectangle_2d_bin: tuple[int, int], recording_resolution: tuple[int, int], translation: Optional[NDArrayFp64]
 ) -> NDArrayFp64:
     horizontal_resolution, vertical_resolution = recording_resolution
 

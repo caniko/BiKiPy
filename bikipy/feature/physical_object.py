@@ -39,8 +39,8 @@ class PhysicalObject(BikipyBase):
     minimum_seconds_attention: float
     maximum_seconds_distraction: float
 
-    inspect_image: Optional[NDArray] = None
-    inspect_figure_file_path: Optional[Path] = None
+    inspect_image: Optional[NDArray]
+    inspect_figure_file_path: Optional[Path]
     _fig: Any = None
     _axes: Any = None
     _exporting_figure: bool = False
@@ -202,7 +202,7 @@ class PhysicalObjectSet(BikipyBase):
 
     physical_objects: Sequence
 
-    inspect_image: Optional[NDArray] = None
+    inspect_image: Optional[NDArray]
 
     overlapping_frame_to_total_frame_warning_ratio: ClassVar[float] = 0.05
 

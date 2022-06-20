@@ -25,15 +25,15 @@ logger = getLogger(__name__)
 
 class PolygonPerimeter(BasePerimeter):
     corners_in_pixels: NDArrayFp64
-    reference_point_coco_path: Optional[FilePath] = None
-    reference_point_array: Optional[NDArrayInt16] = None
-    inspect_image_path: Optional[FilePath] = None
-    inspect_image_array: Optional[NDArrayFp64] = None
-    feature_scale: Optional[NDArrayFp64] = None
+    reference_point_coco_path: Optional[FilePath]
+    reference_point_array: Optional[NDArrayInt16]
+    inspect_image_path: Optional[FilePath]
+    inspect_image_array: Optional[NDArrayFp64]
+    feature_scale: Optional[NDArrayFp64]
 
     category: ClassVar[Optional[str]] = "perimeter"
 
-    _polygon_order: ClassVar[Optional[int]] = None
+    _polygon_order: ClassVar[Optional[int]]
 
     @validator("corners_in_pixels")
     def corners_polygon_order_validator(cls, value: NDArrayFp64):
@@ -125,7 +125,7 @@ class PolygonPerimeter(BasePerimeter):
 
     def plot_perimeter(
         self,
-        perimeter_border_normal_pixel_magnitude: Optional[float] = None,
+        perimeter_border_normal_pixel_magnitude: Optional[float],
         ax: Any = None,
         include_geometric_legend: bool = False,
         colormap: Any = None,
@@ -250,8 +250,8 @@ class PolygonPerimeter(BasePerimeter):
     def from_makesense_coco_polygon(
         cls,
         data_path: Any,
-        image_root: Optional[DirectoryPath] = None,
-        reference_point_csv_path: Optional[FilePath] = None,
+        image_root: Optional[DirectoryPath],
+        reference_point_csv_path: Optional[FilePath],
         **perimeter_kwargs,
     ) -> dict:
         logger.debug("Generating PolygonPerimeter from makesense polygon data in coco format")
@@ -298,8 +298,8 @@ class PolygonPerimeter(BasePerimeter):
     def from_makesense_csv_rectangle(
         cls,
         data_path: FilePath,
-        image_root: Optional[DirectoryPath] = None,
-        reference_point_csv_path: Optional[FilePath] = None,
+        image_root: Optional[DirectoryPath],
+        reference_point_csv_path: Optional[FilePath],
         **perimeter_kwargs,
     ):
         logger.debug("Generating PolygonPerimeter from makesense polygon data in coco format")

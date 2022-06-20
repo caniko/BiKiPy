@@ -157,7 +157,7 @@ class ParallelogramPerimeter(PolygonPerimeter):
         cls,
         inspect_image: Any,
         n: int,
-        object_kwargs: Optional[dict] = None,
+        object_kwargs: Optional[dict],
     ):
         return [cls(inspect_image=inspect_image, **object_kwargs[i]) for i in range(int(n))]
 

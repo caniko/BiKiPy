@@ -18,8 +18,8 @@ def inaccurate_points_in_parallelogram(
     corner_a: NDArrayFp64,
     corner_b: NDArrayFp64,
     coordinates: NDArrayFp64,
-    inspect: Optional[PurePath] = None,
-    inspect_image: Optional[NDArrayFp64] = None,
+    inspect: Optional[PurePath],
+    inspect_image: Optional[NDArrayFp64],
 ) -> NDArrayBool:
     """
     Algebraic solver for finding points contained inside the respective parallelogram.

@@ -17,13 +17,13 @@ from bikipy.utils.video import get_video_data
 
 
 class _VideoMetadataBase(BikipyBase):
-    video_path: Optional[FilePath] = None
+    video_path: Optional[FilePath]
 
-    manual_recording_resolution: Optional[NDArrayInt16] = None
-    manual_fps: Optional[float] = None
+    manual_recording_resolution: Optional[NDArrayInt16]
+    manual_fps: Optional[float]
 
-    manual_meters_per_pixel: Optional[float | NDArrayFp64] = None
-    metric_resolution: Optional[NDArrayFp64] = None
+    manual_meters_per_pixel: Optional[NDArrayFp64 | float]
+    metric_resolution: Optional[NDArrayFp64]
 
     @cached_property
     def video_metadata(self):
@@ -119,7 +119,7 @@ class VideoMetadata(_VideoMetadataBase):
 
 
 class VideoMetadataMixin(_VideoMetadataBase):
-    manual_video: Optional[VideoMetadata] = None
+    manual_video: Optional[VideoMetadata]
 
     @cached_property
     def video(self):

@@ -25,7 +25,7 @@ logger = getLogger(__name__)
 
 
 class RadialMazeBase(BikipyBaseHashable):
-    number_of_arms: ClassVar[Optional[int]] = None
+    number_of_arms: ClassVar[Optional[int]]
 
     @classmethod
     @property

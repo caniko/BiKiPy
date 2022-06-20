@@ -36,7 +36,7 @@ def add_n_levels_to_multi_index(
         return pd.MultiIndex.from_tuples([(headers, *levels_to_add) for headers in multi_index_as_tuples])
 
 
-def copycat_assumes_levels_of_icon(copycat: pd.DataFrame, icon: pd.DataFrame, filler: Optional[str] = None):
+def copycat_assumes_levels_of_icon(copycat: pd.DataFrame, icon: pd.DataFrame, filler: Optional[str]):
     assert copycat.columns.nlevels < icon.columns.nlevels
     clone_df = copycat.copy()
     clone_df.columns = add_n_levels_to_multi_index(

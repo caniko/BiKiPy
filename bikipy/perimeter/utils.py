@@ -15,8 +15,8 @@ def distance_between_two_perimeters(perimeter_a, perimeter_b):
 
 
 def get_coco_array_from_path_or_array(
-    metadata_path: Optional[FilePath] = None,
-    coco_array: Optional[NDArrayFp64] = None,
+    metadata_path: Optional[FilePath],
+    coco_array: Optional[NDArrayFp64],
 ):
     msg = "metadata_path and coco_array are defined mutually exclusive"
     if metadata_path and np.any(coco_array):

@@ -78,7 +78,7 @@ class BaseTrial(Behaviour):
     rigid_nodes_freezing: Optional[Sequence[str | int]] = Field(
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
     )
-    center: Optional[NDArrayInt16] = None
+    center: Optional[NDArrayInt16]
     stage: Optional[str] = Field(description="The semantic stage of the experiment")
     inspect_directory: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
     inspect_image: Optional[NDArray] = Field(
@@ -91,14 +91,14 @@ class BaseTrial(Behaviour):
     )
 
     # Variables for trials with zones, see doc for more info.
-    perimeters: Optional[Sequence] = None
-    trial_start_perimeter: Optional[str] = None
+    perimeters: Optional[Sequence]
+    trial_start_perimeter: Optional[str]
 
     # Class variables
     experiment_class_name: ClassVar[str]
     category: ClassVar[Optional[str]] = "trial"
 
-    trial_label: ClassVar[Optional[str]] = None
+    trial_label: ClassVar[Optional[str]]
 
     second_tolerance: ClassVar[float] = 0.15
 
@@ -219,11 +219,11 @@ Trial = TypeVar("Trial", bound=BaseTrial)
 
 
 class BaseExperiment(Behaviour, VideoMetadataMixin):
-    manual_trial_ids: Optional[tuple] = None
+    manual_trial_ids: Optional[tuple]
     trial_id_to_trial_class_name: Optional[dict] = Field(default_factory=dict)
     trial_id_to_keyword_arguments: Optional[dict] = Field(default_factory=dict)
     trial_class_name_to_keyword_arguments: Optional[dict] = Field(default_factory=dict)
-    trial_id_range_to_keyword_arguments: Optional[RangeDict] = None
+    trial_id_range_to_keyword_arguments: Optional[RangeDict]
     common_trial_keyword_arguments: Optional[dict] = Field(default_factory=dict)
     stage: Optional[str] = Field(
         description="Experiment stage label, if experiment object is in a sequence of experiment objects"

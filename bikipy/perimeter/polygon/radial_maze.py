@@ -18,8 +18,8 @@ logger = getLogger(__name__)
 
 def generate_radial_maze_perimeters(
     line_csv_path: FilePath,
-    center_coco_path: Optional[FilePath] = None,
-    triangular_center_object: Optional[TriangularPerimeter] = None,
+    center_coco_path: Optional[FilePath],
+    triangular_center_object: Optional[TriangularPerimeter],
     inspect: bool = False,
     **perimeter_kwargs,
 ):

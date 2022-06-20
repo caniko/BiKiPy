@@ -5,7 +5,7 @@ import cv2
 from pydantic import FilePath
 
 
-def get_video_data(video_path: FilePath, frame_time: Optional[str | int] = None):
+def get_video_data(video_path: FilePath, frame_time: Optional[str | int]):
     """
     Get a frame from a given relative location, and resolution info of video
 

@@ -468,8 +468,8 @@ def init_settings(
     project_root_directory: DirectoryPath,
     experiment_class: Any,
     kinematic_data_file_extension: str,
-    method_kwargs: Optional[dict] = None,
-    method_immutable: Optional[dict] = None,
+    method_kwargs: Optional[dict],
+    method_immutable: Optional[dict],
     dry_run: bool = False,
     silent: bool = False,
 ) -> dict[str, str | dict]:

@@ -31,7 +31,7 @@ logger = getLogger(__name__)
 class LiveTrial(BaseModel, ABC):
     delay_timings: tuple[float]
     delay_timings_trial_count: tuple[int] | int
-    manual_total_loops_per_trial: Optional[int] = None
+    manual_total_loops_per_trial: Optional[int]
 
     node_sequence: list = []
 

@@ -24,7 +24,7 @@ class RangeDict(UserDict):
 
     def __init__(
         self,
-        class_dict: Optional[dict] = None,
+        class_dict: Optional[dict],
         allow_less_than_first_key: Union[float, bool] = False,
         **kwargs,
     ):

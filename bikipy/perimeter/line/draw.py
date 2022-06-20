@@ -11,7 +11,7 @@ from bikipy.utils.video import get_video_data
 def borders_on_image(
     img: Any,
     orientation: str,
-    resolution: Optional[NDArrayFp64] = None,
+    resolution: Optional[NDArrayFp64],
 ):
     """
     Initialize class using data from a sample frame/image

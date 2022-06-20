@@ -12,13 +12,13 @@ class BikipyBase(BaseModel):
         underscore_attrs_are_private = True
         keep_untouched = (cached_property,)
 
-    category: ClassVar[Optional[str]] = None
+    category: ClassVar[Optional[str]]
 
 
 class BikipyBaseHashable(BikipyBase):
-    int_id: Optional[int] = None
-    label: Optional[str] = None
-    group_label: Optional[str] = None
+    int_id: Optional[int]
+    label: Optional[str]
+    group_label: Optional[str]
     timestamp: datetime = Field(default_factory=datetime.now)
 
     @property

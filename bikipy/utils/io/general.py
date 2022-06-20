@@ -8,7 +8,7 @@ from bikipy.perimeter.base import PerimeterSet
 def defer_perimeter_set_from_multi_row_reference(
     reference_perimeters: Iterable,
     image_name_to_reference_data: dict,
-    image_root: Optional[DirectoryPath] = None,
+    image_root: Optional[DirectoryPath],
 ):
     perimeter_set = PerimeterSet(
         perimeters=tuple(reference_perimeters),

@@ -27,10 +27,10 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
         "Usually because the perimeter is insurmountable or slippery",
     )
 
-    reference_point_coco_path: Optional[FilePath] = None
-    reference_point_array: Optional[NDArrayInt16] = None
-    inspect_image_path: Optional[FilePath] = None
-    inspect_image_array: Optional[NDArrayFp64] = None
+    reference_point_coco_path: Optional[FilePath]
+    reference_point_array: Optional[NDArrayInt16]
+    inspect_image_path: Optional[FilePath]
+    inspect_image_array: Optional[NDArrayFp64]
 
     category: ClassVar[Optional[str]] = "perimeter"
 
@@ -46,7 +46,7 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
     @abstractmethod
     def plot_perimeter(
         self,
-        perimeter_border_normal_pixel_magnitude: Optional[float] = None,
+        perimeter_border_normal_pixel_magnitude: Optional[float],
         ax: Any = None,
         include_geometric_legend: bool = False,
         colormap: Any = None,
@@ -56,8 +56,8 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
     @staticmethod
     def _new_inspect_image(
         perimeter,
-        new_inspect_image: Optional[NDArrayFp64] = None,
-        new_inspect_image_path: Optional[FilePath] = None,
+        new_inspect_image: Optional[NDArrayFp64],
+        new_inspect_image_path: Optional[FilePath],
     ):
         if new_inspect_image_path:
             if not (new_inspect_image_path := Path(new_inspect_image_path)).exists():
@@ -106,8 +106,8 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
 
     def change_reference_with_coco(
         self,
-        metadata_path: Optional[FilePath] = None,
-        coco_array: Optional[NDArrayFp64] = None,
+        metadata_path: Optional[FilePath],
+        coco_array: Optional[NDArrayFp64],
         **kwargs,
     ):
         coco_array = get_coco_array_from_path_or_array(metadata_path, coco_array)
@@ -123,9 +123,9 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
 
     def change_reference_with_coco_with_plural_references(
         self,
-        metadata_path: Optional[FilePath] = None,
-        coco_array: Optional[NDArrayFp64] = None,
-        image_root: Optional[DirectoryPath] = None,
+        metadata_path: Optional[FilePath],
+        coco_array: Optional[NDArrayFp64],
+        image_root: Optional[DirectoryPath],
         map_to_image_names: bool = True,
     ):
         def _change_reference_loop_func(reference_point, img_name):
@@ -188,7 +188,7 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
         cls,
         coordinates: NDArrayFp64,
         superior_poly_border_instances: Optional[Sequence],
-        inferior_poly_border_instances: Optional[Sequence] = None,
+        inferior_poly_border_instances: Optional[Sequence],
         clean_outliers: bool = True,
     ):
         """
@@ -251,7 +251,7 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
 
         return presence, valid_indices, boolean_array
 
-    def apply_label_prefix_suffix(self, prefix: Optional[str] = None, suffix: Optional[str] = None) -> None:
+    def apply_label_prefix_suffix(self, prefix: Optional[str], suffix: Optional[str]) -> None:
         if prefix:
             self.label = f"{prefix}_{self.label}"
         if suffix:
@@ -319,7 +319,7 @@ AnyPerimeter = TypeVar("AnyPerimeter", bound=BasePerimeter)
 
 class PerimeterSet(BikipyBase):
     perimeters: list[AnyPerimeter]
-    restricted_perimeters: Optional[list[AnyPerimeter]] = None
+    restricted_perimeters: Optional[list[AnyPerimeter]]
 
     category: ClassVar[Optional[str]] = "perimeter"
 
@@ -399,8 +399,8 @@ class PerimeterSet(BikipyBase):
 
     def change_reference_with_coco(
         self,
-        metadata_path: Optional[FilePath] = None,
-        coco_array: Optional[NDArrayFp64] = None,
+        metadata_path: Optional[FilePath],
+        coco_array: Optional[NDArrayFp64],
     ):
         coco_array = get_coco_array_from_path_or_array(metadata_path, coco_array)
 
@@ -419,8 +419,8 @@ class PerimeterSet(BikipyBase):
 
     def change_reference_with_coco_with_plural_references(
         self,
-        metadata_path: Optional[FilePath] = None,
-        coco_array: Optional[NDArrayFp64] = None,
+        metadata_path: Optional[FilePath],
+        coco_array: Optional[NDArrayFp64],
         map_to_image_names: bool = True,
         **kwargs,
     ):
@@ -460,7 +460,7 @@ class PerimeterSet(BikipyBase):
             }
         return [self.__class__(**perimeter_data) for perimeter_data in perimeter_set_kwargs.values()]
 
-    def apply_label_prefix_suffix(self, prefix: Optional[str] = None, suffix: Optional[str] = None) -> None:
+    def apply_label_prefix_suffix(self, prefix: Optional[str], suffix: Optional[str]) -> None:
         for perimeter in self.all_perimeters:
             perimeter.apply_label_prefix_suffix(prefix, suffix)
 
@@ -520,7 +520,7 @@ class PerimeterSet(BikipyBase):
 
 @validate_arguments
 def perimeter_set_from_makesense(
-    perimeter_path: FilePath, shape: Optional[StringPerimeterShapes] = None, **perimeter_kwargs
+    perimeter_path: FilePath, shape: Optional[StringPerimeterShapes], **perimeter_kwargs
 ) -> dict[str, PerimeterSet]:
     match shape:
         case "circle":
