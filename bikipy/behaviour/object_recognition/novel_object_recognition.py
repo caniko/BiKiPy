@@ -90,7 +90,7 @@ class NortExperiment(RectangleEnclosedExperiment):
         NortTrainingTrial,
         NortNoveltyTrial,
     )
-    experiment_stage_name_to_sequence_index: ClassVar[dict[str, int]] = {
+    experiment_stage_name_to_stage_index: ClassVar[dict[str, int]] = {
         "habituation": 0,
         "open_field": 0,
         "training": 1,

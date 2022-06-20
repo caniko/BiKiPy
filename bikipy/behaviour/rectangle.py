@@ -66,7 +66,7 @@ class Quadrant(BikipyBase):
 
 
 class RectangleEnclosedExperiment(BaseExperiment):
-    center_box_to_recording_resolution_ratio: ClassVar[Optional[float]]
+    center_box_to_recording_resolution_ratio: ClassVar[Optional[float]] = None
     rectangle_2d_bin: ClassVar[tuple[int, int]] = (2, 2)
 
     @classmethod

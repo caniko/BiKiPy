@@ -2,7 +2,7 @@ from functools import lru_cache
 from logging import getLogger
 
 import pandas as pd
-from pydantic import DirectoryPath, FilePath
+from pydantic import DirectoryPath, FilePath, PositiveInt
 
 from bikipy.ingress.utils.io import (
     infer_metadata_path,
@@ -12,7 +12,7 @@ from bikipy.ingress.utils.io import (
 logger = getLogger(__name__)
 
 
-def perimeter_file_path_to_value(file_path: FilePath, trial_id: str | int, ingress, *args, **kwargs):
+def perimeter_file_path_to_value(file_path: FilePath, trial_id: str | PositiveInt, ingress, *args, **kwargs):
     return ingress.first_perimeter_set_from_makesense(file_path, trial_id)
 
 

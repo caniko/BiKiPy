@@ -30,6 +30,7 @@ from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_multi_indexer
+from bikipy.perimeter.base import PerimeterSet
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.collection_utils import (
     chain_lists_to_tuple,
@@ -121,13 +122,13 @@ class BaseTrial(Behaviour):
 
     @classmethod
     @property
-    def experiment_sequence_index(cls) -> int:
-        return cls.experiment_class.trial_class_name_to_sequence_index[cls.__name__]
+    def experiment_stage_index(cls) -> int:
+        return cls.experiment_class.trial_class_name_to_stage_index[cls.__name__]
 
     @classmethod
     @property
     def motion_column_index_levels(cls):
-        if cls.experiment_sequence_index:
+        if cls.experiment_stage_index:
             return 3
         return 2
 
@@ -283,7 +284,7 @@ class BaseExperiment(Behaviour, VideoMetadataMixin):
         try:
             return {i: trial_class for i, trial_class in enumerate(cls.trial_classes)}
         except AttributeError:
-            msg = "experiment_sequence_index must be defined for each trial class when working with a sequence of trial classes"
+            msg = "experiment_stage_index must be defined for each trial class when working with a sequence of trial classes"
             raise AttributeError(msg)
 
     @classmethod
@@ -304,7 +305,7 @@ class BaseExperiment(Behaviour, VideoMetadataMixin):
         try:
             return {trial_class.__name__: trial_class for trial_class in cls.trial_classes}
         except AttributeError:
-            msg = "experiment_sequence_index must be defined for each trial class when working with a sequence of trial classes"
+            msg = "experiment_stage_index must be defined for each trial class when working with a sequence of trial classes"
             raise AttributeError(msg)
 
     def trial_keyword_arguments(self, trial_id: Hashable) -> dict:
@@ -338,6 +339,10 @@ class BaseExperiment(Behaviour, VideoMetadataMixin):
         result["inspect_directory"] = self.inspect_directory
         if "inspect_image" not in result:
             result["inspect_image"] = self._initialized_inspect_image
+
+        if "perimeter" in result:
+            perimeter_set: PerimeterSet = result.pop("perimeter")
+            result.update(perimeter_set.label_to_perimeter)
 
         return result
 
@@ -607,7 +612,7 @@ class BaseExperiment(Behaviour, VideoMetadataMixin):
             else:
                 result[trial_class] = [trial_id]
 
-        return dict(sorted(result.items(), key=lambda trial_c: trial_c[0].experiment_sequence_index))
+        return dict(sorted(result.items(), key=lambda trial_c: trial_c[0].experiment_stage_index))
 
     @cached_property
     def _trial_class_to_trial_objects(self):

@@ -8,6 +8,7 @@ from pydantic import BaseModel, DirectoryPath, Field
 from bikipy.behaviour.rectangle import RectangleEnclosedTrial
 from bikipy.core.base_class import BikipyBase
 from bikipy.core.typing import NDArrayFp64
+from bikipy.core.video import VideoMetadata
 from bikipy.feature.physical_object import PhysicalObjectSet
 
 
@@ -78,7 +79,7 @@ class PhysicalObjectTrialMixin(BikipyBase):
 
     @cached_property
     def perimeter_border_normal_pixel_magnitude(self) -> float | NDArrayFp64:
-        return self.perimeter_border_normal_metric_magnitude / self.meters_per_pixel
+        return self.perimeter_border_normal_metric_magnitude / self.video.meters_per_pixel
 
 
 PhysicalObjectTrial = TypeVar("PhysicalObjectTrial", bound=PhysicalObjectTrialMixin)

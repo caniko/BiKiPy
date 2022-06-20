@@ -1,14 +1,14 @@
 import json
 from abc import ABC, abstractmethod
-from copy import copy
 from functools import cached_property
+from logging import getLogger
 from typing import Any, Callable, ClassVar, Hashable, Iterable, Optional, TypeVar
 
 import numpy as np
 import openpyxl
 import pandas as pd
 import yaml
-from pydantic import DirectoryPath, FilePath, validate_arguments
+from pydantic import DirectoryPath, FilePath, validate_arguments, PositiveInt
 
 from bikipy.behaviour.base import Experiment
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
@@ -39,6 +39,8 @@ from bikipy.perimeter.base import (
 from bikipy.reader import DeepLabCutReader
 from bikipy.utils.collection_utils import copycat_assumes_levels_of_icon
 
+logger = getLogger(__name__)
+
 
 class BaseIngress(BikipyBase, ABC):
     project_root_directory: DirectoryPath
@@ -58,11 +60,6 @@ class BaseIngress(BikipyBase, ABC):
 
     @abstractmethod
     def verify_project_structure(self):
-        ...
-
-    @property
-    @abstractmethod
-    def method_settings(self):
         ...
 
     @classmethod
@@ -91,16 +88,6 @@ class BaseIngress(BikipyBase, ABC):
             raise ValueError(msg)
 
     @cached_property
-    def reader_kwargs(self) -> dict:
-        result = {}
-        # Data source priority in ascending order
-        if "reader_kwargs" in self.settings["trial"]["common"]["defined"]:
-            result.update(self.settings["trial"]["common"]["defined"])
-        if "reader_kwargs" in self.settings["reader_kwargs"]:
-            result.update(self.settings["reader_kwargs"]["defined"])
-        return result
-
-    @cached_property
     def experiment_class_kwargs(self):
         return {
             "trial_id_to_trial_class_name": self.trial_id_to_trial_class_name,
@@ -113,6 +100,7 @@ class BaseIngress(BikipyBase, ABC):
     def trial_id_to_trial_class_name(self):
         if not self._experiment_data_defined:
             self._define_experiment_data()
+        assert self._trial_id_to_trial_class_name
         return self._trial_id_to_trial_class_name
 
     @property
@@ -136,17 +124,6 @@ class BaseIngress(BikipyBase, ABC):
         if not self._experiment_data_defined:
             self._define_experiment_data()
         return self._metadata_index_to_trial_id
-
-    def _register_to_trial_class_name_to_keyword_arguments(self, setting_key: str, from_stage_index: bool = False):
-        for trial_class_name, value in self.settings.items():
-            if from_stage_index:
-                trial_class_name = self.experiment_class.stage_index_to_trial_class_name[trial_class_name]
-
-            assert trial_class_name in self.experiment_class.trial_class_names
-
-            if trial_class_name not in self._trial_class_name_to_keyword_arguments:
-                self._trial_class_name_to_keyword_arguments[trial_class_name] = {}
-            self._trial_class_name_to_keyword_arguments[trial_class_name][setting_key] = value
 
     # I/O ============================
 
@@ -259,12 +236,23 @@ class BaseIngress(BikipyBase, ABC):
                     raise ValueError(msg)
                 self._common_trial_keyword_arguments[field] = value
 
+        global_reader_kwargs = {}
+        # Data source priority in ascending order
+        if "defined" in self.settings["trial"]["common"] and self.settings["trial"]["common"]["defined"]:
+            global_reader_kwargs.update(self.settings["trial"]["common"]["defined"])
+        if "defined" in self.settings["reader_kwargs"] and self.settings["reader_kwargs"]["defined"]:
+            global_reader_kwargs.update(self.settings["reader_kwargs"]["defined"])
+        assert global_reader_kwargs, "reader_kwargs must be defined"
+        self._common_trial_keyword_arguments["reader_kwargs"] = global_reader_kwargs
+
         for trial_class_name, dataset in self.settings["trial"]["specific"].items():
             if not dataset["defined"]:
                 continue
             if trial_class_name not in self._trial_class_name_to_keyword_arguments:
                 self._trial_class_name_to_keyword_arguments[trial_class_name] = {}
             for field, value in dataset["defined"].items():
+                if not value:
+                    continue
                 trial_class_dict = self._trial_class_name_to_keyword_arguments[trial_class_name]
                 if field not in trial_class_dict or not trial_class_dict[field]:
                     self._trial_class_name_to_keyword_arguments[trial_class_name][field] = value
@@ -332,8 +320,8 @@ class BaseIngress(BikipyBase, ABC):
     def update_settings(self, delete_outdated: bool = False, dry_run: bool = False) -> dict:
         new_settings = init_settings(
             self.ingress_method,
+            self.experiment_name,
             self.project_root_directory,
-            self.experiment_class,
             self.kinematic_data_file_extension,
             dry_run=True,
             silent=True,
@@ -347,9 +335,9 @@ class BaseIngress(BikipyBase, ABC):
         new_settings["perimeter"] = settings.update_dictionary(
             self.settings["perimeter"], new_settings["perimeter"], **kwargs
         )
-        # new_settings["reader_kwargs"] = settings.update_defined_values(
-        #     self.settings["reader_kwargs"], new_settings["reader_kwargs"], **kwargs
-        # )
+        new_settings["reader_kwargs"] = settings.update_defined_values(
+            self.settings["reader_kwargs"], new_settings["reader_kwargs"], **kwargs
+        )
 
         new_settings["trial"]["common"] = settings.update_defined_values(
             self.settings["trial"]["common"], new_settings["trial"]["common"], **kwargs
@@ -377,7 +365,7 @@ class BaseIngress(BikipyBase, ABC):
     def first_perimeter_set_from_makesense(
         self,
         perimeter_path: FilePath,
-        trial_id: str | int,
+        trial_id: str | PositiveInt,
         manual_shape: Optional[StringPerimeterShapes] = None,
     ) -> PerimeterSet:
         shape, label = get_perimeter_data(perimeter_path)
@@ -397,12 +385,12 @@ class BaseIngress(BikipyBase, ABC):
 
         return perimeter_set
 
-    def _get_meter_per_pixel(self, trial_id: str | int) -> NDArrayFp64:
+    def _get_meter_per_pixel(self, trial_id: str | PositiveInt) -> NDArrayFp64:
         match self.settings["ingress"]["meters_per_pixel_definition_strategy"]:
             case "global_perimeter":
                 return first_meters_per_pixel_in_perimeter_directory(self.plugin_directory_path)
             case "metadata":
-                file_label = self.metadata.loc["MetersPerPixel"][trial_id]
+                file_label = self.metadata["MetersPerPixel"][trial_id]
                 return detect_meters_per_pixel_in_perimeter_directory(self.plugin_directory_path)[file_label]
             case "trial-wise":
                 return self.trial_id_to_keyword_arguments[trial_id]["manual_meters_per_pixel"]
@@ -420,18 +408,19 @@ Ingress = TypeVar("Ingress", bound=BaseIngress)
 
 def init_settings(
     ingress_method: str,
+    experiment_name: str,
     project_root_directory: DirectoryPath,
-    experiment_class: Any,
     kinematic_data_file_extension: str,
-    method_kwargs: Optional[dict],
-    method_immutable: Optional[dict],
     dry_run: bool = False,
     silent: bool = False,
 ) -> dict[str, str | dict]:
+    logger.info(f"Generating experiment configuration at {project_root_directory}")
+
+    experiment_class = EXPERIMENT_NAME_TO_CLASS[experiment_name.strip().lower()]
+
     generic_settings = {
         "ingress_method": ingress_method,
         "ingress": {
-            **(method_kwargs or {}),
             "stageful_metadata": False,
             "skip_absent_trials_absent_from_metadata_index": False,
             "meters_per_pixel_definition_strategy": "global_perimeter",
@@ -450,9 +439,9 @@ def init_settings(
         "immutable": {
             "metadata_filename": "metadata.xlsx",
             "kinematic_data_file_extension": kinematic_data_file_extension,
-            "experiment_class": experiment_class.__name__,
+            "experiment_class": experiment_name,
             "trial_classes/stages": experiment_class.trial_class_names,
-            "method_specific": method_immutable,
+            "stage_index_to_trial_class_name": experiment_class.stage_index_to_trial_class_name,
         },
     }
 

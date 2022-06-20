@@ -27,7 +27,7 @@ class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTri
 
     physical_object_labels: ClassVar[list[str, ...]] = ["object_1", "object_2"]
 
-    experiment_sequence_index: ClassVar[int] = 0
+    experiment_stage_index: ClassVar[int] = 0
     trial_label: ClassVar[str] = "Training"
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
 
@@ -42,7 +42,7 @@ class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial
 
     physical_object_labels: ClassVar[list[str, ...]] = ["object_1", "object_4"]
 
-    experiment_sequence_index: ClassVar[int] = 1
+    experiment_stage_index: ClassVar[int] = 1
     trial_label: ClassVar[str] = "Update"
 
     @property
@@ -58,7 +58,7 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
 
     physical_object_labels: ClassVar[list[str, ...]] = ["object_1", "object_2", "object_3", "object_4"]
 
-    experiment_sequence_index: ClassVar[int] = 2
+    experiment_stage_index: ClassVar[int] = 2
     trial_label: ClassVar[str] = "Test"
 
     @property

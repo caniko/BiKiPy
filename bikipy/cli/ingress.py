@@ -6,8 +6,7 @@ import click
 from pydantic import DirectoryPath, validate_arguments
 
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
-from bikipy.ingress import INGRESS_METHOD_NAME_TO_INIT_FUNC
-from bikipy.ingress.core import analyze_and_save, auto_define_ingress_object
+from bikipy.ingress.core import analyze_and_save, auto_define_ingress_object, init_settings
 
 
 @click.group
@@ -27,7 +26,6 @@ def cli_root():
     help="Path to the sequence formatted project directory, uses current directory on omition",
 )
 @click.option("-s", "--data_file_suffix", "kinematic_data_file_extension", default=".h5")
-@click.option("-a", "animals_have_plural_trial_sets", is_flag=True)
 @click.option("-d", "--dry_run", is_flag=True)
 @validate_arguments
 def init(
@@ -35,7 +33,6 @@ def init(
     experiment_name: str,
     project_root_directory: Optional[DirectoryPath] = None,
     kinematic_data_file_extension: str = "h5",
-    animals_have_plural_trial_sets: bool = False,
     dry_run: bool = False,
 ) -> None:
     project_root_directory = _define_project_root_directory(project_root_directory)
@@ -45,13 +42,7 @@ def init(
     ).strip().lower() != "y":
         return print("User aborted re-initialisation")
 
-    INGRESS_METHOD_NAME_TO_INIT_FUNC[ingress_method.lower()](
-        project_root_directory=project_root_directory,
-        experiment_name=experiment_name,
-        kinematic_data_file_extension=kinematic_data_file_extension,
-        animals_have_plural_trial_sets=animals_have_plural_trial_sets,
-        dry_run=dry_run,
-    )
+    init_settings(ingress_method, experiment_name, project_root_directory, kinematic_data_file_extension, dry_run)
 
 
 @cli_root.command()

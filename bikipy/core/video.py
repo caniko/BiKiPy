@@ -25,15 +25,6 @@ class _VideoMetadataBase(BikipyBase):
     manual_meters_per_pixel: Optional[NDArrayFp64 | float]
     metric_resolution: Optional[NDArrayFp64]
 
-    @cached_property
-    def video_metadata(self):
-        return {
-            "manual_meter_per_pixel": self.manual_meters_per_pixel,
-            "manual_fps": self.manual_fps,
-            "manual_recording_resolution": self.manual_recording_resolution,
-            "metric_resolution": self.metric_resolution,
-        }
-
 
 class VideoMetadata(_VideoMetadataBase):
     @cached_property
@@ -125,7 +116,16 @@ class VideoMetadataMixin(_VideoMetadataBase):
     def video(self):
         if self.manual_video:
             return self.manual_video
-        return VideoMetadata(**self.video_metadata)
+        return VideoMetadata(
+            manual_meters_per_pixel=self.manual_meters_per_pixel,
+            manual_fps=self.manual_fps,
+            manual_recording_resolution=self.manual_recording_resolution,
+            metric_resolution=self.metric_resolution,
+        )
+
+    @property
+    def video_metadata(self):
+        return self.video.video_metadata
 
 
 def video_metadata_from_object_or_metric_and_recording(
