@@ -33,7 +33,7 @@ class AnimalIngress(BaseIngress):
                 self._trial_id_to_trial_class_name[trial_id] = self.experiment_class.stage_index_to_trial_class_name[
                     stage_index
                 ]
-                self._trial_id_to_keyword_arguments[trial_id] = {
+                trial_id_kwargs = {
                     "label": trial_id,
                     "animal_id": animal_id,
                     "stage": stage_index,
@@ -45,9 +45,11 @@ class AnimalIngress(BaseIngress):
                         msg = f"Plugin {plugin_info['human_readable_index']}: Only one file per trial"
                         raise ValueError(msg)
 
-                    self._trial_id_to_keyword_arguments[trial_id][plugin_info["bikipy_trial_key"]] = plugin_info[
-                        "file_path_to_value"
-                    ](plugin_data_files[0], trial_id, self)
+                    trial_id_kwargs[plugin_info["bikipy_trial_key"]] = plugin_info["file_path_to_value"](
+                        plugin_data_files[0], trial_id, self
+                    )
+
+                self._trial_id_to_keyword_arguments[trial_id].update(trial_id_kwargs)
 
     def verify_project_structure(self):
         animal_ids = set()

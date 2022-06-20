@@ -258,7 +258,7 @@ class BaseExperiment(Behaviour, VideoMetadataMixin):
 
     @classmethod
     @property
-    def is_trial_sequence(cls) -> bool:
+    def has_trials_in_stages(cls) -> bool:
         return cls.trial_sequence_length != 1
 
     @classmethod
@@ -269,7 +269,7 @@ class BaseExperiment(Behaviour, VideoMetadataMixin):
     @classmethod
     @property
     def trial_class(cls) -> "Trial":
-        if not cls.is_trial_sequence:
+        if not cls.has_trials_in_stages:
             msg = f"{cls.__name__}: trial_class attribute can only be utilized when there is only one Trial class"
             raise AttributeError(msg)
         return cls.trial_classes[0]
@@ -277,7 +277,7 @@ class BaseExperiment(Behaviour, VideoMetadataMixin):
     @classmethod
     @property
     def stage_index_to_trial_class(cls) -> dict[int, Trial]:
-        if not cls.is_trial_sequence:
+        if not cls.has_trials_in_stages:
             msg = f"{cls.__name__}: stage_index_to_trial_class is undefined in non-sequential experiment classes"
             raise AttributeError(msg)
 
@@ -295,7 +295,7 @@ class BaseExperiment(Behaviour, VideoMetadataMixin):
     @classmethod
     @property
     def trial_class_name_to_trial_class(cls) -> dict[str, Trial]:
-        if not cls.is_trial_sequence:
+        if not cls.has_trials_in_stages:
             msg = (
                 f"{cls.__name__}: trial_class_name_to_trial_class attribute can only be utilized when "
                 f"there are many Trial classes"
@@ -312,7 +312,7 @@ class BaseExperiment(Behaviour, VideoMetadataMixin):
         """
         Function useful for customizing initiation parameters for trial objects
         """
-        result = {**self.video_metadata, "data_format_label": self.data_format_label}
+        result = {"data_format_label": self.data_format_label}
 
         if self.common_trial_keyword_arguments:
             result.update(self.common_trial_keyword_arguments)
@@ -352,7 +352,7 @@ class BaseExperiment(Behaviour, VideoMetadataMixin):
         for trial_id in self.trial_ids:
             trial_class = (
                 self.trial_class_name_to_trial_class[self.trial_id_to_trial_class_name[trial_id]]
-                if self.is_trial_sequence
+                if self.has_trials_in_stages
                 else self.trial_class
             )
             try:

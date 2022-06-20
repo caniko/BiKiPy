@@ -123,7 +123,9 @@ trial:
         object_3: None
         object_4: None
 experiment:
-  defined: {}
+  defined:
+    manual_fps: 30
+    manual_recording_resolution: [ 1920, 1080 ]
   optional:
     common_trial_keyword_arguments: object
     compute_only_one_df_row: boolean -> False

@@ -214,15 +214,16 @@ class BaseIngress(BikipyBase, ABC):
 
     def _define_experiment_data(self) -> None:
         if self._metadata_plugins:
+            self._trial_id_to_keyword_arguments = dict.fromkeys(self.metadata.index.values, dict())
             for plugin_info in self._metadata_plugins:
                 label_to_file_path = {
                     file_path.stem.split("-")[-1]: file_path
                     for file_path in self.plugin_directory_path.glob(f"{plugin_info['code_key']}*")
                 }
                 for trial_id, row in self.metadata.iterrows():
-                    self._trial_id_to_keyword_arguments[trial_id] = plugin_info["file_path_to_value"](
-                        label_to_file_path[row[plugin_info["human_readable_index"]]], self, trial_id
-                    )
+                    self._trial_id_to_keyword_arguments[trial_id][plugin_info["bikipy_trial_key"]] = plugin_info[
+                        "file_path_to_value"
+                    ](label_to_file_path[row[plugin_info["human_readable_index"]]], self, trial_id)
 
         self._ingress_reader()
 
@@ -305,7 +306,7 @@ class BaseIngress(BikipyBase, ABC):
         )
         df.columns.names = (
             ["Stage", "Feature", "Location/Category"]
-            if self.experiment.is_trial_sequence
+            if self.experiment.has_trials_in_stages
             else ["Feature", "Location/Category"]
         )
         df.index.names = ["Animal ID"]
@@ -416,7 +417,7 @@ def init_settings(
 ) -> dict[str, str | dict]:
     logger.info(f"Generating experiment configuration at {project_root_directory}")
 
-    experiment_class = EXPERIMENT_NAME_TO_CLASS[experiment_name.strip().lower()]
+    experiment_class = EXPERIMENT_NAME_TO_CLASS[experiment_name]
 
     generic_settings = {
         "ingress_method": ingress_method,
@@ -440,10 +441,15 @@ def init_settings(
             "metadata_filename": "metadata.xlsx",
             "kinematic_data_file_extension": kinematic_data_file_extension,
             "experiment_class": experiment_name,
-            "trial_classes/stages": experiment_class.trial_class_names,
-            "stage_index_to_trial_class_name": experiment_class.stage_index_to_trial_class_name,
         },
     }
+
+    if experiment_class.has_trials_in_stages:
+        generic_settings["immutable"][
+            "stage_index_to_trial_class_name"
+        ] = experiment_class.stage_index_to_trial_class_name
+    else:
+        generic_settings["immutable"]["trial_classes"] = experiment_class.trial_class_names
 
     if dry_run:
         if not silent:

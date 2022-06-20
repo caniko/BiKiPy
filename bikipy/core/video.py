@@ -6,9 +6,10 @@ Classes that define videos should have this mixin: VideoMetadata, BaseExperiment
 barebones metadata, and its purpose is to either initialize or relay an existing VideoMetadata object
 """
 from functools import cached_property
-from typing import Optional
+from typing import Optional, Any
 
 import numpy as np
+from numpy import ndarray
 from pydantic import FilePath
 
 from bikipy.core.base_class import BikipyBase
@@ -39,10 +40,9 @@ class VideoMetadata(_VideoMetadataBase):
     @cached_property
     def video_metadata_can_be_defined(self) -> bool:
         return bool(
-            self.manual_fps is not None
-            and self.manual_recording_resolution is not None
-            and (self.manual_meters_per_pixel is not None or self.metric_resolution is not None)
-            or (self.video_path and (self.manual_meters_per_pixel is not None or self.metric_resolution is not None))
+            self.fps is not None
+            and self.recording_resolution is not None
+            and (self.metric_resolution is not None or self.manual_meters_per_pixel is not None)
         )
 
     @cached_property
@@ -95,14 +95,9 @@ class VideoMetadata(_VideoMetadataBase):
         return self._video_metadata_from_file[2]
 
     @cached_property
-    def _video_metadata_from_file(self) -> tuple[NDArrayInt16, float, NDArrayUint8]:
+    def _video_metadata_from_file(self) -> tuple[None, None, None] | tuple[ndarray, Any, Any]:
         if not self.video_path:
-            msg = (
-                "Requested attribute, could be: FPS, resolution, or frame could not be defined. "
-                "Either define these manually (manual_fps, manual_recording_resolution), or provide path to video;"
-                "frame requires video_path to be defined."
-            )
-            raise AttributeError(msg)
+            return None, None, None
 
         frame, horizontal_resolution, vertical_resolution, fps = get_video_data(self.video_path)
 
@@ -116,12 +111,22 @@ class VideoMetadataMixin(_VideoMetadataBase):
     def video(self):
         if self.manual_video:
             return self.manual_video
-        return VideoMetadata(
+        new_video = VideoMetadata(
+            video_path=self.video_path,
             manual_meters_per_pixel=self.manual_meters_per_pixel,
             manual_fps=self.manual_fps,
             manual_recording_resolution=self.manual_recording_resolution,
             metric_resolution=self.metric_resolution,
         )
+        assert new_video.video_metadata_can_be_defined
+        return new_video
+
+    @property
+    def video_metadata_can_be_defined(self):
+        try:
+            return bool(self.video_metadata)
+        except AssertionError:
+            return False
 
     @property
     def video_metadata(self):
