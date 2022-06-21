@@ -44,7 +44,7 @@ def motion_multi_indexer_for_quadrant(category: Any, level: int):
 class Quadrant(BikipyBase):
     corners: NDArrayFp64
     framewise_confined_coordinates: NDArrayFp64
-    meters_per_pixel: float
+    meters_per_pixel: NDArrayFp64
     fps: float
     quadrant_index: int
 
@@ -66,7 +66,7 @@ class Quadrant(BikipyBase):
 
 
 class RectangleEnclosedExperiment(BaseExperiment):
-    center_box_to_recording_resolution_ratio: ClassVar[Optional[float]] = None
+    center_box_to_spatial_resolution_ratio: ClassVar[Optional[float]] = None
     rectangle_2d_bin: ClassVar[tuple[int, int]] = (2, 2)
 
     @classmethod
@@ -92,7 +92,7 @@ class RectangleEnclosedExperiment(BaseExperiment):
             # ["Gaussian", "CenterToPeriphery"],
             *quadrant_summary_columns,
         ]
-        if cls.center_box_to_recording_resolution_ratio:
+        if cls.center_box_to_spatial_resolution_ratio:
             result += [
                 *motion_multi_indexer("Center", cls.motion_column_index_levels),
                 *perimeter_multi_indexer("Center", cls.motion_column_index_levels),
@@ -104,13 +104,13 @@ class RectangleEnclosedExperiment(BaseExperiment):
     def trial_keyword_arguments(self, trial_id: Hashable) -> dict:
         result = super().trial_keyword_arguments(trial_id)
         result["rectangle_2d_bin"] = self.rectangle_2d_bin
-        result["center_box_to_recording_resolution_ratio"] = self.center_box_to_recording_resolution_ratio
+        result["center_box_to_spatial_resolution_ratio"] = self.center_box_to_spatial_resolution_ratio
         return result
 
 
 class RectangleEnclosedTrial(BaseTrial):
     rectangle_2d_bin: quadrant_grid_typing = (2, 2)
-    center_box_to_recording_resolution_ratio: Optional[float]
+    center_box_to_spatial_resolution_ratio: Optional[float]
 
     @validator("inspect_directory")
     def make_categorical_inspection_sub_dirs(cls, value):
@@ -132,7 +132,7 @@ class RectangleEnclosedTrial(BaseTrial):
 
     @cached_property
     def gaussian_center_to_periphery_score(self) -> float:
-        func = gaussian_scoring_field(self.tuple_recording_resolution)
+        func = gaussian_scoring_field(tuple(self.video.metric_resolution))
         scores = np.array(
             [
                 func(*coordinate)
@@ -144,8 +144,8 @@ class RectangleEnclosedTrial(BaseTrial):
 
     @cached_property
     def quadrant_grid_coordinate_to_corners(self) -> dict[quadrant_grid_typing, NDArrayFp64]:
-        horizontal_uniform_distance = self.horizontal_resolution / self.rectangle_2d_bin[0]
-        vertical_uniform_distance = self.vertical_resolution / self.rectangle_2d_bin[1]
+        horizontal_uniform_distance = self.video.metric_horizontal_resolution / self.rectangle_2d_bin[0]
+        vertical_uniform_distance = self.video.metric_vertical_resolution / self.rectangle_2d_bin[1]
         result = {}
         for h in range(1, self.rectangle_2d_bin[0] + 1):
             horizontal_coordinate_min = horizontal_uniform_distance * (h - 1)
@@ -162,9 +162,11 @@ class RectangleEnclosedTrial(BaseTrial):
                         (horizontal_coordinate_min, vertical_coordinate_max),
                     )
                 )
-                if self.center_translation is not None:
-                    quadrant += self.center_translation
+
+                if self.center_meter_translation is not None:
+                    quadrant += self.center_meter_translation
                 result[(h, v)] = quadrant
+
         return result
 
     @cached_property
@@ -187,16 +189,16 @@ class RectangleEnclosedTrial(BaseTrial):
         Left to right, top to down
         :return:
         """
-        result = {}
-        for quadrant_index, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items():
-            result[quadrant_grid_coordinate] = Quadrant(
+        return {
+            quadrant_grid_coordinate: Quadrant(
                 corners=self.quadrant_grid_coordinate_to_corners[quadrant_grid_coordinate],
                 framewise_confined_coordinates=self.framewise_confined_coordinates,
                 meters_per_pixel=self.meters_per_pixel,
-                fps=self.fps,
+                fps=self.video.fps,
                 quadrant_index=quadrant_index,
             )
-        return result
+            for quadrant_index, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items()
+        }
 
     @cached_property
     def location_sequence_quadrant(self) -> NDArrayFp64:
@@ -209,7 +211,7 @@ class RectangleEnclosedTrial(BaseTrial):
 
             raw_location_sequence_quadrant[quadrant.confinement_boolean_index] = quadrant_index
 
-        return np.array(reduce_repeating_sequences(raw_location_sequence_quadrant, round(self.fps * 0.35)))
+        return np.array(reduce_repeating_sequences(raw_location_sequence_quadrant, round(self.video.fps * 0.35)))
 
     @cached_property
     def quadrant_grid_coordinate_to_entries(self) -> dict[quadrant_grid_typing, int]:
@@ -228,17 +230,17 @@ class RectangleEnclosedTrial(BaseTrial):
     # Center vs Periphery ==============================================================
     @cached_property
     def center_rectangle_corners(self) -> NDArrayFp64:
-        if self.center_box_to_recording_resolution_ratio is None:
-            msg = "center_box_to_recording_resolution_ratio must be defined for center and periphery analysis"
+        if self.center_box_to_spatial_resolution_ratio is None:
+            msg = "center_box_to_spatial_resolution_ratio must be defined for center and periphery analysis"
             raise AttributeError(msg)
 
-        center_pixel_lengths = self.recording_resolution / self.center_box_to_recording_resolution_ratio
+        center_pixel_lengths = self.video.metric_resolution / self.center_box_to_spatial_resolution_ratio
         center_point_to_center_box_side_normal_lengths = center_pixel_lengths / 2.0
 
-        x_short = self.recording_center_pixel[0] - center_point_to_center_box_side_normal_lengths[0]
-        x_long = self.recording_center_pixel[0] + center_point_to_center_box_side_normal_lengths[0]
-        y_short = self.recording_center_pixel[1] + center_point_to_center_box_side_normal_lengths[1]
-        y_long = self.recording_center_pixel[1] - center_point_to_center_box_side_normal_lengths[1]
+        x_short = self.video.center_meters[0] - center_point_to_center_box_side_normal_lengths[0]
+        x_long = self.video.center_meters[0] + center_point_to_center_box_side_normal_lengths[0]
+        y_short = self.video.center_meters[1] + center_point_to_center_box_side_normal_lengths[1]
+        y_long = self.video.center_meters[1] - center_point_to_center_box_side_normal_lengths[1]
 
         return np.array(((x_short, y_short), (x_short, y_long), (x_long, y_long), (x_long, y_short)))
 
@@ -255,7 +257,7 @@ class RectangleEnclosedTrial(BaseTrial):
         return get_combined_features_from_merged_motion_island_data(
             self.center_boolean_index,
             self.framewise_confined_coordinates,
-            self.fps,
+            self.video.fps,
         )
 
     @cached_property
@@ -263,7 +265,7 @@ class RectangleEnclosedTrial(BaseTrial):
         return get_combined_features_from_merged_motion_island_data(
             self.periphery_boolean_index,
             self.framewise_confined_coordinates,
-            self.fps,
+            self.video.fps,
         )
 
     @cached_property
@@ -289,15 +291,15 @@ class RectangleEnclosedTrial(BaseTrial):
 
     @cached_property
     def seconds_on_center(self) -> int:
-        return np.sum(self.center_boolean_index) / self.fps
+        return np.sum(self.center_boolean_index) / self.video.fps
 
     @cached_property
     def seconds_on_periphery(self) -> int:
-        return np.sum(self.periphery_boolean_index) / self.fps
+        return np.sum(self.periphery_boolean_index) / self.video.fps
 
     @property
     def motion_features(self) -> list:
-        if self.recording_resolution is None:
+        if self.video.recording_resolution is None:
             return super().motion_features
 
         quadrant_motion_values = []
@@ -313,7 +315,7 @@ class RectangleEnclosedTrial(BaseTrial):
             *quadrant_motion_values,
         ]
 
-        if self.center_box_to_recording_resolution_ratio:
+        if self.center_box_to_spatial_resolution_ratio:
             result.extend(
                 [
                     *self.motion_center.values(),
@@ -343,41 +345,3 @@ def gaussian_scoring_field(resolution: NDArrayInt16, scale: int = 1):
 
     scale_as_float = float(scale)
     return lambda x, y: model[round(x * scale_as_float)][round(y * scale_as_float)]
-
-
-@lru_cache
-def _compute_quadrant_location_sequence(quadrants, number_of_frames: int, fps: float):
-    result = np.zeros(number_of_frames, dtype=np.uint8)
-    for i, grid_coord in enumerate(quadrants, start=1):
-        result[grid_coord] = i
-    return np.array(reduce_repeating_sequences(result, round(fps * 0.35)))
-
-
-def _compute_quadrant_grid_coordinates(
-    rectangle_2d_bin: tuple[int, int], recording_resolution: tuple[int, int], translation: Optional[NDArrayFp64]
-) -> NDArrayFp64:
-    horizontal_resolution, vertical_resolution = recording_resolution
-
-    horizontal_uniform_distance = horizontal_resolution / rectangle_2d_bin[0]
-    vertical_uniform_distance = vertical_resolution / rectangle_2d_bin[1]
-    result = {}
-    for h in range(1, rectangle_2d_bin[0]):
-        horizontal_coordinate_min = horizontal_uniform_distance * (h - 1)
-        horizontal_coordinate_max = horizontal_uniform_distance * h
-        for v in range(1, rectangle_2d_bin[1]):
-            vertical_coordinate_min = vertical_uniform_distance * (v - 1)
-            vertical_coordinate_max = vertical_uniform_distance * v
-
-            quadrant = np.array(
-                (
-                    (horizontal_coordinate_min, vertical_coordinate_min),
-                    (horizontal_coordinate_max, vertical_coordinate_min),
-                    (horizontal_coordinate_max, vertical_coordinate_max),
-                    (horizontal_coordinate_min, vertical_coordinate_min),
-                )
-            )
-            if translation is not None:
-                quadrant += translation
-            result[(h, v)] = quadrant
-
-    return result

@@ -29,8 +29,6 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
 
     reference_point_coco_path: Optional[FilePath]
     reference_point_array: Optional[NDArrayInt16]
-    inspect_image_path: Optional[FilePath]
-    inspect_image_array: Optional[NDArrayFp64]
 
     category: ClassVar[Optional[str]] = "perimeter"
     required_video_metadata_fields = {"recording_resolution"}
@@ -40,56 +38,26 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
         ...
 
     @abstractmethod
-    def change_reference(self, new_reference: Optional[NDArrayFp64], **new_inspect_image_kwargs):
+    def change_reference(self, new_reference: Optional[NDArrayFp64]):
         """"""
         ...
 
     @abstractmethod
     def plot_perimeter(
         self,
-        perimeter_border_normal_pixel_magnitude: Optional[float],
+        perimeter_border_normal_pixels: Optional[float] = None,
         ax: Any = None,
         include_geometric_legend: bool = False,
         colormap: Any = None,
     ):
         ...
 
-    @staticmethod
-    def _new_inspect_image(
-        perimeter,
-        new_inspect_image: Optional[NDArrayFp64],
-        new_inspect_image_path: Optional[FilePath],
-    ):
-        if new_inspect_image_path:
-            if not (new_inspect_image_path := Path(new_inspect_image_path)).exists():
-                msg = f"new_inspect_image_path, {new_inspect_image_path}, does not exist"
-                raise AttributeError(msg)
-            perimeter.inspect_image = new_inspect_image_path
-        elif np.any(new_inspect_image):
-            perimeter.inspect_image = new_inspect_image
-        else:
-            perimeter.inspect_image = None
-        return perimeter
-
     @root_validator(pre=True)
     def mutually_exclusive(cls, values):
-        if all(key in values and values[key] for key in ("inspect_image_path", "inspect_image_array")):
-            msg = "inspect_image_path and inspect_image_array must be defined " "mutually exclusive"
-            raise AttributeError(msg)
         if all(key in values and values[key] for key in ("reference_point_coco_path", "reference_point_array")):
             msg = "reference_point_coco_path and reference_point_array must be " "defined mutually exclusive"
             raise AttributeError(msg)
         return values
-
-    @property
-    def inspect_image(self):
-        if self.inspect_image_array is None and not self.inspect_image_path:
-            return None
-        return read_image(self.inspect_image_path) if self.inspect_image_path else self.inspect_image_array
-
-    @inspect_image.setter
-    def inspect_image(self, value):
-        self.inspect_image_array = np.asarray(value)
 
     @property
     def reference_point(self):
@@ -132,7 +100,6 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
         def _change_reference_loop_func(reference_point, img_name):
             return self.change_reference(
                 reference_point,
-                new_inspect_image_path=image_root / img_name if image_root else None,
             )
 
         coco_array = get_coco_array_from_path_or_array(metadata_path, coco_array)
@@ -283,8 +250,8 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
         if not ax:
             fig, ax = plt.subplots()
 
-        if self.inspect_image is not None:
-            ax.imshow(self.inspect_image)
+        if self.video.frame is not None:
+            ax.imshow(self.video.frame)
 
         if coordinates is not None:
             coordinates = np.asarray(coordinates)
@@ -298,21 +265,6 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
         ax.set_title(self.best_id)
 
         return self.plot_perimeter(**perimeter_plot_kwargs if perimeter_plot_kwargs else {}, ax=ax)
-
-    @staticmethod
-    def perimeter_set_from_image_name_to_perimeters(image_name_to_perimeters: "dict[str, AnyPerimeter]"):
-        result = {}
-        for image_name, perimeters in image_name_to_perimeters.items():
-            filtered_perimeters, restricted_perimeters = [], []
-            for label, perimeter in perimeters.items():
-                if isinstance(label, str) and label.lower().startswith("restricted"):
-                    restricted_perimeters.append(perimeter)
-                else:
-                    filtered_perimeters.append(perimeter)
-            result[image_name] = PerimeterSet(
-                perimeters=filtered_perimeters, restricted_perimeters=restricted_perimeters
-            )
-        return result
 
 
 AnyPerimeter = TypeVar("AnyPerimeter", bound=BasePerimeter)
@@ -511,7 +463,7 @@ class PerimeterSet(BikipyBase):
     @property
     def all_perimeters(self) -> tuple[AnyPerimeter, ...]:
         if not self.restricted_perimeters:
-            return self.perimeters
+            return tuple(self.perimeters)
         return *self.perimeters, *self.restricted_perimeters
 
     @property
@@ -538,3 +490,16 @@ def perimeter_set_from_makesense(
             return PolygonPerimeter.from_makesense_coco_polygon(perimeter_path, **perimeter_kwargs)
         case _:
             raise ValueError
+
+
+def perimeter_set_from_image_name_to_perimeters(image_name_to_perimeters: "dict[str, AnyPerimeter]"):
+    result = {}
+    for image_name, perimeters in image_name_to_perimeters.items():
+        filtered_perimeters, restricted_perimeters = [], []
+        for label, perimeter in perimeters.items():
+            if isinstance(label, str) and label.lower().startswith("restricted"):
+                restricted_perimeters.append(perimeter)
+            else:
+                filtered_perimeters.append(perimeter)
+        result[image_name] = PerimeterSet(perimeters=filtered_perimeters, restricted_perimeters=restricted_perimeters)
+    return result

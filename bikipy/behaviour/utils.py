@@ -28,7 +28,7 @@ def reduce_repeating_sequences(
     repeating_sequence: NDArray,
     frame_tolerance: int,
     connector_element: Any = None,
-) -> list[Any, ...]:
+) -> list:
     """
     Reduce consecutive sub-sequences in string sequence
 

@@ -1,3 +1,4 @@
+from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
@@ -5,6 +6,7 @@ import cv2
 from pydantic import FilePath
 
 
+@lru_cache
 def get_video_data(video_path: FilePath, frame_time: Optional[str | int]):
     """
     Get a frame from a given relative location, and resolution info of video

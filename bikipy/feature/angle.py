@@ -1,6 +1,7 @@
 from typing import Optional, Sequence
 from warnings import warn
 
+import numba
 import numpy as np
 from numba import njit
 

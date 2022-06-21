@@ -22,7 +22,7 @@ summary_motion_features = (
 _zero_return = {feature: 0.0 for feature in summary_motion_features}
 
 
-def units_pixels_per_second_frame(meters_per_pixel: float, fps: float):
+def units_pixels_per_second_frame(meters_per_pixel: NDArrayFp64, fps: float):
     return meters_per_pixel * fps
 
 

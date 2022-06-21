@@ -97,6 +97,12 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
                 cloned_df = cloned_df.iloc[self.raw_frames - self.crop_frames :]
             else:
                 cloned_df = cloned_df.iloc[: self.crop_frames]
+
+        if self.reverse_y_axis:
+            cloned_df.loc[:, pd.IndexSlice[:, "y"]] = (
+                self.video.vertical_resolution - cloned_df.loc[:, pd.IndexSlice[:, "y"]]
+            )
+
         return cloned_df
 
     @property
@@ -159,20 +165,6 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
             roi: np.sum(self.region_of_interest_to_boolean_index[roi]) / len(self.raw_df)
             for roi in self.tracked_point_labels
         }
-
-    @property
-    def x_add(self) -> float:
-        # The only component that effects x is x_axis_crop_end_point
-        return self.x_axis_crop_end_point
-
-    @cached_property
-    def y_add(self) -> float:
-        add_y = 0
-        if self.reverse_y_axis:
-            add_y -= self.video.vertical_resolution
-        if self.y_axis_crop_end_point:
-            add_y += self.y_axis_crop_end_point
-        return add_y
 
     @classmethod
     def init_many_mapper(

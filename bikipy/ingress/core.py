@@ -315,8 +315,10 @@ class BaseIngress(BikipyBase, ABC):
 
     def save_analysis_data(self):
         # self.analysis_df.to_parquet(self.result_directory_path / f"animal_id_indexed_result_data.parquet")
-        self.analysis_df
-        self.analysis_df.to_excel(self.result_directory_path / "animal_id_indexed_result_data.xlsx")
+        self.experiment.combined_feature_motion_df
+        self.experiment.combined_feature_motion_df.to_excel(
+            self.result_directory_path / "animal_id_indexed_result_data.xlsx"
+        )
 
     def update_settings(self, delete_outdated: bool = False, dry_run: bool = False) -> dict:
         new_settings = init_settings(

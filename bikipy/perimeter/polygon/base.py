@@ -7,13 +7,12 @@ from typing import Any, ClassVar, Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from pydantic import DirectoryPath, FilePath, validator
 
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
-from bikipy.perimeter.base import BasePerimeter
+from bikipy.perimeter.base import BasePerimeter, perimeter_set_from_image_name_to_perimeters
 from bikipy.utils.io.makesense import image_name_to_point_from_makesense, read_makesense_rectangle
-from bikipy.utils.math.geometry import clockwise_sort_points, expand_bikipy_perimeter
+from bikipy.utils.math.geometry import clockwise_sort_points, expand_bikipy_perimeter, expand_parallelogram
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 from bikipy.utils.math.vector import (
     normal_from_line_to_point,
@@ -55,17 +54,12 @@ class PolygonPerimeter(BasePerimeter):
     def corners(self):
         return self.corners_in_pixels * self.video.meters_per_pixel
 
-    def expand(self, perimeter_border_normal_pixel_magnitude: float | NDArrayFp64):
-        """
-        :param perimeter_border_normal_pixel_magnitude: The magnitude of the normal between
-            the perimeter and the perimeter given in pixels
-        :return:
-        """
+    def expand(self, perimeter_border_normal_meters: float | NDArrayFp64):
         if self._polygon_order == 4:
             from bikipy.perimeter.polygon.parallelogram import ParallelogramPerimeter
 
             border_obj = ParallelogramPerimeter(
-                corners=expand_bikipy_perimeter(self, perimeter_border_normal_pixel_magnitude),
+                corners=expand_parallelogram(self, perimeter_border_normal_meters),
                 inspect_image_array=self.inspect_image,
             )
         else:
@@ -74,7 +68,7 @@ class PolygonPerimeter(BasePerimeter):
 
         return border_obj
 
-    def closest_sides_to_coordinates(self, coordinates: NDArrayFp64, inspect: bool = True):
+    def normal_from_closest_point_on_edge(self, coordinates: NDArrayFp64, inspect: bool = True):
         distance_sets = np.array(
             [
                 point_to_line_segment_distance(coordinates, line_segment_pair)
@@ -100,7 +94,7 @@ class PolygonPerimeter(BasePerimeter):
         (
             closest_corner_start_point,
             closest_corner_vectors,
-        ) = self.closest_sides_to_coordinates(coordinates)
+        ) = self.normal_from_closest_point_on_edge(coordinates)
 
         return normal_from_line_to_point(closest_corner_vectors, closest_corner_start_point, coordinates)
 
@@ -125,13 +119,15 @@ class PolygonPerimeter(BasePerimeter):
 
     def plot_perimeter(
         self,
-        perimeter_border_normal_pixel_magnitude: Optional[float],
+        perimeter_border_normal_pixels: Optional[float] = None,
         ax: Any = None,
         include_geometric_legend: bool = False,
         colormap: Any = None,
     ):
         if not ax:
             fig, ax = plt.subplots()
+
+        corners = self.corners if self.video.frame is None else self.corners_in_pixels
 
         legends = []
         for index in range(len(self.corners)):
@@ -148,8 +144,8 @@ class PolygonPerimeter(BasePerimeter):
             )
             ax.scatter(*self.edge_midpoints[index])
 
-            if perimeter_border_normal_pixel_magnitude:
-                perimeter = self.expand(perimeter_border_normal_pixel_magnitude)
+            if perimeter_border_normal_pixels:
+                perimeter = self.expand(perimeter_border_normal_pixels)
                 border_a = perimeter[index]
                 border_b = perimeter[following_index]
                 ax.plot(
@@ -164,7 +160,7 @@ class PolygonPerimeter(BasePerimeter):
                     self._add_label_to_str(f"side {index}"),
                     self._add_label_to_str(f"midpoint {index}"),
                 ]
-                if perimeter_border_normal_pixel_magnitude:
+                if perimeter_border_normal_pixels:
                     legend.append(self._add_label_to_str(f"perimeter {index}"))
 
         plt.legend(legends, bbox_to_anchor=(1.04, 0.5), loc="center left")
@@ -327,7 +323,7 @@ class PolygonPerimeter(BasePerimeter):
                 **perimeter_kwargs,
             )
 
-        return cls.perimeter_set_from_image_name_to_perimeters(result)
+        return perimeter_set_from_image_name_to_perimeters(result)
 
 
 def _coco_polygon_annotation(flat_annotation_data: Sequence):

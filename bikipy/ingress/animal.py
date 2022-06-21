@@ -14,18 +14,13 @@ class AnimalIngress(BaseIngress):
     ingress_method: ClassVar[str] = "animal"
 
     def _ingress_reader(self):
-        def stage_index_from_file_path(file_path: FilePath) -> int:
-            return int(file_path.stem.split(".")[0])
-
         for animal_dir in self.dataset_directory_path.iterdir():
             animal_id = int(animal_dir.stem) if animal_dir.stem.isdigit() else animal_dir.stem
 
             for trial_data_filename in animal_dir.glob(f"*{self.kinematic_data_file_extension}"):
-                trial_data_filename = Path(trial_data_filename)
-                stage_index = stage_index_from_file_path(trial_data_filename)
+                stage_index = int(trial_data_filename.stem.split(".")[0])
 
                 trial_id = _define_trial_id(animal_id, stage_index)
-                trial_id = int(trial_id) if trial_id.isdigit() else trial_id
 
                 if trial_id not in self.metadata.index:
                     continue
@@ -49,7 +44,10 @@ class AnimalIngress(BaseIngress):
                         plugin_data_files[0], trial_id, self
                     )
 
-                self._trial_id_to_keyword_arguments[trial_id].update(trial_id_kwargs)
+                self._trial_id_to_keyword_arguments[trial_id] = {
+                    **self._trial_id_to_keyword_arguments[trial_id],
+                    **trial_id_kwargs,
+                }
 
     def verify_project_structure(self):
         animal_ids = set()

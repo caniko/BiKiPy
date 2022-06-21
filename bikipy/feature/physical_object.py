@@ -12,7 +12,7 @@ from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BikipyBase
 from bikipy.core.typing import NDArrayBool, NDArrayFp64, NDArrayInt16
-from bikipy.core.video import VideoMetadata
+from bikipy.core.video import VideoMetadata, VideoMetadataMixin, convert_meters_to_pixels
 from bikipy.feature.attention.main import (
     gaze_direction_filter,
     proximity_filter,
@@ -35,12 +35,11 @@ class PhysicalObject(BikipyBase):
     reader: Reader
     gaze_start_point_label: str
     gaze_travel_direction_point_label: str
-    perimeter_border_normal_magnitude: float | NDArrayFp64
+    perimeter_border_normal_meters: float | NDArrayFp64
     maximum_radians_inter_gaze_perimeter: float
     minimum_seconds_attention: float
     maximum_seconds_distraction: float
 
-    inspect_image: Optional[NDArray]
     inspect_figure_file_path: Optional[Path]
     _fig: Any = None
     _axes: Any = None
@@ -83,7 +82,8 @@ class PhysicalObject(BikipyBase):
             self.perimeter,
             self._gaze_travel_direction_point,
             self._gaze_start_point,
-            self.perimeter_border_normal_magnitude,
+            self.perimeter_border_normal_meters,
+            inspect_video=self.video,
             **self._attention_proximity_filter_kwargs,
         )
 
@@ -119,24 +119,21 @@ class PhysicalObject(BikipyBase):
     def inspect_attention(self):
         self._exporting_figure = True
 
-        for rows in self.attention_axes:
-            for ax in rows:
-                self.perimeter.plot_perimeter(
-                    ax=ax, perimeter_border_normal_magnitude=self.perimeter_border_normal_magnitude
-                )
+        gaze_travel_direction_point_pixels = convert_meters_to_pixels(self._gaze_travel_direction_point, self.video)
 
         self.attention_axes[1][0].scatter(
-            *self._gaze_travel_direction_point[self.logical_location_and_gaze].T,
+            *gaze_travel_direction_point_pixels[self.logical_location_and_gaze].T,
             alpha=MATPLOTLIB_SCATTER_ALPHA,
         )
 
         self.attention_axes[1][1].scatter(
-            *self._gaze_travel_direction_point[self.attention_observance_boolean_index].T,
+            *gaze_travel_direction_point_pixels[self.attention_observance_boolean_index].T,
             alpha=MATPLOTLIB_SCATTER_ALPHA,
         )
 
         plt.tight_layout()
-        save_plt_fig_cv(self.attention_fig, self.inspect_figure_file_path)
+        # save_plt_fig_cv(self.attention_fig, self.inspect_figure_file_path)
+        plt.savefig(self.inspect_figure_file_path.with_suffix(".svg"))
         plt.close(self.attention_fig)
 
     @property
@@ -158,24 +155,17 @@ class PhysicalObject(BikipyBase):
         return self._axes
 
     def _init_matplotlib(self):
-        if self.inspect_image is not None or self.video.frame is not None:
-            image = self.inspect_image if self.inspect_image is not None else self.video.frame
-            x, y = image.shape[:2]
-            self._fig, self._axes = plt.subplots(nrows=2, ncols=2, figsize=(x / 10.0, y / 10.0))
-
+        self._fig, self._axes = plt.subplots(
+            nrows=2, ncols=2, figsize=(self.video.horizontal_resolution / 50.0, self.video.vertical_resolution / 50.0)
+        )
+        if self.video.frame is not None:
             for row_ax in self._axes:
                 for col_ax in row_ax:
-                    col_ax.imshow(self.inspect_image)
-        elif self.video.recording_resolution is not None:
-            x, y = self.recording_resolution
-            self._fig, self._axes = plt.subplots(nrows=2, ncols=2, figsize=(x / 10.0, y / 10.0))
-        else:
-            self._fig, self._axes = plt.subplots(nrows=2, ncols=2, dpi=500)
+                    col_ax.imshow(self.video.frame)
 
         self.attention_axes[1][0].set_title("proximity_filtered & gaze_filtered")
         self.attention_axes[1][1].set_title("Observation")
 
-        self._fig.gca().invert_yaxis()
         self._fig.suptitle("Observation cumulative filtration analysis")
 
     @cached_property
@@ -195,7 +185,7 @@ class PhysicalObject(BikipyBase):
         return self.reader[self.gaze_travel_direction_point_label]
 
 
-class PhysicalObjectSet(BikipyBase):
+class PhysicalObjectSet(VideoMetadataMixin):
     """
     The physical object set provides useful methods that compute relational features of physical-objects.
     Some methods are designed specifically for sets with a specific number of objects, while others are general.
@@ -216,7 +206,7 @@ class PhysicalObjectSet(BikipyBase):
 
     @cached_property
     def _video(self):
-        return reduce(lambda x, y: VideoMetadata.join(x.video, y.video), self.physical_objects)
+        return reduce(VideoMetadata.join, (physical_object.video for physical_object in self.physical_objects))
 
     @classmethod
     def from_perimeter(cls, *perimeters, **kwargs):
@@ -239,10 +229,6 @@ class PhysicalObjectSet(BikipyBase):
     @cached_property
     def frames(self) -> int:
         return len(self._first_object)
-
-    @property
-    def fps(self) -> float:
-        return self._first_object.fps
 
     @cached_property
     def observing_per_frame(self):
@@ -370,10 +356,10 @@ class PhysicalObjectSet(BikipyBase):
 
     @validator("physical_objects", pre=True)
     def identical_fps(cls, value):
-        if any(value[0].fps != physical_object.fps for physical_object in value[1:]):
+        if any(value[0].video.fps != physical_object.video.fps for physical_object in value[1:]):
             msg = (
                 f"Frames per second differ across physical objects:\n"
-                f"{', '.join((physical_object.fps for physical_object in value))}"
+                f"{', '.join((physical_object.video.fps for physical_object in value))}"
             )
             raise AttributeError(msg)
         return value

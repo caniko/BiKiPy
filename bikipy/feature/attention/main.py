@@ -28,7 +28,7 @@ def proximity_filter(
     perimeter: AnyPerimeter,
     inside_perimeter_border: NDArrayFp64,
     outside_perimeter: NDArrayFp64,
-    perimeter_border_normal_pixel_magnitude: float | NDArrayFp64,
+    perimeter_border_normal_meters: float | NDArrayFp64,
     inspect_video: Optional[VideoMetadata] = None,
     inspect: bool = False,
     inspection_ax: Any = None,
@@ -40,20 +40,20 @@ def proximity_filter(
     :param perimeter:
     :param inside_perimeter_border: Cartesian coordinates of the inside_perimeter_border
     :param outside_perimeter: Cartesian coordinates of the center of mass
-    :param perimeter_border_normal_pixel_magnitude: The magnitude of the normal between the perimeter and the perimeter given in pixels
+    :param perimeter_border_normal_meters: The magnitude of the normal between the perimeter and the perimeter in meters
     :param inspect: If True, generate and view an analytics of the resulting filter
     :param inspection_ax: matplotlib Axes that the inspection plots will (optionally) be saved in
     :type perimeter: AnyPerimeter
     :type inside_perimeter_border: NDArrayFp64
     :type outside_perimeter: NDArrayFp64
-    :type perimeter_border_normal_pixel_magnitude: float | NDArrayFp64
+    :type perimeter_border_normal_meters: float | NDArrayFp64
     :type inspect: bool
     :type inspection_ax: Any
     :return:
     :rtype: NDArrayFp64
     """
     # Remove inside_perimeter_border points that aren't inside the perimeter
-    perimeter_border = perimeter.expand(perimeter_border_normal_pixel_magnitude)
+    perimeter_border = perimeter.expand(perimeter_border_normal_meters)
 
     if perimeter.impenetrable:
         inside_perimeter_border_boolean_index = perimeter_border.coordinate_confinement_boolean_index(
@@ -81,7 +81,12 @@ def proximity_filter(
 
         inside_perimeter_border_pixels = convert_meters_to_pixels(inside_perimeter_border, inspect_video)
 
-        perimeter.plot(ax=ax)
+        perimeter.plot(
+            ax=ax,
+            perimeter_plot_kwargs={
+                "perimeter_border_normal_pixels": perimeter_border_normal_meters * inspect_video.pixels_per_meter
+            },
+        )
         ax.set_title("Proximity filter")
 
         ax.scatter(*inside_perimeter_border_pixels[result].T, marker=",", alpha=MATPLOTLIB_SCATTER_ALPHA, label="Valid")
@@ -128,13 +133,14 @@ def gaze_direction_filter(
 ) -> NDArrayBool:
     gaze_vector = gaze_travel_direction_point - gaze_start_point
 
-    closest_corner_vectors = perimeter.closest_sides_to_coordinates(gaze_travel_direction_point)
+    closest_points_on_edges = perimeter.closest_point_on_edge_to_coordinates(gaze_travel_direction_point)
+    normal_from_closest_point_on_edge = perimeter.normal_from_closest_point_on_edge(gaze_travel_direction_point)
 
     direction_point_is_closer_than_start_point = np.linalg.norm(
-        closest_corner_vectors - gaze_travel_direction_point, axis=1
-    ) >= np.linalg.norm(closest_corner_vectors - gaze_start_point, axis=1)
+        closest_points_on_edges - gaze_travel_direction_point, axis=1
+    ) <= np.linalg.norm(closest_points_on_edges - gaze_start_point, axis=1)
 
-    inner_angles = inner_angle(closest_corner_vectors, gaze_vector)
+    inner_angles = inner_angle(normal_from_closest_point_on_edge, gaze_vector)
 
     result = direction_point_is_closer_than_start_point & (np.abs(inner_angles) <= max_radians)
 
@@ -147,20 +153,17 @@ def gaze_direction_filter(
         else:
             ax = inspection_ax
 
-        gaze_travel_direction_point_pixels = convert_meters_to_pixels(
-            gaze_travel_direction_point, inspect_video.pixels_per_meter
-        )
-        closest_corner_vectors_pixels = convert_meters_to_pixels(closest_corner_vectors, inspect_video.pixels_per_meter)
+        gaze_travel_direction_point_pixels = convert_meters_to_pixels(gaze_travel_direction_point, inspect_video)
 
         perimeter.plot(ax=ax)
         ax.set_title("Gaze direction filter")
 
         ax.quiver(
             *gaze_travel_direction_point_pixels[result].T,
-            *closest_corner_vectors_pixels[result].T,
+            *gaze_vector[result].T,
             angles="xy",
-            scale_units="xy",
-            scale=1.0,
+            # scale_units="xy",
+            # scale=1.0,
             alpha=MATPLOTLIB_SCATTER_ALPHA,
             label="Valid",
             color="b",
@@ -169,10 +172,10 @@ def gaze_direction_filter(
         not_result = ~result
         ax.quiver(
             *gaze_travel_direction_point_pixels[not_result].T,
-            *closest_corner_vectors_pixels[not_result].T,
+            *gaze_vector[not_result].T,
             angles="xy",
-            scale_units="xy",
-            scale=1.0,
+            # scale_units="xy",
+            # scale=2.0,
             alpha=MATPLOTLIB_SCATTER_ALPHA,
             label="Invalid",
             color="r",
@@ -275,7 +278,7 @@ def perimeter_attention(
     eye_center: NDArrayFp64,
     nose: NDArrayFp64,
     fps: float,
-    perimeter_border_normal_pixel_magnitude: float | NDArrayFp64,
+    perimeter_border_normal_meters: float | NDArrayFp64,
     maximum_radians_inter_gaze_perimeter: float = 0.25 * np.pi,
     minimum_seconds_attention: float = 0.5,
     maximum_seconds_distraction: float = 0.5,
@@ -292,7 +295,7 @@ def perimeter_attention(
         Points across time defining the position of the animal nose
     fps: float
         Frames per second (fps) of the video the data was collected from
-    perimeter_border_normal_pixel_magnitude
+    perimeter_border_normal_meters
         The magnitude of the normal between the perimeter and the perimeter given in pixels
     maximum_radians_inter_gaze_perimeter: float
         Maximum radians between the gaze vector (eye_centre to nose) and perimeter tangent
@@ -324,7 +327,7 @@ def perimeter_attention(
         perimeter,
         nose,
         eye_center,
-        perimeter_border_normal_pixel_magnitude,
+        perimeter_border_normal_meters,
         **loc_filter_kwargs,
     )
 
@@ -356,9 +359,7 @@ def perimeter_attention(
             for ax in rows:
                 perimeter.plot_self(
                     plot_kwargs={"ax": ax},
-                    perimeter_plot_kwargs={
-                        "perimeter_border_normal_pixel_magnitude": perimeter_border_normal_pixel_magnitude
-                    },
+                    perimeter_plot_kwargs={"perimeter_border_normal_meters": perimeter_border_normal_meters},
                 )
 
         axes[1][0].set_title("proximity_filtered & gaze_filtered")

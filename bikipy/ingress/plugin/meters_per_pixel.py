@@ -7,7 +7,7 @@ from pydantic import DirectoryPath, FilePath
 from bikipy.core.typing import NDArrayFp64
 from bikipy.ingress.plugin.utils import get_file_label_from_3rd_str_in_split
 from bikipy.ingress.utils.io import initialize_metadata_data_frame, load_settings
-from bikipy.utils.io.makesense import read_first_makesense_line
+from bikipy.utils.io.makesense import read_first_makesense_line, read_makesense_line
 
 
 def meters_per_pixel_file_name_to_value(file_path: FilePath, *args, **kwargs):

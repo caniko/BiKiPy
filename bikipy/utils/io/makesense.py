@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from pydantic import FilePath
 
-from bikipy.core.typing import NDArrayFp64
+from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 
 logger = getLogger(__name__)
 
@@ -73,3 +73,7 @@ def get_only_point_from_makesense(data_path: FilePath) -> NDArrayFp64:
         raise ValueError(msg)
 
     return get_point_from_makesense_row(df.iloc[0])
+
+
+def recording_resolution_from_makesense_row(row: pd.Series) -> NDArrayInt16:
+    return np.array((row["x_res"], row["y_res"]), dtype=np.int16)

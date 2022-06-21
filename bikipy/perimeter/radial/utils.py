@@ -1,13 +1,19 @@
+from typing import Any
+
 import numpy as np
+from matplotlib import pyplot as plt
 
 from bikipy.core.typing import NDArrayFp64
 
 
-def plot_circle(center: NDArrayFp64, radius: float, ax):
+def plot_circle(center: NDArrayFp64, radius: NDArrayFp64 | float, ax: Any = None):
     angles = np.linspace(0, 2 * np.pi, 200)
 
-    x = center[0] + radius * np.cos(angles)
-    y = center[1] + radius * np.sin(angles)
+    result = center + radius * np.array([np.cos(angles), np.sin(angles)]).T
 
-    ax.plot(x, y)
+    if ax is None:
+        fig, ax = plt.subplots()
+
+    ax.plot(*result.T)
+
     return ax

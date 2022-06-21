@@ -51,12 +51,8 @@ class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
     _live: ClassVar[bool] = False
 
     @cached_property
-    def recording_center_pixel(self) -> NDArrayInt16:
-        return np.round(self.recording_resolution / 2)
-
-    @cached_property
-    def center_translation(self):
-        return self.recording_center_pixel - self.center if self.center is not None else None
+    def center_meter_translation(self):
+        return self.video.center_meters - self.center * self.video.meters_per_pixel if self.center is not None else None
 
     @staticmethod
     def multi_index_names(index_content: Iterable):
@@ -137,7 +133,7 @@ class BaseTrial(Behaviour):
     def _video(self):
         video = super()._video
         if self.perimeters:
-            perimeter_video = reduce(lambda x, y: VideoMetadata.join(x.video, y.video), self.perimeters)
+            perimeter_video = reduce(VideoMetadata.join, (perimeter.video for perimeter in self.perimeters))
             new_video = VideoMetadata.join(perimeter_video, video, ignore_incongruency=True)
 
             # The resolution on perimeters should be more correct than whatever
@@ -166,7 +162,7 @@ class BaseTrial(Behaviour):
 
         return reader_init_func(
             df_path=self.coordinate_data_path,
-            video=self.video,
+            manual_video=self.video,
             **self.reader_kwargs,
         )
 
@@ -180,13 +176,13 @@ class BaseTrial(Behaviour):
 
     @cached_property
     def experiment_seconds(self) -> int:
-        return self.framewise_confined_coordinates.shape[0] / self.fps
+        return self.framewise_confined_coordinates.shape[0] / self.video.fps
 
     @cached_property
     def motion(self) -> Motion:
         return Motion(
             coordinate_sequence=self.framewise_confined_coordinates,
-            fps=self.fps,
+            fps=self.video.fps,
         )
 
     @cached_property
@@ -228,7 +224,7 @@ class BaseTrial(Behaviour):
 
     @cached_property
     def _frame_tolerance(self) -> int:
-        return round(self.second_tolerance * self.fps)
+        return round(self.second_tolerance * self.video.fps)
 
 
 Trial = TypeVar("Trial", bound=BaseTrial)

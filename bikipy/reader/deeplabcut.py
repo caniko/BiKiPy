@@ -68,10 +68,6 @@ class DeepLabCutReader(BaseReader):
     def augmented(self) -> pd.DataFrame:
         result = super().augmented
 
-        if self.x_add or self.y_add:
-            result.loc[:, pd.IndexSlice[:, "x"]] += self.x_add
-            result.loc[:, pd.IndexSlice[:, "y"]] += self.y_add
-
         if self.midpoint_groups:
             midpoint_data, midpoint_based_midpoints = {}, {}
             for name, group in self.midpoint_groups.items():

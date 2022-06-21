@@ -16,7 +16,7 @@ class PhysicalObjectTrialMixin(BikipyBase):
     gaze_travel_direction_point_label: Optional[str] = Field(
         description="Label signifying the area where the gaze vector"
     )
-    perimeter_border_normal_metric_magnitude: Optional[float] = Field(
+    perimeter_border_normal_meters: Optional[float] = Field(
         description="The magnitude of the normal between the perimeter and the perimeter given in meters",
     )
 
@@ -61,7 +61,7 @@ class PhysicalObjectTrialMixin(BikipyBase):
             "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
             "minimum_seconds_attention": self.minimum_seconds_attention,
             "maximum_seconds_distraction": self.maximum_seconds_distraction,
-            "perimeter_border_normal_magnitude": self.perimeter_border_normal_metric_magnitude,
+            "perimeter_border_normal_meters": self.perimeter_border_normal_meters,
         }
 
         if self.physical_object_inspect:
@@ -82,8 +82,8 @@ class PhysicalObjectTrialMixin(BikipyBase):
         )
 
     @cached_property
-    def perimeter_border_normal_pixel_magnitude(self) -> float | NDArrayFp64:
-        return self.perimeter_border_normal_metric_magnitude * self.video.pixels_per_meter
+    def perimeter_border_normal_pixels(self) -> float | NDArrayFp64:
+        return self.perimeter_border_normal_meters * self.video.pixels_per_meter
 
 
 PhysicalObjectTrial = TypeVar("PhysicalObjectTrial", bound=PhysicalObjectTrialMixin)
