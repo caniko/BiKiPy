@@ -73,6 +73,13 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
     def crop_frames(self) -> int:
         return round(self.video.fps * self.crop_time_seconds)
 
+    @property
+    def required_video_metadata_fields(self) -> set:
+        base = {"meters_per_pixel", "recording_resolution"}
+        if self.crop_time_seconds:
+            base.add("fps")
+        return base
+
     @cached_property
     def augmented(self) -> pd.DataFrame:
         """
@@ -80,7 +87,12 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
         include midpoints and inner interpolations.
         """
         cloned_df = self.raw_df.copy()
-        if self.crop_frames and self.crop_frames < self.raw_frames:
+        if self.crop_time_seconds:
+            if self.crop_frames > self.raw_frames:
+                logger.warning(
+                    f"(cropping frames: {self.crop_time_seconds} seconds -> {self.crop_frames} frames) "
+                    f"> total of {self.raw_frames} frames"
+                )
             if self.crop_from_end:
                 cloned_df = cloned_df.iloc[self.raw_frames - self.crop_frames :]
             else:
@@ -115,14 +127,6 @@ class BaseReader(BikipyBaseHashable, VideoMetadataMixin, ABC):
     @cached_property
     def raw_df(self) -> pd.DataFrame:
         return FILE_EXTENSION_to_PANDAS_READER[self.df_path.suffix](self.df_path)
-
-    @staticmethod
-    def get_info_from_video_path(video_path) -> dict:
-        _frame, x_res, y_res, fps = get_video_data(video_path)
-        return {
-            "recording_resolution": (x_res, y_res),
-            "fps": fps,
-        }
 
     @property
     def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:

@@ -1,4 +1,4 @@
-from functools import cached_property
+from functools import cached_property, reduce
 from logging import getLogger
 from pathlib import Path
 from typing import Any, ClassVar, Iterable, Optional, Sequence
@@ -12,6 +12,7 @@ from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BikipyBase
 from bikipy.core.typing import NDArrayBool, NDArrayFp64, NDArrayInt16
+from bikipy.core.video import VideoMetadata
 from bikipy.feature.attention.main import (
     gaze_direction_filter,
     proximity_filter,
@@ -34,7 +35,7 @@ class PhysicalObject(BikipyBase):
     reader: Reader
     gaze_start_point_label: str
     gaze_travel_direction_point_label: str
-    perimeter_border_normal_pixel_magnitude: float | NDArrayFp64
+    perimeter_border_normal_magnitude: float | NDArrayFp64
     maximum_radians_inter_gaze_perimeter: float
     minimum_seconds_attention: float
     maximum_seconds_distraction: float
@@ -49,8 +50,8 @@ class PhysicalObject(BikipyBase):
         return self.temporal_resolution
 
     @cached_property
-    def video(self):
-        return self.perimeter.video + self.reader.video
+    def video(self) -> VideoMetadata:
+        return VideoMetadata.join(self.perimeter.video, self.reader.video, ignore_incongruency=True)
 
     @property
     def label(self):
@@ -82,7 +83,7 @@ class PhysicalObject(BikipyBase):
             self.perimeter,
             self._gaze_travel_direction_point,
             self._gaze_start_point,
-            self.perimeter_border_normal_pixel_magnitude,
+            self.perimeter_border_normal_magnitude,
             **self._attention_proximity_filter_kwargs,
         )
 
@@ -121,7 +122,7 @@ class PhysicalObject(BikipyBase):
         for rows in self.attention_axes:
             for ax in rows:
                 self.perimeter.plot_perimeter(
-                    ax=ax, perimeter_border_normal_pixel_magnitude=self.perimeter_border_normal_pixel_magnitude
+                    ax=ax, perimeter_border_normal_magnitude=self.perimeter_border_normal_magnitude
                 )
 
         self.attention_axes[1][0].scatter(
@@ -200,7 +201,7 @@ class PhysicalObjectSet(BikipyBase):
     Some methods are designed specifically for sets with a specific number of objects, while others are general.
     """
 
-    physical_objects: Sequence
+    physical_objects: tuple
 
     inspect_image: Optional[NDArray]
 
@@ -212,6 +213,10 @@ class PhysicalObjectSet(BikipyBase):
 
     def __getitem__(self, item):
         return self.label_to_physical_object[item]
+
+    @cached_property
+    def _video(self):
+        return reduce(lambda x, y: VideoMetadata.join(x.video, y.video), self.physical_objects)
 
     @classmethod
     def from_perimeter(cls, *perimeters, **kwargs):

@@ -1,6 +1,6 @@
-from functools import partial
 from pathlib import Path
 
+from bikipy.core.video import VideoMetadata
 from bikipy.reader.deeplabcut import DeepLabCutReader
 
 EXAMPLES_ROOT = Path(__file__).resolve().parent.parent / "test_data"
@@ -10,20 +10,42 @@ CSV_PATH = EXAMPLES_ROOT / "test_tracking.csv"
 VIDEO_PATH = EXAMPLES_ROOT / "test_video.mp4"
 IMG_PATH = EXAMPLES_ROOT / "test.png"
 
-PIXEL_RESOLUTION = (388, 442)
+video = VideoMetadata(manual_recording_resolution=(388, 442), manual_fps=30, meters_per_pixel=[0.94, 1.0])
 
 
-def test_deep_lab_cut_reader_from_csv():
+def test_deeplabcut_reader_from_csv():
     assert DeepLabCutReader(
         df_path=CSV_PATH,
+        manual_video=video,
         future_scaling=True,
         midpoint_groups={"center_eye": ("left_ear", "right_ear")},
     )
 
 
-def test_deep_lab_cut_reader_from_hdf():
+def test_deeplabcut_reader_from_hdf():
     assert DeepLabCutReader(
         df_path=HDF_PATH,
+        manual_video=video,
         future_scaling=True,
         midpoint_groups={"center_eye": ("left_ear", "right_ear")},
     )
+
+
+def test_deeplabcut_reader_augmented():
+    df = DeepLabCutReader(
+        df_path=HDF_PATH,
+        manual_video=video,
+        future_scaling=True,
+        midpoint_groups={"center_eye": ("left_ear", "right_ear")},
+    )
+    assert not df.augmented.empty
+
+
+def test_deeplabcut_reader_getitem():
+    df = DeepLabCutReader(
+        df_path=HDF_PATH,
+        manual_video=video,
+        future_scaling=True,
+        midpoint_groups={"center_eye": ("left_ear", "right_ear")},
+    )
+    assert df["center_eye"] is not None

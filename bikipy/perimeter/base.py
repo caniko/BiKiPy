@@ -10,7 +10,7 @@ from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_ar
 
 from bikipy.core.base_class import BikipyBase, BikipyBaseHashable
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
-from bikipy.core.video import VideoMetadata, VideoMetadataMixin
+from bikipy.core.video import VideoMetadataMixin
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
 from bikipy.utils.image import read_image
 from bikipy.utils.io.makesense import read_makesense_point, get_point_from_makesense_row
@@ -33,6 +33,7 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
     inspect_image_array: Optional[NDArrayFp64]
 
     category: ClassVar[Optional[str]] = "perimeter"
+    required_video_metadata_fields = {"recording_resolution"}
 
     @abstractmethod
     def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64):

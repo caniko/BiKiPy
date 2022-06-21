@@ -125,8 +125,8 @@ class DeepLabCutReader(BaseReader):
     @cached_property
     def meters_augmented(self) -> pd.DataFrame:
         result = self.augmented.copy()
-        result.loc[:, pd.IndexSlice[:, "x"]] = result.loc[:, pd.IndexSlice[:, "x"]] * self.video.meters_per_pixel
-        result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] * self.video.meters_per_pixel
+        result.loc[:, pd.IndexSlice[:, "x"]] = result.loc[:, pd.IndexSlice[:, "x"]] * self.video.meters_per_pixel[0]
+        result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] * self.video.meters_per_pixel[1]
         return result
 
     @property

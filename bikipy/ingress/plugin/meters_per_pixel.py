@@ -2,7 +2,7 @@ from functools import lru_cache
 from math import sqrt
 
 import numpy as np
-from pydantic import DirectoryPath, FilePath, validate_arguments
+from pydantic import DirectoryPath, FilePath
 
 from bikipy.core.typing import NDArrayFp64
 from bikipy.ingress.plugin.utils import get_file_label_from_3rd_str_in_split

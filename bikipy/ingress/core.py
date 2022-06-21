@@ -372,7 +372,7 @@ class BaseIngress(BikipyBase, ABC):
         shape, label = get_perimeter_data(perimeter_path)
 
         image_name_to_perimeter_set = perimeter_set_from_makesense(
-            perimeter_path, manual_shape or shape, manual_meters_per_pixel=self._get_meter_per_pixel(trial_id)
+            perimeter_path, manual_shape or shape, meters_per_pixel=self._get_meter_per_pixel(trial_id)
         )
 
         perimeter_set = tuple(image_name_to_perimeter_set.values())[0]
@@ -394,7 +394,7 @@ class BaseIngress(BikipyBase, ABC):
                 file_label = self.metadata["MetersPerPixel"][trial_id]
                 return detect_meters_per_pixel_in_perimeter_directory(self.plugin_directory_path)[file_label]
             case "trial-wise":
-                return self.trial_id_to_keyword_arguments[trial_id]["manual_meters_per_pixel"]
+                return self.trial_id_to_keyword_arguments[trial_id]["meters_per_pixel"]
 
     # Private methods ===============================
 

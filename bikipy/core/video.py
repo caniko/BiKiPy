@@ -3,10 +3,11 @@ Weird dataclass hierarchy for videos, requirement by design.
 
 Purpose of VideoMetadataMixin
 Classes that define videos should have this mixin: VideoMetadata, BaseExperiment, and BaseTrial. This class is
-barebones metadata, and its purpose is to either initialize or relay an existing VideoMetadata object
+bare metadata, and its purpose is to either initialize or relay an existing VideoMetadata object
 """
 from functools import cached_property
-from typing import Optional, Any
+from logging import getLogger
+from typing import Optional, Any, ClassVar
 
 import numpy as np
 from numpy import ndarray
@@ -16,27 +17,41 @@ from bikipy.core.base_class import BikipyBase
 from bikipy.core.typing import NDArrayFp64, NDArrayUint8, NDArrayInt16
 from bikipy.utils.video import get_video_data
 
+logger = getLogger(__name__)
+
 
 class _VideoMetadataBase(BikipyBase):
-    video_path: Optional[FilePath]
+    meters_per_pixel: Optional[NDArrayFp64 | float]
 
+    video_path: Optional[FilePath]
     manual_recording_resolution: Optional[NDArrayInt16]
     manual_fps: Optional[float]
 
-    manual_meters_per_pixel: Optional[NDArrayFp64 | float]
-    metric_resolution: Optional[NDArrayFp64]
-
 
 class VideoMetadata(_VideoMetadataBase):
-    def __add__(self, other: "VideoMetadata"):
+    def __and__(self, other: "VideoMetadata") -> bool:
+        for key in set(self.manual_video_metadata).intersection(other.manual_video_metadata):
+            if np.any(self.manual_video_metadata[key] != other.manual_video_metadata[key]):
+                logger.warning(
+                    f"self and other are incongruent on {key}: "
+                    f"{self.manual_video_metadata[key]} != {other.manual_video_metadata[key]}"
+                )
+                return False
+        return True
+
+    def __eq__(self, other: "VideoMetadata") -> bool:
+        return set(self.manual_video_metadata) == set(other.manual_video_metadata)
+
+    def __add__(self, other: "VideoMetadata") -> "VideoMetadata":
         return self.join(self, other)
 
     @classmethod
-    def join(cls, master: "VideoMetadata", slave: "VideoMetadata", ignore_incongruent: bool = False) -> "VideoMetadata":
-        common = set(master).intersection(slave.manual_video_metadata)
-        if not ignore_incongruent and any(not np.any(master.manual_video_metadata[key] == slave.manual_video_metadata) for key in common):
-            msg = "self and other are incongruent, something wrong with dataset"
-            raise ValueError(msg)
+    def join(
+        cls, master: "VideoMetadata", slave: "VideoMetadata", ignore_incongruency: bool = False
+    ) -> "VideoMetadata":
+        if not (master & slave) and not ignore_incongruency:
+            msg = "VideoMetadata are incongruent"
+            raise AttributeError(msg)
         new_metadata = slave.manual_video_metadata
         new_metadata.update(master.manual_video_metadata)
         return cls(**new_metadata)
@@ -44,47 +59,30 @@ class VideoMetadata(_VideoMetadataBase):
     @cached_property
     def video_metadata(self):
         result = {}
-        if self.video_metadata_can_be_defined:
+        if self.meters_per_pixel is not None:
             result["meters_per_pixel"] = self.meters_per_pixel
         if self.fps:
             result["fps"] = self.fps
         if self.recording_resolution is not None:
             result["recording_resolution"] = self.recording_resolution
-        if self.metric_resolution is not None:
-            result["metric_resolution"] = self.metric_resolution
         return result
+
+    @property
+    def unfiltered_video_metadata(self):
+        return {
+            "meters_per_pixel": self.meters_per_pixel,
+            "fps": self.fps,
+            "recording_resolution": self.recording_resolution,
+        }
 
     @cached_property
     def manual_video_metadata(self):
         return {
-            f"manual_{key}" if key != "metric_resolution" else key: value for key, value in self.video_metadata.items()
+            f"manual_{key}" if key != "meters_per_pixel" else key: value for key, value in self.video_metadata.items()
         }
 
     @cached_property
-    def video_metadata_can_be_defined(self) -> bool:
-        return bool(
-            self.fps is not None
-            and self.recording_resolution is not None
-            and (self.metric_resolution is not None or self.manual_meters_per_pixel is not None)
-        )
-
-    @cached_property
-    def meters_per_pixel(self):
-        if self.manual_meters_per_pixel is not None:
-            return self.manual_meters_per_pixel
-
-        if self.metric_resolution is None:
-            msg = (
-                "metric_resolution attribute needs to be defined to compute meters_per_pixel. "
-                "Alternatively, you may define manual_meters_per_pixel; manual_fps, manual_recording_resolution "
-                "still must be defined"
-            )
-            raise AttributeError(msg)
-
-        return self.metric_resolution / self.recording_resolution
-
-    @cached_property
-    def pixels_per_meter(self):
+    def pixels_per_meter(self) -> NDArrayFp64:
         return 1.0 / self.meters_per_pixel
 
     @cached_property
@@ -130,43 +128,31 @@ class VideoMetadata(_VideoMetadataBase):
 class VideoMetadataMixin(_VideoMetadataBase):
     manual_video: Optional[VideoMetadata]
 
-    @cached_property
-    def video(self):
-        if self.manual_video:
-            return self.manual_video
-        new_video = VideoMetadata(
-            video_path=self.video_path,
-            manual_meters_per_pixel=self.manual_meters_per_pixel,
-            manual_fps=self.manual_fps,
-            manual_recording_resolution=self.manual_recording_resolution,
-            metric_resolution=self.metric_resolution,
-        )
-        return new_video
+    required_video_metadata_fields: ClassVar[set[str]] = set()
 
     @property
-    def video_metadata_can_be_defined(self):
-        try:
-            return bool(self.video_metadata)
-        except AssertionError:
-            return False
+    def video(self):
+        # TODO: computed_field validation
+        if self.required_video_metadata_fields and (missing_fields := self.required_video_metadata_fields.difference(self._video.video_metadata)):
+            msg = f"{self.__class__.__name__} requires {self.required_video_metadata_fields}, " \
+                  f"but is missing {missing_fields}"
+            raise AttributeError(msg)
+        return self._video
 
     @property
     def video_metadata(self):
         return self.video.video_metadata
 
-
-def video_metadata_from_object_or_metric_and_recording(
-    video: Optional[VideoMetadata] = None,
-    metric_resolution: Optional[float | NDArrayFp64] = None,
-    recording_resolution: Optional[NDArrayFp64] = None,
-    exclusive: bool = False,
-) -> VideoMetadata:
-    if video:
-        if exclusive and metric_resolution is not None or recording_resolution is not None:
-            msg = "metric_resolution and recording_resolution vs video must be defined exclusively"
-            raise ValueError(msg)
-        return video
-    return VideoMetadata(metric_resolution=metric_resolution, manual_recording_resolution=recording_resolution)
+    @cached_property
+    def _video(self):
+        if self.manual_video:
+            return self.manual_video
+        return VideoMetadata(
+                video_path=self.video_path,
+                meters_per_pixel=self.meters_per_pixel,
+                manual_fps=self.manual_fps,
+                manual_recording_resolution=self.manual_recording_resolution,
+            )
 
 
 def convert_meters_to_pixels(data: NDArrayFp64, video: VideoMetadata) -> NDArrayFp64:

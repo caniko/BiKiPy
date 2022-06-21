@@ -11,7 +11,7 @@ PLUGIN_NAME_TO_KEYRING: dict[str, dict[str, str | Callable]] = {
     "meters_per_pixel": {
         "ingress_key": "meters_per_pixel_definition_strategy",
         "code_key": "meters_per_pixel",
-        "bikipy_trial_key": "manual_meters_per_pixel",
+        "bikipy_trial_key": "meters_per_pixel",
         "human_readable_index": "MetersPerPixel",
         "file_path_to_value": meters_per_pixel_file_name_to_value,
     },

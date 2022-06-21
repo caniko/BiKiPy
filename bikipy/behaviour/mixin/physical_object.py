@@ -8,7 +8,6 @@ from pydantic import BaseModel, DirectoryPath, Field
 from bikipy.behaviour.rectangle import RectangleEnclosedTrial
 from bikipy.core.base_class import BikipyBase
 from bikipy.core.typing import NDArrayFp64
-from bikipy.core.video import VideoMetadata
 from bikipy.feature.physical_object import PhysicalObjectSet
 
 
@@ -28,6 +27,7 @@ class PhysicalObjectTrialMixin(BikipyBase):
     physical_object_inspect: bool = False
 
     physical_object_labels: ClassVar[list[str, ...]] = []
+    all_perimeters_are_physical_objects: ClassVar[bool] = True
 
     @classmethod
     @property
@@ -38,6 +38,12 @@ class PhysicalObjectTrialMixin(BikipyBase):
     @property
     def feature_headers(cls) -> list[tuple[str, ...]]:
         return list(pd.MultiIndex.from_product([["SecondsObserving"], ["All", *cls.physical_object_labels]]))
+
+    @cached_property
+    def perimeters(self):
+        if self.all_perimeters_are_physical_objects:
+            return self.all_physical_object_perimeters
+        return super().perimeters
 
     @property
     def feature_df_rows(self) -> list:
@@ -55,7 +61,7 @@ class PhysicalObjectTrialMixin(BikipyBase):
             "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
             "minimum_seconds_attention": self.minimum_seconds_attention,
             "maximum_seconds_distraction": self.maximum_seconds_distraction,
-            "perimeter_border_normal_pixel_magnitude": self.perimeter_border_normal_pixel_magnitude,
+            "perimeter_border_normal_magnitude": self.perimeter_border_normal_metric_magnitude,
         }
 
         if self.physical_object_inspect:
@@ -77,7 +83,7 @@ class PhysicalObjectTrialMixin(BikipyBase):
 
     @cached_property
     def perimeter_border_normal_pixel_magnitude(self) -> float | NDArrayFp64:
-        return self.perimeter_border_normal_metric_magnitude / self.video.meters_per_pixel
+        return self.perimeter_border_normal_metric_magnitude * self.video.pixels_per_meter
 
 
 PhysicalObjectTrial = TypeVar("PhysicalObjectTrial", bound=PhysicalObjectTrialMixin)
@@ -89,7 +95,7 @@ class PhysicalObjectHabituationTrialMixin(BaseModel):
     trial_label: ClassVar[str] = "Habituation"
 
 
-class RectangleEnclosedPhysicalObjectTrial(RectangleEnclosedTrial, PhysicalObjectTrialMixin):
+class RectangleEnclosedPhysicalObjectTrial(PhysicalObjectTrialMixin, RectangleEnclosedTrial):
     pass
 
 

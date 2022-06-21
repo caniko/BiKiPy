@@ -124,7 +124,6 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
             stage=str(period_index),
             trial_id_to_trial_class_name=trial_id_to_trial_class_name,
             trial_id_to_keyword_arguments=trial_id_range_to_exp_meta,
-            metric_resolution=0.4,
             gaze_travel_direction_point_label="nose",
             gaze_start_point_label="center_eye",
             object_tracking_label_for_kinematics="torso",

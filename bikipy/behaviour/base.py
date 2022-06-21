@@ -91,8 +91,9 @@ class BaseTrial(Behaviour):
         description="Only affective if crop_time_seconds is not 0.0. " "Will crop from start instead when set to False",
     )
 
+    required_video_metadata_fields = {"meters_per_pixel", "recording_resolution", "fps"}
+
     # Variables for trials with zones, see doc for more info.
-    perimeters: Optional[Sequence]
     trial_start_perimeter: Optional[str]
 
     # Class variables
@@ -133,16 +134,20 @@ class BaseTrial(Behaviour):
         return 2
 
     @cached_property
+    def _video(self):
+        video = super()._video
+        if self.perimeters:
+            perimeter_video = reduce(lambda x, y: VideoMetadata.join(x.video, y.video), self.perimeters)
+            new_video = VideoMetadata.join(perimeter_video, video, ignore_incongruency=True)
+
+            # The resolution on perimeters should be more correct than whatever
+            # provided by the user, hence it being master
+            return VideoMetadata.join(new_video, video, ignore_incongruency=True)
+        return video
+
+    @property
     def perimeters(self) -> list[AnyPerimeter]:
         return []
-
-    @cached_property
-    def video(self):
-        video = super().video
-        if self.manual_video:
-            return video
-
-        perimeter_video_metadata = reduce(VideoMetadata.join, )
 
     @property
     def motion_features(self) -> tuple:
@@ -183,8 +188,6 @@ class BaseTrial(Behaviour):
             coordinate_sequence=self.framewise_confined_coordinates,
             fps=self.fps,
         )
-
-    # PolygonPerimeter
 
     @cached_property
     def _int_id_to_perimeter(self) -> dict:
@@ -231,7 +234,7 @@ class BaseTrial(Behaviour):
 Trial = TypeVar("Trial", bound=BaseTrial)
 
 
-class BaseExperiment(Behaviour, VideoMetadataMixin):
+class BaseExperiment(Behaviour):
     manual_trial_ids: Optional[tuple]
     trial_id_to_trial_class_name: Optional[dict] = Field(default_factory=dict)
     trial_id_to_keyword_arguments: Optional[dict] = Field(default_factory=dict)
@@ -324,7 +327,7 @@ class BaseExperiment(Behaviour, VideoMetadataMixin):
         """
         Function useful for customizing initiation parameters for trial objects
         """
-        result = {"data_format_label": self.data_format_label}
+        result = {**self.video.manual_video_metadata, "data_format_label": self.data_format_label}
 
         if self.common_trial_keyword_arguments:
             result.update(self.common_trial_keyword_arguments)
