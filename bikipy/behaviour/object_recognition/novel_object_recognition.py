@@ -61,11 +61,11 @@ class NortNoveltyTrial(RectangleEnclosedTrial, PhysicalObjectTrialMixin):
 
     @cached_property
     def discrimination_index(self):
-        return self.nort_absolute_discrimination / self.experiment_seconds
+        return self.nort_absolute_discrimination / self.physical_object_set.seconds_observing
 
     @cached_property
     def novelty_preference(self):
-        return 100.0 * self.physical_object_set["novel"].attention_filtered_seconds_observing / self.experiment_seconds
+        return 100.0 * self.physical_object_set["novel"].attention_filtered_seconds_observing / self.physical_object_set.seconds_observing
 
     @cached_property
     def nort_absolute_discrimination(self) -> float:

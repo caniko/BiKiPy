@@ -29,3 +29,7 @@ def get_perimeter_name_df(project_root_directory: DirectoryPath):
     assert load_settings(project_root_directory)["ingress"]["perimeter_naming_strategy"] == "metadata"
     df = pd.read_excel(infer_metadata_path(project_root_directory), sheet_name="perimeter_label", index_col=0)
     return df
+
+
+def get_name_map_from_name_df(project_root_directory: DirectoryPath, trial_id: str | int) -> dict[str, str]:
+    return get_perimeter_name_df(project_root_directory)[trial_id]

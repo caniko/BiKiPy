@@ -19,7 +19,7 @@ from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
     first_meters_per_pixel_in_perimeter_directory,
 )
-from bikipy.ingress.plugin.perimeter import get_perimeter_data
+from bikipy.ingress.plugin.perimeter import get_perimeter_data, get_perimeter_name_df, get_name_map_from_name_df
 from bikipy.ingress.utils import settings
 from bikipy.ingress.utils.io import (
     get_dataset_directory_path,
@@ -27,6 +27,7 @@ from bikipy.ingress.utils.io import (
     get_plugin_directory_path,
     get_project_settings_path,
     load_settings,
+    infer_metadata_path,
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
 from bikipy.ingress.utils.settings import get_definable_settings
@@ -45,12 +46,11 @@ logger = getLogger(__name__)
 class BaseIngress(BikipyBase, ABC):
     project_root_directory: DirectoryPath
 
+    _experiment_data_defined: bool = False
     _trial_id_to_trial_class_name: dict[Hashable, str] = {}
     _common_trial_keyword_arguments: dict[str, Any] = {}
     _trial_id_to_keyword_arguments: dict[Hashable, dict[str, Any]] = {}
     _trial_class_name_to_keyword_arguments: dict[str, Any] = {}
-
-    _experiment_data_defined: bool = False
 
     ingress_method: ClassVar[str]
 
@@ -127,28 +127,30 @@ class BaseIngress(BikipyBase, ABC):
 
     # I/O ============================
 
+    @cached_property
+    def _metadata_sheet_names(self):
+        return openpyxl.load_workbook(self.metadata_path, read_only=True).sheetnames
+
     @property
     def settings(self) -> dict:
         return load_settings(self.project_root_directory)
 
     @cached_property
-    def metadata(self) -> pd.DataFrame:
-        metadata_path = next(self.project_root_directory.glob("metadata.*"))
-        sheet_names = openpyxl.load_workbook(metadata_path, read_only=True).sheetnames
-
-        if "animal" in sheet_names:
+    def animal_metadata(self):
+        if "animal" in self._metadata_sheet_names:
             animal_df = pd.read_excel(
-                metadata_path,
+                self.metadata_path,
                 sheet_name="animal",
                 index_col=0,
             )
             animal_df.columns.names = ["Animal"]
-        else:
-            animal_df = None
+            return animal_df
 
-        if "trial_id" in sheet_names:
+    @cached_property
+    def metadata(self) -> pd.DataFrame:
+        if "trial_id" in self._metadata_sheet_names:
             trial_id_df = pd.read_excel(
-                metadata_path,
+                self.metadata_path,
                 sheet_name="trial_id",
                 index_col=0,
             )
@@ -156,31 +158,52 @@ class BaseIngress(BikipyBase, ABC):
 
             assert "Animal" in trial_id_df, "Animal ID column must be present trial_id and animal metadata sheets"
 
-            trial_id_df = trial_id_df.join(animal_df, how="inner")
+            if self.animal_metadata is not None:
+                trial_id_df = trial_id_df.join(self.animal_metadata, how="inner")
 
-        elif "animal_sequence" in sheet_names:
+        elif "animal_sequence" in self._metadata_sheet_names:
             trial_id_df = pd.read_excel(
-                metadata_path,
+                self.metadata_path,
                 sheet_name="animal_sequence",
                 index_col=[0, 1],
             )
             trial_id_df.index.names = ["Animal", "Sequence"]
-            trial_id_df = trial_id_df.join(animal_df, how="inner")
+            if self.animal_metadata is not None:
+                trial_id_df = trial_id_df.join(self.animal_metadata, how="inner")
 
             trial_id_df["Animal"] = trial_id_df.index.get_level_values(level="Animal")
 
             trial_id_df.index = trial_id_df.index.map(lambda idx: f"{idx[0]}_{idx[1]}")
             trial_id_df.index.names = ["Trial"]
 
-        else:
-            msg = "Either trial_id or animal_sequence sheet must be defined in metadata"
+        elif not self._metadata_plugins and self.settings["ingress"]["stageful_metadata"]:
+            msg = (
+                f"Either trial_id or animal_sequence sheet must be defined in metadata "
+                f"when using metadata plugins that are stageful:\n{self._metadata_plugins}"
+            )
             raise ValueError(msg)
+        elif self.animal_metadata is not None:
+            trial_id_df = pd.concat([self.animal_metadata for _ in range(self.experiment_class.trial_sequence_length)], axis=0)
+            trial_id_df.sort_index(inplace=True)
+
+            new_index = []
+            for animal_id in self.animal_metadata.index.values:
+                for sequence_idx in range(self.experiment_class.trial_sequence_length):
+                    new_index.append(f"{animal_id}_{sequence_idx}")
+
+            trial_id_df.index = new_index
+        else:
+            raise RuntimeError()
 
         return trial_id_df
 
     @property
     def settings_path(self) -> FilePath:
         return get_project_settings_path(self.project_root_directory)
+
+    @property
+    def metadata_path(self) -> FilePath:
+        return infer_metadata_path(self.project_root_directory)
 
     @property
     def dataset_directory_path(self) -> DirectoryPath:
@@ -381,6 +404,10 @@ class BaseIngress(BikipyBase, ABC):
         perimeter_set.apply_label_prefix_suffix(
             self.settings["perimeter"]["label_prefix"], self.settings["perimeter"]["label_suffix"]
         )
+        if self.settings["perimeter"]["perimeter_names_in_metadata"]:
+            name_map = get_name_map_from_name_df(self.project_root_directory)
+            1
+
         for perimeter in perimeter_set.all_perimeters:
             for field, value in self.settings["perimeter"]["fields"]["defined"].items():
                 if value is not None:
@@ -434,6 +461,7 @@ def init_settings(
         "perimeter": {
             "label_prefix": None,
             "label_suffix": None,
+            "perimeter_names_in_metadata": False,
             "fields": extended_schema(BasePerimeter),
         },
         "reader_kwargs": extended_schema(DeepLabCutReader, with_required=False),

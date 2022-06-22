@@ -117,7 +117,7 @@ trial:
         object_2: null
         object_3: null
         object_4: null
-        crop_time_seconds: 300
+        crop_time_seconds: 600
       required:
         object_2: None
         object_3: None
