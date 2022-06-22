@@ -45,14 +45,9 @@ logger = getLogger(__name__)
 
 
 class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
-    center: Optional[NDArrayInt16]
     data_format_label: Literal["deeplabcut"] = "deeplabcut"
 
     _live: ClassVar[bool] = False
-
-    @cached_property
-    def center_meter_translation(self):
-        return self.video.center_meters - self.center * self.video.meters_per_pixel if self.center is not None else None
 
     @staticmethod
     def multi_index_names(index_content: Iterable):
@@ -73,6 +68,7 @@ class BaseTrial(Behaviour):
     object_tracking_label_for_kinematics: Optional[str] = Field(
         ..., description="Label of the node that will be used to track general animal movement"
     )
+    center: Optional[NDArrayInt16]
     rigid_nodes_freezing: Optional[Sequence[str | int]] = Field(
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
     )
@@ -130,20 +126,8 @@ class BaseTrial(Behaviour):
         return 2
 
     @cached_property
-    def _video(self):
-        video = super()._video
-        if self.perimeters:
-            perimeter_video = reduce(VideoMetadata.join, (perimeter.video for perimeter in self.perimeters))
-            new_video = VideoMetadata.join(perimeter_video, video, ignore_incongruency=True)
-
-            # The resolution on perimeters should be more correct than whatever
-            # provided by the user, hence it being master
-            return VideoMetadata.join(new_video, video, ignore_incongruency=True)
-        return video
-
-    @property
-    def perimeters(self) -> list[AnyPerimeter]:
-        return []
+    def center_meter_translation(self):
+        return self.center * self.video.meters_per_pixel - self.video.center_meters if self.center is not None else None
 
     @property
     def motion_features(self) -> tuple:
@@ -185,6 +169,10 @@ class BaseTrial(Behaviour):
             fps=self.video.fps,
         )
 
+    @property
+    def perimeters(self) -> list[AnyPerimeter]:
+        return []
+
     @cached_property
     def _int_id_to_perimeter(self) -> dict:
         self._validate_perimeters_object()
@@ -213,6 +201,18 @@ class BaseTrial(Behaviour):
         return tuple(self._perimeter_label_to_int_id[label] for label in label_sequence)
 
     # Miscellaneous
+
+    @cached_property
+    def _video(self):
+        video = super()._video
+        if self.perimeters:
+            perimeter_video = reduce(VideoMetadata.join, (perimeter.video for perimeter in self.perimeters))
+            new_video = VideoMetadata.join(perimeter_video, video, ignore_incongruency=True)
+
+            # The resolution on perimeters should be more correct than whatever
+            # provided by the user, hence it being master
+            return VideoMetadata.join(new_video, video, ignore_incongruency=True)
+        return video
 
     @cached_property
     def _inspection_image_name(self):

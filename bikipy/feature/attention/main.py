@@ -31,6 +31,7 @@ def proximity_filter(
     perimeter_border_normal_meters: float | NDArrayFp64,
     inspect_video: Optional[VideoMetadata] = None,
     inspect: bool = False,
+    inspect_pixels: bool = False,
     inspection_ax: Any = None,
 ) -> NDArrayBool:
     """
@@ -79,7 +80,8 @@ def proximity_filter(
         else:
             ax = inspection_ax
 
-        inside_perimeter_border_pixels = convert_meters_to_pixels(inside_perimeter_border, inspect_video)
+        if inspect_pixels:
+            inside_perimeter_border = convert_meters_to_pixels(inside_perimeter_border, inspect_video)
 
         perimeter.plot(
             ax=ax,
@@ -89,25 +91,25 @@ def proximity_filter(
         )
         ax.set_title("Proximity filter")
 
-        ax.scatter(*inside_perimeter_border_pixels[result].T, marker=",", alpha=MATPLOTLIB_SCATTER_ALPHA, label="Valid")
+        ax.scatter(*inside_perimeter_border[result].T, marker=",", alpha=MATPLOTLIB_SCATTER_ALPHA, label="Valid")
 
         not_result = ~result
         if perimeter.impenetrable:
             ax.scatter(
-                *inside_perimeter_border_pixels[not_result].T,
+                *inside_perimeter_border[not_result].T,
                 marker=",",
                 alpha=MATPLOTLIB_SCATTER_ALPHA,
                 label="Invalid",
             )
         else:
             ax.scatter(
-                *inside_perimeter_border_pixels[inside_perimeter_border_boolean_index & not_result].T,
+                *inside_perimeter_border[inside_perimeter_border_boolean_index & not_result].T,
                 marker=",",
                 alpha=MATPLOTLIB_SCATTER_ALPHA,
                 label="Nose valid, invalid outside_perimeter",
             )
             ax.scatter(
-                *inside_perimeter_border_pixels[outside_perimeter_boolean_index & not_result].T,
+                *inside_perimeter_border[outside_perimeter_boolean_index & not_result].T,
                 marker=",",
                 alpha=MATPLOTLIB_SCATTER_ALPHA,
                 label="Center of mass valid, invalid inside_perimeter_border",
@@ -129,6 +131,7 @@ def gaze_direction_filter(
     max_radians: float,
     inspect_video: Optional[VideoMetadata] = None,
     inspect: bool = False,
+    inspect_pixels: bool = False,
     inspection_ax: Any = None,
 ) -> NDArrayBool:
     gaze_vector = gaze_travel_direction_point - gaze_start_point
@@ -153,13 +156,14 @@ def gaze_direction_filter(
         else:
             ax = inspection_ax
 
-        gaze_travel_direction_point_pixels = convert_meters_to_pixels(gaze_travel_direction_point, inspect_video)
+        if inspect_pixels:
+            gaze_travel_direction_point = convert_meters_to_pixels(gaze_travel_direction_point, inspect_video)
 
         perimeter.plot(ax=ax)
         ax.set_title("Gaze direction filter")
 
         ax.quiver(
-            *gaze_travel_direction_point_pixels[result].T,
+            *gaze_travel_direction_point[result].T,
             *gaze_vector[result].T,
             angles="xy",
             # scale_units="xy",
@@ -171,7 +175,7 @@ def gaze_direction_filter(
 
         not_result = ~result
         ax.quiver(
-            *gaze_travel_direction_point_pixels[not_result].T,
+            *gaze_travel_direction_point[not_result].T,
             *gaze_vector[not_result].T,
             angles="xy",
             # scale_units="xy",

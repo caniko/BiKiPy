@@ -44,7 +44,6 @@ def motion_multi_indexer_for_quadrant(category: Any, level: int):
 class Quadrant(BikipyBase):
     corners: NDArrayFp64
     framewise_confined_coordinates: NDArrayFp64
-    meters_per_pixel: NDArrayFp64
     fps: float
     quadrant_index: int
 
@@ -193,7 +192,6 @@ class RectangleEnclosedTrial(BaseTrial):
             quadrant_grid_coordinate: Quadrant(
                 corners=self.quadrant_grid_coordinate_to_corners[quadrant_grid_coordinate],
                 framewise_confined_coordinates=self.framewise_confined_coordinates,
-                meters_per_pixel=self.meters_per_pixel,
                 fps=self.video.fps,
                 quadrant_index=quadrant_index,
             )

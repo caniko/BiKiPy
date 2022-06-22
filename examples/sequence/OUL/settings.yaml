@@ -56,7 +56,7 @@ trial:
       coordinate_data_path: null
       object_1: null
       object_tracking_label_for_kinematics: center_eye
-      physical_object_inspect: false
+      physical_object_inspect: true
       gaze_start_point_label: center_eye
       gaze_travel_direction_point_label: nose
       perimeter_border_normal_meters: 0.02

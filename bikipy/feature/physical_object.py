@@ -46,7 +46,7 @@ class PhysicalObject(BikipyBase):
     _exporting_figure: bool = False
 
     def __len__(self) -> int:
-        return self.temporal_resolution
+        return self.reader.frames
 
     @cached_property
     def video(self) -> VideoMetadata:
@@ -83,8 +83,8 @@ class PhysicalObject(BikipyBase):
             self._gaze_travel_direction_point,
             self._gaze_start_point,
             self.perimeter_border_normal_meters,
-            inspect_video=self.video,
-            **self._attention_proximity_filter_kwargs,
+            inspection_ax=self.attention_axes[0][0] if self.inspect_figure_file_path else None,
+            **self._global_attention_kwargs
         )
 
     @cached_property
@@ -94,8 +94,8 @@ class PhysicalObject(BikipyBase):
             self._gaze_travel_direction_point,
             self._gaze_start_point,
             self.maximum_radians_inter_gaze_perimeter,
-            inspect_video=self.video,
-            **self._gaze_filter_kwargs,
+            inspection_ax=self.attention_axes[0][1] if self.inspect_figure_file_path else None,
+            **self._global_attention_kwargs
         )
 
     @cached_property
@@ -137,10 +137,6 @@ class PhysicalObject(BikipyBase):
         plt.close(self.attention_fig)
 
     @property
-    def temporal_resolution(self) -> int:
-        return self.reader.frames
-
-    @property
     def attention_fig(self):
         if self._fig is not None:
             return self._fig
@@ -169,12 +165,11 @@ class PhysicalObject(BikipyBase):
         self._fig.suptitle("Observation cumulative filtration analysis")
 
     @cached_property
-    def _attention_proximity_filter_kwargs(self) -> dict:
-        return {"inspection_ax": self.attention_axes[0][0]} if self.inspect_figure_file_path else {}
-
-    @cached_property
-    def _gaze_filter_kwargs(self) -> dict:
-        return {"inspection_ax": self.attention_axes[0][1]} if self.inspect_figure_file_path else {}
+    def _global_attention_kwargs(self) -> dict[str, Any]:
+        return {
+            "inspect_video": self.video,
+            "inspect_pixels": self.video.frame is not None
+        }
 
     @cached_property
     def _gaze_start_point(self) -> NDArrayFp64:
@@ -345,7 +340,7 @@ class PhysicalObjectSet(VideoMetadataMixin):
         return value
 
     @validator("physical_objects", pre=True)
-    def identical_temporal_resolution(cls, value):
+    def identical_frames(cls, value):
         if any(len(value[0]) != len(physical_object) for physical_object in value[1:]):
             msg = (
                 f"The number of frames differ across physical objects:\n"
