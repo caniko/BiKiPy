@@ -68,7 +68,7 @@ class BaseTrial(Behaviour):
     object_tracking_label_for_kinematics: Optional[str] = Field(
         ..., description="Label of the node that will be used to track general animal movement"
     )
-    center: Optional[NDArrayInt16]
+    manual_center_pixels: Optional[NDArrayInt16]
     rigid_nodes_freezing: Optional[Sequence[str | int]] = Field(
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
     )
@@ -126,8 +126,14 @@ class BaseTrial(Behaviour):
         return 2
 
     @cached_property
-    def center_meter_translation(self):
-        return self.center * self.video.meters_per_pixel - self.video.center_meters if self.center is not None else None
+    def manual_center_meters(self) -> NDArrayFp64 | None:
+        if self.manual_center_pixels is not None:
+            return self.manual_center_pixels * self.video.meters_per_pixel
+
+    @cached_property
+    def center_meter_translation(self) -> NDArrayFp64 | None:
+        if self.manual_center_meters is not None:
+            return self.manual_center_meters - self.video.center_meters
 
     @property
     def motion_features(self) -> tuple:
@@ -215,8 +221,8 @@ class BaseTrial(Behaviour):
         return video
 
     @cached_property
-    def _inspection_image_name(self):
-        return f"trial_{self.best_id}.jpg"
+    def _inspect_bool(self) -> bool:
+        return bool(self.inspect_directory)
 
     @cached_property
     def _uint_zeros_based_on_frame_length(self) -> NDArrayFp64:

@@ -21,11 +21,12 @@ class YMazeTrial(BaseYMaze, BaseRadialMazeTrial):
     def plot(
         self,
         ax: Any = None,
-        points: Optional[NDArrayFp64] = None,
+        coordinates: Optional[NDArrayFp64] = None,
+        inspect_pixels: bool = False,
         invalid: bool = False,
     ):
-        if points and invalid:
-            msg = "points can not be defined while invalid is True"
+        if coordinates and invalid:
+            msg = "coordinates can not be defined while invalid is True"
             raise ValueError(msg)
 
         if not ax:
@@ -37,9 +38,10 @@ class YMazeTrial(BaseYMaze, BaseRadialMazeTrial):
         self.center.plot(
             include_borders=False,
             ax=ax,
+            inspect_pixels=inspect_pixels,
             bin=True,
-            points=(
-                points
+            coordinates=(
+                coordinates
                 or self.framewise_confined_coordinates[
                     self.invalid_boolean_index if invalid else self.valid_boolean_index
                 ]

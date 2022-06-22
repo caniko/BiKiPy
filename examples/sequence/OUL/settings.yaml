@@ -124,7 +124,7 @@ trial:
         object_4: None
 experiment:
   defined:
-    compute_only_one_df_row: true
+    compute_only_one_df_row: false
     manual_fps: 30
   optional:
     common_trial_keyword_arguments: object

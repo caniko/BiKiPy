@@ -2,6 +2,7 @@ from functools import cached_property, lru_cache
 from logging import getLogger
 from typing import Any, ClassVar, Hashable, Optional
 
+import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import DirectoryPath, validate_arguments, validator
 from pydantic_numpy import NDArray
@@ -108,6 +109,7 @@ class RectangleEnclosedExperiment(BaseExperiment):
 
 
 class RectangleEnclosedTrial(BaseTrial):
+    inspect_quadrants: bool = False
     rectangle_2d_bin: quadrant_grid_typing = (2, 2)
     center_box_to_spatial_resolution_ratio: Optional[float]
 
@@ -142,6 +144,12 @@ class RectangleEnclosedTrial(BaseTrial):
         return np.sum(scores) / (A * self.number_of_frames)
 
     @cached_property
+    def quadrant_inspect_directory(self) -> DirectoryPath:
+        result = self.inspect_directory / "quadrants"
+        result.mkdir(exist_ok=True)
+        return result
+
+    @cached_property
     def quadrant_grid_coordinate_to_corners(self) -> dict[quadrant_grid_typing, NDArrayFp64]:
         horizontal_uniform_distance = self.video.metric_horizontal_resolution / self.rectangle_2d_bin[0]
         vertical_uniform_distance = self.video.metric_vertical_resolution / self.rectangle_2d_bin[1]
@@ -162,8 +170,9 @@ class RectangleEnclosedTrial(BaseTrial):
                     )
                 )
 
-                if self.center_meter_translation is not None:
-                    quadrant += self.center_meter_translation
+                # if self.center_meter_translation is not None:
+                #     quadrant += self.center_meter_translation
+
                 result[(h, v)] = quadrant
 
         return result
@@ -188,7 +197,7 @@ class RectangleEnclosedTrial(BaseTrial):
         Left to right, top to down
         :return:
         """
-        return {
+        result = {
             quadrant_grid_coordinate: Quadrant(
                 corners=self.quadrant_grid_coordinate_to_corners[quadrant_grid_coordinate],
                 framewise_confined_coordinates=self.framewise_confined_coordinates,
@@ -197,6 +206,27 @@ class RectangleEnclosedTrial(BaseTrial):
             )
             for quadrant_index, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items()
         }
+        if self._inspect_bool:
+            fig, ax = plt.subplots()
+            ax.set_title(f"Quadrants_Trial_#{self.best_id}")
+
+            confined = np.zeros(self.reader.frames, dtype=bool)
+
+            colors = plt.cm.rainbow(np.linspace(0, 1, len(result) + 1))
+            for color, (grid_coordinate, quadrant) in zip(colors, result.items()):
+                ax.plot(*quadrant.corners.T, label=f"({grid_coordinate[0]}, {grid_coordinate[1]})", color=color)
+                ax.scatter(*self.framewise_confined_coordinates[quadrant.confinement_boolean_index].T, color=color)
+
+                confined = confined | quadrant.confinement_boolean_index
+
+            ax.scatter(*self.framewise_confined_coordinates[~confined].T, color=colors[-1], label="Unconfined")
+            ax.scatter(*self.video.center_meters.T, color="r", label="Old")
+            ax.scatter(*self.manual_center_meters.T, color="k", label="New")
+
+            plt.legend()
+            plt.savefig(self.quadrant_inspect_directory / f"{self.best_id}.jpeg")
+
+        return result
 
     @cached_property
     def location_sequence_quadrant(self) -> NDArrayFp64:

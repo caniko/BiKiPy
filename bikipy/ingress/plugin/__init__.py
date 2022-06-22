@@ -18,7 +18,7 @@ PLUGIN_NAME_TO_KEYRING: dict[str, dict[str, str | Callable]] = {
     "center": {
         "ingress_key": "center_definition_strategy",
         "code_key": "center",
-        "bikipy_trial_key": "center",
+        "bikipy_trial_key": "manual_center_pixels",
         "human_readable_index": "Center",
         "file_path_to_value": center_file_path_to_value,
     },

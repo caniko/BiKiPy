@@ -71,12 +71,15 @@ class CirclePerimeter(BasePerimeter):
 
     def plot_perimeter(
         self,
+        inspect_pixels: bool = False,
         perimeter_border_normal_pixels: Optional[float] = None,
         ax: Any = None,
         include_geometric_legend: bool = False,
         colormap: Any = None,
     ):
-        return plot_circle(self.center_pixels, self.radius_pixels, ax)
+        if inspect_pixels:
+            return plot_circle(self.center_pixels, self.radius_pixels, ax)
+        return plot_circle(self.center_meters, self.radius_meters, ax)
 
     def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64, *args, **kwargs):
         distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)

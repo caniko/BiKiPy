@@ -12,7 +12,7 @@ from pydantic import DirectoryPath, FilePath, validator
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.perimeter.base import BasePerimeter, perimeter_set_from_image_name_to_perimeters
 from bikipy.utils.io.makesense import image_name_to_point_from_makesense, read_makesense_rectangle
-from bikipy.utils.math.geometry import clockwise_sort_points, expand_bikipy_perimeter, expand_parallelogram
+from bikipy.utils.math.geometry import clockwise_sort_points, expand_parallelogram
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 from bikipy.utils.math.vector import (
     normal_from_line_to_point,
@@ -119,6 +119,7 @@ class PolygonPerimeter(BasePerimeter):
 
     def plot_perimeter(
         self,
+        inspect_pixels: bool = False,
         perimeter_border_normal_pixels: Optional[float] = None,
         ax: Any = None,
         include_geometric_legend: bool = False,
@@ -127,14 +128,14 @@ class PolygonPerimeter(BasePerimeter):
         if not ax:
             fig, ax = plt.subplots()
 
-        corners = self.corners if self.video.frame is None else self.corners_in_pixels
+        corners = self.corners_in_pixels if inspect_pixels else self.corners
 
         legends = []
-        for index in range(len(self.corners)):
-            following_index = 0 if index + 1 == len(self.corners) else index + 1
+        for index in range(len(corners)):
+            following_index = 0 if index + 1 == len(corners) else index + 1
 
-            corner_a = self.corners[index]
-            corner_b = self.corners[following_index]
+            corner_a = corners[index]
+            corner_b = corners[following_index]
             ax.plot(
                 (corner_a[0], corner_b[0]),
                 (corner_a[1], corner_b[1]),

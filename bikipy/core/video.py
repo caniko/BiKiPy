@@ -86,8 +86,8 @@ class VideoMetadata(_VideoMetadataBase):
         return self.recording_resolution * self.meters_per_pixel
 
     @cached_property
-    def center_meters(self) -> NDArrayInt16:
-        return np.round(self.metric_resolution / 2.0)
+    def center_meters(self) -> NDArrayFp64:
+        return self.metric_resolution / 2.0
 
     @property
     def metric_horizontal_resolution(self) -> int:

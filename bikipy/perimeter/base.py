@@ -10,7 +10,7 @@ from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_ar
 
 from bikipy.core.base_class import BikipyBase, BikipyBaseHashable
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
-from bikipy.core.video import VideoMetadataMixin
+from bikipy.core.video import VideoMetadataMixin, convert_meters_to_pixels
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
 from bikipy.utils.image import read_image
 from bikipy.utils.io.makesense import read_makesense_point, get_point_from_makesense_row
@@ -45,6 +45,7 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
     @abstractmethod
     def plot_perimeter(
         self,
+        inspect_pixels: bool = False,
         perimeter_border_normal_pixels: Optional[float] = None,
         ax: Any = None,
         include_geometric_legend: bool = False,
@@ -229,7 +230,8 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
         self,
         ax: Any = None,
         coordinates: Optional[NDArrayFp64] = None,
-        perimeter_plot_kwargs: Optional[dict] = None,
+        inspect_pixels: bool = False,
+        **perimeter_plot_kwargs,
     ):
         """
         Plot the perimeter using matplotlib. Optionally, plot coordinates alongside the perimeter
@@ -249,12 +251,14 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
         """
         if not ax:
             fig, ax = plt.subplots()
+            ax.set_title(self.best_id)
 
         if self.video.frame is not None:
             ax.imshow(self.video.frame)
 
         if coordinates is not None:
-            coordinates = np.asarray(coordinates)
+            if inspect_pixels:
+                coordinates = convert_meters_to_pixels(coordinates, self.video)
 
             histogram, _x_edges, _y_edges = np.histogram2d(
                 *coordinates[np.logical_and(*np.isfinite(coordinates).T)].T, bins=60
@@ -264,7 +268,9 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
 
         ax.set_title(self.best_id)
 
-        return self.plot_perimeter(**perimeter_plot_kwargs if perimeter_plot_kwargs else {}, ax=ax)
+        return self.plot_perimeter(
+            **perimeter_plot_kwargs if perimeter_plot_kwargs else {}, ax=ax, inspect_pixels=inspect_pixels
+        )
 
 
 AnyPerimeter = TypeVar("AnyPerimeter", bound=BasePerimeter)

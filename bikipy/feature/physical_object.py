@@ -84,7 +84,7 @@ class PhysicalObject(BikipyBase):
             self._gaze_start_point,
             self.perimeter_border_normal_meters,
             inspection_ax=self.attention_axes[0][0] if self.inspect_figure_file_path else None,
-            **self._global_attention_kwargs
+            **self._global_attention_kwargs,
         )
 
     @cached_property
@@ -95,7 +95,7 @@ class PhysicalObject(BikipyBase):
             self._gaze_start_point,
             self.maximum_radians_inter_gaze_perimeter,
             inspection_ax=self.attention_axes[0][1] if self.inspect_figure_file_path else None,
-            **self._global_attention_kwargs
+            **self._global_attention_kwargs,
         )
 
     @cached_property
@@ -119,15 +119,19 @@ class PhysicalObject(BikipyBase):
     def inspect_attention(self):
         self._exporting_figure = True
 
-        gaze_travel_direction_point_pixels = convert_meters_to_pixels(self._gaze_travel_direction_point, self.video)
+        gaze_travel_direction_point = (
+            convert_meters_to_pixels(self._gaze_travel_direction_point, self.video)
+            if self._inspect_pixels
+            else self._gaze_travel_direction_point
+        )
 
         self.attention_axes[1][0].scatter(
-            *gaze_travel_direction_point_pixels[self.logical_location_and_gaze].T,
+            *gaze_travel_direction_point[self.logical_location_and_gaze].T,
             alpha=MATPLOTLIB_SCATTER_ALPHA,
         )
 
         self.attention_axes[1][1].scatter(
-            *gaze_travel_direction_point_pixels[self.attention_observance_boolean_index].T,
+            *gaze_travel_direction_point[self.attention_observance_boolean_index].T,
             alpha=MATPLOTLIB_SCATTER_ALPHA,
         )
 
@@ -154,22 +158,25 @@ class PhysicalObject(BikipyBase):
         self._fig, self._axes = plt.subplots(
             nrows=2, ncols=2, figsize=(self.video.horizontal_resolution / 50.0, self.video.vertical_resolution / 50.0)
         )
-        if self.video.frame is not None:
-            for row_ax in self._axes:
-                for col_ax in row_ax:
+
+        for row_ax in self._axes:
+            for col_ax in row_ax:
+                if self.video.frame is not None:
                     col_ax.imshow(self.video.frame)
+                col_ax.set_aspect("equal", adjustable="box")
 
         self.attention_axes[1][0].set_title("proximity_filtered & gaze_filtered")
         self.attention_axes[1][1].set_title("Observation")
 
-        self._fig.suptitle("Observation cumulative filtration analysis")
+        self._fig.suptitle("Observation cumulative filtration analysis", fontsize=35)
+
+    @cached_property
+    def _inspect_pixels(self) -> bool:
+        return self.video.frame is not None
 
     @cached_property
     def _global_attention_kwargs(self) -> dict[str, Any]:
-        return {
-            "inspect_video": self.video,
-            "inspect_pixels": self.video.frame is not None
-        }
+        return {"inspect_video": self.video, "inspect_pixels": self._inspect_pixels}
 
     @cached_property
     def _gaze_start_point(self) -> NDArrayFp64:

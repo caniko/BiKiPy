@@ -36,7 +36,7 @@ def proximity_filter(
 ) -> NDArrayBool:
     """
     Filter with respect to proximity rules. (1) The inside_perimeter_border has to be in front of perimeter, but inside the perimeter;
-    (2) the outside_perimeter is outside of the perimeter.
+    (2) the outside_perimeter is outside the perimeter.
 
     :param perimeter:
     :param inside_perimeter_border: Cartesian coordinates of the inside_perimeter_border
@@ -85,9 +85,8 @@ def proximity_filter(
 
         perimeter.plot(
             ax=ax,
-            perimeter_plot_kwargs={
-                "perimeter_border_normal_pixels": perimeter_border_normal_meters * inspect_video.pixels_per_meter
-            },
+            inspect_pixels=inspect_pixels,
+            perimeter_border_normal_pixels=perimeter_border_normal_meters * inspect_video.pixels_per_meter,
         )
         ax.set_title("Proximity filter")
 
@@ -132,20 +131,22 @@ def gaze_direction_filter(
     inspect_video: Optional[VideoMetadata] = None,
     inspect: bool = False,
     inspect_pixels: bool = False,
+    inspect_edge_normals: bool = False,
     inspection_ax: Any = None,
 ) -> NDArrayBool:
     gaze_vector = gaze_travel_direction_point - gaze_start_point
 
+    normal_from_closest_point_on_edge = -perimeter.normal_from_closest_point_on_edge(gaze_travel_direction_point)
+
     closest_points_on_edges = perimeter.closest_point_on_edge_to_coordinates(gaze_travel_direction_point)
-    normal_from_closest_point_on_edge = perimeter.normal_from_closest_point_on_edge(gaze_travel_direction_point)
 
     direction_point_is_closer_than_start_point = np.linalg.norm(
         closest_points_on_edges - gaze_travel_direction_point, axis=1
-    ) <= np.linalg.norm(closest_points_on_edges - gaze_start_point, axis=1)
+    ) < np.linalg.norm(closest_points_on_edges - gaze_start_point, axis=1)
 
-    inner_angles = inner_angle(normal_from_closest_point_on_edge, gaze_vector)
+    angle_from_normal_to_gaze = angle_from_a_to_b(normal_from_closest_point_on_edge, gaze_vector)
 
-    result = direction_point_is_closer_than_start_point & (np.abs(inner_angles) <= max_radians)
+    result = direction_point_is_closer_than_start_point & (np.abs(angle_from_normal_to_gaze) <= max_radians)
 
     if inspection_ax is not None or inspect:
         inspect_video_is_none_during_inspection(inspect_video)
@@ -158,31 +159,39 @@ def gaze_direction_filter(
 
         if inspect_pixels:
             gaze_travel_direction_point = convert_meters_to_pixels(gaze_travel_direction_point, inspect_video)
+            if inspect_edge_normals:
+                closest_points_on_edges = convert_meters_to_pixels(closest_points_on_edges, inspect_video)
 
-        perimeter.plot(ax=ax)
+        perimeter.plot(inspect_pixels=inspect_pixels, ax=ax)
         ax.set_title("Gaze direction filter")
 
+        quiver_kwargs = {
+            "angles": "xy",
+            # "scale_units": "xy",
+            "scale": 1.0,
+            "alpha": MATPLOTLIB_SCATTER_ALPHA,
+        }
+
+        if inspect_edge_normals:
+            ax.quiver(
+                *closest_points_on_edges.T,
+                *normal_from_closest_point_on_edge.T,
+                label="EdgeNormals",
+                color="g",
+                **quiver_kwargs,
+            )
+
         ax.quiver(
-            *gaze_travel_direction_point[result].T,
-            *gaze_vector[result].T,
-            angles="xy",
-            # scale_units="xy",
-            # scale=1.0,
-            alpha=MATPLOTLIB_SCATTER_ALPHA,
-            label="Valid",
-            color="b",
+            *gaze_travel_direction_point[result].T, *gaze_vector[result].T, label="Valid", color="b", **quiver_kwargs
         )
 
         not_result = ~result
         ax.quiver(
             *gaze_travel_direction_point[not_result].T,
             *gaze_vector[not_result].T,
-            angles="xy",
-            # scale_units="xy",
-            # scale=2.0,
-            alpha=MATPLOTLIB_SCATTER_ALPHA,
             label="Invalid",
             color="r",
+            **quiver_kwargs,
         )
 
         ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=2)

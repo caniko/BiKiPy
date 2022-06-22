@@ -84,29 +84,6 @@ def clockwise_angel_2d(
     return angles
 
 
-def alternative_inner_angle(a_vector: NDArrayFp64, b_vector: NDArrayFp64) -> NDArrayFp64:
-    """
-    Computes the inner angle between two vectors, a and b, in radians
-
-    .. math::
-        \theta = \cos^{-1} \Big( \frac{\mathbf{a} \cdot \mathbf{b}}{|\mathbf{a}||\mathbf{b}|} \Big)
-
-    :param a_vector: Array of row vectors in which "the clock starts turning" counter counterclockwise
-    :param b_vector: Array of row vectors in which the clock stops
-    :type a_vector: NDArrayFp64
-    :type b_vector: NDArrayFp64
-    :return: Inner angle between a and b vector per frame
-    :rtype: NDArrayFp64
-    """
-    a_unit_vector = unit_vector(a_vector, force_1_dim=True)
-    b_unit_vector = unit_vector(b_vector, force_1_dim=True)
-
-    return np.arccos(
-        dot_prod_along_axis_1_1d(a_unit_vector, b_unit_vector)
-        / (np.linalg.norm(a_unit_vector, axis=1) * np.linalg.norm(b_unit_vector, axis=1))
-    )
-
-
 def inner_angle(vector_set_1: NDArrayFp64, vector_set_2: NDArrayFp64):
     """Returns the angle in radians between given vectors"""
     # TODO: https://github.com/numba/numba/pull/7785
@@ -114,23 +91,21 @@ def inner_angle(vector_set_1: NDArrayFp64, vector_set_2: NDArrayFp64):
     def inner_angle_func():
         index_is_undefined = np.isnan(v1_magnitudes) | np.isnan(v2_magnitudes)
 
-        result = []
+        result = np.zeros_like(index_is_undefined, dtype=float)
         for i in range(len(vector_set_1)):
             if index_is_undefined[i]:
-                result.append(np.nan)
+                result[i] = np.nan
                 continue
 
-            v1_u = vector_set_1[i] / v1_magnitudes[i]
-            v2_u = vector_set_2[i] / v2_magnitudes[i]
-            unit_vstack = np.stack((v1_u[-2:], v2_u[-2:]))
-
-            minor = np.linalg.det(unit_vstack)
+            minor = np.linalg.det(np.stack((vector_set_1[i], vector_set_2[i])))
             sign = 1 if minor == 0 else -np.sign(minor)
 
-            dot_p = np.dot(v1_u, v2_u)
+            dot_p = np.dot(vector_set_1[i], vector_set_2[i])
             dot_p = min(max(dot_p, -1.0), 1.0)
-            result.append(sign * np.arccos(dot_p))
-        return np.array(result)
+
+            result[i] = sign * np.arccos(dot_p)
+
+        return result
 
     v1_magnitudes = np.linalg.norm(vector_set_1, axis=1)
     v2_magnitudes = np.linalg.norm(vector_set_2, axis=1)
