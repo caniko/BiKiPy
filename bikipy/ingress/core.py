@@ -314,17 +314,17 @@ class BaseIngress(BikipyBase, ABC):
     # Motion <-> Feature fitting ===================================
 
     @cached_property
-    def metadata_fit_to_combined_feature_motion_df(self) -> pd.DataFrame:
-        if self.metadata.columns.nlevels >= self.experiment.combined_feature_motion_df.columns.nlevels:
-            return self.metadata
-        return copycat_assumes_levels_of_icon(self.metadata, self.experiment.combined_feature_motion_df, "Global")
+    def animal_metadata_fit_to_combined_feature_motion_df(self) -> pd.DataFrame:
+        if self.animal_metadata.columns.nlevels >= self.experiment.combined_feature_motion_df.columns.nlevels:
+            return self.animal_metadata
+        return copycat_assumes_levels_of_icon(self.animal_metadata, self.experiment.combined_feature_motion_df, "Global")
 
     # Client-side functions ===============================
 
     @cached_property
     def analysis_df(self) -> pd.DataFrame:
         df = pd.concat(
-            (self.metadata_fit_to_combined_feature_motion_df, self.experiment.combined_feature_motion_df),
+            (self.animal_metadata_fit_to_combined_feature_motion_df, self.experiment.combined_feature_motion_df),
             axis=1,
         )
         df.columns.names = (
@@ -404,14 +404,16 @@ class BaseIngress(BikipyBase, ABC):
         perimeter_set.apply_label_prefix_suffix(
             self.settings["perimeter"]["label_prefix"], self.settings["perimeter"]["label_suffix"]
         )
-        if self.settings["perimeter"]["perimeter_names_in_metadata"]:
-            name_map = get_name_map_from_name_df(self.project_root_directory)
-            1
 
         for perimeter in perimeter_set.all_perimeters:
             for field, value in self.settings["perimeter"]["fields"]["defined"].items():
                 if value is not None:
                     perimeter.__setattr__(field, value)
+
+        if self.settings["perimeter"]["perimeter_names_in_metadata"]:
+            name_map = get_name_map_from_name_df(self.project_root_directory, trial_id)
+            for label, perimeter in perimeter_set.label_to_perimeter.items():
+                perimeter.label = name_map[label]
 
         return perimeter_set
 
