@@ -7,19 +7,19 @@ from bikipy.perimeter.polygon.base import PolygonPerimeter
 
 
 class TriangularPerimeter(PolygonPerimeter):
-    _polygon_order: ClassVar[Optional[int]] = 3
+    polygon_order: ClassVar[Optional[int]] = 3
 
     @property
     def base_a(self):
-        return self.corners[0]
+        return self.vertices_in_meters[0]
 
     @property
     def base_b(self):
-        return self.corners[1]
+        return self.vertices_in_meters[1]
 
     @property
     def apex(self):
-        return self.corners[2]
+        return self.vertices_in_meters[2]
 
     def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         """

@@ -46,7 +46,7 @@ def renamed_load(file_obj):
 
 def deserialise_generic(obj):
     return {
-        "corners": obj.sides,
+        "vertices_in_meters": obj.sides,
     }
 
 

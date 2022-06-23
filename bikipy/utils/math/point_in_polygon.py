@@ -13,7 +13,7 @@ from bikipy.utils.math.vector import dot_prod_along_axis_1_1d, orthogonal_unit_v
 from bikipy.utils.misc import generic_inspection_finalization
 
 
-def inaccurate_points_in_parallelogram(
+def inaccurate_points_in_rectangle(
     ab_mid_corner: NDArrayFp64,
     corner_a: NDArrayFp64,
     corner_b: NDArrayFp64,
@@ -22,7 +22,7 @@ def inaccurate_points_in_parallelogram(
     inspect_image: Optional[NDArrayFp64],
 ) -> NDArrayBool:
     """
-    Algebraic solver for finding points contained inside the respective parallelogram.
+    Algebraic solver for finding points contained inside the respective rectangle.
 
     Theoretical source: https://math.stackexchange.com/a/2643651/604035
     """
@@ -35,7 +35,7 @@ def inaccurate_points_in_parallelogram(
         orthogonal_ca_vector = cb_vector
         orthogonal_cb_vector = ca_vector
     else:
-        # Parallelogram
+        # Rectangle
         orthogonal_ca_vector = orthogonal_unit_vector(ca_vector)
         orthogonal_cb_vector = orthogonal_unit_vector(cb_vector)
 
@@ -63,7 +63,7 @@ def inaccurate_points_in_parallelogram(
         ax.scatter(*coordinates[boolean_index].T)
         ax.scatter(*coordinates[~boolean_index].T)
         ax.legend(("A", "B", "valid_points", "invalid_points"))
-        ax.set_title("Point in parallelogram")
+        ax.set_title("Point in rectangle")
 
         generic_inspection_finalization(inspect)
 

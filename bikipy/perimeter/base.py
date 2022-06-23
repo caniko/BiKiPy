@@ -12,12 +12,11 @@ from bikipy.core.base_class import BikipyBase, BikipyBaseHashable
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.core.video import VideoMetadataMixin, convert_meters_to_pixels
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
-from bikipy.utils.image import read_image
 from bikipy.utils.io.makesense import read_makesense_point, get_point_from_makesense_row
 
 logger = getLogger(__name__)
 
-StringPerimeterShapes = Literal["circle", "parallelogram", "polygon", "rectangle"]
+StringPerimeterShapes = Literal["circle", "polygon", "rectangle"]
 
 
 class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
@@ -39,7 +38,18 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
 
     @abstractmethod
     def change_reference(self, new_reference: Optional[NDArrayFp64]):
-        """"""
+        ...
+
+    @abstractmethod
+    def expand(self, perimeter_border_normal_meters: float | NDArrayFp64):
+        ...
+
+    @abstractmethod
+    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> NDArrayFp64:
+        ...
+
+    @abstractmethod
+    def vector_from_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         ...
 
     @abstractmethod
@@ -177,7 +187,7 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
             in case of overlap with respect to confinement
 
         clean_outliers
-            Clear elements that aren't confined to any of the given border_corners
+            Clear elements that aren't confined to any of the given border_vertices
             as a final action before returning the sequential perimeter presence
 
         Returns
@@ -206,7 +216,7 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
                 presence[overlap_locations[perimeter.label]] = 0
                 logger.info(
                     f"BasePerimeter {perimeter.label} has coordinate overlap with "
-                    f"other border_corners, {overlap_locations[perimeter.label].size}"
+                    f"other border_vertices, {overlap_locations[perimeter.label].size}"
                 )
 
             presence[confined_coord_booleans_index] = perimeter.int_id
@@ -486,10 +496,10 @@ def perimeter_set_from_makesense(
             from bikipy.perimeter.radial.circle import CirclePerimeter
 
             return CirclePerimeter.from_makesense_line(perimeter_path, **perimeter_kwargs)
-        case "rectangle" | "parallelogram":
-            from bikipy.perimeter.polygon.parallelogram import ParallelogramPerimeter
+        case "rectangle" | "rectangle":
+            from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 
-            return ParallelogramPerimeter.from_makesense_csv_rectangle(perimeter_path, **perimeter_kwargs)
+            return RectanglePerimeter.from_makesense_csv_rectangle(perimeter_path, **perimeter_kwargs)
         case "polygon":
             from bikipy.perimeter.polygon.base import PolygonPerimeter
 

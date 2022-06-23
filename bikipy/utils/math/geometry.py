@@ -38,11 +38,11 @@ def clockwise_sort_perimeter_centroids(perimeters: Sequence):
 
 @lru_cache
 def expand_bikipy_perimeter(perimeter, *args, **kwargs):
-    return np.array(expand_parallelogram(perimeter.corners, *args, **kwargs))
+    return np.array(expand_rectangle(perimeter.vertices_in_meters, *args, **kwargs))
 
 
-def expand_parallelogram(
-    perimeter_corners: Sequence,
+def expand_rectangle(
+    perimeter_vertices: Sequence,
     offset: float,
     y_inverted: bool = False,
     inspect: bool = False,
@@ -51,7 +51,7 @@ def expand_parallelogram(
     x_offset = offset = float(offset)
     y_offset = -offset if y_inverted else offset
 
-    up_right, down_right, down_left, up_left = clockwise_sort_points(perimeter_corners)
+    up_right, down_right, down_left, up_left = clockwise_sort_points(perimeter_vertices)
 
     off_down_left = (down_left[0] - x_offset, down_left[1] - y_offset)
     off_down_right = (down_right[0] + x_offset, down_right[1] - y_offset)
@@ -62,7 +62,7 @@ def expand_parallelogram(
         fig, axes = plt.subplots(2, 1)
         fig.gca().invert_yaxis()
 
-        fig.suptitle("Parallelogram expansion")
+        fig.suptitle("Rectangle expansion")
         axes[0].set_title("Scattered")
         axes[1].set_title("Line")
         fig.tight_layout()

@@ -1,11 +1,11 @@
 import numpy as np
 
-from bikipy.utils.math import points_in_parallelogram
+from bikipy.utils.math import points_in_rectangle
 
 
-def test_points_in_parallelogram():
+def test_points_in_rectangle():
     # FIXME: Does not work when the intersection is on (0, 0); very rare case
-    inside, outside, on_border = points_in_parallelogram(
+    inside, outside, on_border = points_in_rectangle(
         ab_mid_corner=np.array((0, 0)),
         corner_a=np.array((0, 1)),
         corner_b=np.array((1, 0)),

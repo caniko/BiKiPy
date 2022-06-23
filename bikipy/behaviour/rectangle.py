@@ -43,14 +43,14 @@ def motion_multi_indexer_for_quadrant(category: Any, level: int):
 
 
 class Quadrant(BikipyBase):
-    corners: NDArrayFp64
+    vertices_in_meters: NDArrayFp64
     framewise_confined_coordinates: NDArrayFp64
     fps: float
     quadrant_index: int
 
     @cached_property
     def confinement_boolean_index(self) -> NDArrayBool:
-        return parallel_point_in_polygon(self.framewise_confined_coordinates, clockwise_sort_points(self.corners))
+        return parallel_point_in_polygon(self.framewise_confined_coordinates, clockwise_sort_points(self.vertices_in_meters))
 
     @cached_property
     def seconds_present(self) -> float:
@@ -150,7 +150,7 @@ class RectangleEnclosedTrial(BaseTrial):
         return result
 
     @cached_property
-    def quadrant_grid_coordinate_to_corners(self) -> dict[quadrant_grid_typing, NDArrayFp64]:
+    def quadrant_grid_coordinate_to_vertices(self) -> dict[quadrant_grid_typing, NDArrayFp64]:
         horizontal_uniform_distance = self.video.metric_horizontal_resolution / self.rectangle_2d_bin[0]
         vertical_uniform_distance = self.video.metric_vertical_resolution / self.rectangle_2d_bin[1]
         result = {}
@@ -181,7 +181,7 @@ class RectangleEnclosedTrial(BaseTrial):
     def quadrant_index_to_quadrant_grid_coordinate(self) -> dict[int, quadrant_grid_typing]:
         return {
             i: quadrant_grid_coordinate
-            for i, quadrant_grid_coordinate in enumerate(self.quadrant_grid_coordinate_to_corners, start=1)
+            for i, quadrant_grid_coordinate in enumerate(self.quadrant_grid_coordinate_to_vertices, start=1)
         }
 
     @cached_property
@@ -199,7 +199,7 @@ class RectangleEnclosedTrial(BaseTrial):
         """
         result = {
             quadrant_grid_coordinate: Quadrant(
-                corners=self.quadrant_grid_coordinate_to_corners[quadrant_grid_coordinate],
+                verteces_in_pixelsself.quadrant_grid_coordinate_to_vertices[quadrant_grid_coordinate],
                 framewise_confined_coordinates=self.framewise_confined_coordinates,
                 fps=self.video.fps,
                 quadrant_index=quadrant_index,
@@ -214,7 +214,7 @@ class RectangleEnclosedTrial(BaseTrial):
 
             colors = plt.cm.rainbow(np.linspace(0, 1, len(result) + 1))
             for color, (grid_coordinate, quadrant) in zip(colors, result.items()):
-                ax.plot(*quadrant.corners.T, label=f"({grid_coordinate[0]}, {grid_coordinate[1]})", color=color)
+                ax.plot(*quadrant.vertices_in_meters.T, label=f"({grid_coordinate[0]}, {grid_coordinate[1]})", color=color)
                 ax.scatter(*self.framewise_confined_coordinates[quadrant.confinement_boolean_index].T, color=color)
 
                 confined = confined | quadrant.confinement_boolean_index
@@ -257,7 +257,7 @@ class RectangleEnclosedTrial(BaseTrial):
 
     # Center vs Periphery ==============================================================
     @cached_property
-    def center_rectangle_corners(self) -> NDArrayFp64:
+    def center_rectangle_vertices(self) -> NDArrayFp64:
         if self.center_box_to_spatial_resolution_ratio is None:
             msg = "center_box_to_spatial_resolution_ratio must be defined for center and periphery analysis"
             raise AttributeError(msg)
@@ -274,7 +274,7 @@ class RectangleEnclosedTrial(BaseTrial):
 
     @cached_property
     def center_boolean_index(self) -> NDArrayBool:
-        return parallel_point_in_polygon(self.framewise_confined_coordinates, self.center_rectangle_corners)
+        return parallel_point_in_polygon(self.framewise_confined_coordinates, self.center_rectangle_vertices)
 
     @cached_property
     def periphery_boolean_index(self) -> NDArrayBool:

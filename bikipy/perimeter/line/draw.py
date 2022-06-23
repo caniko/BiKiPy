@@ -36,11 +36,11 @@ def borders_on_image(
 
     plt.imshow(img)
 
-    plt.title("Greater than border_corners")
+    plt.title("Greater than border_vertices")
     greater_than_borders = [
         LinePerimeter(coordinate, orientation, logic=">", resolution=resolution) for coordinate in plt.ginput(0, 0)
     ]
-    plt.title("Less than border_corners")
+    plt.title("Less than border_vertices")
     less_than_borders = [
         LinePerimeter(coordinate, orientation, logic="<", resolution=resolution) for coordinate in plt.ginput(0, 0)
     ]
