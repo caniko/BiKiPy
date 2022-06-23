@@ -11,6 +11,10 @@ def chain_lists_to_tuple(lists: Iterable[list]) -> tuple:
     return tuple(chain(*lists))
 
 
+def chain_iterables_to_multi_index(iterables: Iterable[Iterable[tuple[str, ...]]]) -> pd.MultiIndex:
+    return pd.MultiIndex.from_tuples(chain(*iterables))
+
+
 def max_len_in_iterable(iterable: Iterable[Sequence]):
     return max((len(feature_header) for feature_header in iterable))
 
@@ -19,28 +23,37 @@ def ndarray_to_tuple(array: NDArray):
     return tuple(map(tuple, array))
 
 
+def add_filler_to_sequence(
+    sequence: Iterable[Sequence[str]], filler: str | Iterable[str], on_start: bool = True
+) -> list[tuple[str, ...]]:
+    if isinstance(filler, str):
+        filler = [filler]
+    return [(*filler, *headers) if on_start else (*headers, *filler) for headers in sequence]
+
+
 def add_n_levels_to_multi_index(
-    multi_index: pd.Index | pd.MultiIndex, n_levels: int, on_start: bool = True, filler: Optional[str] = None
+    multi_index: pd.Index | pd.MultiIndex,
+    n_levels: int,
+    filler: Optional[str] = None,
+    on_start: bool = True,
 ) -> pd.MultiIndex:
     multi_index_as_tuples = list(multi_index)
     levels_to_add = [filler or "" for _ in range(n_levels)]
 
     if isinstance(multi_index, pd.MultiIndex):
-        if on_start:
-            return pd.MultiIndex.from_tuples([(*levels_to_add, *headers) for headers in multi_index_as_tuples])
-        return pd.MultiIndex.from_tuples([(*headers, *levels_to_add) for headers in multi_index_as_tuples])
+        return pd.MultiIndex.from_tuples(add_filler_to_sequence(multi_index_as_tuples, levels_to_add))
 
     elif isinstance(multi_index, pd.Index):
-        if on_start:
-            return pd.MultiIndex.from_tuples([(*levels_to_add, headers) for headers in multi_index_as_tuples])
-        return pd.MultiIndex.from_tuples([(headers, *levels_to_add) for headers in multi_index_as_tuples])
+        return pd.MultiIndex.from_tuples(
+            [(*levels_to_add, headers) if on_start else (headers, *levels_to_add) for headers in multi_index_as_tuples]
+        )
 
 
 def copycat_assumes_levels_of_icon(copycat: pd.DataFrame, icon: pd.DataFrame, filler: Optional[str] = None):
     assert copycat.columns.nlevels < icon.columns.nlevels
     clone_df = copycat.copy()
     clone_df.columns = add_n_levels_to_multi_index(
-        clone_df.columns, icon.columns.nlevels - copycat.columns.nlevels, filler
+        clone_df.columns, icon.columns.nlevels - copycat.columns.nlevels, filler=filler
     )
     clone_df.columns.names = icon.columns.names
     return clone_df

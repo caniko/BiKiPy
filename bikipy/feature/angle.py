@@ -3,7 +3,7 @@ from warnings import warn
 
 import numba
 import numpy as np
-from numba import njit
+from numba import njit, jit
 
 from bikipy import ENABLE_NUMBA
 from bikipy.core.typing import NDArrayFp64
@@ -195,4 +195,5 @@ ANGLE_METHOD_TO_FUNC = {
 
 
 if ENABLE_NUMBA:
-    angle_from_a_to_b = njit(cache=True)(angle_from_a_to_b)
+    pass
+    # angle_from_a_to_b = jit(cache=True)(angle_from_a_to_b)

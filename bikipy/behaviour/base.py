@@ -1,6 +1,7 @@
 from concurrent.futures import ProcessPoolExecutor
 from copy import copy
 from functools import cached_property, reduce
+from itertools import chain
 from logging import getLogger
 from operator import attrgetter
 from pathlib import Path
@@ -28,14 +29,16 @@ from yaspin.spinners import Spinners
 from bikipy import ENABLE_PROCESS_POOLING
 from bikipy.core.base_class import BikipyBaseHashable
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
-from bikipy.core.video import VideoMetadataMixin, VideoMetadata
+from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_multi_indexer
-from bikipy.perimeter.base import PerimeterSet, AnyPerimeter
+from bikipy.perimeter.base import AnyPerimeter, PerimeterSet
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.collection_utils import (
     chain_lists_to_tuple,
     copycat_assumes_levels_of_icon,
     max_len_in_iterable,
+    add_filler_to_sequence,
+    chain_iterables_to_multi_index,
 )
 from bikipy.utils.ranged_dict import RangeDict
 
@@ -73,6 +76,7 @@ class BaseTrial(Behaviour):
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
     )
     stage: Optional[str] = Field(description="The semantic stage of the experiment")
+    inspect: bool = False
     inspect_directory: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
     inspect_image: Optional[NDArray] = Field(
         description="Image to use as background in the plots for visualising the analysis data",
@@ -120,10 +124,8 @@ class BaseTrial(Behaviour):
 
     @classmethod
     @property
-    def motion_column_index_levels(cls):
-        if cls.experiment_stage_index:
-            return 3
-        return 2
+    def column_index_levels(cls):
+        return 3 if cls.experiment_stage_index else 2
 
     @cached_property
     def manual_center_meters(self) -> NDArrayFp64 | None:
@@ -153,6 +155,8 @@ class BaseTrial(Behaviour):
         return reader_init_func(
             df_path=self.coordinate_data_path,
             manual_video=self.video,
+            crop_time_seconds=self.crop_time_seconds,
+            # crop_from_end=self.crop_from_end,
             **self.reader_kwargs,
         )
 
@@ -221,10 +225,6 @@ class BaseTrial(Behaviour):
         return video
 
     @cached_property
-    def _inspect_bool(self) -> bool:
-        return bool(self.inspect_directory)
-
-    @cached_property
     def _uint_zeros_based_on_frame_length(self) -> NDArrayFp64:
         return np.zeros(self.number_of_frames, dtype=np.uint8)
 
@@ -250,7 +250,7 @@ class BaseExperiment(Behaviour):
     inspect_image_path: Optional[FilePath] = Field(description="Used globally")
     compute_only_one_df_row: bool = Field(False, description="Used to rapidly generate combo df during debugging")
 
-    trial_classes: ClassVar[tuple[Any]] = Field(..., description="Trial classes designed for this experiment class")
+    trial_classes: ClassVar[tuple["Trial"]] = Field(..., description="Trial classes designed for this experiment class")
 
     @validator("trial_id_to_trial_class_name")
     def sort_trial_id_to_trial_class_name_ascending(cls, value):
@@ -280,8 +280,23 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def trial_class_names(cls) -> tuple[str]:
+    def column_index_levels(cls) -> int:
+        return 3 if cls.has_trials_in_stages else 2
+
+    @classmethod
+    @property
+    def trial_classes_with_feature_headers(cls) -> int:
+        return sum(1 for _trial_class in cls.trial_classes if _trial_class.trial_has_defined_features)
+
+    @classmethod
+    @property
+    def trial_class_names(cls) -> tuple[str, ...]:
         return tuple(trial_class.__name__ for trial_class in cls.trial_classes)
+
+    @classmethod
+    @property
+    def trial_class_labels(cls) -> tuple[str, ...]:
+        return tuple(trial_class.trial_label for trial_class in cls.trial_classes)
 
     @classmethod
     @property
@@ -560,7 +575,13 @@ class BaseExperiment(Behaviour):
     @property
     def feature_column_index(cls) -> pd.MultiIndex:
         all_feature_headers = chain_lists_to_tuple(
-            (trial_class.feature_headers for trial_class in cls.trial_classes if trial_class.trial_has_defined_features)
+            (
+                add_filler_to_sequence(trial_class.feature_headers, trial_class.trial_label)
+                if cls.trial_classes_with_feature_headers > 1
+                else trial_class.feature_headers
+                for trial_class in cls.trial_classes
+                if trial_class.trial_has_defined_features
+            )
         )
         if not all_feature_headers:
             msg = f"{cls.__name__} does not have any features, yet feature column index was called"
@@ -576,7 +597,7 @@ class BaseExperiment(Behaviour):
     @classmethod
     @property
     def motion_column_headers(cls) -> list[tuple[str, ...], ...]:
-        return motion_multi_indexer("All", cls.feature_column_index.nlevels)
+        return motion_multi_indexer("All", 2)
 
     @classmethod
     @property
@@ -588,15 +609,9 @@ class BaseExperiment(Behaviour):
     @classmethod
     @property
     def animal_motion_column_index(cls) -> pd.MultiIndex:
-        tuples = []
-        for trial_class in cls.trial_class_names:
-            tuples.extend((trial_class, *column) for column in cls.motion_column_index)
-        return pd.MultiIndex.from_tuples(tuples)
-
-    @classmethod
-    @property
-    def motion_column_index_levels(cls) -> int:
-        return max((trial_class.motion_column_index_levels for trial_class in cls.trial_classes))
+        return chain_iterables_to_multi_index(
+            add_filler_to_sequence(cls.motion_column_index, trial_label) for trial_label in cls.trial_class_labels
+        )
 
     # Helper methods =====================================
 

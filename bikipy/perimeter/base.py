@@ -12,7 +12,7 @@ from bikipy.core.base_class import BikipyBase, BikipyBaseHashable
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.core.video import VideoMetadataMixin, convert_meters_to_pixels
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
-from bikipy.utils.io.makesense import read_makesense_point, get_point_from_makesense_row
+from bikipy.utils.io.makesense import get_point_from_makesense_row, read_makesense_point
 
 logger = getLogger(__name__)
 
@@ -49,7 +49,7 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
         ...
 
     @abstractmethod
-    def vector_from_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
+    def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         ...
 
     @abstractmethod
@@ -161,74 +161,6 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
             plt.show()
 
         return coordinate_confinement_boolean_index
-
-    @classmethod
-    def detect_sequential_border_presence(
-        cls,
-        coordinates: NDArrayFp64,
-        superior_poly_border_instances: Optional[Sequence],
-        inferior_poly_border_instances: Optional[Sequence],
-        clean_outliers: bool = True,
-    ):
-        """
-        Define sequential perimeter confinements of coordinates
-
-        Parameters
-        ----------
-        coordinates: NDArrayFp64
-            Coordinates that will have their confinement tested
-
-        superior_poly_border_instances: Sequence
-            PolygonPerimeter instances that will have the highest priority
-            in case of overlap with respect to confinement
-
-        inferior_poly_border_instances: Sequence
-            PolygonPerimeter instances that will have the lowest priority
-            in case of overlap with respect to confinement
-
-        clean_outliers
-            Clear elements that aren't confined to any of the given border_vertices
-            as a final action before returning the sequential perimeter presence
-
-        Returns
-        -------
-        NDArrayFp64 that stores the sequential perimeter presence across frames
-        """
-
-        coordinates = np.asarray(coordinates)
-
-        perimeter_sequence = (
-            (*inferior_poly_border_instances, *superior_poly_border_instances)
-            if inferior_poly_border_instances
-            else superior_poly_border_instances
-        )
-        presence = np.zeros(
-            coordinates.shape[0],
-            dtype=np.uint8 if len(perimeter_sequence) <= 255 else np.uint16,
-        )
-
-        overlap_locations = {}
-        for perimeter in perimeter_sequence:
-            confined_coord_booleans_index = perimeter.coordinate_confinement_boolean_index(coordinates)
-
-            if presence[confined_coord_booleans_index].any():
-                overlap_locations[perimeter.label] = np.flatnonzero(presence[confined_coord_booleans_index])
-                presence[overlap_locations[perimeter.label]] = 0
-                logger.info(
-                    f"BasePerimeter {perimeter.label} has coordinate overlap with "
-                    f"other border_vertices, {overlap_locations[perimeter.label].size}"
-                )
-
-            presence[confined_coord_booleans_index] = perimeter.int_id
-
-        valid_indices = np.nonzero(presence)
-        if clean_outliers:
-            presence = presence[valid_indices]
-
-        boolean_array = np.full(coordinates.shape[0], False, dtype=np.bool)
-        boolean_array[valid_indices] = True
-
-        return presence, valid_indices, boolean_array
 
     def apply_label_prefix_suffix(self, prefix: Optional[str], suffix: Optional[str]) -> None:
         if prefix:

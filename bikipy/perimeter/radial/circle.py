@@ -5,7 +5,10 @@ import numpy as np
 from pydantic import FilePath, validator
 
 from bikipy.core.typing import NDArrayFp64
-from bikipy.perimeter.base import BasePerimeter, perimeter_set_from_image_name_to_perimeters
+from bikipy.perimeter.base import (
+    BasePerimeter,
+    perimeter_set_from_image_name_to_perimeters,
+)
 from bikipy.perimeter.radial.utils import plot_circle
 from bikipy.utils.io.makesense import (
     get_line_endpoints_from_makesense_row,
@@ -91,14 +94,12 @@ class CirclePerimeter(BasePerimeter):
         return self.__class__(**kwargs)
 
     def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> NDArrayFp64:
-        return self.center_meters + self.radius_meters * unit_vector(
-            self.vector_from_closest_point_on_edge(coordinates)
-        )
+        return self.center_meters + self.radius_meters * unit_vector(self.vector_to_closest_point_on_edge(coordinates))
 
-    def vector_from_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
+    def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         """
         Strictly for circles, these vectors are the closest normals from the circle
         :param coordinates:
         :return:
         """
-        return unit_vector(coordinates - self.center_meters)
+        return unit_vector(self.center_meters - coordinates)

@@ -4,10 +4,7 @@ from logging import getLogger
 import pandas as pd
 from pydantic import DirectoryPath, FilePath, PositiveInt
 
-from bikipy.ingress.utils.io import (
-    infer_metadata_path,
-    load_settings,
-)
+from bikipy.ingress.utils.io import infer_metadata_path, load_settings
 
 logger = getLogger(__name__)
 

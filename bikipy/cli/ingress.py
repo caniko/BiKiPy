@@ -6,7 +6,11 @@ import click
 from pydantic import DirectoryPath, validate_arguments
 
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
-from bikipy.ingress.core import analyze_and_save, auto_define_ingress_object, init_settings
+from bikipy.ingress.core import (
+    analyze_and_save,
+    auto_define_ingress_object,
+    init_settings,
+)
 
 
 @click.group

@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 from pydantic import FilePath
 
-from bikipy.core.typing import NDArrayUint8, NDArrayFp64
+from bikipy.core.typing import NDArrayFp64, NDArrayUint8
 
 
 def save_plt_fig_cv(figure, save_path: Path) -> None:

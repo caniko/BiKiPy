@@ -50,7 +50,9 @@ class Quadrant(BikipyBase):
 
     @cached_property
     def confinement_boolean_index(self) -> NDArrayBool:
-        return parallel_point_in_polygon(self.framewise_confined_coordinates, clockwise_sort_points(self.vertices_in_meters))
+        return parallel_point_in_polygon(
+            self.framewise_confined_coordinates, clockwise_sort_points(self.vertices_in_meters)
+        )
 
     @cached_property
     def seconds_present(self) -> float:
@@ -85,7 +87,7 @@ class RectangleEnclosedExperiment(BaseExperiment):
         for quadrant_grid_coordinate in cls.quadrant_grid_coordinates:
             category = f"Quadrant{quadrant_grid_coordinate}"
             quadrant_summary_columns.extend(
-                motion_multi_indexer_for_quadrant(category, cls.feature_column_index.nlevels)
+                motion_multi_indexer_for_quadrant(category, 2)
             )
         result = [
             *super().motion_column_headers,
@@ -94,10 +96,10 @@ class RectangleEnclosedExperiment(BaseExperiment):
         ]
         if cls.center_box_to_spatial_resolution_ratio:
             result += [
-                *motion_multi_indexer("Center", cls.motion_column_index_levels),
-                *perimeter_multi_indexer("Center", cls.motion_column_index_levels),
-                *motion_multi_indexer("Periphery", cls.motion_column_index_levels),
-                *perimeter_multi_indexer("Periphery", cls.motion_column_index_levels),
+                *motion_multi_indexer("Center", cls.column_index_levels),
+                *perimeter_multi_indexer("Center", cls.column_index_levels),
+                *motion_multi_indexer("Periphery", cls.column_index_levels),
+                *perimeter_multi_indexer("Periphery", cls.column_index_levels),
             ]
         return result
 
@@ -199,14 +201,14 @@ class RectangleEnclosedTrial(BaseTrial):
         """
         result = {
             quadrant_grid_coordinate: Quadrant(
-                verteces_in_pixelsself.quadrant_grid_coordinate_to_vertices[quadrant_grid_coordinate],
+                vertices_in_meters=self.quadrant_grid_coordinate_to_vertices[quadrant_grid_coordinate],
                 framewise_confined_coordinates=self.framewise_confined_coordinates,
                 fps=self.video.fps,
                 quadrant_index=quadrant_index,
             )
             for quadrant_index, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items()
         }
-        if self._inspect_bool:
+        if self.inspect:
             fig, ax = plt.subplots()
             ax.set_title(f"Quadrants_Trial_#{self.best_id}")
 
@@ -214,7 +216,9 @@ class RectangleEnclosedTrial(BaseTrial):
 
             colors = plt.cm.rainbow(np.linspace(0, 1, len(result) + 1))
             for color, (grid_coordinate, quadrant) in zip(colors, result.items()):
-                ax.plot(*quadrant.vertices_in_meters.T, label=f"({grid_coordinate[0]}, {grid_coordinate[1]})", color=color)
+                ax.plot(
+                    *quadrant.vertices_in_meters.T, label=f"({grid_coordinate[0]}, {grid_coordinate[1]})", color=color
+                )
                 ax.scatter(*self.framewise_confined_coordinates[quadrant.confinement_boolean_index].T, color=color)
 
                 confined = confined | quadrant.confinement_boolean_index

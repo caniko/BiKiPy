@@ -9,6 +9,7 @@ ingress:
 perimeter:
   label_prefix: object
   label_suffix: null
+  perimeter_names_in_metadata: false
   fields:
     defined:
       impenetrable: true
@@ -56,7 +57,7 @@ trial:
       coordinate_data_path: null
       object_1: null
       object_tracking_label_for_kinematics: center_eye
-      physical_object_inspect: true
+      physical_object_inspect: false
       gaze_start_point_label: center_eye
       gaze_travel_direction_point_label: nose
       perimeter_border_normal_meters: 0.02
@@ -117,7 +118,7 @@ trial:
         object_2: null
         object_3: null
         object_4: null
-        crop_time_seconds: 600
+        crop_time_seconds: 300
       required:
         object_2: None
         object_3: None

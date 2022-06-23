@@ -12,7 +12,11 @@ from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BikipyBase
 from bikipy.core.typing import NDArrayBool, NDArrayFp64, NDArrayInt16
-from bikipy.core.video import VideoMetadata, VideoMetadataMixin, convert_meters_to_pixels
+from bikipy.core.video import (
+    VideoMetadata,
+    VideoMetadataMixin,
+    convert_meters_to_pixels,
+)
 from bikipy.feature.attention.main import (
     gaze_direction_filter,
     proximity_filter,
@@ -253,7 +257,8 @@ class PhysicalObjectSet(VideoMetadataMixin):
     @cached_property
     def object_specific_observation(self) -> dict[Any, int]:
         return {
-            physical_object.label: physical_object.raw_seconds_observing for physical_object in self.physical_objects
+            physical_object.label: physical_object.attention_filtered_seconds_observing
+            for physical_object in self.physical_objects
         }
 
     @cached_property

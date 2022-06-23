@@ -7,14 +7,14 @@ bare metadata, and its purpose is to either initialize or relay an existing Vide
 """
 from functools import cached_property
 from logging import getLogger
-from typing import Optional, Any, ClassVar
+from typing import Any, ClassVar, Optional
 
 import numpy as np
 from numpy import ndarray
 from pydantic import FilePath
 
 from bikipy.core.base_class import BikipyBase
-from bikipy.core.typing import NDArrayFp64, NDArrayUint8, NDArrayInt16
+from bikipy.core.typing import NDArrayFp64, NDArrayInt16, NDArrayUint8
 from bikipy.utils.video import get_video_data
 
 logger = getLogger(__name__)

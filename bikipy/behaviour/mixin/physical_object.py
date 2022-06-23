@@ -21,8 +21,8 @@ class PhysicalObjectTrialMixin(BikipyBase):
     )
 
     maximum_radians_inter_gaze_perimeter: float = 1 / 3 * np.pi
-    minimum_seconds_attention: float = 0.5
-    maximum_seconds_distraction: float = 0.5
+    minimum_seconds_attention: float = 0.3
+    maximum_seconds_distraction: float = 0.65
 
     physical_object_inspect: bool = False
 
@@ -37,7 +37,9 @@ class PhysicalObjectTrialMixin(BikipyBase):
     @classmethod
     @property
     def feature_headers(cls) -> list[tuple[str, ...]]:
-        return list(pd.MultiIndex.from_product([["SecondsObserving"], ["All", *cls.physical_object_labels]]))
+        return list(
+            pd.MultiIndex.from_product([["SecondsObserving"], ["All", *cls.physical_object_labels]])
+        )
 
     @cached_property
     def perimeters(self):

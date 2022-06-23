@@ -2,7 +2,6 @@ import numpy as np
 
 from bikipy.core.video import VideoMetadata
 
-
 video_test_a = VideoMetadata(
     manual_recording_resolution=[1920, 1080],
     manual_fps=30,

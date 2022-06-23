@@ -8,7 +8,7 @@ import numpy as np
 import openpyxl
 import pandas as pd
 import yaml
-from pydantic import DirectoryPath, FilePath, validate_arguments, PositiveInt
+from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 
 from bikipy.behaviour.base import Experiment
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
@@ -19,15 +19,19 @@ from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
     first_meters_per_pixel_in_perimeter_directory,
 )
-from bikipy.ingress.plugin.perimeter import get_perimeter_data, get_perimeter_name_df, get_name_map_from_name_df
+from bikipy.ingress.plugin.perimeter import (
+    get_name_map_from_name_df,
+    get_perimeter_data,
+    get_perimeter_name_df,
+)
 from bikipy.ingress.utils import settings
 from bikipy.ingress.utils.io import (
     get_dataset_directory_path,
     get_inspect_directory_path,
     get_plugin_directory_path,
     get_project_settings_path,
-    load_settings,
     infer_metadata_path,
+    load_settings,
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
 from bikipy.ingress.utils.settings import get_definable_settings
@@ -183,7 +187,9 @@ class BaseIngress(BikipyBase, ABC):
             )
             raise ValueError(msg)
         elif self.animal_metadata is not None:
-            trial_id_df = pd.concat([self.animal_metadata for _ in range(self.experiment_class.trial_sequence_length)], axis=0)
+            trial_id_df = pd.concat(
+                [self.animal_metadata for _ in range(self.experiment_class.trial_sequence_length)], axis=0
+            )
             trial_id_df.sort_index(inplace=True)
 
             new_index = []
@@ -317,12 +323,14 @@ class BaseIngress(BikipyBase, ABC):
     def animal_metadata_fit_to_combined_feature_motion_df(self) -> pd.DataFrame:
         if self.animal_metadata.columns.nlevels >= self.experiment.combined_feature_motion_df.columns.nlevels:
             return self.animal_metadata
-        return copycat_assumes_levels_of_icon(self.animal_metadata, self.experiment.combined_feature_motion_df, "Global")
+        return copycat_assumes_levels_of_icon(
+            self.animal_metadata, self.experiment.combined_feature_motion_df, "Global"
+        )
 
     # Client-side functions ===============================
 
     @cached_property
-    def analysis_df(self) -> pd.DataFrame:
+    def animal_analysis_df(self) -> pd.DataFrame:
         df = pd.concat(
             (self.animal_metadata_fit_to_combined_feature_motion_df, self.experiment.combined_feature_motion_df),
             axis=1,
@@ -338,7 +346,6 @@ class BaseIngress(BikipyBase, ABC):
 
     def save_analysis_data(self):
         # self.analysis_df.to_parquet(self.result_directory_path / f"animal_id_indexed_result_data.parquet")
-        self.experiment.combined_feature_motion_df
         self.experiment.combined_feature_motion_df.to_excel(
             self.result_directory_path / "animal_id_indexed_result_data.xlsx"
         )

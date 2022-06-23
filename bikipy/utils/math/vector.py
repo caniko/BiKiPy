@@ -43,7 +43,6 @@ def unit_vector(row_vectors: NDArrayFp64, force_1_dim: bool = False) -> NDArrayF
     return (row_vectors.T / np.linalg.norm(row_vectors, axis=1)).T
 
 
-@validate_arguments
 def orthogonal_unit_vector(vector: NDArrayFp64) -> NDArrayFp64:
     """
     Computes the orthogonal unit vector of the given 2D vector
@@ -63,7 +62,6 @@ def orthogonal_unit_vector(vector: NDArrayFp64) -> NDArrayFp64:
         return unit_vector(np.array((-vector.T[1], vector.T[0])).T)
 
 
-@validate_arguments
 def dot_prod_along_axis_1_1d(vector_a: NDArrayFp64, vector_b: NDArrayFp64) -> NDArrayFp64:
     # np.einsum("ij,ij->i", vector_a, vector_b)
     return np.nansum(vector_a * vector_b, axis=1)
@@ -123,10 +121,12 @@ def nearest_point_on_line_segment_to_coordinates(
     start_end_vector = line_segment_end - line_segment_start
     start_coordinates_vectors = coordinates - line_segment_start
 
-    interpolation_param = np.sum(start_end_vector * start_coordinates_vectors) / np.linalg.norm(start_end_vector, axis=1)
+    interpolation_param = np.sum(start_end_vector * start_coordinates_vectors) / np.linalg.norm(
+        start_end_vector, axis=1
+    )
 
-    filtered_ip = np.where(interpolation_param < 0, 0, interpolation_param)     # lowest value is 0
-    filtered_ip = np.where(filtered_ip > 1, 1, filtered_ip)                     # highest values is 1
+    filtered_ip = np.where(interpolation_param < 0, 0, interpolation_param)  # lowest value is 0
+    filtered_ip = np.where(filtered_ip > 1, 1, filtered_ip)  # highest values is 1
 
     return line_segment_start + filtered_ip * start_end_vector
 
@@ -204,8 +204,8 @@ def rotation_matrix_from_radians(radians: NDArrayFp64) -> NDArrayFp64:
 if ENABLE_NUMBA:
 
     # rotation_matrix_from_radians = jit(cache=True)(rotation_matrix_from_radians)
-    dot_prod_along_axis_1_1d = njit(cache=True)
-    orthogonal_unit_vector = njit(cache=True)
+    # dot_prod_along_axis_1_1d = njit(cache=True)(dot_prod_along_axis_1_1d)   https://github.com/numba/numba/issues/1269
+    orthogonal_unit_vector = njit(cache=True)(orthogonal_unit_vector)
 
     def rotate_vectors_with_angle(vectors: NDArrayFp64, angles: NDArrayFp64) -> NDArrayFp64:
         return rotate_vectors_with_angle(vectors, rotation_matrix_from_radians(angles))

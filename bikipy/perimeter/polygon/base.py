@@ -1,4 +1,3 @@
-import copy
 import json
 from abc import ABC
 from functools import cached_property
@@ -11,13 +10,19 @@ import numpy as np
 from pydantic import DirectoryPath, FilePath, validator
 
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
-from bikipy.perimeter.base import BasePerimeter, perimeter_set_from_image_name_to_perimeters
-from bikipy.utils.io.makesense import image_name_to_point_from_makesense, read_makesense_rectangle
+from bikipy.perimeter.base import (
+    BasePerimeter,
+    perimeter_set_from_image_name_to_perimeters,
+)
+from bikipy.utils.io.makesense import (
+    image_name_to_point_from_makesense,
+    read_makesense_rectangle,
+)
 from bikipy.utils.math.geometry import clockwise_sort_points, expand_rectangle
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 from bikipy.utils.math.vector import (
-    normal_from_line_to_point,
-    point_to_line_segment_distance, unit_vector,
+    unit_vector,
+    nearest_point_on_line_segment_to_coordinates,
 )
 
 logger = getLogger(__name__)
@@ -65,41 +70,33 @@ class PolygonPerimeter(BasePerimeter, ABC):
 
     @cached_property
     def line_segment_pairs(self):
-        pairs = [(self.vertices_in_meters[i], self.vertices_in_meters[i + 1]) for i in range(self.polygon_order - 1)]
-        pairs.append((self.vertices_in_meters[-1], self.vertices_in_meters[0]))
-        return np.array(pairs)
+        return np.array(list(zip(self.linked_vertices_in_meters, self.linked_vertices_in_meters[1:])))
 
-    def closest_edge_to_coordinates(self, coordinates: NDArrayFp64, inspect: bool = True) -> NDArrayFp64:
-
-    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64, inspect: bool = True):
-        distance_sets = np.array(
+    def _coordinate_edge_distance_matrix(self, coordinates: NDArrayFp64) -> NDArrayFp64:
+        return coordinates - np.array(
             [
-                point_to_line_segment_distance(coordinates, line_segment_pair)
+                nearest_point_on_line_segment_to_coordinates(*line_segment_pair, coordinates)
                 for line_segment_pair in self.line_segment_pairs
             ]
-        ).T
+        )
 
-        closest_boolean_index = np.argsort(distance_sets, axis=1) == 0
-        closest_distance = distance_sets[closest_boolean_index]
+    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> NDArrayFp64:
+        # Closest point on the index-respective edge along axis 0, and coordinates along 1.
+        closest_edge_point_to_coordinates_matrix = np.array(
+            [
+                nearest_point_on_line_segment_to_coordinates(*line_segment_pair, coordinates)
+                for line_segment_pair in self.line_segment_pairs
+            ]
+        )
+        # Distance of the coordinate from the previous matrix
+        distance_matrix = coordinates - closest_edge_point_to_coordinates_matrix
 
-        closest_index = np.where(closest_boolean_index)[1]
+        closest_boolean_index = np.argsort(distance_matrix, axis=1) == 0
 
-        closest_edge_vector = np.zeros((closest_distance.shape[0], 2), dtype=np.float64)
-        for i in range(self.polygon_order):
-            closest_corner_vectors[closest_index == i] = self.clockwise_edge_unit_vectors[i]
+        return closest_edge_point_to_coordinates_matrix[closest_boolean_index].T
 
-        if inspect:
-            plt.scatter(*coordinates[0].T)
-
-        return closest_corner_vectors
-
-    def closest_perimeter_points_to_coordinates(self, coordinates: NDArrayFp64):
-        (
-            closest_corner_start_point,
-            closest_corner_vectors,
-        ) = self.closest_point_on_edge_to_coordinates(coordinates)
-
-        return normal_from_line_to_point(closest_corner_vectors, closest_corner_start_point, coordinates)
+    def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
+        return unit_vector(self.closest_point_on_edge_to_coordinates(coordinates) - coordinates)
 
     def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         assert self.polygon_order > 4
@@ -115,7 +112,8 @@ class PolygonPerimeter(BasePerimeter, ABC):
 
         if self.reference_point is not None and np.any(self.reference_point):
             return self.__class__(
-                vertices_in_pixels=self.vertices_in_pixels + new_reference - self.reference_point, manual_video=self.video
+                vertices_in_pixels=self.vertices_in_pixels + new_reference - self.reference_point,
+                manual_video=self.video,
             )
 
         return self
