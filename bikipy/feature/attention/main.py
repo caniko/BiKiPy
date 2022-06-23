@@ -139,6 +139,7 @@ def gaze_direction_filter(
     normal_from_closest_point_on_edge = -perimeter.normal_from_closest_point_on_edge(gaze_travel_direction_point)
 
     closest_points_on_edges = perimeter.closest_point_on_edge_to_coordinates(gaze_travel_direction_point)
+    vector_from_closest_point_on_edge = perimeter.vector_from_closest_point_on_edge(gaze_travel_direction_point)
 
     direction_point_is_closer_than_start_point = np.linalg.norm(
         closest_points_on_edges - gaze_travel_direction_point, axis=1

@@ -92,8 +92,13 @@ class CirclePerimeter(BasePerimeter):
 
     def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         return self.center_meters + self.radius_meters * unit_vector(
-            self.normal_from_closest_point_on_edge(coordinates)
+            self.vector_from_closest_point_on_edge(coordinates)
         )
 
-    def normal_from_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
+    def vector_from_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
+        """
+        Strictly for circles, these vectors are the closest normals from the circle
+        :param coordinates:
+        :return:
+        """
         return unit_vector(coordinates - self.center_meters)

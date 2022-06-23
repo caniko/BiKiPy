@@ -26,7 +26,7 @@ class LinePerimeter(BikipyBase):
     orientation: str | int = Field(
         description=(
             "A lower and an upper perimeter can be defined.\n"
-            "The border_corners can be oriented both horizontally (horizontal) and vertically (vertical).\n"
+            "The border_vertices can be oriented both horizontally (horizontal) and vertically (vertical).\n"
             "If vertical: lower -> right; upper -> left. With the use of the position_preference method, "
             "the ratio of timespent in the upper; the lower; the mid portion can be calculated."
             "For orientation to function, video_path or greater_than_borders andless_than_borders has to be defined."
@@ -42,7 +42,7 @@ class LinePerimeter(BikipyBase):
         ),
     )
 
-    _polygon_order: ClassVar[Optional[int]] = 1
+    polygon_order: ClassVar[Optional[int]] = 1
 
     @property
     def feat_border(self):

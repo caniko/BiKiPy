@@ -79,7 +79,7 @@ def round_to_apparatus_to_general_object_fields(round_to_field_apparatus: dict, 
 
         if convert_from_legacy:
             for key, field in field_temp_store.items():
-                kwargs = {"corners": field.sides}
+                kwargs = {"vertices_in_meters": field.sides}
                 if field.guiding_image:
                     kwargs["inspect_image"] = field.guiding_image
                 if field.int_id:

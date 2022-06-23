@@ -116,41 +116,19 @@ def distance_between_line_and_point(*args, **kwargs) -> NDArrayFp64:
 
 
 @validate_arguments
-def point_to_line_segment_distance(points: NDArrayFp64, line_segment: NDArrayFp64):
-    point_x, point_y = np.asarray(points).T
-    segment_start_x, segment_start_y = line_segment[0]
-    segment_end_x, segment_end_y = line_segment[1]
+def nearest_point_on_line_segment_to_coordinates(
+    line_segment_start: NDArrayFp64, line_segment_end: NDArrayFp64, coordinates: NDArrayFp64
+) -> NDArrayFp64:
+    # https://stackoverflow.com/a/47484153/9793651
+    start_end_vector = line_segment_end - line_segment_start
+    start_coordinates_vectors = coordinates - line_segment_start
 
-    start_to_point_x = point_x - segment_start_x
-    start_to_point_y = point_y - segment_start_y
-    start_end_x = segment_end_x - segment_start_x
-    start_end_y = segment_end_y - segment_start_y
+    interpolation_param = np.sum(start_end_vector * start_coordinates_vectors) / np.linalg.norm(start_end_vector, axis=1)
 
-    dot = start_to_point_x * start_end_x + start_to_point_y * start_end_y
-    len_sq = start_end_x**2 + start_end_y**2
+    filtered_ip = np.where(interpolation_param < 0, 0, interpolation_param)     # lowest value is 0
+    filtered_ip = np.where(filtered_ip > 1, 1, filtered_ip)                     # highest values is 1
 
-    param = np.full_like(dot, -1.0) if len_sq == 0 else dot / len_sq
-
-    xx = np.zeros_like(param, dtype=np.float64)
-    yy = np.zeros_like(param).copy()
-
-    param_less_than_0 = param < 0
-    xx[param_less_than_0] = segment_start_x
-    yy[param_less_than_0] = segment_start_y
-
-    param_more_than_1 = param > 1
-    xx[param_more_than_1] = segment_end_x
-    yy[param_more_than_1] = segment_end_y
-
-    param_between_0_1 = ~param_less_than_0 & ~param_more_than_1
-    if np.any(param_between_0_1):
-        params = param[param_between_0_1]
-        xx[param_between_0_1] = segment_start_x + params * start_end_x
-        yy[param_between_0_1] = segment_start_y + params * start_end_y
-
-    dx = point_x - xx
-    dy = point_y - yy
-    return np.sqrt(dx**2 + dy**2)
+    return line_segment_start + filtered_ip * start_end_vector
 
 
 @validate_arguments

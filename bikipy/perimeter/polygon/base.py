@@ -1,5 +1,6 @@
 import copy
 import json
+from abc import ABC
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
@@ -12,18 +13,18 @@ from pydantic import DirectoryPath, FilePath, validator
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.perimeter.base import BasePerimeter, perimeter_set_from_image_name_to_perimeters
 from bikipy.utils.io.makesense import image_name_to_point_from_makesense, read_makesense_rectangle
-from bikipy.utils.math.geometry import clockwise_sort_points, expand_parallelogram
+from bikipy.utils.math.geometry import clockwise_sort_points, expand_rectangle
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 from bikipy.utils.math.vector import (
     normal_from_line_to_point,
-    point_to_line_segment_distance,
+    point_to_line_segment_distance, unit_vector,
 )
 
 logger = getLogger(__name__)
 
 
-class PolygonPerimeter(BasePerimeter):
-    corners_in_pixels: NDArrayFp64
+class PolygonPerimeter(BasePerimeter, ABC):
+    vertices_in_pixels: NDArrayFp64
     reference_point_coco_path: Optional[FilePath]
     reference_point_array: Optional[NDArrayInt16]
     inspect_image_path: Optional[FilePath]
@@ -32,43 +33,45 @@ class PolygonPerimeter(BasePerimeter):
 
     category: ClassVar[Optional[str]] = "perimeter"
 
-    _polygon_order: ClassVar[Optional[int]]
+    polygon_order: ClassVar[Optional[int]]
 
-    @validator("corners_in_pixels")
-    def corners_polygon_order_validator(cls, value: NDArrayFp64):
-        if cls._polygon_order and (n := len(value)) != int(cls._polygon_order):
+    @validator("vertices_in_pixels")
+    def vertices_polygon_order_validator(cls, value: NDArrayFp64):
+        if cls.polygon_order and (n := len(value)) != int(cls.polygon_order):
             msg = (
-                f"The polygon class is in the {cls._polygon_order}th order. However, "
+                f"The polygon class is in the {cls.polygon_order}th order. However, "
                 f"the current polygon is of the {n}th order"
             )
             raise ValueError(msg)
         return np.ascontiguousarray(clockwise_sort_points(value))
 
     def __getitem__(self, item: int):
-        return self.corners[item]
+        return self.vertices_in_meters[item]
 
     def __repr__(self):
-        return super().__repr__() + f"\n\tcorners={self.corners}"
+        return super().__repr__() + f"\n\tvertices_in_pixels={self.vertices_in_meters}"
 
     @cached_property
-    def corners(self):
-        return self.corners_in_pixels * self.video.meters_per_pixel
+    def vertices_in_meters(self):
+        return self.vertices_in_pixels * self.video.meters_per_pixel
 
-    def expand(self, perimeter_border_normal_meters: float | NDArrayFp64):
-        if self._polygon_order == 4:
-            from bikipy.perimeter.polygon.parallelogram import ParallelogramPerimeter
+    @cached_property
+    def linked_vertices_in_meters(self):
+        return np.append(self.vertices_in_meters, np.expand_dims(self.vertices_in_meters[0], 0), axis=0)
 
-            border_obj = ParallelogramPerimeter(
-                corners=expand_parallelogram(self, perimeter_border_normal_meters),
-                inspect_image_array=self.inspect_image,
-            )
-        else:
-            msg = f"Polygon order {self._polygon_order} is not supported"
-            raise NotImplementedError(msg)
+    @cached_property
+    def clockwise_edge_unit_vectors(self):
+        return unit_vector(np.diff(self.linked_vertices_in_meters, axis=0)[::-1])
 
-        return border_obj
+    @cached_property
+    def line_segment_pairs(self):
+        pairs = [(self.vertices_in_meters[i], self.vertices_in_meters[i + 1]) for i in range(self.polygon_order - 1)]
+        pairs.append((self.vertices_in_meters[-1], self.vertices_in_meters[0]))
+        return np.array(pairs)
 
-    def normal_from_closest_point_on_edge(self, coordinates: NDArrayFp64, inspect: bool = True):
+    def closest_edge_to_coordinates(self, coordinates: NDArrayFp64, inspect: bool = True) -> NDArrayFp64:
+
+    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64, inspect: bool = True):
         distance_sets = np.array(
             [
                 point_to_line_segment_distance(coordinates, line_segment_pair)
@@ -81,9 +84,9 @@ class PolygonPerimeter(BasePerimeter):
 
         closest_index = np.where(closest_boolean_index)[1]
 
-        closest_corner_vectors = np.zeros((closest_distance.shape[0], 2), dtype=np.float64)
-        for i in range(self.number_of_corners):
-            closest_corner_vectors[closest_index == i] = self.perimeter_corner_to_next_clockwise_corner_vectors[i]
+        closest_edge_vector = np.zeros((closest_distance.shape[0], 2), dtype=np.float64)
+        for i in range(self.polygon_order):
+            closest_corner_vectors[closest_index == i] = self.clockwise_edge_unit_vectors[i]
 
         if inspect:
             plt.scatter(*coordinates[0].T)
@@ -94,28 +97,39 @@ class PolygonPerimeter(BasePerimeter):
         (
             closest_corner_start_point,
             closest_corner_vectors,
-        ) = self.normal_from_closest_point_on_edge(coordinates)
+        ) = self.closest_point_on_edge_to_coordinates(coordinates)
 
         return normal_from_line_to_point(closest_corner_vectors, closest_corner_start_point, coordinates)
 
     def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayFp64:
-        assert self.number_of_corners > 4
-        return parallel_point_in_polygon(coordinates, self.corners)
+        assert self.polygon_order > 4
+        return parallel_point_in_polygon(coordinates, self.vertices_in_meters)
 
     def change_reference(self, new_reference: NDArrayFp64, **new_inspect_image_kwargs):
-        if np.all(self.reference_point == new_reference):
-            logger.info("The provided reference_point is identical to the current")
+        if self.reference_point is None:
             return self
 
-        if not np.any(self.reference_point):
-            new = self
-            new.reference_point_array = new_reference
-        else:
-            new = copy.deepcopy(self)
-            new.corners += new_reference - new.reference_point
-            new.reference_point = new_reference
+        if np.all(self.reference_point == new_reference):
+            logger.warning("The provided reference_point is identical to the current")
+            return self
 
-        return self._new_inspect_image(new, **new_inspect_image_kwargs)
+        if self.reference_point is not None and np.any(self.reference_point):
+            return self.__class__(
+                vertices_in_pixels=self.vertices_in_pixels + new_reference - self.reference_point, manual_video=self.video
+            )
+
+        return self
+
+    @cached_property
+    def centroid(self):
+        return np.mean(self.vertices_in_meters, axis=0)
+
+    @cached_property
+    def vertex_neighbor_pairs(self):
+        return (
+            *((i, i + 1) for i in range(self.polygon_order - 1)),
+            (self.polygon_order - 1, 0),
+        )
 
     def plot_perimeter(
         self,
@@ -128,14 +142,14 @@ class PolygonPerimeter(BasePerimeter):
         if not ax:
             fig, ax = plt.subplots()
 
-        corners = self.corners_in_pixels if inspect_pixels else self.corners
+        vertices_in_meters = self.vertices_in_pixels if inspect_pixels else self.vertices_in_meters
 
         legends = []
-        for index in range(len(corners)):
-            following_index = 0 if index + 1 == len(corners) else index + 1
+        for index in range(len(vertices_in_meters)):
+            following_index = 0 if index + 1 == len(vertices_in_meters) else index + 1
 
-            corner_a = corners[index]
-            corner_b = corners[following_index]
+            corner_a = vertices_in_meters[index]
+            corner_b = vertices_in_meters[following_index]
             ax.plot(
                 (corner_a[0], corner_b[0]),
                 (corner_a[1], corner_b[1]),
@@ -143,7 +157,6 @@ class PolygonPerimeter(BasePerimeter):
                 label=self.label,
                 color=colormap,
             )
-            ax.scatter(*self.edge_midpoints[index])
 
             if perimeter_border_normal_pixels:
                 perimeter = self.expand(perimeter_border_normal_pixels)
@@ -168,73 +181,21 @@ class PolygonPerimeter(BasePerimeter):
 
         return ax
 
-    @cached_property
-    def number_of_corners(self):
-        return len(self.corners)
-
-    @cached_property
-    def perimeter_corner_to_next_clockwise_corner_vectors(self):
-        return np.diff(self.corners[::-1], prepend=[self.corners[0]], axis=0)[::-1]
-
-    @cached_property
-    def perimeter_lengths(self):
-        return np.linalg.norm(self.perimeter_corner_to_next_clockwise_corner_vectors, axis=1)
-
-    @cached_property
-    def mean_length(self):
-        return np.mean(self.perimeter_lengths)
-
-    @cached_property
-    def line_segment_pairs(self):
-        pairs = [(self.corners[i], self.corners[i + 1]) for i in range(self.number_of_corners - 1)]
-        pairs.append((self.corners[-1], self.corners[0]))
-        return np.array(pairs)
-
-    @cached_property
-    def centroid(self):
-        return np.mean(self.corners, axis=0)
-
-    @cached_property
-    def linked_corners(self):
-        return np.append(self.corners, np.expand_dims(self.corners[0], 0), axis=0)
-
-    @cached_property
-    def edge_midpoints(self):
-        return self.corners + np.diff(self.linked_corners, axis=0) / 2.0
-
-    @cached_property
-    def linked_polygon_edge_corner_pairs(self):
-        return (
-            *((i, i + 1) for i in range(self.number_of_corners - 1)),
-            (self.number_of_corners - 1, 0),
-        )
-
-    @cached_property
-    def y_flipped_edge_midpoints(self):
-        # self.edge_midpoints.T[1].max()) is the maximum y value
-        return np.array((0.0, self.corners_y_max)) - self.edge_midpoints
-
-    @cached_property
-    def y_flipped_edge_midpoint_scalars(self):
-        return np.linalg.norm(self.y_flipped_edge_midpoints, axis=1)
-
-    @cached_property
-    def corners_y_max(self):
-        return self.corners.T[1].max()
-
     @classmethod
-    def init_polygon(cls, corners: NDArrayFp64, **kwargs):
-        corners = np.asarray(corners)
-        if (number_of_corners := corners.shape[0]) == 3:
+    def init_polygon(cls, vertices_in_meters: NDArrayFp64, **kwargs):
+        vertices_in_meters = np.asarray(vertices_in_meters)
+        polygon_order = vertices_in_meters.shape[0]
+        if polygon_order == 3:
             from bikipy.perimeter.polygon.triangular import TriangularPerimeter
 
-            return TriangularPerimeter(corners=corners, **kwargs)
-        elif number_of_corners == 4:
-            from bikipy.perimeter.polygon.parallelogram import ParallelogramPerimeter
+            return TriangularPerimeter(vertices_in_pixels=vertices_in_meters, **kwargs)
+        elif polygon_order == 4:
+            from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 
-            return ParallelogramPerimeter(corners=corners, **kwargs)
+            return RectanglePerimeter(vertices_in_pixels=vertices_in_meters, **kwargs)
         else:
-            return cls(corners=corners, **kwargs)
+            msg = f"Polygon of the {polygon_order}nt order is not supported"
+            raise NotImplementedError(msg)
 
     def _add_label_to_str(self, in_string):
         if self.label:
@@ -242,6 +203,8 @@ class PolygonPerimeter(BasePerimeter):
         if self.int_id:
             return f"{self.int_id} {in_string}"
         return in_string
+
+    # Class methods for makesense integration ==========================================
 
     @classmethod
     def from_makesense_coco_polygon(

@@ -8,7 +8,7 @@ from pydantic import FilePath
 
 from bikipy.perimeter.base import PerimeterSet
 from bikipy.perimeter.polygon.base import PolygonPerimeter
-from bikipy.perimeter.polygon.parallelogram import ParallelogramPerimeter
+from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 from bikipy.perimeter.polygon.triangular import TriangularPerimeter
 from bikipy.utils.io.makesense import read_makesense_point
 from bikipy.utils.math.geometry import clockwise_argsort_points
@@ -60,14 +60,14 @@ def generate_radial_maze_perimeters(
 
         arm_perimeter = np.concatenate(
             (
-                center_object.corners[center_object.linked_polygon_edge_corner_pairs[line_pair_index], :],
+                center_object.vertices_in_meters[center_object.linked_polygon_edge_corner_pairs[line_pair_index], :],
                 lines[line_index],
             )
         )
 
         arm_perimeters.append(
-            ParallelogramPerimeter(
-                corners=arm_perimeter,
+            RectanglePerimeter(
+                verteces_in_pixelsarm_perimeter,
                 int_id=line_index + 1,
                 label=labels[line_index],
                 group_label="arms",
@@ -79,9 +79,9 @@ def generate_radial_maze_perimeters(
     if inspect:
         fig, ax = plt.subplots(ncols=3)
         PolygonPerimeter.plot_perimeters(perimeters, ax=ax[0])
-        for i, (line, center_corner) in enumerate(zip(lines, center_object.corners), start=1):
+        for i, (line, center_corner) in enumerate(zip(lines, center_object.vertices_in_meters), start=1):
             ax[1].scatter(*line.T, label=f"line_{i}")
-            ax[2].scatter(*center_corner.T, label=f"center_corners_{i}")
+            ax[2].scatter(*center_corner.T, label=f"center_vertices_{i}")
         plt.legend()
         plt.show()
 
