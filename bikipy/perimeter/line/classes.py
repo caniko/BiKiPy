@@ -3,7 +3,7 @@ from typing import ClassVar, Literal, Optional
 import numpy as np
 from pydantic import Field
 
-from bikipy.core.base_class import BikipyBase
+from bikipy.core.base_class import BaseBikipy
 
 # 0: Use the x coordinate(s) as the perimeter
 # 1: Use the y coordinate(s) as the perimeter
@@ -21,7 +21,7 @@ LOGIC_TO_FUNC = {
 }
 
 
-class LinePerimeter(BikipyBase):
+class LinePerimeter(BaseBikipy):
     location: float = Field(description="The location given in pixels")
     orientation: str | int = Field(
         description=(

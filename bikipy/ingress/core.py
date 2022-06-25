@@ -12,7 +12,7 @@ from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 
 from bikipy.behaviour.base import Experiment
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
-from bikipy.core.base_class import BikipyBase
+from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayFp64
 from bikipy.ingress.plugin import ingress_key_to_plugin_name
 from bikipy.ingress.plugin.meters_per_pixel import (
@@ -47,7 +47,7 @@ from bikipy.utils.collection_utils import copycat_assumes_levels_of_icon
 logger = getLogger(__name__)
 
 
-class BaseIngress(BikipyBase, ABC):
+class BaseIngress(BaseBikipy, ABC):
     project_root_directory: DirectoryPath
 
     _experiment_data_defined: bool = False
@@ -252,7 +252,7 @@ class BaseIngress(BikipyBase, ABC):
                 for trial_id, row in self.metadata.iterrows():
                     self._trial_id_to_keyword_arguments[trial_id][plugin_info["bikipy_trial_key"]] = plugin_info[
                         "file_path_to_value"
-                    ](label_to_file_path[row[plugin_info["human_readable_index"]]], self, trial_id)
+                    ](label_to_file_path[row[plugin_info["human_readable_index"]]], trial_id, self)
 
         self._ingress_reader()
 

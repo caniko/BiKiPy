@@ -2,12 +2,90 @@ from functools import lru_cache
 from math import sqrt
 
 import numpy as np
-from pydantic import DirectoryPath, FilePath
+from pydantic import DirectoryPath
 
 from bikipy.core.typing import NDArrayFp64
-from bikipy.ingress.plugin.utils import get_file_label_from_3rd_str_in_split
 from bikipy.ingress.utils.io import initialize_metadata_data_frame, load_settings
-from bikipy.utils.io.makesense import read_first_makesense_line, read_makesense_line
+from bikipy.utils.io.makesense import read_first_makesense_line
+
+from functools import cached_property
+from logging import getLogger
+from typing import ClassVar
+
+from pydantic import FilePath, validator
+
+from bikipy.core.base_class import BaseBikipy
+
+logger = getLogger(__file__)
+
+
+class MeterPerPixel(BaseBikipy):
+    data_path: FilePath
+
+    data_label: ClassVar[str] = "meter_per_pixel"
+
+    @validator("data_file")
+    def is_meter_per_pixel_file(cls, value: FilePath):
+        match value.stem.split("-")[1]:
+            case "meter_pixel_ratio":
+                logger.warning(
+                    f"The {cls.data_label} file has the meter_pixel_ratio indicating it is from an older version"
+                )
+            case cls.data_label:
+                pass
+            case _:
+                msg = f"Defined file is not a {cls.data_label} file"
+                raise AttributeError(msg)
+        return value
+
+    @cached_property
+    def _info(self):
+        result = self.data_file.stem.split("-")
+        assert len(result) >= 3, (
+            f"The file name for {self.data_label} files consist of name, "
+            f"method, and meter length delimeted by a dash this file: {self.data_file.stem}"
+        )
+        return result
+
+    @property
+    def annotation_method(self) -> str:
+        return self._info[1]
+
+    @cached_property
+    def meter_length(self) -> float:
+        return float(self._info[2])
+
+    @cached_property
+    def ratio(self):
+        match self.annotation_method:
+            case "diagonal":
+                """
+                We utilize the diagonal of rectangle to derive the components of the two axes on the 2D image.
+                We derive both the meters and pixels of the diagonal, and use the Pythagoras theorem for this:
+
+                https://www.reddit.com/r/askmath/comments/j1bvfj/getting_catheti_from_hypotenuse_and_catheti_ratio/?utm_source=share&utm_medium=web2x&context=3
+                hypotenuse c and the ratio, r, of a and b in a right triangle.
+
+                From a/b=r, you have a=br.
+
+                Plugging in Pythagoras, c2=a2+b2 -> c2=(br)2+b2. Since c and r are known, you can solve for b.
+                c2=(1+r2)b2
+                b2=c2/(1+r2)
+                a2=c2 - b2
+                """
+
+                point_i_and_point_ii = np.array(read_first_makesense_line(self.data_path), dtype=float)
+                magnitude_argsort = np.argsort(np.linalg.norm(point_i_and_point_ii, axis=1))
+                pixel_a, pixel_b = point_i_and_point_ii[magnitude_argsort]
+
+                pixel_ab_vector = np.abs(pixel_b - pixel_a)
+                pixel_x, pixel_y = pixel_ab_vector
+                pixel_ab_ratio = np.divide(*pixel_ab_vector)  # a-b intersects on the origin
+
+                meter_y = sqrt(self.meter_length ** 2 / (1 + pixel_ab_ratio))
+                meter_x = sqrt(self.meter_length ** 2 - meter_y ** 2)
+
+                return np.array([meter_x / pixel_x, meter_y / pixel_y])
 
 
 def meters_per_pixel_file_name_to_value(file_path: FilePath, *args, **kwargs):
@@ -18,30 +96,7 @@ def meters_per_pixel_file_name_to_value(file_path: FilePath, *args, **kwargs):
 def from_makesense_reference_line_segment(data_path: FilePath) -> NDArrayFp64:
     meters = float(data_path.stem.split("-")[1])
 
-    """
-    https://www.reddit.com/r/askmath/comments/j1bvfj/getting_catheti_from_hypotenuse_and_catheti_ratio/?utm_source=share&utm_medium=web2x&context=3
-    hypotenuse c and the ratio, r, of a and b in a right triangle.
 
-    From a/b=r, you have a=br.
-
-    Plugging in Pythagoras, c2=a2+b2 -> c2=(br)2+b2. Since c and r are known, you can solve for b.
-    c2=(1+r2)b2
-    b2=c2/(1+r2)
-    a2=c2 - b2
-    """
-
-    point_i_and_point_ii = np.array(read_first_makesense_line(data_path), dtype=float)
-    magnitude_argsort = np.argsort(np.linalg.norm(point_i_and_point_ii, axis=1))
-    pixel_a, pixel_b = point_i_and_point_ii[magnitude_argsort]
-
-    pixel_ab_vector = np.abs(pixel_b - pixel_a)
-    pixel_x, pixel_y = pixel_ab_vector
-    pixel_ab_ratio = np.divide(*pixel_ab_vector)  # a-b intersects on the origin
-
-    meter_y = sqrt(meters**2 / (1 + pixel_ab_ratio))
-    meter_x = sqrt(meters**2 - meter_y**2)
-
-    return np.array([meter_x / pixel_x, meter_y / pixel_y])
 
 
 @lru_cache

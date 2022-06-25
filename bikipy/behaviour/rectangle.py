@@ -10,7 +10,7 @@ from skg import ngauss_fit
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.core.base_class import BikipyBase
+from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayBool, NDArrayFp64, NDArrayInt16
 from bikipy.feature.motion import (
     get_combined_features_from_merged_motion_island_data,
@@ -42,7 +42,7 @@ def motion_multi_indexer_for_quadrant(category: Any, level: int):
     )(category, level)
 
 
-class Quadrant(BikipyBase):
+class Quadrant(BaseBikipy):
     vertices_in_meters: NDArrayFp64
     framewise_confined_coordinates: NDArrayFp64
     fps: float
@@ -86,9 +86,7 @@ class RectangleEnclosedExperiment(BaseExperiment):
         quadrant_summary_columns = []
         for quadrant_grid_coordinate in cls.quadrant_grid_coordinates:
             category = f"Quadrant{quadrant_grid_coordinate}"
-            quadrant_summary_columns.extend(
-                motion_multi_indexer_for_quadrant(category, 2)
-            )
+            quadrant_summary_columns.extend(motion_multi_indexer_for_quadrant(category, 2))
         result = [
             *super().motion_column_headers,
             # ["Gaussian", "CenterToPeriphery"],

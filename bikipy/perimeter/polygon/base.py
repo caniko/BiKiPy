@@ -72,14 +72,6 @@ class PolygonPerimeter(BasePerimeter, ABC):
     def line_segment_pairs(self):
         return np.array(list(zip(self.linked_vertices_in_meters, self.linked_vertices_in_meters[1:])))
 
-    def _coordinate_edge_distance_matrix(self, coordinates: NDArrayFp64) -> NDArrayFp64:
-        return coordinates - np.array(
-            [
-                nearest_point_on_line_segment_to_coordinates(*line_segment_pair, coordinates)
-                for line_segment_pair in self.line_segment_pairs
-            ]
-        )
-
     def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         # Closest point on the index-respective edge along axis 0, and coordinates along 1.
         closest_edge_point_to_coordinates_matrix = np.array(

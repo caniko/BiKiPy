@@ -13,14 +13,14 @@ import numpy as np
 from numpy import ndarray
 from pydantic import FilePath
 
-from bikipy.core.base_class import BikipyBase
+from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16, NDArrayUint8
 from bikipy.utils.video import get_video_data
 
 logger = getLogger(__name__)
 
 
-class _VideoMetadataBase(BikipyBase):
+class _VideoMetadataBase(BaseBikipy):
     meters_per_pixel: Optional[NDArrayFp64]
 
     video_path: Optional[FilePath]

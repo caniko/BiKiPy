@@ -82,7 +82,7 @@ experiment:
 trial:
   common:
     defined:
-      physical_object_inspect: true
+      physical_object_inspect: false
       object_tracking_label_for_kinematics: center
       maximum_radians_inter_gaze_perimeter: 0.7853981633974483
       perimeter_border_normal_meters: 0.005

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, validator
 
-from bikipy.core.base_class import BikipyBase
+from bikipy.core.base_class import BaseBikipy
 
 try:
     from statsmodels.multivariate.manova import MANOVA
@@ -15,7 +15,7 @@ except ImportError:
     raise ImportError(msg)
 
 
-class StatisticalAnalysis(BikipyBase):
+class StatisticalAnalysis(BaseBikipy):
     analysis_df: pd.DataFrame
     metadata_df: pd.DataFrame
     category_columns: tuple[str, ...]

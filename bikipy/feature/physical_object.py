@@ -10,7 +10,7 @@ from pydantic_numpy import NDArray
 
 from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.core.base_class import BikipyBase
+from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayBool, NDArrayFp64, NDArrayInt16
 from bikipy.core.video import (
     VideoMetadata,
@@ -29,7 +29,7 @@ from bikipy.utils.image import save_plt_fig_cv
 logger = getLogger(__name__)
 
 
-class PhysicalObject(BikipyBase):
+class PhysicalObject(BaseBikipy):
     """
     The physical object is a triadic abstraction of Reader, Perimeter and Trial. This abstraction allows
     us to define methods that require the respective attributes, think of it as a union between the classes!

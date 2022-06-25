@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments
 
-from bikipy.core.base_class import BikipyBase, BikipyBaseHashable
+from bikipy.core.base_class import BaseBikipy, BaseBikipyHashable
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.core.video import VideoMetadataMixin, convert_meters_to_pixels
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
@@ -19,7 +19,7 @@ logger = getLogger(__name__)
 StringPerimeterShapes = Literal["circle", "polygon", "rectangle"]
 
 
-class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
+class BasePerimeter(BaseBikipyHashable, VideoMetadataMixin):
     impenetrable: bool = Field(
         False,
         description="Signifies the impenetrability of the perimeter. "
@@ -218,7 +218,7 @@ class BasePerimeter(BikipyBaseHashable, VideoMetadataMixin):
 AnyPerimeter = TypeVar("AnyPerimeter", bound=BasePerimeter)
 
 
-class PerimeterSet(BikipyBase):
+class PerimeterSet(BaseBikipy):
     perimeters: list[AnyPerimeter]
     restricted_perimeters: Optional[list[AnyPerimeter]]
 

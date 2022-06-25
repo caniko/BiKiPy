@@ -6,12 +6,12 @@ import pandas as pd
 from pydantic import BaseModel, DirectoryPath, Field
 
 from bikipy.behaviour.rectangle import RectangleEnclosedTrial
-from bikipy.core.base_class import BikipyBase
+from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayFp64
 from bikipy.feature.physical_object import PhysicalObjectSet
 
 
-class PhysicalObjectTrialMixin(BikipyBase):
+class PhysicalObjectTrialMixin(BaseBikipy):
     gaze_start_point_label: Optional[str] = Field(description="Label of the eye center in the df")
     gaze_travel_direction_point_label: Optional[str] = Field(
         description="Label signifying the area where the gaze vector"
@@ -37,9 +37,7 @@ class PhysicalObjectTrialMixin(BikipyBase):
     @classmethod
     @property
     def feature_headers(cls) -> list[tuple[str, ...]]:
-        return list(
-            pd.MultiIndex.from_product([["SecondsObserving"], ["All", *cls.physical_object_labels]])
-        )
+        return list(pd.MultiIndex.from_product([["SecondsObserving"], ["All", *cls.physical_object_labels]]))
 
     @cached_property
     def perimeters(self):

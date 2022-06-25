@@ -1,13 +1,11 @@
-from datetime import date, datetime
+from datetime import datetime
 from functools import cached_property
-from pathlib import Path
 from typing import ClassVar, Optional
 
-import compress_pickle
 from pydantic import BaseModel, DirectoryPath, Field
 
 
-class BikipyBase(BaseModel):
+class BaseBikipy(BaseModel):
     class Config:
         underscore_attrs_are_private = True
         keep_untouched = (cached_property,)
@@ -15,7 +13,7 @@ class BikipyBase(BaseModel):
     category: ClassVar[Optional[str]]
 
 
-class BikipyBaseHashable(BikipyBase):
+class BaseBikipyHashable(BaseBikipy):
     int_id: Optional[int]
     label: Optional[str]
     group_label: Optional[str]

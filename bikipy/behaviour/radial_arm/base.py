@@ -15,7 +15,7 @@ from bikipy.behaviour.utils import (
     reduce_repeating_sequences,
     unique_with_counts_zipped,
 )
-from bikipy.core.base_class import BikipyBaseHashable
+from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.perimeter.base import AnyPerimeter, PerimeterSet
 from bikipy.perimeter.utils import detect_sequential_border_presence
@@ -24,7 +24,7 @@ from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
 logger = getLogger(__name__)
 
 
-class RadialMazeBase(BikipyBaseHashable):
+class RadialMazeBase(BaseBikipyHashable):
     number_of_arms: ClassVar[Optional[int]]
 
     @classmethod

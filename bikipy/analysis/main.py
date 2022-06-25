@@ -4,10 +4,10 @@ from pathlib import Path
 import pandas as pd
 from compress_pickle import compress_pickle
 
-from bikipy.core.base_class import BikipyBase
+from bikipy.core.base_class import BaseBikipy
 
 
-class Analysis(BikipyBase):
+class Analysis(BaseBikipy):
     combined_feature_motion_df: pd.DataFrame
 
     def save(self) -> None:

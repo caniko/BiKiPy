@@ -27,7 +27,7 @@ from yaspin import yaspin
 from yaspin.spinners import Spinners
 
 from bikipy import ENABLE_PROCESS_POOLING
-from bikipy.core.base_class import BikipyBaseHashable
+from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_multi_indexer
@@ -47,7 +47,7 @@ LABEL_to_DATA_READER = {"deeplabcut": DeepLabCutReader}
 logger = getLogger(__name__)
 
 
-class Behaviour(BikipyBaseHashable, VideoMetadataMixin):
+class Behaviour(BaseBikipyHashable, VideoMetadataMixin):
     data_format_label: Literal["deeplabcut"] = "deeplabcut"
 
     _live: ClassVar[bool] = False
