@@ -362,27 +362,29 @@ class BaseIngress(BaseBikipy, ABC):
 
         kwargs = {"delete_outdated": delete_outdated}
 
-        new_settings["ingress"] = settings.update_dictionary(
-            self.settings["ingress"], new_settings["ingress"], **kwargs
-        )
-        new_settings["perimeter"] = settings.update_dictionary(
-            self.settings["perimeter"], new_settings["perimeter"], **kwargs
-        )
-        new_settings["reader_kwargs"] = settings.update_defined_values(
-            self.settings["reader_kwargs"], new_settings["reader_kwargs"], **kwargs
-        )
+        for key in ("ingress", "perimeter"):
+            if key in self.settings:
+                new_settings[key] = settings.update_dictionary(
+                    self.settings[key], new_settings[key], **kwargs
+                )
 
-        new_settings["trial"]["common"] = settings.update_defined_values(
-            self.settings["trial"]["common"], new_settings["trial"]["common"], **kwargs
-        )
-        common_settings_between_trials = get_definable_settings(new_settings["trial"]["common"])
-        for trial_class_name, trial_class_settings in new_settings["trial"]["specific"].items():
-            new_settings["trial"]["specific"][trial_class_name] = settings.update_defined_values(
-                self.settings["trial"]["specific"][trial_class_name],
-                trial_class_settings,
-                common_settings=common_settings_between_trials,
-                **kwargs,
+        if "reader_kwargs" in self.settings:
+            new_settings["reader_kwargs"] = settings.update_defined_values(
+                self.settings["reader_kwargs"], new_settings["reader_kwargs"], **kwargs
             )
+
+        if "trial" in self.settings:
+            new_settings["trial"]["common"] = settings.update_defined_values(
+                self.settings["trial"]["common"], new_settings["trial"]["common"], **kwargs
+            )
+            common_settings_between_trials = get_definable_settings(new_settings["trial"]["common"])
+            for trial_class_name, trial_class_settings in new_settings["trial"]["specific"].items():
+                new_settings["trial"]["specific"][trial_class_name] = settings.update_defined_values(
+                    self.settings["trial"]["specific"][trial_class_name],
+                    trial_class_settings,
+                    common_settings=common_settings_between_trials,
+                    **kwargs,
+                )
 
         if dry_run:
             print(json.dumps(new_settings, indent=2))
@@ -464,7 +466,6 @@ def init_settings(
             "skip_absent_trials_absent_from_metadata_index": False,
             "meters_per_pixel_definition_strategy": "global_perimeter",
             "perimeter_definition_strategy": "metadata",
-            "perimeter_naming_strategy": None,
             "center_definition_strategy": None,
         },
         "perimeter": {

@@ -4,9 +4,22 @@ from logging import getLogger
 import pandas as pd
 from pydantic import DirectoryPath, FilePath, PositiveInt
 
+from bikipy.ingress.plugin.base import BasePlugin
 from bikipy.ingress.utils.io import infer_metadata_path, load_settings
 
 logger = getLogger(__name__)
+
+
+class Perimeter(BasePlugin):
+    data_label = "perimeter"
+
+    @property
+    def shape(self) -> str:
+        return self._info[1]
+
+    @property
+    def label(self) -> str:
+        return self._info[2]
 
 
 def perimeter_file_path_to_value(file_path: FilePath, trial_id: str | PositiveInt, ingress, *args, **kwargs):
@@ -22,11 +35,9 @@ def get_perimeter_data(perimeter_path: FilePath):
 
 
 @lru_cache(1)
-def get_perimeter_name_df(project_root_directory: DirectoryPath):
-    assert load_settings(project_root_directory)["ingress"]["perimeter_naming_strategy"] == "metadata"
-    df = pd.read_excel(infer_metadata_path(project_root_directory), sheet_name="perimeter_label", index_col=0)
-    return df
+def get_perimeter_name_df(project_root_directory: DirectoryPath) -> pd.DataFrame:
+    return pd.read_excel(infer_metadata_path(project_root_directory), sheet_name="perimeter_label", index_col=0)
 
 
-def get_name_map_from_name_df(project_root_directory: DirectoryPath, trial_id: str | int) -> dict[str, str]:
-    return get_perimeter_name_df(project_root_directory)[trial_id]
+def get_name_map_from_name_df(project_root_directory: DirectoryPath, trial_id: str | int) -> pd.Series:
+    return get_perimeter_name_df(project_root_directory).loc[trial_id, :]

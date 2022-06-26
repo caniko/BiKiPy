@@ -34,11 +34,11 @@ from bikipy.feature.motion import Motion, motion_multi_indexer
 from bikipy.perimeter.base import AnyPerimeter, PerimeterSet
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.collection_utils import (
+    add_filler_to_sequence,
+    chain_iterables_to_multi_index,
     chain_lists_to_tuple,
     copycat_assumes_levels_of_icon,
     max_len_in_iterable,
-    add_filler_to_sequence,
-    chain_iterables_to_multi_index,
 )
 from bikipy.utils.ranged_dict import RangeDict
 
@@ -396,7 +396,7 @@ class BaseExperiment(Behaviour):
             msg = f"Some trial IDs yielded pydantic validation errors:"
             for trial_id, msg in bad_trial_ids_to_error_msg.items():
                 msg += f"\n{trial_id}:\n{msg}\n"
-            raise ValueError(msg)
+            raise ValueError(f"{msg}\n{len(bad_trial_ids_to_error_msg)} errors out of {len(self.trial_ids)} Trials")
         return result
 
     @cached_property

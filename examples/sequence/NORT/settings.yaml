@@ -5,11 +5,6 @@ ingress:
   meters_per_pixel_definition_strategy: global_perimeter
   perimeter_definition_strategy: metadata
   center_definition_strategy: null
-  crop_time_definition_strategy: null
-  animal-ID_absent_from_metadata: ignore
-  stage_index_to_trial_class_name:
-    1: NortTrainingTrial
-    2: NortNoveltyTrial
 perimeter:
   label_prefix: null
   label_suffix: null
@@ -19,169 +14,147 @@ perimeter:
     optional:
       group_label: string
       impenetrable: boolean -> False
-      inspect_image_array: np.ndarray[name='inspect_image_array_0' type=dobble required=True]
-      inspect_image_path: string
       int_id: integer
       label: string
+      manual_fps: number
+      manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
+        ''file-path''}]'
+      manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0'
+        type=short required=True]
+      manual_video: None
+      meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
       reference_point_array: np.ndarray[name='reference_point_array_0' type=short
         required=True]
       reference_point_coco_path: string
-      save_root: string
       timestamp: string
-experiment:
+      video_path: string
+      outdated:
+        inspect_image_array: np.ndarray[name='inspect_image_array_0' type=dobble required=True]
+        inspect_image_path: string
+        save_root: string
+reader_kwargs:
   defined:
-    compute_only_one_df_row: true
-    inspect_image_path: /home/can/Projects/bikipy/examples/sequence/NORT/inspect.png
-    manual_recording_resolution: [ 920, 830 ]
-    manual_fps: 30
+    init_from: parquet
+    midpoint_groups:
+      center_eye:
+        - left_ear
+        - right_ear
   optional:
-    common_trial_keyword_arguments: object
-    data_format_label: string -> deeplabcut
+    crop_from_end: boolean -> False
+    crop_time_seconds: number -> 0.0
+    future_scaling: boolean
     group_label: string
-    inspect_directory: string
     int_id: integer
     label: string
     manual_fps: number
-    manual_meters_per_pixel: '[{''type'': ''number''}, {''allOf'': [{''type'': ''dobble''}],
-      ''type'': "np.ndarray[name=''manual_meters_per_pixel_pydantic_numpy.ndarray.NDArray[pydantic_numpy.dtype.dobble]_0''
-      type=dobble required=True]"}]'
+    manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
+      ''file-path''}]'
+    manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0' type=short
+      required=True]
+    manual_video: None
+    meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
+    midpoint_groups: object
+    min_likelihood: number -> 0.8
+    reverse_y_axis: boolean -> True
+    timestamp: string
+    timestamp_index: array
+    video_path: string
+    x_axis_crop_end_point: number -> 0.0
+    y_axis_crop_end_point: number -> 0.0
+trial:
+  common:
+    defined:
+      animal_id: null
+      coordinate_data_path: null
+      familiar: null
+      object_tracking_label_for_kinematics: center
+      physical_object_inspect: false
+      maximum_radians_inter_gaze_perimeter: 0.7853981633974483
+      perimeter_border_normal_meters: 0.05
+    required:
+      animal_id: '[{''type'': ''string''}, {''type'': ''integer''}]'
+      coordinate_data_path: string
+      familiar: None
+      object_tracking_label_for_kinematics: string
+      reader_kwargs: object
+    optional:
+      center_box_to_spatial_resolution_ratio: number
+      crop_from_end: boolean -> True
+      crop_time_seconds: number -> 0.0
+      data_format_label: string -> deeplabcut
+      gaze_start_point_label: string
+      gaze_travel_direction_point_label: string
+      group_label: string
+      inspect: boolean -> False
+      inspect_directory: string
+      inspect_image: np.ndarray
+      inspect_quadrants: boolean -> False
+      int_id: integer
+      label: string
+      manual_center_pixels: np.ndarray[name='manual_center_pixels_0' type=short required=True]
+      manual_fps: number
+      manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
+        ''file-path''}]'
+      manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0'
+        type=short required=True]
+      manual_video: None
+      maximum_radians_inter_gaze_perimeter: number -> 1.0471975511965976
+      maximum_seconds_distraction: number -> 0.65
+      meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
+      minimum_seconds_attention: number -> 0.3
+      perimeter_border_normal_meters: number
+      physical_object_inspect: boolean -> False
+      rectangle_2d_bin: array -> (2, 2)
+      rigid_nodes_freezing: array
+      stage: string
+      timestamp: string
+      trial_start_perimeter: string
+      video_path: string
+  specific:
+    NortTrainingTrial:
+      defined:
+        variable: null
+        gaze_start_point_label: center_eye
+        gaze_travel_direction_point_label: nose
+      required:
+        variable: None
+    NortNoveltyTrial:
+      defined:
+        novel: null
+        gaze_start_point_label: center_eye
+        gaze_travel_direction_point_label: nose
+      required:
+        novel: None
+experiment:
+  defined: {}
+  optional:
+    common_trial_keyword_arguments: object
+    compute_only_one_df_row: boolean -> False
+    data_format_label: string -> deeplabcut
+    group_label: string
+    inspect_directory: string
+    inspect_image_path: string
+    int_id: integer
+    label: string
+    manual_fps: number
+    manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
+      ''file-path''}]'
     manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0' type=short
       required=True]
     manual_trial_ids: array
-    metric_resolution: np.ndarray[name='metric_resolution_0' type=dobble required=True]
-    save_root: string
+    manual_video: None
+    meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
     stage: string
     timestamp: string
+    trial_class_name_to_keyword_arguments: object
     trial_id_range_to_keyword_arguments: RangedDict
     trial_id_to_keyword_arguments: object
     trial_id_to_trial_class_name: object
     video_path: string
-    reader_kwargs:
-      crop_from_end: boolean -> True
-      crop_time_seconds: number -> 0.0
-      future_scaling: boolean
-      group_label: string
-      int_id: integer
-      label: string
-      manual_fps: number
-      manual_meters_per_pixel: '[{''type'': ''number''}, {''allOf'': [{''type'': ''dobble''}],
-        ''type'': "np.ndarray[name=''manual_meters_per_pixel_pydantic_numpy.ndarray.NDArray[pydantic_numpy.dtype.dobble]_0''
-        type=dobble required=True]"}]'
-      manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0'
-        type=short required=True]
-      metric_resolution: np.ndarray[name='metric_resolution_0' type=dobble required=True]
-      midpoint_groups: object
-      min_likelihood: number -> 0.8
-      reverse_y_axis: boolean -> False
-      save_root: string
-      timestamp: string
-      timestamp_index: array
-      video_path: string
-      x_axis_crop_end_point: number -> 0.0
-      y_axis_crop_end_point: number -> 0.0
-trial:
-  common:
-    defined:
-      physical_object_inspect: false
-      object_tracking_label_for_kinematics: center
-      maximum_radians_inter_gaze_perimeter: 0.7853981633974483
-      perimeter_border_normal_meters: 0.005
-      reader_kwargs:
-        init_from: parquet
-        midpoint_groups:
-          center_eye: [ "left_ear", "right_ear" ]
-    required: {}
-    optional: {}
-  specific:
-    NortTrainingTrial:
-      defined:
-        gaze_start_point_label: center_eye
-        gaze_travel_direction_point_label: nose
-      required:
-        familiar: None
-        variable: None
-      optional:
-        gaze_start_point_label: string
-        gaze_travel_direction_point_label: string
-        maximum_radians_inter_gaze_perimeter: number -> 1.0471975511965976
-        maximum_seconds_distraction: number -> 0.5
-        minimum_seconds_attention: number -> 0.5
-        perimeter_border_normal_meters: number
-        physical_object_inspect: boolean -> False
-    NortNoveltyTrial:
-      defined:
-        gaze_start_point_label: center_eye
-        gaze_travel_direction_point_label: nose
-      required:
-        familiar: None
-        novel: None
-      optional:
-        gaze_start_point_label: string
-        gaze_travel_direction_point_label: string
-        maximum_radians_inter_gaze_perimeter: number -> 1.0471975511965976
-        maximum_seconds_distraction: number -> 0.5
-        minimum_seconds_attention: number -> 0.5
-        perimeter_border_normal_meters: number
-        physical_object_inspect: boolean -> False
 immutable:
   metadata_filename: metadata.xlsx
   kinematic_data_file_extension: .parquet
   experiment_class: NortExperiment
-  trial_classes/stages:
-  - NortHabituationTrial
-  - NortTrainingTrial
-  - NortNoveltyTrial
-  method_specific:
-    detected_animal_ids:
-    - OO745
-    - OO671
-    - OP337
-    - OO956
-    - OP210
-    - OP214
-    - OO731
-    - OO725
-    - OP353
-    - OO743
-    - OP721
-    - OO685
-    - OO737
-    - OP216
-    - OP338
-    - OO944
-    - OO728
-    - OO672
-    - OO945
-    - OO955
-    - OP352
-    - OP351
-    - OP213
-    - OP722
-    - OP680
-    - OO670
-    - OP212
-    - OO942
-    - OP700
-    - OO687
-    - OO958
-    - OP339
-    - OO941
-    - OP215
-    - OP696
-    - OP211
-    - OP224
-    - OP689
-    - OO738
-    - OP679
-    - OP698
-    - OO736
-    - OO686
-    - OP222
-    - OP697
-    - OO957
-    - OP691
-    - OO735
-    - OO943
-    - OP220
-    - OO953
-    - OO954
+  stage_index_to_trial_class_name:
+    0: NortTrainingTrial
+    1: NortNoveltyTrial

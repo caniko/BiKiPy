@@ -1,10 +1,7 @@
 from typing import Callable
 
 from bikipy.ingress.plugin.center import center_file_path_to_value
-from bikipy.ingress.plugin.meters_per_pixel import (
-    from_makesense_reference_line_segment,
-    meters_per_pixel_file_name_to_value,
-)
+from bikipy.ingress.plugin.meters_per_pixel import meters_per_pixel_file_name_to_value
 from bikipy.ingress.plugin.perimeter import perimeter_file_path_to_value
 
 PLUGIN_NAME_TO_KEYRING: dict[str, dict[str, str | Callable]] = {

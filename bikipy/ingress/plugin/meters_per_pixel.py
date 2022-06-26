@@ -1,32 +1,25 @@
-from functools import lru_cache
-from math import sqrt
-
-import numpy as np
-from pydantic import DirectoryPath
-
-from bikipy.core.typing import NDArrayFp64
-from bikipy.ingress.utils.io import initialize_metadata_data_frame, load_settings
-from bikipy.utils.io.makesense import read_first_makesense_line
-
-from functools import cached_property
+from functools import cached_property, lru_cache
 from logging import getLogger
+from math import sqrt
 from typing import ClassVar
 
-from pydantic import FilePath, validator
+import numpy as np
+from pydantic import DirectoryPath, FilePath, validator
 
-from bikipy.core.base_class import BaseBikipy
+from bikipy.core.typing import NDArrayFp64
+from bikipy.ingress.plugin.base import BasePlugin
+from bikipy.ingress.utils.io import initialize_metadata_data_frame, load_settings
+from bikipy.utils.io.makesense import read_first_makesense_line
 
 logger = getLogger(__file__)
 
 
-class MeterPerPixel(BaseBikipy):
-    data_path: FilePath
+class MeterPerPixel(BasePlugin):
+    data_label = "meters_per_pixel"
 
-    data_label: ClassVar[str] = "meter_per_pixel"
-
-    @validator("data_file")
+    @validator("data_path")
     def is_meter_per_pixel_file(cls, value: FilePath):
-        match value.stem.split("-")[1]:
+        match value.stem.split("-")[0].split(".")[-1]:
             case "meter_pixel_ratio":
                 logger.warning(
                     f"The {cls.data_label} file has the meter_pixel_ratio indicating it is from an older version"
@@ -34,17 +27,20 @@ class MeterPerPixel(BaseBikipy):
             case cls.data_label:
                 pass
             case _:
-                msg = f"Defined file is not a {cls.data_label} file"
+                msg = f"Defined file, {value.stem}, is not a {cls.data_label} file"
                 raise AttributeError(msg)
         return value
 
     @cached_property
     def _info(self):
-        result = self.data_file.stem.split("-")
+        result = super()._info
+
+        # TODO: Onion validation pydantic v2
         assert len(result) >= 3, (
             f"The file name for {self.data_label} files consist of name, "
-            f"method, and meter length delimeted by a dash this file: {self.data_file.stem}"
+            f"method, and meter length delimited by a dash this file: {self.data_path.stem}"
         )
+
         return result
 
     @property
@@ -82,38 +78,31 @@ class MeterPerPixel(BaseBikipy):
                 pixel_x, pixel_y = pixel_ab_vector
                 pixel_ab_ratio = np.divide(*pixel_ab_vector)  # a-b intersects on the origin
 
-                meter_y = sqrt(self.meter_length ** 2 / (1 + pixel_ab_ratio))
-                meter_x = sqrt(self.meter_length ** 2 - meter_y ** 2)
+                meter_y = sqrt(self.meter_length**2 / (1 + pixel_ab_ratio))
+                meter_x = sqrt(self.meter_length**2 - meter_y**2)
 
                 return np.array([meter_x / pixel_x, meter_y / pixel_y])
+            case "line":
+                return self.meter_length / np.array(read_first_makesense_line(self.data_path), dtype=float)
+            case _:
+                msg = f"Method {self.annotation_method} is not supported"
+                raise NotImplementedError(msg)
 
 
 def meters_per_pixel_file_name_to_value(file_path: FilePath, *args, **kwargs):
-    return from_makesense_reference_line_segment(file_path)
-
-
-@lru_cache
-def from_makesense_reference_line_segment(data_path: FilePath) -> NDArrayFp64:
-    meters = float(data_path.stem.split("-")[1])
-
-
+    return MeterPerPixel(data_path=file_path).ratio
 
 
 @lru_cache
 def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath) -> dict[str, NDArrayFp64]:
-    mpr_file_iterator = perimeter_dir.glob("meters_per_pixel-*.csv")
     return {
-        get_file_label_from_3rd_str_in_split(meters_per_pixel_file_path): from_makesense_reference_line_segment(
-            meters_per_pixel_file_path
-        )
-        for meters_per_pixel_file_path in mpr_file_iterator
+        (mpp := MeterPerPixel(data_path=meters_per_pixel_file_path)).data_label: mpp.ratio
+        for meters_per_pixel_file_path in perimeter_dir.glob("meters_per_pixel-*.csv")
     }
 
 
 def first_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath):
-    return detect_meters_per_pixel_in_perimeter_directory(
-        next(iter(detect_meters_per_pixel_in_perimeter_directory(perimeter_dir).values()))
-    )
+    return next(iter(detect_meters_per_pixel_in_perimeter_directory(perimeter_dir).values()))
 
 
 def validate_metadata_meters_per_pixel_strategy(project_root_directory: DirectoryPath):

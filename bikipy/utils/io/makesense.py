@@ -12,7 +12,7 @@ logger = getLogger(__name__)
 
 def read_makesense_rectangle(data_path: FilePath, invert_y: bool = True) -> pd.DataFrame:
     result = pd.read_csv(
-        data_path, header=None, names=("label", "x", "y", "vec_x", "vec_y", "image_name", "x_res", "y_res")
+        data_path, header=None, index_col=0, names=("x", "y", "vec_x", "vec_y", "image_name", "x_res", "y_res")
     )
     if invert_y:
         result.loc[:, "y"] = result["y_res"] - result.loc[:, "y"]

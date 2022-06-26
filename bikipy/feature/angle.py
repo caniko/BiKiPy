@@ -3,7 +3,7 @@ from warnings import warn
 
 import numba
 import numpy as np
-from numba import njit, jit
+from numba import jit, njit
 
 from bikipy import ENABLE_NUMBA
 from bikipy.core.typing import NDArrayFp64

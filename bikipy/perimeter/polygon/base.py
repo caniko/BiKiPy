@@ -21,8 +21,8 @@ from bikipy.utils.io.makesense import (
 from bikipy.utils.math.geometry import clockwise_sort_points, expand_rectangle
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 from bikipy.utils.math.vector import (
-    unit_vector,
     nearest_point_on_line_segment_to_coordinates,
+    unit_vector,
 )
 
 logger = getLogger(__name__)
@@ -248,8 +248,8 @@ class PolygonPerimeter(BasePerimeter, ABC):
     def from_makesense_csv_rectangle(
         cls,
         data_path: FilePath,
-        image_root: Optional[DirectoryPath],
-        reference_point_csv_path: Optional[FilePath],
+        image_root: Optional[DirectoryPath] = None,
+        reference_point_csv_path: Optional[FilePath] = None,
         **perimeter_kwargs,
     ):
         logger.debug("Generating PolygonPerimeter from makesense polygon data in coco format")
@@ -261,8 +261,8 @@ class PolygonPerimeter(BasePerimeter, ABC):
 
         result = {}
         for label, row in csv_data.iterrows():
-            start = np.array(row[1:3], dtype=int)
-            end = start + np.array(row[3:5], dtype=int)
+            start = np.array(row[:2], dtype=int)
+            end = start + np.array(row[2:4], dtype=int)
 
             image_name = row["image_name"]
             if image_name not in result:
