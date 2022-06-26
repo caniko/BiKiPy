@@ -121,8 +121,8 @@ def nearest_point_on_line_segment_to_coordinates(
     start_end_vector = line_segment_end - line_segment_start
     start_coordinates_vectors = coordinates - line_segment_start
 
-    interpolation_param = np.sum(start_end_vector * start_coordinates_vectors) / np.linalg.norm(
-        start_end_vector, axis=1
+    interpolation_param = np.sum(start_end_vector * start_coordinates_vectors, axis=1) / np.linalg.norm(
+        start_end_vector
     )
 
     filtered_ip = np.where(interpolation_param < 0, 0, interpolation_param)  # lowest value is 0

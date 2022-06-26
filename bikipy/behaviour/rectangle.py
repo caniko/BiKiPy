@@ -208,7 +208,7 @@ class RectangleEnclosedTrial(BaseTrial):
         }
         if self.inspect:
             fig, ax = plt.subplots()
-            ax.set_title(f"Quadrants_Trial_#{self.best_id}")
+            ax.set_title(f"Quadrants_Trial_#{self.label}")
 
             confined = np.zeros(self.reader.frames, dtype=bool)
 
@@ -226,7 +226,7 @@ class RectangleEnclosedTrial(BaseTrial):
             ax.scatter(*self.manual_center_meters.T, color="k", label="New")
 
             plt.legend()
-            plt.savefig(self.quadrant_inspect_directory / f"{self.best_id}.jpeg")
+            plt.savefig(self.quadrant_inspect_directory / f"{self.label}.jpeg")
 
         return result
 

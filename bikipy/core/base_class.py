@@ -1,8 +1,7 @@
-from datetime import datetime
 from functools import cached_property
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, TypeVar
 
-from pydantic import BaseModel, DirectoryPath, Field
+from pydantic import BaseModel
 
 
 class BaseBikipy(BaseModel):
@@ -14,53 +13,23 @@ class BaseBikipy(BaseModel):
 
 
 class BaseBikipyHashable(BaseBikipy):
-    int_id: Optional[int]
-    label: Optional[str]
-    group_label: Optional[str]
-    timestamp: datetime = Field(default_factory=datetime.now)
+    label: str
 
     @property
-    def _hash_key(self):
-        return (
-            self.best_id,
-            self.group_label,
-            self.timestamp,
-            self.category,
-        )
+    def _to_hash(self) -> list:
+        return [self.__class__.__name__, self.category, self.label]
 
     def __hash__(self):
-        return sum(hash(key) for key in self._hash_key)
+        return hash(tuple(self._to_hash))
 
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self._hash_key == other._hash_key
-        return self._hash_key == other
+    def __eq__(self, other: "BikipyHashable"):
+        try:
+            return self._to_hash == other._to_hash
+        except AttributeError:
+            return False
 
-    def __ne__(self, other):
+    def __ne__(self, other: "BikipyHashable"):
         return not self.__eq__(other)
 
-    def __lt__(self, other):
-        self._inquire_timestamp_attribute(other)
-        return self.timestamp < other.timestamp
 
-    def __le__(self, other):
-        self._inquire_timestamp_attribute(other)
-        return self.timestamp <= other.timestamp
-
-    def __gt__(self, other):
-        self._inquire_timestamp_attribute(other)
-        return self.timestamp > other.timestamp
-
-    def __ge__(self, other):
-        self._inquire_timestamp_attribute(other)
-        return self.timestamp >= other.timestamp
-
-    @property
-    def best_id(self):
-        return self.label or self.int_id or self.timestamp or self.category
-
-    @staticmethod
-    def _inquire_timestamp_attribute(obj):
-        if not hasattr(obj, "timestamp"):
-            msg = "Cannot perform inequality operations on object without the timestamp attribute"
-            raise AttributeError(msg)
+BikipyHashable = TypeVar("BikipyHashable", bound=BaseBikipyHashable)

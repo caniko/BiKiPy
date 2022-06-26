@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, DirectoryPath, Field
 
+from bikipy.behaviour.base import BaseTrial
 from bikipy.behaviour.rectangle import RectangleEnclosedTrial
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayFp64
@@ -41,9 +42,7 @@ class PhysicalObjectTrialMixin(BaseBikipy):
 
     @cached_property
     def perimeters(self):
-        if self.all_perimeters_are_physical_objects:
-            return self.all_physical_object_perimeters
-        return super().perimeters
+        return self.all_physical_object_perimeters
 
     @property
     def feature_df_rows(self) -> list:

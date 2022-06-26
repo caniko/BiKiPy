@@ -40,6 +40,12 @@ class PolygonPerimeter(BasePerimeter, ABC):
 
     polygon_order: ClassVar[Optional[int]]
 
+    @property
+    def _to_hash(self) -> list:
+        result = super()._to_hash
+        result.append(self.vertices_in_pixels.data.tobytes())
+        return result
+
     @validator("vertices_in_pixels")
     def vertices_polygon_order_validator(cls, value: NDArrayFp64):
         if cls.polygon_order and (n := len(value)) != int(cls.polygon_order):
@@ -91,7 +97,7 @@ class PolygonPerimeter(BasePerimeter, ABC):
         return unit_vector(self.closest_point_on_edge_to_coordinates(coordinates) - coordinates)
 
     def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayFp64:
-        assert self.polygon_order > 4
+        assert self.polygon_order >= 4, f"polygon_order <= 4, {self.polygon_order}"
         return parallel_point_in_polygon(coordinates, self.vertices_in_meters)
 
     def change_reference(self, new_reference: NDArrayFp64, **new_inspect_image_kwargs):

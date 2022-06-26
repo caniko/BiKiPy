@@ -22,6 +22,13 @@ class CirclePerimeter(BasePerimeter):
     center_pixels: NDArrayFp64
     radius_meters: float
 
+    @property
+    def _to_hash(self) -> list:
+        result = super()._to_hash
+        result.append(self.radius_meters)
+        result.append(self.center_pixels.data.tobytes())
+        return result
+
     @cached_property
     def center_meters(self):
         return self.center_pixels * self.video.meters_per_pixel

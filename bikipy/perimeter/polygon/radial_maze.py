@@ -67,7 +67,7 @@ def generate_radial_maze_perimeters(
 
         arm_perimeters.append(
             RectanglePerimeter(
-                verteces_in_pixelsarm_perimeter,
+                vertices_in_pixels=arm_perimeter,
                 int_id=line_index + 1,
                 label=labels[line_index],
                 group_label="arms",

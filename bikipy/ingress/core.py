@@ -1,5 +1,6 @@
 import json
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from functools import cached_property
 from logging import getLogger
 from typing import Any, Callable, ClassVar, Hashable, Iterable, Optional, TypeVar
@@ -19,11 +20,6 @@ from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
     first_meters_per_pixel_in_perimeter_directory,
 )
-from bikipy.ingress.plugin.perimeter import (
-    get_name_map_from_name_df,
-    get_perimeter_data,
-    get_perimeter_name_df,
-)
 from bikipy.ingress.utils import settings
 from bikipy.ingress.utils.io import (
     get_dataset_directory_path,
@@ -35,12 +31,7 @@ from bikipy.ingress.utils.io import (
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
 from bikipy.ingress.utils.settings import get_definable_settings
-from bikipy.perimeter.base import (
-    BasePerimeter,
-    PerimeterSet,
-    StringPerimeterShapes,
-    perimeter_set_from_makesense,
-)
+from bikipy.perimeter.base import BasePerimeter
 from bikipy.reader import DeepLabCutReader
 from bikipy.utils.collection_utils import copycat_assumes_levels_of_icon
 
@@ -243,7 +234,7 @@ class BaseIngress(BaseBikipy, ABC):
 
     def _define_experiment_data(self) -> None:
         if self._metadata_plugins:
-            self._trial_id_to_keyword_arguments = dict.fromkeys(self.metadata.index.values, dict())
+            self._trial_id_to_keyword_arguments = defaultdict(dict)
             for plugin_info in self._metadata_plugins:
                 label_to_file_path = {
                     file_path.stem.split("-")[-1]: file_path
@@ -252,7 +243,7 @@ class BaseIngress(BaseBikipy, ABC):
                 for trial_id, row in self.metadata.iterrows():
                     self._trial_id_to_keyword_arguments[trial_id][plugin_info["bikipy_trial_key"]] = plugin_info[
                         "file_path_to_value"
-                    ](label_to_file_path[row[plugin_info["human_readable_index"]]], trial_id, self)
+                    ](label_to_file_path[row[plugin_info["human_readable_index"]]], self, trial_id)
 
         self._ingress_reader()
 
@@ -364,9 +355,7 @@ class BaseIngress(BaseBikipy, ABC):
 
         for key in ("ingress", "perimeter"):
             if key in self.settings:
-                new_settings[key] = settings.update_dictionary(
-                    self.settings[key], new_settings[key], **kwargs
-                )
+                new_settings[key] = settings.update_dictionary(self.settings[key], new_settings[key], **kwargs)
 
         if "reader_kwargs" in self.settings:
             new_settings["reader_kwargs"] = settings.update_defined_values(
@@ -396,37 +385,7 @@ class BaseIngress(BaseBikipy, ABC):
 
     # Plugin methods ==============================
 
-    @validate_arguments
-    def first_perimeter_set_from_makesense(
-        self,
-        perimeter_path: FilePath,
-        trial_id: str | PositiveInt,
-        manual_shape: Optional[StringPerimeterShapes] = None,
-    ) -> PerimeterSet:
-        shape, label = get_perimeter_data(perimeter_path)
-
-        image_name_to_perimeter_set = perimeter_set_from_makesense(
-            perimeter_path, manual_shape or shape, meters_per_pixel=self._get_meter_per_pixel(trial_id)
-        )
-
-        perimeter_set = tuple(image_name_to_perimeter_set.values())[0]
-        perimeter_set.apply_label_prefix_suffix(
-            self.settings["perimeter"]["label_prefix"], self.settings["perimeter"]["label_suffix"]
-        )
-
-        for perimeter in perimeter_set.all_perimeters:
-            for field, value in self.settings["perimeter"]["fields"]["defined"].items():
-                if value is not None:
-                    perimeter.__setattr__(field, value)
-
-        if self.settings["perimeter"]["perimeter_names_in_metadata"]:
-            name_map = get_name_map_from_name_df(self.project_root_directory, trial_id)
-            for label, perimeter in perimeter_set.label_to_perimeter.items():
-                perimeter.label = name_map[label]
-
-        return perimeter_set
-
-    def _get_meter_per_pixel(self, trial_id: str | PositiveInt) -> NDArrayFp64:
+    def get_meter_per_pixel(self, trial_id: str | PositiveInt) -> NDArrayFp64:
         match self.settings["ingress"]["meters_per_pixel_definition_strategy"]:
             case "global_perimeter":
                 return first_meters_per_pixel_in_perimeter_directory(self.plugin_directory_path)

@@ -22,7 +22,7 @@ PLUGIN_NAME_TO_KEYRING: dict[str, dict[str, str | Callable]] = {
     "perimeter": {
         "ingress_key": "perimeter_definition_strategy",
         "code_key": "perimeter",
-        "bikipy_trial_key": "perimeter",
+        "bikipy_trial_key": "label_to_perimeter",
         "human_readable_index": "Perimeter",
         "file_path_to_value": perimeter_file_path_to_value,
     },

@@ -2,17 +2,16 @@ from functools import cached_property
 from logging import getLogger
 from typing import ClassVar
 
-from bikipy.behaviour.mixin.physical_object import PhysicalObjectTrialMixin
+from bikipy.behaviour.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
 from bikipy.behaviour.rectangle import (
     RectangleEnclosedExperiment,
-    RectangleEnclosedTrial,
 )
 from bikipy.perimeter.base import AnyPerimeter
 
 logger = getLogger(__name__)
 
 
-class NortTrainingTrial(RectangleEnclosedTrial, PhysicalObjectTrialMixin):
+class NortTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
     variable: AnyPerimeter
     familiar: AnyPerimeter
 
@@ -26,7 +25,7 @@ class NortTrainingTrial(RectangleEnclosedTrial, PhysicalObjectTrialMixin):
         return self.variable, self.familiar
 
 
-class NortNoveltyTrial(RectangleEnclosedTrial, PhysicalObjectTrialMixin):
+class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
     novel: AnyPerimeter
     familiar: AnyPerimeter
 

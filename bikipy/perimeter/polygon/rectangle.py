@@ -15,4 +15,5 @@ class RectanglePerimeter(PolygonPerimeter):
         return self.__class__(
             vertices_in_pixels=expand_rectangle(self.vertices_in_pixels, perimeter_border_normal_meters),
             manual_video=self.video,
+            label=f"border_{self.label}"
         )

@@ -154,6 +154,7 @@ class BaseTrial(Behaviour):
 
         return reader_init_func(
             df_path=self.coordinate_data_path,
+            label=self.coordinate_data_path.stem,
             manual_video=self.video,
             crop_time_seconds=self.crop_time_seconds,
             # crop_from_end=self.crop_from_end,
@@ -246,6 +247,7 @@ class BaseExperiment(Behaviour):
     stage: Optional[str] = Field(
         description="Experiment stage label, if experiment object is in a sequence of experiment objects"
     )
+    label: Optional[str]
     inspect_directory: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
     inspect_image_path: Optional[FilePath] = Field(description="Used globally")
     compute_only_one_df_row: bool = Field(False, description="Used to rapidly generate combo df during debugging")
@@ -372,9 +374,8 @@ class BaseExperiment(Behaviour):
         if "inspect_image" not in result:
             result["inspect_image"] = self._initialized_inspect_image
 
-        if "perimeter" in result:
-            perimeter_set: PerimeterSet = result.pop("perimeter")
-            result.update(perimeter_set.label_to_perimeter)
+        if "label_to_perimeter" in result:
+            result.update(result.pop("label_to_perimeter"))
 
         return result
 
@@ -423,7 +424,7 @@ class BaseExperiment(Behaviour):
             else:
                 result[trial.animal_id] = [trial]
         for trials in result.values():
-            trials.sort(key=lambda t: t.best_id)
+            trials.sort(key=lambda t: t.label)
         return dict(sorted(result.items()))
 
     @cached_property

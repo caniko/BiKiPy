@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 from pydantic import FilePath
 

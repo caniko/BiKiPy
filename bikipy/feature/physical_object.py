@@ -58,7 +58,7 @@ class PhysicalObject(BaseBikipy):
 
     @property
     def label(self):
-        return self.perimeter.best_id
+        return self.perimeter.label
 
     @cached_property
     def distance_from_per_frame(self) -> NDArrayFp64:

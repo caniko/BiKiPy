@@ -1,14 +1,13 @@
 from abc import abstractmethod
 from functools import cached_property
 from logging import getLogger
-from pathlib import Path
 from typing import Any, ClassVar, Literal, Optional, Sequence, TypeVar
 
 import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments
 
-from bikipy.core.base_class import BaseBikipy, BaseBikipyHashable
+from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.core.video import VideoMetadataMixin, convert_meters_to_pixels
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
@@ -25,12 +24,20 @@ class BasePerimeter(BaseBikipyHashable, VideoMetadataMixin):
         description="Signifies the impenetrability of the perimeter. "
         "Usually because the perimeter is insurmountable or slippery",
     )
+    int_id: Optional[int] = Field(description="For multi-perimeter trials where sequential confinement is used")
+    group_label: Optional[str]
 
     reference_point_coco_path: Optional[FilePath]
     reference_point_array: Optional[NDArrayInt16]
 
     category: ClassVar[Optional[str]] = "perimeter"
     required_video_metadata_fields = {"recording_resolution"}
+
+    @property
+    def _to_hash(self) -> list:
+        result = super()._to_hash
+        result.append(self.int_id)
+        return result
 
     @abstractmethod
     def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64):
@@ -162,12 +169,6 @@ class BasePerimeter(BaseBikipyHashable, VideoMetadataMixin):
 
         return coordinate_confinement_boolean_index
 
-    def apply_label_prefix_suffix(self, prefix: Optional[str], suffix: Optional[str]) -> None:
-        if prefix:
-            self.label = f"{prefix}_{self.label}"
-        if suffix:
-            self.label = f"{self.label}_{suffix}"
-
     def plot(
         self,
         ax: Any = None,
@@ -193,7 +194,7 @@ class BasePerimeter(BaseBikipyHashable, VideoMetadataMixin):
         """
         if not ax:
             fig, ax = plt.subplots()
-            ax.set_title(self.best_id)
+            ax.set_title(self.label)
 
         if self.video.frame is not None:
             ax.imshow(self.video.frame)
@@ -208,7 +209,7 @@ class BasePerimeter(BaseBikipyHashable, VideoMetadataMixin):
             ax.imshow(histogram.T, interpolation="sinc")
             ax.plot(*coordinates.T, ".r-")
 
-        ax.set_title(self.best_id)
+        ax.set_title(self.label)
 
         return self.plot_perimeter(
             **perimeter_plot_kwargs if perimeter_plot_kwargs else {}, ax=ax, inspect_pixels=inspect_pixels
@@ -218,11 +219,19 @@ class BasePerimeter(BaseBikipyHashable, VideoMetadataMixin):
 AnyPerimeter = TypeVar("AnyPerimeter", bound=BasePerimeter)
 
 
-class PerimeterSet(BaseBikipy):
+class PerimeterSet(BaseBikipyHashable):
     perimeters: list[AnyPerimeter]
     restricted_perimeters: Optional[list[AnyPerimeter]]
 
+    label: Optional[str]
+
     category: ClassVar[Optional[str]] = "perimeter"
+
+    @property
+    def _to_hash(self) -> list:
+        result = super()._to_hash
+        result.extend(perimeter._to_hash for perimeter in self.all_perimeters)
+        return result
 
     def __add__(self, other):
         return PerimeterSet(
@@ -266,7 +275,7 @@ class PerimeterSet(BaseBikipy):
         result = {}
         for i, perimeter in enumerate(self.all_perimeters):
             framewise_confined_coordinates = perimeter.framewise_confined_coordinates(coordinates, ax=ax)
-            result[perimeter.best_id or i] = framewise_confined_coordinates
+            result[perimeter.label or i] = framewise_confined_coordinates
         if inspect:
             plt.show()
         return result
@@ -361,27 +370,19 @@ class PerimeterSet(BaseBikipy):
             }
         return [self.__class__(**perimeter_data) for perimeter_data in perimeter_set_kwargs.values()]
 
-    def apply_label_prefix_suffix(self, prefix: Optional[str], suffix: Optional[str]) -> None:
-        for perimeter in self.all_perimeters:
-            perimeter.apply_label_prefix_suffix(prefix, suffix)
-
-    @cached_property
+    @property
     def perimeter_to_int_id(self):
         return {perimeter: perimeter.int_id for perimeter in self.all_perimeters}
 
-    @cached_property
-    def perimeter_to_label(self):
-        return {perimeter: perimeter.label for perimeter in self.all_perimeters}
-
-    @cached_property
+    @property
     def int_id_to_perimeter(self):
         return {perimeter.int_id: perimeter for perimeter in self.all_perimeters}
 
-    @cached_property
+    @property
     def label_to_perimeter(self):
         return {perimeter.label: perimeter for perimeter in self.all_perimeters}
 
-    @cached_property
+    @property
     def int_id_to_label(self):
         return {perimeter.int_id: perimeter.label for perimeter in self.all_perimeters}
 
