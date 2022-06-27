@@ -9,7 +9,6 @@ from pydantic import FilePath, PositiveInt, validator
 from bikipy.ingress.plugin.base import BasePlugin
 from bikipy.perimeter.base import (
     AnyPerimeter,
-    PerimeterSet,
     StringPerimeterShapes,
     perimeter_set_from_makesense,
 )
@@ -75,7 +74,7 @@ class PluginPerimeter(BasePlugin):
             return _open_label_to_trial_label_df(self.ingress.metadata_path)
 
 
-def perimeter_file_path_to_value(file_path: FilePath, ingress: Any, trial_id: str | PositiveInt, *args, **kwargs):
+def perimeter_file_path_to_value(file_path: FilePath, trial_id: str | PositiveInt, ingress: Any, *args, **kwargs):
     return PluginPerimeter(
         data_path=file_path, ingress=ingress, trial_id=trial_id
     ).label_to_perimeter_from_first_makesense

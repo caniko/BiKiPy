@@ -141,7 +141,7 @@ class PhysicalObject(BaseBikipy):
 
         plt.tight_layout()
         # save_plt_fig_cv(self.attention_fig, self.inspect_figure_file_path)
-        plt.savefig(self.inspect_figure_file_path.with_suffix(".svg"))
+        plt.savefig(self.inspect_figure_file_path.with_name(f"{self.inspect_figure_file_path.stem}_{self.label}.svg"))
         plt.close(self.attention_fig)
 
     @property

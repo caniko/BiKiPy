@@ -36,7 +36,7 @@ class MeterPerPixel(BasePlugin):
         result = super()._info
 
         # TODO: Onion validation pydantic v2
-        assert len(result) >= 3, (
+        assert len(result) >= 4, (
             f"The file name for {self.data_label} files consist of name, "
             f"method, and meter length delimited by a dash this file: {self.data_path.stem}"
         )
@@ -50,6 +50,13 @@ class MeterPerPixel(BasePlugin):
     @cached_property
     def meter_length(self) -> float:
         return float(self._info[2])
+
+    @property
+    def file_label(self) -> str | None:
+        try:
+            return self._info[3]
+        except IndexError:
+            return None
 
     @cached_property
     def ratio(self):
@@ -96,8 +103,8 @@ def meters_per_pixel_file_name_to_value(file_path: FilePath, *args, **kwargs):
 @lru_cache
 def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath) -> dict[str, NDArrayFp64]:
     return {
-        (mpp := MeterPerPixel(data_path=meters_per_pixel_file_path)).data_label: mpp.ratio
-        for meters_per_pixel_file_path in perimeter_dir.glob("meters_per_pixel-*.csv")
+        (mpp := MeterPerPixel(data_path=meters_per_pixel_file_path)).file_label or i: mpp.ratio
+        for i, meters_per_pixel_file_path in enumerate(perimeter_dir.glob("meters_per_pixel-*.csv"))
     }
 
 

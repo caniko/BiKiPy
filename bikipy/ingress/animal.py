@@ -90,5 +90,5 @@ def _animal_ids(project_root_directory: DirectoryPath):
     return animal_ids
 
 
-def _define_trial_id(animal_id: int | str, stage_index: int | str):
+def _define_trial_id(animal_id: str | int, stage_index: str | int):
     return f"{animal_id}_{stage_index}"

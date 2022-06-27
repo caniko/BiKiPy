@@ -3,9 +3,7 @@ from logging import getLogger
 from typing import ClassVar
 
 from bikipy.behaviour.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
-from bikipy.behaviour.rectangle import (
-    RectangleEnclosedExperiment,
-)
+from bikipy.behaviour.rectangle import RectangleEnclosedExperiment
 from bikipy.perimeter.base import AnyPerimeter
 
 logger = getLogger(__name__)

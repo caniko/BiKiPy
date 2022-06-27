@@ -1,20 +1,12 @@
+from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from copy import copy
-from functools import cached_property, reduce
+from functools import cached_property, reduce, lru_cache
 from itertools import chain
 from logging import getLogger
 from operator import attrgetter
 from pathlib import Path
-from typing import (
-    Any,
-    ClassVar,
-    Hashable,
-    Iterable,
-    Literal,
-    Optional,
-    Sequence,
-    TypeVar,
-)
+from typing import ClassVar, Hashable, Iterable, Literal, Optional, Sequence, TypeVar
 
 import cv2
 import numpy as np
@@ -38,7 +30,7 @@ from bikipy.utils.collection_utils import (
     chain_iterables_to_multi_index,
     chain_lists_to_tuple,
     copycat_assumes_levels_of_icon,
-    max_len_in_iterable,
+    max_len_in_iterable, flatten_multi_index,
 )
 from bikipy.utils.ranged_dict import RangeDict
 
@@ -214,6 +206,12 @@ class BaseTrial(Behaviour):
     # Miscellaneous
 
     @cached_property
+    def trial_id_all_features_df_row(self):
+        if self.trial_has_defined_features:
+            return *self.feature_df_rows, *self.motion_features
+        return self.motion_features
+
+    @cached_property
     def _video(self):
         video = super()._video
         if self.perimeters:
@@ -292,6 +290,19 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
+    def trial_classes_have_identical_feature_headers(cls) -> bool:
+        if not cls.has_trials_in_stages:
+            return True
+        if cls.trial_classes_with_feature_headers != cls.trial_sequence_length:
+            return False
+        if all(
+            cls.trial_classes[0].feature_headers == trial_class.feature_headers for trial_class in cls.trial_classes[1:]
+        ):
+            return True
+        return False
+
+    @classmethod
+    @property
     def trial_class_names(cls) -> tuple[str, ...]:
         return tuple(trial_class.__name__ for trial_class in cls.trial_classes)
 
@@ -299,6 +310,12 @@ class BaseExperiment(Behaviour):
     @property
     def trial_class_labels(cls) -> tuple[str, ...]:
         return tuple(trial_class.trial_label for trial_class in cls.trial_classes)
+
+    @classmethod
+    @property
+    def trial_class_name_to_label(cls) -> dict:
+        return dict(zip(cls.trial_class_names, cls.trial_class_labels))
+        # return {name: label for name, label in zip(cls.trial_class_names, cls.trial_class_labels)}
 
     @classmethod
     @property
@@ -402,17 +419,19 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def trial_class_name_to_trial_ids(self) -> dict[str, Trial]:
-        return {trial_class.__name__: trial_ids for trial_class, trial_ids in self._trial_class_to_trial_ids.items()}
+        return {
+            trial_class.__name__: trial_ids for trial_class, trial_ids in self._trial_class_name_to_trial_ids.items()
+        }
 
     @cached_property
     def trial_id_to_trial_object(self) -> dict[Hashable, Trial]:
-        return {trial.int_id: trial for trial in self.trial_objects}
+        return {trial.label: trial for trial in self.trial_objects}
 
     @cached_property
     def trial_class_name_to_trial_objects(self) -> dict[str, Trial]:
         return {
             trial_class_name: [self.trial_id_to_trial_object[trial_id] for trial_id in trial_ids]
-            for trial_class_name, trial_ids in self._trial_class_to_trial_ids.items()
+            for trial_class_name, trial_ids in self._trial_class_name_to_trial_ids.items()
         }
 
     @cached_property
@@ -477,8 +496,39 @@ class BaseExperiment(Behaviour):
     # DataFrame methods =========================================
 
     @cached_property
-    def trial_id_feature_motion_df(self):
-        pass
+    def trial_label_to_df(self) -> dict[str | int, pd.DataFrame]:
+        data_dicts = defaultdict(dict)
+        if ENABLE_PROCESS_POOLING:
+            with yaspin(Spinners.pong, text="Computing experiment features..."):
+                with ProcessPoolExecutor() as executor:
+                    for trial_class_label, trial_objects in self._trial_class_label_to_trial_objects.items():
+                        data_dicts[trial_class_label] = {
+                            trial_object.label: features
+                            for trial_object, features in zip(
+                                trial_objects, executor.map(attrgetter("trial_id_all_features_df_row"), trial_objects)
+                            )
+                        }
+        else:
+            for trial_class_label, trial_objects in tqdm(
+                self._trial_class_label_to_trial_objects.items(), desc="Computing experiment features"
+            ):
+                if self.compute_only_one_df_row:
+                    data_dicts[trial_class_label] = {
+                        trial_objects[0].label: trial_objects[0].trial_id_all_features_df_row
+                    }
+                    break
+                data_dicts[trial_class_label] = {
+                    trial_object.label: trial_object.trial_id_all_features_df_row for trial_object in trial_objects
+                }
+
+        result = {}
+        for trial_class_label, data_dict in data_dicts.items():
+            result[trial_class_label] = pd.DataFrame.from_dict(
+                data_dict, orient="index", columns=self.trial_class_label_to_trial_id_indexed_column_index[trial_class_label]
+            )
+            result[trial_class_label].index.name = "Trial ID"
+
+        return result
 
     @cached_property
     def combined_feature_motion_df(self) -> pd.DataFrame:
@@ -533,10 +583,6 @@ class BaseExperiment(Behaviour):
             with yaspin(Spinners.pong, text="Computing motion features..."):
                 with ProcessPoolExecutor() as executor:
                     for animal_id, trial_objects in self.animal_id_to_trial_objects.items():
-                        trial_objects = [
-                            trial_object
-                            for trial_object in trial_objects
-                        ]
                         data_dict[animal_id] = chain_lists_to_tuple(
                             executor.map(attrgetter("motion_features"), trial_objects),
                         )
@@ -613,6 +659,14 @@ class BaseExperiment(Behaviour):
             add_filler_to_sequence(cls.motion_column_index, trial_label) for trial_label in cls.trial_class_labels
         )
 
+    @classmethod
+    @property
+    def trial_class_label_to_trial_id_indexed_column_index(cls):
+        return {
+            trial_class.trial_label: flatten_multi_index(chain_lists_to_tuple([trial_class.feature_headers, cls.motion_column_headers]))
+            for trial_class in cls.trial_classes
+        }
+
     # Helper methods =====================================
 
     @cached_property
@@ -628,7 +682,7 @@ class BaseExperiment(Behaviour):
         ).sort_index()
 
     @cached_property
-    def _trial_class_to_trial_ids(self) -> dict:
+    def _trial_class_name_to_trial_ids(self) -> dict:
         if not self.trial_id_to_trial_class_name:
             msg = (
                 "This experiment object has no trial_id_to_trial_class_name, "
@@ -637,20 +691,25 @@ class BaseExperiment(Behaviour):
             )
             raise AttributeError(msg)
 
-        result = {}
-        for trial_id, trial_class in self.trial_id_to_trial_class_name.items():
-            if trial_class in result:
-                result[trial_class].append(trial_id)
-            else:
-                result[trial_class] = [trial_id]
+        result = defaultdict(list)
+        for trial_id, trial_class_name in self.trial_id_to_trial_class_name.items():
+            result[trial_class_name].append(trial_id)
 
-        return dict(sorted(result.items(), key=lambda trial_c: trial_c[0].experiment_stage_index))
+        return result
 
     @cached_property
-    def _trial_class_to_trial_objects(self):
+    def _trial_class_label_to_trial_objects(self) -> dict:
+        if not self.trial_id_to_trial_class_name:
+            msg = (
+                "This experiment object has no trial_id_to_trial_class_name, "
+                "this attribute is reserved for experiments with "
+                "several trial classes"
+            )
+            raise AttributeError(msg)
+
         return {
-            trial_class: [self.trial_id_to_trial_object[trial_id] for trial_id in trial_ids]
-            for trial_class, trial_ids in self._trial_class_to_trial_ids.items()
+            self.trial_class_name_to_label[trial_class_name]: trial_objects
+            for trial_class_name, trial_objects in self.trial_class_name_to_trial_objects.items()
         }
 
     @cached_property

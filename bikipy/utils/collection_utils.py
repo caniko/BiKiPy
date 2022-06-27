@@ -1,3 +1,4 @@
+from functools import lru_cache
 from itertools import chain
 from typing import Any, Iterable, Optional, Sequence
 
@@ -72,3 +73,8 @@ def generic_multi_indexer(*basis_labels):
         return [(category, label, *levels_to_add) for label in basis_labels]
 
     return result
+
+
+@lru_cache
+def flatten_multi_index(indices: Iterable[Sequence[str]]) -> tuple[str, ...]:
+    return tuple("-".join(index) for index in indices)
