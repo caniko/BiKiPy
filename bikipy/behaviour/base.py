@@ -535,11 +535,10 @@ class BaseExperiment(Behaviour):
                     for animal_id, trial_objects in self.animal_id_to_trial_objects.items():
                         trial_objects = [
                             trial_object
-                            for trial_object in copy(trial_objects)
-                            if trial_object.trial_has_defined_features
+                            for trial_object in trial_objects
                         ]
                         data_dict[animal_id] = chain_lists_to_tuple(
-                            list(executor.map(attrgetter("motion_features"), trial_objects)),
+                            executor.map(attrgetter("motion_features"), trial_objects),
                         )
         else:
             for animal_id, trial_objects in tqdm(
