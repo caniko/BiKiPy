@@ -21,9 +21,9 @@ class PhysicalObjectTrialMixin(BaseBikipy):
         description="The magnitude of the normal between the perimeter and the perimeter given in meters",
     )
 
-    maximum_radians_inter_gaze_perimeter: float = 1 / 3 * np.pi
-    minimum_seconds_attention: float = 0.3
-    maximum_seconds_distraction: float = 0.65
+    maximum_radians_inter_gaze_perimeter: float = 1.0 / 3.0 * np.pi
+    minimum_seconds_attention: float = 1.0 / 3.0
+    maximum_seconds_distraction: float = 2.0 / 3.0
 
     physical_object_inspect: bool = False
 
