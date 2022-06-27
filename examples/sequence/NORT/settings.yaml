@@ -68,9 +68,9 @@ trial:
       coordinate_data_path: null
       familiar: null
       object_tracking_label_for_kinematics: center
-      physical_object_inspect: false
+      physical_object_inspect: true
       maximum_radians_inter_gaze_perimeter: 0.7853981633974483
-      perimeter_border_normal_meters: 0.05
+      perimeter_border_normal_meters: 0.005
     required:
       animal_id: '[{''type'': ''string''}, {''type'': ''integer''}]'
       coordinate_data_path: string
@@ -128,6 +128,7 @@ trial:
 experiment:
   defined:
     manual_fps: 30
+    compute_only_one_df_row: true
   optional:
     common_trial_keyword_arguments: object
     compute_only_one_df_row: boolean -> False

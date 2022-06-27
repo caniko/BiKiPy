@@ -87,11 +87,12 @@ class PolygonPerimeter(BasePerimeter, ABC):
             ]
         )
         # Distance of the coordinate from the previous matrix
-        distance_matrix = coordinates - closest_edge_point_to_coordinates_matrix
+        vector_matrix = coordinates - closest_edge_point_to_coordinates_matrix
+        distance_matrix = np.linalg.norm(vector_matrix, axis=2)
 
-        closest_boolean_index = np.argsort(distance_matrix, axis=1) == 0
+        closest_boolean_index = np.argsort(distance_matrix, axis=0) == 0
 
-        return closest_edge_point_to_coordinates_matrix[closest_boolean_index].T
+        return closest_edge_point_to_coordinates_matrix[closest_boolean_index]
 
     def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         return unit_vector(self.closest_point_on_edge_to_coordinates(coordinates) - coordinates)
@@ -154,7 +155,7 @@ class PolygonPerimeter(BasePerimeter, ABC):
                 color=colormap,
             )
 
-            if perimeter_border_normal_pixels:
+            if perimeter_border_normal_pixels is not None:
                 perimeter = self.expand(perimeter_border_normal_pixels)
                 border_a = perimeter[index]
                 border_b = perimeter[following_index]

@@ -43,13 +43,18 @@ def expand_bikipy_perimeter(perimeter, *args, **kwargs):
 
 def expand_rectangle(
     perimeter_vertices: Sequence,
-    offset: float,
+    offset: Sequence[float] | float,
     y_inverted: bool = False,
     inspect: bool = False,
     as_array: bool = False,
 ):
-    x_offset = offset = float(offset)
-    y_offset = -offset if y_inverted else offset
+    if isinstance(offset, float):
+        x_offset = offset = float(offset)
+        y_offset = -offset if y_inverted else offset
+    else:
+        x_offset, y_offset = offset
+        if y_inverted:
+            y_offset = -y_offset
 
     up_right, down_right, down_left, up_left = clockwise_sort_points(perimeter_vertices)
 
