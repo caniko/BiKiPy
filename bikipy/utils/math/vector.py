@@ -2,6 +2,7 @@ from typing import Callable
 
 import numba
 import numpy as np
+from matplotlib import pyplot as plt
 from numba import jit, njit
 from numpy.linalg import LinAlgError
 from pydantic import validate_arguments
@@ -9,6 +10,7 @@ from pydantic_numpy import NDArray
 
 from bikipy import ENABLE_NUMBA
 from bikipy.core.typing import NDArrayFp64
+from bikipy.utils.collection_utils import evenly_spaced_indices
 
 
 @validate_arguments
@@ -115,7 +117,7 @@ def distance_between_line_and_point(*args, **kwargs) -> NDArrayFp64:
 
 @validate_arguments
 def nearest_point_on_line_segment_to_coordinates(
-    line_segment_start: NDArrayFp64, line_segment_end: NDArrayFp64, coordinates: NDArrayFp64
+    line_segment_start: NDArrayFp64, line_segment_end: NDArrayFp64, coordinates: NDArrayFp64, inspect: bool = True
 ) -> NDArrayFp64:
     # https://stackoverflow.com/a/47484153/9793651
     start_end_vector = line_segment_end - line_segment_start
@@ -128,7 +130,21 @@ def nearest_point_on_line_segment_to_coordinates(
     filtered_ip = np.where(interpolation_param < 0, 0, interpolation_param)  # lowest value is 0
     filtered_ip = np.where(filtered_ip > 1, 1, filtered_ip)  # highest values is 1
 
-    return line_segment_start + (filtered_ip * start_end_vector[:, None]).T
+    result = line_segment_start + (filtered_ip * start_end_vector[:, None]).T
+
+    if inspect:
+        fig, axes = plt.subplots(3, 3)
+        axes = np.array(axes)
+
+        for i, ax in zip(evenly_spaced_indices(coordinates, 9), axes.reshape(-1)):
+            ax.plot(*np.vstack((line_segment_start, line_segment_end)).T)
+            ax.scatter(*result[i])
+            ax.scatter(*coordinates[i])
+
+        plt.tight_layout()
+        plt.show()
+
+    return result
 
 
 @validate_arguments
