@@ -36,7 +36,7 @@ class MeterPerPixel(BasePlugin):
         result = super()._info
 
         # TODO: Onion validation pydantic v2
-        assert len(result) >= 4, (
+        assert len(result) == 4 or len(result) == 3, (
             f"The file name for {self.data_label} files consist of name, "
             f"method, and meter length delimited by a dash this file: {self.data_path.stem}"
         )

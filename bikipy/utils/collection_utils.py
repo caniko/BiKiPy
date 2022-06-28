@@ -2,6 +2,7 @@ from functools import lru_cache
 from itertools import chain
 from typing import Any, Iterable, Optional, Sequence
 
+import numpy as np
 import pandas as pd
 from pydantic import validate_arguments
 
@@ -78,3 +79,8 @@ def generic_multi_indexer(*basis_labels):
 @lru_cache
 def flatten_multi_index(indices: Iterable[Sequence[str]]) -> tuple[str, ...]:
     return tuple("-".join(index) for index in indices)
+
+
+def evenly_spaced_indices(sequence: Sequence, number_of_elements: int):
+    # https://stackoverflow.com/a/50685454/9793651
+    return np.round(np.linspace(0, len(sequence) - 1, number_of_elements)).astype(int)

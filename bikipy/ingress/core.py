@@ -243,7 +243,7 @@ class BaseIngress(BaseBikipy, ABC):
                 for trial_id, row in self.metadata.iterrows():
                     self._trial_id_to_keyword_arguments[trial_id][plugin_info["bikipy_trial_key"]] = plugin_info[
                         "file_path_to_value"
-                    ](label_to_file_path[row[plugin_info["human_readable_index"]]], self, trial_id)
+                    ](label_to_file_path[row[plugin_info["human_readable_index"]]], trial_id, self)
 
         self._ingress_reader()
 
