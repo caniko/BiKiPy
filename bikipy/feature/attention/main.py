@@ -16,8 +16,9 @@ from bikipy.core.video import (
     convert_meters_to_pixels,
     inspect_video_is_none_during_inspection,
 )
-from bikipy.feature.angle import angle_from_a_to_b, inner_angle
+from bikipy.feature.angle import angle_from_a_to_b
 from bikipy.perimeter.base import AnyPerimeter
+from bikipy.utils.collection_utils import evenly_spaced_indices
 from bikipy.utils.misc import generic_inspection_finalization
 
 logger = getLogger(__name__)
@@ -138,6 +139,7 @@ def gaze_direction_filter(
     inspect: bool = False,
     inspect_pixels: bool = False,
     inspect_edge_normals: bool = False,
+    inspect_vectors: bool = True,
     inspection_ax: Any = None,
 ) -> NDArrayBool:
     gaze_vector = gaze_travel_direction_point - gaze_start_point
@@ -177,15 +179,6 @@ def gaze_direction_filter(
             "alpha": MATPLOTLIB_SCATTER_ALPHA,
         }
 
-        if inspect_edge_normals:
-            ax.quiver(
-                *closest_points_on_edges.T,
-                *vector_to_closest_point_on_edge.T,
-                label="EdgeNormals",
-                color="g",
-                **quiver_kwargs,
-            )
-
         ax.quiver(
             *gaze_travel_direction_point[result].T, *gaze_vector[result].T, label="Valid", color="b", **quiver_kwargs
         )
@@ -198,6 +191,21 @@ def gaze_direction_filter(
             color="r",
             **quiver_kwargs,
         )
+
+        if inspect_edge_normals:
+            ax.quiver(
+                *closest_points_on_edges.T,
+                *vector_to_closest_point_on_edge.T,
+                label="EdgeNormals",
+                color="g",
+                **quiver_kwargs,
+            )
+
+        if inspect_vectors:
+            number_of_points = 5
+            with sb.color_palette("Spectral", n_colors=number_of_points):
+                for i in evenly_spaced_indices(gaze_travel_direction_point, number_of_points):
+                    ax.plot(*np.vstack((closest_points_on_edges[i], gaze_travel_direction_point[i])).T)
 
         ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=2)
 

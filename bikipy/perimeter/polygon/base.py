@@ -5,6 +5,8 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, ClassVar, Optional, Sequence
 
+import cv2
+import seaborn as sb
 import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import DirectoryPath, FilePath, validator
@@ -14,6 +16,7 @@ from bikipy.perimeter.base import (
     BasePerimeter,
     perimeter_set_from_image_name_to_perimeters,
 )
+from bikipy.utils.collection_utils import evenly_spaced_indices
 from bikipy.utils.io.makesense import (
     image_name_to_point_from_makesense,
     read_makesense_rectangle,
@@ -32,8 +35,6 @@ class PolygonPerimeter(BasePerimeter, ABC):
     vertices_in_pixels: NDArrayFp64
     reference_point_coco_path: Optional[FilePath]
     reference_point_array: Optional[NDArrayInt16]
-    inspect_image_path: Optional[FilePath]
-    inspect_image_array: Optional[NDArrayFp64]
     feature_scale: Optional[NDArrayFp64]
 
     category: ClassVar[Optional[str]] = "perimeter"
@@ -78,7 +79,7 @@ class PolygonPerimeter(BasePerimeter, ABC):
     def line_segment_pairs(self):
         return np.array(list(zip(self.linked_vertices_in_meters, self.linked_vertices_in_meters[1:])))
 
-    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> NDArrayFp64:
+    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64, inspect: bool = True) -> NDArrayFp64:
         # Closest point on the index-respective edge along axis 0, and coordinates along 1.
         closest_edge_point_to_coordinates_matrix = np.array(
             [
@@ -90,9 +91,27 @@ class PolygonPerimeter(BasePerimeter, ABC):
         vector_matrix = coordinates - closest_edge_point_to_coordinates_matrix
         distance_matrix = np.linalg.norm(vector_matrix, axis=2)
 
-        closest_boolean_index = np.argsort(distance_matrix, axis=0) == 0
+        argsorted_distance = np.argsort(distance_matrix, axis=0)
+        closest_boolean_index = argsorted_distance == 0
 
-        return closest_edge_point_to_coordinates_matrix[closest_boolean_index]
+        result = closest_edge_point_to_coordinates_matrix[closest_boolean_index]
+
+        if inspect:
+            indexable_t = closest_edge_point_to_coordinates_matrix.transpose(1, 2, 0)
+
+            fig, axes = plt.subplots(3, 3)
+            axes = np.array(axes)
+
+            for i, ax in zip(evenly_spaced_indices(coordinates, 9), axes.reshape(-1)):
+                for sort_idx, point in zip(argsorted_distance.T[i], indexable_t[i].T):
+                    ax.scatter(*point, label=str(sort_idx))
+                ax.scatter(*coordinates[i], label="coordinate")
+
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
+
+        return result
 
     def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         return unit_vector(self.closest_point_on_edge_to_coordinates(coordinates) - coordinates)
@@ -233,18 +252,15 @@ class PolygonPerimeter(BasePerimeter, ABC):
             image_name = coco["images"][annotation["image_id"] - 1]["file_name"]
             label = coco["categories"][annotation["category_id"] - 1]["name"]
 
-            if image_root:
-                assert not any(key in perimeter_kwargs for key in ("inspect_image_path", "inspect_image_array"))
-                current_kwargs["inspect_image_path"] = image_root / image_name
-            if reference_point_csv_path:
-                current_kwargs["reference_point_array"] = image_name_to_reference_point[image_name]
-
             if image_name not in result:
                 result[image_name] = {}
 
             result[image_name]["label"] = cls.init_polygon(
                 _coco_polygon_annotation(annotation["segmentation"][0]),
                 label=label,
+                reference_point_array=image_name_to_reference_point[image_name] if reference_point_csv_path else None,
+                manual_frame=cv2.imread(image_root / image_name) if image_root else None,
+                # manual_recording_resolution=np.array((row["x_res"], row["y_res"]), dtype=float),
                 **current_kwargs,
                 **perimeter_kwargs,
             )
@@ -277,10 +293,10 @@ class PolygonPerimeter(BasePerimeter, ABC):
 
             result[image_name][label] = cls.init_polygon(
                 np.array((start, (start[0], end[1]), end, (end[0], start[1]))),
-                inspect_image_path=image_root / str(image_name) if image_root else None,
                 label=label,
                 reference_point_array=image_name_to_reference_point[image_name] if reference_point_csv_path else None,
                 manual_recording_resolution=np.array((row["x_res"], row["y_res"]), dtype=float),
+                manual_frame=cv2.imread(image_root / str(image_name)) if image_root else None,
                 **perimeter_kwargs,
             )
 
