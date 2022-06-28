@@ -67,6 +67,7 @@ class BasePerimeter(BaseBikipyHashable, VideoMetadataMixin):
         ax: Any = None,
         include_geometric_legend: bool = False,
         colormap: Any = None,
+        **plot_kwargs
     ):
         ...
 

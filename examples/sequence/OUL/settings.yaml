@@ -60,7 +60,7 @@ trial:
       physical_object_inspect: true
       gaze_start_point_label: center_eye
       gaze_travel_direction_point_label: nose
-      perimeter_border_normal_meters: 0.02
+      perimeter_border_normal_meters: 0.05
     required:
       animal_id: '[{''type'': ''string''}, {''type'': ''integer''}]'
       coordinate_data_path: string
@@ -118,7 +118,7 @@ trial:
         object_2: null
         object_3: null
         object_4: null
-        crop_time_seconds: 600
+        crop_time_seconds: 300
       required:
         object_2: None
         object_3: None

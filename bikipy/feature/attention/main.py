@@ -83,12 +83,18 @@ def proximity_filter(
         if inspect_pixels:
             inside_perimeter_border = convert_meters_to_pixels(inside_perimeter_border, inspect_video)
 
+        ax.set_title("Proximity filter")
+
         perimeter.plot(
             ax=ax,
             inspect_pixels=inspect_pixels,
             perimeter_border_normal_pixels=perimeter_border_normal_meters * inspect_video.pixels_per_meter,
         )
-        ax.set_title("Proximity filter")
+        perimeter_border.plot(
+            ax=ax,
+            inspect_pixels=inspect_pixels,
+            perimeter_border_normal_pixels=perimeter_border_normal_meters * inspect_video.pixels_per_meter,
+        )
 
         ax.scatter(*inside_perimeter_border[result].T, marker=",", alpha=MATPLOTLIB_SCATTER_ALPHA, label="Valid")
 
