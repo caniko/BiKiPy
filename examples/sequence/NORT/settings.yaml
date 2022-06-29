@@ -128,7 +128,7 @@ trial:
 experiment:
   defined:
     manual_fps: 30
-    compute_only_one_df_row: true
+    compute_only_one_df_row: false
   optional:
     common_trial_keyword_arguments: object
     compute_only_one_df_row: boolean -> False
