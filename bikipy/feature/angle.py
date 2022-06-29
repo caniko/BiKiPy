@@ -7,7 +7,7 @@ from numba import jit, njit
 
 from bikipy import ENABLE_NUMBA
 from bikipy.core.typing import NDArrayFp64
-from bikipy.utils.math.vector import dot_prod_along_axis_1_1d, unit_vector
+from bikipy.utils.math.vector import dot_axis_1_1d, unit_vector
 
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}
 
@@ -78,7 +78,7 @@ def clockwise_angel_2d(
         ]
     )
 
-    dot_products = dot_prod_along_axis_1_1d(end_vector, start_vector)
+    dot_products = dot_axis_1_1d(end_vector, start_vector)
     angles = np.arctan2(np.abs(determinants), dot_products)
     angles[determinants < 0.0] = 2.0 * np.pi - angles[determinants < 0.0]
     return angles
@@ -182,8 +182,8 @@ def angle_from_a_to_b(vector_a: NDArrayFp64, vector_b: NDArrayFp64) -> NDArrayFp
     b_x, b_y = vector_b.T
     vector_p = np.array([-b_y, b_x]).T
 
-    b_coord = dot_prod_along_axis_1_1d(vector_a, vector_b)
-    p_coord = dot_prod_along_axis_1_1d(vector_a, vector_p)
+    b_coord = dot_axis_1_1d(vector_a, vector_b)
+    p_coord = dot_axis_1_1d(vector_a, vector_p)
 
     return np.arctan2(p_coord, b_coord)
 

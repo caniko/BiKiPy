@@ -7,14 +7,14 @@ import numpy as np
 from pydantic import DirectoryPath, FilePath, validator
 
 from bikipy.core.typing import NDArrayFp64
-from bikipy.ingress.plugin.base import BasePlugin
+from bikipy.ingress.plugin.base import BasePluginFile
 from bikipy.ingress.utils.io import initialize_metadata_data_frame, load_settings
 from bikipy.utils.io.makesense import read_first_makesense_line
 
 logger = getLogger(__file__)
 
 
-class MeterPerPixel(BasePlugin):
+class MeterPerPixel(BasePluginFile):
     data_label = "meters_per_pixel"
 
     @validator("data_path")

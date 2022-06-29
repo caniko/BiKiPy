@@ -321,16 +321,15 @@ class BaseIngress(BaseBikipy, ABC):
     def metadata_fit_to_combined_feature_motion_df(self) -> pd.DataFrame:
         if self.metadata.columns.nlevels >= self.experiment.combined_feature_motion_df.columns.nlevels:
             return self.metadata
-        return copycat_assumes_levels_of_icon(
-            self.metadata, self.experiment.combined_feature_motion_df, "Global"
-        )
+        return copycat_assumes_levels_of_icon(self.metadata, self.experiment.combined_feature_motion_df, "Global")
 
     # Client-side functions ===============================
 
     @cached_property
     def trial_label_to_df(self) -> dict[str | int, pd.DataFrame]:
         return {
-            trial_label: df.join(self.metadata, how="inner") for trial_label, df in self.experiment.trial_label_to_df.items()
+            trial_label: df.join(self.metadata, how="inner")
+            for trial_label, df in self.experiment.trial_label_to_df.items()
         }
 
     @cached_property

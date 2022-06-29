@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import Any, ClassVar, Optional, Sequence
 
 import cv2
-import seaborn as sb
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sb
 from pydantic import DirectoryPath, FilePath, validator
 
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
@@ -265,7 +265,7 @@ class PolygonPerimeter(BasePerimeter, ABC):
                 **perimeter_kwargs,
             )
 
-        return image_name_to_point_from_makesense(result)
+        return perimeter_set_from_image_name_to_perimeters(result)
 
     @classmethod
     def from_makesense_csv_rectangle(

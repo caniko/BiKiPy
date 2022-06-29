@@ -6,7 +6,7 @@ from typing import Any, Optional
 import pandas as pd
 from pydantic import FilePath, PositiveInt, validator
 
-from bikipy.ingress.plugin.base import BasePlugin
+from bikipy.ingress.plugin.base import BasePluginFile
 from bikipy.perimeter.base import (
     AnyPerimeter,
     StringPerimeterShapes,
@@ -16,7 +16,7 @@ from bikipy.perimeter.base import (
 logger = getLogger(__name__)
 
 
-class PluginPerimeter(BasePlugin):
+class PluginPerimeter(BasePluginFile):
     ingress: Any
     trial_id: str | PositiveInt
 

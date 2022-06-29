@@ -67,7 +67,7 @@ class BasePerimeter(BaseBikipyHashable, VideoMetadataMixin):
         ax: Any = None,
         include_geometric_legend: bool = False,
         colormap: Any = None,
-        **plot_kwargs
+        **plot_kwargs,
     ):
         ...
 
@@ -430,7 +430,11 @@ def perimeter_set_from_makesense(
             from bikipy.perimeter.radial.circle import CirclePerimeter
 
             return CirclePerimeter.from_makesense_line(perimeter_path, **perimeter_kwargs)
-        case "rectangle" | "rectangle":
+        case "rectangle":
+            from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
+
+            return RectanglePerimeter.from_makesense_csv_rectangle(perimeter_path, **perimeter_kwargs)
+        case "triangle":
             from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 
             return RectanglePerimeter.from_makesense_csv_rectangle(perimeter_path, **perimeter_kwargs)
@@ -442,7 +446,7 @@ def perimeter_set_from_makesense(
             raise ValueError
 
 
-def perimeter_set_from_image_name_to_perimeters(image_name_to_perimeters: "dict[str, AnyPerimeter]"):
+def perimeter_set_from_image_name_to_perimeters(image_name_to_perimeters: dict[str, "AnyPerimeter"]):
     result = {}
     for image_name, perimeters in image_name_to_perimeters.items():
         filtered_perimeters, restricted_perimeters = [], []

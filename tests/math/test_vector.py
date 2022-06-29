@@ -1,7 +1,7 @@
 import numpy as np
 
 from bikipy.utils.math import (
-    dot_prod_along_axis_1_1d,
+    dot_axis_1_1d,
     intersection_between_two_lines,
     orthogonal_unit_vector,
     unit_vector,
@@ -32,11 +32,11 @@ def test_orthogonal_vector():
     np.testing.assert_almost_equal(orthogonal_unit_vector(multiple_vectors), orthogonal_of_multiple)
 
 
-def test_dot_prod_along_axis_1_1d():
+def test_dot_axis_1_1d():
     vectors_a = np.array(((1, 1), (2, 2)))
     vectors_b = np.array(((3, 3), (1, 1)))
 
-    np.testing.assert_almost_equal((6, 4), dot_prod_along_axis_1_1d(vectors_a, vectors_b))
+    np.testing.assert_almost_equal((6, 4), dot_axis_1_1d(vectors_a, vectors_b))
 
 
 def test_intersection_between_two_lines():

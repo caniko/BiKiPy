@@ -1,7 +1,7 @@
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from copy import copy
-from functools import cached_property, reduce, lru_cache
+from functools import cached_property, lru_cache, reduce
 from itertools import chain
 from logging import getLogger
 from operator import attrgetter
@@ -30,7 +30,8 @@ from bikipy.utils.collection_utils import (
     chain_iterables_to_multi_index,
     chain_lists_to_tuple,
     copycat_assumes_levels_of_icon,
-    max_len_in_iterable, flatten_multi_index,
+    flatten_multi_index,
+    max_len_in_iterable,
 )
 from bikipy.utils.ranged_dict import RangeDict
 
@@ -524,7 +525,9 @@ class BaseExperiment(Behaviour):
         result = {}
         for trial_class_label, data_dict in data_dicts.items():
             result[trial_class_label] = pd.DataFrame.from_dict(
-                data_dict, orient="index", columns=self.trial_class_label_to_trial_id_indexed_column_index[trial_class_label]
+                data_dict,
+                orient="index",
+                columns=self.trial_class_label_to_trial_id_indexed_column_index[trial_class_label],
             )
             result[trial_class_label].index.name = "Trial ID"
 
@@ -663,7 +666,9 @@ class BaseExperiment(Behaviour):
     @property
     def trial_class_label_to_trial_id_indexed_column_index(cls):
         return {
-            trial_class.trial_label: flatten_multi_index(chain_lists_to_tuple([trial_class.feature_headers, cls.motion_column_headers]))
+            trial_class.trial_label: flatten_multi_index(
+                chain_lists_to_tuple([trial_class.feature_headers, cls.motion_column_headers])
+            )
             for trial_class in cls.trial_classes
         }
 
