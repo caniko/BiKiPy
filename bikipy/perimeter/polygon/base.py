@@ -99,17 +99,25 @@ class PolygonPerimeter(BasePerimeter, ABC):
         if inspect:
             indexable_t = closest_edge_point_to_coordinates_matrix.transpose(1, 2, 0)
 
-            fig, axes = plt.subplots(3, 3)
-            axes = np.array(axes)
+            for i in evenly_spaced_indices(coordinates, 9):
+                fig, ax = plt.subplots()
+                to_skip = []
+                for y, point in enumerate(indexable_t[i].T):
+                    if y in to_skip:
+                        continue
+                    duplicates_boolean_indices = np.all(
+                        np.apply_along_axis(np.isclose, 0, point, indexable_t[i].T, atol=1.e-4),
+                        axis=1
+                    )
+                    sort_indices = ", ".join(argsorted_distance.T[i][duplicates_boolean_indices].astype(str))
+                    ax.scatter(*point, label=sort_indices)
 
-            for i, ax in zip(evenly_spaced_indices(coordinates, 9), axes.reshape(-1)):
-                for sort_idx, point in zip(argsorted_distance.T[i], indexable_t[i].T):
-                    ax.scatter(*point, label=str(sort_idx))
+                    to_skip.extend(np.where(duplicates_boolean_indices)[0].tolist())
+
                 ax.scatter(*coordinates[i], label="coordinate")
-
-            plt.legend()
-            plt.tight_layout()
-            plt.show()
+                plt.legend()
+                plt.tight_layout()
+                plt.show()
 
         return result
 
