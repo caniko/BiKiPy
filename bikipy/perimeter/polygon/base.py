@@ -1,27 +1,18 @@
-import json
 from abc import ABC
 from functools import cached_property
 from logging import getLogger
-from pathlib import Path
-from typing import Any, ClassVar, Optional, Sequence
+from typing import Any, ClassVar, Optional
 
-import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sb
-from pydantic import DirectoryPath, FilePath, validator
+from pydantic import FilePath, validator
 
-from bikipy.core.typing import NDArrayFp64, NDArrayInt16
-from bikipy.perimeter.base import (
-    BasePerimeter,
-    perimeter_set_from_image_name_to_perimeters,
-)
+from bikipy.core.typing import NDArrayFp64, NDArrayInt16, NDArrayBool
+from bikipy.core.video import convert_meters_to_pixels
+from bikipy.perimeter.base import BasePerimeter
+from bikipy.perimeter.radial.circle import CirclePerimeter
 from bikipy.utils.collection_utils import evenly_spaced_indices
-from bikipy.utils.io.makesense import (
-    image_name_to_point_from_makesense,
-    read_makesense_rectangle,
-)
-from bikipy.utils.math.geometry import clockwise_sort_points, expand_rectangle
+from bikipy.utils.math.geometry import clockwise_sort_points
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 from bikipy.utils.math.vector import (
     nearest_point_on_line_segment_to_coordinates,
@@ -64,6 +55,10 @@ class PolygonPerimeter(BasePerimeter, ABC):
         return super().__repr__() + f"\n\tvertices_in_pixels={self.vertices_in_meters}"
 
     @cached_property
+    def centroid(self):
+        return np.mean(self.vertices_in_meters, axis=0)
+
+    @cached_property
     def vertices_in_meters(self):
         return self.vertices_in_pixels * self.video.meters_per_pixel
 
@@ -72,12 +67,26 @@ class PolygonPerimeter(BasePerimeter, ABC):
         return np.append(self.vertices_in_meters, np.expand_dims(self.vertices_in_meters[0], 0), axis=0)
 
     @cached_property
-    def clockwise_edge_unit_vectors(self):
-        return unit_vector(np.diff(self.linked_vertices_in_meters, axis=0)[::-1])
-
-    @cached_property
     def line_segment_pairs(self):
         return np.array(list(zip(self.linked_vertices_in_meters, self.linked_vertices_in_meters[1:])))
+
+    @cached_property
+    def edge_lengths(self):
+        return np.linalg.norm(np.diff(self.line_segment_pairs, axis=0), axis=1)
+
+    @cached_property
+    def equilateral(self) -> bool:
+        return np.all(
+            np.apply_along_axis(np.isclose, 0, self.edge_lengths[0], self.edge_lengths[1:], atol=1.0e-4), axis=1
+        )
+
+    @cached_property
+    def circle(self):
+        return CirclePerimeter(
+            center_pixels=convert_meters_to_pixels(self.centroid, self.video),
+            radius_meters=np.mean(self.edge_lengths),
+            manual_video=self.video,
+        )
 
     def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64, inspect: bool = False) -> NDArrayFp64:
         # Closest point on the index-respective edge along axis 0, and coordinates along 1.
@@ -123,9 +132,24 @@ class PolygonPerimeter(BasePerimeter, ABC):
     def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         return unit_vector(self.closest_point_on_edge_to_coordinates(coordinates) - coordinates)
 
-    def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayFp64:
-        assert self.polygon_order >= 4, f"polygon_order <= 4, {self.polygon_order}"
+    def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
         return parallel_point_in_polygon(coordinates, self.vertices_in_meters)
+
+    def gaze_direction_filter(
+        self,
+        gaze_travel_direction_point: NDArrayFp64,
+        gaze_start_point: NDArrayFp64,
+        max_radians: float,
+        inspect: bool = False,
+    ):
+        gaze_vector = gaze_travel_direction_point - gaze_start_point
+
+        closest_points_on_edges = self.closest_point_on_edge_to_coordinates(gaze_travel_direction_point)
+        vector_to_closest_point_on_edge = self.vector_to_closest_point_on_edge(gaze_travel_direction_point)
+
+        direction_point_is_closer_than_start_point = np.linalg.norm(
+            closest_points_on_edges - gaze_travel_direction_point, axis=1
+        ) < np.linalg.norm(closest_points_on_edges - gaze_start_point, axis=1)
 
     def change_reference(self, new_reference: NDArrayFp64, **new_inspect_image_kwargs):
         if self.reference_point is None:
@@ -143,17 +167,6 @@ class PolygonPerimeter(BasePerimeter, ABC):
 
         return self
 
-    @cached_property
-    def centroid(self):
-        return np.mean(self.vertices_in_meters, axis=0)
-
-    @cached_property
-    def vertex_neighbor_pairs(self):
-        return (
-            *((i, i + 1) for i in range(self.polygon_order - 1)),
-            (self.polygon_order - 1, 0),
-        )
-
     def plot_perimeter(
         self,
         inspect_pixels: bool = False,
@@ -161,6 +174,7 @@ class PolygonPerimeter(BasePerimeter, ABC):
         ax: Any = None,
         include_geometric_legend: bool = False,
         colormap: Any = None,
+        **plot_kwargs,
     ):
         if not ax:
             fig, ax = plt.subplots()
@@ -179,18 +193,14 @@ class PolygonPerimeter(BasePerimeter, ABC):
                 "o-",
                 label=self.label,
                 color=colormap,
+                **plot_kwargs,
             )
 
             if perimeter_border_normal_pixels is not None:
                 perimeter = self.expand(perimeter_border_normal_pixels)
                 border_a = perimeter[index]
                 border_b = perimeter[following_index]
-                ax.plot(
-                    (border_a[0], border_b[0]),
-                    (border_a[1], border_b[1]),
-                    "o-",
-                    color=colormap,
-                )
+                ax.plot((border_a[0], border_b[0]), (border_a[1], border_b[1]), "o-", color=colormap, **plot_kwargs)
 
             if include_geometric_legend:
                 legend = [
@@ -204,22 +214,6 @@ class PolygonPerimeter(BasePerimeter, ABC):
 
         return ax
 
-    @classmethod
-    def init_polygon(cls, vertices_in_meters: NDArrayFp64, **kwargs):
-        vertices_in_meters = np.asarray(vertices_in_meters)
-        polygon_order = vertices_in_meters.shape[0]
-        if polygon_order == 3:
-            from bikipy.perimeter.polygon.triangular import TriangularPerimeter
-
-            return TriangularPerimeter(vertices_in_pixels=vertices_in_meters, **kwargs)
-        elif polygon_order == 4:
-            from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
-
-            return RectanglePerimeter(vertices_in_pixels=vertices_in_meters, **kwargs)
-        else:
-            msg = f"Polygon of the {polygon_order}nt order is not supported"
-            raise NotImplementedError(msg)
-
     def _add_label_to_str(self, in_string):
         if self.label:
             return f"{self.label} {in_string}"
@@ -227,88 +221,16 @@ class PolygonPerimeter(BasePerimeter, ABC):
             return f"{self.int_id} {in_string}"
         return in_string
 
-    # Class methods for makesense integration ==========================================
 
-    @classmethod
-    def from_makesense_coco_polygon(
-        cls,
-        data_path: Any,
-        image_root: Optional[DirectoryPath],
-        reference_point_csv_path: Optional[FilePath],
-        **perimeter_kwargs,
-    ) -> dict:
-        logger.debug("Generating PolygonPerimeter from makesense polygon data in coco format")
+def init_polygon(vertices_in_meters: NDArrayFp64, **kwargs):
+    match vertices_in_meters.shape[0]:  # polygon_order
+        case 3:
+            from bikipy.perimeter.polygon.triangular import TriangularPerimeter
 
-        with open(data_path, "rb") as in_json:
-            coco = json.load(in_json)
+            return TriangularPerimeter(vertices_in_pixels=vertices_in_meters, **kwargs)
+        case 4:
+            from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 
-        assert not image_root or (image_root := Path(image_root)).exists()
-
-        # The coco annotations are not sorted with respect to the category IDs
-        coco["annotations"] = sorted(coco["annotations"], key=lambda dictionary: dictionary["category_id"])
-
-        # We don't need to do this, but better to be on the safe side
-        coco["categories"] = sorted(coco["categories"], key=lambda dictionary: dictionary["id"])
-
-        if reference_point_csv_path:
-            image_name_to_reference_point = image_name_to_point_from_makesense(reference_point_csv_path)
-
-        result = {}
-        for annotation in coco["annotations"]:
-            current_kwargs = {}
-            image_name = coco["images"][annotation["image_id"] - 1]["file_name"]
-            label = coco["categories"][annotation["category_id"] - 1]["name"]
-
-            if image_name not in result:
-                result[image_name] = {}
-
-            result[image_name]["label"] = cls.init_polygon(
-                _coco_polygon_annotation(annotation["segmentation"][0]),
-                label=label,
-                reference_point_array=image_name_to_reference_point[image_name] if reference_point_csv_path else None,
-                manual_frame=cv2.imread(image_root / image_name) if image_root else None,
-                # manual_recording_resolution=np.array((row["x_res"], row["y_res"]), dtype=float),
-                **current_kwargs,
-                **perimeter_kwargs,
-            )
-
-        return perimeter_set_from_image_name_to_perimeters(result)
-
-    @classmethod
-    def from_makesense_csv_rectangle(
-        cls,
-        data_path: FilePath,
-        image_root: Optional[DirectoryPath] = None,
-        reference_point_csv_path: Optional[FilePath] = None,
-        **perimeter_kwargs,
-    ):
-        logger.debug("Generating PolygonPerimeter from makesense polygon data in coco format")
-
-        csv_data = read_makesense_rectangle(data_path)
-
-        if reference_point_csv_path:
-            image_name_to_reference_point = image_name_to_point_from_makesense(reference_point_csv_path)
-
-        result = {}
-        for label, row in csv_data.iterrows():
-            start = np.array(row[:2], dtype=int)
-            end = start + np.array(row[2:4], dtype=int)
-
-            image_name = row["image_name"]
-            if image_name not in result:
-                result[image_name] = {}
-
-            result[image_name][label] = cls.init_polygon(
-                np.array((start, (start[0], end[1]), end, (end[0], start[1]))),
-                label=label,
-                reference_point_array=image_name_to_reference_point[image_name] if reference_point_csv_path else None,
-                manual_recording_resolution=np.array((row["x_res"], row["y_res"]), dtype=float),
-                manual_frame=cv2.imread(image_root / str(image_name)) if image_root else None,
-                **perimeter_kwargs,
-            )
-
-        return perimeter_set_from_image_name_to_perimeters(result)
-
-
-def _coco_polygon_annotation(flat_annotation_data: Sequence):
-    return [(flat_annotation_data[i], flat_annotation_data[i + 1]) for i in range(0, len(flat_annotation_data) - 1, 2)]
+            return RectanglePerimeter(vertices_in_pixels=vertices_in_meters, **kwargs)
+        case _:
+            return PolygonPerimeter(vertices_in_pixels=vertices_in_meters, **kwargs)

@@ -11,7 +11,15 @@ from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_ar
 from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
-from bikipy.core.video import VideoMetadataMixin, convert_meters_to_pixels, VideoMetadata
+from bikipy.core.video import (
+    VideoMetadata,
+    VideoMetadataMixin,
+    convert_meters_to_pixels,
+)
+from bikipy.perimeter.polygon.makesense import (
+    init_polygon_from_makesense_coco_polygon,
+    init_polygon_from_makesense_csv_rectangle,
+)
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
 from bikipy.utils.collection_utils import evenly_spaced_indices
 from bikipy.utils.io.makesense import get_point_from_makesense_row, read_makesense_point
@@ -436,15 +444,15 @@ def perimeter_set_from_makesense(
         case "rectangle":
             from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 
-            return RectanglePerimeter.from_makesense_csv_rectangle(perimeter_path, **perimeter_kwargs)
+            return init_polygon_from_makesense_csv_rectangle(perimeter_path, **perimeter_kwargs)
         case "triangle":
             from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 
-            return RectanglePerimeter.from_makesense_csv_rectangle(perimeter_path, **perimeter_kwargs)
+            return init_polygon_from_makesense_csv_rectangle(perimeter_path, **perimeter_kwargs)
         case "polygon":
             from bikipy.perimeter.polygon.base import PolygonPerimeter
 
-            return PolygonPerimeter.from_makesense_coco_polygon(perimeter_path, **perimeter_kwargs)
+            return init_polygon_from_makesense_coco_polygon(perimeter_path, **perimeter_kwargs)
         case _:
             raise ValueError
 

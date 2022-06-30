@@ -4,7 +4,7 @@ from typing import Any, Optional
 import numpy as np
 from pydantic import FilePath, validator
 
-from bikipy.core.typing import NDArrayFp64, NDArrayBool
+from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.feature.attention.gaze import gaze_direction_filter_circle_triangle
 from bikipy.perimeter.base import (
     BasePerimeter,
@@ -87,7 +87,7 @@ class CirclePerimeter(BasePerimeter):
         ax: Any = None,
         include_geometric_legend: bool = False,
         colormap: Any = None,
-        **plot_kwargs
+        **plot_kwargs,
     ):
         if inspect_pixels:
             return plot_circle(self.center_pixels, self.radius_pixels, ax)

@@ -12,7 +12,7 @@ from bikipy.behaviour.object_recognition.base import (
     ObjectField,
     ObjectRecognitionExperiment,
 )
-from bikipy.perimeter.polygon.base import PolygonPerimeter
+from bikipy.perimeter.polygon.base import PolygonPerimeter, init_polygon
 
 
 def _re_pattern_validator(pattern: re.Pattern):
@@ -85,7 +85,7 @@ def round_to_apparatus_to_general_object_fields(round_to_field_apparatus: dict, 
                 if field.int_id:
                     kwargs["int_id"] = field.int_id
 
-                field_temp_store[key] = PolygonPerimeter.init_polygon(**kwargs)
+                field_temp_store[key] = init_polygon(**kwargs)
 
         result.append(ObjectField(label=field_key, **field_temp_store))
 

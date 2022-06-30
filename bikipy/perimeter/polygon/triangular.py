@@ -2,7 +2,7 @@ from typing import ClassVar, Optional
 
 import numpy as np
 
-from bikipy.core.typing import NDArrayFp64
+from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.perimeter.polygon.base import PolygonPerimeter
 
 
@@ -50,6 +50,11 @@ class TriangularPerimeter(PolygonPerimeter):
         )
 
         return np.logical_or(
-            np.logical_and(c1 > 0, np.logical_and(c2 > 0, c3 > 0)),
-            np.logical_and(c1 < 0, np.logical_and(c2 < 0, c3 < 0)),
+            (c1 > 0.0) & (c2 > 0.0) & (c3 > 0.0),
+            (c1 < 0.0) & (c2 < 0.0) & (c3 < 0.0),
         )
+
+    def gaze_direction_filter(self, *args, **kwargs) -> NDArrayBool:
+        if self.equilateral:
+            return self.circle.gaze_direction_filter_circle_triangle(*args, **kwargs)
+        return super().gaze_direction_filter(*args, **kwargs)

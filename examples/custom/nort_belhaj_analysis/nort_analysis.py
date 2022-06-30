@@ -14,6 +14,7 @@ from bikipy.behaviour.object_recognition.novel_object_recognition import (
     NortExperiment,
 )
 from bikipy.perimeter.polygon.base import PolygonPerimeter
+from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
 from bikipy.plugins.belhaj import (
     get_animal_id_to_apparatus,
     get_animal_id_to_trial_ids,
@@ -43,7 +44,7 @@ EXP_ID_REGEX_PATTERN = re.compile(r"\d+")
 
 period_to_field_id_to_object_field = {}
 for field_idx in range(1, 5):
-    training_perimeters = PolygonPerimeter.from_makesense_coco_polygon(
+    training_perimeters = init_polygon_from_makesense_coco_polygon(
         IMAGE_DIR / f"training_{field_idx}.json",
         image_root=IMAGE_DIR,
     )
@@ -55,7 +56,7 @@ for field_idx in range(1, 5):
         image_root=IMAGE_DIR,
     )
 
-    novel_perimeters = PolygonPerimeter.from_makesense_coco_polygon(
+    novel_perimeters = init_polygon_from_makesense_coco_polygon(
         IMAGE_DIR / f"novel_{field_idx}.json",
         image_root=IMAGE_DIR,
     )

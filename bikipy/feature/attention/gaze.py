@@ -1,15 +1,34 @@
-from typing import Optional, Any
+from typing import Any, Optional
 
 import numpy as np
-from matplotlib import pyplot as plt
 import seaborn as sb
+from matplotlib import pyplot as plt
 
 from bikipy import MATPLOTLIB_SCATTER_ALPHA
-from bikipy.core.typing import NDArrayFp64, NDArrayBool
+from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.core.video import VideoMetadata, convert_meters_to_pixels
 from bikipy.feature.angle import angle_from_a_to_b
-from bikipy.perimeter.base import AnyPerimeter
+from bikipy.perimeter.base import AnyPerimeter, PerimeterSet
 from bikipy.utils.collection_utils import evenly_spaced_indices
+
+
+def gaze_direction_filter_polygon(
+    perimeter: AnyPerimeter,
+    gaze_travel_direction_point: NDArrayFp64,
+    gaze_start_point: NDArrayFp64,
+    max_radians: float,
+    inspect: bool = False,
+    **inspect_kwargs,
+) -> NDArrayBool:
+    gaze_vectors = gaze_travel_direction_point - gaze_start_point
+
+    closest_points_on_edges = perimeter.closest_point_on_edge_to_coordinates(gaze_travel_direction_point)
+
+    direction_point_is_closer_than_start_point = np.linalg.norm(
+        closest_points_on_edges - gaze_travel_direction_point, axis=1
+    ) < np.linalg.norm(closest_points_on_edges - gaze_start_point, axis=1)
+
+    for
 
 
 def gaze_direction_filter_circle_triangle(
@@ -18,9 +37,9 @@ def gaze_direction_filter_circle_triangle(
     gaze_start_point: NDArrayFp64,
     max_radians: float,
     inspect: bool = False,
-    **inspect_kwargs
+    **inspect_kwargs,
 ) -> NDArrayBool:
-    gaze_vector = gaze_travel_direction_point - gaze_start_point
+    gaze_vectors = gaze_travel_direction_point - gaze_start_point
 
     closest_points_on_edges = perimeter.closest_point_on_edge_to_coordinates(gaze_travel_direction_point)
     vector_to_closest_point_on_edge = perimeter.vector_to_closest_point_on_edge(gaze_travel_direction_point)
@@ -29,7 +48,7 @@ def gaze_direction_filter_circle_triangle(
         closest_points_on_edges - gaze_travel_direction_point, axis=1
     ) < np.linalg.norm(closest_points_on_edges - gaze_start_point, axis=1)
 
-    angle_from_normal_to_gaze = angle_from_a_to_b(vector_to_closest_point_on_edge, gaze_vector)
+    angle_from_normal_to_gaze = angle_from_a_to_b(vector_to_closest_point_on_edge, gaze_vectors)
 
     result = direction_point_is_closer_than_start_point & (np.abs(angle_from_normal_to_gaze) <= max_radians)
 
@@ -42,7 +61,7 @@ def gaze_direction_filter_circle_triangle(
 def _gaze_inspection_plot(
     perimeter: AnyPerimeter,
     result: NDArrayFp64,
-    gaze_vector: NDArrayFp64,
+    gaze_vectors: NDArrayFp64,
     gaze_travel_direction_point: NDArrayFp64,
     vector_to_closest_point_on_edge: NDArrayFp64,
     closest_points_on_edges: NDArrayFp64,
@@ -73,14 +92,12 @@ def _gaze_inspection_plot(
         "alpha": MATPLOTLIB_SCATTER_ALPHA,
     }
 
-    ax.quiver(
-        *gaze_travel_direction_point[result].T, *gaze_vector[result].T, label="Valid", color="b", **quiver_kwargs
-    )
+    ax.quiver(*gaze_travel_direction_point[result].T, *gaze_vectors[result].T, label="Valid", color="b", **quiver_kwargs)
 
     not_result = ~result
     ax.quiver(
         *gaze_travel_direction_point[not_result].T,
-        *gaze_vector[not_result].T,
+        *gaze_vectors[not_result].T,
         label="Invalid",
         color="r",
         **quiver_kwargs,

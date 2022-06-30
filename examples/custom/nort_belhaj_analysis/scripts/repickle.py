@@ -7,7 +7,7 @@ import pickle
 from pathlib import Path
 
 from bikipy.behaviour.object_recognition.novel_object_recognition import ObjectField
-from bikipy.perimeter.polygon.base import PolygonPerimeter
+from bikipy.perimeter.polygon.base import PolygonPerimeter, init_polygon
 from bikipy.plugins.belhaj import round_to_apparatus_to_general_object_fields
 
 NORT_EXAMPLE_DIR = Path("").resolve().parent
@@ -57,15 +57,15 @@ for annotation_obj_path in B_PICKLE_PATHS:
     for i, gen_poly in enumerate(gen_poly_seq):
         gen_poly_seq[i] = ObjectField(
             label=int(gen_poly.label),
-            constant_object_perimeter=PolygonPerimeter.init_polygon(
+            constant_object_perimeter=init_polygon(
                 inspect_image=annotation_obj_path.parent / f"training_{i+1}.png",
                 **deserialise_generic(gen_poly.constant_object),
             ),
-            variable_object_perimeter=PolygonPerimeter.init_polygon(
+            variable_object_perimeter=init_polygon(
                 inspect_image=annotation_obj_path.parent / f"training_{i+1}.png",
                 **deserialise_generic(gen_poly.variable_object),
             ),
-            novel_object_perimeter=PolygonPerimeter.init_polygon(
+            novel_object_perimeter=init_polygon(
                 inspect_image=annotation_obj_path.parent / f"novel_{i+1}.png",
                 **deserialise_generic(gen_poly.novel_object),
             ),
