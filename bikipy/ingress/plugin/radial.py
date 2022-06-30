@@ -77,7 +77,7 @@ class PluginRadial(BasePluginDirectory):
                 )
             )
 
-        perimeters = (*arm_perimeters, self.center)
+        perimeters = [*arm_perimeters, self.center]
 
         if self._inspect:
             fig, ax = plt.subplots(ncols=3)
