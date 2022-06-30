@@ -4,8 +4,9 @@ from logging import getLogger
 from typing import Any, Optional
 
 import pandas as pd
-from pydantic import FilePath, PositiveInt, validator
+from pydantic import FilePath, PositiveInt
 
+from bikipy.core.base_class import BaseBikipy
 from bikipy.ingress.plugin.base import BasePluginFile
 from bikipy.perimeter.base import (
     AnyPerimeter,
@@ -16,7 +17,14 @@ from bikipy.perimeter.base import (
 logger = getLogger(__name__)
 
 
-class PluginPerimeter(BasePluginFile):
+class PluginPerimeterMixin(BaseBikipy):
+    @cached_property
+    def reference_point(self) -> pd.Series:
+        if (path_to_reference_file := self.data_path.parent / f"reference-{self.label}.csv").exists():
+            pass
+
+
+class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
     ingress: Any
     trial_id: str | PositiveInt
 

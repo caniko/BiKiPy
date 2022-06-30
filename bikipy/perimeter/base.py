@@ -5,12 +5,15 @@ from typing import Any, ClassVar, Literal, Optional, Sequence, TypeVar
 
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sb
 from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments
 
+from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
-from bikipy.core.video import VideoMetadataMixin, convert_meters_to_pixels
+from bikipy.core.video import VideoMetadataMixin, convert_meters_to_pixels, VideoMetadata
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
+from bikipy.utils.collection_utils import evenly_spaced_indices
 from bikipy.utils.io.makesense import get_point_from_makesense_row, read_makesense_point
 
 logger = getLogger(__name__)

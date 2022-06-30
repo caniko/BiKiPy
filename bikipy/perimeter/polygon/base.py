@@ -106,8 +106,7 @@ class PolygonPerimeter(BasePerimeter, ABC):
                     if y in to_skip:
                         continue
                     duplicates_boolean_indices = np.all(
-                        np.apply_along_axis(np.isclose, 0, point, indexable_t[i].T, atol=1.e-4),
-                        axis=1
+                        np.apply_along_axis(np.isclose, 0, point, indexable_t[i].T, atol=1.0e-4), axis=1
                     )
                     sort_indices = ", ".join(argsorted_distance.T[i][duplicates_boolean_indices].astype(str))
                     ax.scatter(*point, label=sort_indices)

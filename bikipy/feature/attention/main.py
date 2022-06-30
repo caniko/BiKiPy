@@ -1,13 +1,10 @@
-"""
-2D kinematic filters, 3D not supported.
-"""
 from logging import getLogger
 from typing import Any, Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sb
-from pydantic import DirectoryPath, validate_arguments
+from pydantic import validate_arguments
 
 from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
@@ -16,10 +13,7 @@ from bikipy.core.video import (
     convert_meters_to_pixels,
     inspect_video_is_none_during_inspection,
 )
-from bikipy.feature.angle import angle_from_a_to_b
 from bikipy.perimeter.base import AnyPerimeter
-from bikipy.utils.collection_utils import evenly_spaced_indices
-from bikipy.utils.misc import generic_inspection_finalization
 
 logger = getLogger(__name__)
 
@@ -130,92 +124,6 @@ def proximity_filter(
     return result
 
 
-def gaze_direction_filter(
-    perimeter: AnyPerimeter,
-    gaze_travel_direction_point: NDArrayFp64,
-    gaze_start_point: NDArrayFp64,
-    max_radians: float,
-    inspect_video: Optional[VideoMetadata] = None,
-    inspect: bool = False,
-    inspect_pixels: bool = False,
-    inspect_edge_normals: bool = False,
-    inspect_vectors: bool = True,
-    inspection_ax: Any = None,
-) -> NDArrayBool:
-    gaze_vector = gaze_travel_direction_point - gaze_start_point
-
-    closest_points_on_edges = perimeter.closest_point_on_edge_to_coordinates(gaze_travel_direction_point)
-    vector_to_closest_point_on_edge = perimeter.vector_to_closest_point_on_edge(gaze_travel_direction_point)
-
-    direction_point_is_closer_than_start_point = np.linalg.norm(
-        closest_points_on_edges - gaze_travel_direction_point, axis=1
-    ) < np.linalg.norm(closest_points_on_edges - gaze_start_point, axis=1)
-
-    angle_from_normal_to_gaze = angle_from_a_to_b(vector_to_closest_point_on_edge, gaze_vector)
-
-    result = direction_point_is_closer_than_start_point & (np.abs(angle_from_normal_to_gaze) <= max_radians)
-
-    if inspection_ax is not None or inspect:
-        inspect_video_is_none_during_inspection(inspect_video)
-
-        if inspection_ax is None:
-            sb.set_theme(style="darkgrid")
-            fig, ax = plt.subplots(dpi=500)
-        else:
-            ax = inspection_ax
-
-        if inspect_pixels:
-            gaze_travel_direction_point = convert_meters_to_pixels(gaze_travel_direction_point, inspect_video)
-            if inspect_edge_normals:
-                closest_points_on_edges = convert_meters_to_pixels(closest_points_on_edges, inspect_video)
-
-        perimeter.plot(inspect_pixels=inspect_pixels, ax=ax)
-        ax.set_title("Gaze direction filter")
-
-        quiver_kwargs = {
-            "angles": "xy",
-            # "scale_units": "xy",
-            "scale": 1.0,
-            "alpha": MATPLOTLIB_SCATTER_ALPHA,
-        }
-
-        ax.quiver(
-            *gaze_travel_direction_point[result].T, *gaze_vector[result].T, label="Valid", color="b", **quiver_kwargs
-        )
-
-        not_result = ~result
-        ax.quiver(
-            *gaze_travel_direction_point[not_result].T,
-            *gaze_vector[not_result].T,
-            label="Invalid",
-            color="r",
-            **quiver_kwargs,
-        )
-
-        if inspect_edge_normals:
-            ax.quiver(
-                *closest_points_on_edges.T,
-                *vector_to_closest_point_on_edge.T,
-                label="EdgeNormals",
-                color="g",
-                **quiver_kwargs,
-            )
-
-        if inspect_vectors:
-            number_of_points = 5
-            with sb.color_palette("Spectral", n_colors=number_of_points):
-                for i in evenly_spaced_indices(gaze_travel_direction_point, number_of_points):
-                    ax.plot(*np.vstack((closest_points_on_edges[i], gaze_travel_direction_point[i])).T)
-
-        ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=2)
-
-        if not inspection_ax:
-            plt.tight_layout()
-            plt.show()
-
-    return result
-
-
 @validate_arguments
 def tolerance_filter(
     boolean_index: NDArrayBool,
@@ -307,124 +215,3 @@ def tolerance_filter(
     )
 
     return attention_boolean_index
-
-
-@validate_arguments
-def perimeter_attention(
-    perimeter: AnyPerimeter,
-    eye_center: NDArrayFp64,
-    nose: NDArrayFp64,
-    fps: float,
-    perimeter_border_normal_meters: float | NDArrayFp64,
-    maximum_radians_inter_gaze_perimeter: float = 0.25 * np.pi,
-    minimum_seconds_attention: float = 0.5,
-    maximum_seconds_distraction: float = 0.5,
-    inspect: bool | DirectoryPath = False,
-) -> tuple:
-    """
-
-    Parameters
-    ----------
-    perimeter: AnyPerimeter
-    eye_center: Sequence
-        Points across time defining the position between the eyes of the animal
-    nose: Sequence
-        Points across time defining the position of the animal nose
-    fps: float
-        Frames per second (fps) of the video the data was collected from
-    perimeter_border_normal_meters
-        The magnitude of the normal between the perimeter and the perimeter given in pixels
-    maximum_radians_inter_gaze_perimeter: float
-        Maximum radians between the gaze vector (eye_centre to nose) and perimeter tangent
-    minimum_seconds_attention
-    inspect: bool
-        If True, will generate and show and inspection figure for the inspection of
-        each filter
-
-    Returns
-    -------
-
-    """
-    if inspect:
-        if perimeter.inspect_image is None:
-            fig, axes = plt.subplots(nrows=2, ncols=2)
-        else:
-            x, y = perimeter.inspect_image.shape[:2]
-            fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(1.1 * x / 10.0, 1.1 * y / 10.0))
-
-        fig.gca().invert_yaxis()
-        fig.suptitle("Observation cumulative filtration analysis")
-
-        loc_filter_kwargs = {"inspection_ax": axes[0][0]}
-        gaze_filter_kwargs = {"inspection_ax": axes[0][1]}
-    else:
-        loc_filter_kwargs, gaze_filter_kwargs = {}, {}
-
-    proximity_filtered = proximity_filter(
-        perimeter,
-        nose,
-        eye_center,
-        perimeter_border_normal_meters,
-        **loc_filter_kwargs,
-    )
-
-    gaze_filtered, gaze_closest_vectors = gaze_direction_filter(
-        perimeter,
-        nose,
-        eye_center,
-        maximum_radians_inter_gaze_perimeter,
-        **gaze_filter_kwargs,
-    )
-
-    semi_true_observations = proximity_filtered & gaze_filtered
-
-    perimeter_observation = (
-        np.zeros_like(semi_true_observations, dtype=bool)
-        if np.sum(semi_true_observations) < fps
-        else np.array(
-            tolerance_filter(
-                semi_true_observations,
-                fps,
-                minimum_seconds_attention,
-                maximum_seconds_distraction,
-            )
-        )
-    )
-
-    if inspect:
-        for rows in axes:
-            for ax in rows:
-                perimeter.plot_self(
-                    plot_kwargs={"ax": ax},
-                    perimeter_plot_kwargs={"perimeter_border_normal_meters": perimeter_border_normal_meters},
-                )
-
-        axes[1][0].set_title("proximity_filtered & gaze_filtered")
-        axes[1][0].scatter(
-            *nose[semi_true_observations].T,
-            alpha=MATPLOTLIB_SCATTER_ALPHA,
-        )
-
-        axes[1][1].set_title("BasePerimeter observation")
-        axes[1][1].scatter(
-            *nose[perimeter_observation].T,
-            alpha=MATPLOTLIB_SCATTER_ALPHA,
-        )
-
-        plt.tight_layout()
-        generic_inspection_finalization(inspect)
-        fig.clear()
-
-    return (
-        perimeter_observation,
-        (
-            # Arrays for analysing each filter
-            proximity_filtered,
-            gaze_filtered,
-            semi_true_observations,
-        ),
-        (
-            # Arrays for making video
-            gaze_closest_vectors,
-        ),
-    )

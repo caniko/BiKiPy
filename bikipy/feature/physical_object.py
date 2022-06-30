@@ -93,8 +93,7 @@ class PhysicalObject(BaseBikipy):
 
     @cached_property
     def attention_gaze_boolean_index(self) -> NDArrayBool:
-        return gaze_direction_filter(
-            self.perimeter,
+        return self.perimeter.gaze_direction_filter(
             self._gaze_travel_direction_point,
             self._gaze_start_point,
             self.maximum_radians_inter_gaze_perimeter,

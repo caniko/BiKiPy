@@ -4,7 +4,8 @@ from typing import Any, Optional
 import numpy as np
 from pydantic import FilePath, validator
 
-from bikipy.core.typing import NDArrayFp64
+from bikipy.core.typing import NDArrayFp64, NDArrayBool
+from bikipy.feature.attention.gaze import gaze_direction_filter_circle_triangle
 from bikipy.perimeter.base import (
     BasePerimeter,
     perimeter_set_from_image_name_to_perimeters,
@@ -50,6 +51,48 @@ class CirclePerimeter(BasePerimeter):
             raise ValueError(msg)
         return value.astype(float)
 
+    def change_reference(self, new_reference: NDArrayFp64, **new_inspect_image_kwargs):
+        kwargs = self.dict()
+        kwargs["center_meters"] += new_reference - self.reference_point_array
+        kwargs["reference_point_array"] = new_reference
+        return self._new_inspect_image(self.__class__(**kwargs), **new_inspect_image_kwargs)
+
+    def expand(self, perimeter_border_normal_meters: float | NDArrayFp64):
+        kwargs = self.dict()
+        kwargs["radius_meters"] += perimeter_border_normal_meters
+        return self.__class__(**kwargs)
+
+    def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64, *args, **kwargs):
+        distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
+        return np.abs(distance_of_point_from_center) <= self.radius_meters
+
+    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> NDArrayFp64:
+        return self.center_meters + self.radius_meters * unit_vector(self.vector_to_closest_point_on_edge(coordinates))
+
+    def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
+        """
+        Strictly for circles, these vectors are the closest normals from the circle
+        :param coordinates:
+        :return:
+        """
+        return unit_vector(self.center_meters - coordinates)
+
+    def gaze_direction_filter(self, *args, **kwargs) -> NDArrayBool:
+        return gaze_direction_filter_circle_triangle(self, *args, **kwargs)
+
+    def plot_perimeter(
+        self,
+        inspect_pixels: bool = False,
+        perimeter_border_normal_pixels: Optional[float] = None,
+        ax: Any = None,
+        include_geometric_legend: bool = False,
+        colormap: Any = None,
+        **plot_kwargs
+    ):
+        if inspect_pixels:
+            return plot_circle(self.center_pixels, self.radius_pixels, ax)
+        return plot_circle(self.center_meters, self.radius_meters, ax)
+
     @classmethod
     def from_makesense_line(
         cls, data_path: FilePath, meters_per_pixel: NDArrayFp64, **perimeter_kwargs
@@ -72,41 +115,3 @@ class CirclePerimeter(BasePerimeter):
             result[row["image_name"]][row["label"]] = perimeter
 
         return perimeter_set_from_image_name_to_perimeters(result)
-
-    def change_reference(self, new_reference: NDArrayFp64, **new_inspect_image_kwargs):
-        kwargs = self.dict()
-        kwargs["center_meters"] += new_reference - self.reference_point_array
-        kwargs["reference_point_array"] = new_reference
-        return self._new_inspect_image(self.__class__(**kwargs), **new_inspect_image_kwargs)
-
-    def plot_perimeter(
-        self,
-        inspect_pixels: bool = False,
-        perimeter_border_normal_pixels: Optional[float] = None,
-        ax: Any = None,
-        include_geometric_legend: bool = False,
-        colormap: Any = None,
-    ):
-        if inspect_pixels:
-            return plot_circle(self.center_pixels, self.radius_pixels, ax)
-        return plot_circle(self.center_meters, self.radius_meters, ax)
-
-    def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64, *args, **kwargs):
-        distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
-        return np.abs(distance_of_point_from_center) <= self.radius_meters
-
-    def expand(self, perimeter_border_normal_meters: float | NDArrayFp64):
-        kwargs = self.dict()
-        kwargs["radius_meters"] += perimeter_border_normal_meters
-        return self.__class__(**kwargs)
-
-    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> NDArrayFp64:
-        return self.center_meters + self.radius_meters * unit_vector(self.vector_to_closest_point_on_edge(coordinates))
-
-    def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
-        """
-        Strictly for circles, these vectors are the closest normals from the circle
-        :param coordinates:
-        :return:
-        """
-        return unit_vector(self.center_meters - coordinates)
