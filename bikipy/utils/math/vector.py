@@ -117,7 +117,7 @@ def distance_between_line_and_point(*args, **kwargs) -> NDArrayFp64:
 
 @validate_arguments
 def nearest_point_on_line_segment_to_coordinates(
-    line_segment_start: NDArrayFp64, line_segment_end: NDArrayFp64, coordinates: NDArrayFp64, inspect: bool = True
+    line_segment_start: NDArrayFp64, line_segment_end: NDArrayFp64, coordinates: NDArrayFp64, inspect: bool = False
 ) -> NDArrayFp64:
     # https://stackoverflow.com/a/47484153/9793651
     start_end_vector = line_segment_end - line_segment_start

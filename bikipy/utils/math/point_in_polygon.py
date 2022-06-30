@@ -1,5 +1,5 @@
 from pathlib import PurePath
-from typing import Optional
+from typing import Any, Optional
 
 import matplotlib.pyplot as plt
 import numba
@@ -70,11 +70,28 @@ def inaccurate_points_in_rectangle(
     return boolean_index
 
 
-def parallel_point_in_polygon(points: NDArrayFp64, polygon: NDArrayFp64) -> NDArrayBool:
-    return is_inside_sm_parallel(
+def parallel_point_in_polygon(
+    points: NDArrayFp64, polygon: NDArrayFp64, inspect: bool = False, ax: Any = None
+) -> NDArrayBool:
+    result = is_inside_sm_parallel(
         np.asarray(points, dtype=np.float64),
         np.ascontiguousarray(polygon, dtype=np.float64),
     )
+
+    if inspect or ax is not None:
+        show = False
+        if ax is None:
+            fig, ax = plt.subplots()
+            show = True
+
+        ax.plot(*np.vstack(polygon).T, label="Polygon")
+        ax.scatter(*points[result].T, label="Inside")
+        ax.scatter(*points[~result].T, label="Outside")
+
+        if show:
+            plt.show()
+
+    return result
 
 
 def _is_inside_sm(point: NDArrayFp64, polygon: NDArrayFp64):

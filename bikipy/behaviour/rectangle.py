@@ -4,7 +4,7 @@ from typing import Any, ClassVar, Hashable, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
-from pydantic import DirectoryPath, validate_arguments, validator
+from pydantic import validate_arguments
 from pydantic_numpy import NDArray
 from skg import ngauss_fit
 
@@ -25,15 +25,6 @@ logger = getLogger(__name__)
 quadrant_grid_typing = tuple[int, int]
 
 A = 1
-QUADRANT_INSPECTION_DIR_NAME = "PiP_quadrant_location_booleans"
-CENTER_INSPECTION_DIR_NAME = "PiP_center_location_booleans"
-
-_TWO_BY_TWO_IN_ENGLISH = {
-    "upper_left": (0, 0),
-    "upper_right": (0, 1),
-    "lower_left": (0, 1),
-    "lower_right": (1, 1),
-}
 
 
 def motion_multi_indexer_for_quadrant(category: Any, level: int):
@@ -113,23 +104,17 @@ class RectangleEnclosedTrial(BaseTrial):
     rectangle_2d_bin: quadrant_grid_typing = (2, 2)
     center_box_to_spatial_resolution_ratio: Optional[float]
 
-    @validator("inspect_directory")
-    def make_categorical_inspection_sub_dirs(cls, value):
-        if value and not (quadrant_dir := value / QUADRANT_INSPECTION_DIR_NAME).exists():
-            quadrant_dir.mkdir()
-            for current_quadrant in (
-                "upper_left",
-                "upper_right",
-                "lower_right",
-                "lower_left",
-            ):
-                (quadrant_dir / current_quadrant).mkdir()
-            (value / CENTER_INSPECTION_DIR_NAME).mkdir()
-        return value
+    @cached_property
+    def _inspect_center_periphery_directory(self):
+        result = self.inspect_directory / "center_periphery"
+        result.mkdir(exist_ok=True)
+        return result
 
     @cached_property
-    def _quadrant_inspection_dir(self) -> DirectoryPath:
-        return self.inspect_directory / QUADRANT_INSPECTION_DIR_NAME
+    def _inspect_quadrant_directory(self):
+        result = self.inspect_directory / "quadrant"
+        result.mkdir(exist_ok=True)
+        return result
 
     @cached_property
     def gaussian_center_to_periphery_score(self) -> float:
@@ -142,12 +127,6 @@ class RectangleEnclosedTrial(BaseTrial):
             ]
         )
         return np.sum(scores) / (A * self.number_of_frames)
-
-    @cached_property
-    def quadrant_inspect_directory(self) -> DirectoryPath:
-        result = self.inspect_directory / "quadrants"
-        result.mkdir(exist_ok=True)
-        return result
 
     @cached_property
     def quadrant_grid_coordinate_to_vertices(self) -> dict[quadrant_grid_typing, NDArrayFp64]:
@@ -226,7 +205,7 @@ class RectangleEnclosedTrial(BaseTrial):
             ax.scatter(*self.manual_center_meters.T, color="k", label="New")
 
             plt.legend()
-            plt.savefig(self.quadrant_inspect_directory / f"{self.label}.jpeg")
+            plt.savefig(self._inspect_quadrant_directory / f"{self.label}.jpeg")
 
         return result
 
@@ -276,7 +255,15 @@ class RectangleEnclosedTrial(BaseTrial):
 
     @cached_property
     def center_boolean_index(self) -> NDArrayBool:
-        return parallel_point_in_polygon(self.framewise_confined_coordinates, self.center_rectangle_vertices)
+        if self.inspect:
+            fig, ax = plt.subplots()
+
+        result = parallel_point_in_polygon(self.framewise_confined_coordinates, self.center_rectangle_vertices, ax=ax)
+
+        if self.inspect:
+            plt.savefig(self._inspect_center_periphery_directory / f"{self.label}.jpeg")
+
+        return result
 
     @cached_property
     def periphery_boolean_index(self) -> NDArrayBool:

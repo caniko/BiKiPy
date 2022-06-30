@@ -73,6 +73,11 @@ class PluginPerimeter(BasePluginFile):
         if self.perimeter_settings["perimeter_names_in_metadata"]:
             return _open_label_to_trial_label_df(self.ingress.metadata_path)
 
+    @property
+    def get_only_perimeter(self) -> AnyPerimeter:
+        assert len(self.label_to_perimeter_from_first_makesense) == 1
+        return next(self.label_to_perimeter_from_first_makesense.values())
+
 
 def perimeter_file_path_to_value(file_path: FilePath, trial_id: str | PositiveInt, ingress: Any, *args, **kwargs):
     return PluginPerimeter(

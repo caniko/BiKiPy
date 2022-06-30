@@ -8,6 +8,7 @@ from bikipy.core.base_class import BaseBikipy
 
 class BasePlugin(BaseBikipy):
     data_label: ClassVar[str]
+    _inspect: ClassVar[bool] = False
 
     @cached_property
     def _info(self):

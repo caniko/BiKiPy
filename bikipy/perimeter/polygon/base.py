@@ -79,7 +79,7 @@ class PolygonPerimeter(BasePerimeter, ABC):
     def line_segment_pairs(self):
         return np.array(list(zip(self.linked_vertices_in_meters, self.linked_vertices_in_meters[1:])))
 
-    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64, inspect: bool = True) -> NDArrayFp64:
+    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64, inspect: bool = False) -> NDArrayFp64:
         # Closest point on the index-respective edge along axis 0, and coordinates along 1.
         closest_edge_point_to_coordinates_matrix = np.array(
             [

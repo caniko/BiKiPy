@@ -1,10 +1,18 @@
 from functools import cached_property
 from typing import Any
 
+import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
 from pydantic import PositiveInt
 
 from bikipy.ingress.plugin.base import BasePluginDirectory
 from bikipy.ingress.plugin.perimeter import PluginPerimeter
+from bikipy.perimeter.base import AnyPerimeter, PerimeterSet
+from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
+from bikipy.perimeter.utils import plot_perimeters
+from bikipy.utils.io.makesense import read_makesense_line
+from bikipy.utils.math.geometry import clockwise_argsort_points
 
 
 class PluginRadial(BasePluginDirectory):
@@ -23,29 +31,23 @@ class PluginRadial(BasePluginDirectory):
         ]
 
     @cached_property
+    def center(self) -> AnyPerimeter:
+        center_perimeter_paths = tuple(self.data_path.glob("*center*"))
+        assert len(center_perimeter_paths) == 1
+        return PluginPerimeter(
+            data_path=center_perimeter_paths[0], ingress=self.ingress, trial_id=self.trial_id
+        ).get_only_perimeter
+
+    @cached_property
+    def line_data(self) -> pd.DataFrame:
+        line_data = [read_makesense_line(data_path) for data_path in self.data_path.glob("*line*")]
+        line_data = line_data[0] if len(line_data) == 1 else pd.concat(line_data, axis=0)
+        return line_data
+
+    @cached_property
     def radial_maze_perimeters(self):
-        if triangular_center_object:
-            center_object = triangular_center_object
-        elif center_coco_path:
-            if not os.path.exists(center_coco_path):
-                msg = f"center_coco_path does not exist, {center_coco_path}"
-                raise ValueError(msg)
-            center_object = triangular_center_object or PolygonPerimeter.from_makesense_coco_polygon(
-                center_coco_path, single_obj_return=True, **perimeter_kwargs
-            )
-        else:
-            msg = "Either center_object or center_coco_path has to be defined"
-            raise ValueError(msg)
+        line_dataset = self.line_data[1:5].T
 
-        center_object.label = "center"
-        center_object.group_label = "center"
-
-        csv_array = read_makesense_point(line_csv_path).T
-        labels = csv_array[0]
-        number_of_arms = len(labels)
-        center_object.int_id = number_of_arms + 1
-
-        line_dataset = csv_array[1:5].T
         lines = np.array([np.array_split(line, 2) for line in line_dataset])
         line_midpoints = np.array([np.mean(line, axis=0) for line in lines])
 
@@ -56,13 +58,12 @@ class PluginRadial(BasePluginDirectory):
         arm_perimeters = []
         for line_index, line_midpoint in enumerate(line_midpoints):
             line_pair_index = np.where(
-                np.argsort(np.linalg.norm(line_midpoint - center_object.edge_midpoints, axis=1)) == 0
+                np.argsort(np.linalg.norm(line_midpoint - self.center.edge_midpoints, axis=1)) == 0
             )[0][0]
 
             arm_perimeter = np.concatenate(
                 (
-                    center_object.vertices_in_meters[center_object.linked_polygon_edge_corner_pairs[line_pair_index],
-                    :],
+                    self.center.vertices_in_meters[self.center.linked_polygon_edge_corner_pairs[line_pair_index], :],
                     lines[line_index],
                 )
             )
@@ -71,17 +72,17 @@ class PluginRadial(BasePluginDirectory):
                 RectanglePerimeter(
                     vertices_in_pixels=arm_perimeter,
                     int_id=line_index + 1,
-                    label=labels[line_index],
+                    label=self.line_data["labels"][line_index],
                     group_label="arms",
-                    **perimeter_kwargs,
                 )
             )
 
-        perimeters = (*arm_perimeters, center_object)
-        if inspect:
+        perimeters = (*arm_perimeters, self.center)
+
+        if self._inspect:
             fig, ax = plt.subplots(ncols=3)
-            PolygonPerimeter.plot_perimeters(perimeters, ax=ax[0])
-            for i, (line, center_corner) in enumerate(zip(lines, center_object.vertices_in_meters), start=1):
+            plot_perimeters(perimeters, ax=ax[0])
+            for i, (line, center_corner) in enumerate(zip(lines, self.center.vertices_in_meters), start=1):
                 ax[1].scatter(*line.T, label=f"line_{i}")
                 ax[2].scatter(*center_corner.T, label=f"center_vertices_{i}")
             plt.legend()
