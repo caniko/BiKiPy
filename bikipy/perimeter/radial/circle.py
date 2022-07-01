@@ -52,10 +52,12 @@ class CirclePerimeter(BaseSinglePerimeter):
         return value.astype(float)
 
     def change_reference(self, new_reference: NDArrayFp64, **new_inspect_image_kwargs):
-        kwargs = self.dict()
-        kwargs["center_meters"] += new_reference - self.reference_point_array
-        kwargs["reference_point_array"] = new_reference
-        return self._new_inspect_image(self.__class__(**kwargs), **new_inspect_image_kwargs)
+        return self.copy(
+            update={
+                "center_meters": self.center_meters + new_reference - self.reference_point_array,
+                "reference_point_array": new_reference,
+            }
+        )
 
     def expand(self, perimeter_border_normal_meters: float | NDArrayFp64):
         kwargs = self.dict()

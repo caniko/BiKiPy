@@ -32,10 +32,11 @@ class PluginPerimeterMixin(BaseBikipy):
             return get_only_point_from_makesense(path_to_reference_file)
 
     @cached_property
-    def re_referencing_points(self) -> dict[str, NDArrayFp64]:
+    def image_name_to_re_referencing_point(self) -> dict[str, NDArrayFp64]:
         if (path_to_re_reference_file := self.data_path.parent / f"re_reference-{self.label}.csv").exists():
             assert self.reference_point is not None, "Reference point must be defined for re-referencing"
             return image_name_to_point_from_makesense(path_to_re_reference_file)
+        return {}
 
 
 class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
@@ -67,16 +68,20 @@ class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
             reference_point_array=self.reference_point,
         )
 
-        if self.reference_point is not None and len(image_name_to_perimeter_set) > 1:
-            logger.warning(f"Dataset {self.label}: The same reference is being applied to several images")
+        if self.reference_point is not None:
+            if not self.image_name_to_re_referencing_point:
+                logger.warning(f"Dataset {self.label}: Defines reference point, yet no re-reference data was detected")
+            if len(image_name_to_perimeter_set) > 1:
+                logger.warning(f"Dataset {self.label}: The same reference is being applied to several images")
 
         result = {}
-        for perimeter_set in image_name_to_perimeter_set.values():
+        for image_name, perimeter_set in image_name_to_perimeter_set.items():
             for label, perimeter in perimeter_set.label_to_perimeter.items():
                 for field, value in self.perimeter_settings["fields"]["defined"].items():
                     if value is not None:
                         perimeter.__setattr__(field, value)
 
+                key = copy(label)
                 new_label = copy(label)
                 if self.label_to_trial_label_df is not None:
                     new_label = self.label_to_trial_label_df.loc[self.trial_id, label]
@@ -87,12 +92,16 @@ class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
 
                 match self.perimeter_settings["perimeter_mapper_key"]:
                     case "label":
-                        if new_label != label:
-                            result[new_label] = _perimeter_with_label(perimeter, new_label)
-                        else:
-                            result[label] = perimeter
-                    case "ranged-trial_id":
+                        pass
+                    case "image-label":
+                        key = f"{image_name}-{label}"
+                    case _:
+                        msg = f"{self.perimeter_settings['perimeter_mapper_key']} is an unsupported map key for perimeters"
+                        raise ValueError(msg)
 
+                result[key] = _perimeter_with_label(perimeter, new_label)
+                for new_image_name, new_reference in self.image_name_to_re_referencing_point.items():
+                    result[key.replace(image_name, new_image_name)] = result[key].change_reference(new_reference)
 
         return result
 
@@ -103,18 +112,20 @@ class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
 
     @property
     def get_only_perimeter(self) -> AnyPerimeter:
-        assert len(self.label_to_perimeter_from_first_makesense) == 1
-        return next(self.label_to_perimeter_from_first_makesense.values())
+        assert len(self.perimeter_mapper_from_first_makesense) == 1
+        return next(self.perimeter_mapper_from_first_makesense.values())
 
 
 def perimeter_file_path_to_value(file_path: FilePath, trial_id: str | PositiveInt, ingress: Any, *args, **kwargs):
     return PluginPerimeter(
         data_path=file_path, ingress=ingress, trial_id=trial_id
-    ).label_to_perimeter_from_first_makesense
+    ).perimeter_mapper_from_first_makesense
 
 
 @lru_cache
 def _perimeter_with_label(perimeter: AnyPerimeter, new_label: str) -> AnyPerimeter:
+    if new_label == perimeter.label:
+        return perimeter
     return perimeter.copy(update={"label": new_label})
 
 

@@ -252,16 +252,19 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
 
     def change_reference(self, new_reference: NDArrayFp64, **new_inspect_image_kwargs):
         if self.reference_point is None:
-            return self
+            msg = "Reference without defining a reference for the source perimeter object is disallowed"
+            raise AttributeError(msg)
 
         if np.all(self.reference_point == new_reference):
             logger.warning("The provided reference_point is identical to the current")
             return self
 
         if self.reference_point is not None and np.any(self.reference_point):
-            return self.__class__(
-                vertices_in_pixels=self.vertices_in_pixels + new_reference - self.reference_point,
-                manual_video=self.video,
+            return self.copy(
+                update={
+                    "vertices_in_pixels": self.vertices_in_pixels + new_reference - self.reference_point,
+                    "manual_video": self.video,
+                }
             )
 
         return self

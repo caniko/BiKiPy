@@ -49,7 +49,7 @@ class PluginRadial(BasePluginDirectory, PluginPerimeterMixin):
 
     @cached_property
     def radial_maze_perimeters(self):
-        line_dataset = self.line_data[1:5].T
+        line_dataset = self.line_data.iloc[1:5].T
 
         lines = np.array([np.array_split(line, 2) for line in line_dataset])
         line_midpoints = np.array([np.mean(line, axis=0) for line in lines])
