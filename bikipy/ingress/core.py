@@ -39,6 +39,22 @@ logger = getLogger(__name__)
 
 
 class BaseIngress(BaseBikipy, ABC):
+    """
+    This model stores methods to ingest data for bikipy-based analysis. The workflow differs slightly between daughter
+    classes. The commonality are the levels in which data is introduced, which is quite similar to the bikipy experiment
+    class:
+        - Common trial keyword arguments are defined by the settings.yaml file, or from global plugin values defined in
+        the plugin_files folder. Note that each plugin file may have their values assigned to trial IDs with mappers
+        defined in the metadata files; the values are assigned to their respective trial ID in this case.
+
+        - Trial class name keyword arguments are defined in settings.yaml
+
+        - Trial ID keyword arguments are defined by a combination of the ingress class, the settings, and metadata.
+
+    This data is passed onto the experiment class, which is the runner of the analysis. The best method to initiate
+    analysis is to run analyze_and_save(), a function at the bottom of this file, through the BiKiPy CLI.
+    """
+
     project_root_directory: DirectoryPath
 
     _experiment_data_defined: bool = False
@@ -447,6 +463,7 @@ def init_settings(
             "label_prefix": None,
             "label_suffix": None,
             "perimeter_names_in_metadata": False,
+            "perimeter_mapper_key": "label",
             "fields": extended_schema(BaseSinglePerimeter),
         },
         "reader_kwargs": extended_schema(DeepLabCutReader, with_required=False),

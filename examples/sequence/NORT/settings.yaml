@@ -8,6 +8,7 @@ ingress:
 perimeter:
   label_prefix: null
   label_suffix: null
+  perimeter_mapper_key: label
   perimeter_names_in_metadata: true
   fields:
     defined: {}

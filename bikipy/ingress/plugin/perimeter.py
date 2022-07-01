@@ -1,4 +1,4 @@
-from copy import copy, deepcopy
+from copy import copy
 from functools import cached_property, lru_cache
 from logging import getLogger
 from typing import Any, Optional
@@ -14,7 +14,7 @@ from bikipy.perimeter.base import (
     StringPerimeterShapes,
     perimeter_set_from_makesense,
 )
-from bikipy.utils.io.makesense import get_only_point_from_makesense
+from bikipy.utils.io.makesense import get_only_point_from_makesense, image_name_to_point_from_makesense
 
 logger = getLogger(__name__)
 
@@ -30,6 +30,12 @@ class PluginPerimeterMixin(BaseBikipy):
             return self.manual_reference
         if (path_to_reference_file := self.data_path.parent / f"reference-{self.label}.csv").exists():
             return get_only_point_from_makesense(path_to_reference_file)
+
+    @cached_property
+    def re_referencing_points(self) -> dict[str, NDArrayFp64]:
+        if (path_to_re_reference_file := self.data_path.parent / f"re_reference-{self.label}.csv").exists():
+            assert self.reference_point is not None, "Reference point must be defined for re-referencing"
+            return image_name_to_point_from_makesense(path_to_re_reference_file)
 
 
 class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
@@ -53,7 +59,7 @@ class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
         return self.ingress.settings["perimeter"]
 
     @cached_property
-    def label_to_perimeter_from_first_makesense(self) -> dict[str, AnyPerimeter]:
+    def perimeter_mapper_from_first_makesense(self) -> dict[str, AnyPerimeter]:
         image_name_to_perimeter_set = perimeter_set_from_makesense(
             self.data_path,
             self.manual_shape or self.shape,
@@ -61,14 +67,16 @@ class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
             reference_point_array=self.reference_point,
         )
 
+        if self.reference_point is not None and len(image_name_to_perimeter_set) > 1:
+            logger.warning(f"Dataset {self.label}: The same reference is being applied to several images")
+
         result = {}
         for perimeter_set in image_name_to_perimeter_set.values():
-            for perimeter in perimeter_set.all_perimeters:
+            for label, perimeter in perimeter_set.label_to_perimeter.items():
                 for field, value in self.perimeter_settings["fields"]["defined"].items():
                     if value is not None:
                         perimeter.__setattr__(field, value)
 
-            for label, perimeter in perimeter_set.label_to_perimeter.items():
                 new_label = copy(label)
                 if self.label_to_trial_label_df is not None:
                     new_label = self.label_to_trial_label_df.loc[self.trial_id, label]
@@ -77,11 +85,14 @@ class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
                 if s := self.perimeter_settings["label_suffix"]:
                     new_label = f"{new_label}_{s}"
 
-                if new_label != label:
-                    result[new_label] = _perimeter_with_label(perimeter, new_label)
-                # elif result:
-                else:
-                    result[label] = perimeter
+                match self.perimeter_settings["perimeter_mapper_key"]:
+                    case "label":
+                        if new_label != label:
+                            result[new_label] = _perimeter_with_label(perimeter, new_label)
+                        else:
+                            result[label] = perimeter
+                    case "ranged-trial_id":
+
 
         return result
 
