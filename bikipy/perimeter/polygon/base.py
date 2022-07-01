@@ -6,6 +6,7 @@ from typing import Any, ClassVar, Optional
 import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import FilePath, validator
+from pydantic_numpy import NDArray
 
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16, NDArrayBool
 from bikipy.core.video import convert_meters_to_pixels
@@ -17,7 +18,7 @@ from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 from bikipy.utils.math.vector import (
     nearest_point_on_line_segment_to_coordinates,
     unit_vector,
-    ray_and_line_segment_intersection_point,
+    ray_and_line_segment_intersection,
     rotate_vectors_with_angle,
 )
 
@@ -145,13 +146,17 @@ class PolygonPerimeter(BasePerimeter, ABC):
         self,
         ray_origins: NDArrayFp64,
         ray_directions: NDArrayFp64,
-    ) -> NDArrayFp64:
-        return np.array(
+        return_points: bool = False,
+    ) -> NDArray:
+        result = np.array(
             [
-                ray_and_line_segment_intersection_point(ray_origins, ray_directions, *line_segment_pair)
+                ray_and_line_segment_intersection(ray_origins, ray_directions, *line_segment_pair, return_points)
                 for line_segment_pair in self.line_segment_pairs
             ]
         )
+        if not return_points:
+            return np.any(result, axis=0)
+        return result
 
     def closest_ray_intersection_points(
         self,
@@ -197,14 +202,11 @@ class PolygonPerimeter(BasePerimeter, ABC):
         """
         gaze_vectors = gaze_travel_direction_point - gaze_start_point
 
-        in_direct_los = np.any(
-            self.ray_intersects_on_polygon(
-                gaze_travel_direction_point,
-                gaze_vectors,
-            ),
-            axis=2,
+        in_direct_los = self.ray_intersects_on_polygon(
+            gaze_travel_direction_point,
+            gaze_vectors,
         )
-        if all(in_direct_los):
+        if np.all(in_direct_los):
             return in_direct_los
 
         positive_angles = np.linspace(max_radians, 0.0, angular_resolution)
@@ -213,12 +215,9 @@ class PolygonPerimeter(BasePerimeter, ABC):
 
         not_in_direct_los = ~in_direct_los
         rotated_gaze_vectors = rotate_vectors_with_angle(gaze_vectors[not_in_direct_los], angles)
-        in_tolerable_los = np.any(
-            self.ray_intersects_on_polygon(
-                gaze_travel_direction_point,
-                rotated_gaze_vectors,
-            ),
-            axis=2,
+        in_tolerable_los = self.ray_intersects_on_polygon(
+            gaze_travel_direction_point[not_in_direct_los],
+            rotated_gaze_vectors,
         )
         result = project_mask_to_original(in_tolerable_los, in_direct_los)
 

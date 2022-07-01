@@ -153,11 +153,12 @@ def nearest_point_on_line_segment_to_coordinates(
 
 
 @validate_arguments
-def ray_and_line_segment_intersection_point(
+def ray_and_line_segment_intersection(
     ray_origins: NDArrayFp64,
     ray_directions: NDArrayFp64,
     line_segment_start: NDArrayFp64,
     line_segment_end: NDArrayFp64,
+    return_points: bool = False,
 ) -> NDArrayFp64:
 
     # Ray-Line Segment Intersection Test in 2D
@@ -172,10 +173,12 @@ def ray_and_line_segment_intersection_point(
     t2 = dot_axis_1_1d(v1, v3) / dot_axis_1_1d(v2, v3)
 
     line_segment_intersection_bool = (t1 >= 0.0) & (0.0 <= t2) & (t2 <= 1.0)
-    result = np.full_like(ray_origins, np.nan)
-    result[line_segment_intersection_bool] = ray_origins + t1 * ray_directions
-
-    return result
+    if return_points:
+        raise NotImplementedError()
+        result = np.full_like(ray_origins, np.nan)
+        result[line_segment_intersection_bool] = ray_origins + t1 * ray_directions
+    else:
+        return line_segment_intersection_bool
 
 
 @validate_arguments
@@ -248,14 +251,16 @@ def rotation_matrix_from_radians(radians: NDArrayFp64) -> NDArrayFp64:
     return np.ascontiguousarray(([cos, -sin], [sin, cos])).transpose(2, 0, 1)
 
 
+def rotate_vectors_with_angle(vectors: NDArrayFp64, angle: NDArrayFp64) -> NDArrayFp64:
+    rotation_matrix = rotation_matrix_from_radians(angle)
+    return np.array([np.dot(vector, rotation_matrix) for vector in vectors])
+
+
 if ENABLE_NUMBA:
 
     # rotation_matrix_from_radians = jit(cache=True)(rotation_matrix_from_radians)
     # dot_axis_1_1d = njit(cache=True)(dot_axis_1_1d)   https://github.com/numba/numba/issues/1269
     orthogonal_unit_vector = njit(cache=True)(orthogonal_unit_vector)
-
-    def rotate_vectors_with_angle(vectors: NDArrayFp64, angles: NDArrayFp64) -> NDArrayFp64:
-        return rotate_vectors_with_angle(vectors, rotation_matrix_from_radians(angles))
 
     @njit(parallel=True, nogil=True, cache=True)
     def rotate_vectors_with_rotation_matrix(vectors: NDArrayFp64, rotation_matrices: NDArrayFp64) -> NDArrayFp64:
@@ -263,13 +268,3 @@ if ENABLE_NUMBA:
         for i in numba.prange(len(vectors)):
             result[i] = np.dot(vectors[i], rotation_matrices[i])
         return result
-
-else:
-
-    def rotate_vectors_with_angle(vectors: NDArrayFp64, angles: NDArrayFp64) -> NDArrayFp64:
-        return np.array(
-            [
-                np.dot(vector, rotation_matrix)
-                for vector, rotation_matrix in zip(vectors, rotation_matrix_from_radians(angles))
-            ]
-        )
