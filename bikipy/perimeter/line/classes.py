@@ -37,7 +37,7 @@ class LinePerimeter(BaseBikipy):
         None,
         description=(
             "The respective resolution of the frame.\n"
-            "BasePerimeter orient will be used to isolate the correct resolution if "
+            "BaseSinglePerimeter orient will be used to isolate the correct resolution if "
             "both vertical and horizontal are provided"
         ),
     )

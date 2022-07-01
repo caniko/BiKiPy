@@ -7,7 +7,7 @@ from pydantic import FilePath, validator
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.feature.attention.gaze import gaze_direction_filter_circle_triangle
 from bikipy.perimeter.base import (
-    BasePerimeter,
+    BaseSinglePerimeter,
     perimeter_set_from_image_name_to_perimeters,
 )
 from bikipy.perimeter.radial.utils import plot_circle
@@ -19,7 +19,7 @@ from bikipy.utils.io.makesense import (
 from bikipy.utils.math.vector import unit_vector
 
 
-class CirclePerimeter(BasePerimeter):
+class CirclePerimeter(BaseSinglePerimeter):
     center_pixels: NDArrayFp64
     radius_meters: float
 
@@ -85,8 +85,6 @@ class CirclePerimeter(BasePerimeter):
         inspect_pixels: bool = False,
         perimeter_border_normal_pixels: Optional[float] = None,
         ax: Any = None,
-        include_geometric_legend: bool = False,
-        colormap: Any = None,
         **plot_kwargs,
     ):
         if inspect_pixels:

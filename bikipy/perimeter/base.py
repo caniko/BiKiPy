@@ -19,7 +19,7 @@ from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_csv_rectangle,
 )
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
-from bikipy.utils.collection_utils import evenly_spaced_indices
+from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence
 from bikipy.utils.io.makesense import get_point_from_makesense_row, read_makesense_point
 
 logger = getLogger(__name__)
@@ -27,7 +27,7 @@ logger = getLogger(__name__)
 StringPerimeterShapes = Literal["circle", "polygon", "rectangle"]
 
 
-class BasePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
+class BaseSinglePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
     impenetrable: bool = Field(
         False,
         description="Signifies the impenetrability of the perimeter. "
@@ -72,7 +72,7 @@ class BasePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMix
             self.plot_perimeter(ax=ax)
 
             with sb.color_palette("Spectral", n_colors=5):
-                for i in evenly_spaced_indices(coordinates, 5):
+                for i in evenly_spaced_indices_from_sequence(coordinates, 5):
                     ax.plot(*np.vstack((result[i], coordinates[i])).T)
 
             plt.savefig(self.inspect_directory / f"{self.label}.jpeg")
@@ -91,8 +91,6 @@ class BasePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMix
         inspect_pixels: bool = False,
         perimeter_border_normal_pixels: Optional[float] = None,
         ax: Any = None,
-        include_geometric_legend: bool = False,
-        colormap: Any = None,
         **plot_kwargs,
     ):
         ...
@@ -116,7 +114,7 @@ class BasePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMix
 
     @reference_point.setter
     def reference_point(self, value):
-        self.reference_point_array = np.asarray(value)
+        self.reference_point_array = np.ascontiguousarray(value)
 
     def change_reference_with_coco(
         self,
@@ -243,7 +241,7 @@ class BasePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMix
         )
 
 
-AnyPerimeter = TypeVar("AnyPerimeter", bound=BasePerimeter)
+AnyPerimeter = TypeVar("AnyPerimeter", bound=BaseSinglePerimeter)
 
 
 class PerimeterSet(BaseBikipyHashable):

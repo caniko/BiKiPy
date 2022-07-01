@@ -61,7 +61,7 @@ def detect_sequential_border_presence(
             overlap_locations[perimeter.label] = np.flatnonzero(presence[confined_coord_booleans_index])
             presence[overlap_locations[perimeter.label]] = 0
             logger.info(
-                f"BasePerimeter {perimeter.label} has coordinate overlap with "
+                f"BaseSinglePerimeter {perimeter.label} has coordinate overlap with "
                 f"other border_vertices, {overlap_locations[perimeter.label].size}"
             )
 

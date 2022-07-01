@@ -10,9 +10,12 @@ from pydantic_numpy import NDArray
 
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16, NDArrayBool
 from bikipy.core.video import convert_meters_to_pixels
-from bikipy.perimeter.base import BasePerimeter
+from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.perimeter.radial.circle import CirclePerimeter
-from bikipy.utils.collection_utils import evenly_spaced_indices, project_mask_to_original
+from bikipy.utils.collection_utils import (
+    evenly_spaced_indices_from_sequence,
+    project_mask_to_original,
+)
 from bikipy.utils.math.geometry import clockwise_sort_points
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 from bikipy.utils.math.vector import (
@@ -25,7 +28,7 @@ from bikipy.utils.math.vector import (
 logger = getLogger(__name__)
 
 
-class PolygonPerimeter(BasePerimeter, ABC):
+class PolygonPerimeter(BaseSinglePerimeter, ABC):
     vertices_in_pixels: NDArrayFp64
     reference_point_coco_path: Optional[FilePath]
     reference_point_array: Optional[NDArrayInt16]
@@ -67,7 +70,11 @@ class PolygonPerimeter(BasePerimeter, ABC):
 
     @cached_property
     def linked_vertices_in_meters(self):
-        return np.append(self.vertices_in_meters, np.expand_dims(self.vertices_in_meters[0], 0), axis=0)
+        return np.append(
+            self.vertices_in_meters,
+            np.expand_dims(self.vertices_in_meters[0], 0),
+            axis=0,
+        )
 
     @cached_property
     def line_segment_pairs(self):
@@ -80,7 +87,8 @@ class PolygonPerimeter(BasePerimeter, ABC):
     @cached_property
     def equilateral(self) -> bool:
         return np.all(
-            np.apply_along_axis(np.isclose, 0, self.edge_lengths[0], self.edge_lengths[1:], atol=1.0e-4), axis=1
+            np.apply_along_axis(np.isclose, 0, self.edge_lengths[0], self.edge_lengths[1:], atol=1.0e-4),
+            axis=1,
         )
 
     @cached_property
@@ -111,14 +119,15 @@ class PolygonPerimeter(BasePerimeter, ABC):
         if inspect:
             indexable_t = closest_edge_point_to_coordinates_matrix.transpose(1, 2, 0)
 
-            for i in evenly_spaced_indices(coordinates, 9):
+            for i in evenly_spaced_indices_from_sequence(coordinates, 9):
                 fig, ax = plt.subplots()
                 to_skip = []
                 for y, point in enumerate(indexable_t[i].T):
                     if y in to_skip:
                         continue
                     duplicates_boolean_indices = np.all(
-                        np.apply_along_axis(np.isclose, 0, point, indexable_t[i].T, atol=1.0e-4), axis=1
+                        np.apply_along_axis(np.isclose, 0, point, indexable_t[i].T, atol=1.0e-4),
+                        axis=1,
                     )
                     sort_indices = ", ".join(argsorted_distance.T[i][duplicates_boolean_indices].astype(str))
                     ax.scatter(*point, label=sort_indices)
@@ -133,7 +142,9 @@ class PolygonPerimeter(BasePerimeter, ABC):
         return result
 
     def vector_to_closest_point_on_edge(
-        self, coordinates: NDArrayFp64, closest_point_on_edge_to_coordinates: Optional[NDArrayFp64] = None
+        self,
+        coordinates: NDArrayFp64,
+        closest_point_on_edge_to_coordinates: Optional[NDArrayFp64] = None,
     ) -> NDArrayFp64:
         if closest_point_on_edge_to_coordinates is None:
             closest_point_on_edge_to_coordinates = self.closest_point_on_edge_to_coordinates(coordinates)
@@ -182,7 +193,8 @@ class PolygonPerimeter(BasePerimeter, ABC):
         gaze_travel_direction_point: NDArrayFp64,
         gaze_start_point: NDArrayFp64,
         max_radians: float,
-        angular_resolution: int = 200,
+        angular_resolution: int = 400,
+        manual_inspect: bool = True,
         **inspect_kwargs,
     ) -> NDArrayBool:
         """
@@ -215,16 +227,26 @@ class PolygonPerimeter(BasePerimeter, ABC):
 
         not_in_direct_los = ~in_direct_los
         rotated_gaze_vectors = rotate_vectors_with_angle(gaze_vectors[not_in_direct_los], angles)
-        in_tolerable_los = self.ray_intersects_on_polygon(
-            gaze_travel_direction_point[not_in_direct_los],
-            rotated_gaze_vectors,
-        )
-        result = project_mask_to_original(in_tolerable_los, in_direct_los)
 
-        if self.inspect:
+        in_tolerable_los = np.empty(rotated_gaze_vectors.shape[:2])
+        for i in range(angular_resolution * 2):
+            in_tolerable_los[i] = self.ray_intersects_on_polygon(
+                gaze_travel_direction_point[not_in_direct_los],
+                rotated_gaze_vectors[i],
+            )
+        in_tolerable_los = np.any(in_tolerable_los, axis=0)
+        result = project_mask_to_original(in_tolerable_los, in_direct_los) | in_direct_los
+
+        if self.inspect or manual_inspect:
             from bikipy.feature.attention.gaze import gaze_inspection_plot
 
-            gaze_inspection_plot(self, result, gaze_travel_direction_point, gaze_start_point, **inspect_kwargs)
+            gaze_inspection_plot(
+                self,
+                result,
+                gaze_vectors,
+                gaze_travel_direction_point,
+                **inspect_kwargs,
+            )
 
         return result
 
@@ -249,8 +271,6 @@ class PolygonPerimeter(BasePerimeter, ABC):
         inspect_pixels: bool = False,
         perimeter_border_normal_pixels: Optional[float] = None,
         ax: Any = None,
-        include_geometric_legend: bool = False,
-        colormap: Any = None,
         **plot_kwargs,
     ):
         if not ax:
@@ -258,18 +278,14 @@ class PolygonPerimeter(BasePerimeter, ABC):
 
         vertices_in_meters = self.vertices_in_pixels if inspect_pixels else self.vertices_in_meters
 
-        legends = []
         for index in range(len(vertices_in_meters)):
             following_index = 0 if index + 1 == len(vertices_in_meters) else index + 1
 
             corner_a = vertices_in_meters[index]
             corner_b = vertices_in_meters[following_index]
             ax.plot(
-                (corner_a[0], corner_b[0]),
-                (corner_a[1], corner_b[1]),
-                "o-",
+                *np.vstack((corner_a, corner_b)).T,
                 label=self.label,
-                color=colormap,
                 **plot_kwargs,
             )
 
@@ -277,17 +293,10 @@ class PolygonPerimeter(BasePerimeter, ABC):
                 perimeter = self.expand(perimeter_border_normal_pixels)
                 border_a = perimeter[index]
                 border_b = perimeter[following_index]
-                ax.plot((border_a[0], border_b[0]), (border_a[1], border_b[1]), "o-", color=colormap, **plot_kwargs)
-
-            if include_geometric_legend:
-                legend = [
-                    self._add_label_to_str(f"side {index}"),
-                    self._add_label_to_str(f"midpoint {index}"),
-                ]
-                if perimeter_border_normal_pixels:
-                    legend.append(self._add_label_to_str(f"perimeter {index}"))
-
-        plt.legend(legends, bbox_to_anchor=(1.04, 0.5), loc="center left")
+                ax.plot(
+                    *np.vstack((border_a, border_b)).T,
+                    **plot_kwargs,
+                )
 
         return ax
 

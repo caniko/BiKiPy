@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Any
 
 import numba
 import numpy as np
@@ -8,9 +8,12 @@ from numpy.linalg import LinAlgError
 from pydantic import validate_arguments
 from pydantic_numpy import NDArray
 
-from bikipy import ENABLE_NUMBA
+from bikipy import ENABLE_NUMBA, MATPLOTLIB_SCATTER_ALPHA
 from bikipy.core.typing import NDArrayFp64
-from bikipy.utils.collection_utils import evenly_spaced_indices
+from bikipy.utils.collection_utils import (
+    evenly_spaced_indices_from_sequence,
+    evenly_spaced_indices,
+)
 
 
 @validate_arguments
@@ -122,7 +125,10 @@ def distance_between_line_and_point(*args, **kwargs) -> NDArrayFp64:
 
 @validate_arguments
 def nearest_point_on_line_segment_to_coordinates(
-    line_segment_start: NDArrayFp64, line_segment_end: NDArrayFp64, coordinates: NDArrayFp64, inspect: bool = False
+    line_segment_start: NDArrayFp64,
+    line_segment_end: NDArrayFp64,
+    coordinates: NDArrayFp64,
+    inspect: bool = False,
 ) -> NDArrayFp64:
     # # https://stackoverflow.com/a/47484153/9793651
     start_end_vector = line_segment_end - line_segment_start
@@ -141,7 +147,7 @@ def nearest_point_on_line_segment_to_coordinates(
         fig, axes = plt.subplots(3, 3)
         axes = np.array(axes)
 
-        for i, ax in zip(evenly_spaced_indices(coordinates, 9), axes.reshape(-1)):
+        for i, ax in zip(evenly_spaced_indices_from_sequence(coordinates, 9), axes.reshape(-1)):
             ax.plot(*np.vstack((line_segment_start, line_segment_end)).T)
             ax.scatter(*result[i])
             ax.scatter(*coordinates[i])
@@ -159,8 +165,9 @@ def ray_and_line_segment_intersection(
     line_segment_start: NDArrayFp64,
     line_segment_end: NDArrayFp64,
     return_points: bool = False,
+    inspect: bool = False,
+    number_of_vectors: int = 150,
 ) -> NDArrayFp64:
-
     # Ray-Line Segment Intersection Test in 2D
     # http://bit.ly/1CoxdrG
     v1 = ray_origins - line_segment_start
@@ -173,6 +180,35 @@ def ray_and_line_segment_intersection(
     t2 = dot_axis_1_1d(v1, v3) / dot_axis_1_1d(v2, v3)
 
     line_segment_intersection_bool = (t1 >= 0.0) & (0.0 <= t2) & (t2 <= 1.0)
+
+    if inspect:
+        indices = evenly_spaced_indices(np.sum(line_segment_intersection_bool), number_of_vectors)
+        fig, ax = plt.subplots()
+        ax.quiver(
+            *ray_origins[line_segment_intersection_bool][indices].T,
+            *ray_directions[line_segment_intersection_bool][indices].T,
+            angles="xy",
+            scale_units="xy",
+            alpha=MATPLOTLIB_SCATTER_ALPHA,
+            label="Valid",
+            color="b",
+        )
+
+        non_intersection_bool = ~line_segment_intersection_bool
+        indices = evenly_spaced_indices(np.sum(non_intersection_bool), number_of_vectors)
+        ax.quiver(
+            *ray_origins[non_intersection_bool][indices].T,
+            *ray_directions[non_intersection_bool][indices].T,
+            angles="xy",
+            scale_units="xy",
+            alpha=MATPLOTLIB_SCATTER_ALPHA,
+            label="Invalid",
+            color="r",
+        )
+        ax.legend()
+        ax.plot(*np.vstack([line_segment_start, line_segment_end]).T)
+        plt.show()
+
     if return_points:
         raise NotImplementedError()
         result = np.full_like(ray_origins, np.nan)
@@ -235,12 +271,21 @@ def intersection_between_two_lines(
 
 
 @validate_arguments
-def numpy_bin(data: NDArray, axis: int, bin_step: int, bin_size: int, reducer: Callable = np.nanmean) -> NDArray:
+def numpy_bin(
+    data: NDArray,
+    axis: int,
+    bin_step: int,
+    bin_size: int,
+    reducer: Callable = np.nanmean,
+) -> NDArray:
     arg_dims = np.arange(data.ndim)
     arg_dims[0], arg_dims[axis] = arg_dims[axis], arg_dims[0]
     data = data.transpose(arg_dims)
     data = [
-        reducer(np.take(data, np.arange(int(i * bin_step), int(i * bin_step + bin_size)), 0), 0)
+        reducer(
+            np.take(data, np.arange(int(i * bin_step), int(i * bin_step + bin_size)), 0),
+            0,
+        )
         for i in np.arange(data.shape[axis] // bin_step)
     ]
     return np.array(data).transpose(arg_dims)
@@ -253,7 +298,7 @@ def rotation_matrix_from_radians(radians: NDArrayFp64) -> NDArrayFp64:
 
 def rotate_vectors_with_angle(vectors: NDArrayFp64, angle: NDArrayFp64) -> NDArrayFp64:
     rotation_matrix = rotation_matrix_from_radians(angle)
-    return np.array([np.dot(vector, rotation_matrix) for vector in vectors])
+    return np.array([np.dot(vector, rotation_matrix) for vector in vectors]).transpose(1, 0, 2)
 
 
 if ENABLE_NUMBA:

@@ -53,13 +53,12 @@ def get_point_from_makesense_row(row: pd.Series) -> NDArrayFp64:
     return row.values[1:3]
 
 
+# Use get_only_point_from_makesense instead!
+# def read_first_makesense_point(*args, **kwargs) -> NDArrayFp64:
+#     return get_point_from_makesense_row(read_makesense_point(*args, **kwargs).iloc[0])
+
+
 def image_name_to_point_from_makesense(data_path: FilePath):
-    return {
-        row["image_name"]: get_point_from_makesense_row(row) for _, row in read_makesense_point(data_path).iterrows()
-    }
-
-
-def image_name_to_reference_point_from_makesense(data_path: FilePath):
     return {
         row["image_name"]: get_point_from_makesense_row(row) for _, row in read_makesense_point(data_path).iterrows()
     }

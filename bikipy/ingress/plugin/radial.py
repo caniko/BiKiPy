@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from pydantic import PositiveInt
 
 from bikipy.ingress.plugin.base import BasePluginDirectory
-from bikipy.ingress.plugin.perimeter import PluginPerimeter
+from bikipy.ingress.plugin.perimeter import PluginPerimeter, PluginPerimeterMixin
 from bikipy.perimeter.base import AnyPerimeter, PerimeterSet
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 from bikipy.perimeter.utils import plot_perimeters
@@ -15,7 +15,7 @@ from bikipy.utils.io.makesense import read_makesense_line
 from bikipy.utils.math.geometry import clockwise_argsort_points
 
 
-class PluginRadial(BasePluginDirectory):
+class PluginRadial(BasePluginDirectory, PluginPerimeterMixin):
     trial_id: str | PositiveInt
     ingress: Any
 
@@ -26,7 +26,12 @@ class PluginRadial(BasePluginDirectory):
     @cached_property
     def _input_perimeters(self) -> list[PluginPerimeter]:
         return [
-            PluginPerimeter(data_path=perimeter_path, trial_id=self.trial_id, ingress=self.ingress)
+            PluginPerimeter(
+                data_path=perimeter_path,
+                trial_id=self.trial_id,
+                ingress=self.ingress,
+                manual_reference=self.reference_point,
+            )
             for perimeter_path in self.data_path.glob("perimeter*")
         ]
 
@@ -40,9 +45,7 @@ class PluginRadial(BasePluginDirectory):
 
     @cached_property
     def line_data(self) -> pd.DataFrame:
-        line_data = [read_makesense_line(data_path) for data_path in self.data_path.glob("*line*")]
-        line_data = line_data[0] if len(line_data) == 1 else pd.concat(line_data, axis=0)
-        return line_data
+        return read_makesense_line(next(self.data_path.glob("*line*")))
 
     @cached_property
     def radial_maze_perimeters(self):

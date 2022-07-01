@@ -3,6 +3,6 @@
 Experiment
     Trials
     Data
-        BasePerimeter
+        BaseSinglePerimeter
         Images
 """

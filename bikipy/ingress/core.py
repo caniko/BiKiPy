@@ -31,7 +31,7 @@ from bikipy.ingress.utils.io import (
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
 from bikipy.ingress.utils.settings import get_definable_settings
-from bikipy.perimeter.base import BasePerimeter
+from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.reader import DeepLabCutReader
 from bikipy.utils.collection_utils import copycat_assumes_levels_of_icon
 
@@ -447,7 +447,7 @@ def init_settings(
             "label_prefix": None,
             "label_suffix": None,
             "perimeter_names_in_metadata": False,
-            "fields": extended_schema(BasePerimeter),
+            "fields": extended_schema(BaseSinglePerimeter),
         },
         "reader_kwargs": extended_schema(DeepLabCutReader, with_required=False),
         "trial": extended_group_schema(experiment_class.trial_classes),
