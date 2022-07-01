@@ -11,12 +11,14 @@ from bikipy.core.typing import NDArrayFp64, NDArrayInt16, NDArrayBool
 from bikipy.core.video import convert_meters_to_pixels
 from bikipy.perimeter.base import BasePerimeter
 from bikipy.perimeter.radial.circle import CirclePerimeter
-from bikipy.utils.collection_utils import evenly_spaced_indices
+from bikipy.utils.collection_utils import evenly_spaced_indices, project_mask_to_original
 from bikipy.utils.math.geometry import clockwise_sort_points
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 from bikipy.utils.math.vector import (
     nearest_point_on_line_segment_to_coordinates,
     unit_vector,
+    ray_and_line_segment_intersection_point,
+    rotate_vectors_with_angle,
 )
 
 logger = getLogger(__name__)
@@ -129,27 +131,103 @@ class PolygonPerimeter(BasePerimeter, ABC):
 
         return result
 
-    def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
-        return unit_vector(self.closest_point_on_edge_to_coordinates(coordinates) - coordinates)
+    def vector_to_closest_point_on_edge(
+        self, coordinates: NDArrayFp64, closest_point_on_edge_to_coordinates: Optional[NDArrayFp64] = None
+    ) -> NDArrayFp64:
+        if closest_point_on_edge_to_coordinates is None:
+            closest_point_on_edge_to_coordinates = self.closest_point_on_edge_to_coordinates(coordinates)
+        return unit_vector(closest_point_on_edge_to_coordinates - coordinates)
 
     def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
         return parallel_point_in_polygon(coordinates, self.vertices_in_meters)
+
+    def ray_intersects_on_polygon(
+        self,
+        ray_origins: NDArrayFp64,
+        ray_directions: NDArrayFp64,
+    ) -> NDArrayFp64:
+        return np.array(
+            [
+                ray_and_line_segment_intersection_point(ray_origins, ray_directions, *line_segment_pair)
+                for line_segment_pair in self.line_segment_pairs
+            ]
+        )
+
+    def closest_ray_intersection_points(
+        self,
+        ray_origins: NDArrayFp64,
+        ray_directions: NDArrayFp64,
+    ) -> NDArrayFp64:
+        """
+        The first intersection point between a ray, and the polygon
+
+        :return:
+        """
+        ray_intersection_points_on_polygon = self.ray_intersects_on_polygon(ray_origins, ray_directions)
+        vector_matrix = ray_origins - ray_intersection_points_on_polygon
+        distance_matrix = np.linalg.norm(vector_matrix, axis=2)
+
+        argsorted_distance = np.argsort(distance_matrix, axis=0)
+        closest_boolean_index = argsorted_distance == 0
+
+        return ray_intersection_points_on_polygon[closest_boolean_index]
 
     def gaze_direction_filter(
         self,
         gaze_travel_direction_point: NDArrayFp64,
         gaze_start_point: NDArrayFp64,
         max_radians: float,
-        inspect: bool = False,
-    ):
-        gaze_vector = gaze_travel_direction_point - gaze_start_point
+        angular_resolution: int = 200,
+        **inspect_kwargs,
+    ) -> NDArrayBool:
+        """
+        Determine if the object is within the gaze cone
 
-        closest_points_on_edges = self.closest_point_on_edge_to_coordinates(gaze_travel_direction_point)
-        vector_to_closest_point_on_edge = self.vector_to_closest_point_on_edge(gaze_travel_direction_point)
+        This problem is called the "in line of sight" (ilos) problem, and is non-trivial. This is not the best solution
+        in terms of speed for our application; nevertheless, it is quite robust and had the lowest implementation time.
+        The solution below does the following:
+            1.
 
-        direction_point_is_closer_than_start_point = np.linalg.norm(
-            closest_points_on_edges - gaze_travel_direction_point, axis=1
-        ) < np.linalg.norm(closest_points_on_edges - gaze_start_point, axis=1)
+        :param gaze_travel_direction_point:
+        :param gaze_start_point:
+        :param max_radians:
+        :param angular_resolution:
+        :param inspect_kwargs:
+        :return:
+        """
+        gaze_vectors = gaze_travel_direction_point - gaze_start_point
+
+        in_direct_los = np.any(
+            self.ray_intersects_on_polygon(
+                gaze_travel_direction_point,
+                gaze_vectors,
+            ),
+            axis=2,
+        )
+        if all(in_direct_los):
+            return in_direct_los
+
+        positive_angles = np.linspace(max_radians, 0.0, angular_resolution)
+        negative_angles = -positive_angles
+        angles = np.concatenate([negative_angles, positive_angles])
+
+        not_in_direct_los = ~in_direct_los
+        rotated_gaze_vectors = rotate_vectors_with_angle(gaze_vectors[not_in_direct_los], angles)
+        in_tolerable_los = np.any(
+            self.ray_intersects_on_polygon(
+                gaze_travel_direction_point,
+                rotated_gaze_vectors,
+            ),
+            axis=2,
+        )
+        result = project_mask_to_original(in_tolerable_los, in_direct_los)
+
+        if self.inspect:
+            from bikipy.feature.attention.gaze import gaze_inspection_plot
+
+            gaze_inspection_plot(self, result, gaze_travel_direction_point, gaze_start_point, **inspect_kwargs)
+
+        return result
 
     def change_reference(self, new_reference: NDArrayFp64, **new_inspect_image_kwargs):
         if self.reference_point is None:

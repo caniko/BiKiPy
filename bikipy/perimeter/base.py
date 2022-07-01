@@ -1,18 +1,16 @@
 from abc import abstractmethod
 from functools import cached_property
 from logging import getLogger
-from typing import Any, ClassVar, Literal, Optional, Sequence, TypeVar
+from typing import Any, ClassVar, Literal, Optional, TypeVar
 
 import matplotlib.pyplot as plt
-import numpy as np
 import seaborn as sb
+import numpy as np
 from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments
 
-from bikipy import MATPLOTLIB_SCATTER_ALPHA
-from bikipy.core.base_class import BaseBikipyHashable
+from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.core.video import (
-    VideoMetadata,
     VideoMetadataMixin,
     convert_meters_to_pixels,
 )
@@ -29,7 +27,7 @@ logger = getLogger(__name__)
 StringPerimeterShapes = Literal["circle", "polygon", "rectangle"]
 
 
-class BasePerimeter(BaseBikipyHashable, VideoMetadataMixin):
+class BasePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
     impenetrable: bool = Field(
         False,
         description="Signifies the impenetrability of the perimeter. "
@@ -66,8 +64,25 @@ class BasePerimeter(BaseBikipyHashable, VideoMetadataMixin):
     def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         ...
 
+    def inspect_closest_point_on_edge_to_coordinates(self, result: NDArrayFp64, coordinates: NDArrayFp64):
+        if self.inspect:
+            sb.set_theme(style="darkgrid")
+            fig, ax = plt.subplots(dpi=500)
+
+            self.plot_perimeter(ax=ax)
+
+            with sb.color_palette("Spectral", n_colors=5):
+                for i in evenly_spaced_indices(coordinates, 5):
+                    ax.plot(*np.vstack((result[i], coordinates[i])).T)
+
+            plt.savefig(self.inspect_directory / f"{self.label}.jpeg")
+
     @abstractmethod
     def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
+        ...
+
+    @abstractmethod
+    def gaze_direction_filter(self, *args, **kwargs):
         ...
 
     @abstractmethod

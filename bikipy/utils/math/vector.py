@@ -18,19 +18,11 @@ def unit_vector(row_vectors: NDArrayFp64, force_1_dim: bool = False) -> NDArrayF
     """
     Computes unit vector, i.e. vector/<norm of the vector>
 
-    Parameters
-    ----------
-    row_vectors: NDArrayFp64-like
-        Array of row vector(s)
-
-    force_1_dim: bool
-        If True, make sure that the results are sent back as a NDArrayFp64 within an array
+    :param row_vectors: Array of row vector(s)
+    :param force_1_dim: If True, make sure that the results are sent back as a NDArrayFp64 within an array
         important when working with single vectors within functions that expect
         a NDArrayFp64 of vectors
-
-    Returns
-    -------
-    All unit vectors along the rows of row_vectors
+    :return: All unit vectors along the rows of row_vectors
     """
     if len(row_vectors.shape) != 2:
         # Single vector
@@ -45,28 +37,41 @@ def unit_vector(row_vectors: NDArrayFp64, force_1_dim: bool = False) -> NDArrayF
     return (row_vectors.T / np.linalg.norm(row_vectors, axis=1)).T
 
 
-def orthogonal_unit_vector(vector: NDArrayFp64) -> NDArrayFp64:
+def orthogonal_vector(row_vectors: NDArrayFp64) -> NDArrayFp64:
     """
-    Computes the orthogonal unit vector of the given 2D vector
+    Computes the orthogonal row_vectors of the given 2D row_vectors
 
-    Parameters
-    ----------
-    vector: NDArrayFp64-like
-        Array of row vector(s)
-
-    Returns
-    -------
-    NDArrayFp64
+    :param row_vectors: Array of row vector(s)
+    :type row_vectors: NDArrayFp64-like
+    :return: Orthogonal vectors with respect to row_vectors
     """
-    if vector.shape == (2,):
-        return unit_vector((-vector[1], vector[0]))
-    else:
-        return unit_vector(np.array((-vector.T[1], vector.T[0])).T)
+
+    # if row_vectors.shape == (2,):
+    #     return np.ascontiguousarray((-row_vectors[1], row_vectors[0]))
+    return np.ascontiguousarray((-row_vectors.T[1], row_vectors.T[0])).T
 
 
-def dot_axis_1_1d(vector_a: NDArrayFp64, vector_b: NDArrayFp64) -> NDArrayFp64:
+def orthogonal_unit_vector(row_vectors: NDArrayFp64) -> NDArrayFp64:
+    """
+    Computes the orthogonal unit row_vectors of the given 2D row_vectors
+
+    :param row_vectors: Array of row vector(s)
+    :return: Orthogonal unit vectors with respect to row_vectors
+    """
+    return unit_vector(orthogonal_vector(row_vectors))
+
+
+def dot_axis_1_1d(row_vectors_a: NDArrayFp64, row_vectors_b: NDArrayFp64) -> NDArrayFp64:
+    """
+    Convenience function to perform dot product of vectors in stored in arrays of row vectors.
+    The two row vector arrays must have the same shape; numpy will raise an error in cases when this is not true
+
+    :param row_vectors_a: Array of row vectors
+    :param row_vectors_b: Array of row vectors
+    :return: Dot product of the row vectors
+    """
     # np.einsum("ij,ij->i", vector_a, vector_b)
-    return np.nansum(vector_a * vector_b, axis=1)
+    return np.nansum(row_vectors_a * row_vectors_b, axis=1)
 
 
 def normal_from_line_to_point(line_vector: NDArrayFp64, line_start: NDArrayFp64, point: NDArrayFp64):
@@ -143,6 +148,32 @@ def nearest_point_on_line_segment_to_coordinates(
 
         plt.tight_layout()
         plt.show()
+
+    return result
+
+
+@validate_arguments
+def ray_and_line_segment_intersection_point(
+    ray_origins: NDArrayFp64,
+    ray_directions: NDArrayFp64,
+    line_segment_start: NDArrayFp64,
+    line_segment_end: NDArrayFp64,
+) -> NDArrayFp64:
+
+    # Ray-Line Segment Intersection Test in 2D
+    # http://bit.ly/1CoxdrG
+    v1 = ray_origins - line_segment_start
+    v2 = line_segment_end - line_segment_start
+
+    ray_directions = unit_vector(ray_directions)
+    v3 = orthogonal_vector(ray_directions)
+
+    t1 = np.cross(v2, v1) / dot_axis_1_1d(v2, v3)
+    t2 = dot_axis_1_1d(v1, v3) / dot_axis_1_1d(v2, v3)
+
+    line_segment_intersection_bool = (t1 >= 0.0) & (0.0 <= t2) & (t2 <= 1.0)
+    result = np.full_like(ray_origins, np.nan)
+    result[line_segment_intersection_bool] = ray_origins + t1 * ray_directions
 
     return result
 

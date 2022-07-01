@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, DirectoryPath, Field
 
-from bikipy.behaviour.base import BaseTrial
 from bikipy.behaviour.rectangle import RectangleEnclosedTrial
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayFp64
@@ -63,10 +62,11 @@ class PhysicalObjectTrialMixin(BaseBikipy):
             "perimeter_border_normal_meters": self.perimeter_border_normal_meters,
         }
 
-        if self.physical_object_inspect:
+        if self.physical_object_inspect or self.inspect:
             if not self.inspect_directory:
                 msg = "Physical object inspection is set to True, yet inspect_directory is undefined"
                 raise AttributeError(msg)
+
             result["inspect_figure_file_path"] = (
                 _physical_object_inspection_dir(self.inspect_directory) / f"{self.label}.png"
             )

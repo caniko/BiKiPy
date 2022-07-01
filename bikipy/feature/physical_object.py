@@ -1,7 +1,7 @@
 from functools import cached_property, reduce
 from logging import getLogger
 from pathlib import Path
-from typing import Any, ClassVar, Iterable, Optional, Sequence
+from typing import Any, ClassVar, Iterable, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,20 +11,18 @@ from pydantic_numpy import NDArray
 from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipy
-from bikipy.core.typing import NDArrayBool, NDArrayFp64, NDArrayInt16
+from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.core.video import (
     VideoMetadata,
     VideoMetadataMixin,
     convert_meters_to_pixels,
 )
 from bikipy.feature.attention.main import (
-    gaze_direction_filter,
     proximity_filter,
     tolerance_filter,
 )
 from bikipy.perimeter.base import AnyPerimeter, PerimeterSet
 from bikipy.reader.base import Reader
-from bikipy.utils.image import save_plt_fig_cv
 
 logger = getLogger(__name__)
 

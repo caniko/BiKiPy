@@ -7,8 +7,6 @@ import cv2
 import numpy as np
 from pydantic import DirectoryPath, FilePath
 
-from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters
-from bikipy.perimeter.polygon.base import init_polygon
 from bikipy.utils.io.makesense import (
     image_name_to_point_from_makesense,
     read_makesense_rectangle,
@@ -23,6 +21,9 @@ def init_polygon_from_makesense_coco_polygon(
     reference_point_csv_path: Optional[FilePath],
     **perimeter_kwargs,
 ) -> dict:
+    from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters
+    from bikipy.perimeter.polygon.base import init_polygon
+
     logger.debug("Generating PolygonPerimeter from makesense polygon data in coco format")
 
     with open(data_path, "rb") as in_json:
@@ -67,6 +68,9 @@ def init_polygon_from_makesense_csv_rectangle(
     reference_point_csv_path: Optional[FilePath] = None,
     **perimeter_kwargs,
 ):
+    from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters
+    from bikipy.perimeter.polygon.base import init_polygon
+
     logger.debug("Generating PolygonPerimeter from makesense polygon data in coco format")
 
     csv_data = read_makesense_rectangle(data_path)

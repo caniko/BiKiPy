@@ -1,7 +1,8 @@
 from functools import cached_property
 from typing import ClassVar, Optional, TypeVar
 
-from pydantic import BaseModel
+from compress_pickle import compress_pickle
+from pydantic import BaseModel, DirectoryPath, Field, validator
 
 
 class BaseBikipy(BaseModel):
@@ -33,3 +34,19 @@ class BaseBikipyHashable(BaseBikipy):
 
 
 BikipyHashable = TypeVar("BikipyHashable", bound=BaseBikipyHashable)
+
+
+class BaseBikipyInspectMixin(BaseModel):
+    inspect_directory: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
+    inspect: bool = Field(False, description="Will trigger all inspection functions in model when True")
+
+    @validator("inspect_directory", "inspect", pre=True)
+    def inspect_directory_must_be_defined_when_inspect_is_true(cls, v):
+        inspect_directory, inspect = v
+        if inspect and not inspect_directory:
+            msg = "inspect is set to True, yet inspect_directory is None"
+            raise AttributeError(msg)
+        return v
+
+    def save(self):
+        compress_pickle.dump(self, self.inspect_directory / f"experiment.pickle.lzma")

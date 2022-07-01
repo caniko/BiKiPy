@@ -11,7 +11,7 @@ from typing import Any, ClassVar, Optional
 
 import numpy as np
 from numpy import ndarray
-from pydantic import FilePath
+from pydantic import FilePath, Field
 
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16, NDArrayUint8
@@ -21,12 +21,18 @@ logger = getLogger(__name__)
 
 
 class _VideoMetadataBase(BaseBikipy):
-    meters_per_pixel: Optional[NDArrayFp64]
+    meters_per_pixel: Optional[NDArrayFp64] = Field(description="1D array defining the meter to pixel ratio")
 
-    video_path: Optional[FilePath]
-    manual_recording_resolution: Optional[NDArrayInt16]
-    manual_fps: Optional[float]
-    manual_frame: Optional[NDArrayUint8 | FilePath]
+    video_path: Optional[FilePath] = Field(
+        description="Path to video, used to infer recording resolution, fps, and frame"
+    )
+    manual_recording_resolution: Optional[NDArrayInt16] = Field(
+        description="1D array defining the resolution of the recording"
+    )
+    manual_fps: Optional[float] = Field(description="Frames per second of the recording")
+    manual_frame: Optional[NDArrayUint8 | FilePath] = Field(
+        description="Frame from the video stored in numpy array, use cv2.imread to read from file paths"
+    )
 
 
 class VideoMetadata(_VideoMetadataBase):
@@ -138,7 +144,9 @@ class VideoMetadata(_VideoMetadataBase):
 
 
 class VideoMetadataMixin(_VideoMetadataBase):
-    manual_video: Optional[VideoMetadata]
+    manual_video: Optional[VideoMetadata] = Field(
+        description="Video metadata defined from another video metadata object"
+    )
 
     required_video_metadata_fields: ClassVar[set[str]] = set()
 

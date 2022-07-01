@@ -84,3 +84,9 @@ def flatten_multi_index(indices: Iterable[Sequence[str]]) -> tuple[str, ...]:
 def evenly_spaced_indices(sequence: Sequence, number_of_elements: int):
     # https://stackoverflow.com/a/50685454/9793651
     return np.round(np.linspace(0, len(sequence) - 1, number_of_elements)).astype(int)
+
+
+def project_mask_to_original(mask: NDArray, original: NDArray, original_mask: Optional[NDArray] = None) -> NDArray:
+    result = np.empty_like(original, dtype=mask.dtype)
+    result[original_mask if original_mask is not None else original] = mask
+    return result

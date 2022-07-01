@@ -19,7 +19,7 @@ from yaspin import yaspin
 from yaspin.spinners import Spinners
 
 from bikipy import ENABLE_PROCESS_POOLING
-from bikipy.core.base_class import BaseBikipyHashable
+from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_multi_indexer
@@ -40,7 +40,7 @@ LABEL_to_DATA_READER = {"deeplabcut": DeepLabCutReader}
 logger = getLogger(__name__)
 
 
-class Behaviour(BaseBikipyHashable, VideoMetadataMixin):
+class Behaviour(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
     data_format_label: Literal["deeplabcut"] = "deeplabcut"
 
     _live: ClassVar[bool] = False
@@ -69,8 +69,6 @@ class BaseTrial(Behaviour):
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
     )
     stage: Optional[str] = Field(description="The semantic stage of the experiment")
-    inspect: bool = False
-    inspect_directory: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
     inspect_image: Optional[NDArray] = Field(
         description="Image to use as background in the plots for visualising the analysis data",
     )
@@ -247,7 +245,6 @@ class BaseExperiment(Behaviour):
         description="Experiment stage label, if experiment object is in a sequence of experiment objects"
     )
     label: Optional[str]
-    inspect_directory: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
     inspect_image_path: Optional[FilePath] = Field(description="Used globally")
     compute_only_one_df_row: bool = Field(False, description="Used to rapidly generate combo df during debugging")
 
@@ -265,9 +262,8 @@ class BaseExperiment(Behaviour):
         return self.trial_id_to_trial_object[item]
 
     def save(self):
-        self.combined_feature_motion_df
-        save_root = self.inspect_directory or Path(".").resolve()
-        compress_pickle.dump(self, save_root / f"experiment.pickle.lzma")
+        self.trial_label_to_df
+        super().save()
 
     @classmethod
     @property

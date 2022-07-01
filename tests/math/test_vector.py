@@ -1,12 +1,5 @@
 import numpy as np
 
-from bikipy.utils.math import (
-    dot_axis_1_1d,
-    intersection_between_two_lines,
-    orthogonal_unit_vector,
-    unit_vector,
-)
-
 
 def test_unit_vector():
     single_vector = np.array((0, 10))
