@@ -61,6 +61,18 @@ class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
 
     @cached_property
     def perimeter_mapper_from_first_makesense(self) -> dict[str, AnyPerimeter]:
+        def map_perimeter(new_perimeter: AnyPerimeter) -> None:
+            match self.perimeter_settings["perimeter_mapper_key"]:
+                case "label":
+                    result[key] = new_perimeter
+                case "image-label":
+                    if image_name not in result:
+                        result[image_name] = {}
+                    result[image_name][key] = new_perimeter
+                case _:
+                    msg = f"{self.perimeter_settings['perimeter_mapper_key']} is an unsupported map key for perimeters"
+                    raise ValueError(msg)
+
         image_name_to_perimeter_set = perimeter_set_from_makesense(
             self.data_path,
             self.manual_shape or self.shape,
@@ -90,16 +102,8 @@ class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
                 if s := self.perimeter_settings["label_suffix"]:
                     new_label = f"{new_label}_{s}"
 
-                match self.perimeter_settings["perimeter_mapper_key"]:
-                    case "label":
-                        pass
-                    case "image-label":
-                        key = f"{image_name}-{label}"
-                    case _:
-                        msg = f"{self.perimeter_settings['perimeter_mapper_key']} is an unsupported map key for perimeters"
-                        raise ValueError(msg)
+                map_perimeter(_perimeter_with_label(perimeter, new_label))
 
-                result[key] = _perimeter_with_label(perimeter, new_label)
                 for new_image_name, new_reference in self.image_name_to_re_referencing_point.items():
                     result[key.replace(image_name, new_image_name)] = result[key].change_reference(new_reference)
 
@@ -117,9 +121,18 @@ class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
 
 
 def perimeter_file_path_to_value(file_path: FilePath, trial_id: str | PositiveInt, ingress: Any, *args, **kwargs):
-    return PluginPerimeter(
+    perimeter_mapper = PluginPerimeter(
         data_path=file_path, ingress=ingress, trial_id=trial_id
     ).perimeter_mapper_from_first_makesense
+
+    match ingress.settings["perimeter"]["perimeter_mapper_key"]:
+        case "label":
+            pass
+        case "image-label":
+            key = f"{image_name}-{label}"
+        case _:
+            msg = f"{self.perimeter_settings['perimeter_mapper_key']} is an unsupported map key for perimeters"
+            raise ValueError(msg)
 
 
 @lru_cache
