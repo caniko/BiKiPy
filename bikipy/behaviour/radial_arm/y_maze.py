@@ -52,4 +52,4 @@ class YMazeTrial(BaseYMaze, BaseRadialMazeTrial):
 
 
 class YMazeExperiment(BaseYMaze, BaseRadialMazeExperiment):
-    trial_class: ClassVar[Any] = YMazeTrial
+    trial_classes: ClassVar = (YMazeTrial,)

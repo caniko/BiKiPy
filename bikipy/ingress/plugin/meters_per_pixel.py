@@ -8,7 +8,6 @@ from pydantic import DirectoryPath, FilePath, validator
 
 from bikipy.core.typing import NDArrayFp64
 from bikipy.ingress.plugin.base import BasePluginFile
-from bikipy.ingress.utils.io import initialize_metadata_data_frame, load_settings
 from bikipy.utils.io.makesense import read_first_makesense_line
 
 logger = getLogger(__file__)
@@ -110,13 +109,3 @@ def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath)
 
 def first_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath):
     return next(iter(detect_meters_per_pixel_in_perimeter_directory(perimeter_dir).values()))
-
-
-def validate_metadata_meters_per_pixel_strategy(project_root_directory: DirectoryPath):
-    settings = load_settings(project_root_directory)
-    # perimeter_dir = get_plugin_directory_path(project_root_directory)
-
-    metadata = initialize_metadata_data_frame(project_root_directory, settings["ingress"]["stageful_metadata"])
-    if "Meter Pixel Ratio" not in metadata:
-        msg = 'Meter Pixel Ratio must be defined in metadata when utilizing the "metadata" strategy'
-        raise ValueError(msg)

@@ -8,8 +8,11 @@ from typing import Any, Callable, ClassVar, Hashable, Iterable, Optional, TypeVa
 
 import numpy as np
 import openpyxl
+import odf
 import pandas as pd
 import yaml
+from odf import opendocument
+from odf.table import Table
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 
 from bikipy.behaviour.base import Experiment, Trial
@@ -35,6 +38,7 @@ from bikipy.ingress.utils.settings import get_definable_settings
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.reader import DeepLabCutReader
 from bikipy.utils.collection_utils import copycat_assumes_levels_of_icon
+from bikipy.utils.misc import sheet_names_from_path
 
 logger = getLogger(__name__)
 
@@ -67,7 +71,12 @@ class BaseIngress(BaseBikipy, ABC):
     ingress_method: ClassVar[str]
 
     @abstractmethod
-    def _ingress_reader(self):
+    def _dataset_reader(self) -> None:
+        """
+        This component reads the contents of the dataset folder. It is an abstractmethod because projects often have
+        different layouts. Refer to submodules in the same directory as this module
+        to explore the different implementations
+        """
         ...
 
     @classmethod
@@ -78,6 +87,16 @@ class BaseIngress(BaseBikipy, ABC):
                 from bikipy.ingress import AnimalIngress
 
                 return AnimalIngress(**kwargs)
+            case "phase":
+                from bikipy.ingress import PhaseIngress
+
+                return PhaseIngress(**kwargs)
+            case _:
+                msg = (
+                    f"Defined ingress method, {auto_define_ingress_object(project_root_directory).ingress_method}, "
+                    f"is not supported"
+                )
+                raise AttributeError(msg)
 
     @property
     def experiment_name(self) -> str:
@@ -136,15 +155,22 @@ class BaseIngress(BaseBikipy, ABC):
     # I/O ============================
 
     @cached_property
-    def _metadata_sheet_names(self):
-        return openpyxl.load_workbook(self.metadata_path, read_only=True).sheetnames
+    def _metadata_sheet_names(self) -> list[str]:
+        return sheet_names_from_path(self.metadata_path)
 
     @property
     def settings(self) -> dict:
         return load_settings(self.project_root_directory)
 
     @cached_property
-    def animal_metadata(self):
+    def ranged_metadata(self) -> pd.DataFrame | None:
+        if "ranged" in self._metadata_sheet_names:
+            column_names = set(pd.read_excel(self.metadata_path, sheet_name="ranged").columns)
+            if "Phase" in column_names:
+                return pd.read_excel(self.metadata_path, sheet_name="ranged", index_col=[0, 1, 2])
+
+    @cached_property
+    def animal_metadata(self) -> pd.DataFrame | None:
         if "animal" in self._metadata_sheet_names:
             animal_df = pd.read_excel(
                 self.metadata_path,
@@ -184,26 +210,57 @@ class BaseIngress(BaseBikipy, ABC):
             trial_id_df.index = trial_id_df.index.map(lambda idx: f"{idx[0]}_{idx[1]}")
             trial_id_df.index.names = ["Trial"]
 
-        elif not self._metadata_plugins and self.settings["ingress"]["stageful_metadata"]:
+        elif self.animal_metadata is not None:
+            if "Phase" in self.animal_metadata.index:
+                """
+                The phase layout of animal metadata consists of two column types:
+                    - The "Phase" column, which defines the phase of the trial. This is the highest point in the
+                    hierarchy
+                    - The "PhasePart-N", where N is the number of parts in each phase.
+
+                Additional information from a phase may be stored in the sheet with the same label as the phase.
+                """
+
+                # We detect all the PhasePart columns to iterate over them again when iterating over animals
+                all_phase_part_columns = [name for name in self.animal_metadata.index if "PhasePart" in name]
+
+                phase_to_df = {
+                    phase: pd.read_excel(self.metadata_path, sheet_name=phase, index_col=[0, 1])
+                    for phase in np.unique(self.animal_metadata["Phase"])
+                    if phase in self._metadata_sheet_names
+                }
+                df_data = {}
+                for _, row in self.animal_metadata.iterrows():
+                    phase = row.pop("Phase")
+                    for phase_part in all_phase_part_columns:
+                        part = row.pop(phase_part)
+                        if phase in phase_to_df and :
+                            row = pd.concat([row, phase_to_df[phase][]])
+                        df_data[f"{phase}_{}"] = row
+
+                trial_id_df = pd.DataFrame.from_dict(df_data, orient="index")
+
+            else:
+                trial_id_df = pd.concat(
+                    [self.animal_metadata for _ in range(self.experiment_class.trial_sequence_length)], axis=0
+                )
+                trial_id_df.sort_index(inplace=True)
+
+                new_index = []
+                for animal_id in self.animal_metadata.index.values:
+                    for sequence_idx in range(self.experiment_class.trial_sequence_length):
+                        new_index.append(f"{animal_id}_{sequence_idx}")
+
+                trial_id_df.index = new_index
+
+        else:
             msg = (
                 f"Either trial_id or animal_sequence sheet must be defined in metadata "
-                f"when using metadata plugins that are stageful:\n{self._metadata_plugins}"
+                f"when using metadata plugins that are stageful. This allows BiKiPy ingress "
+                f"to define a trial id for each trial object. Following plugins are set "
+                f"to metadata:\n{self._metadata_plugins}"
             )
             raise ValueError(msg)
-        elif self.animal_metadata is not None:
-            trial_id_df = pd.concat(
-                [self.animal_metadata for _ in range(self.experiment_class.trial_sequence_length)], axis=0
-            )
-            trial_id_df.sort_index(inplace=True)
-
-            new_index = []
-            for animal_id in self.animal_metadata.index.values:
-                for sequence_idx in range(self.experiment_class.trial_sequence_length):
-                    new_index.append(f"{animal_id}_{sequence_idx}")
-
-            trial_id_df.index = new_index
-        else:
-            raise RuntimeError()
 
         return trial_id_df
 
@@ -217,6 +274,11 @@ class BaseIngress(BaseBikipy, ABC):
 
     @property
     def dataset_directory_path(self) -> DirectoryPath:
+        if self.settings["manual_dataset_directory"]:
+            if not (path := DirectoryPath(self.settings["manual_dataset_directory"])).exists():
+                msg = f"manual_dataset_directory must exist: {path}"
+                raise AttributeError(msg)
+            return path
         return get_dataset_directory_path(self.project_root_directory)
 
     @property
@@ -258,7 +320,7 @@ class BaseIngress(BaseBikipy, ABC):
                         "file_path_to_value"
                     ](label_to_file_path[row[plugin_info["human_readable_index"]]], trial_id, self)
 
-        self._ingress_reader()
+        self._dataset_reader()
 
         for field, value in self.settings["trial"]["common"]["defined"].items():
             if value is not None:
@@ -339,7 +401,7 @@ class BaseIngress(BaseBikipy, ABC):
     # Client-side functions ===============================
 
     @cached_property
-    def trial_label_to_df(self) -> dict[str | int, pd.DataFrame]:
+    def trial_label_to_df(self) -> dict[str | PositiveInt, pd.DataFrame]:
         return {
             trial_label: df.join(self.metadata, how="inner")
             for trial_label, df in self.experiment.trial_label_to_df.items()
@@ -426,11 +488,24 @@ class BaseIngress(BaseBikipy, ABC):
 
     # Private methods ===============================
 
-    def _trial_class_from_stage_index(self, stage_index: str | int) -> Trial:
+    def _trial_class_from_stage_index(self, stage_index: str | PositiveInt) -> Trial:
         return self.experiment_class.stage_index_to_trial_class_name[stage_index]
 
+    def _trialwise_plugins_for_trial_id(self, trial_id: str | PositiveInt, trial_directory: DirectoryPath) -> None:
+        result = {}
+        for plugin_info in self._trial_wise_plugins:
+            plugin_data_files = tuple(trial_directory.glob(f"{trial_id}.{plugin_info['code_key']}*"))
+            if len(plugin_data_files) > 1:
+                msg = f"Plugin {plugin_info['human_readable_index']}: Only one file per trial"
+                raise ValueError(msg)
+
+            result[plugin_info["bikipy_trial_key"]] = plugin_info["file_path_to_value"](
+                plugin_data_files[0], trial_id, self
+            )
+        return result
+
     @staticmethod
-    def _get_id_from_path_stem(path: Path) -> str | int:
+    def _get_id_from_path_stem(path: Path) -> str | PositiveInt:
         stem = path.stem
         if "-" in stem:
             stem = path.stem.split("-")
@@ -459,11 +534,13 @@ def init_settings(
 
     generic_settings = {
         "ingress_method": ingress_method,
+        "manual_dataset_directory": None,
         "ingress": {
             "stageful_metadata": False,
             "skip_absent_trials_absent_from_metadata_index": False,
             "meters_per_pixel_definition_strategy": "global_perimeter",
             "perimeter_definition_strategy": "metadata",
+            "video_definition_strategy": None,
             "center_definition_strategy": None,
         },
         "perimeter": {

@@ -1,17 +1,26 @@
 import copy
 import subprocess
-from functools import lru_cache
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import Any, Union
+from typing import Union
 
-import cv2
-import numpy as np
+import openpyxl
 from matplotlib import pyplot as plt
-
-from bikipy.core.typing import NDArrayFp64
+from odf import opendocument
+from odf.table import Table
+from pydantic import FilePath
 
 logger = getLogger(__name__)
+
+
+def sheet_names_from_path(path_to_workbook: FilePath) -> list[str]:
+    if path_to_workbook.suffix == ".ods":
+        # odfpy really needs documentation. Had to reverse-engineer this: https://pastebin.com/Xp9dqvRq
+        return [
+            sheet.getAttribute("name")
+            for sheet in opendocument.load(path_to_workbook).spreadsheet.getElementsByType(Table)
+        ]
+    return openpyxl.load_workbook(path_to_workbook, read_only=True).sheetnames
 
 
 def dict_deepmerge(source: dict, destination: dict) -> dict:

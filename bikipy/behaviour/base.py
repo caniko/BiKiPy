@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 import pandas as pd
 from compress_pickle import compress_pickle
-from pydantic import DirectoryPath, Field, FilePath, ValidationError, validator
+from pydantic import DirectoryPath, Field, FilePath, ValidationError, validator, PositiveInt
 from pydantic_numpy import NDArray
 from tqdm import tqdm
 from yaspin import yaspin
@@ -60,12 +60,12 @@ class Behaviour(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
 class BaseTrial(Behaviour):
     coordinate_data_path: FilePath = Field(..., description="Path to file storing coordinate data")
     reader_kwargs: dict
-    animal_id: str | int = Field(..., description="The ID of the animal in the trial")
+    animal_id: str | PositiveInt = Field(..., description="The ID of the animal in the trial")
     object_tracking_label_for_kinematics: Optional[str] = Field(
         ..., description="Label of the node that will be used to track general animal movement"
     )
     manual_center_pixels: Optional[NDArrayInt16]
-    rigid_nodes_freezing: Optional[Sequence[str | int]] = Field(
+    rigid_nodes_freezing: Optional[Sequence[str | PositiveInt]] = Field(
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
     )
     stage: Optional[str] = Field(description="The semantic stage of the experiment")
@@ -493,7 +493,7 @@ class BaseExperiment(Behaviour):
     # DataFrame methods =========================================
 
     @cached_property
-    def trial_label_to_df(self) -> dict[str | int, pd.DataFrame]:
+    def trial_label_to_df(self) -> dict[str | PositiveInt, pd.DataFrame]:
         data_dicts = defaultdict(dict)
         if ENABLE_PROCESS_POOLING:
             with yaspin(Spinners.pong, text="Computing experiment features..."):

@@ -6,7 +6,7 @@ from typing import Any, ClassVar, Literal, Optional, TypeVar
 import matplotlib.pyplot as plt
 import seaborn as sb
 import numpy as np
-from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments
+from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments, PositiveInt
 
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
@@ -264,7 +264,7 @@ class PerimeterSet(BaseBikipyHashable):
             restricted_perimeters=self.restricted_perimeters + other.restricted_perimeters,
         )
 
-    def __getitem__(self, item: str | int):
+    def __getitem__(self, item: str | PositiveInt):
         for perimeter in self.all_perimeters:
             if perimeter.label == item or perimeter.int_id == item:
                 return perimeter

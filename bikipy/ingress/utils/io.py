@@ -1,6 +1,5 @@
 from functools import lru_cache
 
-import pandas as pd
 import yaml
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
@@ -9,16 +8,6 @@ from pydantic import DirectoryPath, FilePath, validate_arguments
 @validate_arguments
 def infer_metadata_path(project_root_directory: DirectoryPath):
     return next(project_root_directory.glob("metadata.*"))
-
-
-@lru_cache(1)
-@validate_arguments
-def initialize_metadata_data_frame(project_root_directory: DirectoryPath, stageful_metadata: bool) -> pd.DataFrame:
-    return pd.read_excel(
-        infer_metadata_path(project_root_directory),
-        index_col=0,
-        header=(0, 1) if stageful_metadata else 0,
-    )
 
 
 @lru_cache(1)

@@ -23,7 +23,7 @@ LOGIC_TO_FUNC = {
 
 class LinePerimeter(BaseBikipy):
     location: float = Field(description="The location given in pixels")
-    orientation: str | int = Field(
+    orientation: str | PositiveInt = Field(
         description=(
             "A lower and an upper perimeter can be defined.\n"
             "The border_vertices can be oriented both horizontally (horizontal) and vertically (vertical).\n"

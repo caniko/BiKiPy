@@ -1,6 +1,8 @@
 from logging import getLogger
 from typing import ClassVar
 
+from pydantic import PositiveInt
+
 from bikipy.ingress.core import BaseIngress
 
 logger = getLogger(__name__)
@@ -9,7 +11,7 @@ logger = getLogger(__name__)
 class AnimalIngress(BaseIngress):
     ingress_method: ClassVar[str] = "animal"
 
-    def _ingress_reader(self):
+    def _dataset_reader(self) -> None:
         for animal_dir in self.dataset_directory_path.iterdir():
             animal_id = self._get_id_from_path_stem(animal_dir)
 
@@ -22,25 +24,13 @@ class AnimalIngress(BaseIngress):
                     continue
 
                 self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(trial_id)
-                trial_id_kwargs = {
+                self._trial_id_to_keyword_arguments[trial_id] = {
                     "label": trial_id,
                     "animal_id": animal_id,
                     "stage": stage_index,
                     "coordinate_data_path": trial_kinematic_data_file_path,
-                }
-                for plugin_info in self._trial_wise_plugins:
-                    plugin_data_files = tuple(animal_dir.glob(f"{stage_index}.{plugin_info['code_key']}*"))
-                    if len(plugin_data_files) > 1:
-                        msg = f"Plugin {plugin_info['human_readable_index']}: Only one file per trial"
-                        raise ValueError(msg)
-
-                    trial_id_kwargs[plugin_info["bikipy_trial_key"]] = plugin_info["file_path_to_value"](
-                        plugin_data_files[0], trial_id, self
-                    )
-
-                self._trial_id_to_keyword_arguments[trial_id] = {
                     **self._trial_id_to_keyword_arguments[trial_id],
-                    **trial_id_kwargs,
+                    **self._trialwise_plugins_for_trial_id(trial_id, animal_dir),
                 }
 
     def verify_project_structure(self):
@@ -76,5 +66,5 @@ class AnimalIngress(BaseIngress):
             raise ValueError(msg)
 
 
-def _define_trial_id(animal_id: str | int, stage_index: str | int):
+def _define_trial_id(animal_id: str | PositiveInt, stage_index: str | PositiveInt):
     return f"{animal_id}_{stage_index}"
