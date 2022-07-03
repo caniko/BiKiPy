@@ -1,6 +1,8 @@
 from collections import UserDict
-from functools import cached_property, lru_cache
-from typing import Any, Optional, Union
+from functools import lru_cache
+from typing import Any
+
+from pydantic import validate_arguments, Field
 
 
 def translate_keys(store: dict, translation: dict) -> dict:
@@ -22,35 +24,39 @@ class RangeDict(UserDict):
     Useful when working with data that is generalised for a given range of values.
     """
 
+    @validate_arguments
     def __init__(
         self,
-        class_dict: Optional[dict],
-        allow_less_than_first_key: Union[float, bool] = False,
-        **kwargs,
+        class_dict: dict = Field(default_factory=dict),
+        allow_less_than_first_key: int | bool = False,
+        allow_greater_than_last_key: int | bool = True,
+        **dict_kwargs,
     ):
-        if not isinstance(allow_less_than_first_key, (bool, float)):
-            msg = "allow_less_than_first_key can either be bool, int, or float"
-            raise TypeError(msg)
+        super().__init__(class_dict, **dict_kwargs)
 
-        self.descending = sorted(dict(class_dict), reverse=True) if class_dict else {}
+        self.ascending = list(sorted(self.data))
+        self.descending = self.ascending[::-1]
+
         self.allow_less_than_first_key = allow_less_than_first_key
-
-        super().__init__(class_dict, **kwargs)
+        self.allow_greater_than_last_key = allow_greater_than_last_key
 
     @lru_cache
     def find_key_range(self, value: float):
-        for number in self.descending:
-            if number <= value:
-                return number
+        for lower_bound, upper_bound in zip(self.descending, self.descending[1:]):
+            if lower_bound <= value <= upper_bound:
+                return lower_bound
+
+        if self.allow_greater_than_last_key is not False and (
+            self.allow_greater_than_last_key is True or self.allow_greater_than_last_key <= value
+        ):
+            return self.data[self.descending[0]]
 
         if self.allow_less_than_first_key is not False and (
-            # must be value < self._smallest_key
-            self.allow_less_than_first_key is True
-            or self.allow_less_than_first_key <= value
+            self.allow_less_than_first_key is True or self.allow_less_than_first_key >= value
         ):
-            return self._smallest_key
+            return self.data[self.ascending[0]]
 
-        msg = f"Provided key is less than the first key in the RangeDict; {value}"
+        msg = f"Provided key is not defined; {value}"
         raise KeyError(msg)
 
     def __getitem__(self, key: float):
@@ -73,13 +79,6 @@ class RangeDict(UserDict):
         self.descending = sorted(self.descending, reverse=True)
 
         super().__setitem__(key, value)
-
-    @cached_property
-    def _smallest_key(self):
-        return self.descending[-1]
-
-    def __hash__(self):
-        return 0
 
     @classmethod
     def __modify_schema__(cls, field_schema):

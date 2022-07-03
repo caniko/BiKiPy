@@ -1,11 +1,7 @@
 from logging import getLogger
-from pathlib import Path
 from typing import ClassVar
 
-from pydantic import DirectoryPath, FilePath
-
 from bikipy.ingress.core import BaseIngress
-from bikipy.ingress.utils.io import get_dataset_directory_path
 
 logger = getLogger(__name__)
 
@@ -15,24 +11,22 @@ class AnimalIngress(BaseIngress):
 
     def _ingress_reader(self):
         for animal_dir in self.dataset_directory_path.iterdir():
-            animal_id = int(animal_dir.stem) if animal_dir.stem.isdigit() else animal_dir.stem
+            animal_id = self._get_id_from_path_stem(animal_dir)
 
-            for trial_data_filename in animal_dir.glob(f"*{self.kinematic_data_file_extension}"):
-                stage_index = int(trial_data_filename.stem.split(".")[0])
+            for trial_kinematic_data_file_path in animal_dir.glob(f"*{self.kinematic_data_file_extension}"):
+                stage_index = self._get_id_from_path_stem(trial_kinematic_data_file_path)
 
                 trial_id = _define_trial_id(animal_id, stage_index)
 
                 if trial_id not in self.metadata.index:
                     continue
 
-                self._trial_id_to_trial_class_name[trial_id] = self.experiment_class.stage_index_to_trial_class_name[
-                    stage_index
-                ]
+                self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(trial_id)
                 trial_id_kwargs = {
                     "label": trial_id,
                     "animal_id": animal_id,
                     "stage": stage_index,
-                    "coordinate_data_path": trial_data_filename,
+                    "coordinate_data_path": trial_kinematic_data_file_path,
                 }
                 for plugin_info in self._trial_wise_plugins:
                     plugin_data_files = tuple(animal_dir.glob(f"{stage_index}.{plugin_info['code_key']}*"))
@@ -80,14 +74,6 @@ class AnimalIngress(BaseIngress):
                 f"- metadata: {sorted(metadata_animal_id_column_set)}\n- trial_sets: {sorted(animal_ids)}"
             )
             raise ValueError(msg)
-
-
-def _animal_ids(project_root_directory: DirectoryPath):
-    animal_ids = set()
-    for trial_set_dir in get_dataset_directory_path(project_root_directory).iterdir():
-        if trial_set_dir.is_dir():
-            animal_ids.add(trial_set_dir.name.split("-")[0])
-    return animal_ids
 
 
 def _define_trial_id(animal_id: str | int, stage_index: str | int):

@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cached_property
 from logging import getLogger
+from pathlib import Path
 from typing import Any, Callable, ClassVar, Hashable, Iterable, Optional, TypeVar
 
 import numpy as np
@@ -11,7 +12,7 @@ import pandas as pd
 import yaml
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 
-from bikipy.behaviour.base import Experiment
+from bikipy.behaviour.base import Experiment, Trial
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayFp64
@@ -67,10 +68,6 @@ class BaseIngress(BaseBikipy, ABC):
 
     @abstractmethod
     def _ingress_reader(self):
-        ...
-
-    @abstractmethod
-    def verify_project_structure(self):
         ...
 
     @classmethod
@@ -428,6 +425,16 @@ class BaseIngress(BaseBikipy, ABC):
                 return self.trial_id_to_keyword_arguments[trial_id]["meters_per_pixel"]
 
     # Private methods ===============================
+
+    def _trial_class_from_stage_index(self, stage_index: str | int) -> Trial:
+        return self.experiment_class.stage_index_to_trial_class_name[stage_index]
+
+    @staticmethod
+    def _get_id_from_path_stem(path: Path) -> str | int:
+        stem = path.stem
+        if "-" in stem:
+            stem = path.stem.split("-")
+        return int(stem) if stem.isdigit() else stem
 
     @staticmethod
     def _raise_unsupported_plugin_method(plugin_name: str, supported_methods: Iterable[str]) -> None:
