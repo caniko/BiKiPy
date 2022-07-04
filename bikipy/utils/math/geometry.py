@@ -10,48 +10,67 @@ from bikipy.core.typing import NDArrayFp64
 from bikipy.feature.angle import clockwise_angel_2d
 
 
+def normalize_hypotenuse_to_origin(hypotenuse_start: NDArrayFp64, hypotenuse_end: NDArrayFp64):
+    return np.abs(hypotenuse_end - hypotenuse_start)
+
+
 @validate_arguments
-def find_cathetus_from_similar_triangle_with_hypotenuse_points_from_original_triangle_and_length_of_the_target_triangle(
-    hypotenuse_start: NDArrayFp64, hypotenuse_end: NDArrayFp64, inspect: bool = False
+def cathetus_from_similar_triangle_with_hypotenuse_points_from_original_triangle_and_length_of_the_target_triangle(
+    cathetus_a: NDArrayFp64, cathetus_b: NDArrayFp64, similar_hypotenuse_length: float, inspect: bool = True
 ):
     """
     We utilize the diagonal of rectangle to derive the components of the two axes on the 2D image.
     We derive both the meters and pixels of the diagonal, and use the Pythagoras theorem for this:
 
     https://www.reddit.com/r/askmath/comments/j1bvfj/getting_catheti_from_hypotenuse_and_catheti_ratio/?utm_source=share&utm_medium=web2x&context=3
-    hypotenuse h and the ratio, r, of x and y in a right triangle.
+    hypotenuse h and the ratio, r, of a and b in a right triangle.
 
-    x/y=r -> x=y*r
+    a/b=r -> a=b*r
 
-    h**2 = x**2 + y**2
-    h**2 = y**2 + (y*r)**2
-    h**2 = y**2 * (1 + r**2)
+    h**2 = a**2 + b**2
+    h**2 = b**2 + (b*r)**2
+    h**2 = b**2 * (1 + r**2)
 
-    y = sqrt( h**2 / (1 + r**2) )
-    x = sqrt( h**2 - y**2 )
+    b = sqrt( h**2 / (1 + r**2) )
+    a = sqrt( h**2 - b**2 )
 
     We can override the hypotenuse length if we want to calculate
     """
-    pixel_ab_vector = np.abs(hypotenuse_end - hypotenuse_start)
-    pixel_x, pixel_y = pixel_ab_vector
-    pixel_xy_ratio = pixel_x / pixel_y  # a-b intersects on the origin
+    ab_ratio = cathetus_a / cathetus_b  # a-b intersects on the origin
 
-    meter_y = sqrt(self.meter_length**2.0 / (1.0 + pixel_xy_ratio**2.0))
-    meter_x = sqrt(self.meter_length**2.0 - meter_y**2.0)
+    similar_b = sqrt(similar_hypotenuse_length**2.0 / (1.0 + ab_ratio**2.0))
+    similar_a = sqrt(similar_hypotenuse_length**2.0 - similar_b**2.0)
 
     if inspect:
-        pixel_x_vector = np.array([pixel_x, 0.0])
-        plt.plot(*np.vstack([[0.0, 0.0], pixel_x_vector]).T, label="cathetus_x")
+        fig, axes = plt.subplots(1, 2)
+        for ax, (a, b) in zip(axes, ((cathetus_a, cathetus_b), (similar_a, similar_b))):
+            vector_a = np.array([a, 0.0])
+            ax.plot(*np.vstack([[0.0, 0.0], vector_a]).T, label="a")
 
-        pixel_y_vector = np.array([0.0, pixel_y])
-        plt.plot(*np.vstack([[0.0, 0.0], pixel_y_vector]).T, label="cathetus_y")
+            vector_b = np.array([0.0, b])
+            ax.plot(*np.vstack([[0.0, 0.0], vector_b]).T, label="b")
 
-        plt.plot(*np.vstack([pixel_x_vector, pixel_y_vector]).T, label="hypotenuse")
+            ax.plot(*np.vstack([vector_a, vector_b]).T, label="hypotenuse")
+
+        axes[0].set_title("Original")
+        axes[1].set_title("Similar")
 
         plt.legend()
         plt.show()
 
-    return pixel_x, pixel_y
+    return similar_a, similar_b
+
+
+def meter_per_pixel_from_diagonal(diagonal_a: NDArrayFp64, diagonal_b: NDArrayFp64, length_meters: float):
+    pixel_x, pixel_y = normalize_hypotenuse_to_origin(diagonal_b - diagonal_a)
+    (
+        meter_x,
+        meter_y,
+    ) = cathetus_from_similar_triangle_with_hypotenuse_points_from_original_triangle_and_length_of_the_target_triangle(
+        pixel_x, pixel_y, length_meters
+    )
+
+    return np.array([meter_x / pixel_x, meter_y / pixel_y])
 
 
 def clockwise_argsort_points(points: NDArrayFp64):
@@ -196,6 +215,3 @@ def expand_rectangle(
 
     result = (off_down_left, off_down_right, off_up_right, off_up_left)
     return np.array(result) if as_array else result
-
-
-cathetus_from_hypotenuse([5, 5], [10, 10], True)

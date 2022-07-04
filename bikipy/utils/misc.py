@@ -2,13 +2,17 @@ import copy
 import subprocess
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import Union
+from typing import Union, Optional, Any
 
+import numpy as np
 import openpyxl
 from matplotlib import pyplot as plt
 from odf import opendocument
 from odf.table import Table
 from pydantic import FilePath
+
+from bikipy.core.typing import NDArrayFp64
+from bikipy.core.video import convert_meters_to_pixels, VideoMetadata
 
 logger = getLogger(__name__)
 
@@ -86,3 +90,16 @@ def get_git_root():
         .rstrip()
         .decode("utf-8")
     )
+
+
+def plot_coordinates(
+    coordinates: NDArrayFp64, ax: Any = None, inspect_pixels: bool = False, video: Optional[VideoMetadata] = None
+):
+    if inspect_pixels:
+        coordinates = convert_meters_to_pixels(coordinates, video)
+
+    histogram, _x_edges, _y_edges = np.histogram2d(*coordinates[np.logical_and(*np.isfinite(coordinates).T)].T, bins=60)
+    ax.imshow(histogram.T, interpolation="sinc")
+    ax.plot(*coordinates.T, ".r-")
+
+    return ax

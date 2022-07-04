@@ -36,9 +36,11 @@ class BaseBikipyHashable(BaseBikipy):
 BikipyHashable = TypeVar("BikipyHashable", bound=BaseBikipyHashable)
 
 
-class BaseBikipyInspectMixin(BaseModel):
+class BaseBikipyInspectMixin(BaseBikipy):
     inspect_directory: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
     inspect: bool = Field(False, description="Will trigger all inspection functions in model when True")
+
+    _class_inspect_directory_name: ClassVar[str]
 
     @root_validator(pre=True)
     def inspect_directory_must_be_defined_when_inspect_is_true(cls, values):
@@ -46,6 +48,12 @@ class BaseBikipyInspectMixin(BaseModel):
             msg = "inspect is set to True, yet inspect_directory is None"
             raise AttributeError(msg)
         return values
+
+    @cached_property
+    def class_inspect_directory(self) -> DirectoryPath:
+        result = self.inspect_directory / self._class_inspect_directory_name
+        result.mkdir(exist_ok=True)
+        return result
 
     def save(self):
         compress_pickle.dump(self, self.inspect_directory / f"experiment.pickle.lzma")

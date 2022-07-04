@@ -13,6 +13,7 @@ from bikipy.core.typing import NDArrayFp64
 from bikipy.utils.collection_utils import (
     evenly_spaced_indices_from_sequence,
     evenly_spaced_indices,
+    flatten_sequence,
 )
 
 
@@ -145,9 +146,9 @@ def nearest_point_on_line_segment_to_coordinates(
 
     if inspect:
         fig, axes = plt.subplots(3, 3)
-        axes = np.array(axes)
+        axes = flatten_sequence(axes)
 
-        for i, ax in zip(evenly_spaced_indices_from_sequence(coordinates, 9), axes.reshape(-1)):
+        for i, ax in zip(evenly_spaced_indices_from_sequence(coordinates, 9), axes):
             ax.plot(*np.vstack((line_segment_start, line_segment_end)).T)
             ax.scatter(*result[i])
             ax.scatter(*coordinates[i])

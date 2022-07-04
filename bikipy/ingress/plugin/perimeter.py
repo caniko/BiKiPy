@@ -14,7 +14,13 @@ from bikipy.perimeter.base import (
     StringPerimeterShapes,
     perimeter_set_from_makesense,
 )
-from bikipy.utils.io.makesense import get_only_point_from_makesense, image_name_to_point_from_makesense
+from bikipy.utils.collection_utils import get_first_value_in_dict
+from bikipy.utils.io.makesense import (
+    get_only_point_from_makesense,
+    image_name_to_point_from_makesense,
+    image_name_from_makesense,
+    SHAPE_TO_MAKESENSE_TYPE,
+)
 
 logger = getLogger(__name__)
 
@@ -44,6 +50,7 @@ class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
     trial_id: str | PositiveInt
 
     manual_shape: Optional[StringPerimeterShapes] = None
+    warn_missing_re_reference_file: bool = False
 
     data_label = "perimeter"
 
@@ -55,20 +62,25 @@ class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
     def label(self) -> str:
         return self._info[2]
 
+    @cached_property
+    def image_name(self):
+        return image_name_from_makesense(self.data_path, SHAPE_TO_MAKESENSE_TYPE[self.shape])
+
     @property
     def perimeter_settings(self) -> dict:
         return self.ingress.settings["perimeter"]
 
     @cached_property
     def perimeter_mapper_from_first_makesense(self) -> dict[str, AnyPerimeter]:
-        def map_perimeter(new_perimeter: AnyPerimeter) -> None:
+        def map_perimeter(new_perimeter: AnyPerimeter, manual_image_name: Optional[str] = None) -> None:
+            image_name_key = manual_image_name or image_name
             match self.perimeter_settings["perimeter_mapper_key"]:
                 case "label":
                     result[key] = new_perimeter
                 case "image-label":
-                    if image_name not in result:
-                        result[image_name] = {}
-                    result[image_name][key] = new_perimeter
+                    if image_name_key not in result:
+                        result[image_name_key] = {}
+                    result[image_name_key][key] = new_perimeter
                 case _:
                     msg = f"{self.perimeter_settings['perimeter_mapper_key']} is an unsupported map key for perimeters"
                     raise ValueError(msg)
@@ -83,11 +95,12 @@ class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
         if self.reference_point is not None:
             if self.ingress.settings["perimeter"]["perimeter_mapper_key"] == "label":
                 logger.warning(
-                    "The default method for labels are not supported when using reference points, "
-                    "please set perimeter_mapper_key in settings to a compatible method. Will try with image-label"
+                    f"Dataset {self.label}: The default method for labels are not supported when using reference "
+                    f"points, please set perimeter_mapper_key in settings to a compatible method. "
+                    f"Will try with image-label"
                 )
                 self.ingress.settings["perimeter"]["perimeter_mapper_key"] = "image-label"
-            if not self.image_name_to_re_referencing_point:
+            if self.warn_missing_re_reference_file and not self.image_name_to_re_referencing_point:
                 logger.warning(f"Dataset {self.label}: Defines reference point, yet no re-reference data was detected")
             if len(image_name_to_perimeter_set) > 1:
                 logger.warning(f"Dataset {self.label}: The same reference is being applied to several images")
@@ -110,8 +123,9 @@ class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
 
                 map_perimeter(_perimeter_with_label(perimeter, new_label))
 
+                # This for-loop will trigger when the perimeter_mapper_key is set to image-label
                 for new_image_name, new_reference in self.image_name_to_re_referencing_point.items():
-                    result[key.replace(image_name, new_image_name)] = result[key].change_reference(new_reference)
+                    map_perimeter(result[image_name][key].change_reference(new_reference), new_image_name)
 
         return result
 
@@ -123,7 +137,7 @@ class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
     @property
     def get_only_perimeter(self) -> AnyPerimeter:
         assert len(self.perimeter_mapper_from_first_makesense) == 1
-        return next(self.perimeter_mapper_from_first_makesense.values())
+        return get_first_value_in_dict(self.perimeter_mapper_from_first_makesense)
 
 
 def perimeter_file_path_to_value(file_path: FilePath, trial_id: str | PositiveInt, ingress: Any, *args, **kwargs):

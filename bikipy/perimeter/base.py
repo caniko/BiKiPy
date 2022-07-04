@@ -21,6 +21,7 @@ from bikipy.perimeter.polygon.makesense import (
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
 from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence
 from bikipy.utils.io.makesense import get_point_from_makesense_row, read_makesense_point
+from bikipy.utils.misc import plot_coordinates
 
 logger = getLogger(__name__)
 
@@ -225,14 +226,7 @@ class BaseSinglePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetad
             ax.imshow(self.video.frame)
 
         if coordinates is not None:
-            if inspect_pixels:
-                coordinates = convert_meters_to_pixels(coordinates, self.video)
-
-            histogram, _x_edges, _y_edges = np.histogram2d(
-                *coordinates[np.logical_and(*np.isfinite(coordinates).T)].T, bins=60
-            )
-            ax.imshow(histogram.T, interpolation="sinc")
-            ax.plot(*coordinates.T, ".r-")
+            ax = plot_coordinates(coordinates, ax, inspect_pixels, self.video)
 
         ax.set_title(self.label)
 
@@ -244,13 +238,14 @@ class BaseSinglePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetad
 AnyPerimeter = TypeVar("AnyPerimeter", bound=BaseSinglePerimeter)
 
 
-class PerimeterSet(BaseBikipyHashable):
+class PerimeterSet(BaseBikipyHashable, BaseBikipyInspectMixin):
     perimeters: list[AnyPerimeter]
     restricted_perimeters: Optional[list[AnyPerimeter]]
 
     label: Optional[str]
 
     category: ClassVar[Optional[str]] = "perimeter"
+    _class_inspect_directory_name = "perimeter_set"
 
     @property
     def _to_hash(self) -> list:
@@ -271,6 +266,11 @@ class PerimeterSet(BaseBikipyHashable):
         raise KeyError(f"Item was not found, {item} amongst {self.all_perimeters}")
 
     @cached_property
+    def video(self):
+        if self.number_of_perimeters:
+            return self.all_perimeters[0].video
+
+    @cached_property
     def group(self):
         grouped = {}
         for perimeter in self.all_perimeters:
@@ -281,10 +281,11 @@ class PerimeterSet(BaseBikipyHashable):
 
         # Groups with one perimeter member should be the value of the respective key
         for label, perimeters in grouped.items():
-            if len(perimeters) == 1:
-                grouped[label] = perimeters[0]
-            else:
+            number_of_perimeters = len(perimeters)
+            if number_of_perimeters > 1:
                 grouped[label] = tuple(perimeters)
+            elif number_of_perimeters == 1:
+                grouped[label] = perimeters[0]
 
         return grouped
 
@@ -443,6 +444,31 @@ class PerimeterSet(BaseBikipyHashable):
     @property
     def labels(self) -> tuple:
         return tuple(perimeter.label for perimeter in self.all_perimeters)
+
+    @cached_property
+    def number_of_perimeters(self) -> int:
+        return len(self.all_perimeters)
+
+    def plot(
+        self,
+        ax: Any = None,
+        coordinates: Optional[NDArrayFp64] = None,
+        inspect_pixels: bool = False,
+        **perimeter_plot_kwargs,
+    ):
+        if ax is None:
+            fig, ax = plt.subplots(constrained_layout=True)
+
+        for perimeter in self.all_perimeters:
+            perimeter.plot_perimeter(ax=ax, **perimeter_plot_kwargs)
+            ax = plot_coordinates(coordinates, ax, inspect_pixels, self.video)
+
+        plt.legend()
+        if self.inspect_directory:
+            plt.savefig(self.class_inspect_directory / f"{self.label}.jpg")
+            logger.debug(f"Saved perimeter_set {self.label} inspect plot to {self.class_inspect_directory}")
+        else:
+            plt.show()
 
 
 @validate_arguments

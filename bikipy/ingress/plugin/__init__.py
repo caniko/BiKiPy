@@ -24,7 +24,7 @@ PLUGIN_NAME_TO_KEYRING: dict[str, dict[str, str | Callable]] = {
     "radial": {
         "ingress_key": "radial_definition_strategy",
         "code_key": "radial",
-        "bikipy_trial_key": "label_to_radial",
+        "bikipy_trial_key": "perimeter_set",
         "human_readable_index": "Radial",
         "file_path_to_value": radial_directory_path_to_value,
     },

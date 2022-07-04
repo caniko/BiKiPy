@@ -11,8 +11,7 @@ from typing import ClassVar, Hashable, Iterable, Literal, Optional, Sequence, Ty
 import cv2
 import numpy as np
 import pandas as pd
-from compress_pickle import compress_pickle
-from pydantic import DirectoryPath, Field, FilePath, ValidationError, validator, PositiveInt
+from pydantic import Field, FilePath, ValidationError, validator, PositiveInt
 from pydantic_numpy import NDArray
 from tqdm import tqdm
 from yaspin import yaspin
@@ -390,6 +389,10 @@ class BaseExperiment(Behaviour):
 
         if "label_to_perimeter" in result:
             result.update(result.pop("label_to_perimeter"))
+
+        if "perimeter_set" in result:
+            perimeter_set: PerimeterSet = result.pop("perimeter_set")
+            result.update(perimeter_set.label_to_perimeter)
 
         return result
 

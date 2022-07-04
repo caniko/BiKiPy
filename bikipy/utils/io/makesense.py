@@ -1,5 +1,6 @@
 from functools import lru_cache
 from logging import getLogger
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -76,3 +77,26 @@ def get_only_point_from_makesense(data_path: FilePath) -> NDArrayFp64:
 
 def recording_resolution_from_makesense_row(row: pd.Series) -> NDArrayInt16:
     return np.array((row["x_res"], row["y_res"]), dtype=np.int16)
+
+
+def image_name_from_makesense(data_path: FilePath, makesense_shape: Literal["rectangle", "line", "point"]) -> str:
+    match makesense_shape:
+        case "rectangle":
+            data = read_makesense_rectangle(data_path)
+        case "line":
+            data = read_makesense_line(data_path)
+        case "point":
+            data = read_makesense_point(data_path)
+
+    if len(data) > 1:
+        logger.warning(f"image_name_from_makesense detected more than one perimeter in one file: {data_path}")
+
+    return data.iloc[0]["image_name"]
+
+
+SHAPE_TO_MAKESENSE_TYPE = {
+    "circle": "line",
+    "triangle": "polygon",
+    "rectangle": "rectangle",
+    "polygon": "polygon",
+}

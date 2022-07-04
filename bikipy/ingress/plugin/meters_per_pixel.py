@@ -1,14 +1,14 @@
 from functools import cached_property, lru_cache
 from logging import getLogger
-from math import sqrt
-from typing import ClassVar
 
 import numpy as np
 from pydantic import DirectoryPath, FilePath, validator
 
 from bikipy.core.typing import NDArrayFp64
 from bikipy.ingress.plugin.base import BasePluginFile
+from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.io.makesense import read_first_makesense_line
+from bikipy.utils.math.geometry import meter_per_pixel_from_diagonal
 
 logger = getLogger(__file__)
 
@@ -47,7 +47,7 @@ class MeterPerPixel(BasePluginFile):
         return self._info[1]
 
     @cached_property
-    def meter_length(self) -> float:
+    def length_meters(self) -> float:
         return float(self._info[2])
 
     @property
@@ -61,19 +61,9 @@ class MeterPerPixel(BasePluginFile):
     def ratio(self):
         match self.annotation_method:
             case "diagonal":
-
-                pixel_a, pixel_b = np.array(read_first_makesense_line(self.data_path), dtype=float)
-
-                pixel_ab_vector = np.abs(pixel_b - pixel_a)
-                pixel_x, pixel_y = pixel_ab_vector
-                pixel_xy_ratio = pixel_x / pixel_y  # a-b intersects on the origin
-
-                meter_y = sqrt(self.meter_length**2.0 / (1.0 + pixel_xy_ratio**2.0))
-                meter_x = sqrt(self.meter_length**2.0 - meter_y**2.0)
-
-                return np.array([meter_x / pixel_x, meter_y / pixel_y])
+                return meter_per_pixel_from_diagonal(*read_first_makesense_line(self.data_path), self.length_meters)
             case "line":
-                return self.meter_length / np.array(read_first_makesense_line(self.data_path), dtype=float)
+                return self.length_meters / np.array(read_first_makesense_line(self.data_path), dtype=float)
             case _:
                 msg = f"Method {self.annotation_method} is not supported"
                 raise NotImplementedError(msg)
@@ -92,4 +82,4 @@ def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath)
 
 
 def first_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath):
-    return next(iter(detect_meters_per_pixel_in_perimeter_directory(perimeter_dir).values()))
+    return get_first_value_in_dict(detect_meters_per_pixel_in_perimeter_directory(perimeter_dir))

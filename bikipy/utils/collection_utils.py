@@ -4,7 +4,6 @@ from typing import Any, Iterable, Optional, Sequence
 
 import numpy as np
 import pandas as pd
-from pydantic import validate_arguments
 
 from bikipy.core.typing import NDArray
 
@@ -13,9 +12,7 @@ def chain_lists_to_tuple(lists: Iterable[list]) -> tuple:
     return tuple(chain(*lists))
 
 
-def chain_iterables_to_multi_index(
-    iterables: Iterable[Iterable[tuple[str, ...]]]
-) -> pd.MultiIndex:
+def chain_iterables_to_multi_index(iterables: Iterable[Iterable[tuple[str, ...]]]) -> pd.MultiIndex:
     return pd.MultiIndex.from_tuples(chain(*iterables))
 
 
@@ -34,9 +31,7 @@ def add_filler_to_sequence(
 ) -> list[tuple[str, ...]]:
     if isinstance(filler, str):
         filler = [filler]
-    return [
-        (*filler, *headers) if on_start else (*headers, *filler) for headers in sequence
-    ]
+    return [(*filler, *headers) if on_start else (*headers, *filler) for headers in sequence]
 
 
 def add_n_levels_to_multi_index(
@@ -49,22 +44,15 @@ def add_n_levels_to_multi_index(
     levels_to_add = [filler or "" for _ in range(n_levels)]
 
     if isinstance(multi_index, pd.MultiIndex):
-        return pd.MultiIndex.from_tuples(
-            add_filler_to_sequence(multi_index_as_tuples, levels_to_add)
-        )
+        return pd.MultiIndex.from_tuples(add_filler_to_sequence(multi_index_as_tuples, levels_to_add))
 
     elif isinstance(multi_index, pd.Index):
         return pd.MultiIndex.from_tuples(
-            [
-                (*levels_to_add, headers) if on_start else (headers, *levels_to_add)
-                for headers in multi_index_as_tuples
-            ]
+            [(*levels_to_add, headers) if on_start else (headers, *levels_to_add) for headers in multi_index_as_tuples]
         )
 
 
-def copycat_assumes_levels_of_icon(
-    copycat: pd.DataFrame, icon: pd.DataFrame, filler: Optional[str] = None
-):
+def copycat_assumes_levels_of_icon(copycat: pd.DataFrame, icon: pd.DataFrame, filler: Optional[str] = None):
     assert copycat.columns.nlevels < icon.columns.nlevels
     clone_df = copycat.copy()
     clone_df.columns = add_n_levels_to_multi_index(
@@ -76,10 +64,7 @@ def copycat_assumes_levels_of_icon(
 
 def generic_multi_indexer(*basis_labels):
     number_of_levels = 1 if isinstance(basis_labels[0], str) else len(basis_labels[0])
-    assert not any(
-        number_of_levels != 1 if isinstance(label, str) else len(label)
-        for label in basis_labels
-    )
+    assert not any(number_of_levels != 1 if isinstance(label, str) else len(label) for label in basis_labels)
 
     def result(category: Any, desired_nlevel: int):
         # if desired_nlevel < number_of_levels:
@@ -107,9 +92,15 @@ def evenly_spaced_indices(sequence_length: int, number_of_elements: int):
     return np.round(np.linspace(0, sequence_length - 1, number_of_elements)).astype(int)
 
 
-def project_mask_to_original(
-    mask: NDArray, original: NDArray, original_mask: Optional[NDArray] = None
-) -> NDArray:
+def project_mask_to_original(mask: NDArray, original: NDArray, original_mask: Optional[NDArray] = None) -> NDArray:
     result = np.empty_like(original, dtype=mask.dtype)
     result[original_mask if original_mask is not None else ~original] = mask
     return result
+
+
+def flatten_sequence(sequence: Sequence) -> NDArray:
+    return np.asarray(sequence).reshape(-1)
+
+
+def get_first_value_in_dict(source: dict) -> Any:
+    return next(iter(source.values()))
