@@ -1,10 +1,32 @@
+from functools import cached_property
+
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
-from bikipy.utils.io.makesense import get_only_point_from_makesense
+from bikipy.core.typing import NDArrayFp64
+from bikipy.ingress.plugin.base import BasePluginFile
+from bikipy.utils.io.makesense import get_only_point_from_makesense, read_makesense_point
 
 
-def center_file_path_to_value(file_path: FilePath, *args, **kwargs):
-    return get_only_point_from_makesense(file_path)
+class PluginCenter(BasePluginFile):
+    ingress_key = "center_definition_strategy"
+    code_key = "center"
+    bikipy_trial_key = "manual_center_pixels"
+    human_readable_index = "Center"
+
+    @cached_property
+    def only_center(self) -> NDArrayFp64:
+        return get_only_point_from_makesense(self.data_path)
+
+    @property
+    def trialwise(self) -> NDArrayFp64:
+        return self.only_center
+
+    def metadata(self, key: str) -> NDArrayFp64:
+        return read_makesense_point(self.data_path)
+
+    @property
+    def globally_defined(self) -> NDArrayFp64:
+        return self.only_center
 
 
 @validate_arguments

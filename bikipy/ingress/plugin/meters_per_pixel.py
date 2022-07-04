@@ -13,20 +13,23 @@ from bikipy.utils.math.geometry import meter_per_pixel_from_diagonal
 logger = getLogger(__file__)
 
 
-class MeterPerPixel(BasePluginFile):
-    data_label = "meters_per_pixel"
+class PluginMeterPerPixel(BasePluginFile):
+    ingress_key = "meters_per_pixel_definition_strategy"
+    code_key = "meters_per_pixel"
+    bikipy_trial_key = "manual_video_pixels"
+    human_readable_index = "MetersPerPixel"
 
     @validator("data_path")
     def is_meter_per_pixel_file(cls, value: FilePath):
         match value.stem.split("-")[0].split(".")[-1]:
             case "meter_pixel_ratio":
                 logger.warning(
-                    f"The {cls.data_label} file has the meter_pixel_ratio indicating it is from an older version"
+                    f"The {cls.code_key} file has the meter_pixel_ratio indicating it is from an older version"
                 )
-            case cls.data_label:
+            case cls.code_key:
                 pass
             case _:
-                msg = f"Defined file, {value.stem}, is not a {cls.data_label} file"
+                msg = f"Defined file, {value.stem}, is not a {cls.code_key} file"
                 raise AttributeError(msg)
         return value
 
@@ -36,7 +39,7 @@ class MeterPerPixel(BasePluginFile):
 
         # TODO: Onion validation pydantic v2
         assert len(result) == 4 or len(result) == 3, (
-            f"The file name for {self.data_label} files consist of name, "
+            f"The file name for {self.code_key} files consist of name, "
             f"method, and meter length delimited by a dash this file: {self.data_path.stem}"
         )
 
@@ -58,7 +61,7 @@ class MeterPerPixel(BasePluginFile):
             return None
 
     @cached_property
-    def ratio(self):
+    def ratio(self) -> float:
         match self.annotation_method:
             case "diagonal":
                 return meter_per_pixel_from_diagonal(*read_first_makesense_line(self.data_path), self.length_meters)
@@ -68,15 +71,27 @@ class MeterPerPixel(BasePluginFile):
                 msg = f"Method {self.annotation_method} is not supported"
                 raise NotImplementedError(msg)
 
+    @property
+    def trialwise(self) -> float:
+        return self.ratio
+
+    @property
+    def metadata(self, key: str) -> float:
+        return self.ratio
+
+    @property
+    def globally_defined(self) -> float:
+        return self.ratio
+
 
 def meters_per_pixel_file_name_to_value(file_path: FilePath, *args, **kwargs):
-    return MeterPerPixel(data_path=file_path).ratio
+    return PluginMeterPerPixel(data_path=file_path).ratio
 
 
 @lru_cache
 def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath) -> dict[str, NDArrayFp64]:
     return {
-        (mpp := MeterPerPixel(data_path=meters_per_pixel_file_path)).file_label or i: mpp.ratio
+        (mpp := PluginMeterPerPixel(data_path=meters_per_pixel_file_path)).file_label or i: mpp.ratio
         for i, meters_per_pixel_file_path in enumerate(perimeter_dir.glob("meters_per_pixel-*.csv"))
     }
 

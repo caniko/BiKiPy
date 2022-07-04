@@ -1,10 +1,27 @@
-from functools import lru_cache
-
-from pydantic import FilePath
+from functools import cached_property
 
 from bikipy.core.video import VideoMetadata
+from bikipy.ingress.plugin.base import BasePluginFile
 
 
-@lru_cache
-def video_file_path_to_value(file_path: FilePath, *args, **kwargs):
-    return VideoMetadata(video_path=file_path)
+class PluginVideo(BasePluginFile):
+    ingress_key = "video_definition_strategy"
+    code_key = "video"
+    bikipy_trial_key = "manual_video_pixels"
+    human_readable_index = "Video"
+
+    @cached_property
+    def video(self) -> VideoMetadata:
+        return VideoMetadata(video_path=self.data_path)
+
+    @property
+    def trialwise(self) -> VideoMetadata:
+        return self.video
+
+    @property
+    def metadata(self, key: str) -> VideoMetadata:
+        return self.video
+
+    @property
+    def globally_defined(self) -> VideoMetadata:
+        return self.video

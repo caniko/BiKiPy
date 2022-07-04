@@ -4,22 +4,19 @@ from collections import defaultdict
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Callable, ClassVar, Hashable, Iterable, Optional, TypeVar
+from typing import Any, Callable, ClassVar, Hashable, Iterable, TypeVar
 
 import numpy as np
-import openpyxl
-import odf
 import pandas as pd
 import yaml
-from odf import opendocument
-from odf.table import Table
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 
 from bikipy.behaviour.base import Experiment, Trial
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayFp64
-from bikipy.ingress.plugin import ingress_key_to_plugin_name
+from bikipy.ingress.plugin import PLUGIN_NAME_TO_MODEL, ingress_key_to_model
+from bikipy.ingress.plugin.base import Plugin
 from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
     first_meters_per_pixel_in_perimeter_directory,
@@ -318,18 +315,6 @@ class BaseIngress(BaseBikipy, ABC):
             self._define_experiment_data()
 
     def _define_experiment_data(self) -> None:
-        if self._metadata_plugins:
-            self._trial_id_to_keyword_arguments = defaultdict(dict)
-            for plugin_info in self._metadata_plugins:
-                label_to_file_path = {
-                    file_path.stem.split("-")[-1]: file_path
-                    for file_path in self.plugin_directory_path.glob(f"{plugin_info['code_key']}*")
-                }
-                for trial_id, row in self.metadata.iterrows():
-                    self._trial_id_to_keyword_arguments[trial_id][plugin_info["bikipy_trial_key"]] = plugin_info[
-                        "file_path_to_value"
-                    ](label_to_file_path[row[plugin_info["human_readable_index"]]], trial_id, self)
-
         self._dataset_reader()
 
         for field, value in self.settings["trial"]["common"]["defined"].items():
@@ -364,22 +349,6 @@ class BaseIngress(BaseBikipy, ABC):
                     self._trial_class_name_to_keyword_arguments[trial_class_name][field] = value
 
         self._experiment_data_defined = True
-
-    @cached_property
-    def _trial_wise_plugins(self) -> list[str, ...]:
-        return [
-            ingress_key_to_plugin_name[ingress_key]
-            for ingress_key, strategy in self.settings["ingress"].items()
-            if strategy == "trial-wise"
-        ]
-
-    @cached_property
-    def _metadata_plugins(self) -> list[dict[str, str | Callable], ...]:
-        return [
-            ingress_key_to_plugin_name[ingress_key]
-            for ingress_key, strategy in self.settings["ingress"].items()
-            if strategy == "metadata"
-        ]
 
     @cached_property
     def experiment(self) -> Experiment:
@@ -486,33 +455,52 @@ class BaseIngress(BaseBikipy, ABC):
 
     # Plugin methods ==============================
 
-    def get_meter_per_pixel(self, trial_id: str | PositiveInt) -> NDArrayFp64:
-        match self.settings["ingress"]["meters_per_pixel_definition_strategy"]:
-            case "global_perimeter":
-                return first_meters_per_pixel_in_perimeter_directory(self.plugin_directory_path)
-            case "metadata":
-                file_label = self.metadata["MetersPerPixel"][trial_id]
-                return detect_meters_per_pixel_in_perimeter_directory(self.plugin_directory_path)[file_label]
-            case "trial-wise":
-                return self.trial_id_to_keyword_arguments[trial_id]["meters_per_pixel"]
+    @cached_property
+    def _global_plugins(self) -> list[Plugin]:
+        return [
+            ingress_key_to_model[ingress_key]
+            for ingress_key, strategy in self.settings["ingress"].items()
+            if strategy == "global"
+        ]
+
+    def plugin_to_label_to_global_objects(self) -> dict[str, dict[str, Any]]:
+        result = {}
+        for plugin_model in self._metadata_plugins:
+            result[plugin_model[plugin_model.bikipy_trial_key]] = {
+                file_path.stem.split("-")[-1]: plugin_model(data_path=file_path, ingress=self)
+                for file_path in self.plugin_directory_path.glob(f"{plugin_model['code_key']}*")
+            }
+        return result
+
+    @cached_property
+    def _metadata_plugins(self) -> list[Plugin]:
+        return [
+            ingress_key_to_model[ingress_key]
+            for ingress_key, strategy in self.settings["ingress"].items()
+            if strategy == "metadata"
+        ]
+
+    def plugin_to_label_to_metadata_objects(self) -> dict[str, dict[str, Any]]:
+        result = {}
+        for plugin_model in self._metadata_plugins:
+            result[plugin_model[plugin_model.bikipy_trial_key]] = {
+                file_path.stem.split("-")[-1]: plugin_model(data_path=file_path, ingress=self)
+                for file_path in self.plugin_directory_path.glob(f"{plugin_model['code_key']}*")
+            }
+        return result
+
+    @cached_property
+    def _trial_wise_plugins(self) -> list[Plugin]:
+        return [
+            ingress_key_to_model[ingress_key]
+            for ingress_key, strategy in self.settings["ingress"].items()
+            if strategy == "trial-wise"
+        ]
 
     # Private methods ===============================
 
     def _trial_class_from_stage_index(self, stage_index: str | PositiveInt) -> Trial:
         return self.experiment_class.stage_index_to_trial_class_name[stage_index]
-
-    def _trialwise_plugins_for_trial_id(self, trial_id: str | PositiveInt, trial_directory: DirectoryPath) -> None:
-        result = {}
-        for plugin_info in self._trial_wise_plugins:
-            plugin_data_files = tuple(trial_directory.glob(f"{trial_id}.{plugin_info['code_key']}*"))
-            if len(plugin_data_files) > 1:
-                msg = f"Plugin {plugin_info['human_readable_index']}: Only one file per trial"
-                raise ValueError(msg)
-
-            result[plugin_info["bikipy_trial_key"]] = plugin_info["file_path_to_value"](
-                plugin_data_files[0], trial_id, self
-            )
-        return result
 
     @staticmethod
     def _get_id_from_path_stem(path: Path) -> str | PositiveInt:
@@ -546,7 +534,7 @@ def init_settings(
         "ingress_method": ingress_method,
         "manual_dataset_directory": None,
         "ingress": {
-            "meters_per_pixel_definition_strategy": "global_perimeter",
+            "meters_per_pixel_definition_strategy": "global",
             "perimeter_definition_strategy": "metadata",
             "video_definition_strategy": None,
             "center_definition_strategy": None,

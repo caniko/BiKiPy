@@ -23,6 +23,16 @@ class AnimalIngress(BaseIngress):
                 if trial_id not in self.metadata.index:
                     continue
 
+                plugin_data = {}
+                for plugin_info in self._trial_wise_plugins:
+                    plugin_data_files = tuple(animal_dir.glob(f"{trial_id}.{plugin_info['code_key']}*"))
+                    if len(plugin_data_files) > 1:
+                        msg = f"Plugin {plugin_info['human_readable_index']}: Only one file per trial"
+                        raise ValueError(msg)
+
+                    data_object = plugin_info["file_path_to_value"](plugin_data_files[0], trial_id, self)
+                    plugin_data[plugin_info["bikipy_trial_key"] or data_object.bikipy_trial_key] = data_object
+
                 self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(trial_id)
                 self._trial_id_to_keyword_arguments[trial_id] = {
                     "label": trial_id,
@@ -30,7 +40,7 @@ class AnimalIngress(BaseIngress):
                     "stage": stage_index,
                     "coordinate_data_path": trial_kinematic_data_file_path,
                     **self._trial_id_to_keyword_arguments[trial_id],
-                    **self._trialwise_plugins_for_trial_id(trial_id, animal_dir),
+                    **plugin_data,
                 }
 
     def verify_project_structure(self):

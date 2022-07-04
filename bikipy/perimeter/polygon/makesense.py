@@ -17,8 +17,8 @@ logger = getLogger(__name__)
 
 def init_polygon_from_makesense_coco_polygon(
     data_path: FilePath,
-    image_root: Optional[DirectoryPath],
-    reference_point_csv_path: Optional[FilePath],
+    image_root: Optional[DirectoryPath] = None,
+    reference_point_csv_path: Optional[FilePath] = None,
     **perimeter_kwargs,
 ) -> dict:
     from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters

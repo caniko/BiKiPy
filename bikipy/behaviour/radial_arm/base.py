@@ -144,7 +144,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return exclude_value_from_sequence(self.reduced_alternation_sequence, self.center.int_id)
 
     @cached_property
-    def sum_of_alternations(self):
+    def sum_of_alternations(self) -> int:
         return len(self.reduced_without_center) - 2
 
     @cached_property
@@ -239,14 +239,6 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         assert self.sum_of_alternations > 0, self.sum_of_alternations
 
         return 100.0 * alternations / self.sum_of_alternations
-
-    @classmethod
-    def with_reference_point(cls, center: AnyPerimeter, arms: tuple, reference_point: NDArrayFp64, **kwargs):
-        return cls(
-            center=center.change_reference(reference_point),
-            arms=[arm.change_reference(reference_point) for arm in arms],
-            **kwargs,
-        )
 
     @cached_property
     def _border_presence_data(self):
