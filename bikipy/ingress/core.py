@@ -316,6 +316,9 @@ class BaseIngress(BaseBikipy, ABC):
             self._define_experiment_data()
 
     def _define_experiment_data(self) -> None:
+        for plugin_name, label_to_metadata_plugin_objects in self.plugin_to_label_to_metadata_plugin_objects.items():
+            plugin_metadata = self.metadata.loc[:]
+
         self._dataset_reader()
 
         for field, value in self.settings["trial"]["common"]["defined"].items():
