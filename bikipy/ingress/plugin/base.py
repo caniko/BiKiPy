@@ -39,11 +39,7 @@ class BasePlugin(BaseBikipy, ABC):
             return int(self.plugin_name[0])
 
     @abstractmethod
-    def trialwise(self, trial_id: str | PositiveInt):
-        ...
-
-    @abstractmethod
-    def metadata(self, key: str):
+    def trialwise_and_metadata(self, trial_id: str | PositiveInt):
         ...
 
     @property
@@ -74,7 +70,3 @@ class HasReferenceMixin(BaseBikipy):
             return self.manual_reference
         if (path_to_reference_file := self.data_path.parent / f"reference-{self.label}.csv").exists():
             return get_only_point_from_makesense(path_to_reference_file)
-
-
-class MetadataSupportError(BaseException):
-    pass

@@ -16,11 +16,7 @@ class PluginVideo(BasePluginFile):
     def video(self) -> VideoMetadata:
         return VideoMetadata(video_path=self.data_path)
 
-    def trialwise(self, trial_id: str | PositiveInt) -> VideoMetadata:
-        return self.video
-
-    @property
-    def metadata(self, key: str) -> VideoMetadata:
+    def trialwise_and_metadata(self, trial_id: str | PositiveInt) -> VideoMetadata:
         return self.video
 
     @property

@@ -13,14 +13,14 @@ from bikipy.core.video import (
     convert_meters_to_pixels,
     inspect_video_is_none_during_inspection,
 )
-from bikipy.perimeter.base import AnyPerimeter
+from bikipy.perimeter.base import SinglePerimeter
 
 logger = getLogger(__name__)
 
 
 @validate_arguments
 def proximity_filter(
-    perimeter: AnyPerimeter,
+    perimeter: SinglePerimeter,
     inside_perimeter_border: NDArrayFp64,
     outside_perimeter: NDArrayFp64,
     perimeter_border_normal_meters: float | NDArrayFp64,
@@ -39,7 +39,7 @@ def proximity_filter(
     :param perimeter_border_normal_meters: The magnitude of the normal between the perimeter and the perimeter in meters
     :param inspect: If True, generate and view an analytics of the resulting filter
     :param inspection_ax: matplotlib Axes that the inspection plots will (optionally) be saved in
-    :type perimeter: AnyPerimeter
+    :type perimeter: SinglePerimeter
     :type inside_perimeter_border: NDArrayFp64
     :type outside_perimeter: NDArrayFp64
     :type perimeter_border_normal_meters: float | NDArrayFp64

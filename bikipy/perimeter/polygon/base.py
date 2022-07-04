@@ -250,7 +250,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
 
         return result
 
-    def change_reference(self, new_reference: NDArrayFp64, **new_inspect_image_kwargs):
+    def change_reference(self, new_reference: NDArrayFp64, makesense_image_name: Optional[str] = None):
         if self.reference_point is None:
             msg = "Reference without defining a reference for the source perimeter object is disallowed"
             raise AttributeError(msg)
@@ -264,6 +264,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
                 update={
                     "vertices_in_pixels": self.vertices_in_pixels + new_reference - self.reference_point,
                     "manual_video": self.video,
+                    "makesense_image_name": makesense_image_name,
                 }
             )
 

@@ -18,12 +18,12 @@ from typing import ClassVar
 
 from bikipy.behaviour.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
 from bikipy.behaviour.rectangle import RectangleEnclosedExperiment
-from bikipy.perimeter.base import AnyPerimeter
+from bikipy.perimeter.base import SinglePerimeter
 
 
 class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
-    object_1: AnyPerimeter = ...
-    object_2: AnyPerimeter = ...
+    object_1: SinglePerimeter = ...
+    object_2: SinglePerimeter = ...
 
     physical_object_labels: ClassVar[list[str, ...]] = ["object_1", "object_2"]
 
@@ -32,13 +32,13 @@ class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTri
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
 
     @property
-    def all_physical_object_perimeters(self) -> tuple[AnyPerimeter, ...]:
+    def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.object_1, self.object_2
 
 
 class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial):
-    object_1: AnyPerimeter = ...
-    object_4: AnyPerimeter = ...
+    object_1: SinglePerimeter = ...
+    object_4: SinglePerimeter = ...
 
     physical_object_labels: ClassVar[list[str, ...]] = ["object_1", "object_4"]
 
@@ -46,15 +46,15 @@ class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial
     trial_label: ClassVar[str] = "Update"
 
     @property
-    def all_physical_object_perimeters(self) -> tuple[AnyPerimeter, ...]:
+    def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.object_1, self.object_4
 
 
 class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
-    object_1: AnyPerimeter = ...
-    object_2: AnyPerimeter = ...
-    object_3: AnyPerimeter = ...
-    object_4: AnyPerimeter = ...
+    object_1: SinglePerimeter = ...
+    object_2: SinglePerimeter = ...
+    object_3: SinglePerimeter = ...
+    object_4: SinglePerimeter = ...
 
     physical_object_labels: ClassVar[list[str, ...]] = ["object_1", "object_2", "object_3", "object_4"]
 
@@ -62,7 +62,7 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
     trial_label: ClassVar[str] = "Test"
 
     @property
-    def all_physical_object_perimeters(self) -> tuple[AnyPerimeter, ...]:
+    def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.object_1, self.object_2, self.object_3, self.object_4
 
 

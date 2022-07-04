@@ -4,14 +4,14 @@ from typing import ClassVar
 
 from bikipy.behaviour.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
 from bikipy.behaviour.rectangle import RectangleEnclosedExperiment
-from bikipy.perimeter.base import AnyPerimeter
+from bikipy.perimeter.base import SinglePerimeter
 
 logger = getLogger(__name__)
 
 
 class NortTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
-    variable: AnyPerimeter
-    familiar: AnyPerimeter
+    variable: SinglePerimeter
+    familiar: SinglePerimeter
 
     physical_object_labels: ClassVar[list[str, ...]] = ["variable", "familiar"]
 
@@ -24,8 +24,8 @@ class NortTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
 
 
 class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
-    novel: AnyPerimeter
-    familiar: AnyPerimeter
+    novel: SinglePerimeter
+    familiar: SinglePerimeter
 
     physical_object_labels: ClassVar[list[str, ...]] = ["novel", "familiar"]
 

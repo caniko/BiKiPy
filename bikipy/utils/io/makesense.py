@@ -59,9 +59,10 @@ def get_point_from_makesense_row(row: pd.Series) -> NDArrayFp64:
 #     return get_point_from_makesense_row(read_makesense_point(*args, **kwargs).iloc[0])
 
 
-def image_name_to_point_from_makesense(data_path: FilePath):
+def image_name_to_point_from_makesense(data_path: FilePath, only_point: bool = True):
     return {
-        row["image_name"]: get_point_from_makesense_row(row) for _, row in read_makesense_point(data_path).iterrows()
+        row["image_name"]: get_point_from_makesense_row(row) if only_point else row
+        for _, row in read_makesense_point(data_path).iterrows()
     }
 
 

@@ -1,6 +1,7 @@
 import json
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from copy import deepcopy
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
@@ -15,7 +16,7 @@ from bikipy.behaviour.base import Experiment, Trial
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayFp64
-from bikipy.ingress.plugin import PLUGIN_NAME_TO_MODEL, ingress_key_to_model
+from bikipy.ingress.plugin import PLUGIN_NAME_TO_MODEL, ingress_key_to_model, PluginPerimeter, PluginRadial
 from bikipy.ingress.plugin.base import Plugin
 from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
@@ -35,7 +36,7 @@ from bikipy.ingress.utils.settings import get_definable_settings
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.reader import DeepLabCutReader
 from bikipy.utils.collection_utils import copycat_assumes_levels_of_icon
-from bikipy.utils.misc import sheet_names_from_path
+from bikipy.utils.misc import sheet_names_from_path, dict_deepmerge
 
 logger = getLogger(__name__)
 
@@ -453,41 +454,49 @@ class BaseIngress(BaseBikipy, ABC):
 
         return new_settings
 
-    # Plugin methods ==============================
+    # Plugin methods ============================== Read more about plugins in respective __init__.py file
 
     @cached_property
-    def _global_plugins(self) -> list[Plugin]:
+    def _global_plugins(self) -> list[Plugin, ...]:
         return [
             ingress_key_to_model[ingress_key]
             for ingress_key, strategy in self.settings["ingress"].items()
             if strategy == "global"
         ]
 
-    def plugin_to_label_to_global_objects(self) -> dict[str, dict[str, Any]]:
-        result = {}
-        for plugin_model in self._metadata_plugins:
-            result[plugin_model[plugin_model.bikipy_trial_key]] = {
-                file_path.stem.split("-")[-1]: plugin_model(data_path=file_path, ingress=self)
-                for file_path in self.plugin_directory_path.glob(f"{plugin_model['code_key']}*")
-            }
-        return result
-
     @cached_property
-    def _metadata_plugins(self) -> list[Plugin]:
+    def _metadata_plugins(self) -> list[Plugin, ...]:
         return [
             ingress_key_to_model[ingress_key]
             for ingress_key, strategy in self.settings["ingress"].items()
             if strategy == "metadata"
         ]
 
-    def plugin_to_label_to_metadata_objects(self) -> dict[str, dict[str, Any]]:
+    @cached_property
+    def plugin_to_label_to_global_plugin_objects(self) -> dict[str, dict[str, Plugin]]:
+        result = {}
+        for plugin_model in self._global_plugins:
+            result[plugin_model[plugin_model.bikipy_trial_key]] = {
+                file_path.stem.split("-")[-1]: plugin_model(data_path=file_path, ingress=self)
+                for file_path in self.plugin_directory_path.glob(f"{plugin_model.code_key}*")
+            }
+        return result
+
+    @cached_property
+    def plugin_to_label_to_metadata_plugin_objects(self) -> dict[str, dict[str, Plugin]]:
         result = {}
         for plugin_model in self._metadata_plugins:
             result[plugin_model[plugin_model.bikipy_trial_key]] = {
                 file_path.stem.split("-")[-1]: plugin_model(data_path=file_path, ingress=self)
-                for file_path in self.plugin_directory_path.glob(f"{plugin_model['code_key']}*")
+                for file_path in self.plugin_directory_path.glob(f"{plugin_model.code_key}*")
             }
         return result
+
+    @cached_property
+    def metadata_and_global_perimeter_and_perimeter_set(self) -> dict[str, dict[str, Plugin]]:
+        return dict_deepmerge(
+            self.plugin_to_label_to_global_plugin_objects, deepcopy(self.plugin_to_label_to_metadata_plugin_objects)
+        )
 
     @cached_property
     def _trial_wise_plugins(self) -> list[Plugin]:

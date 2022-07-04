@@ -10,7 +10,6 @@ perimeter:
   label_prefix: null
   label_suffix: null
   perimeter_names_in_metadata: false
-  perimeter_mapper_key: ImageName
   fields:
     defined:
       label: null

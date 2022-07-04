@@ -12,7 +12,6 @@ from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.core.video import (
     VideoMetadataMixin,
-    convert_meters_to_pixels,
 )
 from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_coco_polygon,
@@ -28,7 +27,14 @@ logger = getLogger(__name__)
 StringPerimeterShapes = Literal["circle", "polygon", "rectangle"]
 
 
-class BaseSinglePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
+class BasePerimeter(BaseBikipyHashable):
+    pass
+
+
+Perimeter = TypeVar("Perimeter", bound=BasePerimeter)
+
+
+class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMixin):
     impenetrable: bool = Field(
         False,
         description="Signifies the impenetrability of the perimeter. "
@@ -36,6 +42,8 @@ class BaseSinglePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetad
     )
     int_id: Optional[int] = Field(description="For multi-perimeter trials where sequential confinement is used")
     group_label: Optional[str]
+
+    makesense_image_name: Optional[str]
 
     reference_point_coco_path: Optional[FilePath]
     reference_point_array: Optional[NDArrayInt16]
@@ -54,7 +62,7 @@ class BaseSinglePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetad
         ...
 
     @abstractmethod
-    def change_reference(self, new_reference: Optional[NDArrayFp64]):
+    def change_reference(self, new_reference: NDArrayFp64, makesense_image_name: Optional[str] = None):
         ...
 
     @abstractmethod
@@ -235,12 +243,12 @@ class BaseSinglePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetad
         )
 
 
-AnyPerimeter = TypeVar("AnyPerimeter", bound=BaseSinglePerimeter)
+SinglePerimeter = TypeVar("SinglePerimeter", bound=BaseSinglePerimeter)
 
 
-class PerimeterSet(BaseBikipyHashable, BaseBikipyInspectMixin):
-    perimeters: list[AnyPerimeter]
-    restricted_perimeters: Optional[list[AnyPerimeter]]
+class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
+    perimeters: list[SinglePerimeter]
+    restricted_perimeters: Optional[list[SinglePerimeter]]
 
     label: Optional[str]
 
@@ -333,69 +341,6 @@ class PerimeterSet(BaseBikipyHashable, BaseBikipyInspectMixin):
             else None,
         )
 
-    def change_reference_with_coco(
-        self,
-        metadata_path: Optional[FilePath],
-        coco_array: Optional[NDArrayFp64],
-    ):
-        coco_array = get_coco_array_from_path_or_array(metadata_path, coco_array)
-
-        if len(coco_array) != 1:
-            msg = (
-                "The coco array includes more than one annotation. "
-                "Please use change_reference_with_coco_with_plural_references()"
-            )
-            raise ValueError(msg)
-
-        return self.__class__(
-            perimeters=self.perimeters,
-            restricted_perimeters=self.restricted_perimeters,
-            reference_point_array=coco_array,
-        )
-
-    def change_reference_with_coco_with_plural_references(
-        self,
-        metadata_path: Optional[FilePath],
-        coco_array: Optional[NDArrayFp64],
-        map_to_image_names: bool = True,
-        **kwargs,
-    ):
-        coco_array = get_coco_array_from_path_or_array(metadata_path, coco_array)
-
-        perimeter_set_kwargs = {}
-        for perimeter in self.perimeters:
-            image_name_to_referenced_perimeters = perimeter.change_reference_with_coco_with_plural_references(
-                coco_array=coco_array, **kwargs
-            )
-            for (
-                image_name,
-                referenced_perimeter,
-            ) in image_name_to_referenced_perimeters.items():
-                if image_name in perimeter_set_kwargs:
-                    perimeter_set_kwargs[image_name]["perimeters"].append(referenced_perimeter)
-                else:
-                    perimeter_set_kwargs[image_name] = {"perimeters": [referenced_perimeter]}
-
-        for perimeter in self.restricted_perimeters or []:
-            image_name_to_referenced_perimeters = perimeter.change_reference_with_coco_with_plural_references(
-                coco_array, **kwargs
-            )
-            for (
-                image_name,
-                referenced_perimeter,
-            ) in image_name_to_referenced_perimeters.items():
-                if "restricted_perimeters" in perimeter_set_kwargs[image_name]:
-                    perimeter_set_kwargs[image_name]["restricted_perimeters"].append(referenced_perimeter)
-                else:
-                    perimeter_set_kwargs[image_name] = {"restricted_perimeters": [referenced_perimeter]}
-
-        if map_to_image_names:
-            return {
-                image_name: self.__class__(**perimeter_data)
-                for image_name, perimeter_data in perimeter_set_kwargs.items()
-            }
-        return [self.__class__(**perimeter_data) for perimeter_data in perimeter_set_kwargs.values()]
-
     @property
     def perimeter_to_int_id(self):
         return {perimeter: perimeter.int_id for perimeter in self.all_perimeters}
@@ -436,7 +381,7 @@ class PerimeterSet(BaseBikipyHashable, BaseBikipyInspectMixin):
         return result
 
     @property
-    def all_perimeters(self) -> tuple[AnyPerimeter, ...]:
+    def all_perimeters(self) -> tuple[SinglePerimeter, ...]:
         if not self.restricted_perimeters:
             return tuple(self.perimeters)
         return *self.perimeters, *self.restricted_perimeters
@@ -481,22 +426,16 @@ def perimeter_set_from_makesense(
 
             return CirclePerimeter.from_makesense_line(perimeter_path, **perimeter_kwargs)
         case "rectangle":
-            from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
-
             return init_polygon_from_makesense_csv_rectangle(perimeter_path, **perimeter_kwargs)
         case "triangle":
-            from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
-
-            return init_polygon_from_makesense_csv_rectangle(perimeter_path, **perimeter_kwargs)
+            return init_polygon_from_makesense_coco_polygon(perimeter_path, **perimeter_kwargs)
         case "polygon":
-            from bikipy.perimeter.polygon.base import PolygonPerimeter
-
             return init_polygon_from_makesense_coco_polygon(perimeter_path, **perimeter_kwargs)
         case _:
             raise ValueError
 
 
-def perimeter_set_from_image_name_to_perimeters(image_name_to_perimeters: dict[str, "AnyPerimeter"]):
+def perimeter_set_from_image_name_to_perimeters(image_name_to_perimeters: dict[str, "SinglePerimeter"]):
     result = {}
     for image_name, perimeters in image_name_to_perimeters.items():
         filtered_perimeters, restricted_perimeters = [], []

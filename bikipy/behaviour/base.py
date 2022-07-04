@@ -22,7 +22,7 @@ from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_multi_indexer
-from bikipy.perimeter.base import AnyPerimeter, PerimeterSet
+from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.collection_utils import (
     add_filler_to_sequence,
@@ -171,7 +171,7 @@ class BaseTrial(Behaviour):
         )
 
     @property
-    def perimeters(self) -> list[AnyPerimeter]:
+    def perimeters(self) -> list[SinglePerimeter]:
         return []
 
     @cached_property

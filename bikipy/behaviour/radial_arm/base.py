@@ -17,7 +17,7 @@ from bikipy.behaviour.utils import (
 )
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
-from bikipy.perimeter.base import AnyPerimeter, PerimeterSet
+from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
 from bikipy.perimeter.utils import detect_sequential_border_presence
 from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
 
@@ -66,8 +66,8 @@ class BaseRadialMazeExperiment(BaseExperiment, RadialMazeBase):
 
 
 class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
-    center: AnyPerimeter
-    arms: tuple[AnyPerimeter, ...]
+    center: SinglePerimeter
+    arms: tuple[SinglePerimeter, ...]
 
     @validator("center")
     def center_has_1_as_int_id(cls, value):

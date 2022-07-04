@@ -27,7 +27,7 @@ def sheet_names_from_path(path_to_workbook: FilePath) -> list[str]:
     return openpyxl.load_workbook(path_to_workbook, read_only=True).sheetnames
 
 
-def dict_deepmerge(source: dict, destination: dict) -> dict:
+def dict_deepmerge(source: dict, destination: dict, assert_no_endpoint_intersection: bool = False) -> dict:
     """
     run me with nosetests --with-doctest file.py
 
@@ -42,6 +42,7 @@ def dict_deepmerge(source: dict, destination: dict) -> dict:
             node = destination.setdefault(key, {})
             dict_deepmerge(value, node)
         else:
+            assert not (key in destination and assert_no_endpoint_intersection)
             destination[key] = value
 
     return destination

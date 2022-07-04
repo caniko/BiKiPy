@@ -8,11 +8,11 @@ from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.core.video import VideoMetadata, convert_meters_to_pixels
 from bikipy.feature.angle import angle_from_a_to_b
-from bikipy.perimeter.base import AnyPerimeter
+from bikipy.perimeter.base import SinglePerimeter
 
 
 def gaze_direction_filter_circle_triangle(
-    perimeter: AnyPerimeter,
+    perimeter: SinglePerimeter,
     gaze_travel_direction_point: NDArrayFp64,
     gaze_start_point: NDArrayFp64,
     max_radians: float,
@@ -39,7 +39,7 @@ def gaze_direction_filter_circle_triangle(
 
 
 def gaze_inspection_plot(
-    perimeter: AnyPerimeter,
+    perimeter: SinglePerimeter,
     result: NDArrayFp64,
     gaze_vectors: NDArrayFp64,
     gaze_travel_direction_point: NDArrayFp64,

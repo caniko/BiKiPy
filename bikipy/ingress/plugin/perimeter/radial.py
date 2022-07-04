@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 from pydantic import PositiveInt
 
-from bikipy.ingress.plugin.base import BasePluginDirectory, HasReferenceMixin, MetadataSupportError
-from bikipy.perimeter.base import AnyPerimeter, PerimeterSet
+from bikipy.ingress.plugin.base import BasePluginDirectory, HasReferenceMixin
+from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
@@ -29,7 +29,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
         return read_makesense_line(self.data_path / "arm-lines.csv")
 
     @cached_property
-    def center(self) -> AnyPerimeter:
+    def center(self) -> SinglePerimeter:
         return get_first_value_in_dict(
             init_polygon_from_makesense_coco_polygon(next(iglob(str(self.data_path / "center*"))))
         )
@@ -72,11 +72,8 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
     def radial_maze_perimeter_set(self) -> PerimeterSet:
         return PerimeterSet(perimeters=[*self.arms, self.center])
 
-    def trialwise(self, trial_id: str | PositiveInt) -> PerimeterSet:
+    def trialwise_and_metadata(self, trial_id: str | PositiveInt) -> PerimeterSet:
         return self.radial_maze_perimeter_set
-
-    def metadata(self, key: str) -> PerimeterSet:
-        raise MetadataSupportError(self.__class__.__name__)
 
     @property
     def globally_defined(self) -> PerimeterSet:

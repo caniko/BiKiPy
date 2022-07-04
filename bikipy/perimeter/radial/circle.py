@@ -51,11 +51,12 @@ class CirclePerimeter(BaseSinglePerimeter):
             raise ValueError(msg)
         return value.astype(float)
 
-    def change_reference(self, new_reference: NDArrayFp64, **new_inspect_image_kwargs):
+    def change_reference(self, new_reference: NDArrayFp64, makesense_image_name: Optional[str] = None):
         return self.copy(
             update={
                 "center_meters": self.center_meters + new_reference - self.reference_point_array,
                 "reference_point_array": new_reference,
+                "makesense_image_name": makesense_image_name,
             }
         )
 
@@ -106,6 +107,7 @@ class CirclePerimeter(BaseSinglePerimeter):
                 radius_meters=np.linalg.norm((a - b) * meters_per_pixel),  # AB vector is in pixels, must be meters
                 label=row["label"],
                 manual_recording_resolution=recording_resolution_from_makesense_row(row),
+                makesense_image_name=row["image_name"],
                 meters_per_pixel=meters_per_pixel,
                 **perimeter_kwargs,
             )

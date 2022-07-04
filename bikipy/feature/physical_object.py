@@ -21,7 +21,7 @@ from bikipy.feature.attention.main import (
     proximity_filter,
     tolerance_filter,
 )
-from bikipy.perimeter.base import AnyPerimeter, PerimeterSet
+from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
 from bikipy.reader.base import Reader
 
 logger = getLogger(__name__)
@@ -33,7 +33,7 @@ class PhysicalObject(BaseBikipy):
     us to define methods that require the respective attributes, think of it as a union between the classes!
     """
 
-    perimeter: AnyPerimeter
+    perimeter: SinglePerimeter
     reader: Reader
     gaze_start_point_label: str
     gaze_travel_direction_point_label: str
@@ -221,7 +221,7 @@ class PhysicalObjectSet(VideoMetadataMixin):
         return cls.from_perimeter(*perimeter_set.perimeters)
 
     @classmethod
-    def from_bikipy_trial(cls, perimeters: Iterable[AnyPerimeter], trial_class):
+    def from_bikipy_trial(cls, perimeters: Iterable[SinglePerimeter], trial_class):
         return cls(
             physical_objects=tuple(
                 PhysicalObject(perimeter=perimeter, **trial_class.physical_object_keyword_arguments)

@@ -4,7 +4,7 @@ from math import floor
 
 from bikipy.behaviour.base import BaseTrial
 from bikipy.behaviour.mixin.live import LiveTrial
-from bikipy.perimeter.base import AnyPerimeter
+from bikipy.perimeter.base import SinglePerimeter
 
 logger = getLogger(__name__)
 
@@ -14,13 +14,13 @@ class InfinityMaze(BaseTrial, LiveTrial):
 
     def __init__(
         self,
-        choice: AnyPerimeter,
-        reward_left: AnyPerimeter,
-        reward_right: AnyPerimeter,
-        return_left: AnyPerimeter,
-        return_right: AnyPerimeter,
-        delay_entry: AnyPerimeter,
-        delay_zone: AnyPerimeter,
+        choice: SinglePerimeter,
+        reward_left: SinglePerimeter,
+        reward_right: SinglePerimeter,
+        return_left: SinglePerimeter,
+        return_right: SinglePerimeter,
+        delay_entry: SinglePerimeter,
+        delay_zone: SinglePerimeter,
         regression_seconds_tolerance: float = 1.5,
         regression_instance_tolerance: int = 3,
         *args,
