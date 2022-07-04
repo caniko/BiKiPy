@@ -3,7 +3,7 @@ from functools import cached_property
 from typing import ClassVar, Optional, TypeVar, Any
 
 import pandas as pd
-from pydantic import DirectoryPath, FilePath, Field
+from pydantic import DirectoryPath, FilePath, Field, PositiveInt
 
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayFp64
@@ -38,12 +38,10 @@ class BasePlugin(BaseBikipy, ABC):
             assert self.plugin_name[0].isdigit()
             return int(self.plugin_name[0])
 
-    @property
     @abstractmethod
-    def trialwise(self):
+    def trialwise(self, trial_id: str | PositiveInt):
         ...
 
-    @property
     @abstractmethod
     def metadata(self, key: str):
         ...

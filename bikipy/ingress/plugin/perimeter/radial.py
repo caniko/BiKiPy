@@ -3,6 +3,7 @@ from glob import iglob
 
 import numpy as np
 import pandas as pd
+from pydantic import PositiveInt
 
 from bikipy.ingress.plugin.base import BasePluginDirectory, HasReferenceMixin, MetadataSupportError
 from bikipy.perimeter.base import AnyPerimeter, PerimeterSet
@@ -71,8 +72,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
     def radial_maze_perimeter_set(self) -> PerimeterSet:
         return PerimeterSet(perimeters=[*self.arms, self.center])
 
-    @property
-    def trialwise(self) -> PerimeterSet:
+    def trialwise(self, trial_id: str | PositiveInt) -> PerimeterSet:
         return self.radial_maze_perimeter_set
 
     def metadata(self, key: str) -> PerimeterSet:

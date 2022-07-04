@@ -1,5 +1,7 @@
 from functools import cached_property
 
+from pydantic import PositiveInt
+
 from bikipy.core.video import VideoMetadata
 from bikipy.ingress.plugin.base import BasePluginFile
 
@@ -14,8 +16,7 @@ class PluginVideo(BasePluginFile):
     def video(self) -> VideoMetadata:
         return VideoMetadata(video_path=self.data_path)
 
-    @property
-    def trialwise(self) -> VideoMetadata:
+    def trialwise(self, trial_id: str | PositiveInt) -> VideoMetadata:
         return self.video
 
     @property

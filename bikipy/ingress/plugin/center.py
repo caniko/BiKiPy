@@ -1,6 +1,6 @@
 from functools import cached_property
 
-from pydantic import DirectoryPath, FilePath, validate_arguments
+from pydantic import DirectoryPath, FilePath, validate_arguments, PositiveInt
 
 from bikipy.core.typing import NDArrayFp64
 from bikipy.ingress.plugin.base import BasePluginFile
@@ -17,12 +17,11 @@ class PluginCenter(BasePluginFile):
     def only_center(self) -> NDArrayFp64:
         return get_only_point_from_makesense(self.data_path)
 
-    @property
-    def trialwise(self) -> NDArrayFp64:
+    def trialwise(self, trial_id: str | PositiveInt) -> NDArrayFp64:
         return self.only_center
 
     def metadata(self, key: str) -> NDArrayFp64:
-        return read_makesense_point(self.data_path)
+        return read_makesense_point(self.data_path).loc[key, 1:3].values
 
     @property
     def globally_defined(self) -> NDArrayFp64:

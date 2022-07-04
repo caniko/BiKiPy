@@ -2,10 +2,10 @@ from functools import cached_property, lru_cache
 from logging import getLogger
 
 import numpy as np
-from pydantic import DirectoryPath, FilePath, validator
+from pydantic import DirectoryPath, FilePath, validator, PositiveInt
 
 from bikipy.core.typing import NDArrayFp64
-from bikipy.ingress.plugin.base import BasePluginFile
+from bikipy.ingress.plugin.base import BasePluginFile, MetadataSupportError
 from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.io.makesense import read_first_makesense_line
 from bikipy.utils.math.geometry import meter_per_pixel_from_diagonal
@@ -71,13 +71,11 @@ class PluginMeterPerPixel(BasePluginFile):
                 msg = f"Method {self.annotation_method} is not supported"
                 raise NotImplementedError(msg)
 
-    @property
-    def trialwise(self) -> float:
+    def trialwise(self, trial_id: str | PositiveInt) -> float:
         return self.ratio
 
-    @property
     def metadata(self, key: str) -> float:
-        return self.ratio
+        raise MetadataSupportError(self.__class__.__name__)
 
     @property
     def globally_defined(self) -> float:
