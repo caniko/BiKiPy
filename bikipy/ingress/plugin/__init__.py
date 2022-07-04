@@ -3,6 +3,8 @@ from typing import Callable
 from bikipy.ingress.plugin.center import center_file_path_to_value
 from bikipy.ingress.plugin.meters_per_pixel import meters_per_pixel_file_name_to_value
 from bikipy.ingress.plugin.perimeter import perimeter_file_path_to_value
+from bikipy.ingress.plugin.radial import radial_directory_path_to_value
+from bikipy.ingress.plugin.video import video_file_path_to_value
 
 PLUGIN_NAME_TO_KEYRING: dict[str, dict[str, str | Callable]] = {
     "meters_per_pixel": {
@@ -12,19 +14,33 @@ PLUGIN_NAME_TO_KEYRING: dict[str, dict[str, str | Callable]] = {
         "human_readable_index": "MetersPerPixel",
         "file_path_to_value": meters_per_pixel_file_name_to_value,
     },
-    "center": {
-        "ingress_key": "center_definition_strategy",
-        "code_key": "center",
-        "bikipy_trial_key": "manual_center_pixels",
-        "human_readable_index": "Center",
-        "file_path_to_value": center_file_path_to_value,
-    },
     "perimeter": {
         "ingress_key": "perimeter_definition_strategy",
         "code_key": "perimeter",
         "bikipy_trial_key": "label_to_perimeter",
         "human_readable_index": "Perimeter",
         "file_path_to_value": perimeter_file_path_to_value,
+    },
+    "radial": {
+        "ingress_key": "radial_definition_strategy",
+        "code_key": "radial",
+        "bikipy_trial_key": "label_to_radial",
+        "human_readable_index": "Radial",
+        "file_path_to_value": radial_directory_path_to_value,
+    },
+    "video": {
+        "ingress_key": "video_definition_strategy",
+        "code_key": "video",
+        "bikipy_trial_key": "manual_video_pixels",
+        "human_readable_index": "Video",
+        "file_path_to_value": video_file_path_to_value,
+    },
+    "center": {
+        "ingress_key": "center_definition_strategy",
+        "code_key": "center",
+        "bikipy_trial_key": "manual_center_pixels",
+        "human_readable_index": "Center",
+        "file_path_to_value": center_file_path_to_value,
     },
 }
 

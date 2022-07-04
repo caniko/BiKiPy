@@ -1,8 +1,6 @@
 ingress_method: phase
 manual_dataset_directory: /mnt/soma/Projects/Neuroscience/Imen/data/y_maze/
 ingress:
-  stageful_metadata: false
-  skip_absent_trials_absent_from_metadata_index: false
   meters_per_pixel_definition_strategy: global_perimeter
   perimeter_definition_strategy: metadata
   video_definition_strategy: trial-wise

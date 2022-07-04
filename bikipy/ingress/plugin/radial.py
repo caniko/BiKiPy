@@ -4,7 +4,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from pydantic import PositiveInt
+from pydantic import PositiveInt, DirectoryPath
 
 from bikipy.ingress.plugin.base import BasePluginDirectory
 from bikipy.ingress.plugin.perimeter import PluginPerimeter, PluginPerimeterMixin
@@ -48,7 +48,7 @@ class PluginRadial(BasePluginDirectory, PluginPerimeterMixin):
         return read_makesense_line(next(self.data_path.glob("*line*")))
 
     @cached_property
-    def radial_maze_perimeters(self):
+    def radial_maze_perimeter_set(self) -> PerimeterSet:
         line_dataset = self.line_data.iloc[1:5].T
 
         lines = np.array([np.array_split(line, 2) for line in line_dataset])
@@ -92,3 +92,9 @@ class PluginRadial(BasePluginDirectory, PluginPerimeterMixin):
             plt.show()
 
         return PerimeterSet(perimeters=perimeters)
+
+
+def radial_directory_path_to_value(
+    file_path: DirectoryPath, trial_id: str | PositiveInt, ingress: Any, *args, **kwargs
+):
+    return PluginRadial(data_path=file_path, ingress=ingress, trial_id=trial_id).radial_maze_perimeter_set

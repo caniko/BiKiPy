@@ -81,6 +81,12 @@ class PluginPerimeter(BasePluginFile, PluginPerimeterMixin):
         )
 
         if self.reference_point is not None:
+            if self.ingress.settings["perimeter"]["perimeter_mapper_key"] == "label":
+                logger.warning(
+                    "The default method for labels are not supported when using reference points, "
+                    "please set perimeter_mapper_key in settings to a compatible method. Will try with image-label"
+                )
+                self.ingress.settings["perimeter"]["perimeter_mapper_key"] = "image-label"
             if not self.image_name_to_re_referencing_point:
                 logger.warning(f"Dataset {self.label}: Defines reference point, yet no re-reference data was detected")
             if len(image_name_to_perimeter_set) > 1:
@@ -127,11 +133,11 @@ def perimeter_file_path_to_value(file_path: FilePath, trial_id: str | PositiveIn
 
     match ingress.settings["perimeter"]["perimeter_mapper_key"]:
         case "label":
-            pass
+            return perimeter_mapper
         case "image-label":
-            key = f"{image_name}-{label}"
+            return perimeter_mapper[ingress.metadata.loc[trial_id, "ImageName"]]
         case _:
-            msg = f"{self.perimeter_settings['perimeter_mapper_key']} is an unsupported map key for perimeters"
+            msg = f"{ingress.settings['perimeter']['perimeter_mapper_key']} is an unsupported map key for perimeters"
             raise ValueError(msg)
 
 

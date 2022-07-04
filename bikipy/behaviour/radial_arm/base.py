@@ -6,7 +6,7 @@ from logging import getLogger
 from math import ceil
 from typing import ClassVar, Optional
 
-from pydantic import validator
+from pydantic import validator, root_validator
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import (
@@ -66,7 +66,8 @@ class BaseRadialMazeExperiment(BaseExperiment, RadialMazeBase):
 
 
 class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
-    corridor_meter_width: float
+    arm_meter_width: float
+    arm_meter_length: float
 
     center: AnyPerimeter
     arms: tuple[AnyPerimeter, ...]
@@ -82,6 +83,9 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         for i, arm in enumerate(value):
             arm.int_id = cls._arm_int_ids[i]
         return tuple(value)
+
+    @root_validator
+    def compute_and_store_
 
     @classmethod
     @property

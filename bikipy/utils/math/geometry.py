@@ -3,9 +3,55 @@ from typing import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
+from math import sqrt
+from pydantic import validate_arguments
 
 from bikipy.core.typing import NDArrayFp64
 from bikipy.feature.angle import clockwise_angel_2d
+
+
+@validate_arguments
+def find_cathetus_from_similar_triangle_with_hypotenuse_points_from_original_triangle_and_length_of_the_target_triangle(
+    hypotenuse_start: NDArrayFp64, hypotenuse_end: NDArrayFp64, inspect: bool = False
+):
+    """
+    We utilize the diagonal of rectangle to derive the components of the two axes on the 2D image.
+    We derive both the meters and pixels of the diagonal, and use the Pythagoras theorem for this:
+
+    https://www.reddit.com/r/askmath/comments/j1bvfj/getting_catheti_from_hypotenuse_and_catheti_ratio/?utm_source=share&utm_medium=web2x&context=3
+    hypotenuse h and the ratio, r, of x and y in a right triangle.
+
+    x/y=r -> x=y*r
+
+    h**2 = x**2 + y**2
+    h**2 = y**2 + (y*r)**2
+    h**2 = y**2 * (1 + r**2)
+
+    y = sqrt( h**2 / (1 + r**2) )
+    x = sqrt( h**2 - y**2 )
+
+    We can override the hypotenuse length if we want to calculate
+    """
+    pixel_ab_vector = np.abs(hypotenuse_end - hypotenuse_start)
+    pixel_x, pixel_y = pixel_ab_vector
+    pixel_xy_ratio = pixel_x / pixel_y  # a-b intersects on the origin
+
+    meter_y = sqrt(self.meter_length**2.0 / (1.0 + pixel_xy_ratio**2.0))
+    meter_x = sqrt(self.meter_length**2.0 - meter_y**2.0)
+
+    if inspect:
+        pixel_x_vector = np.array([pixel_x, 0.0])
+        plt.plot(*np.vstack([[0.0, 0.0], pixel_x_vector]).T, label="cathetus_x")
+
+        pixel_y_vector = np.array([0.0, pixel_y])
+        plt.plot(*np.vstack([[0.0, 0.0], pixel_y_vector]).T, label="cathetus_y")
+
+        plt.plot(*np.vstack([pixel_x_vector, pixel_y_vector]).T, label="hypotenuse")
+
+        plt.legend()
+        plt.show()
+
+    return pixel_x, pixel_y
 
 
 def clockwise_argsort_points(points: NDArrayFp64):
@@ -150,3 +196,6 @@ def expand_rectangle(
 
     result = (off_down_left, off_down_right, off_up_right, off_up_left)
     return np.array(result) if as_array else result
+
+
+cathetus_from_hypotenuse([5, 5], [10, 10], True)

@@ -211,32 +211,42 @@ class BaseIngress(BaseBikipy, ABC):
             trial_id_df.index.names = ["Trial"]
 
         elif self.animal_metadata is not None:
-            if "Phase" in self.animal_metadata.index:
+            if "Phase" in self.animal_metadata.columns:
                 """
                 The phase layout of animal metadata consists of two column types:
                     - The "Phase" column, which defines the phase of the trial. This is the highest point in the
                     hierarchy
-                    - The "PhasePart-N", where N is the number of parts in each phase.
+                    - "PhasePart-1", "PhasePart-2", ..., "PhasePart-N"; where N is the number of parts in each phase.
+                    These column store the experiment number that animal belonged to in the respective part of the given
+                    phase (stored in the previous type of column). See examples in phase...
 
                 Additional information from a phase may be stored in the sheet with the same label as the phase.
+                Phases are ASCII letters; the other parts of the index (part, and trial number) are integers.
                 """
 
-                # We detect all the PhasePart columns to iterate over them again when iterating over animals
-                all_phase_part_columns = [name for name in self.animal_metadata.index if "PhasePart" in name]
-
+                # Detect all the Phase columns to iterate over them again when iterating over animals
                 phase_to_df = {
                     phase: pd.read_excel(self.metadata_path, sheet_name=phase, index_col=[0, 1])
                     for phase in np.unique(self.animal_metadata["Phase"])
                     if phase in self._metadata_sheet_names
                 }
+
                 df_data = {}
                 for _, row in self.animal_metadata.iterrows():
                     phase = row.pop("Phase")
-                    for phase_part in all_phase_part_columns:
-                        part = row.pop(phase_part)
-                        if phase in phase_to_df and :
-                            row = pd.concat([row, phase_to_df[phase][]])
-                        df_data[f"{phase}_{}"] = row
+                    for column in self.animal_metadata.columns:
+                        if "PhasePart" not in column:
+                            continue
+
+                        phase_part_trial_number = row.pop(column)
+                        phase_part = int(column.split("-")[1])  # from "PhasePart-N"
+
+                        try:
+                            row = pd.concat([row, phase_to_df[phase].loc[(phase_part, phase_part_trial_number), :]])
+                        except KeyError:
+                            pass
+
+                        df_data[f"{phase}{phase_part}_{phase_part_trial_number}"] = row
 
                 trial_id_df = pd.DataFrame.from_dict(df_data, orient="index")
 
@@ -536,8 +546,6 @@ def init_settings(
         "ingress_method": ingress_method,
         "manual_dataset_directory": None,
         "ingress": {
-            "stageful_metadata": False,
-            "skip_absent_trials_absent_from_metadata_index": False,
             "meters_per_pixel_definition_strategy": "global_perimeter",
             "perimeter_definition_strategy": "metadata",
             "video_definition_strategy": None,
