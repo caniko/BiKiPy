@@ -2,6 +2,7 @@ from functools import cached_property
 from typing import Any, Optional
 
 import numpy as np
+from matplotlib import pyplot as plt
 from pydantic import FilePath, validator
 
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
@@ -87,12 +88,25 @@ class CirclePerimeter(BaseSinglePerimeter):
         self,
         inspect_pixels: bool = False,
         perimeter_border_normal_pixels: Optional[float] = None,
-        ax: Any = None,
+        inspection_ax: Any = None,
         **plot_kwargs,
     ):
+        if not inspection_ax:
+            fig, ax = plt.subplots()
+        else:
+            ax = inspection_ax
+
         if inspect_pixels:
-            return plot_circle(self.center_pixels, self.radius_pixels, ax)
-        return plot_circle(self.center_meters, self.radius_meters, ax)
+            ax = plot_circle(self.center_pixels, self.radius_pixels, ax)
+        else:
+            ax = plot_circle(self.center_meters, self.radius_meters, ax)
+
+        if not inspection_ax:
+            plt.show()
+        if self.inspect_directory:
+            plt.savefig(self.class_inspect_directory / f"{self.label}.jpg")
+
+        return ax
 
     @classmethod
     def from_makesense_line(

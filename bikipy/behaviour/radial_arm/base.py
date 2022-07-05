@@ -141,7 +141,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
     @cached_property
     def reduced_alternation_sequence(self):
-        return reduce_repeating_sequences(self.alternation_sequence, round(self.fps * 0.075))
+        return reduce_repeating_sequences(self.alternation_sequence, round(self.video.fps * 0.075))
 
     @cached_property
     def reduced_without_center(self):

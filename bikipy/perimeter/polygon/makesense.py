@@ -21,6 +21,7 @@ def init_polygon_from_makesense_coco_polygon(
     image_root: Optional[DirectoryPath] = None,
     reference_point_csv_path: Optional[FilePath] = None,
     manual_reference_point_array: Optional[NDArrayFp64] = None,
+    invert_y: bool = True,
     **perimeter_kwargs,
 ) -> dict:
     from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters
@@ -58,7 +59,11 @@ def init_polygon_from_makesense_coco_polygon(
             reference_point_array = manual_reference_point_array
 
         result[image_name]["label"] = init_polygon(
-            np.array(_coco_polygon_annotation(annotation["segmentation"][0])),
+            np.array(
+                _coco_polygon_annotation(
+                    annotation["segmentation"][0], invert_y_vertical_resolution=coco["images"][image_index]["height"]
+                ),
+            ),
             label=label,
             reference_point_array=reference_point_array,
             manual_frame=cv2.imread(image_root / image_name) if image_root else None,
@@ -111,5 +116,15 @@ def init_polygon_from_makesense_csv_rectangle(
     return perimeter_set_from_image_name_to_perimeters(result)
 
 
-def _coco_polygon_annotation(flat_annotation_data: Sequence):
-    return [(flat_annotation_data[i], flat_annotation_data[i + 1]) for i in range(0, len(flat_annotation_data) - 1, 2)]
+def _coco_polygon_annotation(flat_annotation_data: Sequence, invert_y_vertical_resolution: Optional[float] = None):
+    return [
+        (
+            flat_annotation_data[i],
+            (
+                invert_y_vertical_resolution - flat_annotation_data[i + 1]
+                if invert_y_vertical_resolution
+                else flat_annotation_data[i + 1]
+            ),
+        )
+        for i in range(0, len(flat_annotation_data) - 1, 2)
+    ]

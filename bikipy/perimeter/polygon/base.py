@@ -105,10 +105,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
 
     @cached_property
     def line_segment_midpoints_pixels(self) -> NDArrayFp64:
-        return (
-            self.linked_vertices_pixels[1:]
-            + np.diff(self.line_segment_points_pixels, axis=1).transpose(1, 0, 2)[0] / 2.0
-        )
+        return self.vertices_in_pixels - np.diff(self.line_segment_points_pixels, axis=1).transpose(1, 0, 2)[0] / 2.0
 
     @cached_property
     def edge_lengths_pixels(self) -> NDArrayFp64:
@@ -304,11 +301,14 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         self,
         inspect_pixels: bool = False,
         perimeter_border_normal_pixels: Optional[float] = None,
-        ax: Any = None,
+        with_midpoints: bool = False,
+        inspection_ax: Any = None,
         **plot_kwargs,
     ):
-        if not ax:
+        if not inspection_ax:
             fig, ax = plt.subplots()
+        else:
+            ax = inspection_ax
 
         vertices_in_meters = self.vertices_in_pixels if inspect_pixels else self.vertices_in_meters
 
@@ -319,7 +319,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
             corner_b = vertices_in_meters[following_index]
             ax.plot(
                 *np.vstack((corner_a, corner_b)).T,
-                label=self.label,
+                label=f"{self.label}{index}",
                 **plot_kwargs,
             )
 
@@ -331,6 +331,16 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
                     *np.vstack((border_a, border_b)).T,
                     **plot_kwargs,
                 )
+
+        if with_midpoints:
+            for i, midpoint in enumerate(self.line_segment_midpoints_meters):
+                ax.scatter(*midpoint.T, label=f"{self.label}{i}")
+
+        if not inspection_ax:
+            plt.legend()
+            plt.show()
+        elif self.inspect_directory:
+            plt.savefig(self.class_inspect_directory / f"{self.label}.jpg")
 
         return ax
 

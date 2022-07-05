@@ -46,21 +46,27 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
     @cached_property
     def arms(self) -> list[RectanglePerimeter]:
         lines = np.array([np.array_split(line, 2) for _, line in self.line_data.iloc[:, 1:5].iterrows()])
-        line_midpoints = np.array([np.mean(line, axis=0) for line in lines])
+        line_midpoints = np.mean(lines, axis=1)
 
         correct_argsort = clockwise_argsort_points(line_midpoints)
+
         lines = lines[correct_argsort]
         line_midpoints = line_midpoints[correct_argsort]
 
         arm_perimeters = []
         for line_index, line_midpoint in enumerate(line_midpoints):
-            line_pair_index = np.where(
-                np.argsort(np.linalg.norm(line_midpoint - self.center.line_segment_midpoints_pixels, axis=1)) == 0
+            line_pair_bool_index = np.where(
+                (
+                    np.argsort(
+                        np.linalg.norm(line_midpoint[None, :] - self.center.line_segment_midpoints_pixels, axis=1)
+                    )
+                    == 0
+                )
             )[0][0]
 
             arm_perimeter_vertices = np.concatenate(
                 (
-                    self.center.line_segment_points_pixels[line_pair_index],
+                    self.center.line_segment_points_pixels[line_pair_bool_index],
                     lines[line_index],
                 )
             )
@@ -78,6 +84,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
                 arm_perimeter.vertices_in_pixels[2],
                 self.ingress.settings["perimeter"]["radial_arm_rectangle_diagonal"],
             )
+            arm_perimeter.plot_perimeter(with_midpoints=True)
             arm_perimeters.append(arm_perimeter)
 
         arm_perimeter_mean_meters_per_pixel = PerimeterSet(perimeters=arm_perimeters).mean_meters_per_pixel
@@ -90,9 +97,11 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
 
     @cached_property
     def grouped_radial_maze_perimeters(self) -> dict[str, tuple[SinglePerimeter, ...]]:
-        result = PerimeterSet(perimeters=[*self.arms, self.center]).group()
-        self.ingress.ingress_defined_perimeters[self.label] = result
-        return result
+        perimeter_set = PerimeterSet(perimeters=[*self.arms, self.center])
+        perimeter_set.plot()
+        grouped = perimeter_set.group()
+        self.ingress.ingress_defined_perimeters[self.label] = grouped
+        return grouped
 
     def trialwise_and_metadata(self, trial_id: str | PositiveInt) -> dict[str, tuple[SinglePerimeter, ...]]:
         return self.grouped_radial_maze_perimeters

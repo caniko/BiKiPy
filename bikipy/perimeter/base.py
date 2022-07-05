@@ -101,7 +101,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         self,
         inspect_pixels: bool = False,
         perimeter_border_normal_pixels: Optional[float] = None,
-        ax: Any = None,
+        inspection_ax: Any = None,
         **plot_kwargs,
     ):
         ...
@@ -414,6 +414,8 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
 
         for perimeter in self.all_perimeters:
             perimeter.plot_perimeter(ax=ax, **perimeter_plot_kwargs)
+
+        if coordinates is not None:
             ax = plot_coordinates(coordinates, ax, inspect_pixels, self.video)
 
         plt.legend()
