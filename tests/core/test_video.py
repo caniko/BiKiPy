@@ -31,5 +31,5 @@ def test_video_metadata_comparison():
 
 def test_video_metadata_incongruent():
     video_test_complete = video_test_a + video_test_b
-    dirty_video_test = VideoMetadata.join(video_test_c, video_test_complete, ignore_incongruency=True)
+    dirty_video_test = VideoMetadata.join(video_test_c, video_test_complete, ignore_incongruity=True)
     assert np.all(dirty_video_test.recording_resolution == INCONGRUENT_RESOLUTION)

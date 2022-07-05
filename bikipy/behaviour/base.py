@@ -22,7 +22,8 @@ from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_multi_indexer
-from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
+from bikipy.ingress.plugin import PluginChangeReference
+from bikipy.perimeter.base import SinglePerimeter, PerimeterSet, BaseSinglePerimeter
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.collection_utils import (
     add_filler_to_sequence,
@@ -214,11 +215,11 @@ class BaseTrial(Behaviour):
         video = super()._video
         if self.perimeters:
             perimeter_video = reduce(VideoMetadata.join, (perimeter.video for perimeter in self.perimeters))
-            new_video = VideoMetadata.join(perimeter_video, video, ignore_incongruency=True)
+            new_video = VideoMetadata.join(perimeter_video, video, ignore_incongruity=True)
 
             # The resolution on perimeters should be more correct than whatever
             # provided by the user, hence it being master
-            return VideoMetadata.join(new_video, video, ignore_incongruency=True)
+            return VideoMetadata.join(new_video, video, ignore_incongruity=True)
         return video
 
     @cached_property
@@ -393,6 +394,13 @@ class BaseExperiment(Behaviour):
         if "perimeter_set" in result:
             perimeter_set: PerimeterSet = result.pop("perimeter_set")
             result.update(perimeter_set.label_to_perimeter)
+
+        if PluginChangeReference.bikipy_trial_key in result:
+            val = result.pop(PluginChangeReference.bikipy_trial_key)
+            if isinstance(val, PerimeterSet):
+                result.update(val.label_to_perimeter)
+            elif isinstance(val, BaseSinglePerimeter):
+                result[val.label] = val
 
         return result
 

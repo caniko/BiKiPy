@@ -52,7 +52,7 @@ class PhysicalObject(BaseBikipy):
 
     @cached_property
     def video(self) -> VideoMetadata:
-        return VideoMetadata.join(self.perimeter.video, self.reader.video, ignore_incongruency=True)
+        return VideoMetadata.join(self.perimeter.video, self.reader.video, ignore_incongruity=True)
 
     @property
     def label(self):

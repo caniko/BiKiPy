@@ -16,7 +16,7 @@ def normalize_hypotenuse_to_origin(hypotenuse_start: NDArrayFp64, hypotenuse_end
 
 @validate_arguments
 def cathetus_from_similar_triangle_with_hypotenuse_points_from_original_triangle_and_length_of_the_target_triangle(
-    cathetus_a: NDArrayFp64, cathetus_b: NDArrayFp64, similar_hypotenuse_length: float, inspect: bool = True
+    cathetus_a: NDArrayFp64, cathetus_b: NDArrayFp64, similar_hypotenuse_length: float, inspect: bool = False
 ):
     """
     We utilize the diagonal of rectangle to derive the components of the two axes on the 2D image.
@@ -62,7 +62,7 @@ def cathetus_from_similar_triangle_with_hypotenuse_points_from_original_triangle
 
 
 def meter_per_pixel_from_diagonal(diagonal_a: NDArrayFp64, diagonal_b: NDArrayFp64, length_meters: float):
-    pixel_x, pixel_y = normalize_hypotenuse_to_origin(diagonal_b - diagonal_a)
+    pixel_x, pixel_y = normalize_hypotenuse_to_origin(diagonal_b, diagonal_a)
     (
         meter_x,
         meter_y,

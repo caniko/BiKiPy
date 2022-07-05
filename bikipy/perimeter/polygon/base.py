@@ -69,7 +69,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         return self.vertices_in_pixels * self.video.meters_per_pixel
 
     @cached_property
-    def linked_vertices_in_meters(self) -> NDArrayFp64:
+    def linked_vertices_meters(self) -> NDArrayFp64:
         return np.append(
             self.vertices_in_meters,
             np.expand_dims(self.vertices_in_meters[0], 0),
@@ -77,21 +77,47 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         )
 
     @cached_property
-    def line_segment_pairs(self) -> NDArrayFp64:
-        return np.array(list(zip(self.linked_vertices_in_meters, self.linked_vertices_in_meters[1:])))
+    def line_segment_points_meters(self) -> NDArrayFp64:
+        return np.array(list(zip(self.linked_vertices_meters, self.linked_vertices_meters[1:])))
 
     @cached_property
-    def line_segment_midpoints(self) -> NDArrayFp64:
-        return np.mean(self.line_segment_pairs, axis=0)
+    def line_segment_midpoints_meters(self) -> NDArrayFp64:
+        return (
+            self.linked_vertices_meters[1:]
+            + np.diff(self.line_segment_points_meters, axis=1).transpose(1, 0, 2)[0] / 2.0
+        )
 
     @cached_property
-    def edge_lengths(self):
-        return np.linalg.norm(np.diff(self.line_segment_pairs, axis=0), axis=1)
+    def edge_lengths_meters(self):
+        return np.linalg.norm(np.diff(self.line_segment_points_meters, axis=0), axis=1)
+
+    @cached_property
+    def linked_vertices_pixels(self) -> NDArrayFp64:
+        return np.append(
+            self.vertices_in_pixels,
+            np.expand_dims(self.vertices_in_pixels[0], 0),
+            axis=0,
+        )
+
+    @cached_property
+    def line_segment_points_pixels(self) -> NDArrayFp64:
+        return np.array(list(zip(self.linked_vertices_pixels, self.linked_vertices_pixels[1:])))
+
+    @cached_property
+    def line_segment_midpoints_pixels(self) -> NDArrayFp64:
+        return (
+            self.linked_vertices_pixels[1:]
+            + np.diff(self.line_segment_points_pixels, axis=1).transpose(1, 0, 2)[0] / 2.0
+        )
+
+    @cached_property
+    def edge_lengths_pixels(self) -> NDArrayFp64:
+        return np.linalg.norm(np.diff(self.line_segment_points_pixels, axis=0), axis=1)
 
     @cached_property
     def equilateral(self) -> bool:
         return np.all(
-            np.apply_along_axis(np.isclose, 0, self.edge_lengths[0], self.edge_lengths[1:], atol=1.0e-4),
+            np.apply_along_axis(np.isclose, 0, self.edge_lengths_meters[0], self.edge_lengths_meters[1:], atol=1.0e-4),
             axis=1,
         )
 
@@ -99,7 +125,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
     def circle(self):
         return CirclePerimeter(
             center_pixels=convert_meters_to_pixels(self.centroid, self.video),
-            radius_meters=np.mean(self.edge_lengths),
+            radius_meters=np.mean(self.edge_lengths_meters),
             manual_video=self.video,
         )
 
@@ -108,7 +134,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         closest_edge_point_to_coordinates_matrix = np.array(
             [
                 nearest_point_on_line_segment_to_coordinates(*line_segment_pair, coordinates)
-                for line_segment_pair in self.line_segment_pairs
+                for line_segment_pair in self.line_segment_points_meters
             ]
         )
         # Distance of the coordinate from the previous matrix
@@ -166,7 +192,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         result = np.array(
             [
                 ray_and_line_segment_intersection(ray_origins, ray_directions, *line_segment_pair, return_points)
-                for line_segment_pair in self.line_segment_pairs
+                for line_segment_pair in self.line_segment_points_meters
             ]
         )
         if not return_points:

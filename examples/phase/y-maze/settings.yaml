@@ -11,7 +11,7 @@ perimeter:
   label_prefix: null
   label_suffix: null
   perimeter_names_in_metadata: false
-  perimeter_metadata_key: image-name
+  radial_arm_rectangle_diagonal: 0.359026
   fields:
     defined:
       label: null
@@ -23,6 +23,7 @@ perimeter:
       inspect: boolean -> False
       inspect_directory: string
       int_id: integer
+      makesense_image_name: string
       manual_fps: number
       manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
         ''file-path''}]'
@@ -61,17 +62,17 @@ trial:
       arms: null
       center: null
       coordinate_data_path: null
-      corridor_meter_width: null
       label: null
       object_tracking_label_for_kinematics: null
       reader_kwargs: null
+      outdated:
+        corridor_meter_width: null
     required:
       animal_id: '[{''type'': ''string''}, {''type'': ''integer'', ''exclusiveMinimum'':
         0}]'
       arms: array
       center: None
       coordinate_data_path: string
-      corridor_meter_width: number
       label: string
       object_tracking_label_for_kinematics: string
       reader_kwargs: object

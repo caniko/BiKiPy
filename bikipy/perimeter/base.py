@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from functools import cached_property
+from functools import cached_property, reduce, partial
 from logging import getLogger
 from typing import Any, ClassVar, Literal, Optional, TypeVar
 
@@ -12,6 +12,7 @@ from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.core.video import (
     VideoMetadataMixin,
+    VideoMetadata,
 )
 from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_coco_polygon,
@@ -274,9 +275,15 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
         raise KeyError(f"Item was not found, {item} amongst {self.all_perimeters}")
 
     @cached_property
-    def video(self):
-        if self.number_of_perimeters:
-            return self.all_perimeters[0].video
+    def video(self) -> VideoMetadata:
+        return self.all_perimeters[0].video
+
+    @cached_property
+    def mean_meters_per_pixel(self) -> float:
+        if self.number_of_perimeters == 1:
+            return self.video.meters_per_pixel
+        join_func = partial(VideoMetadata.join, meters_per_pixel_mean=True, ignore_incongruity=True)
+        return reduce(join_func, (perimeter.video for perimeter in self.perimeters)).meters_per_pixel
 
     @cached_property
     def group(self):

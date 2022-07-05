@@ -11,7 +11,7 @@ from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.io.makesense import read_makesense_line
-from bikipy.utils.math.geometry import clockwise_argsort_points
+from bikipy.utils.math.geometry import clockwise_argsort_points, meter_per_pixel_from_diagonal
 
 
 class PluginRadial(BasePluginDirectory, HasReferenceMixin):
@@ -19,6 +19,8 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
     code_key = "radial"
     bikipy_trial_key = "perimeter_set"
     human_readable_index = "Radial"
+
+    _center: SinglePerimeter | None = None
 
     @property
     def label(self):
@@ -28,11 +30,16 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
     def line_data(self) -> pd.DataFrame:
         return read_makesense_line(self.data_path / "arm-lines.csv")
 
-    @cached_property
+    @property
     def center(self) -> SinglePerimeter:
-        return get_first_value_in_dict(
-            init_polygon_from_makesense_coco_polygon(next(iglob(str(self.data_path / "center*"))))
-        ).get_only_perimeter
+        if not self._center:
+            self._center = get_first_value_in_dict(
+                init_polygon_from_makesense_coco_polygon(
+                    next(iglob(str(self.data_path / "center*"))), manual_reference_point_array=self.reference_point
+                )
+            ).get_only_perimeter
+
+        return self._center
 
     @cached_property
     def arms(self) -> list[RectanglePerimeter]:
@@ -46,25 +53,36 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
         arm_perimeters = []
         for line_index, line_midpoint in enumerate(line_midpoints):
             line_pair_index = np.where(
-                np.argsort(np.linalg.norm(line_midpoint - self.center.line_segment_midpoints, axis=1)) == 0
+                np.argsort(np.linalg.norm(line_midpoint - self.center.line_segment_midpoints_pixels, axis=1)) == 0
             )[0][0]
 
-            arm_perimeter = np.concatenate(
+            arm_perimeter_vertices = np.concatenate(
                 (
-                    self.center.vertices_in_meters[self.center.linked_polygon_edge_corner_pairs[line_pair_index], :],
+                    self.center.line_segment_points_pixels[line_pair_index],
                     lines[line_index],
                 )
             )
-
-            arm_perimeters.append(
-                RectanglePerimeter(
-                    vertices_in_pixels=arm_perimeter,
-                    int_id=line_index + 1,
-                    label=self.line_data["labels"][line_index],
-                    reference_point_array=self.reference_point,
-                    group_label="arms",
-                )
+            index_data = self.line_data.loc[line_index, :]
+            arm_perimeter = RectanglePerimeter(
+                vertices_in_pixels=arm_perimeter_vertices,
+                int_id=line_index + 1,
+                label=index_data["label"],
+                reference_point_array=self.reference_point,
+                manual_recording_resolution=np.array((index_data["x_res"], index_data["y_res"]), dtype=float),
+                group_label="arms",
             )
+            arm_perimeter.meters_per_pixel = meter_per_pixel_from_diagonal(
+                arm_perimeter.vertices_in_pixels[0],
+                arm_perimeter.vertices_in_pixels[2],
+                self.ingress.settings["perimeter"]["radial_arm_rectangle_diagonal"],
+            )
+            arm_perimeters.append(arm_perimeter)
+
+        arm_perimeter_mean_meters_per_pixel = PerimeterSet(perimeters=arm_perimeters).mean_meters_per_pixel
+        for arm_perimeter in arm_perimeters:
+            arm_perimeter.meters_per_pixel = arm_perimeter_mean_meters_per_pixel
+
+        self._center.meters_per_pixel = arm_perimeter_mean_meters_per_pixel
 
         return arm_perimeters
 

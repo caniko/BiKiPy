@@ -42,8 +42,9 @@ class PluginChangeReference(BasePluginFile):
         trial_id_image_name = self.ingress.metadata.loc[trial_id, self._human_readable_index_image_name]
         reference_data = self.image_name_to_re_referencing_point[trial_id_image_name]
 
-        return self.ingress.ingress_defined_perimeters[self.original_label].globally_defined.change_reference(
-            get_point_from_makesense_row(reference_data), makesense_image_name=reference_data["image_name"]
+        return self.ingress.ingress_defined_perimeters[self.original_label].change_reference(
+            new_reference=get_point_from_makesense_row(reference_data),
+            makesense_image_name=reference_data["image_name"],
         )
 
     @property

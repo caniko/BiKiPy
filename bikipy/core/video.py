@@ -54,11 +54,17 @@ class VideoMetadata(_VideoMetadataBase):
 
     @classmethod
     def join(
-        cls, master: "VideoMetadata", slave: "VideoMetadata", ignore_incongruency: bool = False
+        cls,
+        master: "VideoMetadata",
+        slave: "VideoMetadata",
+        ignore_incongruity: bool = False,
+        meters_per_pixel_mean: bool = False,
     ) -> "VideoMetadata":
-        if not (master & slave) and not ignore_incongruency:
+        if not (master & slave) and not ignore_incongruity:
             msg = "VideoMetadata are incongruent"
             raise AttributeError(msg)
+        if meters_per_pixel_mean and "meters_per_pixel" in slave and "meters_per_pixel" in master:
+            master.meters_per_pixel = np.mean([slave.meters_per_pixel, master.meters_per_pixel], axis=0)
         new_metadata = slave.manual_video_metadata
         new_metadata.update(master.manual_video_metadata)
         return cls(**new_metadata)
