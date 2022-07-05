@@ -88,7 +88,7 @@ for round_id, data_dirs in enumerate(round_dirs):
                 continue
             trial_id_to_exp_meta[trial_id] = {
                 "animal_id": int(
-                    metadata_df.loc[metadata_df.iloc[:, metadata_animal_id_cidx] == trial_id]["Animal ID"].iloc[0]
+                    metadata_df.loc[metadata_df.iloc[:, metadata_animal_id_cidx] == trial_id]["Animal"].iloc[0]
                 ),
                 "coordinate_data_path": paths["data"],
                 "video_path": paths["video"],

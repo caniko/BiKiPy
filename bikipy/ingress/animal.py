@@ -1,7 +1,7 @@
 from logging import getLogger
 from typing import ClassVar
 
-from pydantic import PositiveInt
+from pydantic import PositiveInt, DirectoryPath
 
 from bikipy.ingress.core import BaseIngress
 
@@ -39,9 +39,12 @@ class AnimalIngress(BaseIngress):
                     "animal_id": animal_id,
                     "stage": stage_index,
                     "coordinate_data_path": trial_kinematic_data_file_path,
-                    **self._trial_id_to_keyword_arguments[trial_id],
+                    **self.trialwise_plugins_for_trial_id(trial_id, animal_dir),
                     **plugin_data,
                 }
+
+    def trialwise_plugins_for_trial_id(self, trial_id: str | PositiveInt, trial_directory: DirectoryPath):
+        return self._trialwise_plugins_for_trial_id(trial_id, trial_directory, "{trial_id}.{plugin_code_key}*")
 
     def verify_project_structure(self):
         animal_ids = set()
@@ -65,7 +68,7 @@ class AnimalIngress(BaseIngress):
         try:
             metadata_animal_id_column_set = set(self.metadata.index)
         except KeyError:
-            msg = f"Animal ID column, Animal, is not defined in the metadata sheet. Defined columns:\n{self.metadata.columns}"
+            msg = f"Animal column, Animal, is not defined in the metadata sheet. Defined columns:\n{self.metadata.columns}"
             raise KeyError(msg)
 
         if metadata_animal_id_column_set.issubset(animal_ids):

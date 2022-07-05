@@ -1,8 +1,9 @@
 ingress_method: phase
-manual_dataset_directory: /home/can/Downloads/Compressed/y_maze/
+manual_dataset_directory: /mnt/soma/Projects/Neuroscience/Imen/data/y_maze/
 ingress:
   meters_per_pixel_definition_strategy: radial
   perimeter_definition_strategy: null
+  change_reference_definition_strategy: metadata
   radial_definition_strategy: metadata
   video_definition_strategy: trial-wise
   center_definition_strategy: null
@@ -10,6 +11,7 @@ perimeter:
   label_prefix: null
   label_suffix: null
   perimeter_names_in_metadata: false
+  perimeter_metadata_key: image-name
   fields:
     defined:
       label: null

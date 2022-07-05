@@ -16,7 +16,7 @@ from bikipy.behaviour.base import Experiment, Trial
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayFp64
-from bikipy.ingress.plugin import PLUGIN_NAME_TO_MODEL, ingress_key_to_model, PluginPerimeter, PluginRadial
+from bikipy.ingress.plugin import PLUGIN_CODE_KEY_TO_MODEL, ingress_key_to_model, PluginPerimeter, PluginRadial
 from bikipy.ingress.plugin.base import Plugin
 from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
@@ -33,7 +33,7 @@ from bikipy.ingress.utils.io import (
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
 from bikipy.ingress.utils.settings import get_definable_settings
-from bikipy.perimeter.base import BaseSinglePerimeter
+from bikipy.perimeter.base import BaseSinglePerimeter, Perimeter
 from bikipy.reader import DeepLabCutReader
 from bikipy.utils.collection_utils import copycat_assumes_levels_of_icon
 from bikipy.utils.misc import sheet_names_from_path, dict_deepmerge
@@ -112,14 +112,28 @@ class BaseIngress(BaseBikipy, ABC):
             )
             raise ValueError(msg)
 
-    @cached_property
-    def experiment_class_kwargs(self):
-        return {
-            "trial_id_to_trial_class_name": self.trial_id_to_trial_class_name,
+    @property
+    def experiment_class_kwargs(self) -> dict[str, dict]:
+        result = {
             "common_trial_keyword_arguments": self.common_trial_keyword_arguments,
             "trial_id_to_keyword_arguments": self.trial_id_to_keyword_arguments,
-            "trial_class_name_to_keyword_arguments": self.trial_class_name_to_keyword_arguments,
         }
+        if self.experiment_class.has_stages:
+            result["trial_id_to_trial_class_name"] = self.trial_id_to_trial_class_name
+            result["trial_class_name_to_keyword_arguments"] = self.trial_class_name_to_keyword_arguments
+
+        return result
+
+    @property
+    def ingress_defined_fields(self) -> dict[str, set]:
+        result = {
+            "common_trial_keyword_arguments": set(self.common_trial_keyword_arguments),
+            "trial_id_to_keyword_arguments": set(self.trial_id_to_keyword_arguments.values()),
+        }
+        if self.experiment_class.has_stages:
+            result["trial_class_name_to_keyword_arguments"] = set(self.trial_class_name_to_keyword_arguments.values())
+
+        return result
 
     @property
     def trial_id_to_trial_class_name(self):
@@ -188,7 +202,7 @@ class BaseIngress(BaseBikipy, ABC):
             )
             trial_id_df.index.names = ["Trial"]
 
-            assert "Animal" in trial_id_df, "Animal ID column must be present trial_id and animal metadata sheets"
+            assert "Animal" in trial_id_df, "Animal column must be present trial_id and animal metadata sheets"
 
             if self.animal_metadata is not None:
                 trial_id_df = trial_id_df.join(self.animal_metadata, how="inner")
@@ -230,7 +244,7 @@ class BaseIngress(BaseBikipy, ABC):
                 }
 
                 df_data = {}
-                for _, row in self.animal_metadata.iterrows():
+                for _, row in self.animal_metadata.reset_index().iterrows():
                     phase = row.pop("Phase")
                     for column in self.animal_metadata.columns:
                         if "PhasePart" not in column:
@@ -283,7 +297,7 @@ class BaseIngress(BaseBikipy, ABC):
     @property
     def dataset_directory_path(self) -> DirectoryPath:
         if self.settings["manual_dataset_directory"]:
-            if not (path := DirectoryPath(self.settings["manual_dataset_directory"])).exists():
+            if not (path := Path(self.settings["manual_dataset_directory"])).exists():
                 msg = f"manual_dataset_directory must exist: {path}"
                 raise AttributeError(msg)
             return path
@@ -316,8 +330,17 @@ class BaseIngress(BaseBikipy, ABC):
             self._define_experiment_data()
 
     def _define_experiment_data(self) -> None:
-        for plugin_name, label_to_metadata_plugin_objects in self.plugin_to_label_to_metadata_plugin_objects.items():
-            plugin_metadata = self.metadata.loc[:]
+        if self._metadata_plugins:
+            self._trial_id_to_keyword_arguments = defaultdict(dict)
+            for plugin_model in self._metadata_plugins:
+                label_to_file_path = {
+                    file_path.stem.split("-")[-1]: file_path
+                    for file_path in self.plugin_directory_path.glob(f"{plugin_model.code_key}*")
+                }
+                for trial_id, row in self.metadata.iterrows():
+                    self._trial_id_to_keyword_arguments[trial_id][plugin_model.bikipy_trial_key] = plugin_model(
+                        data_path=label_to_file_path[row[plugin_model.human_readable_index]], ingress=self
+                    ).trialwise_and_metadata(trial_id)
 
         self._dataset_reader()
 
@@ -340,26 +363,30 @@ class BaseIngress(BaseBikipy, ABC):
         assert global_reader_kwargs, "reader_kwargs must be defined"
         self._common_trial_keyword_arguments["reader_kwargs"] = global_reader_kwargs
 
-        for trial_class_name, dataset in self.settings["trial"]["specific"].items():
-            if not dataset["defined"]:
-                continue
-            if trial_class_name not in self._trial_class_name_to_keyword_arguments:
-                self._trial_class_name_to_keyword_arguments[trial_class_name] = {}
-            for field, value in dataset["defined"].items():
-                if not value:
+        if self.experiment.has_stages:
+            for trial_class_name, dataset in self.settings["trial"]["specific"].items():
+                if not dataset["defined"]:
                     continue
-                trial_class_dict = self._trial_class_name_to_keyword_arguments[trial_class_name]
-                if field not in trial_class_dict or not trial_class_dict[field]:
-                    self._trial_class_name_to_keyword_arguments[trial_class_name][field] = value
+                if trial_class_name not in self._trial_class_name_to_keyword_arguments:
+                    self._trial_class_name_to_keyword_arguments[trial_class_name] = {}
+                for field, value in dataset["defined"].items():
+                    if not value:
+                        continue
+                    trial_class_dict = self._trial_class_name_to_keyword_arguments[trial_class_name]
+                    if field not in trial_class_dict or not trial_class_dict[field]:
+                        self._trial_class_name_to_keyword_arguments[trial_class_name][field] = value
 
         self._experiment_data_defined = True
 
     @cached_property
     def experiment(self) -> Experiment:
-        intersection = set(self.settings["experiment"]["defined"]).intersection(self.experiment_class_kwargs)
-        if intersection:
-            msg = f"The setting defines fields defined by the ingress method:\n{intersection}"
-            raise ValueError(msg)
+        settings_defined = set(self.settings["experiment"]["defined"])
+
+        for kwarg_dict_name, fields in self.ingress_defined_fields.items():
+            if intersection := settings_defined.intersection(fields):
+                msg = f"{kwarg_dict_name}: Setting defines fields also defined by the ingress: {intersection}"
+                raise ValueError(msg)
+
         return self.experiment_class(
             **self.settings["experiment"]["defined"],
             **self.experiment_class_kwargs,
@@ -398,10 +425,10 @@ class BaseIngress(BaseBikipy, ABC):
         )
         df.columns.names = (
             ["Stage", "Feature", "Location/Category"]
-            if self.experiment.has_trials_in_stages
+            if self.experiment.has_stages
             else ["Feature", "Location/Category"]
         )
-        df.index.names = ["Animal ID"]
+        df.index.names = ["Animal"]
 
         return df
 
@@ -479,8 +506,8 @@ class BaseIngress(BaseBikipy, ABC):
     def plugin_to_label_to_global_plugin_objects(self) -> dict[str, dict[str, Plugin]]:
         result = {}
         for plugin_model in self._global_plugins:
-            result[plugin_model[plugin_model.bikipy_trial_key]] = {
-                file_path.stem.split("-")[-1]: plugin_model(data_path=file_path, ingress=self)
+            result[plugin_model.bikipy_trial_key] = {
+                plugin_model.label: plugin_model(data_path=file_path, ingress=self)
                 for file_path in self.plugin_directory_path.glob(f"{plugin_model.code_key}*")
             }
         return result
@@ -489,17 +516,26 @@ class BaseIngress(BaseBikipy, ABC):
     def plugin_to_label_to_metadata_plugin_objects(self) -> dict[str, dict[str, Plugin]]:
         result = {}
         for plugin_model in self._metadata_plugins:
-            result[plugin_model[plugin_model.bikipy_trial_key]] = {
-                file_path.stem.split("-")[-1]: plugin_model(data_path=file_path, ingress=self)
+            result[plugin_model.bikipy_trial_key] = {
+                plugin_model.label: plugin_model(data_path=file_path, ingress=self)
                 for file_path in self.plugin_directory_path.glob(f"{plugin_model.code_key}*")
             }
         return result
 
     @cached_property
-    def metadata_and_global_perimeter_and_perimeter_set(self) -> dict[str, dict[str, Plugin]]:
+    def metadata_and_global_plugins(self) -> dict[str, dict[str, Plugin]]:
         return dict_deepmerge(
             self.plugin_to_label_to_global_plugin_objects, deepcopy(self.plugin_to_label_to_metadata_plugin_objects)
         )
+
+    @property
+    def metadata_and_global_perimeter_and_perimeter_set(self) -> dict[str, Perimeter]:
+        result = {}
+        if PluginPerimeter.bikipy_trial_key in self.metadata_and_global_plugins:
+            result.update(self.metadata_and_global_plugins[PluginPerimeter.bikipy_trial_key])
+        if PluginRadial.bikipy_trial_key in self.metadata_and_global_plugins:
+            result.update(self.metadata_and_global_plugins[PluginRadial.bikipy_trial_key])
+        return result
 
     @cached_property
     def _trial_wise_plugins(self) -> list[Plugin]:
@@ -514,11 +550,29 @@ class BaseIngress(BaseBikipy, ABC):
     def _trial_class_from_stage_index(self, stage_index: str | PositiveInt) -> Trial:
         return self.experiment_class.stage_index_to_trial_class_name[stage_index]
 
+    def _trialwise_plugins_for_trial_id(
+        self, trial_id: str | PositiveInt, trial_directory: DirectoryPath, trial_id_plugin_glob_format_string: str
+    ) -> dict:
+        result = {}
+        for plugin_model in self._trial_wise_plugins:
+            glob_str = trial_id_plugin_glob_format_string.format(
+                trial_id=trial_id, plugin_code_key=plugin_model.code_key
+            )
+            plugin_data_files = tuple(trial_directory.glob(glob_str))
+            if len(plugin_data_files) > 1:
+                msg = f"Plugin {plugin_model.human_readable_index}: Only one file per trial"
+                raise ValueError(msg)
+
+            result[plugin_model.bikipy_trial_key] = plugin_model(data_path=plugin_data_files[0]).trialwise_and_metadata(
+                trial_id
+            )
+        return result
+
     @staticmethod
     def _get_id_from_path_stem(path: Path) -> str | PositiveInt:
         stem = path.stem
         if "-" in stem:
-            stem = path.stem.split("-")
+            stem = path.stem.split("-")[0]
         return int(stem) if stem.isdigit() else stem
 
     @staticmethod
@@ -568,7 +622,7 @@ def init_settings(
         },
     }
 
-    if experiment_class.has_trials_in_stages:
+    if experiment_class.has_stages:
         generic_settings["immutable"][
             "stage_index_to_trial_class_name"
         ] = experiment_class.stage_index_to_trial_class_name

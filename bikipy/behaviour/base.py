@@ -247,7 +247,7 @@ class BaseExperiment(Behaviour):
     inspect_image_path: Optional[FilePath] = Field(description="Used globally")
     compute_only_one_df_row: bool = Field(False, description="Used to rapidly generate combo df during debugging")
 
-    trial_classes: ClassVar[tuple["Trial"]] = Field(..., description="Trial classes designed for this experiment class")
+    trial_classes: ClassVar[tuple[Trial]] = Field(..., description="Trial classes designed for this experiment class")
 
     @validator("trial_id_to_trial_class_name")
     def sort_trial_id_to_trial_class_name_ascending(cls, value):
@@ -271,13 +271,13 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def has_trials_in_stages(cls) -> bool:
+    def has_stages(cls) -> bool:
         return cls.trial_sequence_length != 1
 
     @classmethod
     @property
     def column_index_levels(cls) -> int:
-        return 3 if cls.has_trials_in_stages else 2
+        return 3 if cls.has_stages else 2
 
     @classmethod
     @property
@@ -287,7 +287,7 @@ class BaseExperiment(Behaviour):
     @classmethod
     @property
     def trial_classes_have_identical_feature_headers(cls) -> bool:
-        if not cls.has_trials_in_stages:
+        if not cls.has_stages:
             return True
         if cls.trial_classes_with_feature_headers != cls.trial_sequence_length:
             return False
@@ -315,8 +315,8 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def trial_class(cls) -> "Trial":
-        if not cls.has_trials_in_stages:
+    def trial_class(cls) -> Trial:
+        if not cls.has_stages:
             msg = f"{cls.__name__}: trial_class attribute can only be utilized when there is only one Trial class"
             raise AttributeError(msg)
         return cls.trial_classes[0]
@@ -324,7 +324,7 @@ class BaseExperiment(Behaviour):
     @classmethod
     @property
     def stage_index_to_trial_class(cls) -> dict[int, Trial]:
-        if not cls.has_trials_in_stages:
+        if not cls.has_stages:
             msg = f"{cls.__name__}: stage_index_to_trial_class is undefined in non-sequential experiment classes"
             raise AttributeError(msg)
 
@@ -342,7 +342,7 @@ class BaseExperiment(Behaviour):
     @classmethod
     @property
     def trial_class_name_to_trial_class(cls) -> dict[str, Trial]:
-        if not cls.has_trials_in_stages:
+        if not cls.has_stages:
             msg = (
                 f"{cls.__name__}: trial_class_name_to_trial_class attribute can only be utilized when "
                 f"there are many Trial classes"
@@ -402,7 +402,7 @@ class BaseExperiment(Behaviour):
         for trial_id in self.trial_ids:
             trial_class = (
                 self.trial_class_name_to_trial_class[self.trial_id_to_trial_class_name[trial_id]]
-                if self.has_trials_in_stages
+                if self.has_stages
                 else self.trial_class
             )
             try:
@@ -574,7 +574,7 @@ class BaseExperiment(Behaviour):
                     break
 
         result = pd.DataFrame.from_dict(data_dict, orient="index", columns=self.feature_column_index)
-        result.index.name = "Animal ID"
+        result.index.name = "Animal"
 
         return result
 
@@ -599,7 +599,7 @@ class BaseExperiment(Behaviour):
                     break
 
         result = pd.DataFrame.from_dict(data_dict, orient="index", columns=self.animal_motion_column_index)
-        result.index.name = "Animal ID"
+        result.index.name = "Animal"
 
         return result
 
@@ -682,7 +682,7 @@ class BaseExperiment(Behaviour):
         return pd.Series(
             self.trial_id_to_animal_id.values(),
             index=self._trial_id_series,  # derived from self.trial_id_to_animal_id
-            name="Animal ID",
+            name="Animal",
         ).sort_index()
 
     @cached_property

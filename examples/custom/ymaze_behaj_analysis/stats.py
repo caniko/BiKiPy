@@ -20,7 +20,7 @@ for i in range(2):
     after_df = after_df[1].droplevel(axis=1, level=0)
     analysis_df = before_df - after_df
 
-    metadata_df = pd.read_excel("y-maze_metadata.xlsx", sheet_name=i).set_index("Animal ID")
+    metadata_df = pd.read_excel("y-maze_metadata.xlsx", sheet_name=i).set_index("Animal")
 
     summary = StatisticalAnalysis(
         analysis_df=analysis_df,
