@@ -5,7 +5,7 @@ Purpose of VideoMetadataMixin
 Classes that define videos should have this mixin: VideoMetadata, BaseExperiment, and BaseTrial. This class is
 bare metadata, and its purpose is to either initialize or relay an existing VideoMetadata object
 """
-from functools import cached_property
+from functools import cached_property, partial
 from logging import getLogger
 from typing import Any, ClassVar, Optional
 
@@ -196,3 +196,6 @@ def inspect_video_is_none_during_inspection(inspect_video: VideoMetadata | None)
             "required for generating inspection figure"
         )
         raise ValueError(msg)
+
+
+incongruity_permissive_video_join = partial(VideoMetadata.join, ignore_incongruity=True)

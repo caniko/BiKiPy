@@ -1,6 +1,6 @@
 from functools import cached_property
 from logging import getLogger
-from typing import ClassVar
+from typing import ClassVar, Hashable
 
 from bikipy.behaviour.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
 from bikipy.behaviour.rectangle import RectangleEnclosedExperiment, RectangleEnclosedHabituationTrial
@@ -100,3 +100,25 @@ class NortExperiment(RectangleEnclosedExperiment):
         "test": 2,
         "novelty_observation": 2,
     }
+
+    def trial_keyword_arguments(self, trial_id: Hashable) -> dict:
+        upstream = super().trial_keyword_arguments(trial_id)
+
+        match self.trial_id_to_trial_class_name[trial_id]:
+            case "NortTrainingTrial":
+                if "novel" in upstream:
+                    logger.debug("Renaming perimeter label: novel to variable for use in NortTrainingTrial")
+
+                    perimeter = upstream.pop("novel")
+                    perimeter.label = "variable"
+                    upstream["variable"] = upstream.pop("novel")
+
+            case "NortNoveltyTrial":
+                if "variable" in upstream:
+                    logger.debug("Renaming perimeter label: variable to novel for use in NortNoveltyTrial")
+
+                    perimeter = upstream.pop("variable")
+                    perimeter.label = "novel"
+                    upstream["novel"] = perimeter
+
+        return upstream

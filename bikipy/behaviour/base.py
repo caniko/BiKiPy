@@ -17,8 +17,8 @@ from yaspin.spinners import Spinners
 
 from bikipy import ENABLE_PROCESS_POOLING
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin, BaseBikipy
-from bikipy.core.typing import NDArrayFp64, NDArrayInt16
-from bikipy.core.video import VideoMetadata, VideoMetadataMixin
+from bikipy.core.typing import NDArrayFp64, NDArrayInt16, NDArrayUint8
+from bikipy.core.video import VideoMetadata, VideoMetadataMixin, incongruity_permissive_video_join
 from bikipy.feature.motion import Motion, motion_multi_indexer
 from bikipy.ingress.plugin import PluginChangeReference, PluginRadial
 from bikipy.perimeter.base import SinglePerimeter, PerimeterSet, BaseSinglePerimeter
@@ -210,8 +210,11 @@ class BaseTrial(Behaviour):
     def _video(self):
         video = super()._video
         if self.perimeters:
-            perimeter_video = reduce(VideoMetadata.join, (perimeter.video for perimeter in self.perimeters))
-            new_video = VideoMetadata.join(perimeter_video, video, ignore_incongruity=True)
+            perimeter_video = reduce(
+                incongruity_permissive_video_join, (perimeter.video for perimeter in self.perimeters)
+            )
+            # Manually passed video parameters should override any
+            new_video = VideoMetadata.join(video, perimeter_video, ignore_incongruity=True)
 
             # The resolution on perimeters should be more correct than whatever
             # provided by the user, hence it being master
@@ -219,7 +222,7 @@ class BaseTrial(Behaviour):
         return video
 
     @cached_property
-    def _uint_zeros_based_on_frame_length(self) -> NDArrayFp64:
+    def _uint_zeros_based_on_frame_length(self) -> NDArrayUint8:
         return np.zeros(self.number_of_frames, dtype=np.uint8)
 
     @cached_property

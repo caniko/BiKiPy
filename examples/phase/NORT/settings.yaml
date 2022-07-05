@@ -1,12 +1,12 @@
 ingress_method: phase
 first_stage_is_habituation: true
-manual_dataset_directory: null
+manual_dataset_directory: /home/can/Downloads/Compressed/NORT/
 ingress:
   meters_per_pixel_definition_strategy: global
   perimeter_definition_strategy: metadata
   radial_definition_strategy: null
   change_reference_definition_strategy: null
-  video_definition_strategy: null
+  video_definition_strategy: trial-wise
   center_definition_strategy: null
 perimeter:
   label_prefix: null
@@ -38,7 +38,15 @@ perimeter:
       reference_point_coco_path: string
       video_path: string
 reader_kwargs:
-  defined: {}
+  defined:
+    init_from: parquet
+    midpoint_groups:
+      center_eye:
+        - left_ear
+        - right_ear
+      torso:
+        - center_eye
+        - base_tail
   optional:
     crop_from_end: boolean -> False
     crop_time_seconds: number -> 0.0
@@ -116,7 +124,8 @@ trial:
       required:
         novel: None
 experiment:
-  defined: {}
+  defined:
+    manual_fps: 30
   optional:
     common_trial_keyword_arguments: object
     compute_only_one_df_row: boolean -> False
