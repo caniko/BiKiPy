@@ -10,6 +10,7 @@ import cv2
 import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath, ValidationError, validator, PositiveInt
+from pydantic.fields import FieldInfo
 from pydantic_numpy import NDArray
 from tqdm import tqdm
 from yaspin import yaspin
@@ -17,7 +18,7 @@ from yaspin.spinners import Spinners
 
 from bikipy import ENABLE_PROCESS_POOLING
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin, BaseBikipy
-from bikipy.core.typing import NDArrayFp64, NDArrayInt16, NDArrayUint8
+from bikipy.core.typing import NDArrayFp64, NDArrayInt16, NDArrayUint8, TrialId
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin, incongruity_permissive_video_join
 from bikipy.feature.motion import Motion, motion_multi_indexer
 from bikipy.ingress.plugin import PluginChangeReference, PluginRadial
@@ -66,7 +67,6 @@ class BaseTrial(Behaviour):
     rigid_nodes_freezing: Optional[Sequence[str | PositiveInt]] = Field(
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
     )
-    stage: Optional[str] = Field(description="The semantic stage of the experiment")
     inspect_image: Optional[NDArray] = Field(
         description="Image to use as background in the plots for visualising the analysis data",
     )
@@ -270,7 +270,7 @@ class BaseExperiment(Behaviour):
     @classmethod
     def first_trial_is_habituation(cls) -> "Experiment":
         cls.habituation_trial_class.experiment_class_name = cls.__name__
-        cls.trial_classes = (cls.habituation_trial_class, cls.trial_classes)
+        cls.trial_classes = (cls.habituation_trial_class, *cls.trial_classes)
         return cls
 
     @classmethod
@@ -292,19 +292,6 @@ class BaseExperiment(Behaviour):
     @property
     def trial_classes_with_feature_headers(cls) -> int:
         return sum(1 for _trial_class in cls.trial_classes if _trial_class.trial_has_defined_features)
-
-    @classmethod
-    @property
-    def trial_classes_have_identical_feature_headers(cls) -> bool:
-        if not cls.has_stages:
-            return True
-        if cls.trial_classes_with_feature_headers != cls.trial_sequence_length:
-            return False
-        if all(
-            cls.trial_classes[0].feature_headers == trial_class.feature_headers for trial_class in cls.trial_classes[1:]
-        ):
-            return True
-        return False
 
     @classmethod
     @property
@@ -346,6 +333,12 @@ class BaseExperiment(Behaviour):
     @classmethod
     @property
     def stage_index_to_trial_class_name(cls):
+        if isinstance(tuple(cls.stage_index_to_trial_class.values())[-1], FieldInfo):
+            msg = (
+                f"To the developers: Setting the trial_classes class variable is required; "
+                f"please do so for {cls.__name__}"
+            )
+            raise AttributeError(msg)
         return {i: trial_class.__name__ for i, trial_class in cls.stage_index_to_trial_class.items()}
 
     @classmethod
@@ -364,7 +357,7 @@ class BaseExperiment(Behaviour):
             msg = "experiment_stage_index must be defined for each trial class when working with a sequence of trial classes"
             raise AttributeError(msg)
 
-    def trial_keyword_arguments(self, trial_id: Hashable) -> dict:
+    def trial_keyword_arguments(self, trial_id: TrialId) -> dict:
         """
         Function useful for customizing initiation parameters for trial objects
         """
@@ -489,17 +482,17 @@ class BaseExperiment(Behaviour):
     def stage_index_to_trial_objects(self) -> dict[int, Trial]:
         result = {}
         for trial in self.trial_objects:
-            if trial.stage in result:
-                result[trial.stage].append(trial)
+            if trial.experiment_stage_index in result:
+                result[trial.experiment_stage_index].append(trial)
             else:
-                result[trial.stage] = [trial]
+                result[trial.experiment_stage_index] = [trial]
         return result
 
     @cached_property
     def trial_ids(self) -> tuple:
         if self.manual_trial_ids:
             result = self.manual_trial_ids
-        elif self.trial_class:
+        elif not self.has_stages and self.trial_class:
             result = tuple(self.trial_id_to_keyword_arguments)
         elif self.trial_id_to_trial_class_name:
             result = tuple(self.trial_id_to_trial_class_name)

@@ -6,7 +6,7 @@ import pandas as pd
 from pydantic import DirectoryPath, FilePath, Field, PositiveInt
 
 from bikipy.core.base_class import BaseBikipy
-from bikipy.core.typing import NDArrayFp64
+from bikipy.core.typing import NDArrayFp64, TrialId
 from bikipy.utils.io.makesense import get_only_point_from_makesense
 
 
@@ -41,7 +41,7 @@ class BasePlugin(BaseBikipy, ABC):
             return int(self.plugin_name[0])
 
     @abstractmethod
-    def trialwise_and_metadata(self, trial_id: str | PositiveInt):
+    def trialwise_and_metadata(self, trial_id: TrialId):
         ...
 
     @property

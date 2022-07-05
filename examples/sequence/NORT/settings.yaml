@@ -2,7 +2,7 @@ ingress_method: animal
 ingress:
   stageful_metadata: false
   skip_absent_trials_absent_from_metadata_index: false
-  meters_per_pixel_definition_strategy: global_perimeter
+  meters_per_pixel_definition_strategy: global
   perimeter_definition_strategy: metadata
   center_definition_strategy: null
 perimeter:

@@ -4,7 +4,7 @@ from logging import getLogger
 import numpy as np
 from pydantic import DirectoryPath, FilePath, validator, PositiveInt
 
-from bikipy.core.typing import NDArrayFp64
+from bikipy.core.typing import NDArrayFp64, TrialId
 from bikipy.ingress.plugin.base import BasePluginFile
 from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.io.makesense import read_first_makesense_line
@@ -71,7 +71,7 @@ class PluginMeterPerPixel(BasePluginFile):
                 msg = f"Method {self.annotation_method} is not supported"
                 raise NotImplementedError(msg)
 
-    def trialwise_and_metadata(self, trial_id: str | PositiveInt) -> float:
+    def trialwise_and_metadata(self, trial_id: TrialId) -> float:
         return self.ratio
 
     @property

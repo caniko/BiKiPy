@@ -3,7 +3,7 @@ from typing import ClassVar
 
 from pydantic import PositiveInt
 
-from bikipy.core.typing import NDArrayFp64
+from bikipy.core.typing import NDArrayFp64, TrialId
 from bikipy.ingress.plugin.base import BasePluginFile
 from bikipy.perimeter.base import Perimeter, BasePerimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
@@ -38,7 +38,7 @@ class PluginChangeReference(BasePluginFile):
     def image_name_to_re_referencing_point(self) -> dict[str, NDArrayFp64]:
         return image_name_to_point_from_makesense(self.data_path, only_point=False)
 
-    def trialwise_and_metadata(self, trial_id: str | PositiveInt) -> Perimeter | dict:
+    def trialwise_and_metadata(self, trial_id: TrialId) -> Perimeter | dict:
         trial_id_image_name = self.ingress.metadata.loc[trial_id, self._human_readable_index_image_name]
         reference_data = self.image_name_to_re_referencing_point[trial_id_image_name]
 

@@ -3,6 +3,7 @@ from typing import ClassVar
 
 from pydantic import PositiveInt, DirectoryPath
 
+from bikipy.core.typing import TrialId
 from bikipy.ingress.core import BaseIngress
 
 logger = getLogger(__name__)
@@ -37,14 +38,13 @@ class AnimalIngress(BaseIngress):
                 self._trial_id_to_keyword_arguments[trial_id] = {
                     "label": trial_id,
                     "animal_id": animal_id,
-                    "stage": stage_index,
                     "coordinate_data_path": trial_kinematic_data_file_path,
                     **self.trialwise_plugins_for_trial_id(trial_id, animal_dir),
                     **self._trial_id_to_keyword_arguments[trial_id],
                     **plugin_data,
                 }
 
-    def trialwise_plugins_for_trial_id(self, trial_id: str | PositiveInt, trial_directory: DirectoryPath):
+    def trialwise_plugins_for_trial_id(self, trial_id: TrialId, trial_directory: DirectoryPath):
         return self._trialwise_plugins_for_trial_id(trial_id, trial_directory, "{trial_id}.{plugin_code_key}*")
 
     def verify_project_structure(self):

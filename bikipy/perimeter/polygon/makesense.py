@@ -99,6 +99,11 @@ def init_polygon_from_makesense_csv_rectangle(
         start = np.array(row[:2], dtype=int)
         end = start + np.array(row[2:4], dtype=int)
 
+        if "reference_point_array" not in perimeter_kwargs:
+            perimeter_kwargs["reference_point_array"] = (
+                image_name_to_reference_point[image_name] if reference_point_csv_path else None
+            )
+
         image_name = row["image_name"]
         if image_name not in result:
             result[image_name] = {}
@@ -106,7 +111,6 @@ def init_polygon_from_makesense_csv_rectangle(
         result[image_name][label] = init_polygon(
             np.array((start, (start[0], end[1]), end, (end[0], start[1]))),
             label=label,
-            reference_point_array=image_name_to_reference_point[image_name] if reference_point_csv_path else None,
             manual_recording_resolution=np.array((row["x_res"], row["y_res"]), dtype=float),
             manual_frame=cv2.imread(image_root / str(image_name)) if image_root else None,
             makesense_image_name=row["image_name"],

@@ -2,7 +2,7 @@ from functools import cached_property
 
 from pydantic import DirectoryPath, FilePath, validate_arguments, PositiveInt
 
-from bikipy.core.typing import NDArrayFp64
+from bikipy.core.typing import NDArrayFp64, TrialId
 from bikipy.ingress.plugin.base import BasePluginFile
 from bikipy.utils.io.makesense import get_only_point_from_makesense, read_makesense_point
 
@@ -17,7 +17,7 @@ class PluginCenter(BasePluginFile):
     def only_center(self) -> NDArrayFp64:
         return get_only_point_from_makesense(self.data_path)
 
-    def trialwise_and_metadata(self, trial_id: str | PositiveInt) -> NDArrayFp64:
+    def trialwise_and_metadata(self, trial_id: TrialId) -> NDArrayFp64:
         return self.only_center
 
     @property

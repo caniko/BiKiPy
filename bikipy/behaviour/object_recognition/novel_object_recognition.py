@@ -4,6 +4,7 @@ from typing import ClassVar, Hashable
 
 from bikipy.behaviour.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
 from bikipy.behaviour.rectangle import RectangleEnclosedExperiment, RectangleEnclosedHabituationTrial
+from bikipy.core.typing import TrialId
 from bikipy.perimeter.base import SinglePerimeter
 
 logger = getLogger(__name__)
@@ -88,6 +89,8 @@ class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
 class NortExperiment(RectangleEnclosedExperiment):
     habituation_trial_class = RectangleEnclosedHabituationTrial
 
+    trial_classes = (NortTrainingTrial, NortNoveltyTrial)
+
     experiment_stage_name_to_stage_index: ClassVar[dict[str, int]] = {
         "habituation": 0,
         "open_field": 0,
@@ -101,7 +104,7 @@ class NortExperiment(RectangleEnclosedExperiment):
         "novelty_observation": 2,
     }
 
-    def trial_keyword_arguments(self, trial_id: Hashable) -> dict:
+    def trial_keyword_arguments(self, trial_id: TrialId) -> dict:
         upstream = super().trial_keyword_arguments(trial_id)
 
         match self.trial_id_to_trial_class_name[trial_id]:

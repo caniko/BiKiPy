@@ -4,7 +4,7 @@ from collections import defaultdict
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, ClassVar, Hashable, Iterable, TypeVar
+from typing import Any, ClassVar, Hashable, Iterable, TypeVar, Optional
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -13,8 +13,10 @@ import yaml
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 
 from bikipy.core.base_class import BaseBikipy
-from bikipy.ingress.plugin import ingress_key_to_model
+from bikipy.core.typing import NDArrayFp64, TrialId
+from bikipy.ingress.plugin import ingress_key_to_model, PluginMeterPerPixel
 from bikipy.ingress.plugin.base import Plugin
+from bikipy.ingress.plugin.meters_per_pixel import detect_meters_per_pixel_in_perimeter_directory
 from bikipy.ingress.utils import settings
 from bikipy.ingress.utils.io import (
     get_dataset_directory_path,
@@ -97,9 +99,7 @@ class BaseIngress(BaseBikipy, ABC):
 
     @property
     def experiment_name(self) -> str:
-        python_defined_name = self.experiment_class.__name__
-        assert python_defined_name == self.settings["immutable"]["experiment_class"]
-        return python_defined_name
+        return self.settings["immutable"]["experiment_class"]
 
     @cached_property
     def experiment_class(self) -> "Experiment":
@@ -138,7 +138,13 @@ class BaseIngress(BaseBikipy, ABC):
             "trial_id_to_keyword_arguments": set(get_first_value_in_dict(self.trial_id_to_keyword_arguments)),
         }
         if self.experiment_class.has_stages:
-            result["trial_class_name_to_keyword_arguments"] = set(self.trial_class_name_to_keyword_arguments.values())
+            trial_class_name_to_keyword_arguments_fields = []
+
+            for trial_class_keyword_arguments in self.trial_class_name_to_keyword_arguments.values():
+                if trial_class_keyword_arguments:
+                    trial_class_name_to_keyword_arguments_fields.extend(*trial_class_keyword_arguments.keys())
+
+            result["trial_class_name_to_keyword_arguments"] = set(trial_class_name_to_keyword_arguments_fields)
 
         return result
 
@@ -355,9 +361,10 @@ class BaseIngress(BaseBikipy, ABC):
 
     def _define_experiment_data(self) -> None:
         for plugin_model in self._global_plugins:
+            first_file = next(self.plugin_directory_path.glob(f"{plugin_model.code_key}*"))
             self._common_trial_keyword_arguments[plugin_model.bikipy_trial_key] = plugin_model(
-                data_path=next(self.plugin_directory_path.glob(f"{plugin_model.code_key}*")), ingress=self
-            )
+                data_path=first_file, ingress=self
+            ).globally_defined
 
         for plugin_model in self._metadata_plugins:
             label_to_file_path = {
@@ -371,7 +378,7 @@ class BaseIngress(BaseBikipy, ABC):
                     continue
 
                 self._trial_id_to_keyword_arguments[trial_id][plugin_model.bikipy_trial_key] = plugin_model(
-                    data_path=label_to_file_path[trial_id_plugin_label], ingress=self
+                    data_path=label_to_file_path[str(trial_id_plugin_label)], ingress=self
                 ).trialwise_and_metadata(trial_id)
 
         self._dataset_reader()
@@ -468,12 +475,9 @@ class BaseIngress(BaseBikipy, ABC):
         return df
 
     def save_analysis_data(self):
-        # self.analysis_df.to_parquet(self.result_directory_path / f"animal_id_indexed_result_data.parquet")
-        # self.experiment.combined_feature_motion_df.to_excel(
-        #     self.result_directory_path / "animal_id_indexed_result_data.xlsx"
-        # )
+        self.experiment.trial_label_to_df
         with pd.ExcelWriter(self.result_directory_path / "trial_id_indexed_result_data.xlsx") as writer:
-            for trial_label, df in self.trial_label_to_df.items():
+            for trial_label, df in self.experiment.trial_label_to_df.items():
                 df.to_excel(writer, sheet_name=trial_label)
 
     def update_settings(self, delete_outdated: bool = False, dry_run: bool = False) -> dict:
@@ -544,13 +548,23 @@ class BaseIngress(BaseBikipy, ABC):
             if strategy == "trial-wise"
         ]
 
+    def get_meter_per_pixel(self, trial_id: Optional[str | PositiveInt] = None) -> NDArrayFp64:
+        match self.settings["ingress"]["meters_per_pixel_definition_strategy"]:
+            case "global":
+                return self._common_trial_keyword_arguments[PluginMeterPerPixel.bikipy_trial_key]
+            case "metadata":
+                file_label = self.metadata["MetersPerPixel"][trial_id]
+                return detect_meters_per_pixel_in_perimeter_directory(self.plugin_directory_path)[file_label]
+            case "trial-wise":
+                return self.trial_id_to_keyword_arguments[trial_id]["meters_per_pixel"]
+
     # Private methods ===============================
 
     def _trial_class_from_stage_index(self, stage_index: str | PositiveInt) -> "Trial":
         return self.experiment_class.stage_index_to_trial_class_name[stage_index]
 
     def _trialwise_plugins_for_trial_id(
-        self, trial_id: str | PositiveInt, trial_directory: DirectoryPath, trial_id_plugin_glob_format_string: str
+        self, trial_id: TrialId, trial_directory: DirectoryPath, trial_id_plugin_glob_format_string: str
     ) -> dict:
         result = {}
         for plugin_model in self._trial_wise_plugins:

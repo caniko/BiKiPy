@@ -1,6 +1,6 @@
 ingress_method: phase
 first_stage_is_habituation: true
-manual_dataset_directory: /home/can/Downloads/Compressed/NORT/
+manual_dataset_directory: /home/can/Downloads/Compressed/nort/
 ingress:
   meters_per_pixel_definition_strategy: global
   perimeter_definition_strategy: metadata
@@ -72,7 +72,7 @@ trial:
       coordinate_data_path: null
       familiar: null
       label: null
-      object_tracking_label_for_kinematics: null
+      object_tracking_label_for_kinematics: nose
       reader_kwargs: null
     required:
       animal_id: '[{''type'': ''string''}, {''type'': ''integer'', ''exclusiveMinimum'':

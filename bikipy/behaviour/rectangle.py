@@ -1,6 +1,6 @@
 from functools import cached_property, lru_cache
 from logging import getLogger
-from typing import Any, ClassVar, Hashable, Optional
+from typing import Any, ClassVar, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,7 +11,7 @@ from skg import ngauss_fit
 from bikipy.behaviour.base import BaseExperiment, BaseTrial, HabituationTrialMixin
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipy
-from bikipy.core.typing import NDArrayBool, NDArrayFp64, NDArrayInt16
+from bikipy.core.typing import NDArrayBool, NDArrayFp64, NDArrayInt16, TrialId
 from bikipy.feature.motion import (
     get_combined_features_from_merged_motion_island_data,
     motion_multi_indexer,
@@ -92,7 +92,7 @@ class RectangleEnclosedExperiment(BaseExperiment):
             ]
         return result
 
-    def trial_keyword_arguments(self, trial_id: Hashable) -> dict:
+    def trial_keyword_arguments(self, trial_id: TrialId) -> dict:
         result = super().trial_keyword_arguments(trial_id)
         result["rectangle_2d_bin"] = self.rectangle_2d_bin
         result["center_box_to_spatial_resolution_ratio"] = self.center_box_to_spatial_resolution_ratio
@@ -313,6 +313,18 @@ class RectangleEnclosedTrial(BaseTrial):
     @cached_property
     def seconds_on_periphery(self) -> int:
         return np.sum(self.periphery_boolean_index) / self.video.fps
+
+    @property
+    def dynamic_feature_headers(self):
+        quadrant_summary_columns = []
+        for quadrant_grid_coordinate in self.quadrant_grid_coordinate_to_vertices:
+            category = f"Quadrant{quadrant_grid_coordinate}"
+            quadrant_summary_columns.extend(motion_multi_indexer_for_quadrant(category, 2))
+        result = [
+            *super().motion_column_headers,
+            # ["Gaussian", "CenterToPeriphery"],
+            *quadrant_summary_columns,
+        ]
 
     @property
     def motion_features(self) -> list:

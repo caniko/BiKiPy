@@ -5,6 +5,7 @@ from typing import Any, Optional
 import pandas as pd
 from pydantic import FilePath, PositiveInt
 
+from bikipy.core.typing import TrialId
 from bikipy.ingress.plugin.base import BasePluginFile, HasReferenceMixin
 from bikipy.perimeter.base import (
     SinglePerimeter,
@@ -49,12 +50,11 @@ class PluginPerimeter(BasePluginFile, HasReferenceMixin):
         if self.perimeter_settings["perimeter_names_in_metadata"]:
             return _open_label_to_trial_label_df(self.ingress.metadata_path)
 
-    @cached_property
-    def perimeter_mapper(self) -> dict[str, SinglePerimeter]:
+    def perimeter_mapper(self, trial_id: Optional[str | PositiveInt] = None) -> dict[str, SinglePerimeter]:
         image_name_to_perimeter_set = perimeter_set_from_makesense(
             self.data_path,
             self.manual_shape or self.shape,
-            meters_per_pixel=self.ingress.get_meter_per_pixel(),
+            meters_per_pixel=self.ingress.get_meter_per_pixel(trial_id),
             reference_point_array=self.reference_point,
         )
 
@@ -69,9 +69,9 @@ class PluginPerimeter(BasePluginFile, HasReferenceMixin):
 
         return result
 
-    def trialwise_and_metadata(self, trial_id: str | PositiveInt) -> dict[str, SinglePerimeter]:
+    def trialwise_and_metadata(self, trial_id: TrialId) -> dict[str, SinglePerimeter]:
         result = {}
-        for label, perimeter in self.perimeter_mapper.items():
+        for label, perimeter in self.perimeter_mapper(trial_id).items():
             if self.label_to_trial_label_df is not None:
                 label = self.label_to_trial_label_df.loc[trial_id, label]
             if p := self.perimeter_settings["label_prefix"]:
@@ -86,7 +86,7 @@ class PluginPerimeter(BasePluginFile, HasReferenceMixin):
     @property
     def globally_defined(self) -> dict[str, SinglePerimeter]:
         result = {}
-        for label, perimeter in self.perimeter_mapper.items():
+        for label, perimeter in self.perimeter_mapper().items():
             if p := self.perimeter_settings["label_prefix"]:
                 label = f"{p}_{label}"
             if s := self.perimeter_settings["label_suffix"]:
@@ -100,7 +100,7 @@ class PluginPerimeter(BasePluginFile, HasReferenceMixin):
         return result
 
 
-def perimeter_file_path_to_data_object(file_path: FilePath, trial_id: str | PositiveInt, ingress: Any, *args, **kwargs):
+def perimeter_file_path_to_data_object(file_path: FilePath, trial_id: TrialId, ingress: Any, *args, **kwargs):
     return PluginPerimeter(data_path=file_path, ingress=ingress, trial_id=trial_id)
 
 
