@@ -17,7 +17,7 @@ WT: 3 > 4 > 1 > 2
 from typing import ClassVar
 
 from bikipy.behaviour.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
-from bikipy.behaviour.rectangle import RectangleEnclosedExperiment
+from bikipy.behaviour.rectangle import RectangleEnclosedExperiment, RectangleEnclosedHabituationTrial
 from bikipy.perimeter.base import SinglePerimeter
 
 
@@ -25,11 +25,10 @@ class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTri
     object_1: SinglePerimeter = ...
     object_2: SinglePerimeter = ...
 
-    physical_object_labels: ClassVar[list[str, ...]] = ["object_1", "object_2"]
+    physical_object_labels = ("object_1", "object_2")
 
-    experiment_stage_index: ClassVar[int] = 0
-    trial_label: ClassVar[str] = "Training"
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
+    trial_label = "Training"
 
     @property
     def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
@@ -40,10 +39,10 @@ class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial
     object_1: SinglePerimeter = ...
     object_4: SinglePerimeter = ...
 
-    physical_object_labels: ClassVar[list[str, ...]] = ["object_1", "object_4"]
+    physical_object_labels = ("object_1", "object_4")
 
-    experiment_stage_index: ClassVar[int] = 1
-    trial_label: ClassVar[str] = "Update"
+    experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
+    trial_label = "Update"
 
     @property
     def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
@@ -56,10 +55,10 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
     object_3: SinglePerimeter = ...
     object_4: SinglePerimeter = ...
 
-    physical_object_labels: ClassVar[list[str, ...]] = ["object_1", "object_2", "object_3", "object_4"]
+    physical_object_labels = ("object_1", "object_2", "object_3", "object_4")
 
-    experiment_stage_index: ClassVar[int] = 2
-    trial_label: ClassVar[str] = "Test"
+    experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
+    trial_label = "Test"
 
     @property
     def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
@@ -67,7 +66,9 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
 
 
 class ObjectsInUpdatingLocationsExperiment(RectangleEnclosedExperiment):
-    trial_classes: ClassVar = (
+    habituation_trial_class = RectangleEnclosedHabituationTrial
+
+    trial_classes = (
         ObjectsInUpdatingLocationsTrainingTrial,
         ObjectsInUpdatingLocationsUpdateTrial,
         ObjectsInUpdatingLocationsTestTrial,

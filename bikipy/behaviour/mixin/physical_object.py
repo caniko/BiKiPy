@@ -26,7 +26,7 @@ class PhysicalObjectTrialMixin(BaseBikipy):
 
     physical_object_inspect: bool = False
 
-    physical_object_labels: ClassVar[list[str, ...]] = []
+    physical_object_labels: ClassVar[tuple[str, ...]] = ...
     all_perimeters_are_physical_objects: ClassVar[bool] = True
 
     @classmethod
@@ -86,12 +86,6 @@ class PhysicalObjectTrialMixin(BaseBikipy):
 
 
 PhysicalObjectTrial = TypeVar("PhysicalObjectTrial", bound=PhysicalObjectTrialMixin)
-
-
-class PhysicalObjectHabituationTrialMixin(BaseModel):
-    """The purpose of this stage is to generate reference data for proceeding experiments with objects."""
-
-    trial_label: ClassVar[str] = "Habituation"
 
 
 class RectangleEnclosedPhysicalObjectTrial(PhysicalObjectTrialMixin, RectangleEnclosedTrial):

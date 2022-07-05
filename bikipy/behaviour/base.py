@@ -16,7 +16,7 @@ from yaspin import yaspin
 from yaspin.spinners import Spinners
 
 from bikipy import ENABLE_PROCESS_POOLING
-from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
+from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin, BaseBikipy
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_multi_indexer
@@ -82,14 +82,12 @@ class BaseTrial(Behaviour):
     trial_start_perimeter: Optional[str]
 
     # Class variables
-    experiment_class_name: ClassVar[str]
-    category: ClassVar[Optional[str]] = "trial"
+    category = "trial"
 
-    trial_label: ClassVar[Optional[str]]
+    experiment_class_name: ClassVar[str] = ...
+    trial_label: ClassVar[str] = ...
 
     second_tolerance: ClassVar[float] = 0.15
-
-    trial_has_video_space_for_analysis: ClassVar[bool] = False
 
     @classmethod
     @property
@@ -246,6 +244,9 @@ class BaseExperiment(Behaviour):
     inspect_image_path: Optional[FilePath] = Field(description="Used globally")
     compute_only_one_df_row: bool = Field(False, description="Used to rapidly generate combo df during debugging")
 
+    habituation_trial_class: ClassVar[Trial] = Field(
+        ..., description="The trial class that will be used in case first_trial_is_habituation is called"
+    )
     trial_classes: ClassVar[tuple[Trial]] = Field(..., description="Trial classes designed for this experiment class")
 
     @validator("trial_id_to_trial_class_name")
@@ -262,6 +263,12 @@ class BaseExperiment(Behaviour):
     def save(self):
         self.trial_label_to_df
         super().save()
+
+    @classmethod
+    def first_trial_is_habituation(cls) -> "Experiment":
+        cls.habituation_trial_class.experiment_class_name = cls.__name__
+        cls.trial_classes = (cls.habituation_trial_class, cls.trial_classes)
+        return cls
 
     @classmethod
     @property
@@ -748,3 +755,7 @@ class BaseExperiment(Behaviour):
 
 
 Experiment = TypeVar("Experiment", bound=BaseExperiment)
+
+
+class HabituationTrialMixin(BaseBikipy):
+    trial_label = "Habituation"

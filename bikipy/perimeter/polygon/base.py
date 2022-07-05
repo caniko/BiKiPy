@@ -34,7 +34,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
     reference_point_array: Optional[NDArrayInt16]
     feature_scale: Optional[NDArrayFp64]
 
-    category: ClassVar[Optional[str]] = "perimeter"
+    category = "perimeter"
 
     polygon_order: ClassVar[Optional[int]]
 

@@ -3,20 +3,20 @@ from logging import getLogger
 from typing import ClassVar
 
 from bikipy.behaviour.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
-from bikipy.behaviour.rectangle import RectangleEnclosedExperiment
+from bikipy.behaviour.rectangle import RectangleEnclosedExperiment, RectangleEnclosedHabituationTrial
 from bikipy.perimeter.base import SinglePerimeter
 
 logger = getLogger(__name__)
 
 
 class NortTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
-    variable: SinglePerimeter
-    familiar: SinglePerimeter
+    variable: SinglePerimeter = ...
+    familiar: SinglePerimeter = ...
 
-    physical_object_labels: ClassVar[list[str, ...]] = ["variable", "familiar"]
+    physical_object_labels = ("variable", "familiar")
 
     experiment_class_name = "NortExperiment"
-    trial_label: ClassVar[str] = "Training"
+    trial_label = "Training"
 
     @property
     def all_physical_object_perimeters(self):
@@ -24,13 +24,13 @@ class NortTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
 
 
 class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
-    novel: SinglePerimeter
-    familiar: SinglePerimeter
+    novel: SinglePerimeter = ...
+    familiar: SinglePerimeter = ...
 
-    physical_object_labels: ClassVar[list[str, ...]] = ["novel", "familiar"]
+    physical_object_labels = ("novel", "familiar")
 
     experiment_class_name = "NortExperiment"
-    trial_label: ClassVar[str] = "Novelty"
+    trial_label = "Novelty"
 
     @classmethod
     @property
@@ -86,11 +86,8 @@ class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
 
 
 class NortExperiment(RectangleEnclosedExperiment):
-    first_stage_has_no_object: ClassVar = True
-    trial_classes: ClassVar = (
-        NortTrainingTrial,
-        NortNoveltyTrial,
-    )
+    habituation_trial_class = RectangleEnclosedHabituationTrial
+
     experiment_stage_name_to_stage_index: ClassVar[dict[str, int]] = {
         "habituation": 0,
         "open_field": 0,

@@ -5,14 +5,13 @@ from functools import cached_property
 from logging import getLogger
 from pathlib import Path
 from typing import Any, ClassVar, Hashable, Iterable, TypeVar
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 import yaml
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 
-from bikipy.behaviour.base import Experiment, Trial
-from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.core.base_class import BaseBikipy
 from bikipy.ingress.plugin import ingress_key_to_model
 from bikipy.ingress.plugin.base import Plugin
@@ -31,6 +30,10 @@ from bikipy.perimeter.base import BaseSinglePerimeter, Perimeter
 from bikipy.reader import DeepLabCutReader
 from bikipy.utils.collection_utils import copycat_assumes_levels_of_icon, get_first_value_in_dict
 from bikipy.utils.misc import sheet_names_from_path, dict_deepmerge
+
+if TYPE_CHECKING:
+    from bikipy.behaviour.base import Experiment, Trial
+
 
 logger = getLogger(__name__)
 
@@ -94,12 +97,16 @@ class BaseIngress(BaseBikipy, ABC):
 
     @property
     def experiment_name(self) -> str:
-        return self.settings["immutable"]["experiment_class"]
+        python_defined_name = self.experiment_class.__name__
+        assert python_defined_name == self.settings["immutable"]["experiment_class"]
+        return python_defined_name
 
-    @property
-    def experiment_class(self):
+    @cached_property
+    def experiment_class(self) -> "Experiment":
+        from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
+
         try:
-            return EXPERIMENT_NAME_TO_CLASS[self.experiment_name]
+            experiment = EXPERIMENT_NAME_TO_CLASS[self.experiment_name]
         except KeyError:
             msg = (
                 f"experiment_class in settings is set to an invalid value: "
@@ -107,6 +114,10 @@ class BaseIngress(BaseBikipy, ABC):
                 f"this value should not be changed after initialization of the project."
             )
             raise ValueError(msg)
+
+        if self.settings["first_stage_is_habituation"]:
+            return experiment.first_trial_is_habituation()
+        return experiment
 
     @property
     def experiment_class_kwargs(self) -> dict[str, dict]:
@@ -190,6 +201,11 @@ class BaseIngress(BaseBikipy, ABC):
 
     @cached_property
     def metadata(self) -> pd.DataFrame:
+        def join_trial_df_with_animal_metadata(df: pd.DataFrame) -> pd.DataFrame:
+            if self.animal_metadata is not None:
+                df = df.join(self.animal_metadata, how="inner")
+            return df
+
         if "trial_id" in self._metadata_sheet_names:
             trial_id_df = pd.read_excel(
                 self.metadata_path,
@@ -198,20 +214,30 @@ class BaseIngress(BaseBikipy, ABC):
             )
             trial_id_df.index.names = ["Trial"]
 
-            assert "Animal" in trial_id_df, "Animal column must be present trial_id and animal metadata sheets"
+            trial_id_df = join_trial_df_with_animal_metadata(trial_id_df)
 
-            if self.animal_metadata is not None:
-                trial_id_df = trial_id_df.join(self.animal_metadata, how="inner")
+        elif "phase" in self._metadata_sheet_names:
+            """
+            The phase layout of trial ID is very similar to the original layout, with one minor difference:
+            There are three index columns the 1st is the Phase column, the 2nd is the PhasePart column, and the
+            3rd is the trial ID column. This column are merged into a single index for bikipy ingress
+            """
+            trial_id_df = pd.read_excel(self.metadata_path, sheet_name="phase", index_col=[0, 1, 2])
+            trial_id_df.index = trial_id_df.index.map(lambda x: f"{x[0]}{x[1]}_{x[2]}")
+
+            trial_id_df = join_trial_df_with_animal_metadata(trial_id_df)
 
         elif "animal_sequence" in self._metadata_sheet_names:
+            """
+            The Animal-Sequence layout derives trial ID from Animal and Sequence ID.
+            """
             trial_id_df = pd.read_excel(
                 self.metadata_path,
                 sheet_name="animal_sequence",
                 index_col=[0, 1],
             )
             trial_id_df.index.names = ["Animal", "Sequence"]
-            if self.animal_metadata is not None:
-                trial_id_df = trial_id_df.join(self.animal_metadata, how="inner")
+            trial_id_df = join_trial_df_with_animal_metadata(trial_id_df)
 
             trial_id_df["Animal"] = trial_id_df.index.get_level_values(level="Animal")
 
@@ -279,6 +305,8 @@ class BaseIngress(BaseBikipy, ABC):
                 f"to metadata:\n{self._metadata_plugins}"
             )
             raise ValueError(msg)
+
+        assert "Animal" in trial_id_df, "Animal column must be present trial_id and animal metadata sheets"
 
         return trial_id_df
 
@@ -386,7 +414,7 @@ class BaseIngress(BaseBikipy, ABC):
         self._experiment_data_defined = True
 
     @cached_property
-    def experiment(self) -> Experiment:
+    def experiment(self) -> "Experiment":
         settings_defined = set(self.settings["experiment"]["defined"])
 
         for kwarg_dict_name, fields in self.ingress_defined_fields.items():
@@ -518,7 +546,7 @@ class BaseIngress(BaseBikipy, ABC):
 
     # Private methods ===============================
 
-    def _trial_class_from_stage_index(self, stage_index: str | PositiveInt) -> Trial:
+    def _trial_class_from_stage_index(self, stage_index: str | PositiveInt) -> "Trial":
         return self.experiment_class.stage_index_to_trial_class_name[stage_index]
 
     def _trialwise_plugins_for_trial_id(
@@ -563,12 +591,15 @@ def init_settings(
     dry_run: bool = False,
     silent: bool = False,
 ) -> dict[str, str | dict]:
+    from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
+
     logger.info(f"Generating experiment configuration at {project_root_directory}")
 
     experiment_class = EXPERIMENT_NAME_TO_CLASS[experiment_name]
 
     generic_settings = {
         "ingress_method": ingress_method,
+        "first_stage_is_habituation": False,
         "manual_dataset_directory": None,
         "ingress": {
             "meters_per_pixel_definition_strategy": "global",

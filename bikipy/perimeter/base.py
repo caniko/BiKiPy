@@ -50,7 +50,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
     reference_point_coco_path: Optional[FilePath]
     reference_point_array: Optional[NDArrayInt16]
 
-    category: ClassVar[Optional[str]] = "perimeter"
+    category = "perimeter"
     required_video_metadata_fields = {"recording_resolution"}
 
     @property
@@ -254,7 +254,7 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
 
     label: Optional[str]
 
-    category: ClassVar[Optional[str]] = "perimeter"
+    category = "perimeter"
     _class_inspect_directory_name = "perimeter_set"
 
     @property

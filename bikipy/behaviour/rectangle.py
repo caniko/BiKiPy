@@ -8,7 +8,7 @@ from pydantic import validate_arguments
 from pydantic_numpy import NDArray
 from skg import ngauss_fit
 
-from bikipy.behaviour.base import BaseExperiment, BaseTrial
+from bikipy.behaviour.base import BaseExperiment, BaseTrial, HabituationTrialMixin
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayBool, NDArrayFp64, NDArrayInt16
@@ -345,6 +345,10 @@ class RectangleEnclosedTrial(BaseTrial):
             )
 
         return result
+
+
+class RectangleEnclosedHabituationTrial(HabituationTrialMixin, BaseTrial):
+    pass
 
 
 @lru_cache
