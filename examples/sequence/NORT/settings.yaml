@@ -35,7 +35,6 @@ perimeter:
         save_root: string
 reader_kwargs:
   defined:
-    init_from: parquet
     midpoint_groups:
       center_eye:
         - left_ear

@@ -40,6 +40,7 @@ class AnimalIngress(BaseIngress):
                     "stage": stage_index,
                     "coordinate_data_path": trial_kinematic_data_file_path,
                     **self.trialwise_plugins_for_trial_id(trial_id, animal_dir),
+                    **self._trial_id_to_keyword_arguments[trial_id],
                     **plugin_data,
                 }
 

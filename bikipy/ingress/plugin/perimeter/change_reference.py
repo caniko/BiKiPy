@@ -5,7 +5,7 @@ from pydantic import PositiveInt
 
 from bikipy.core.typing import NDArrayFp64
 from bikipy.ingress.plugin.base import BasePluginFile
-from bikipy.perimeter.base import Perimeter
+from bikipy.perimeter.base import Perimeter, BasePerimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.io.makesense import image_name_to_point_from_makesense, get_point_from_makesense_row
 
@@ -38,14 +38,37 @@ class PluginChangeReference(BasePluginFile):
     def image_name_to_re_referencing_point(self) -> dict[str, NDArrayFp64]:
         return image_name_to_point_from_makesense(self.data_path, only_point=False)
 
-    def trialwise_and_metadata(self, trial_id: str | PositiveInt) -> Perimeter:
+    def trialwise_and_metadata(self, trial_id: str | PositiveInt) -> Perimeter | dict:
         trial_id_image_name = self.ingress.metadata.loc[trial_id, self._human_readable_index_image_name]
         reference_data = self.image_name_to_re_referencing_point[trial_id_image_name]
 
-        return self.ingress.ingress_defined_perimeters[self.original_label].change_reference(
-            new_reference=get_point_from_makesense_row(reference_data),
-            makesense_image_name=reference_data["image_name"],
-        )
+        original_perimeter = self.ingress.ingress_defined_perimeters[self.original_label]
+
+        if isinstance(original_perimeter, dict):
+            # Grouped with PerimeterSet.group()
+            result = {}
+            for group_name, perimeters in original_perimeter.items():
+                if isinstance(perimeters, BasePerimeter):
+                    perimeters = perimeters.change_reference(
+                        new_reference=get_point_from_makesense_row(reference_data),
+                        makesense_image_name=reference_data["image_name"],
+                    )
+                else:
+                    perimeters = tuple(
+                        perimeter.change_reference(
+                            new_reference=get_point_from_makesense_row(reference_data),
+                            makesense_image_name=reference_data["image_name"],
+                        )
+                        for perimeter in perimeters
+                    )
+                result[group_name] = perimeters
+        else:
+            result = self.ingress.ingress_defined_perimeters[self.original_label].change_reference(
+                new_reference=get_point_from_makesense_row(reference_data),
+                makesense_image_name=reference_data["image_name"],
+            )
+
+        return result
 
     @property
     def globally_defined(self) -> Perimeter:

@@ -1,5 +1,5 @@
 ingress_method: phase
-manual_dataset_directory: /mnt/soma/Projects/Neuroscience/Imen/data/y_maze/
+manual_dataset_directory: /home/can/Downloads/Compressed/y_maze/
 ingress:
   meters_per_pixel_definition_strategy: radial
   perimeter_definition_strategy: null
@@ -36,7 +36,12 @@ perimeter:
       reference_point_coco_path: string
       video_path: string
 reader_kwargs:
-  defined: {}
+  defined:
+    init_from: parquet
+    midpoint_groups:
+      center_eye:
+        - left_ear
+        - right_ear
   optional:
     crop_from_end: boolean -> False
     crop_time_seconds: number -> 0.0
@@ -63,10 +68,8 @@ trial:
       center: null
       coordinate_data_path: null
       label: null
-      object_tracking_label_for_kinematics: null
+      object_tracking_label_for_kinematics: center_eye
       reader_kwargs: null
-      outdated:
-        corridor_meter_width: null
     required:
       animal_id: '[{''type'': ''string''}, {''type'': ''integer'', ''exclusiveMinimum'':
         0}]'
@@ -97,7 +100,8 @@ trial:
       video_path: string
   specific: {}
 experiment:
-  defined: {}
+  defined:
+    manual_fps: 30
   optional:
     common_trial_keyword_arguments: object
     compute_only_one_df_row: boolean -> False

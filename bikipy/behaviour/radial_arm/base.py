@@ -104,6 +104,10 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         ]
 
     @cached_property
+    def perimeters(self):
+        return [*self.arms, self.center]
+
+    @cached_property
     def arm_len(self):
         return len(self.arms)
 

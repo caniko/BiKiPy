@@ -1,11 +1,9 @@
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from copy import copy
-from functools import cached_property, lru_cache, reduce
-from itertools import chain
+from functools import cached_property, reduce
 from logging import getLogger
 from operator import attrgetter
-from pathlib import Path
 from typing import ClassVar, Hashable, Iterable, Literal, Optional, Sequence, TypeVar
 
 import cv2
@@ -22,7 +20,7 @@ from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_multi_indexer
-from bikipy.ingress.plugin import PluginChangeReference
+from bikipy.ingress.plugin import PluginChangeReference, PluginRadial
 from bikipy.perimeter.base import SinglePerimeter, PerimeterSet, BaseSinglePerimeter
 from bikipy.reader.deeplabcut import DeepLabCutReader
 from bikipy.utils.collection_utils import (
@@ -59,7 +57,7 @@ class Behaviour(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
 
 class BaseTrial(Behaviour):
     coordinate_data_path: FilePath = Field(..., description="Path to file storing coordinate data")
-    reader_kwargs: dict
+    reader_kwargs: dict = Field(..., description="Keyword arguments that will be passed on the reader objects on init")
     animal_id: str | PositiveInt = Field(..., description="The ID of the animal in the trial")
     object_tracking_label_for_kinematics: Optional[str] = Field(
         ..., description="Label of the node that will be used to track general animal movement"
@@ -317,7 +315,7 @@ class BaseExperiment(Behaviour):
     @classmethod
     @property
     def trial_class(cls) -> Trial:
-        if not cls.has_stages:
+        if cls.has_stages:
             msg = f"{cls.__name__}: trial_class attribute can only be utilized when there is only one Trial class"
             raise AttributeError(msg)
         return cls.trial_classes[0]
@@ -366,8 +364,10 @@ class BaseExperiment(Behaviour):
             result.update(self.common_trial_keyword_arguments)
 
         if (
-            trial_class_name := self.trial_id_to_trial_class_name[trial_id]
-        ) in self.trial_class_name_to_keyword_arguments:
+            self.has_stages
+            and (trial_class_name := self.trial_id_to_trial_class_name[trial_id])
+            in self.trial_class_name_to_keyword_arguments
+        ):
             result.update(self.trial_class_name_to_keyword_arguments[trial_class_name])
 
         if self.trial_id_to_keyword_arguments:
@@ -395,12 +395,21 @@ class BaseExperiment(Behaviour):
             perimeter_set: PerimeterSet = result.pop("perimeter_set")
             result.update(perimeter_set.label_to_perimeter)
 
+        if PluginRadial.bikipy_trial_key in result:
+            perimeter_set_group: dict = result.pop(PluginRadial.bikipy_trial_key)
+            result.update(perimeter_set_group)
+
         if PluginChangeReference.bikipy_trial_key in result:
             val = result.pop(PluginChangeReference.bikipy_trial_key)
             if isinstance(val, PerimeterSet):
                 result.update(val.label_to_perimeter)
             elif isinstance(val, BaseSinglePerimeter):
                 result[val.label] = val
+            elif isinstance(val, dict):
+                result.update(val)
+            else:
+                msg = f"Unsupported type for PluginChangeReference: {type(val)}"
+                raise AttributeError(msg)
 
         return result
 
@@ -711,13 +720,8 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _trial_class_label_to_trial_objects(self) -> dict:
-        if not self.trial_id_to_trial_class_name:
-            msg = (
-                "This experiment object has no trial_id_to_trial_class_name, "
-                "this attribute is reserved for experiments with "
-                "several trial classes"
-            )
-            raise AttributeError(msg)
+        if not self.has_stages:
+            return {self.trial_class.trial_label: self.trial_objects}
 
         return {
             self.trial_class_name_to_label[trial_class_name]: trial_objects

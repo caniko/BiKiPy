@@ -16,7 +16,7 @@ class BaseYMaze(BaseModel):
 
 
 class YMazeTrial(BaseYMaze, BaseRadialMazeTrial):
-    pass
+    trial_label = "Y-Maze"
 
 
 class YMazeExperiment(BaseYMaze, BaseRadialMazeExperiment):

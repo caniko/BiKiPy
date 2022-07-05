@@ -29,6 +29,7 @@ class PhaseIngress(BaseIngress):
                     "animal_id": self.metadata.loc[trial_id, "Animal"],
                     "coordinate_data_path": trial_kinematic_data_file_path,
                     **self.trialwise_plugins_for_trial_id(trial_number, phase_dir),
+                    **self._trial_id_to_keyword_arguments[trial_id],
                 }
 
                 if self.experiment_class.has_stages:

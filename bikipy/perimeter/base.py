@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from collections import defaultdict
 from functools import cached_property, reduce, partial
 from logging import getLogger
 from typing import Any, ClassVar, Literal, Optional, TypeVar
@@ -285,24 +286,19 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
         join_func = partial(VideoMetadata.join, meters_per_pixel_mean=True, ignore_incongruity=True)
         return reduce(join_func, (perimeter.video for perimeter in self.perimeters)).meters_per_pixel
 
-    @cached_property
-    def group(self):
-        grouped = {}
+    def group(self, pop_single_element_groups: bool = True) -> dict[str, tuple[SinglePerimeter, ...] | SinglePerimeter]:
+        grouped = defaultdict(list)
         for perimeter in self.all_perimeters:
-            if (label := perimeter.group_label) not in grouped:
-                grouped[label] = [perimeter]
-            else:
-                grouped[label].append(perimeter)
+            grouped[perimeter.group_label].append(perimeter)
 
-        # Groups with one perimeter member should be the value of the respective key
         for label, perimeters in grouped.items():
             number_of_perimeters = len(perimeters)
             if number_of_perimeters > 1:
                 grouped[label] = tuple(perimeters)
             elif number_of_perimeters == 1:
-                grouped[label] = perimeters[0]
+                grouped[label] = perimeters[0] if pop_single_element_groups else tuple(perimeters)
 
-        return grouped
+        return dict(grouped)
 
     @cached_property
     def centroid(self):

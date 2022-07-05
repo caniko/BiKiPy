@@ -17,7 +17,7 @@ from bikipy.utils.math.geometry import clockwise_argsort_points, meter_per_pixel
 class PluginRadial(BasePluginDirectory, HasReferenceMixin):
     ingress_key = "radial_definition_strategy"
     code_key = "radial"
-    bikipy_trial_key = "perimeter_set"
+    bikipy_trial_key = "radial"
     human_readable_index = "Radial"
 
     _center: SinglePerimeter | None = None
@@ -35,7 +35,9 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
         if not self._center:
             self._center = get_first_value_in_dict(
                 init_polygon_from_makesense_coco_polygon(
-                    next(iglob(str(self.data_path / "center*"))), manual_reference_point_array=self.reference_point
+                    next(iglob(str(self.data_path / "center*"))),
+                    manual_reference_point_array=self.reference_point,
+                    group_label="center",
                 )
             ).get_only_perimeter
 
@@ -87,14 +89,14 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
         return arm_perimeters
 
     @cached_property
-    def radial_maze_perimeter_set(self) -> PerimeterSet:
-        result = PerimeterSet(perimeters=[*self.arms, self.center])
+    def grouped_radial_maze_perimeters(self) -> dict[str, tuple[SinglePerimeter, ...]]:
+        result = PerimeterSet(perimeters=[*self.arms, self.center]).group()
         self.ingress.ingress_defined_perimeters[self.label] = result
         return result
 
-    def trialwise_and_metadata(self, trial_id: str | PositiveInt) -> PerimeterSet:
-        return self.radial_maze_perimeter_set
+    def trialwise_and_metadata(self, trial_id: str | PositiveInt) -> dict[str, tuple[SinglePerimeter, ...]]:
+        return self.grouped_radial_maze_perimeters
 
     @property
-    def globally_defined(self) -> PerimeterSet:
-        return self.radial_maze_perimeter_set
+    def globally_defined(self) -> dict[str, tuple[SinglePerimeter, ...]]:
+        return self.grouped_radial_maze_perimeters

@@ -15,7 +15,7 @@ from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 from bikipy.behaviour.base import Experiment, Trial
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.core.base_class import BaseBikipy
-from bikipy.ingress.plugin import ingress_key_to_model, PluginPerimeter, PluginRadial
+from bikipy.ingress.plugin import ingress_key_to_model
 from bikipy.ingress.plugin.base import Plugin
 from bikipy.ingress.utils import settings
 from bikipy.ingress.utils.io import (
@@ -30,7 +30,7 @@ from bikipy.ingress.utils.model_schema import extended_group_schema, extended_sc
 from bikipy.ingress.utils.settings import get_definable_settings
 from bikipy.perimeter.base import BaseSinglePerimeter, Perimeter
 from bikipy.reader import DeepLabCutReader
-from bikipy.utils.collection_utils import copycat_assumes_levels_of_icon
+from bikipy.utils.collection_utils import copycat_assumes_levels_of_icon, get_first_value_in_dict
 from bikipy.utils.misc import sheet_names_from_path, dict_deepmerge
 
 logger = getLogger(__name__)
@@ -125,7 +125,7 @@ class BaseIngress(BaseBikipy, ABC):
     def ingress_defined_fields(self) -> dict[str, set]:
         result = {
             "common_trial_keyword_arguments": set(self.common_trial_keyword_arguments),
-            "trial_id_to_keyword_arguments": set(self.trial_id_to_keyword_arguments.values()),
+            "trial_id_to_keyword_arguments": set(get_first_value_in_dict(self.trial_id_to_keyword_arguments)),
         }
         if self.experiment_class.has_stages:
             result["trial_class_name_to_keyword_arguments"] = set(self.trial_class_name_to_keyword_arguments.values())
@@ -148,7 +148,7 @@ class BaseIngress(BaseBikipy, ABC):
     @property
     def trial_id_to_keyword_arguments(self):
         self._define_experiment_data_if_not_defined()
-        return self._trial_id_to_keyword_arguments
+        return dict(self._trial_id_to_keyword_arguments)
 
     @property
     def trial_class_name_to_keyword_arguments(self):
@@ -362,13 +362,16 @@ class BaseIngress(BaseBikipy, ABC):
         global_reader_kwargs = {}
         # Data source priority in ascending order
         if "defined" in self.settings["trial"]["common"] and self.settings["trial"]["common"]["defined"]:
-            global_reader_kwargs.update(self.settings["trial"]["common"]["defined"])
+            for key, value in self.settings["trial"]["common"]["defined"].items():
+                if value is None:
+                    continue
+                global_reader_kwargs[key] = value
         if "defined" in self.settings["reader_kwargs"] and self.settings["reader_kwargs"]["defined"]:
             global_reader_kwargs.update(self.settings["reader_kwargs"]["defined"])
         assert global_reader_kwargs, "reader_kwargs must be defined"
         self._common_trial_keyword_arguments["reader_kwargs"] = global_reader_kwargs
 
-        if self.experiment.has_stages:
+        if self.experiment_class.has_stages:
             for trial_class_name, dataset in self.settings["trial"]["specific"].items():
                 if not dataset["defined"]:
                     continue
@@ -430,7 +433,7 @@ class BaseIngress(BaseBikipy, ABC):
         )
         df.columns.names = (
             ["Stage", "Feature", "Location/Category"]
-            if self.experiment.has_stages
+            if self.experiment_class.has_stages
             else ["Feature", "Location/Category"]
         )
         df.index.names = ["Animal"]
