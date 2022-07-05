@@ -32,11 +32,11 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
     def center(self) -> SinglePerimeter:
         return get_first_value_in_dict(
             init_polygon_from_makesense_coco_polygon(next(iglob(str(self.data_path / "center*"))))
-        )
+        ).get_only_perimeter
 
     @cached_property
     def arms(self) -> list[RectanglePerimeter]:
-        lines = np.array([np.array_split(line, 2) for line in self.line_data.iloc[1:5].T])
+        lines = np.array([np.array_split(line, 2) for _, line in self.line_data.iloc[:, 1:5].iterrows()])
         line_midpoints = np.array([np.mean(line, axis=0) for line in lines])
 
         correct_argsort = clockwise_argsort_points(line_midpoints)
@@ -46,7 +46,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
         arm_perimeters = []
         for line_index, line_midpoint in enumerate(line_midpoints):
             line_pair_index = np.where(
-                np.argsort(np.linalg.norm(line_midpoint - self.center.edge_midpoints, axis=1)) == 0
+                np.argsort(np.linalg.norm(line_midpoint - self.center.line_segment_midpoints, axis=1)) == 0
             )[0][0]
 
             arm_perimeter = np.concatenate(
@@ -70,7 +70,9 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
 
     @cached_property
     def radial_maze_perimeter_set(self) -> PerimeterSet:
-        return PerimeterSet(perimeters=[*self.arms, self.center])
+        result = PerimeterSet(perimeters=[*self.arms, self.center])
+        self.ingress.ingress_defined_perimeters[self.label] = result
+        return result
 
     def trialwise_and_metadata(self, trial_id: str | PositiveInt) -> PerimeterSet:
         return self.radial_maze_perimeter_set

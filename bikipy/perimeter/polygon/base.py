@@ -61,15 +61,15 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         return super().__repr__() + f"\n\tvertices_in_pixels={self.vertices_in_meters}"
 
     @cached_property
-    def centroid(self):
+    def centroid(self) -> NDArrayFp64:
         return np.mean(self.vertices_in_meters, axis=0)
 
     @cached_property
-    def vertices_in_meters(self):
+    def vertices_in_meters(self) -> NDArrayFp64:
         return self.vertices_in_pixels * self.video.meters_per_pixel
 
     @cached_property
-    def linked_vertices_in_meters(self):
+    def linked_vertices_in_meters(self) -> NDArrayFp64:
         return np.append(
             self.vertices_in_meters,
             np.expand_dims(self.vertices_in_meters[0], 0),
@@ -77,8 +77,12 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         )
 
     @cached_property
-    def line_segment_pairs(self):
+    def line_segment_pairs(self) -> NDArrayFp64:
         return np.array(list(zip(self.linked_vertices_in_meters, self.linked_vertices_in_meters[1:])))
+
+    @cached_property
+    def line_segment_midpoints(self) -> NDArrayFp64:
+        return np.mean(self.line_segment_pairs, axis=0)
 
     @cached_property
     def edge_lengths(self):

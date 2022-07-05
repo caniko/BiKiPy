@@ -50,7 +50,7 @@ def init_polygon_from_makesense_coco_polygon(
             result[image_name] = {}
 
         result[image_name]["label"] = init_polygon(
-            _coco_polygon_annotation(annotation["segmentation"][0]),
+            np.array(_coco_polygon_annotation(annotation["segmentation"][0])),
             label=label,
             reference_point_array=image_name_to_reference_point[image_name] if reference_point_csv_path else None,
             manual_frame=cv2.imread(image_root / image_name) if image_root else None,

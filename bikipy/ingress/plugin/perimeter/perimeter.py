@@ -92,7 +92,10 @@ class PluginPerimeter(BasePluginFile, HasReferenceMixin):
             if s := self.perimeter_settings["label_suffix"]:
                 label = f"{label}_{s}"
 
-            result[label] = _perimeter_with_label(perimeter, label)
+            perimeter = _perimeter_with_label(perimeter, label)
+
+            result[label] = perimeter
+            self.ingress.ingress_defined_perimeters[label] = perimeter
 
         return result
 

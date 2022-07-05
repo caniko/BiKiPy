@@ -394,6 +394,11 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
     def number_of_perimeters(self) -> int:
         return len(self.all_perimeters)
 
+    @property
+    def get_only_perimeter(self) -> SinglePerimeter:
+        assert self.number_of_perimeters == 1
+        return self.all_perimeters[0]
+
     def plot(
         self,
         ax: Any = None,

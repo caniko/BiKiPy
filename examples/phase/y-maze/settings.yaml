@@ -3,8 +3,8 @@ manual_dataset_directory: /mnt/soma/Projects/Neuroscience/Imen/data/y_maze/
 ingress:
   meters_per_pixel_definition_strategy: radial
   perimeter_definition_strategy: null
-  change_reference_definition_strategy: metadata
   radial_definition_strategy: metadata
+  change_reference_definition_strategy: metadata
   video_definition_strategy: trial-wise
   center_definition_strategy: null
 perimeter:

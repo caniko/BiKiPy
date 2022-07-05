@@ -5,7 +5,7 @@ from copy import deepcopy
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Callable, ClassVar, Hashable, Iterable, TypeVar
+from typing import Any, ClassVar, Hashable, Iterable, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -15,13 +15,8 @@ from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 from bikipy.behaviour.base import Experiment, Trial
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.core.base_class import BaseBikipy
-from bikipy.core.typing import NDArrayFp64
-from bikipy.ingress.plugin import PLUGIN_CODE_KEY_TO_MODEL, ingress_key_to_model, PluginPerimeter, PluginRadial
+from bikipy.ingress.plugin import ingress_key_to_model, PluginPerimeter, PluginRadial
 from bikipy.ingress.plugin.base import Plugin
-from bikipy.ingress.plugin.meters_per_pixel import (
-    detect_meters_per_pixel_in_perimeter_directory,
-    first_meters_per_pixel_in_perimeter_directory,
-)
 from bikipy.ingress.utils import settings
 from bikipy.ingress.utils.io import (
     get_dataset_directory_path,
@@ -60,10 +55,12 @@ class BaseIngress(BaseBikipy, ABC):
 
     project_root_directory: DirectoryPath
 
+    ingress_defined_perimeters: dict[str, Perimeter] = {}
+
     _experiment_data_defined: bool = False
     _trial_id_to_trial_class_name: dict[Hashable, str] = {}
     _common_trial_keyword_arguments: dict[str, Any] = {}
-    _trial_id_to_keyword_arguments: dict[Hashable, dict[str, Any]] = {}
+    _trial_id_to_keyword_arguments: dict[Hashable, dict[str, Any]] = defaultdict(dict)
     _trial_class_name_to_keyword_arguments: dict[str, Any] = {}
 
     ingress_method: ClassVar[str]
@@ -330,17 +327,25 @@ class BaseIngress(BaseBikipy, ABC):
             self._define_experiment_data()
 
     def _define_experiment_data(self) -> None:
-        if self._metadata_plugins:
-            self._trial_id_to_keyword_arguments = defaultdict(dict)
-            for plugin_model in self._metadata_plugins:
-                label_to_file_path = {
-                    file_path.stem.split("-")[-1]: file_path
-                    for file_path in self.plugin_directory_path.glob(f"{plugin_model.code_key}*")
-                }
-                for trial_id, row in self.metadata.iterrows():
-                    self._trial_id_to_keyword_arguments[trial_id][plugin_model.bikipy_trial_key] = plugin_model(
-                        data_path=label_to_file_path[row[plugin_model.human_readable_index]], ingress=self
-                    ).trialwise_and_metadata(trial_id)
+        for plugin_model in self._global_plugins:
+            self._common_trial_keyword_arguments[plugin_model.bikipy_trial_key] = plugin_model(
+                data_path=next(self.plugin_directory_path.glob(f"{plugin_model.code_key}*")), ingress=self
+            )
+
+        for plugin_model in self._metadata_plugins:
+            label_to_file_path = {
+                file_path.stem.split("-")[-1]: file_path
+                for file_path in self.plugin_directory_path.glob(f"{plugin_model.code_key}*")
+            }
+            for trial_id, row in self.metadata.iterrows():
+                trial_id_plugin_label = row[plugin_model.human_readable_index]
+
+                if isinstance(trial_id_plugin_label, float) and np.isnan(trial_id_plugin_label):
+                    continue
+
+                self._trial_id_to_keyword_arguments[trial_id][plugin_model.bikipy_trial_key] = plugin_model(
+                    data_path=label_to_file_path[trial_id_plugin_label], ingress=self
+                ).trialwise_and_metadata(trial_id)
 
         self._dataset_reader()
 
@@ -503,41 +508,6 @@ class BaseIngress(BaseBikipy, ABC):
         ]
 
     @cached_property
-    def plugin_to_label_to_global_plugin_objects(self) -> dict[str, dict[str, Plugin]]:
-        result = {}
-        for plugin_model in self._global_plugins:
-            result[plugin_model.bikipy_trial_key] = {
-                plugin_model.label: plugin_model(data_path=file_path, ingress=self)
-                for file_path in self.plugin_directory_path.glob(f"{plugin_model.code_key}*")
-            }
-        return result
-
-    @cached_property
-    def plugin_to_label_to_metadata_plugin_objects(self) -> dict[str, dict[str, Plugin]]:
-        result = {}
-        for plugin_model in self._metadata_plugins:
-            result[plugin_model.bikipy_trial_key] = {
-                plugin_model.label: plugin_model(data_path=file_path, ingress=self)
-                for file_path in self.plugin_directory_path.glob(f"{plugin_model.code_key}*")
-            }
-        return result
-
-    @cached_property
-    def metadata_and_global_plugins(self) -> dict[str, dict[str, Plugin]]:
-        return dict_deepmerge(
-            self.plugin_to_label_to_global_plugin_objects, deepcopy(self.plugin_to_label_to_metadata_plugin_objects)
-        )
-
-    @property
-    def metadata_and_global_perimeter_and_perimeter_set(self) -> dict[str, Perimeter]:
-        result = {}
-        if PluginPerimeter.bikipy_trial_key in self.metadata_and_global_plugins:
-            result.update(self.metadata_and_global_plugins[PluginPerimeter.bikipy_trial_key])
-        if PluginRadial.bikipy_trial_key in self.metadata_and_global_plugins:
-            result.update(self.metadata_and_global_plugins[PluginRadial.bikipy_trial_key])
-        return result
-
-    @cached_property
     def _trial_wise_plugins(self) -> list[Plugin]:
         return [
             ingress_key_to_model[ingress_key]
@@ -602,6 +572,8 @@ def init_settings(
         "ingress": {
             "meters_per_pixel_definition_strategy": "global",
             "perimeter_definition_strategy": "metadata",
+            "radial_definition_strategy": None,
+            "change_reference_definition_strategy": None,
             "video_definition_strategy": None,
             "center_definition_strategy": None,
         },
@@ -610,6 +582,7 @@ def init_settings(
             "label_suffix": None,
             "perimeter_names_in_metadata": False,
             "perimeter_mapper_key": "label",
+            "radial": {"arm_width_meters": None, "arm_length_meters": None},
             "fields": extended_schema(BaseSinglePerimeter),
         },
         "reader_kwargs": extended_schema(DeepLabCutReader, with_required=False),
