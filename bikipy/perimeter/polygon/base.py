@@ -84,7 +84,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
     def line_segment_midpoints_meters(self) -> NDArrayFp64:
         return (
             self.linked_vertices_meters[1:]
-            + np.diff(self.line_segment_points_meters, axis=1).transpose(1, 0, 2)[0] / 2.0
+            - np.diff(self.line_segment_points_meters, axis=2).transpose(2, 0, 1)[0] / 2.0
         )
 
     @cached_property
@@ -105,7 +105,10 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
 
     @cached_property
     def line_segment_midpoints_pixels(self) -> NDArrayFp64:
-        return self.vertices_in_pixels - np.diff(self.line_segment_points_pixels, axis=1).transpose(1, 0, 2)[0] / 2.0
+        return (
+            self.linked_vertices_pixels[1:]
+            - np.diff(self.line_segment_points_pixels, axis=2).transpose(2, 0, 1)[0] / 2.0
+        )
 
     @cached_property
     def edge_lengths_pixels(self) -> NDArrayFp64:
@@ -302,13 +305,13 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         inspect_pixels: bool = False,
         perimeter_border_normal_pixels: Optional[float] = None,
         with_midpoints: bool = False,
-        inspection_ax: Any = None,
+        manual_ax: Any = None,
         **plot_kwargs,
     ):
-        if not inspection_ax:
+        if not manual_ax:
             fig, ax = plt.subplots()
         else:
-            ax = inspection_ax
+            ax = manual_ax
 
         vertices_in_meters = self.vertices_in_pixels if inspect_pixels else self.vertices_in_meters
 
@@ -336,7 +339,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
             for i, midpoint in enumerate(self.line_segment_midpoints_meters):
                 ax.scatter(*midpoint.T, label=f"{self.label}{i}")
 
-        if not inspection_ax:
+        if not manual_ax:
             plt.legend()
             plt.show()
         elif self.inspect_directory:

@@ -101,7 +101,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         self,
         inspect_pixels: bool = False,
         perimeter_border_normal_pixels: Optional[float] = None,
-        inspection_ax: Any = None,
+        manual_ax: Any = None,
         **plot_kwargs,
     ):
         ...
@@ -404,26 +404,32 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
 
     def plot(
         self,
-        ax: Any = None,
+        manual_ax: Any = None,
         coordinates: Optional[NDArrayFp64] = None,
         inspect_pixels: bool = False,
         **perimeter_plot_kwargs,
     ):
-        if ax is None:
+        if manual_ax is None:
             fig, ax = plt.subplots(constrained_layout=True)
+        else:
+            ax = manual_ax
 
         for perimeter in self.all_perimeters:
-            perimeter.plot_perimeter(ax=ax, **perimeter_plot_kwargs)
+            perimeter.plot_perimeter(manual_ax=ax, **perimeter_plot_kwargs)
 
         if coordinates is not None:
             ax = plot_coordinates(coordinates, ax, inspect_pixels, self.video)
 
-        plt.legend()
-        if self.inspect_directory:
+        if manual_ax:
+            pass
+        elif self.inspect_directory:
             plt.savefig(self.class_inspect_directory / f"{self.label}.jpg")
             logger.debug(f"Saved perimeter_set {self.label} inspect plot to {self.class_inspect_directory}")
         else:
+            plt.legend()
             plt.show()
+
+        return ax
 
 
 @validate_arguments

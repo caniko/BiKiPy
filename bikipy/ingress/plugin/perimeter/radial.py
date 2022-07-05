@@ -84,7 +84,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
                 arm_perimeter.vertices_in_pixels[2],
                 self.ingress.settings["perimeter"]["radial_arm_rectangle_diagonal"],
             )
-            arm_perimeter.plot_perimeter(with_midpoints=True)
+            # arm_perimeter.plot_perimeter(with_midpoints=True)
             arm_perimeters.append(arm_perimeter)
 
         arm_perimeter_mean_meters_per_pixel = PerimeterSet(perimeters=arm_perimeters).mean_meters_per_pixel
@@ -98,7 +98,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
     @cached_property
     def grouped_radial_maze_perimeters(self) -> dict[str, tuple[SinglePerimeter, ...]]:
         perimeter_set = PerimeterSet(perimeters=[*self.arms, self.center])
-        perimeter_set.plot()
+        # perimeter_set.plot()
         grouped = perimeter_set.group()
         self.ingress.ingress_defined_perimeters[self.label] = grouped
         return grouped

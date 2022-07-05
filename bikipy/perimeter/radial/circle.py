@@ -88,20 +88,20 @@ class CirclePerimeter(BaseSinglePerimeter):
         self,
         inspect_pixels: bool = False,
         perimeter_border_normal_pixels: Optional[float] = None,
-        inspection_ax: Any = None,
+        manual_ax: Any = None,
         **plot_kwargs,
     ):
-        if not inspection_ax:
+        if not manual_ax:
             fig, ax = plt.subplots()
         else:
-            ax = inspection_ax
+            ax = manual_ax
 
         if inspect_pixels:
             ax = plot_circle(self.center_pixels, self.radius_pixels, ax)
         else:
             ax = plot_circle(self.center_meters, self.radius_meters, ax)
 
-        if not inspection_ax:
+        if not manual_ax:
             plt.show()
         if self.inspect_directory:
             plt.savefig(self.class_inspect_directory / f"{self.label}.jpg")

@@ -36,8 +36,8 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         description="Scales the coordinates with respect to their min and max. " "True requires x_max and y_max",
     )
     midpoint_groups: Optional[dict] = Field(description="labels that consist of groups that should have their")
-    x_axis_crop_end_point: float = Field(0.0, description="")
-    y_axis_crop_end_point: float = Field(0.0, description="")
+    x_axis_crop_end_point: float = 0.0
+    y_axis_crop_end_point: float = 0.0
     reverse_y_axis: bool = Field(
         True,
         description=(
@@ -101,6 +101,15 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         if self.reverse_y_axis:
             cloned_df.loc[:, pd.IndexSlice[:, "y"]] = (
                 self.video.vertical_resolution - cloned_df.loc[:, pd.IndexSlice[:, "y"]]
+            )
+
+        if self.x_axis_crop_end_point:
+            cloned_df.loc[:, pd.IndexSlice[:, "x"]] = (
+                self.x_axis_crop_end_point + cloned_df.loc[:, pd.IndexSlice[:, "x"]]
+            )
+        if self.reverse_y_axis:
+            cloned_df.loc[:, pd.IndexSlice[:, "y"]] = (
+                cloned_df.loc[:, pd.IndexSlice[:, "y"]] - self.y_axis_crop_end_point
             )
 
         return cloned_df

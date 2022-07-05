@@ -1,8 +1,9 @@
+from logging import getLogger
 from typing import Any, Optional, Sequence
 
 import numpy as np
 from matplotlib import pyplot as plt
-from pydantic import FilePath
+from pydantic import FilePath, validate_arguments
 
 from bikipy.core.typing import NDArrayFp64
 from bikipy.utils.collection_utils import generic_multi_indexer
@@ -10,10 +11,14 @@ from bikipy.utils.image import read_image
 from bikipy.utils.io.makesense import read_makesense_point
 
 
+logger = getLogger(__file__)
+
+
+@validate_arguments
 def detect_sequential_border_presence(
     coordinates: NDArrayFp64,
-    superior_poly_border_instances: Optional[Sequence],
-    inferior_poly_border_instances: Optional[Sequence],
+    superior_poly_border_instances: Sequence,
+    inferior_poly_border_instances: Optional[Sequence] = None,
     clean_outliers: bool = True,
 ):
     """
@@ -41,12 +46,10 @@ def detect_sequential_border_presence(
     NDArrayFp64 that stores the sequential perimeter presence across frames
     """
 
-    coordinates = np.asarray(coordinates)
-
     perimeter_sequence = (
-        (*inferior_poly_border_instances, *superior_poly_border_instances)
-        if inferior_poly_border_instances
-        else superior_poly_border_instances
+        superior_poly_border_instances
+        if inferior_poly_border_instances is None
+        else (*inferior_poly_border_instances, *superior_poly_border_instances)
     )
     presence = np.zeros(
         coordinates.shape[0],

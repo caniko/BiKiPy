@@ -38,10 +38,15 @@ perimeter:
 reader_kwargs:
   defined:
     init_from: parquet
+    x_axis_crop_end_point: 95.0
+    y_axis_crop_end_point: 75.0
     midpoint_groups:
       center_eye:
         - left_ear
         - right_ear
+      torso:
+        - center_eye
+        - base_tail
   optional:
     crop_from_end: boolean -> False
     crop_time_seconds: number -> 0.0
@@ -63,12 +68,13 @@ reader_kwargs:
 trial:
   common:
     defined:
+      higher_order_inspect: true
       animal_id: null
       arms: null
       center: null
       coordinate_data_path: null
       label: null
-      object_tracking_label_for_kinematics: center_eye
+      object_tracking_label_for_kinematics: torso
       reader_kwargs: null
     required:
       animal_id: '[{''type'': ''string''}, {''type'': ''integer'', ''exclusiveMinimum'':

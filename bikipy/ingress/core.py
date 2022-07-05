@@ -1,7 +1,6 @@
 import json
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from copy import deepcopy
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
@@ -445,7 +444,6 @@ class BaseIngress(BaseBikipy, ABC):
         # self.experiment.combined_feature_motion_df.to_excel(
         #     self.result_directory_path / "animal_id_indexed_result_data.xlsx"
         # )
-        self.trial_label_to_df
         with pd.ExcelWriter(self.result_directory_path / "trial_id_indexed_result_data.xlsx") as writer:
             for trial_label, df in self.trial_label_to_df.items():
                 df.to_excel(writer, sheet_name=trial_label)

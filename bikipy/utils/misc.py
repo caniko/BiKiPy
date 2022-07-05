@@ -99,8 +99,6 @@ def plot_coordinates(
     if inspect_pixels:
         coordinates = convert_meters_to_pixels(coordinates, video)
 
-    histogram, _x_edges, _y_edges = np.histogram2d(*coordinates[np.logical_and(*np.isfinite(coordinates).T)].T, bins=60)
-    ax.imshow(histogram.T, interpolation="sinc")
-    ax.plot(*coordinates.T, ".r-")
+    ax.scatter(*coordinates.T)
 
     return ax

@@ -85,7 +85,7 @@ class PhysicalObject(BaseBikipy):
             self._gaze_travel_direction_point,
             self._gaze_start_point,
             self.perimeter_border_normal_meters,
-            inspection_ax=self.attention_axes[0][0] if self.inspect_figure_file_path else None,
+            manual_ax=self.attention_axes[0][0] if self.inspect_figure_file_path else None,
             **self._global_attention_kwargs,
         )
 
@@ -95,7 +95,7 @@ class PhysicalObject(BaseBikipy):
             self._gaze_travel_direction_point,
             self._gaze_start_point,
             self.maximum_radians_inter_gaze_perimeter,
-            inspection_ax=self.attention_axes[0][1] if self.inspect_figure_file_path else None,
+            manual_ax=self.attention_axes[0][1] if self.inspect_figure_file_path else None,
             **self._global_attention_kwargs,
         )
 

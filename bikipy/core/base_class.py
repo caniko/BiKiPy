@@ -38,6 +38,10 @@ BikipyHashable = TypeVar("BikipyHashable", bound=BaseBikipyHashable)
 
 class BaseBikipyInspectMixin(BaseBikipy):
     inspect_directory: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
+    higher_order_inspect: bool = Field(
+        False,
+        description="Will only trigger inspection on composite metrics that require the use of several complex functions",
+    )
     inspect: bool = Field(False, description="Will trigger all inspection functions in model when True")
 
     _class_inspect_directory_name: ClassVar[str]
@@ -54,6 +58,10 @@ class BaseBikipyInspectMixin(BaseBikipy):
         result = self.inspect_directory / self._class_inspect_directory_name
         result.mkdir(exist_ok=True)
         return result
+
+    @cached_property
+    def inspect_higher_order(self) -> bool:
+        return self.inspect or self.higher_order_inspect
 
     def save(self):
         compress_pickle.dump(self, self.inspect_directory / f"experiment.pickle.lzma")

@@ -6,7 +6,8 @@ from logging import getLogger
 from math import ceil
 from typing import ClassVar, Optional
 
-from pydantic import validator, root_validator
+from matplotlib import pyplot as plt
+from pydantic import validator
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import (
@@ -16,7 +17,7 @@ from bikipy.behaviour.utils import (
     unique_with_counts_zipped,
 )
 from bikipy.core.base_class import BaseBikipyHashable
-from bikipy.core.typing import NDArrayBool, NDArrayFp64
+from bikipy.core.typing import NDArrayBool
 from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
 from bikipy.perimeter.utils import detect_sequential_border_presence
 from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
@@ -26,6 +27,8 @@ logger = getLogger(__name__)
 
 class RadialMazeBase(BaseBikipyHashable):
     number_of_arms: ClassVar[Optional[int]]
+
+    _class_inspect_directory_name = "RadialMaze"
 
     @classmethod
     @property
@@ -47,8 +50,8 @@ class RadialMazeBase(BaseBikipyHashable):
 
     @classmethod
     @property
-    def _arm_labels(cls):
-        return string.ascii_uppercase[: cls.number_of_arms]
+    def _arm_labels(cls) -> list:
+        return list(string.ascii_uppercase[: cls.number_of_arms])
 
     @classmethod
     @property
@@ -59,6 +62,11 @@ class RadialMazeBase(BaseBikipyHashable):
     @property
     def _arm_label_permutations_as_string(cls):
         return map("".join, cls._arm_label_permutations)
+
+    @classmethod
+    @property
+    def _arm_center_labels(cls) -> list:
+        return [*cls._arm_labels, "Center"]
 
 
 class BaseRadialMazeExperiment(BaseExperiment, RadialMazeBase):
@@ -84,12 +92,11 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
     @classmethod
     @property
     def feature_headers(cls) -> list[tuple[str, ...]]:
-        area_designations = ["Center", *cls._arm_labels]
         return [
             ("Alternations", ""),
             ("Spontaneous alternations", ""),
-            *feature_2d_multi_indexer("SecondsInArea", area_designations),
-            *feature_2d_multi_indexer("AreaAlternations", area_designations),
+            *feature_2d_multi_indexer("SecondsInArea", cls._arm_center_labels),
+            *feature_2d_multi_indexer("AreaAlternations", cls._arm_labels),
             *feature_2d_multi_indexer("PermutationAlternation", cls._arm_label_permutations_as_string),
         ]
 
@@ -105,7 +112,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
     @cached_property
     def perimeters(self):
-        return [*self.arms, self.center]
+        return [*self.sorted_arms, self.center]
 
     @cached_property
     def arm_len(self):
@@ -117,7 +124,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
     @cached_property
     def perimeter_set(self):
-        return PerimeterSet(perimeters=(self.center, *self.sorted_arms))
+        return PerimeterSet(perimeters=self.perimeters)
 
     @cached_property
     def meters_per_pixel(self):
@@ -135,9 +142,17 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
     def valid_boolean_index(self) -> NDArrayBool:
         return self._border_presence_data[2]
 
-    @cached_property
-    def invalid_boolean_index(self) -> NDArrayBool:
-        return ~self.valid_boolean_index
+    @property
+    def alternation_sequence_with_center(self):
+        return self._border_center_presence_data[0]
+
+    @property
+    def valid_indices_with_center(self) -> NDArrayBool:
+        return self._border_center_presence_data[1]
+
+    @property
+    def valid_boolean_index_with_center(self) -> NDArrayBool:
+        return self._border_center_presence_data[2]
 
     @cached_property
     def reduced_alternation_sequence(self):
@@ -162,9 +177,9 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         """
 
         result = copy(self._arm_center_int_id_to_zero)
-        for label, counts in unique_with_counts_zipped(self.alternation_sequence):
+        for label, counts in unique_with_counts_zipped(self.alternation_sequence_with_center):
             assert label in result, f"{label} is not in {tuple(result.keys())})"
-            result[label] = (counts / self.fps) if self.fps else counts
+            result[label] = counts / self.video.fps
 
         return result
 
@@ -179,12 +194,13 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         """
         result = dict(unique_with_counts_zipped(self.reduced_alternation_sequence))
 
-        if result[self.center.int_id] < (minimum_center_entries := ceil(self.sum_of_alternations / 2.0)):
-            logger.warning(
-                f"{self.center.int_id}: The number of alternations to the center, "
-                f"{result[self.center.int_id]} can't be less than the "
-                f"ceil of half of the total arm alternations, {minimum_center_entries}"
-            )
+        # TODO: Add this test back without sacrificing data accuracy
+        # if result[self.center.int_id] < (minimum_center_entries := ceil(self.sum_of_alternations / 2.0)):
+        #     logger.warning(
+        #         f"{self.center.int_id}: The number of alternations to the center, "
+        #         f"{result[self.center.int_id]} can't be less than the "
+        #         f"ceil of half of the total arm alternations, {minimum_center_entries}"
+        #     )
 
         return result
 
@@ -207,13 +223,6 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
             if all(arm.int_id in current_permutation for arm in self.arms):
                 distribution[tuple(current_permutation)] += 1
 
-        # result = {}
-        # for key, value in distribution.items():
-        #     semantic_key = "".join(
-        #         [self.perimeter_set.int_id_to_label[integer] for integer in key]
-        #     )
-        #     result[semantic_key] = value
-
         return distribution
 
     @cached_property
@@ -231,8 +240,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         arms and sum of all permutation alternations.
         """
 
-        if self.sum_of_alternations == 0:
-            return 0
+        assert self.sum_of_alternations > 0, self.sum_of_alternations
 
         alternations = 0
         for i in range(self.sum_of_alternations):
@@ -240,17 +248,40 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
             if all(arm.int_id in current_permutation for arm in self.arms):
                 alternations += 1
 
-        assert self.sum_of_alternations > 0, self.sum_of_alternations
+        alternative_alternations = sum(self.permutation_alternation_distribution.values())
+        if alternations != alternative_alternations:
+            logger.warning(
+                f"Alternation compute methods yielded differing values: {alternations} != {alternative_alternations}"
+            )
 
         return 100.0 * alternations / self.sum_of_alternations
 
     @cached_property
-    def _border_presence_data(self):
+    def _border_center_presence_data(self):
         return detect_sequential_border_presence(
             self.framewise_confined_coordinates,
             self.arms,
             inferior_poly_border_instances=[self.center],
         )
+
+    @cached_property
+    def _border_presence_data(self):
+        result = detect_sequential_border_presence(
+            self.framewise_confined_coordinates,
+            self.arms,
+        )
+
+        if self.inspect_higher_order:
+            fig, ax = plt.subplots()
+            ax = self.perimeter_set.plot(coordinates=self.framewise_confined_coordinates, manual_ax=ax)
+
+            if self.inspect_directory:
+                plt.savefig(self.class_inspect_directory / f"{self.label}.jpg")
+                logger.debug(f"Saved perimeter_set {self.label} inspect plot to {self.class_inspect_directory}")
+            else:
+                plt.show()
+
+        return result
 
     @cached_property
     def _arm_permutation_to_zero(self):

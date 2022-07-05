@@ -45,13 +45,13 @@ def gaze_inspection_plot(
     gaze_travel_direction_point: NDArrayFp64,
     inspect_video: Optional[VideoMetadata] = None,
     inspect_pixels: bool = False,
-    inspection_ax: Any = None,
+    manual_ax: Any = None,
 ):
-    if inspection_ax is None:
+    if manual_ax is None:
         sb.set_theme(style="darkgrid")
         fig, ax = plt.subplots(dpi=500)
     else:
-        ax = inspection_ax
+        ax = manual_ax
 
     if inspect_pixels:
         gaze_travel_direction_point = convert_meters_to_pixels(gaze_travel_direction_point, inspect_video)
@@ -81,7 +81,7 @@ def gaze_inspection_plot(
 
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=2)
 
-    if not inspection_ax:
+    if not manual_ax:
         plt.tight_layout()
         plt.show()
 
