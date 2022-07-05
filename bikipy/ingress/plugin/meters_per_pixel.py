@@ -16,7 +16,7 @@ logger = getLogger(__file__)
 class PluginMeterPerPixel(BasePluginFile):
     ingress_key = "meters_per_pixel_definition_strategy"
     code_key = "meters_per_pixel"
-    bikipy_trial_key = "manual_video_pixels"
+    bikipy_trial_key = "meters_per_pixel"
     human_readable_index = "MetersPerPixel"
 
     @validator("data_path")
