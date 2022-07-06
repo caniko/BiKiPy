@@ -63,7 +63,7 @@ live = ["pyzmq"]
 jupyter = ["jupyter", "jupyterthemes"]
 
 [tool.poetry.scripts]
-bkpy = "bikipy.cli.ingress:cli_root"
+bkpy = "bikipy.cli:cli_root"
 
 [tool.mypy]
 python_version = "3.10"

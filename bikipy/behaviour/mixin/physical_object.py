@@ -3,7 +3,7 @@ from typing import Any, ClassVar, Optional, TypeVar
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, DirectoryPath, Field
+from pydantic import DirectoryPath, Field
 
 from bikipy.behaviour.rectangle import RectangleEnclosedTrial
 from bikipy.core.base_class import BaseBikipy
@@ -54,19 +54,18 @@ class PhysicalObjectTrialMixin(BaseBikipy):
     def physical_object_keyword_arguments(self) -> dict[str, Any]:
         result = {
             "reader": self.reader,
+            "trial_obj_label": self.label,
             "gaze_travel_direction_point_label": self.gaze_travel_direction_point_label,
             "gaze_start_point_label": self.gaze_start_point_label,
             "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
             "minimum_seconds_attention": self.minimum_seconds_attention,
             "maximum_seconds_distraction": self.maximum_seconds_distraction,
             "perimeter_border_normal_meters": self.perimeter_border_normal_meters,
-            "inspect": self.inspect_higher_order
+            "inspect": self.inspect_higher_order,
         }
 
         if self.inspect_higher_order and self.inspect_directory:
-            result["inspect_figure_file_path"] = (
-                _physical_object_inspection_dir(self.inspect_directory) / f"{self.label}.png"
-            )
+            result["inspect_figure_directory"] = _physical_object_inspection_dir(self.inspect_directory)
 
         return result
 

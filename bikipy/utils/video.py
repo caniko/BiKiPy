@@ -7,7 +7,7 @@ from pydantic import FilePath, PositiveInt
 
 
 @lru_cache
-def get_video_data(video_path: FilePath, frame_time: Optional[str | PositiveInt] = None):
+def get_video_data(video_path: FilePath, frame_time: str | PositiveInt = "middle"):
     """
     Get a frame from a given relative location, and resolution info of video
 

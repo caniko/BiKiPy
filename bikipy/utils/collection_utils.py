@@ -102,5 +102,9 @@ def flatten_sequence(sequence: Sequence) -> NDArray:
     return np.asarray(sequence).reshape(-1)
 
 
+def get_first_key_in_dict(source: dict) -> Any:
+    return next(iter(source.keys()))
+
+
 def get_first_value_in_dict(source: dict) -> Any:
     return next(iter(source.values()))

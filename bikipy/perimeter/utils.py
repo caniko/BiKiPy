@@ -133,7 +133,7 @@ def plot_perimeters(
 
     perimeter_plot_kwargs = perimeter_plot_kwargs or {}
     for perimeter in perimeters:
-        perimeter.plot_perimeter(ax=ax, **perimeter_plot_kwargs)
+        perimeter.plot_perimeter(manual_ax=ax, **perimeter_plot_kwargs)
 
     return ax
 

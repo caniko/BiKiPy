@@ -115,7 +115,7 @@ def proximity_filter(
                 label="Center of mass valid, invalid inside_perimeter_border",
             )
 
-        ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=3)
+        # ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=3)
 
         if not manual_ax:
             plt.tight_layout()

@@ -224,7 +224,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         gaze_start_point: NDArrayFp64,
         max_radians: float,
         angular_resolution: int = 400,
-        manual_inspect: bool = False,
+        manual_ax: Any = None,
         **inspect_kwargs,
     ) -> NDArrayBool:
         """
@@ -232,8 +232,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
 
         This problem is called the "in line of sight" (ilos) problem, and is non-trivial. This is not the best solution
         in terms of speed for our application; nevertheless, it is quite robust and had the lowest implementation time.
-        The solution below does the following:
-            1.
+        The solution is to emit rays from
 
         :param gaze_travel_direction_point:
         :param gaze_start_point:
@@ -267,7 +266,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         in_tolerable_los = np.any(in_tolerable_los, axis=0)
         result = project_mask_to_original(in_tolerable_los, in_direct_los) | in_direct_los
 
-        if self.inspect or manual_inspect:
+        if self.inspect or manual_ax:
             from bikipy.feature.attention.gaze import gaze_inspection_plot
 
             gaze_inspection_plot(
@@ -275,6 +274,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
                 result,
                 gaze_vectors,
                 gaze_travel_direction_point,
+                manual_ax=manual_ax,
                 **inspect_kwargs,
             )
 

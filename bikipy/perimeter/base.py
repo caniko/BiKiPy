@@ -10,7 +10,7 @@ import numpy as np
 from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments, PositiveInt
 
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
-from bikipy.core.typing import NDArrayFp64, NDArrayInt16
+from bikipy.core.typing import NDArrayFp64, NDArrayInt16, NDArrayBool
 from bikipy.core.video import (
     VideoMetadataMixin,
     VideoMetadata,
@@ -80,7 +80,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
             sb.set_theme(style="darkgrid")
             fig, ax = plt.subplots(dpi=500)
 
-            self.plot_perimeter(ax=ax)
+            self.plot_perimeter(manual_ax=ax)
 
             with sb.color_palette("Spectral", n_colors=5):
                 for i in evenly_spaced_indices_from_sequence(coordinates, 5):
@@ -93,7 +93,14 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         ...
 
     @abstractmethod
-    def gaze_direction_filter(self, *args, **kwargs):
+    def gaze_direction_filter(
+        self,
+        gaze_travel_direction_point: NDArrayFp64,
+        gaze_start_point: NDArrayFp64,
+        max_radians: float,
+        manual_ax: Any = None,
+        **kwargs,
+    ) -> NDArrayBool:
         ...
 
     @abstractmethod
@@ -234,6 +241,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
 
         if self.video.frame is not None:
             ax.imshow(self.video.frame)
+            ax.invert_yaxis()
 
         if coordinates is not None:
             ax = plot_coordinates(coordinates, ax, inspect_pixels, self.video)
@@ -241,7 +249,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         ax.set_title(self.label)
 
         return self.plot_perimeter(
-            **perimeter_plot_kwargs if perimeter_plot_kwargs else {}, ax=ax, inspect_pixels=inspect_pixels
+            **perimeter_plot_kwargs if perimeter_plot_kwargs else {}, manual_ax=ax, inspect_pixels=inspect_pixels
         )
 
 

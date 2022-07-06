@@ -1,17 +1,15 @@
 from functools import cached_property, reduce
 from logging import getLogger
-from pathlib import Path
 from typing import Any, ClassVar, Iterable, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
-from pydantic import validator
-from pydantic_numpy import NDArray
+from pydantic import validator, DirectoryPath
 
 from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipy
-from bikipy.core.typing import NDArrayBool, NDArrayFp64
+from bikipy.core.typing import NDArrayBool, NDArrayFp64, TrialId
 from bikipy.core.video import (
     VideoMetadata,
     VideoMetadataMixin,
@@ -50,7 +48,8 @@ class PhysicalObject(BaseBikipy):
     maximum_seconds_distraction: float = ...
 
     # Inspection fields
-    inspect_figure_directory_path: Optional[Path]
+    inspect_figure_directory: Optional[DirectoryPath]
+    trial_obj_label: Optional[TrialId]
     _fig: Any = None
     _axes: Any = None
     _exporting_figure: bool = False
@@ -73,7 +72,7 @@ class PhysicalObject(BaseBikipy):
             self._gaze_travel_direction_point,
             self._outside_perimeter_point if self.outside_perimeter_point_label else self._gaze_start_point,
             self.perimeter_border_normal_meters,
-            manual_ax=self.attention_axes[0][0] if self.inspect_figure_file_path else None,
+            manual_ax=self.attention_axes[0][0] if self.inspect_figure_directory else None,
             **self._global_attention_kwargs,
         )
 
@@ -83,7 +82,7 @@ class PhysicalObject(BaseBikipy):
             self._gaze_travel_direction_point,
             self._gaze_start_point,
             self.maximum_radians_inter_gaze_perimeter,
-            manual_ax=self.attention_axes[0][1] if self.inspect_figure_file_path else None,
+            manual_ax=self.attention_axes[0][1] if self.inspect_figure_directory else None,
             **self._global_attention_kwargs,
         )
 
@@ -100,7 +99,7 @@ class PhysicalObject(BaseBikipy):
             self.maximum_seconds_distraction,
         )
 
-        if self.inspect_figure_file_path and not self._exporting_figure:
+        if self.inspect_figure_directory and not self._exporting_figure:
             self.inspect_attention()
 
         return result
@@ -145,9 +144,14 @@ class PhysicalObject(BaseBikipy):
         )
 
         plt.tight_layout()
-        # save_plt_fig_cv(self.attention_fig, self.inspect_figure_file_path)
-        plt.savefig(self.inspect_figure_file_path.with_name(f"{self.inspect_figure_file_path.stem}_{self.label}.svg"))
-        plt.close(self.attention_fig)
+
+        if self.inspect_figure_directory:
+            name = f"{self.inspect_figure_directory.stem}_{self.label}.svg"
+            if self.trial_obj_label:
+                name = f"{self.trial_obj_label}_{name}"
+
+            plt.savefig(self.inspect_figure_directory / name)
+            plt.close(self.attention_fig)
 
     @property
     def attention_fig(self):
@@ -171,13 +175,15 @@ class PhysicalObject(BaseBikipy):
         for row_ax in self._axes:
             for col_ax in row_ax:
                 if self.video.frame is not None:
+                    # This will be done twice for row 0, as the perimeter plotter also plots video frame.
                     col_ax.imshow(self.video.frame)
+                    col_ax.invert_yaxis()
                 col_ax.set_aspect("equal", adjustable="box")
 
         self.attention_axes[1][0].set_title("proximity_filtered & gaze_filtered")
         self.attention_axes[1][1].set_title("Observation")
 
-        self._fig.suptitle("Observation cumulative filtration analysis", fontsize=35)
+        self._fig.suptitle("Observation cumulative filtration analysis", fontsize=30)
 
     @cached_property
     def _inspect_pixels(self) -> bool:
@@ -206,9 +212,7 @@ class PhysicalObjectSet(VideoMetadataMixin):
     Some methods are designed specifically for sets with a specific number of objects, while others are general.
     """
 
-    physical_objects: tuple
-
-    inspect_image: Optional[NDArray]
+    physical_objects: tuple[PhysicalObject, ...] = ...
 
     overlapping_frame_to_total_frame_warning_ratio: ClassVar[float] = 0.05
 

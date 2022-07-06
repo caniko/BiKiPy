@@ -1,4 +1,4 @@
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, Any
 
 import numpy as np
 
@@ -54,7 +54,26 @@ class TriangularPerimeter(PolygonPerimeter):
             (c1 < 0.0) & (c2 < 0.0) & (c3 < 0.0),
         )
 
-    def gaze_direction_filter(self, *args, **kwargs) -> NDArrayBool:
+    def gaze_direction_filter(
+        self,
+        gaze_travel_direction_point: NDArrayFp64,
+        gaze_start_point: NDArrayFp64,
+        max_radians: float,
+        manual_ax: Any = None,
+        **kwargs
+    ) -> NDArrayBool:
         if self.equilateral:
-            return self.circle.gaze_direction_filter_circle_triangle(*args, **kwargs)
-        return super().gaze_direction_filter(*args, **kwargs)
+            return self.circle.gaze_direction_filter_circle_triangle(
+                gaze_travel_direction_point=gaze_travel_direction_point,
+                gaze_start_point=gaze_start_point,
+                max_radians=max_radians,
+                manual_ax=manual_ax,
+                **kwargs
+            )
+        return super().gaze_direction_filter(
+            gaze_travel_direction_point=gaze_travel_direction_point,
+            gaze_start_point=gaze_start_point,
+            max_radians=max_radians,
+            manual_ax=manual_ax,
+            **kwargs
+        )

@@ -1,9 +1,12 @@
 from functools import cached_property, lru_cache
 from logging import getLogger
+from pathlib import Path
 from typing import Any, Optional
 
+import cv2
+import matplotlib.pyplot as plt
 import pandas as pd
-from pydantic import FilePath, PositiveInt
+from pydantic import FilePath, PositiveInt, DirectoryPath, validate_arguments
 
 from bikipy.core.typing import TrialId
 from bikipy.ingress.plugin.base import BasePluginFile, HasReferenceMixin
@@ -12,8 +15,9 @@ from bikipy.perimeter.base import (
     StringPerimeterShapes,
     perimeter_set_from_makesense,
 )
+from bikipy.utils.collection_utils import get_first_key_in_dict
 from bikipy.utils.io.makesense import (
-    image_name_from_makesense,
+    first_image_name_from_makesense,
     SHAPE_TO_MAKESENSE_TYPE,
 )
 
@@ -39,7 +43,7 @@ class PluginPerimeter(BasePluginFile, HasReferenceMixin):
 
     @cached_property
     def image_name(self):
-        return image_name_from_makesense(self.data_path, SHAPE_TO_MAKESENSE_TYPE[self.shape])
+        return first_image_name_from_makesense(self.data_path, SHAPE_TO_MAKESENSE_TYPE[self.shape])
 
     @property
     def perimeter_settings(self) -> dict[str, SinglePerimeter]:
@@ -102,6 +106,31 @@ class PluginPerimeter(BasePluginFile, HasReferenceMixin):
 
 def perimeter_file_path_to_data_object(file_path: FilePath, trial_id: TrialId, ingress: Any, *args, **kwargs):
     return PluginPerimeter(data_path=file_path, ingress=ingress, trial_id=trial_id)
+
+
+@validate_arguments
+def inspect_annotations(annotation_path: FilePath, image_directory: Optional[DirectoryPath] = None) -> None:
+    _, shape, annotation_label = annotation_path.stem.split("-")
+    image_name_to_perimeter_set = perimeter_set_from_makesense(annotation_path, shape)
+
+    # Check if image is in current directory
+    if not image_directory:
+        image_directory = Path(".").resolve()
+        if not (image_directory / get_first_key_in_dict(image_name_to_perimeter_set)).exists():
+            msg = "Can not inspect annotation without the image coupled to it being provided"
+            raise ValueError(msg)
+
+    fig, axes = plt.subplots(len(image_name_to_perimeter_set))
+    if len(image_name_to_perimeter_set) == 1:
+        axes = [axes]
+
+    for ax, (image_name, perimeter_set) in zip(axes, image_name_to_perimeter_set.items()):
+        ax.imshow(cv2.imread(str(image_directory / image_name)))
+        ax.invert_yaxis()
+
+        perimeter_set.plot(manual_ax=ax, inspect_pixels=True)
+
+    plt.show()
 
 
 @lru_cache

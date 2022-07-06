@@ -4,6 +4,8 @@ from typing import ClassVar, Optional, TypeVar
 from compress_pickle import compress_pickle
 from pydantic import BaseModel, DirectoryPath, Field, root_validator
 
+from bikipy.core.typing import TrialId
+
 
 class BaseBikipy(BaseModel):
     class Config:
@@ -14,7 +16,7 @@ class BaseBikipy(BaseModel):
 
 
 class BaseBikipyHashable(BaseBikipy):
-    label: str
+    label: TrialId
 
     @property
     def _to_hash(self) -> list:

@@ -5,6 +5,7 @@ from typing import Optional
 import click
 from pydantic import DirectoryPath, validate_arguments
 
+from bikipy.cli import cli_root
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.ingress.core import (
     analyze_and_save,
@@ -13,12 +14,12 @@ from bikipy.ingress.core import (
 )
 
 
-@click.group
-def cli_root():
+@cli_root.group
+def ingress():
     pass
 
 
-@cli_root.command()
+@ingress.command()
 @click.argument("ingress_method")
 @click.option(
     "-e", "--experiment_name", help=f"Name of experiment. Choose from:\n{', '.join(EXPERIMENT_NAME_TO_CLASS.keys())}"
@@ -49,14 +50,14 @@ def init(
     init_settings(ingress_method, experiment_name, project_root_directory, kinematic_data_file_extension, dry_run)
 
 
-@cli_root.command()
+@ingress.command()
 @click.argument("project_root_directory")
 @validate_arguments
 def analyze(project_root_directory: Optional[DirectoryPath]) -> None:
     analyze_and_save(_define_project_root_directory(project_root_directory))
 
 
-@cli_root.command()
+@ingress.command()
 @click.argument("project_root_directory")
 @click.option("-x", "--delete_outdated", help="Outdated field will be removed", is_flag=True)
 @click.option("-d", "--dry_run", is_flag=True)
@@ -69,7 +70,7 @@ def update(
     )
 
 
-@cli_root.command()
+@ingress.command()
 @click.argument("project_root_directory")
 @validate_arguments
 def verify(project_root_directory: Optional[DirectoryPath]) -> None:
