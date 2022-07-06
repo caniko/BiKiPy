@@ -15,10 +15,10 @@ from bikipy.core.video import (
     VideoMetadataMixin,
     convert_meters_to_pixels,
 )
-from bikipy.feature.attention.main import (
+from bikipy.feature.attention.proximity import (
     proximity_filter,
-    tolerance_filter,
 )
+from bikipy.feature.tolerance.single import single_node_tolerance_filter
 from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
 from bikipy.reader.base import Reader
 
@@ -92,7 +92,7 @@ class PhysicalObject(BaseBikipy):
 
     @cached_property
     def attention_observance_boolean_index(self) -> NDArrayBool:
-        result = tolerance_filter(
+        result = single_node_tolerance_filter(
             self.logical_location_and_gaze,
             self.video.fps,
             self.minimum_seconds_attention,

@@ -9,6 +9,7 @@ from bikipy.behaviour.rectangle import RectangleEnclosedTrial
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayFp64
 from bikipy.feature.physical_object import PhysicalObjectSet
+from bikipy.feature.tolerance import GENERIC_MINIMUM_SECONDS_ATTENTION, GENERIC_MAXIMUM_SECONDS_DISTRACTION
 
 
 class PhysicalObjectTrialMixin(BaseBikipy):
@@ -20,8 +21,8 @@ class PhysicalObjectTrialMixin(BaseBikipy):
     )
 
     maximum_radians_inter_gaze_perimeter: float = np.pi / 4.0
-    minimum_seconds_attention: float = 1.0 / 3.0
-    maximum_seconds_distraction: float = 2.0 / 3.0
+    minimum_seconds_attention: float = GENERIC_MINIMUM_SECONDS_ATTENTION
+    maximum_seconds_distraction: float = GENERIC_MAXIMUM_SECONDS_DISTRACTION
 
     physical_object_inspect: bool = False
 

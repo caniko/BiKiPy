@@ -29,7 +29,6 @@ from bikipy.utils.collection_utils import (
     chain_iterables_to_multi_index,
     chain_lists_to_tuple,
     copycat_assumes_levels_of_icon,
-    flatten_multi_index,
     max_len_in_iterable,
 )
 from bikipy.utils.ranged_dict import RangeDict
@@ -149,21 +148,21 @@ class BaseTrial(Behaviour):
         )
 
     @property
-    def framewise_confined_coordinates(self) -> NDArrayFp64:
+    def kinematic_coordinates(self) -> NDArrayFp64:
         return self.reader[self.object_tracking_label_for_kinematics]
 
     @cached_property
     def number_of_frames(self) -> int:
-        return len(self.framewise_confined_coordinates)
+        return len(self.kinematic_coordinates)
 
     @cached_property
     def experiment_seconds(self) -> int:
-        return self.framewise_confined_coordinates.shape[0] / self.video.fps
+        return self.kinematic_coordinates.shape[0] / self.video.fps
 
     @cached_property
     def motion(self) -> Motion:
         return Motion(
-            coordinate_sequence=self.framewise_confined_coordinates,
+            coordinate_sequence=self.kinematic_coordinates,
             fps=self.video.fps,
         )
 

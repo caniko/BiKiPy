@@ -60,7 +60,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         return result
 
     @abstractmethod
-    def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64):
+    def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64):
         ...
 
     @abstractmethod
@@ -181,9 +181,9 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         ]
 
     @validate_arguments
-    def framewise_confined_coordinates(self, coordinates: NDArrayFp64, inspect: bool = False, ax: Any = None):
+    def confined_coordinates(self, coordinates: NDArrayFp64, inspect: bool = False, ax: Any = None):
         """
-        self.framewise_confined_coordinates to fetch confined coordinates within
+        self.confined_coordinates to fetch confined coordinates within
         the respective perimeter
 
         Parameters
@@ -198,19 +198,19 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         -------
 
         """
-        coordinate_confinement_boolean_index = coordinates[self.coordinate_confinement_boolean_index(coordinates)]
+        confined_coordinate_boolean_index = coordinates[self.confined_coordinate_boolean_index(coordinates)]
         if inspect or ax:
             if not ax:
                 ax = self.plot_self()
             ax.scatter(
-                coordinate_confinement_boolean_index.T[0],
-                coordinate_confinement_boolean_index.T[1],
+                confined_coordinate_boolean_index.T[0],
+                confined_coordinate_boolean_index.T[1],
                 marker="x",
             )
             ax.set_tittle("Confined coordinates")
             plt.show()
 
-        return coordinate_confinement_boolean_index
+        return confined_coordinate_boolean_index
 
     def plot(
         self,
@@ -319,24 +319,24 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
         ax = self.plot() if inspect else None
         result = {}
         for i, perimeter in enumerate(self.all_perimeters):
-            framewise_confined_coordinates = perimeter.framewise_confined_coordinates(coordinates, ax=ax)
-            result[perimeter.label or i] = framewise_confined_coordinates
+            confined_coordinates = perimeter.confined_coordinates(coordinates, ax=ax)
+            result[perimeter.label or i] = confined_coordinates
         if inspect:
             plt.show()
         return result
 
     def combined_framewise_confined_coordinates(self, coordinates: NDArrayFp64):
-        present = np.any([perimeter.coordinate_confinement_boolean_index(coordinates) for perimeter in self.perimeters])
+        present = np.any([perimeter.confined_coordinate_boolean_index(coordinates) for perimeter in self.perimeters])
         if self.restricted_perimeters:
             present = present & ~np.any(
                 [
-                    perimeter.coordinate_confinement_boolean_index(coordinates)
+                    perimeter.confined_coordinate_boolean_index(coordinates)
                     for perimeter in self.restricted_perimeters
                 ]
             )
         return present
 
-    def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64):
+    def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64):
         return self.combined_framewise_confined_coordinates(coordinates)
 
     def change_reference(self, **perimeter_change_reference_kwargs):

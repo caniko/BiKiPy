@@ -454,10 +454,21 @@ class BaseIngress(BaseBikipy, ABC):
 
     @cached_property
     def trial_label_to_df(self) -> dict[str | PositiveInt, pd.DataFrame]:
-        return {
-            trial_label: df.join(self.metadata, how="inner")
-            for trial_label, df in self.experiment.trial_label_to_df.items()
-        }
+        result = {}
+        for trial_label, df in self.experiment.trial_label_to_df.items():
+            metadata = (
+                self.metadata
+                if self.metadata.columns.nlevels >= df.columns.nlevels
+                else copycat_assumes_levels_of_icon(self.metadata, df, "")
+            )
+            df = (
+                df
+                if df.columns.nlevels >= self.metadata.columns.nlevels
+                else copycat_assumes_levels_of_icon(df, self.metadata, "")
+            )
+            result[trial_label] = df.join(metadata, how="inner")
+
+        return result
 
     @cached_property
     def animal_analysis_df(self) -> pd.DataFrame:

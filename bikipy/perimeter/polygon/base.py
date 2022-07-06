@@ -180,7 +180,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
             closest_point_on_edge_to_coordinates = self.closest_point_on_edge_to_coordinates(coordinates)
         return unit_vector(closest_point_on_edge_to_coordinates - coordinates)
 
-    def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
+    def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
         return parallel_point_in_polygon(coordinates, self.vertices_in_meters)
 
     def ray_intersects_on_polygon(

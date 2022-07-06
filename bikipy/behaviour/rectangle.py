@@ -35,15 +35,13 @@ def motion_multi_indexer_for_quadrant(category: Any, level: int):
 
 class Quadrant(BaseBikipy):
     vertices_in_meters: NDArrayFp64
-    framewise_confined_coordinates: NDArrayFp64
+    kinematic_coordinates: NDArrayFp64
     fps: float
     quadrant_index: int
 
     @cached_property
     def confinement_boolean_index(self) -> NDArrayBool:
-        return parallel_point_in_polygon(
-            self.framewise_confined_coordinates, clockwise_sort_points(self.vertices_in_meters)
-        )
+        return parallel_point_in_polygon(self.kinematic_coordinates, clockwise_sort_points(self.vertices_in_meters))
 
     @cached_property
     def seconds_present(self) -> float:
@@ -53,7 +51,7 @@ class Quadrant(BaseBikipy):
     def motion(self) -> dict[str, float]:
         return get_combined_features_from_merged_motion_island_data(
             self.confinement_boolean_index,
-            self.framewise_confined_coordinates,
+            self.kinematic_coordinates,
             self.fps,
         )
 
@@ -153,11 +151,7 @@ class RectangleEnclosedTrial(BaseTrial):
     def gaussian_center_to_periphery_score(self) -> float:
         func = gaussian_scoring_field(tuple(self.video.metric_resolution))
         scores = np.array(
-            [
-                func(*coordinate)
-                for coordinate in self.framewise_confined_coordinates
-                if not np.any(np.isnan(coordinate))
-            ]
+            [func(*coordinate) for coordinate in self.kinematic_coordinates if not np.any(np.isnan(coordinate))]
         )
         return np.sum(scores) / (A * self.number_of_frames)
 
@@ -212,7 +206,7 @@ class RectangleEnclosedTrial(BaseTrial):
         result = {
             quadrant_grid_coordinate: Quadrant(
                 vertices_in_meters=self.quadrant_grid_coordinate_to_vertices[quadrant_grid_coordinate],
-                framewise_confined_coordinates=self.framewise_confined_coordinates,
+                kinematic_coordinates=self.kinematic_coordinates,
                 fps=self.video.fps,
                 quadrant_index=quadrant_index,
             )
@@ -229,11 +223,11 @@ class RectangleEnclosedTrial(BaseTrial):
                 ax.plot(
                     *quadrant.vertices_in_meters.T, label=f"({grid_coordinate[0]}, {grid_coordinate[1]})", color=color
                 )
-                ax.scatter(*self.framewise_confined_coordinates[quadrant.confinement_boolean_index].T, color=color)
+                ax.scatter(*self.kinematic_coordinates[quadrant.confinement_boolean_index].T, color=color)
 
                 confined = confined | quadrant.confinement_boolean_index
 
-            ax.scatter(*self.framewise_confined_coordinates[~confined].T, color=colors[-1], label="Unconfined")
+            ax.scatter(*self.kinematic_coordinates[~confined].T, color=colors[-1], label="Unconfined")
             ax.scatter(*self.video.center_meters.T, color="r", label="Old")
             ax.scatter(*self.manual_center_meters.T, color="k", label="New")
 
@@ -304,7 +298,7 @@ class RectangleEnclosedTrial(BaseTrial):
         else:
             ax = None
 
-        result = parallel_point_in_polygon(self.framewise_confined_coordinates, self.center_rectangle_vertices, ax=ax)
+        result = parallel_point_in_polygon(self.kinematic_coordinates, self.center_rectangle_vertices, ax=ax)
 
         if self.inspect:
             plt.savefig(self._inspect_center_periphery_directory / f"{self.label}.jpeg")
@@ -319,7 +313,7 @@ class RectangleEnclosedTrial(BaseTrial):
     def motion_center(self) -> dict:
         return get_combined_features_from_merged_motion_island_data(
             self.center_boolean_index,
-            self.framewise_confined_coordinates,
+            self.kinematic_coordinates,
             self.video.fps,
         )
 
@@ -327,7 +321,7 @@ class RectangleEnclosedTrial(BaseTrial):
     def motion_periphery(self) -> dict:
         return get_combined_features_from_merged_motion_island_data(
             self.periphery_boolean_index,
-            self.framewise_confined_coordinates,
+            self.kinematic_coordinates,
             self.video.fps,
         )
 

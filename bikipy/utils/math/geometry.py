@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Sequence
+from typing import Sequence, TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,6 +8,7 @@ from pydantic import validate_arguments
 
 from bikipy.core.typing import NDArrayFp64
 from bikipy.feature.angle import clockwise_angel_2d
+from bikipy.perimeter.base import Perimeter
 
 
 def normalize_hypotenuse_to_origin(hypotenuse_start: NDArrayFp64, hypotenuse_end: NDArrayFp64):
@@ -97,7 +98,7 @@ def clockwise_sort_points(points: NDArrayFp64, inspect: bool = False):
 
 
 @lru_cache
-def clockwise_sort_perimeter_centroids(perimeters: Sequence):
+def clockwise_sort_perimeter_centroids(perimeters: Sequence[Perimeter]):
     return [perimeters[i] for i in clockwise_argsort_points([perimeter.centroid for perimeter in perimeters])]
 
 

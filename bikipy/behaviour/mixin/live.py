@@ -90,7 +90,7 @@ class LiveTrial(BaseModel, ABC):
     def detect_confined_perimeter(self, coordinate: NDArrayFp64) -> NDArrayFp64:
         coordinate = np.expand_dims(coordinate, 0)
         for label, perimeter in self._int_id_to_perimeter.items():
-            if perimeter.coordinate_confinement_boolean_index(coordinate):
+            if perimeter.confined_coordinate_boolean_index(coordinate):
                 logger.info(f"Location: {label}, {coordinate}")
                 return label
         logger.debug(f"Location could not be determined, {coordinate}")

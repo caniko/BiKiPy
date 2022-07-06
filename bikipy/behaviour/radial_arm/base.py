@@ -7,6 +7,7 @@ from typing import ClassVar, Optional
 
 from matplotlib import pyplot as plt
 from pydantic import validator
+from pydantic_numpy import NDArray
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import (
@@ -15,9 +16,9 @@ from bikipy.behaviour.utils import (
     unique_with_counts_zipped,
 )
 from bikipy.core.base_class import BaseBikipyHashable
-from bikipy.core.typing import NDArrayBool
+from bikipy.core.typing import NDArrayBool, NDArrayUint8, NDArrayFp64
 from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
-from bikipy.perimeter.utils import detect_sequential_border_presence
+from bikipy.perimeter.confinement import detect_multi_node_sequential_perimeter_presence
 from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
 
 logger = getLogger(__name__)
@@ -75,6 +76,8 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
     center: SinglePerimeter = ...
     arms: tuple[SinglePerimeter, ...] = ...
 
+    object_labels_for_y_maze_confinement_tracking: set[str] = ...
+
     minimum_seconds_for_entry: float = 0.5
 
     @validator("center")
@@ -107,7 +110,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
     def feature_df_rows(self) -> list:
         return [
             self.spontaneous_alternations,
-            *self.perimeter_to_seconds_spent.values(),
+            *self.area_to_seconds_spent.values(),
             self.sum_of_seconds_in_arms,
             self.sum_of_seconds_in_perimeters,
             *self.arm_to_entries.values(),
@@ -118,15 +121,11 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
     @cached_property
     def perimeters(self):
-        return [*self.sorted_arms, self.center]
+        return [*self.arms, self.center]
 
     @cached_property
     def arm_len(self):
         return len(self.arms)
-
-    @property
-    def sorted_arms(self):
-        return clockwise_sort_perimeter_centroids(self.arms)
 
     @cached_property
     def perimeter_set(self):
@@ -137,7 +136,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return _compute_meter_per_pixel(self.center.mean_length, self.corridor_meter_width)
 
     @property
-    def alternation_sequence(self):
+    def alternation_sequence(self) -> NDArrayUint8:
         return self._border_presence_data[0]
 
     @property
@@ -149,7 +148,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return self._border_presence_data[2]
 
     @cached_property
-    def reduced_alternation_sequence_without_center(self):
+    def reduced_alternation_sequence_without_center(self) -> NDArrayUint8:
         return reduce_repeating_sequences(
             self.alternation_sequence, round(self.video.fps * self.minimum_seconds_for_entry)
         )
@@ -177,7 +176,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         )
 
     @cached_property
-    def perimeter_to_seconds_spent(self) -> dict:
+    def area_to_seconds_spent(self) -> dict:
         """
         The time spent in each area; arms and center
 
@@ -195,11 +194,11 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
     @cached_property
     def sum_of_seconds_in_perimeters(self) -> float:
-        return sum(iter(self.perimeter_to_seconds_spent.values()))
+        return sum(iter(self.area_to_seconds_spent.values()))
 
     @cached_property
     def sum_of_seconds_in_arms(self) -> float:
-        return sum(self.perimeter_to_seconds_spent[arm_id] for arm_id in self._arm_int_ids)
+        return sum(self.area_to_seconds_spent[arm_id] for arm_id in self._arm_int_ids)
 
     @cached_property
     def arm_to_entries(self) -> dict[str, int]:
@@ -278,23 +277,27 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return 100.0 * alternations / self.sum_of_entries
 
     @cached_property
+    def _multi_node_coordinates(self) -> tuple[NDArrayFp64, ...]:
+        return tuple(self.reader[node_label] for node_label in self.object_labels_for_y_maze_confinement_tracking)
+
+    @cached_property
     def _border_center_presence_data(self):
-        return detect_sequential_border_presence(
-            self.framewise_confined_coordinates,
-            self.arms,
-            inferior_poly_border_instances=[self.center],
+        return detect_multi_node_sequential_perimeter_presence(
+            self._multi_node_coordinates,
+            (self.center, *self.arms),
         )
 
     @cached_property
     def _border_presence_data(self):
-        result = detect_sequential_border_presence(
-            self.framewise_confined_coordinates,
+        # alternation_sequence, valid_indices, valid_boolean_index
+        result = detect_multi_node_sequential_perimeter_presence(
+            self._multi_node_coordinates,
             self.arms,
         )
 
         if self.inspect_higher_order:
             fig, ax = plt.subplots()
-            ax = self.perimeter_set.plot(coordinates=self.framewise_confined_coordinates, manual_ax=ax)
+            ax = self.perimeter_set.plot(coordinates=self.kinematic_coordinates[result[1]], manual_ax=ax)
 
             if self.inspect_directory:
                 plt.savefig(self.class_inspect_directory / f"{self.label}.jpg")

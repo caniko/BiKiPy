@@ -75,7 +75,11 @@ trial:
       center: null
       coordinate_data_path: null
       label: null
-      object_tracking_label_for_kinematics: base_tail
+      object_tracking_label_for_kinematics: torso
+      object_labels_for_y_maze_confinement_tracking:
+        - center_eye
+        - torso
+        - base_tail
       reader_kwargs: null
     required:
       animal_id: '[{''type'': ''string''}, {''type'': ''integer'', ''exclusiveMinimum'':

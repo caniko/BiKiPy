@@ -66,7 +66,7 @@ class CirclePerimeter(BaseSinglePerimeter):
         kwargs["radius_meters"] += perimeter_border_normal_meters
         return self.__class__(**kwargs)
 
-    def coordinate_confinement_boolean_index(self, coordinates: NDArrayFp64, *args, **kwargs):
+    def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64, *args, **kwargs):
         distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
         return np.abs(distance_of_point_from_center) <= self.radius_meters
 
