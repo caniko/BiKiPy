@@ -46,7 +46,7 @@ reader_kwargs:
         - right_ear
       torso:
         - center_eye
-        - base_tail
+        - tail
   optional:
     crop_from_end: boolean -> False
     crop_time_seconds: number -> 0.0
@@ -68,12 +68,11 @@ reader_kwargs:
 trial:
   common:
     defined:
-      animal_id: null
-      coordinate_data_path: null
-      familiar: null
-      label: null
-      object_tracking_label_for_kinematics: nose
-      reader_kwargs: null
+      higher_order_inspect: true
+      gaze_start_point_label: center_eye
+      gaze_travel_direction_point_label: nose
+      object_tracking_label_for_kinematics: torso
+      perimeter_border_normal_meters: 0.05
     required:
       animal_id: '[{''type'': ''string''}, {''type'': ''integer'', ''exclusiveMinimum'':
         0}]'

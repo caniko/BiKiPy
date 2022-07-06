@@ -224,7 +224,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         gaze_start_point: NDArrayFp64,
         max_radians: float,
         angular_resolution: int = 400,
-        manual_inspect: bool = True,
+        manual_inspect: bool = False,
         **inspect_kwargs,
     ) -> NDArrayBool:
         """

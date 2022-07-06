@@ -206,7 +206,7 @@ class BaseTrial(Behaviour):
             return *self.feature_df_rows, *self.motion_features
         return self.motion_features
 
-    @cached_property
+    @property
     def _video(self):
         video = super()._video
         if self.perimeters:
@@ -218,7 +218,10 @@ class BaseTrial(Behaviour):
 
             # The resolution on perimeters should be more correct than whatever
             # provided by the user, hence it being master
-            return VideoMetadata.join(new_video, video, ignore_incongruity=True)
+            final_video = VideoMetadata.join(new_video, video, ignore_incongruity=True)
+            for perimeter in self.perimeters:
+                perimeter.manual_video = final_video
+            return final_video
         return video
 
     @cached_property

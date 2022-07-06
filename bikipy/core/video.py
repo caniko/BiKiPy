@@ -173,16 +173,17 @@ class VideoMetadataMixin(_VideoMetadataBase):
     def video_metadata(self):
         return self.video.video_metadata
 
-    @cached_property
+    @property
     def _video(self):
-        if self.manual_video:
-            return self.manual_video
-        return VideoMetadata(
+        video = VideoMetadata(
             video_path=self.video_path,
             meters_per_pixel=self.meters_per_pixel,
             manual_fps=self.manual_fps,
             manual_recording_resolution=self.manual_recording_resolution,
         )
+        if self.manual_video:
+            video = VideoMetadata.join(self.manual_video, video, ignore_incongruity=True)
+        return video
 
 
 def convert_meters_to_pixels(data: NDArrayFp64, video: VideoMetadata) -> NDArrayFp64:

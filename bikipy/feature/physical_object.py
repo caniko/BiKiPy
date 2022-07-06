@@ -33,16 +33,24 @@ class PhysicalObject(BaseBikipy):
     us to define methods that require the respective attributes, think of it as a union between the classes!
     """
 
-    perimeter: SinglePerimeter
-    reader: Reader
-    gaze_start_point_label: str
-    gaze_travel_direction_point_label: str
-    perimeter_border_normal_meters: float | NDArrayFp64
-    maximum_radians_inter_gaze_perimeter: float
-    minimum_seconds_attention: float
-    maximum_seconds_distraction: float
+    perimeter: SinglePerimeter = ...
+    reader: Reader = ...
 
-    inspect_figure_file_path: Optional[Path]
+    # Proximity fields
+    perimeter_border_normal_meters: float | NDArrayFp64 = ...
+    outside_perimeter_point_label: Optional[str]
+
+    # Gaze fields
+    gaze_start_point_label: str = ...
+    gaze_travel_direction_point_label: str = ...
+    maximum_radians_inter_gaze_perimeter: float = ...
+
+    # Tolerance fields
+    minimum_seconds_attention: float = ...
+    maximum_seconds_distraction: float = ...
+
+    # Inspection fields
+    inspect_figure_directory_path: Optional[Path]
     _fig: Any = None
     _axes: Any = None
     _exporting_figure: bool = False
@@ -59,31 +67,11 @@ class PhysicalObject(BaseBikipy):
         return self.perimeter.label
 
     @cached_property
-    def distance_from_per_frame(self) -> NDArrayFp64:
-        return np.linalg.norm(self._gaze_travel_direction_point - self.perimeter.centroid, axis=1)
-
-    @cached_property
-    def not_observing(self) -> NDArrayFp64:
-        return ~self.attention_observance_boolean_index
-
-    @cached_property
-    def attention_filtered_seconds_observing(self) -> float:
-        return np.sum(self.attention_observance_boolean_index) / self.video.fps
-
-    @cached_property
-    def raw_seconds_observing(self) -> float:
-        return np.sum(self.logical_location_and_gaze) / self.video.fps
-
-    @cached_property
-    def filtered_raw_observation_ratio(self) -> float:
-        return self.attention_filtered_seconds_observing / self.raw_seconds_observing
-
-    @cached_property
     def attention_proximity_boolean_index(self) -> NDArrayBool:
         return proximity_filter(
             self.perimeter,
             self._gaze_travel_direction_point,
-            self._gaze_start_point,
+            self._outside_perimeter_point if self.outside_perimeter_point_label else self._gaze_start_point,
             self.perimeter_border_normal_meters,
             manual_ax=self.attention_axes[0][0] if self.inspect_figure_file_path else None,
             **self._global_attention_kwargs,
@@ -116,6 +104,26 @@ class PhysicalObject(BaseBikipy):
             self.inspect_attention()
 
         return result
+
+    @cached_property
+    def not_observing(self) -> NDArrayFp64:
+        return ~self.attention_observance_boolean_index
+
+    @cached_property
+    def attention_filtered_seconds_observing(self) -> float:
+        return np.sum(self.attention_observance_boolean_index) / self.video.fps
+
+    @cached_property
+    def raw_seconds_observing(self) -> float:
+        return np.sum(self.logical_location_and_gaze) / self.video.fps
+
+    @cached_property
+    def filtered_raw_observation_ratio(self) -> float:
+        return self.attention_filtered_seconds_observing / self.raw_seconds_observing
+
+    @cached_property
+    def distance_from_per_frame(self) -> NDArrayFp64:
+        return np.linalg.norm(self._gaze_travel_direction_point - self.perimeter.centroid, axis=1)
 
     def inspect_attention(self):
         self._exporting_figure = True
@@ -179,11 +187,15 @@ class PhysicalObject(BaseBikipy):
     def _global_attention_kwargs(self) -> dict[str, Any]:
         return {"inspect_video": self.video, "inspect_pixels": self._inspect_pixels}
 
-    @cached_property
+    @property
+    def _outside_perimeter_point(self) -> NDArrayFp64:
+        return self.reader[self.outside_perimeter_point_label]
+
+    @property
     def _gaze_start_point(self) -> NDArrayFp64:
         return self.reader[self.gaze_start_point_label]
 
-    @cached_property
+    @property
     def _gaze_travel_direction_point(self) -> NDArrayFp64:
         return self.reader[self.gaze_travel_direction_point_label]
 

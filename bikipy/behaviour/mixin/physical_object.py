@@ -60,17 +60,13 @@ class PhysicalObjectTrialMixin(BaseBikipy):
             "minimum_seconds_attention": self.minimum_seconds_attention,
             "maximum_seconds_distraction": self.maximum_seconds_distraction,
             "perimeter_border_normal_meters": self.perimeter_border_normal_meters,
+            "inspect": self.inspect_higher_order
         }
 
-        if self.physical_object_inspect or self.inspect:
-            if not self.inspect_directory:
-                msg = "Physical object inspection is set to True, yet inspect_directory is undefined"
-                raise AttributeError(msg)
-
+        if self.inspect_higher_order and self.inspect_directory:
             result["inspect_figure_file_path"] = (
                 _physical_object_inspection_dir(self.inspect_directory) / f"{self.label}.png"
             )
-            result["inspect_image"] = self.inspect_image
 
         return result
 
