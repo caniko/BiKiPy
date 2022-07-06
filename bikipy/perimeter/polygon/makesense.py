@@ -21,7 +21,7 @@ def init_polygon_from_makesense_coco_polygon(
     image_root: Optional[DirectoryPath] = None,
     reference_point_csv_path: Optional[FilePath] = None,
     manual_reference_point_array: Optional[NDArrayFp64] = None,
-    invert_y: bool = True,
+    invert_y: bool = False,
     **perimeter_kwargs,
 ) -> dict:
     from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters
@@ -58,18 +58,22 @@ def init_polygon_from_makesense_coco_polygon(
         else:
             reference_point_array = manual_reference_point_array
 
+        y_res = float(coco["images"][image_index]["height"])
+        vertices = np.array(
+            _coco_polygon_annotation(
+                annotation["segmentation"][0], invert_y_vertical_resolution=coco["images"][image_index]["height"]
+            )
+        )
+        if invert_y:
+            x, y = vertices.T
+            vertices = np.array([x, y_res - y]).T
+
         result[image_name]["label"] = init_polygon(
-            np.array(
-                _coco_polygon_annotation(
-                    annotation["segmentation"][0], invert_y_vertical_resolution=coco["images"][image_index]["height"]
-                ),
-            ),
+            vertices,
             label=label,
             reference_point_array=reference_point_array,
             manual_frame=cv2.imread(image_root / image_name) if image_root else None,
-            manual_recording_resolution=np.array(
-                (coco["images"][image_index]["width"], coco["images"][image_index]["height"]), dtype=float
-            ),
+            manual_recording_resolution=np.array((coco["images"][image_index]["width"], y_res), dtype=float),
             makesense_image_name=image_name,
             **current_kwargs,
             **perimeter_kwargs,
@@ -82,6 +86,7 @@ def init_polygon_from_makesense_csv_rectangle(
     data_path: FilePath,
     image_root: Optional[DirectoryPath] = None,
     reference_point_csv_path: Optional[FilePath] = None,
+    invert_y: bool = True,
     **perimeter_kwargs,
 ):
     from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters
@@ -108,10 +113,16 @@ def init_polygon_from_makesense_csv_rectangle(
         if image_name not in result:
             result[image_name] = {}
 
+        y_res = float(row["y_res"])
+        vertices = np.array((start, (start[0], end[1]), end, (end[0], start[1])))
+        if invert_y:
+            x, y = vertices.T
+            vertices = np.array([x, y_res - y]).T
+
         result[image_name][label] = init_polygon(
-            np.array((start, (start[0], end[1]), end, (end[0], start[1]))),
+            vertices,
             label=label,
-            manual_recording_resolution=np.array((row["x_res"], row["y_res"]), dtype=float),
+            manual_recording_resolution=np.array((row["x_res"], y_res), dtype=float),
             manual_frame=cv2.imread(image_root / str(image_name)) if image_root else None,
             makesense_image_name=row["image_name"],
             **perimeter_kwargs,

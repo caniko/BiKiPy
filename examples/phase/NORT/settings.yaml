@@ -1,6 +1,6 @@
 ingress_method: phase
 first_stage_is_habituation: true
-manual_dataset_directory: /mnt/soma/Projects/Neuroscience/Imen/data/nort/
+manual_dataset_directory: /home/can/Downloads/Compressed/nort/
 ingress:
   meters_per_pixel_definition_strategy: global
   perimeter_definition_strategy: metadata
@@ -71,11 +71,12 @@ trial:
       higher_order_inspect: true
       gaze_start_point_label: center_eye
       gaze_travel_direction_point_label: nose
-      object_tracking_label_for_kinematics: torso
-      perimeter_border_normal_meters: 0.05
+      outside_perimeter: torso
+      object_tracking_label_for_kinematics: center_eye
+      maximum_radians_inter_gaze_perimeter: 0.7853981633974483
+      perimeter_border_normal_meters: 0.06
     required:
-      animal_id: '[{''type'': ''string''}, {''type'': ''integer'', ''exclusiveMinimum'':
-        0}]'
+      animal_id: '[{''type'': ''string''}, {''type'': ''integer'', ''exclusiveMinimum'': 0}]'
       coordinate_data_path: string
       familiar: None
       label: string
@@ -124,7 +125,7 @@ trial:
         novel: None
 experiment:
   defined:
-    manual_fps: 30
+    compute_only_one_df_row: true
   optional:
     common_trial_keyword_arguments: object
     compute_only_one_df_row: boolean -> False

@@ -1,4 +1,5 @@
 ingress_method: phase
+first_stage_is_habituation: false
 manual_dataset_directory: /home/can/Downloads/Compressed/y_maze/
 ingress:
   meters_per_pixel_definition_strategy: radial
@@ -74,7 +75,7 @@ trial:
       center: null
       coordinate_data_path: null
       label: null
-      object_tracking_label_for_kinematics: torso
+      object_tracking_label_for_kinematics: base_tail
       reader_kwargs: null
     required:
       animal_id: '[{''type'': ''string''}, {''type'': ''integer'', ''exclusiveMinimum'':
@@ -106,8 +107,7 @@ trial:
       video_path: string
   specific: {}
 experiment:
-  defined:
-    manual_fps: 30
+  defined: {}
   optional:
     common_trial_keyword_arguments: object
     compute_only_one_df_row: boolean -> False

@@ -691,13 +691,19 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def trial_class_label_to_trial_id_indexed_column_index(cls):
-        return {
-            trial_class.trial_label: flatten_multi_index(
-                chain_lists_to_tuple([trial_class.feature_headers, cls.motion_column_headers])
-            )
-            for trial_class in cls.trial_classes
-        }
+    def trial_class_label_to_trial_id_indexed_column_index(
+        cls,
+    ) -> dict[str, tuple[str, str, str]] | dict[str, tuple[str, str]]:
+        result = {}
+        for trial_class in cls.trial_classes:
+            headers = []
+            if trial_class.trial_has_defined_features:
+                headers.append(trial_class.feature_headers)
+            headers.append(cls.motion_column_headers)
+
+            result[trial_class.trial_label] = chain_lists_to_tuple(headers)
+
+        return result
 
     # Helper methods =====================================
 
@@ -759,7 +765,3 @@ class BaseExperiment(Behaviour):
 
 
 Experiment = TypeVar("Experiment", bound=BaseExperiment)
-
-
-class HabituationTrialMixin(BaseBikipy):
-    trial_label = "Habituation"

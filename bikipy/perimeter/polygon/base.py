@@ -313,13 +313,13 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         else:
             ax = manual_ax
 
-        vertices_in_meters = self.vertices_in_pixels if inspect_pixels else self.vertices_in_meters
+        vertices = self.vertices_in_pixels if inspect_pixels else self.vertices_in_meters
 
-        for index in range(len(vertices_in_meters)):
-            following_index = 0 if index + 1 == len(vertices_in_meters) else index + 1
+        for index in range(len(vertices)):
+            following_index = 0 if index + 1 == len(vertices) else index + 1
 
-            corner_a = vertices_in_meters[index]
-            corner_b = vertices_in_meters[following_index]
+            corner_a = vertices[index]
+            corner_b = vertices[following_index]
             ax.plot(
                 *np.vstack((corner_a, corner_b)).T,
                 label=f"{self.label}{index}",

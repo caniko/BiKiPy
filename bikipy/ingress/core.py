@@ -477,7 +477,7 @@ class BaseIngress(BaseBikipy, ABC):
     def save_analysis_data(self):
         self.experiment.trial_label_to_df
         with pd.ExcelWriter(self.result_directory_path / "trial_id_indexed_result_data.xlsx") as writer:
-            for trial_label, df in self.experiment.trial_label_to_df.items():
+            for trial_label, df in self.trial_label_to_df.items():
                 df.to_excel(writer, sheet_name=trial_label)
 
     def update_settings(self, delete_outdated: bool = False, dry_run: bool = False) -> dict:

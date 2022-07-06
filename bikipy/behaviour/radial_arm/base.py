@@ -3,7 +3,6 @@ from copy import copy
 from functools import cached_property, lru_cache
 from itertools import permutations
 from logging import getLogger
-from math import ceil
 from typing import ClassVar, Optional
 
 from matplotlib import pyplot as plt
@@ -11,7 +10,6 @@ from pydantic import validator
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import (
-    exclude_value_from_sequence,
     feature_2d_multi_indexer,
     reduce_repeating_sequences,
     unique_with_counts_zipped,
@@ -50,13 +48,13 @@ class RadialMazeBase(BaseBikipyHashable):
 
     @classmethod
     @property
-    def _arm_labels(cls) -> list:
+    def arm_labels(cls) -> list:
         return list(string.ascii_uppercase[: cls.number_of_arms])
 
     @classmethod
     @property
     def _arm_label_permutations(cls):
-        return permutations(cls._arm_labels)
+        return permutations(cls.arm_labels)
 
     @classmethod
     @property
@@ -66,7 +64,7 @@ class RadialMazeBase(BaseBikipyHashable):
     @classmethod
     @property
     def _arm_center_labels(cls) -> list:
-        return [*cls._arm_labels, "Center"]
+        return [*cls.arm_labels, "Center"]
 
 
 class BaseRadialMazeExperiment(BaseExperiment, RadialMazeBase):
@@ -74,8 +72,10 @@ class BaseRadialMazeExperiment(BaseExperiment, RadialMazeBase):
 
 
 class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
-    center: SinglePerimeter
-    arms: tuple[SinglePerimeter, ...]
+    center: SinglePerimeter = ...
+    arms: tuple[SinglePerimeter, ...] = ...
+
+    minimum_seconds_for_entry: float = 0.5
 
     @validator("center")
     def center_has_1_as_int_id(cls, value):
@@ -93,21 +93,27 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
     @property
     def feature_headers(cls) -> list[tuple[str, ...]]:
         return [
-            ("Alternations", ""),
-            ("Spontaneous alternations", ""),
+            ("SpontaneousAlternations", ""),
             *feature_2d_multi_indexer("SecondsInArea", cls._arm_center_labels),
-            *feature_2d_multi_indexer("AreaAlternations", cls._arm_labels),
+            ("SecondsInArms", ""),
+            ("SumOfSecondsInArea", ""),
+            *feature_2d_multi_indexer("ArmEntries", cls.arm_labels),
+            ("SumOfEntries", ""),
             *feature_2d_multi_indexer("PermutationAlternation", cls._arm_label_permutations_as_string),
+            ("SumOfAlternations", ""),
         ]
 
     @property
     def feature_df_rows(self) -> list:
         return [
-            self.sum_of_alternations,
             self.spontaneous_alternations,
             *self.perimeter_to_seconds_spent.values(),
-            *self.perimeter_alternations.values(),
+            self.sum_of_seconds_in_arms,
+            self.sum_of_seconds_in_perimeters,
+            *self.arm_to_entries.values(),
+            self.sum_of_entries,
             *self.permutation_alternation_distribution.values(),
+            self.sum_of_permutation_alternation_distribution,
         ]
 
     @cached_property
@@ -142,6 +148,16 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
     def valid_boolean_index(self) -> NDArrayBool:
         return self._border_presence_data[2]
 
+    @cached_property
+    def reduced_alternation_sequence_without_center(self):
+        return reduce_repeating_sequences(
+            self.alternation_sequence, round(self.video.fps * self.minimum_seconds_for_entry)
+        )
+
+    @cached_property
+    def sum_of_entries(self) -> int:
+        return len(self.reduced_alternation_sequence_without_center) - 2
+
     @property
     def alternation_sequence_with_center(self):
         return self._border_center_presence_data[0]
@@ -155,16 +171,10 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return self._border_center_presence_data[2]
 
     @cached_property
-    def reduced_alternation_sequence(self):
-        return reduce_repeating_sequences(self.alternation_sequence, round(self.video.fps * 0.075))
-
-    @cached_property
-    def reduced_without_center(self):
-        return exclude_value_from_sequence(self.reduced_alternation_sequence, self.center.int_id)
-
-    @cached_property
-    def sum_of_alternations(self) -> int:
-        return len(self.reduced_without_center) - 2
+    def reduced_alternation_sequence_with_center(self):
+        return reduce_repeating_sequences(
+            self.alternation_sequence_with_center, round(self.video.fps * self.minimum_seconds_for_entry)
+        )
 
     @cached_property
     def perimeter_to_seconds_spent(self) -> dict:
@@ -181,10 +191,18 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
             assert label in result, f"{label} is not in {tuple(result.keys())})"
             result[label] = counts / self.video.fps
 
-        return result
+        return dict(sorted(result.items()))
 
     @cached_property
-    def perimeter_alternations(self) -> dict:
+    def sum_of_seconds_in_perimeters(self) -> float:
+        return sum(iter(self.perimeter_to_seconds_spent.values()))
+
+    @cached_property
+    def sum_of_seconds_in_arms(self) -> float:
+        return sum(self.perimeter_to_seconds_spent[arm_id] for arm_id in self._arm_int_ids)
+
+    @cached_property
+    def arm_to_entries(self) -> dict[str, int]:
         """
         The number of alternations to every arm and center
 
@@ -192,17 +210,17 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         -------
         dict, arm label vs alternations to arm
         """
-        result = dict(unique_with_counts_zipped(self.reduced_alternation_sequence))
+        result = dict(unique_with_counts_zipped(self.reduced_alternation_sequence_without_center))
 
         # TODO: Add this test back without sacrificing data accuracy
-        # if result[self.center.int_id] < (minimum_center_entries := ceil(self.sum_of_alternations / 2.0)):
+        # if result[self.center.int_id] < (minimum_center_entries := ceil(self.sum_of_entries / 2.0)):
         #     logger.warning(
         #         f"{self.center.int_id}: The number of alternations to the center, "
         #         f"{result[self.center.int_id]} can't be less than the "
         #         f"ceil of half of the total arm alternations, {minimum_center_entries}"
         #     )
 
-        return result
+        return dict(sorted(result.items()))
 
     @cached_property
     def permutation_alternation_distribution(self) -> dict:
@@ -218,12 +236,16 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         dict, permutation vs number of occurrences.
         """
         distribution = copy(self._arm_permutation_to_zero)
-        for i in range(self.sum_of_alternations):
-            current_permutation = self.reduced_without_center[i : i + self.arm_len]
+        for i in range(self.sum_of_entries):
+            current_permutation = self.reduced_alternation_sequence_without_center[i : i + self.arm_len]
             if all(arm.int_id in current_permutation for arm in self.arms):
                 distribution[tuple(current_permutation)] += 1
 
         return distribution
+
+    @cached_property
+    def sum_of_permutation_alternation_distribution(self) -> int:
+        return sum(iter(self.permutation_alternation_distribution.values()))
 
     @cached_property
     def spontaneous_alternations(self) -> float:
@@ -240,21 +262,20 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         arms and sum of all permutation alternations.
         """
 
-        assert self.sum_of_alternations > 0, self.sum_of_alternations
+        assert self.sum_of_entries > 0, self.sum_of_entries
 
         alternations = 0
-        for i in range(self.sum_of_alternations):
-            current_permutation = self.reduced_without_center[i : i + self.arm_len]
+        for i in range(self.sum_of_entries):
+            current_permutation = self.reduced_alternation_sequence_without_center[i : i + self.arm_len]
             if all(arm.int_id in current_permutation for arm in self.arms):
                 alternations += 1
 
         alternative_alternations = sum(self.permutation_alternation_distribution.values())
         if alternations != alternative_alternations:
-            logger.warning(
-                f"Alternation compute methods yielded differing values: {alternations} != {alternative_alternations}"
-            )
+            msg = f"Alternation compute methods yielded differing values: {alternations} != {alternative_alternations}"
+            raise ValueError(msg)
 
-        return 100.0 * alternations / self.sum_of_alternations
+        return 100.0 * alternations / self.sum_of_entries
 
     @cached_property
     def _border_center_presence_data(self):

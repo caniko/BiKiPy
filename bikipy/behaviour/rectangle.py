@@ -8,7 +8,7 @@ from pydantic import validate_arguments
 from pydantic_numpy import NDArray
 from skg import ngauss_fit
 
-from bikipy.behaviour.base import BaseExperiment, BaseTrial, HabituationTrialMixin
+from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayBool, NDArrayFp64, NDArrayInt16, TrialId
@@ -59,8 +59,9 @@ class Quadrant(BaseBikipy):
 
 
 class RectangleEnclosedExperiment(BaseExperiment):
-    center_box_to_spatial_resolution_ratio: ClassVar[Optional[float]] = None
     rectangle_2d_bin: ClassVar[tuple[int, int]] = (2, 2)
+    manual_center_rectangle_dimensions_meters: ClassVar[tuple[float, float]] = (0.2, 0.2)
+    center_rectangle_dimensions_to_spatial_resolution_ratio: ClassVar[Optional[float]] = None
 
     @classmethod
     @property
@@ -83,26 +84,58 @@ class RectangleEnclosedExperiment(BaseExperiment):
             # ["Gaussian", "CenterToPeriphery"],
             *quadrant_summary_columns,
         ]
-        if cls.center_box_to_spatial_resolution_ratio:
+        if cls.manual_center_rectangle_dimensions_meters or cls.center_rectangle_dimensions_to_spatial_resolution_ratio:
             result += [
                 *motion_multi_indexer("Center", cls.column_index_levels),
+                ("Center", "Entries"),
                 *perimeter_multi_indexer("Center", cls.column_index_levels),
                 *motion_multi_indexer("Periphery", cls.column_index_levels),
+                ("Periphery", "Entries"),
                 *perimeter_multi_indexer("Periphery", cls.column_index_levels),
             ]
         return result
 
     def trial_keyword_arguments(self, trial_id: TrialId) -> dict:
-        result = super().trial_keyword_arguments(trial_id)
-        result["rectangle_2d_bin"] = self.rectangle_2d_bin
-        result["center_box_to_spatial_resolution_ratio"] = self.center_box_to_spatial_resolution_ratio
-        return result
+        return {
+            "rectangle_2d_bin": self.rectangle_2d_bin,
+            "manual_center_rectangle_dimensions_meters": self.manual_center_rectangle_dimensions_meters,
+            "center_rectangle_dimensions_to_spatial_resolution_ratio": self.center_rectangle_dimensions_to_spatial_resolution_ratio,
+            **super().trial_keyword_arguments(trial_id),
+        }
 
 
 class RectangleEnclosedTrial(BaseTrial):
     inspect_quadrants: bool = False
     rectangle_2d_bin: quadrant_grid_typing = (2, 2)
-    center_box_to_spatial_resolution_ratio: Optional[float]
+
+    manual_center_rectangle_dimensions_meters: Optional[NDArrayFp64]
+    center_rectangle_dimensions_to_spatial_resolution_ratio: Optional[float]
+
+    @cached_property
+    def center_periphery_is_defined(self) -> bool:
+        return (
+            self.manual_center_rectangle_dimensions_meters is not None
+            or self.center_rectangle_dimensions_to_spatial_resolution_ratio
+        )
+
+    @cached_property
+    def rectangle_df(self) -> list:
+        quadrant_summary_columns = []
+        for quadrant_grid_coordinate in self.quadrant_grid_coordinate_to_vertices:
+            category = f"Quadrant{quadrant_grid_coordinate}"
+            quadrant_summary_columns.extend(motion_multi_indexer_for_quadrant(category, 2))
+        result = [
+            ["Gaussian", "CenterToPeriphery"],
+            *quadrant_summary_columns,
+        ]
+        if self.center_periphery_is_defined:
+            result += [
+                *motion_multi_indexer("Center", self.column_index_levels),
+                *perimeter_multi_indexer("Center", self.column_index_levels),
+                *motion_multi_indexer("Periphery", self.column_index_levels),
+                *perimeter_multi_indexer("Periphery", self.column_index_levels),
+            ]
+        return result
 
     @cached_property
     def _inspect_center_periphery_directory(self):
@@ -238,18 +271,29 @@ class RectangleEnclosedTrial(BaseTrial):
 
     # Center vs Periphery ==============================================================
     @cached_property
+    def center_rectangle_dimensions_meters(self) -> NDArrayFp64 | None:
+        if self.center_periphery_is_defined is None:
+            return None
+        if self.manual_center_rectangle_dimensions_meters is not None:
+            return self.manual_center_rectangle_dimensions_meters
+        if self.center_rectangle_dimensions_to_spatial_resolution_ratio is not None:
+            return self.video.metric_resolution / self.center_rectangle_dimensions_to_spatial_resolution_ratio
+
+    @cached_property
     def center_rectangle_vertices(self) -> NDArrayFp64:
-        if self.center_box_to_spatial_resolution_ratio is None:
-            msg = "center_box_to_spatial_resolution_ratio must be defined for center and periphery analysis"
+        if not self.center_periphery_is_defined:
+            msg = (
+                "manual_center_rectangle_dimensions_meters or center_rectangle_dimensions_to_spatial_resolution_ratio "
+                "must be defined for center_rectangle_vertices to be defined"
+            )
             raise AttributeError(msg)
 
-        center_pixel_lengths = self.video.metric_resolution / self.center_box_to_spatial_resolution_ratio
-        center_point_to_center_box_side_normal_lengths = center_pixel_lengths / 2.0
+        center_point_to_center_rectangle_side_normal_lengths = self.center_rectangle_dimensions_meters / 2.0
 
-        x_short = self.video.center_meters[0] - center_point_to_center_box_side_normal_lengths[0]
-        x_long = self.video.center_meters[0] + center_point_to_center_box_side_normal_lengths[0]
-        y_short = self.video.center_meters[1] + center_point_to_center_box_side_normal_lengths[1]
-        y_long = self.video.center_meters[1] - center_point_to_center_box_side_normal_lengths[1]
+        x_short = self.video.center_meters[0] - center_point_to_center_rectangle_side_normal_lengths[0]
+        x_long = self.video.center_meters[0] + center_point_to_center_rectangle_side_normal_lengths[0]
+        y_short = self.video.center_meters[1] + center_point_to_center_rectangle_side_normal_lengths[1]
+        y_long = self.video.center_meters[1] - center_point_to_center_rectangle_side_normal_lengths[1]
 
         return np.array(((x_short, y_short), (x_short, y_long), (x_long, y_long), (x_long, y_short)))
 
@@ -257,6 +301,8 @@ class RectangleEnclosedTrial(BaseTrial):
     def center_boolean_index(self) -> NDArrayBool:
         if self.inspect:
             fig, ax = plt.subplots()
+        else:
+            ax = None
 
         result = parallel_point_in_polygon(self.framewise_confined_coordinates, self.center_rectangle_vertices, ax=ax)
 
@@ -315,18 +361,6 @@ class RectangleEnclosedTrial(BaseTrial):
         return np.sum(self.periphery_boolean_index) / self.video.fps
 
     @property
-    def dynamic_feature_headers(self):
-        quadrant_summary_columns = []
-        for quadrant_grid_coordinate in self.quadrant_grid_coordinate_to_vertices:
-            category = f"Quadrant{quadrant_grid_coordinate}"
-            quadrant_summary_columns.extend(motion_multi_indexer_for_quadrant(category, 2))
-        result = [
-            *super().motion_column_headers,
-            # ["Gaussian", "CenterToPeriphery"],
-            *quadrant_summary_columns,
-        ]
-
-    @property
     def motion_features(self) -> list:
         if self.video.recording_resolution is None:
             return super().motion_features
@@ -344,7 +378,7 @@ class RectangleEnclosedTrial(BaseTrial):
             *quadrant_motion_values,
         ]
 
-        if self.center_box_to_spatial_resolution_ratio:
+        if self.center_periphery_is_defined:
             result.extend(
                 [
                     *self.motion_center.values(),
@@ -359,8 +393,8 @@ class RectangleEnclosedTrial(BaseTrial):
         return result
 
 
-class RectangleEnclosedHabituationTrial(HabituationTrialMixin, BaseTrial):
-    pass
+class RectangleEnclosedHabituationTrial(RectangleEnclosedTrial):
+    trial_label = "Habituation"
 
 
 @lru_cache

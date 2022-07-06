@@ -423,7 +423,7 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
             ax = manual_ax
 
         for perimeter in self.all_perimeters:
-            perimeter.plot_perimeter(manual_ax=ax, **perimeter_plot_kwargs)
+            perimeter.plot_perimeter(manual_ax=ax, inspect_pixels=inspect_pixels, **perimeter_plot_kwargs)
 
         if coordinates is not None:
             ax = plot_coordinates(coordinates, ax, inspect_pixels, self.video)

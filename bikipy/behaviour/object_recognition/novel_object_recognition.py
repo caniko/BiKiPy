@@ -1,6 +1,6 @@
 from functools import cached_property
 from logging import getLogger
-from typing import ClassVar, Hashable
+from typing import ClassVar
 
 from bikipy.behaviour.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
 from bikipy.behaviour.rectangle import RectangleEnclosedExperiment, RectangleEnclosedHabituationTrial
