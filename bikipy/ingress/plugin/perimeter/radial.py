@@ -37,7 +37,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
             self._center = get_first_value_in_dict(
                 init_polygon_from_makesense_coco_polygon(
                     next(iglob(str(self.data_path / "center*"))),
-                    manual_reference_point_array=self.reference_point,
+                    reference_point_array=self.reference_point,
                     group_label="center",
                 )
             ).get_only_perimeter

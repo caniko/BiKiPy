@@ -85,6 +85,10 @@ class PluginPerimeter(BasePluginFile, HasReferenceMixin):
 
             result[label] = _perimeter_with_label(perimeter, label)
 
+            if self.label not in self.ingress.ingress_defined_perimeters:
+                self.ingress.ingress_defined_perimeters[self.label] = {}
+            self.ingress.ingress_defined_perimeters[self.label][label] = perimeter
+
         return result
 
     @property

@@ -10,16 +10,43 @@ df.loc[:, "TrialNumber"] = df.loc[:, "Video_file_name"].map(lambda x: x.strip().
 df.loc[:, "Apparatus"] = df.loc[:, "Apparatus"].map(lambda x: x.strip().split("-")[2]).astype(int)
 
 
-def a1_mapper(ser):
-    test = ser["Test"]
+def reference_mapper(ser):
+    test = ser["Stage"]
     if test == 0:
         return np.nan
     return f"{test_mapper[test]}_{ser['Apparatus']}"
 
 
 test_mapper = {1: "training", 2: "novel"}
-df.loc[pd.IndexSlice["A", 1], "Perimeter"] = df.loc[pd.IndexSlice["A", 1], ["Apparatus", "Test"]].apply(
-    a1_mapper, axis=1
+df.loc[pd.IndexSlice["A", 1], "Perimeter"] = df.loc[pd.IndexSlice["A", 1], ["Apparatus", "Stage"]].apply(
+    reference_mapper, axis=1
+)
+df.loc[pd.IndexSlice["A", 2], "ChangeReference"] = df.loc[pd.IndexSlice["A", 2], ["Apparatus", "Stage"]].apply(
+    reference_mapper, axis=1
+)
+df.loc[pd.IndexSlice["B", :], "ChangeReference"] = df.loc[pd.IndexSlice["B", :], ["Apparatus", "Stage"]].apply(
+    reference_mapper, axis=1
+)
+
+
+def image_name_mapper(ser):
+    test = ser["Stage"]
+    if test == 0:
+        return np.nan
+    return f"{phase_part}_{test_mapper[test]}_{ser['Apparatus']}"
+
+
+phase_part = "A2"
+df.loc[pd.IndexSlice["A", 2], "ChangeReferenceImageName"] = df.loc[pd.IndexSlice["A", 2], ["Apparatus", "Stage"]].apply(
+    image_name_mapper, axis=1
+)
+phase_part = "B1"
+df.loc[pd.IndexSlice["B", 1], "ChangeReferenceImageName"] = df.loc[pd.IndexSlice["B", 1], ["Apparatus", "Stage"]].apply(
+    image_name_mapper, axis=1
+)
+phase_part = "B2"
+df.loc[pd.IndexSlice["B", 2], "ChangeReferenceImageName"] = df.loc[pd.IndexSlice["B", 2], ["Apparatus", "Stage"]].apply(
+    image_name_mapper, axis=1
 )
 
 df.set_index("TrialNumber", append=True, inplace=True)

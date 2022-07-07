@@ -419,19 +419,24 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
 def perimeter_set_from_makesense(
     perimeter_path: FilePath, shape: Optional[StringPerimeterShapes], **perimeter_kwargs
 ) -> dict[str, PerimeterSet]:
+    msg = "Unsupported format"
     match shape:
         case "circle":
             from bikipy.perimeter.radial.circle import CirclePerimeter
 
             return CirclePerimeter.from_makesense_line(perimeter_path, **perimeter_kwargs)
         case "rectangle":
-            return init_polygon_from_makesense_csv_rectangle(perimeter_path, **perimeter_kwargs)
-        case "triangle":
-            return init_polygon_from_makesense_coco_polygon(perimeter_path, **perimeter_kwargs)
-        case "polygon":
+            match perimeter_path.suffix:
+                case ".csv":
+                    return init_polygon_from_makesense_csv_rectangle(perimeter_path, **perimeter_kwargs)
+                case ".json":
+                    return init_polygon_from_makesense_coco_polygon(perimeter_path, **perimeter_kwargs)
+                case _:
+                    raise ValueError(msg)
+        case "polygon" | "triangle":
             return init_polygon_from_makesense_coco_polygon(perimeter_path, **perimeter_kwargs)
         case _:
-            raise ValueError
+            raise ValueError(msg)
 
 
 def perimeter_set_from_image_name_to_perimeters(image_name_to_perimeters: dict[str, "SinglePerimeter"]):

@@ -20,7 +20,7 @@ def init_polygon_from_makesense_coco_polygon(
     data_path: FilePath,
     image_root: Optional[DirectoryPath] = None,
     reference_point_csv_path: Optional[FilePath] = None,
-    manual_reference_point_array: Optional[NDArrayFp64] = None,
+    reference_point_array: Optional[NDArrayFp64] = None,
     invert_y: bool = False,
     **perimeter_kwargs,
 ) -> dict:
@@ -53,10 +53,8 @@ def init_polygon_from_makesense_coco_polygon(
         if image_name not in result:
             result[image_name] = {}
 
-        if manual_reference_point_array is None:
+        if reference_point_array is None:
             reference_point_array = image_name_to_reference_point[image_name] if reference_point_csv_path else None
-        else:
-            reference_point_array = manual_reference_point_array
 
         y_res = float(coco["images"][image_index]["height"])
         vertices = np.array(
@@ -69,7 +67,7 @@ def init_polygon_from_makesense_coco_polygon(
             x, y = vertices.T
             vertices = np.array([x, y_res - y]).T
 
-        result[image_name]["label"] = init_polygon(
+        result[image_name][label] = init_polygon(
             vertices,
             label=label,
             reference_point_array=reference_point_array,
