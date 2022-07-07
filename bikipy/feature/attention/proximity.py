@@ -50,18 +50,14 @@ def proximity_filter(
     """
     # Remove inside_perimeter_border points that aren't inside the perimeter
     perimeter_border = perimeter.expand(perimeter_border_normal_meters)
+    inside_perimeter_border_boolean_index = perimeter_border.confined_coordinate_boolean_index(
+        coordinates=inside_perimeter_border
+    )
 
     if perimeter.impenetrable:
-        inside_perimeter_border_boolean_index = perimeter_border.confined_coordinate_boolean_index(
-            coordinates=inside_perimeter_border
-        )
         result = inside_perimeter_border_boolean_index
     else:
-        inside_perimeter_border_boolean_index = perimeter_border.confined_coordinate_boolean_index(
-            coordinates=inside_perimeter_border
-        )
         outside_perimeter_boolean_index = ~perimeter.confined_coordinate_boolean_index(outside_perimeter)
-
         result = inside_perimeter_border_boolean_index & outside_perimeter_boolean_index
 
     if manual_ax is not None or inspect:
@@ -83,12 +79,10 @@ def proximity_filter(
         perimeter.plot(
             ax=ax,
             inspect_pixels=inspect_pixels,
-            perimeter_border_normal_pixels=perimeter_border_normal_meters * inspect_video.pixels_per_meter,
         )
         perimeter_border.plot(
             ax=ax,
             inspect_pixels=inspect_pixels,
-            perimeter_border_normal_pixels=perimeter_border_normal_meters * inspect_video.pixels_per_meter,
         )
 
         ax.scatter(*inside_perimeter_border[result].T, marker=",", alpha=MATPLOTLIB_SCATTER_ALPHA, label="Valid")

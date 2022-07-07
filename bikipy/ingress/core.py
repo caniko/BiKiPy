@@ -507,7 +507,7 @@ class BaseIngress(BaseBikipy, ABC):
         else:
             parquet_dir = self.result_directory_path
         for trial_label, df in self.trial_label_to_df.items():
-            df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_name}", sheet_name=trial_label)
+            df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_name}.parquet")
 
     def update_settings(self, delete_outdated: bool = False, dry_run: bool = False) -> dict:
         new_settings = init_settings(
