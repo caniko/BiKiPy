@@ -8,6 +8,7 @@ ingress:
   change_reference_definition_strategy: null
   video_definition_strategy: trial-wise
   center_definition_strategy: null
+  profile_runtime: true
 perimeter:
   label_prefix: null
   label_suffix: null

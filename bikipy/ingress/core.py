@@ -1,5 +1,7 @@
 import json
+import pstats
 from abc import ABC, abstractmethod
+from cProfile import Profile
 from collections import defaultdict
 from functools import cached_property
 from logging import getLogger
@@ -486,10 +488,26 @@ class BaseIngress(BaseBikipy, ABC):
         return df
 
     def save_analysis_data(self):
-        self.experiment.trial_label_to_df
-        with pd.ExcelWriter(self.result_directory_path / "trial_id_indexed_result_data.xlsx") as writer:
+        if self.settings["ingress"]["profile_runtime"]:
+            with Profile() as pr:
+                self.experiment.trial_label_to_df
+            stats = pstats.Stats(pr)
+            stats.sort_stats(pstats.SortKey.TIME)
+            stats.dump_stats(self.inspect_directory_path / "analysis_performance.prof")
+        else:
+            self.experiment.trial_label_to_df
+
+        with pd.ExcelWriter(self.result_directory_path / f"{self.experiment_name}.xlsx") as writer:
             for trial_label, df in self.trial_label_to_df.items():
                 df.to_excel(writer, sheet_name=trial_label)
+
+        if len(self.trial_label_to_df) != 1:
+            parquet_dir = self.result_directory_path / "parquet"
+            parquet_dir.mkdir(exist_ok=True)
+        else:
+            parquet_dir = self.result_directory_path
+        for trial_label, df in self.trial_label_to_df.items():
+            df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_name}", sheet_name=trial_label)
 
     def update_settings(self, delete_outdated: bool = False, dry_run: bool = False) -> dict:
         new_settings = init_settings(

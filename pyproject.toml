@@ -57,6 +57,8 @@ Sphinx = "*"
 sphinx-material = "*"
 sphinx-autoapi = "*"
 
+snakeviz = "*"
+
 [tool.poetry.extras]
 stats = ["statsmodels"]
 live = ["pyzmq"]
