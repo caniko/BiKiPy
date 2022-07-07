@@ -1,6 +1,3 @@
-novel,168,82,A2_novel_4.png,224,224
-familiar,67,171,A2_novel_4.png,224,224
-novel,164,82,B1_novel_4.png,224,224
-familiar,64,170,B1_novel_4.png,224,224
-novel,167,81,B2_novel_4.png,224,224
-familiar,66,171,B2_novel_4.png,224,224
+reference,125,119,A2_novel_4.png,224,224
+reference,123,117,B1_novel_4.png,224,224
+reference,124,118,B2_novel_4.png,224,224

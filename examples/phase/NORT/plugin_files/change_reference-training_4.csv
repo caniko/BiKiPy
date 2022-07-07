@@ -1,6 +1,3 @@
-variable,169,71,A2_training_4.png,224,224
-familiar,68,172,A2_training_4.png,224,224
-variable,168,71,B1_training_4.png,224,224
-familiar,66,171,B1_training_4.png,224,224
-variable,168,72,B2_training_4.png,224,224
-familiar,65,172,B2_training_4.png,224,224
+reference,120,120,A2_training_4.png,224,224
+reference,120,118,B1_training_4.png,224,224
+reference,120,118,B2_training_4.png,224,224
