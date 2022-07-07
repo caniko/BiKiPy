@@ -53,6 +53,16 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         description="Only affective if crop_frames is not 0. " "Will crop from start instead when set to False",
     )
 
+    @classmethod
+    @property
+    def _to_exclude_from_settings_schema(cls) -> set[str]:
+        """
+        Some required fields for a class are sometimes highly specific to its respective object. These fields should
+        be recorded in this class-property to be excluded by the settings generator function in the ingress module
+        :return:
+        """
+        return super()._to_exclude_from_settings_schema.union({"df_path", "timestamp_index"})
+
     @abstractmethod
     def _isolate_coordinates(self, key: Iterable[Hashable] | Hashable) -> pd.DataFrame:
         ...

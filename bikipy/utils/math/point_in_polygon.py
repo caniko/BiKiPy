@@ -1,16 +1,17 @@
-from pathlib import PurePath
+from pathlib import PurePath, Path
 from typing import Any, Optional
 
 import matplotlib.pyplot as plt
 import numba
 import numpy as np
 from numba import njit
+from pydantic import validate_arguments
 from seaborn import set_theme
 
 from bikipy import ENABLE_NUMBA
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.utils.math.vector import dot_axis_1_1d, orthogonal_unit_vector
-from bikipy.utils.misc import generic_inspection_finalization
+from bikipy.utils.plotting import generic_inspection_finalization
 
 
 def inaccurate_points_in_rectangle(
@@ -70,15 +71,23 @@ def inaccurate_points_in_rectangle(
     return boolean_index
 
 
+@validate_arguments
 def parallel_point_in_polygon(
-    points: NDArrayFp64, polygon: NDArrayFp64, inspect: bool = False, ax: Any = None
+    points: NDArrayFp64,
+    polygon: NDArrayFp64,
+    merge_ends: bool = True,
+    inspect_file_path: Optional[Path] = None,
+    ax: Any = None,
 ) -> NDArrayBool:
+    if merge_ends:
+        polygon = np.append(polygon, np.expand_dims(polygon, 0), axis=0)
+
     result = is_inside_sm_parallel(
         np.asarray(points, dtype=np.float64),
         np.ascontiguousarray(polygon, dtype=np.float64),
     )
 
-    if inspect or ax is not None:
+    if inspect_file_path or ax is not None:
         show = False
         if ax is None:
             fig, ax = plt.subplots()
@@ -88,8 +97,9 @@ def parallel_point_in_polygon(
         ax.scatter(*points[result].T, label="Inside")
         ax.scatter(*points[~result].T, label="Outside")
 
-        if show:
-            plt.show()
+        ax.legend()
+
+        generic_inspection_finalization(inspect_file_path)
 
     return result
 

@@ -82,9 +82,9 @@ def clockwise_argsort_points(points: NDArrayFp64):
     return np.argsort(clockwise_angel_2d((0.0, 1.0), points - centroid))
 
 
+@validate_arguments
 def clockwise_sort_points(points: NDArrayFp64, inspect: bool = False):
     # Sort from top-right point
-    points = np.asarray(points)
     result = points[clockwise_argsort_points(points)]
 
     if inspect:

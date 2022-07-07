@@ -432,7 +432,7 @@ class BaseIngress(BaseBikipy, ABC):
         return self.experiment_class(
             **self.settings["experiment"]["defined"],
             **self.experiment_class_kwargs,
-            inspect_directory=self.inspect_directory_path,
+            inspect_directory=self.inspect_arg_directory_path,
         )
 
     # Motion <-> Feature fitting ===================================
@@ -524,6 +524,12 @@ class BaseIngress(BaseBikipy, ABC):
                     common_settings=common_settings_between_trials,
                     **kwargs,
                 )
+
+        for field, value in self.settings.items():
+            if isinstance(value, dict):
+                continue
+            if field in new_settings and value:
+                new_settings[field] = value
 
         if dry_run:
             print(json.dumps(new_settings, indent=2))

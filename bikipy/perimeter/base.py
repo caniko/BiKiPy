@@ -22,7 +22,7 @@ from bikipy.perimeter.polygon.makesense import (
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
 from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence
 from bikipy.utils.io.makesense import get_point_from_makesense_row, read_makesense_point
-from bikipy.utils.misc import plot_coordinates
+from bikipy.utils.plotting import plot_coordinates, generic_inspection_finalization
 
 logger = getLogger(__name__)
 
@@ -53,6 +53,18 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
     category = "perimeter"
     required_video_metadata_fields = {"recording_resolution"}
 
+    @classmethod
+    @property
+    def _to_exclude_from_settings_schema(cls) -> set[str]:
+        """
+        Some required fields for a class are sometimes highly specific to its respective object. These fields should
+        be recorded in this class-property to be excluded by the settings generator function in the ingress module
+        :return:
+        """
+        return super()._to_exclude_from_settings_schema.union(
+            {"int_id", "group_label", "makesense_image_name", "reference_point_coco_path", "reference_point_array"}
+        )
+
     @property
     def _to_hash(self) -> list:
         result = super()._to_hash
@@ -76,7 +88,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         ...
 
     def inspect_closest_point_on_edge_to_coordinates(self, result: NDArrayFp64, coordinates: NDArrayFp64):
-        if self.inspect:
+        if self.inspect_arg:
             sb.set_theme(style="darkgrid")
             fig, ax = plt.subplots(dpi=500)
 
@@ -86,7 +98,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
                 for i in evenly_spaced_indices_from_sequence(coordinates, 5):
                     ax.plot(*np.vstack((result[i], coordinates[i])).T)
 
-            plt.savefig(self.inspect_directory / f"{self.label}.jpeg")
+            generic_inspection_finalization(self.class_inspect_arg, f"{self.label}.jpeg")
 
     @abstractmethod
     def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
@@ -260,10 +272,17 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
     perimeters: list[SinglePerimeter]
     restricted_perimeters: Optional[list[SinglePerimeter]]
 
-    label: Optional[str]
+    category = "PerimeterSet"
 
-    category = "perimeter"
-    _class_inspect_directory_name = "perimeter_set"
+    @classmethod
+    @property
+    def _to_exclude_from_settings_schema(cls) -> set[str]:
+        """
+        Some required fields for a class are sometimes highly specific to its respective object. These fields should
+        be recorded in this class-property to be excluded by the settings generator function in the ingress module
+        :return:
+        """
+        return super()._to_exclude_from_settings_schema.union({"perimeters", "restricted_perimeters"})
 
     @property
     def _to_hash(self) -> list:
@@ -329,10 +348,7 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
         present = np.any([perimeter.confined_coordinate_boolean_index(coordinates) for perimeter in self.perimeters])
         if self.restricted_perimeters:
             present = present & ~np.any(
-                [
-                    perimeter.confined_coordinate_boolean_index(coordinates)
-                    for perimeter in self.restricted_perimeters
-                ]
+                [perimeter.confined_coordinate_boolean_index(coordinates) for perimeter in self.restricted_perimeters]
             )
         return present
 
@@ -430,12 +446,8 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
 
         if manual_ax:
             pass
-        elif self.inspect_directory:
-            plt.savefig(self.class_inspect_directory / f"{self.label}.jpg")
-            logger.debug(f"Saved perimeter_set {self.label} inspect plot to {self.class_inspect_directory}")
         else:
-            plt.legend()
-            plt.show()
+            generic_inspection_finalization(self.class_inspect_arg, f"{self.label}.jpg")
 
         return ax
 

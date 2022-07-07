@@ -62,7 +62,8 @@ def init_polygon_from_makesense_coco_polygon(
         vertices = np.array(
             _coco_polygon_annotation(
                 annotation["segmentation"][0], invert_y_vertical_resolution=coco["images"][image_index]["height"]
-            )
+            ),
+            dtype=float,
         )
         if invert_y:
             x, y = vertices.T
@@ -114,7 +115,7 @@ def init_polygon_from_makesense_csv_rectangle(
             result[image_name] = {}
 
         y_res = float(row["y_res"])
-        vertices = np.array((start, (start[0], end[1]), end, (end[0], start[1])))
+        vertices = np.array((start, (start[0], end[1]), end, (end[0], start[1])), dtype=float)
         if invert_y:
             x, y = vertices.T
             vertices = np.array([x, y_res - y]).T

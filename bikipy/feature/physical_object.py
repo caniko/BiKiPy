@@ -1,14 +1,15 @@
 from functools import cached_property, reduce
 from logging import getLogger
+from pathlib import Path
 from typing import Any, ClassVar, Iterable, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
-from pydantic import validator, DirectoryPath
+from pydantic import validator
 
 from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.core.base_class import BaseBikipy
+from bikipy.core.base_class import BaseBikipyInspectMixin
 from bikipy.core.typing import NDArrayBool, NDArrayFp64, TrialId
 from bikipy.core.video import (
     VideoMetadata,
@@ -21,11 +22,12 @@ from bikipy.feature.attention.proximity import (
 from bikipy.feature.tolerance.single import single_node_tolerance_filter
 from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
 from bikipy.reader.base import Reader
+from bikipy.utils.plotting import generic_inspection_finalization, InspectArg
 
 logger = getLogger(__name__)
 
 
-class PhysicalObject(BaseBikipy):
+class PhysicalObject(BaseBikipyInspectMixin):
     """
     The physical object is a triadic abstraction of Reader, Perimeter and Trial. This abstraction allows
     us to define methods that require the respective attributes, think of it as a union between the classes!
@@ -48,11 +50,12 @@ class PhysicalObject(BaseBikipy):
     maximum_seconds_distraction: float = ...
 
     # Inspection fields
-    inspect_figure_directory: Optional[DirectoryPath]
     trial_obj_label: Optional[TrialId]
     _fig: Any = None
     _axes: Any = None
     _exporting_figure: bool = False
+
+    category = "physical_object"
 
     def __len__(self) -> int:
         return self.reader.frames
@@ -72,7 +75,7 @@ class PhysicalObject(BaseBikipy):
             self._gaze_travel_direction_point,
             self._outside_perimeter_point if self.outside_perimeter_point_label else self._gaze_start_point,
             self.perimeter_border_normal_meters,
-            manual_ax=self.attention_axes[0][0] if self.inspect_figure_directory else None,
+            manual_ax=self.attention_axes[0][0] if self.inspect_arg else None,
             **self._global_attention_kwargs,
         )
 
@@ -82,7 +85,7 @@ class PhysicalObject(BaseBikipy):
             self._gaze_travel_direction_point,
             self._gaze_start_point,
             self.maximum_radians_inter_gaze_perimeter,
-            manual_ax=self.attention_axes[0][1] if self.inspect_figure_directory else None,
+            manual_ax=self.attention_axes[0][1] if self.inspect_arg else None,
             **self._global_attention_kwargs,
         )
 
@@ -99,8 +102,8 @@ class PhysicalObject(BaseBikipy):
             self.maximum_seconds_distraction,
         )
 
-        if self.inspect_figure_directory and not self._exporting_figure:
-            self.inspect_attention()
+        if self.inspect_arg and not self._exporting_figure:
+            self.inspect_arg_attention()
 
         return result
 
@@ -145,13 +148,14 @@ class PhysicalObject(BaseBikipy):
 
         plt.tight_layout()
 
-        if self.inspect_figure_directory:
-            name = f"{self.inspect_figure_directory.stem}_{self.label}.svg"
+        if isinstance(self.inspect_arg, Path):
+            name = f"{self.inspect_arg.stem}_{self.label}.svg"
             if self.trial_obj_label:
                 name = f"{self.trial_obj_label}_{name}"
+        else:
+            name = None
 
-            plt.savefig(self.inspect_figure_directory / name)
-            plt.close(self.attention_fig)
+        generic_inspection_finalization(self.class_inspect_arg, name)
 
     @property
     def attention_fig(self):

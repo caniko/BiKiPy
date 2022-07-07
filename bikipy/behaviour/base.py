@@ -43,6 +43,16 @@ class Behaviour(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
 
     _live: ClassVar[bool] = False
 
+    @classmethod
+    @property
+    def _to_exclude_from_settings_schema(cls) -> set[str]:
+        """
+        Some required fields for a class are sometimes highly specific to its respective object. These fields should
+        be recorded in this class-property to be excluded by the settings generator function in the ingress module
+        :return:
+        """
+        return super()._to_exclude_from_settings_schema.union({"manual_inspect_image"})
+
     @staticmethod
     def multi_index_names(index_content: Iterable):
         match max_level := max_len_in_iterable(index_content):
@@ -66,9 +76,6 @@ class BaseTrial(Behaviour):
     rigid_nodes_freezing: Optional[Sequence[str | PositiveInt]] = Field(
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
     )
-    inspect_image: Optional[NDArray] = Field(
-        description="Image to use as background in the plots for visualising the analysis data",
-    )
     crop_time_seconds: float = 0.0
     crop_from_end: bool = Field(
         True,
@@ -87,6 +94,16 @@ class BaseTrial(Behaviour):
     trial_label: ClassVar[str] = ...
 
     second_tolerance: ClassVar[float] = 0.15
+
+    @classmethod
+    @property
+    def _to_exclude_from_settings_schema(cls) -> set[str]:
+        """
+        Some required fields for a class are sometimes highly specific to its respective object. These fields should
+        be recorded in this class-property to be excluded by the settings generator function in the ingress module
+        :return:
+        """
+        return super()._to_exclude_from_settings_schema.union({"coordinate_data_path", "reader_kwargs", "animal_id"})
 
     @classmethod
     @property
@@ -394,7 +411,7 @@ class BaseExperiment(Behaviour):
         if "animal_id" not in result:
             result["animal_id"] = trial_id
 
-        result["inspect_directory"] = self.inspect_directory
+        result["inspect_directory"] = self.inspect_arg
         if "inspect_image" not in result:
             result["inspect_image"] = self._initialized_inspect_image
 
@@ -545,7 +562,9 @@ class BaseExperiment(Behaviour):
                     }
                     break
                 data_dicts[trial_class_label] = {
-                    trial_object.label: trial_object.trial_id_all_features_df_row for trial_object in trial_objects
+                    trial_object.label: trial_object.trial_id_all_features_df_row
+                    for trial_object in trial_objects
+                    if trial_object.label == "A2_32"
                 }
 
         result = {}
@@ -750,9 +769,9 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _initialized_inspect_image(self) -> NDArray | None:
-        if not self.inspect_image_path:
+        if not self.inspect_arg_image_path:
             return None
-        return cv2.imread(str(self.inspect_image_path))
+        return cv2.imread(str(self.inspect_arg_image_path))
 
     @staticmethod
     def _neither_singular_trial_class_or_trial_id_to_trial_class_name(self):

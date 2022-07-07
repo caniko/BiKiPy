@@ -20,6 +20,7 @@ from bikipy.perimeter.utils import perimeter_multi_indexer
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.geometry import clockwise_sort_points
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
+from bikipy.utils.plotting import generic_inspection_finalization
 
 logger = getLogger(__name__)
 quadrant_grid_typing = tuple[int, int]
@@ -137,13 +138,13 @@ class RectangleEnclosedTrial(BaseTrial):
 
     @cached_property
     def _inspect_center_periphery_directory(self):
-        result = self.inspect_directory / "center_periphery"
+        result = self.inspect_arg / "center_periphery"
         result.mkdir(exist_ok=True)
         return result
 
     @cached_property
     def _inspect_quadrant_directory(self):
-        result = self.inspect_directory / "quadrant"
+        result = self.inspect_arg / "quadrant"
         result.mkdir(exist_ok=True)
         return result
 
@@ -212,7 +213,7 @@ class RectangleEnclosedTrial(BaseTrial):
             )
             for quadrant_index, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items()
         }
-        if self.inspect:
+        if self.inspect_arg:
             fig, ax = plt.subplots()
             ax.set_title(f"Quadrants_Trial_#{self.label}")
 
@@ -232,7 +233,11 @@ class RectangleEnclosedTrial(BaseTrial):
             ax.scatter(*self.manual_center_meters.T, color="k", label="New")
 
             plt.legend()
-            plt.savefig(self._inspect_quadrant_directory / f"{self.label}.jpeg")
+            generic_inspection_finalization(
+                self._inspect_quadrant_directory,
+                f"{self.label}.jpeg",
+                debug_save_message=f"Saved perimeter_set {self.label} inspect plot to {self.class_inspect_arg}",
+            )
 
         return result
 
@@ -293,17 +298,11 @@ class RectangleEnclosedTrial(BaseTrial):
 
     @cached_property
     def center_boolean_index(self) -> NDArrayBool:
-        if self.inspect:
-            fig, ax = plt.subplots()
-        else:
-            ax = None
-
-        result = parallel_point_in_polygon(self.kinematic_coordinates, self.center_rectangle_vertices, ax=ax)
-
-        if self.inspect:
-            plt.savefig(self._inspect_center_periphery_directory / f"{self.label}.jpeg")
-
-        return result
+        return parallel_point_in_polygon(
+            self.kinematic_coordinates,
+            self.center_rectangle_vertices,
+            inspect_file_path=self._inspect_center_periphery_directory / f"{self.label}.jpeg",
+        )
 
     @cached_property
     def periphery_boolean_index(self) -> NDArrayBool:

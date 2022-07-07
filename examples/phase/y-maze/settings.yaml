@@ -21,8 +21,8 @@ perimeter:
     optional:
       group_label: string
       impenetrable: boolean -> False
-      inspect: boolean -> False
-      inspect_directory: string
+      inspect_arg: '[{''type'': ''string'', ''format'': ''directory-path''}, {''type'':
+        ''boolean''}] -> False'
       int_id: integer
       makesense_image_name: string
       manual_fps: number
@@ -36,18 +36,22 @@ perimeter:
         required=True]
       reference_point_coco_path: string
       video_path: string
+      outdated:
+        inspect: boolean -> False
+        inspect_directory: string
 reader_kwargs:
   defined:
-    init_from: parquet
+    outdated:
+      init_from: parquet
     x_axis_crop_end_point: 95.0
     y_axis_crop_end_point: 75.0
     midpoint_groups:
       center_eye:
-        - left_ear
-        - right_ear
+      - left_ear
+      - right_ear
       torso:
-        - center_eye
-        - base_tail
+      - center_eye
+      - base_tail
   optional:
     crop_from_end: boolean -> False
     crop_time_seconds: number -> 0.0
@@ -69,33 +73,36 @@ reader_kwargs:
 trial:
   common:
     defined:
-      higher_order_inspect: true
       animal_id: null
       arms: null
       center: null
       coordinate_data_path: null
       label: null
-      object_tracking_label_for_kinematics: torso
       object_labels_for_y_maze_confinement_tracking:
-        - center_eye
-        - torso
-        - base_tail
+      - center_eye
+      - torso
+      - base_tail
+      object_tracking_label_for_kinematics: torso
       reader_kwargs: null
+      outdated:
+        higher_order_inspect: true
     required:
       animal_id: '[{''type'': ''string''}, {''type'': ''integer'', ''exclusiveMinimum'':
         0}]'
       arms: array
       center: None
       coordinate_data_path: string
-      label: string
+      label: '[{''type'': ''string''}, {''type'': ''integer'', ''exclusiveMinimum'':
+        0}]'
+      object_labels_for_y_maze_confinement_tracking: array
       object_tracking_label_for_kinematics: string
       reader_kwargs: object
     optional:
       crop_from_end: boolean -> True
       crop_time_seconds: number -> 0.0
       data_format_label: string -> deeplabcut
-      inspect: boolean -> False
-      inspect_directory: string
+      inspect_arg: '[{''type'': ''string'', ''format'': ''directory-path''}, {''type'':
+        ''boolean''}] -> False'
       inspect_image: np.ndarray
       manual_center_pixels: np.ndarray[name='manual_center_pixels_0' type=short required=True]
       manual_fps: number
@@ -105,8 +112,8 @@ trial:
         type=short required=True]
       manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
       meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
+      minimum_seconds_for_entry: number -> 0.5
       rigid_nodes_freezing: array
-      stage: string
       trial_start_perimeter: string
       video_path: string
   specific: {}
@@ -116,8 +123,8 @@ experiment:
     common_trial_keyword_arguments: object
     compute_only_one_df_row: boolean -> False
     data_format_label: string -> deeplabcut
-    inspect: boolean -> False
-    inspect_directory: string
+    inspect_arg: '[{''type'': ''string'', ''format'': ''directory-path''}, {''type'':
+      ''boolean''}] -> False'
     inspect_image_path: string
     label: string
     manual_fps: number

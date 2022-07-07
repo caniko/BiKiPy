@@ -44,8 +44,6 @@ def reduce_repeating_sequences(
     -------
     list, reduced sequence; (A, A, A, B, B, C) -> [A, B, C]
     """
-    repeating_sequence = np.asarray(repeating_sequence)
-
     try:
         i = np.where(repeating_sequence != repeating_sequence[frame_tolerance - 1])[0][0]
     except IndexError:

@@ -24,19 +24,27 @@ from bikipy.utils.math.vector import (
     ray_and_line_segment_intersection,
     rotate_vectors_with_angle,
 )
+from bikipy.utils.plotting import generic_inspection_finalization
 
 logger = getLogger(__name__)
 
 
 class PolygonPerimeter(BaseSinglePerimeter, ABC):
-    vertices_in_pixels: NDArrayFp64
-    reference_point_coco_path: Optional[FilePath]
-    reference_point_array: Optional[NDArrayInt16]
-    feature_scale: Optional[NDArrayFp64]
+    vertices_in_pixels: NDArrayFp64 = ...
 
     category = "perimeter"
 
     polygon_order: ClassVar[Optional[int]]
+
+    @classmethod
+    @property
+    def _to_exclude_from_settings_schema(cls) -> set[str]:
+        """
+        Some required fields for a class are sometimes highly specific to its respective object. These fields should
+        be recorded in this class-property to be excluded by the settings generator function in the ingress module
+        :return:
+        """
+        return super()._to_exclude_from_settings_schema.union({"vertices_in_pixels"})
 
     @property
     def _to_hash(self) -> list:
@@ -52,7 +60,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
                 f"the current polygon is of the {n}th order"
             )
             raise ValueError(msg)
-        return np.ascontiguousarray(clockwise_sort_points(value))
+        return np.ascontiguousarray(clockwise_sort_points(value), dtype=float)
 
     def __getitem__(self, item: int):
         return self.vertices_in_meters[item]
@@ -181,7 +189,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         return unit_vector(closest_point_on_edge_to_coordinates - coordinates)
 
     def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
-        return parallel_point_in_polygon(coordinates, self.vertices_in_meters)
+        return parallel_point_in_polygon(coordinates, self.linked_vertices_meters, merge_ends=False)
 
     def ray_intersects_on_polygon(
         self,
@@ -266,7 +274,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         in_tolerable_los = np.any(in_tolerable_los, axis=0)
         result = project_mask_to_original(in_tolerable_los, in_direct_los) | in_direct_los
 
-        if self.inspect or manual_ax:
+        if self.inspect_arg or manual_ax:
             from bikipy.feature.attention.gaze import gaze_inspection_plot
 
             gaze_inspection_plot(
@@ -340,10 +348,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
                 ax.scatter(*midpoint.T, label=f"{self.label}{i}")
 
         if not manual_ax:
-            plt.legend()
-            plt.show()
-        elif self.inspect_directory:
-            plt.savefig(self.class_inspect_directory / f"{self.label}.jpg")
+            generic_inspection_finalization(self.class_inspect_arg, f"{self.label}.jpg")
 
         return ax
 

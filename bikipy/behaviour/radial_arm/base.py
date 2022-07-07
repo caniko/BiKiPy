@@ -7,7 +7,6 @@ from typing import ClassVar, Optional
 
 from matplotlib import pyplot as plt
 from pydantic import validator
-from pydantic_numpy import NDArray
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import (
@@ -20,6 +19,7 @@ from bikipy.core.typing import NDArrayBool, NDArrayUint8, NDArrayFp64
 from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
 from bikipy.perimeter.confinement import detect_multi_node_sequential_perimeter_presence
 from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
+from bikipy.utils.plotting import generic_inspection_finalization
 
 logger = getLogger(__name__)
 
@@ -44,13 +44,20 @@ class RadialMazeBase(BaseBikipyHashable):
 
     @classmethod
     @property
-    def _arm_int_id_permutations(cls):
-        return permutations(cls._arm_int_ids)
+    def arm_labels(cls) -> list:
+        return list(string.ascii_uppercase[: cls.number_of_arms])
 
     @classmethod
     @property
-    def arm_labels(cls) -> list:
-        return list(string.ascii_uppercase[: cls.number_of_arms])
+    def int_ids_to_labels(cls) -> dict[int, str]:
+        result = {int_id: label for int_id, label in zip(cls._arm_int_ids, cls.arm_labels)}
+        result[1] = "Center"
+        return result
+
+    @classmethod
+    @property
+    def _arm_int_id_permutations(cls):
+        return permutations(cls._arm_int_ids)
 
     @classmethod
     @property
@@ -211,6 +218,13 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         """
         result = dict(unique_with_counts_zipped(self.reduced_alternation_sequence_without_center))
 
+        if any(arm not in result for arm in self._arm_int_ids):
+            missing = set(result).difference(self.int_ids_to_labels)
+            logger.warning(
+                f"{self.label}: Are missing some of the arms in the arm_to_entries dataset: "
+                f"{', '.join(self.int_ids_to_labels[int(int_id)] for int_id in missing)}"
+            )
+
         # TODO: Add this test back without sacrificing data accuracy
         # if result[self.center.int_id] < (minimum_center_entries := ceil(self.sum_of_entries / 2.0)):
         #     logger.warning(
@@ -295,15 +309,15 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
             self.arms,
         )
 
-        if self.inspect_higher_order:
+        if self.inspect_arg_higher_order:
             fig, ax = plt.subplots()
             ax = self.perimeter_set.plot(coordinates=self.kinematic_coordinates[result[1]], manual_ax=ax)
 
-            if self.inspect_directory:
-                plt.savefig(self.class_inspect_directory / f"{self.label}.jpg")
-                logger.debug(f"Saved perimeter_set {self.label} inspect plot to {self.class_inspect_directory}")
-            else:
-                plt.show()
+            generic_inspection_finalization(
+                self.class_inspect_arg,
+                f"{self.label}.jpg",
+                debug_save_message=f"Saved perimeter_set {self.label} inspect plot to {self.class_inspect_arg}",
+            )
 
         return result
 

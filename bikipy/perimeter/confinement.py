@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Any, Optional, Sequence, Iterable, TYPE_CHECKING
+from typing import Sequence, Iterable
 
 import numpy as np
 from pydantic import validate_arguments
@@ -7,7 +7,7 @@ from pydantic import validate_arguments
 from bikipy.core.typing import NDArrayFp64, NDArrayBool
 from bikipy.feature.tolerance.plural import plural_node_tolerance_filter
 from bikipy.feature.tolerance.single import single_node_tolerance_filter
-from bikipy.perimeter.base import PerimeterSet, Perimeter
+from bikipy.perimeter.base import Perimeter
 
 logger = getLogger(__file__)
 
@@ -19,20 +19,11 @@ def detect_sequential_perimeter_presence(
     clean_outliers: bool = True,
 ) -> NDArrayBool:
     """
-    Define sequential perimeter confinements of coordinates
 
-    Parameters
-    ----------
-    coordinates: NDArrayFp64
-        Coordinates that will have their confinement tested
-
-    clean_outliers
-        Clear elements that aren't confined to any of the given perimeter_vertices
-        as a final action before returning the sequential perimeter presence
-
-    Returns
-    -------
-    NDArrayFp64 that stores the sequential perimeter presence across frames
+    :param coordinates:
+    :param inferior_to_superior_perimeter_instances:
+    :param clean_outliers:
+    :return:
     """
 
     presence = np.zeros(
@@ -71,8 +62,6 @@ def detect_multi_node_sequential_perimeter_presence(
     inferior_to_superior_perimeter_instances: Iterable[Perimeter],
     clean_outliers: bool = True,
 ) -> NDArrayBool:
-    video = PerimeterSet(perimeters=inferior_to_superior_perimeter_instances).video
-
     presence = np.zeros(
         multi_node_coordinates[0].shape[0],
         dtype=np.uint8 if len(inferior_to_superior_perimeter_instances) <= 255 else np.uint16,

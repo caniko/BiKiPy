@@ -18,11 +18,22 @@ from bikipy.utils.io.makesense import (
     recording_resolution_from_makesense_row,
 )
 from bikipy.utils.math.vector import unit_vector
+from bikipy.utils.plotting import generic_inspection_finalization
 
 
 class CirclePerimeter(BaseSinglePerimeter):
     center_pixels: NDArrayFp64
     radius_meters: float
+
+    @classmethod
+    @property
+    def _to_exclude_from_settings_schema(cls) -> set[str]:
+        """
+        Some required fields for a class are sometimes highly specific to its respective object. These fields should
+        be recorded in this class-property to be excluded by the settings generator function in the ingress module
+        :return:
+        """
+        return super()._to_exclude_from_settings_schema.union({"center_pixels", "radius_meters"})
 
     @property
     def _to_hash(self) -> list:
@@ -102,9 +113,7 @@ class CirclePerimeter(BaseSinglePerimeter):
             ax = plot_circle(self.center_meters, self.radius_meters, ax)
 
         if not manual_ax:
-            plt.show()
-        if self.inspect_directory:
-            plt.savefig(self.class_inspect_directory / f"{self.label}.jpg")
+            generic_inspection_finalization(self.class_inspect_arg, f"{self.label}.jpg")
 
         return ax
 

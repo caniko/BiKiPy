@@ -48,13 +48,6 @@ def dict_deepmerge(source: dict, destination: dict, assert_no_endpoint_intersect
     return destination
 
 
-def generic_inspection_finalization(inspect):
-    if isinstance(inspect, bool):
-        plt.show()
-    elif isinstance(inspect, str) or isinstance(inspect, PurePath):
-        plt.savefig(inspect)
-
-
 def seek_next_file_index(filepath: Union[PurePath, str]) -> PurePath:
     if not (original_filepath := Path(filepath)).exists():
         return original_filepath.with_stem(f"{1:04d}_{original_filepath.stem}")
@@ -91,14 +84,3 @@ def get_git_root():
         .rstrip()
         .decode("utf-8")
     )
-
-
-def plot_coordinates(
-    coordinates: NDArrayFp64, ax: Any = None, inspect_pixels: bool = False, video: Optional[VideoMetadata] = None
-):
-    if inspect_pixels:
-        coordinates = convert_meters_to_pixels(coordinates, video)
-
-    ax.scatter(*coordinates.T)
-
-    return ax

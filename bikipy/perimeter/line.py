@@ -1,13 +1,14 @@
 from typing import ClassVar, Literal, Optional
 
 import numpy as np
-from pydantic import Field
+from pydantic import Field, PositiveInt
 
-from bikipy.core.base_class import BaseBikipy
+from bikipy.core.base_class import BaseBikipyHashable
 
 # 0: Use the x coordinate(s) as the perimeter
 # 1: Use the y coordinate(s) as the perimeter
 from bikipy.core.typing import NDArrayFp64
+from bikipy.core.video import VideoMetadataMixin
 
 ORIENTATION_TO_INDEX = {"vertical": 0, "horizontal": 1}
 INDEX_TO_ORIENTATION = {0: "vertical", 1: "horizontal"}
@@ -21,7 +22,7 @@ LOGIC_TO_FUNC = {
 }
 
 
-class LinePerimeter(BaseBikipy):
+class LinePerimeter(BaseBikipyHashable, VideoMetadataMixin):
     location: float = Field(description="The location given in pixels")
     orientation: str | PositiveInt = Field(
         description=(
@@ -33,21 +34,23 @@ class LinePerimeter(BaseBikipy):
         )
     )
     logic: Literal["<", "<=", ">", ">=", "=="] = Field(description="The logic of the perimeter")
-    resolution: Optional[NDArrayFp64] = Field(
-        None,
-        description=(
-            "The respective resolution of the frame.\n"
-            "BaseSinglePerimeter orient will be used to isolate the correct resolution if "
-            "both vertical and horizontal are provided"
-        ),
-    )
 
     polygon_order: ClassVar[Optional[int]] = 1
 
+    @classmethod
+    @property
+    def _to_exclude_from_settings_schema(cls) -> set[str]:
+        """
+        Some required fields for a class are sometimes highly specific to its respective object. These fields should
+        be recorded in this class-property to be excluded by the settings generator function in the ingress module
+        :return:
+        """
+        return super()._to_exclude_from_settings_schema.union({"location", "orientation", "logic"})
+
     @property
     def feat_border(self):
-        """Feature magnituded perimeter location"""
-        return self.location / self.resolution[self.orientation]
+        """Feature magnitude perimeter location"""
+        return self.location / self.video.metric_resolution[self.orientation]
 
     @property
     def orientation_label(self):

@@ -11,7 +11,7 @@ class Analysis(BaseBikipy):
     combined_feature_motion_df: pd.DataFrame
 
     def save(self) -> None:
-        save_root = self.inspect_directory or Path(".").resolve()
+        save_root = self.inspect_arg or Path(".").resolve()
         compress_pickle.dump(self, save_root / f"analysis.pickle.lzma")
 
     @cached_property

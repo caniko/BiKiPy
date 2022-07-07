@@ -1,10 +1,13 @@
 from functools import cached_property
+from pathlib import Path
 from typing import ClassVar, Optional, TypeVar
 
+import cv2
 from compress_pickle import compress_pickle
-from pydantic import BaseModel, DirectoryPath, Field, root_validator
+from pydantic import BaseModel, DirectoryPath, Field, root_validator, FilePath
 
-from bikipy.core.typing import TrialId
+from bikipy.core.typing import TrialId, NDArrayUint8
+from bikipy.utils.plotting import InspectArg, inspect_arg_description
 
 
 class BaseBikipy(BaseModel):
@@ -12,11 +15,31 @@ class BaseBikipy(BaseModel):
         underscore_attrs_are_private = True
         keep_untouched = (cached_property,)
 
-    category: ClassVar[Optional[str]]
+    category: ClassVar[str] = ...
+
+    @classmethod
+    @property
+    def _to_exclude_from_settings_schema(cls) -> set[str]:
+        """
+        Some required fields for a class are sometimes highly specific to its respective object. These fields should
+        be recorded in this class-property to be excluded by the settings generator function in the ingress module
+        :return:
+        """
+        return set()
 
 
 class BaseBikipyHashable(BaseBikipy):
     label: TrialId
+
+    @classmethod
+    @property
+    def _to_exclude_from_settings_schema(cls) -> set[str]:
+        """
+        Some required fields for a class are sometimes highly specific to its respective object. These fields should
+        be recorded in this class-property to be excluded by the settings generator function in the ingress module
+        :return:
+        """
+        return super()._to_exclude_from_settings_schema.union({"label"})
 
     @property
     def _to_hash(self) -> list:
@@ -39,14 +62,13 @@ BikipyHashable = TypeVar("BikipyHashable", bound=BaseBikipyHashable)
 
 
 class BaseBikipyInspectMixin(BaseBikipy):
-    inspect_directory: Optional[DirectoryPath] = Field(description="Path to save figures for inspection of results")
-    higher_order_inspect: bool = Field(
-        False,
-        description="Will only trigger inspection on composite metrics that require the use of several complex functions",
+    inspect_arg: InspectArg = Field(False, description=inspect_arg_description)
+    manual_inspect_image: Optional[NDArrayUint8] = Field(
+        description="Image to use as background in the plots for visualising the analysis data",
     )
-    inspect: bool = Field(False, description="Will trigger all inspection functions in model when True")
-
-    _class_inspect_directory_name: ClassVar[str]
+    inspect_image_path: Optional[FilePath] = Field(
+        description="Path to image to use as background in the plots for visualising the analysis data",
+    )
 
     @root_validator(pre=True)
     def inspect_directory_must_be_defined_when_inspect_is_true(cls, values):
@@ -56,14 +78,25 @@ class BaseBikipyInspectMixin(BaseBikipy):
         return values
 
     @cached_property
-    def class_inspect_directory(self) -> DirectoryPath:
-        result = self.inspect_directory / self._class_inspect_directory_name
-        result.mkdir(exist_ok=True)
-        return result
+    def inspect_image(self):
+        return cv2.imread(self.inspect_image_path) if self.inspect_image_path else self.manual_inspect_image
 
     @cached_property
-    def inspect_higher_order(self) -> bool:
-        return self.inspect or self.higher_order_inspect
+    def class_inspect_arg(self) -> InspectArg:
+        if isinstance(self.inspect_arg, Path):
+            assert self._class_inspect_directory_name
+            result = self.inspect_arg / self._class_inspect_directory_name
+            result.mkdir(exist_ok=True)
+            return result
+        return bool(self.inspect_arg)
 
-    def save(self):
-        compress_pickle.dump(self, self.inspect_directory / f"experiment.pickle.lzma")
+    def save(self, manual_save_path: Optional[DirectoryPath] = None) -> None:
+        if manual_save_path:
+            save_directory_path = manual_save_path
+        elif isinstance(self.inspect_arg, Path):
+            save_directory_path = self.inspect_arg
+        else:
+            msg = "No path provided to save method"
+            raise ValueError(msg)
+
+        compress_pickle.dump(self, save_directory_path / f"experiment.pickle.lzma")
