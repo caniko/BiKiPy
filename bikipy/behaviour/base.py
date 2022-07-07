@@ -45,13 +45,13 @@ class Behaviour(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
 
     @classmethod
     @property
-    def _to_exclude_from_settings_schema(cls) -> set[str]:
+    def exclude_from_settings_schema(cls) -> set[str]:
         """
         Some required fields for a class are sometimes highly specific to its respective object. These fields should
         be recorded in this class-property to be excluded by the settings generator function in the ingress module
         :return:
         """
-        return super()._to_exclude_from_settings_schema.union({"manual_inspect_image"})
+        return super().exclude_from_settings_schema.union({"inspect_arg", "manual_inspect_image"})
 
     @staticmethod
     def multi_index_names(index_content: Iterable):
@@ -97,13 +97,13 @@ class BaseTrial(Behaviour):
 
     @classmethod
     @property
-    def _to_exclude_from_settings_schema(cls) -> set[str]:
+    def exclude_from_settings_schema(cls) -> set[str]:
         """
         Some required fields for a class are sometimes highly specific to its respective object. These fields should
         be recorded in this class-property to be excluded by the settings generator function in the ingress module
         :return:
         """
-        return super()._to_exclude_from_settings_schema.union({"coordinate_data_path", "reader_kwargs", "animal_id"})
+        return super().exclude_from_settings_schema.union({"coordinate_data_path", "reader_kwargs", "animal_id"})
 
     @classmethod
     @property
@@ -262,14 +262,30 @@ class BaseExperiment(Behaviour):
     stage: Optional[str] = Field(
         description="Experiment stage label, if experiment object is in a sequence of experiment objects"
     )
-    label: Optional[str]
-    inspect_image_path: Optional[FilePath] = Field(description="Used globally")
     compute_only_one_df_row: bool = Field(False, description="Used to rapidly generate combo df during debugging")
 
     habituation_trial_class: ClassVar[Trial] = Field(
         ..., description="The trial class that will be used in case first_trial_is_habituation is called"
     )
     trial_classes: ClassVar[tuple[Trial]] = Field(..., description="Trial classes designed for this experiment class")
+
+    @classmethod
+    @property
+    def exclude_from_settings_schema(cls) -> set[str]:
+        """
+        Some required fields for a class are sometimes highly specific to its respective object. These fields should
+        be recorded in this class-property to be excluded by the settings generator function in the ingress module
+        :return:
+        """
+        return super().exclude_from_settings_schema.union(
+            {
+                "trial_id_to_trial_class_name",
+                "trial_id_to_keyword_arguments",
+                "trial_class_name_to_keyword_arguments",
+                "trial_id_range_to_keyword_arguments",
+                "common_trial_keyword_arguments",
+            }
+        )
 
     @validator("trial_id_to_trial_class_name")
     def sort_trial_id_to_trial_class_name_ascending(cls, value):
@@ -412,8 +428,7 @@ class BaseExperiment(Behaviour):
             result["animal_id"] = trial_id
 
         result["inspect_directory"] = self.inspect_arg
-        if "inspect_image" not in result:
-            result["inspect_image"] = self._initialized_inspect_image
+        result["manual_inspect_image"] = self.inspect_image
 
         if "label_to_perimeter" in result:
             result.update(result.pop("label_to_perimeter"))
@@ -562,9 +577,7 @@ class BaseExperiment(Behaviour):
                     }
                     break
                 data_dicts[trial_class_label] = {
-                    trial_object.label: trial_object.trial_id_all_features_df_row
-                    for trial_object in trial_objects
-                    if trial_object.label == "A2_32"
+                    trial_object.label: trial_object.trial_id_all_features_df_row for trial_object in trial_objects
                 }
 
         result = {}
@@ -766,12 +779,6 @@ class BaseExperiment(Behaviour):
     @cached_property
     def _class_labels(self):
         return tuple(trial_class.trial_label for trial_class in self.trial_classes)
-
-    @cached_property
-    def _initialized_inspect_image(self) -> NDArray | None:
-        if not self.inspect_arg_image_path:
-            return None
-        return cv2.imread(str(self.inspect_arg_image_path))
 
     @staticmethod
     def _neither_singular_trial_class_or_trial_id_to_trial_class_name(self):

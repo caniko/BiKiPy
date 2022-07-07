@@ -14,35 +14,36 @@ perimeter:
   perimeter_names_in_metadata: false
   radial_arm_rectangle_diagonal: 0.359026
   fields:
-    defined:
-      label: null
-    required:
-      label: string
+    defined: {}
     optional:
-      group_label: string
       impenetrable: boolean -> False
       inspect_arg: '[{''type'': ''string'', ''format'': ''directory-path''}, {''type'':
         ''boolean''}] -> False'
-      int_id: integer
-      makesense_image_name: string
+      inspect_image_path: string
       manual_fps: number
       manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
         ''file-path''}]'
+      manual_inspect_image: np.ndarray
       manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0'
         type=short required=True]
       manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
       meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
-      reference_point_array: np.ndarray[name='reference_point_array_0' type=short
-        required=True]
-      reference_point_coco_path: string
       video_path: string
       outdated:
-        inspect: boolean -> False
-        inspect_directory: string
+        group_label: string
+        int_id: integer
+        makesense_image_name: string
+        reference_point_array: np.ndarray[name='reference_point_array_0' type=short
+          required=True]
+        reference_point_coco_path: string
+        outdated:
+          inspect: boolean -> False
+          inspect_directory: string
+    outdated:
+      required:
+        label: string
 reader_kwargs:
   defined:
-    outdated:
-      init_from: parquet
     x_axis_crop_end_point: 95.0
     y_axis_crop_end_point: 75.0
     midpoint_groups:
@@ -66,44 +67,27 @@ reader_kwargs:
     midpoint_groups: object
     min_likelihood: number -> 0.8
     reverse_y_axis: boolean -> True
-    timestamp_index: array
     video_path: string
     x_axis_crop_end_point: number -> 0.0
     y_axis_crop_end_point: number -> 0.0
 trial:
   common:
     defined:
-      animal_id: null
-      arms: null
-      center: null
-      coordinate_data_path: null
-      label: null
       object_labels_for_y_maze_confinement_tracking:
       - center_eye
       - torso
       - base_tail
       object_tracking_label_for_kinematics: torso
-      reader_kwargs: null
-      outdated:
-        higher_order_inspect: true
     required:
-      animal_id: '[{''type'': ''string''}, {''type'': ''integer'', ''exclusiveMinimum'':
-        0}]'
-      arms: array
-      center: None
-      coordinate_data_path: string
-      label: '[{''type'': ''string''}, {''type'': ''integer'', ''exclusiveMinimum'':
-        0}]'
       object_labels_for_y_maze_confinement_tracking: array
       object_tracking_label_for_kinematics: string
-      reader_kwargs: object
     optional:
       crop_from_end: boolean -> True
       crop_time_seconds: number -> 0.0
       data_format_label: string -> deeplabcut
       inspect_arg: '[{''type'': ''string'', ''format'': ''directory-path''}, {''type'':
         ''boolean''}] -> False'
-      inspect_image: np.ndarray
+      inspect_image_path: string
       manual_center_pixels: np.ndarray[name='manual_center_pixels_0' type=short required=True]
       manual_fps: number
       manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
@@ -120,13 +104,11 @@ trial:
 experiment:
   defined: {}
   optional:
-    common_trial_keyword_arguments: object
     compute_only_one_df_row: boolean -> False
     data_format_label: string -> deeplabcut
     inspect_arg: '[{''type'': ''string'', ''format'': ''directory-path''}, {''type'':
       ''boolean''}] -> False'
     inspect_image_path: string
-    label: string
     manual_fps: number
     manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
       ''file-path''}]'
@@ -136,10 +118,6 @@ experiment:
     manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
     meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
     stage: string
-    trial_class_name_to_keyword_arguments: object
-    trial_id_range_to_keyword_arguments: RangedDict
-    trial_id_to_keyword_arguments: object
-    trial_id_to_trial_class_name: object
     video_path: string
 immutable:
   metadata_filename: metadata.xlsx

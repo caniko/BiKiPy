@@ -27,7 +27,7 @@ logger = getLogger(__name__)
 class RadialMazeBase(BaseBikipyHashable):
     number_of_arms: ClassVar[Optional[int]]
 
-    _class_inspect_directory_name = "RadialMaze"
+    category = "radial_maze"
 
     @classmethod
     @property
@@ -86,6 +86,16 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
     object_labels_for_y_maze_confinement_tracking: set[str] = ...
 
     minimum_seconds_for_entry: float = 0.5
+
+    @classmethod
+    @property
+    def exclude_from_settings_schema(cls) -> set[str]:
+        """
+        Some required fields for a class are sometimes highly specific to its respective object. These fields should
+        be recorded in this class-property to be excluded by the settings generator function in the ingress module
+        :return:
+        """
+        return super().exclude_from_settings_schema.union({"center", "arms"})
 
     @validator("center")
     def center_has_1_as_int_id(cls, value):
@@ -309,7 +319,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
             self.arms,
         )
 
-        if self.inspect_arg_higher_order:
+        if self.inspect_arg:
             fig, ax = plt.subplots()
             ax = self.perimeter_set.plot(coordinates=self.kinematic_coordinates[result[1]], manual_ax=ax)
 

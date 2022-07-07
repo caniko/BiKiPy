@@ -1,10 +1,15 @@
 from functools import reduce
 from typing import Any, Iterable
 
+from bikipy.core.base_class import BaseBikipy
 
-def field_name_to_metadata(fields: Iterable, class_schema: dict) -> dict:
+
+def field_name_to_metadata(fields: Iterable, class_schema: dict, model_class: BaseBikipy) -> dict:
     result = {}
     for name in sorted(fields):
+        if name in model_class.exclude_from_settings_schema:
+            continue
+
         field_property = class_schema["properties"][name]
         if "type" in field_property:
             field_type = field_property["type"]
@@ -27,12 +32,14 @@ def extended_schema(model_class: Any, with_optional: bool = True, with_required:
     assert with_optional or with_required
 
     class_schema = model_class.schema()
-    required = field_name_to_metadata(class_schema["required"], class_schema) if "required" in class_schema else {}
-    optional = field_name_to_metadata(set(class_schema["properties"]).difference(required), class_schema)
+    required = (
+        field_name_to_metadata(class_schema["required"], class_schema, model_class)
+        if "required" in class_schema
+        else {}
+    )
+    optional = field_name_to_metadata(set(class_schema["properties"]).difference(required), class_schema, model_class)
 
-    defined = []
-    result = {}
-
+    defined, result = [], {}
     if required and with_required:
         defined.extend(required)
         result["required"] = required

@@ -13,12 +13,14 @@ from bikipy.feature.tolerance import GENERIC_MINIMUM_SECONDS_ATTENTION, GENERIC_
 
 
 class PhysicalObjectTrialMixin(BaseBikipy):
-    gaze_start_point_label: str = Field(..., description="Label of the eye center in the df")
-    gaze_travel_direction_point_label: str = Field(..., description="Label signifying the area where the gaze vector")
     perimeter_border_normal_meters: float = Field(
         ...,
         description="The magnitude of the normal between the perimeter and the perimeter given in meters",
     )
+    outside_perimeter_point_label: str = ...
+
+    gaze_start_point_label: str = Field(..., description="Label of the eye center in the df")
+    gaze_travel_direction_point_label: str = Field(..., description="Label signifying the area where the gaze vector")
 
     maximum_radians_inter_gaze_perimeter: float = np.pi / 4.0
     minimum_seconds_attention: float = GENERIC_MINIMUM_SECONDS_ATTENTION
@@ -57,14 +59,15 @@ class PhysicalObjectTrialMixin(BaseBikipy):
             "trial_obj_label": self.label,
             "gaze_travel_direction_point_label": self.gaze_travel_direction_point_label,
             "gaze_start_point_label": self.gaze_start_point_label,
+            "outside_perimeter_point_label": self.outside_perimeter_point_label,
             "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
             "minimum_seconds_attention": self.minimum_seconds_attention,
             "maximum_seconds_distraction": self.maximum_seconds_distraction,
             "perimeter_border_normal_meters": self.perimeter_border_normal_meters,
-            "inspect": self.inspect_arg_higher_order,
+            "inspect": self.inspect_arg,
         }
 
-        if self.inspect_arg_higher_order and self.inspect_arg:
+        if self.inspect_arg and self.inspect_arg:
             result["inspect_arg"] = _physical_object_inspection_dir(self.inspect_arg)
 
         return result

@@ -56,12 +56,12 @@ def generate_radial_maze_perimeters(
     arm_perimeters = []
     for line_index, line_midpoint in enumerate(line_midpoints):
         line_pair_index = np.where(
-            np.argsort(np.linalg.norm(line_midpoint - center_object.line_segment_midpoints_meters, axis=1)) == 0
+            np.argsort(np.linalg.norm(line_midpoint - center_object.metric_graph.vertex_midpoints, axis=1)) == 0
         )[0][0]
 
         arm_perimeter = np.concatenate(
             (
-                center_object.vertices_in_meters[center_object.line_segment_points_pixels[line_pair_index], :],
+                center_object.vertices_in_meters[center_object.pixel_graph.vertex_pairs[line_pair_index], :],
                 lines[line_index],
             )
         )

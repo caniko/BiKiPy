@@ -301,7 +301,7 @@ class RectangleEnclosedTrial(BaseTrial):
         return parallel_point_in_polygon(
             self.kinematic_coordinates,
             self.center_rectangle_vertices,
-            inspect_file_path=self._inspect_center_periphery_directory / f"{self.label}.jpeg",
+            inspect_arg=self.class_inspect_arg,
         )
 
     @cached_property

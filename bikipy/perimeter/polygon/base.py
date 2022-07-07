@@ -16,6 +16,7 @@ from bikipy.utils.collection_utils import (
     evenly_spaced_indices_from_sequence,
     project_mask_to_original,
 )
+from bikipy.utils.graph import Graph
 from bikipy.utils.math.geometry import clockwise_sort_points
 from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
 from bikipy.utils.math.vector import (
@@ -38,13 +39,13 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
 
     @classmethod
     @property
-    def _to_exclude_from_settings_schema(cls) -> set[str]:
+    def exclude_from_settings_schema(cls) -> set[str]:
         """
         Some required fields for a class are sometimes highly specific to its respective object. These fields should
         be recorded in this class-property to be excluded by the settings generator function in the ingress module
         :return:
         """
-        return super()._to_exclude_from_settings_schema.union({"vertices_in_pixels"})
+        return super().exclude_from_settings_schema.union({"vertices_in_pixels"})
 
     @property
     def _to_hash(self) -> list:
@@ -69,71 +70,31 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         return super().__repr__() + f"\n\tvertices_in_pixels={self.vertices_in_meters}"
 
     @cached_property
-    def centroid(self) -> NDArrayFp64:
-        return np.mean(self.vertices_in_meters, axis=0)
-
-    @cached_property
     def vertices_in_meters(self) -> NDArrayFp64:
         return self.vertices_in_pixels * self.video.meters_per_pixel
 
     @cached_property
-    def linked_vertices_meters(self) -> NDArrayFp64:
-        return np.append(
-            self.vertices_in_meters,
-            np.expand_dims(self.vertices_in_meters[0], 0),
-            axis=0,
-        )
+    def metric_graph(self) -> Graph:
+        return Graph(vertices=self.vertices_in_meters)
 
     @cached_property
-    def line_segment_points_meters(self) -> NDArrayFp64:
-        return np.array(list(zip(self.linked_vertices_meters, self.linked_vertices_meters[1:])))
-
-    @cached_property
-    def line_segment_midpoints_meters(self) -> NDArrayFp64:
-        return (
-            self.linked_vertices_meters[1:]
-            - np.diff(self.line_segment_points_meters, axis=2).transpose(2, 0, 1)[0] / 2.0
-        )
-
-    @cached_property
-    def edge_lengths_meters(self):
-        return np.linalg.norm(np.diff(self.line_segment_points_meters, axis=0), axis=1)
-
-    @cached_property
-    def linked_vertices_pixels(self) -> NDArrayFp64:
-        return np.append(
-            self.vertices_in_pixels,
-            np.expand_dims(self.vertices_in_pixels[0], 0),
-            axis=0,
-        )
-
-    @cached_property
-    def line_segment_points_pixels(self) -> NDArrayFp64:
-        return np.array(list(zip(self.linked_vertices_pixels, self.linked_vertices_pixels[1:])))
-
-    @cached_property
-    def line_segment_midpoints_pixels(self) -> NDArrayFp64:
-        return (
-            self.linked_vertices_pixels[1:]
-            - np.diff(self.line_segment_points_pixels, axis=2).transpose(2, 0, 1)[0] / 2.0
-        )
-
-    @cached_property
-    def edge_lengths_pixels(self) -> NDArrayFp64:
-        return np.linalg.norm(np.diff(self.line_segment_points_pixels, axis=0), axis=1)
+    def pixel_graph(self) -> Graph:
+        return Graph(vertices=self.vertices_in_pixels)
 
     @cached_property
     def equilateral(self) -> bool:
         return np.all(
-            np.apply_along_axis(np.isclose, 0, self.edge_lengths_meters[0], self.edge_lengths_meters[1:], atol=1.0e-4),
+            np.apply_along_axis(
+                np.isclose, 0, self.metric_graph.edge_lengths[0], self.metric_graph.edge_lengths[1:], atol=1.0e-4
+            ),
             axis=1,
         )
 
     @cached_property
     def circle(self):
         return CirclePerimeter(
-            center_pixels=convert_meters_to_pixels(self.centroid, self.video),
-            radius_meters=np.mean(self.edge_lengths_meters),
+            center_pixels=self.pixel_graph.centroid,
+            radius_meters=np.mean(self.metric_graph.vertex_midpoint_distances_to_centroid),
             manual_video=self.video,
         )
 
@@ -142,7 +103,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         closest_edge_point_to_coordinates_matrix = np.array(
             [
                 nearest_point_on_line_segment_to_coordinates(*line_segment_pair, coordinates)
-                for line_segment_pair in self.line_segment_points_meters
+                for line_segment_pair in self.metric_graph.vertex_pairs
             ]
         )
         # Distance of the coordinate from the previous matrix
@@ -189,7 +150,9 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         return unit_vector(closest_point_on_edge_to_coordinates - coordinates)
 
     def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
-        return parallel_point_in_polygon(coordinates, self.linked_vertices_meters, merge_ends=False)
+        return parallel_point_in_polygon(
+            coordinates, self.metric_graph.linked_vertices, merge_ends=False, inspect_arg=self.class_inspect_arg
+        )
 
     def ray_intersects_on_polygon(
         self,
@@ -200,7 +163,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         result = np.array(
             [
                 ray_and_line_segment_intersection(ray_origins, ray_directions, *line_segment_pair, return_points)
-                for line_segment_pair in self.line_segment_points_meters
+                for line_segment_pair in self.metric_graph.vertex_pairs
             ]
         )
         if not return_points:
@@ -344,7 +307,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
                 )
 
         if with_midpoints:
-            for i, midpoint in enumerate(self.line_segment_midpoints_meters):
+            for i, midpoint in enumerate(self.metric_graph.vertex_midpoints):
                 ax.scatter(*midpoint.T, label=f"{self.label}{i}")
 
         if not manual_ax:

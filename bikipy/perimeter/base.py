@@ -55,13 +55,13 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
 
     @classmethod
     @property
-    def _to_exclude_from_settings_schema(cls) -> set[str]:
+    def exclude_from_settings_schema(cls) -> set[str]:
         """
         Some required fields for a class are sometimes highly specific to its respective object. These fields should
         be recorded in this class-property to be excluded by the settings generator function in the ingress module
         :return:
         """
-        return super()._to_exclude_from_settings_schema.union(
+        return super().exclude_from_settings_schema.union(
             {"int_id", "group_label", "makesense_image_name", "reference_point_coco_path", "reference_point_array"}
         )
 
@@ -276,13 +276,13 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
 
     @classmethod
     @property
-    def _to_exclude_from_settings_schema(cls) -> set[str]:
+    def exclude_from_settings_schema(cls) -> set[str]:
         """
         Some required fields for a class are sometimes highly specific to its respective object. These fields should
         be recorded in this class-property to be excluded by the settings generator function in the ingress module
         :return:
         """
-        return super()._to_exclude_from_settings_schema.union({"perimeters", "restricted_perimeters"})
+        return super().exclude_from_settings_schema.union({"perimeters", "restricted_perimeters"})
 
     @property
     def _to_hash(self) -> list:

@@ -19,7 +19,7 @@ class BaseBikipy(BaseModel):
 
     @classmethod
     @property
-    def _to_exclude_from_settings_schema(cls) -> set[str]:
+    def exclude_from_settings_schema(cls) -> set[str]:
         """
         Some required fields for a class are sometimes highly specific to its respective object. These fields should
         be recorded in this class-property to be excluded by the settings generator function in the ingress module
@@ -29,17 +29,12 @@ class BaseBikipy(BaseModel):
 
 
 class BaseBikipyHashable(BaseBikipy):
-    label: TrialId
+    label: Optional[TrialId] = Field(description="")
 
     @classmethod
     @property
-    def _to_exclude_from_settings_schema(cls) -> set[str]:
-        """
-        Some required fields for a class are sometimes highly specific to its respective object. These fields should
-        be recorded in this class-property to be excluded by the settings generator function in the ingress module
-        :return:
-        """
-        return super()._to_exclude_from_settings_schema.union({"label"})
+    def exclude_from_settings_schema(cls) -> set[str]:
+        return super().exclude_from_settings_schema.union({"label"})
 
     @property
     def _to_hash(self) -> list:
@@ -84,8 +79,8 @@ class BaseBikipyInspectMixin(BaseBikipy):
     @cached_property
     def class_inspect_arg(self) -> InspectArg:
         if isinstance(self.inspect_arg, Path):
-            assert self._class_inspect_directory_name
-            result = self.inspect_arg / self._class_inspect_directory_name
+            assert self.category
+            result = self.inspect_arg / self.category
             result.mkdir(exist_ok=True)
             return result
         return bool(self.inspect_arg)

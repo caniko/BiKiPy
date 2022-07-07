@@ -2,17 +2,13 @@ import copy
 import subprocess
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import Union, Optional, Any
+from typing import Union
 
-import numpy as np
 import openpyxl
-from matplotlib import pyplot as plt
 from odf import opendocument
 from odf.table import Table
 from pydantic import FilePath
 
-from bikipy.core.typing import NDArrayFp64
-from bikipy.core.video import convert_meters_to_pixels, VideoMetadata
 
 logger = getLogger(__name__)
 
@@ -60,13 +56,12 @@ def seek_next_file_index(filepath: Union[PurePath, str]) -> PurePath:
     return new_filepath
 
 
-def directory_incrementor(path: Path):
-    path = Path(path)
-    i = 2
-    while path.exists():
-        path = path.with_stem(path.stem + f"_{i}")
-        i += 1
-    return path
+def int_file_stem_incrementor(starting_filename: Path):
+    while starting_filename.exists():
+        split_stem = starting_filename.stem.split("-")
+        int_id = int(split_stem[0])
+        starting_filename = starting_filename.with_stem(f"{int_id}-{'-'.join(split_stem[1:])}")
+    return starting_filename
 
 
 def clear_console():

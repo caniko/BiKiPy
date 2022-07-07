@@ -59,7 +59,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
             line_pair_bool_index = np.where(
                 (
                     np.argsort(
-                        np.linalg.norm(line_midpoint[None, :] - self.center.line_segment_midpoints_pixels, axis=1)
+                        np.linalg.norm(line_midpoint[None, :] - self.center.pixel_graph.vertex_midpoints, axis=1)
                     )
                     == 0
                 )
@@ -67,7 +67,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
 
             arm_perimeter_vertices = np.concatenate(
                 (
-                    self.center.line_segment_points_pixels[line_pair_bool_index],
+                    self.center.pixel_graph.vertex_pairs[line_pair_bool_index],
                     lines[line_index],
                 )
             )
