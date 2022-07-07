@@ -64,11 +64,10 @@ class PhysicalObjectTrialMixin(BaseBikipy):
             "minimum_seconds_attention": self.minimum_seconds_attention,
             "maximum_seconds_distraction": self.maximum_seconds_distraction,
             "perimeter_border_normal_meters": self.perimeter_border_normal_meters,
-            "inspect": self.inspect_arg,
         }
 
-        if self.inspect_arg and self.inspect_arg:
-            result["inspect_arg"] = _physical_object_inspection_dir(self.inspect_arg)
+        if self.inspect_arg:
+            result["inspect_arg"] = self.inspect_arg
 
         return result
 

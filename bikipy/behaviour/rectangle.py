@@ -229,13 +229,14 @@ class RectangleEnclosedTrial(BaseTrial):
                 confined = confined | quadrant.confinement_boolean_index
 
             ax.scatter(*self.kinematic_coordinates[~confined].T, color=colors[-1], label="Unconfined")
-            ax.scatter(*self.video.center_meters.T, color="r", label="Old")
-            ax.scatter(*self.manual_center_meters.T, color="k", label="New")
+            ax.scatter(*self.video.center_meters.T, color="r", label="VideoCenter")
+
+            if self.manual_center_meters:
+                ax.scatter(*self.manual_center_meters.T, color="k", label="ManualCenter")
 
             plt.legend()
             generic_inspection_finalization(
-                self._inspect_quadrant_directory,
-                f"{self.label}.jpeg",
+                self._inspect_quadrant_directory / f"{self.label}.jpg",
                 debug_save_message=f"Saved perimeter_set {self.label} inspect plot to {self.class_inspect_arg}",
             )
 
@@ -301,7 +302,7 @@ class RectangleEnclosedTrial(BaseTrial):
         return parallel_point_in_polygon(
             self.kinematic_coordinates,
             self.center_rectangle_vertices,
-            inspect_arg=self.class_inspect_arg,
+            inspect_arg=self.class_inspect_arg / f"{self.label}.jpg",
         )
 
     @cached_property

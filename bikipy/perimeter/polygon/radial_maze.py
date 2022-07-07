@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from pydantic import FilePath
 
 from bikipy.perimeter.base import PerimeterSet
-from bikipy.perimeter.polygon.base import PolygonPerimeter
+from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 from bikipy.perimeter.polygon.triangular import TriangularPerimeter
@@ -79,7 +79,7 @@ def generate_radial_maze_perimeters(
     perimeters = (*arm_perimeters, center_object)
     if inspect:
         fig, ax = plt.subplots(ncols=3)
-        PolygonPerimeter.plot_perimeters(perimeters, ax=ax[0])
+        BasePolygonPerimeter.plot_perimeters(perimeters, ax=ax[0])
         for i, (line, center_corner) in enumerate(zip(lines, center_object.vertices_in_meters), start=1):
             ax[1].scatter(*line.T, label=f"line_{i}")
             ax[2].scatter(*center_corner.T, label=f"center_vertices_{i}")

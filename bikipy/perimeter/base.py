@@ -87,6 +87,11 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
     def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         ...
 
+    @property
+    @abstractmethod
+    def centroid_meters(self) -> NDArrayFp64:
+        ...
+
     def inspect_closest_point_on_edge_to_coordinates(self, result: NDArrayFp64, coordinates: NDArrayFp64):
         if self.inspect_arg:
             sb.set_theme(style="darkgrid")
@@ -98,7 +103,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
                 for i in evenly_spaced_indices_from_sequence(coordinates, 5):
                     ax.plot(*np.vstack((result[i], coordinates[i])).T)
 
-            generic_inspection_finalization(self.class_inspect_arg, f"{self.label}.jpeg")
+            generic_inspection_finalization(self.class_inspect_arg / f"{self.label}.jpg")
 
     @abstractmethod
     def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
@@ -191,38 +196,6 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
             _change_reference_loop_func(reference_point, img_name)
             for img_name, reference_point in img_name_to_reference_points.items()
         ]
-
-    @validate_arguments
-    def confined_coordinates(self, coordinates: NDArrayFp64, inspect: bool = False, ax: Any = None):
-        """
-        self.confined_coordinates to fetch confined coordinates within
-        the respective perimeter
-
-        Parameters
-        ----------
-        coordinates
-            Coordinates that will have their confinement tested
-        inspect
-            If True, plot the confined coordinates
-        ax
-
-        Returns
-        -------
-
-        """
-        confined_coordinate_boolean_index = coordinates[self.confined_coordinate_boolean_index(coordinates)]
-        if inspect or ax:
-            if not ax:
-                ax = self.plot_self()
-            ax.scatter(
-                confined_coordinate_boolean_index.T[0],
-                confined_coordinate_boolean_index.T[1],
-                marker="x",
-            )
-            ax.set_tittle("Confined coordinates")
-            plt.show()
-
-        return confined_coordinate_boolean_index
 
     def plot(
         self,
@@ -328,21 +301,11 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
         return dict(grouped)
 
     @cached_property
-    def centroid(self):
+    def centroid_meters(self):
         """
         :return: The mean of all perimeter centroids in the set
         """
-        return np.mean([perimeter.centroid for perimeter in self.all_perimeters], axis=0)
-
-    def discrete_framewise_confined_coordinates(self, coordinates: NDArrayFp64, inspect: bool = False):
-        ax = self.plot() if inspect else None
-        result = {}
-        for i, perimeter in enumerate(self.all_perimeters):
-            confined_coordinates = perimeter.confined_coordinates(coordinates, ax=ax)
-            result[perimeter.label or i] = confined_coordinates
-        if inspect:
-            plt.show()
-        return result
+        return np.mean([perimeter.centroid_meters for perimeter in self.all_perimeters], axis=0)
 
     def combined_framewise_confined_coordinates(self, coordinates: NDArrayFp64):
         present = np.any([perimeter.confined_coordinate_boolean_index(coordinates) for perimeter in self.perimeters])
@@ -447,7 +410,7 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
         if manual_ax:
             pass
         else:
-            generic_inspection_finalization(self.class_inspect_arg, f"{self.label}.jpg")
+            generic_inspection_finalization(self.class_inspect_arg / f"{self.label}.jpg")
 
         return ax
 

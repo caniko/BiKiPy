@@ -12,7 +12,7 @@ from bikipy.behaviour.object_recognition.base import (
     ObjectField,
     ObjectRecognitionExperiment,
 )
-from bikipy.perimeter.polygon.base import PolygonPerimeter, init_polygon
+from bikipy.perimeter.polygon.base import BasePolygonPerimeter, init_polygon
 
 
 def _re_pattern_validator(pattern: re.Pattern):

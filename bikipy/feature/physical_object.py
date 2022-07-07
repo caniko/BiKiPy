@@ -103,7 +103,7 @@ class PhysicalObject(BaseBikipyInspectMixin):
         )
 
         if self.inspect_arg and not self._exporting_figure:
-            self.inspect_arg_attention()
+            self.inspect_attention()
 
         return result
 
@@ -125,7 +125,7 @@ class PhysicalObject(BaseBikipyInspectMixin):
 
     @cached_property
     def distance_from_per_frame(self) -> NDArrayFp64:
-        return np.linalg.norm(self._gaze_travel_direction_point - self.perimeter.centroid, axis=1)
+        return np.linalg.norm(self._gaze_travel_direction_point - self.perimeter.centroid_meters, axis=1)
 
     def inspect_attention(self):
         self._exporting_figure = True
@@ -146,16 +146,15 @@ class PhysicalObject(BaseBikipyInspectMixin):
             alpha=MATPLOTLIB_SCATTER_ALPHA,
         )
 
-        plt.tight_layout()
+        self._fig.tight_layout()
 
         if isinstance(self.inspect_arg, Path):
             name = f"{self.inspect_arg.stem}_{self.label}.svg"
             if self.trial_obj_label:
                 name = f"{self.trial_obj_label}_{name}"
+            generic_inspection_finalization(self.class_inspect_arg / name)
         else:
-            name = None
-
-        generic_inspection_finalization(self.class_inspect_arg, name)
+            generic_inspection_finalization(self.class_inspect_arg)
 
     @property
     def attention_fig(self):
@@ -180,6 +179,7 @@ class PhysicalObject(BaseBikipyInspectMixin):
             for col_ax in row_ax:
                 if self.video.frame is not None:
                     # This will be done twice for row 0, as the perimeter plotter also plots video frame.
+                    col_ax.autoscale(enable=True)
                     col_ax.imshow(self.video.frame)
                     col_ax.invert_yaxis()
                 col_ax.set_aspect("equal", adjustable="box")

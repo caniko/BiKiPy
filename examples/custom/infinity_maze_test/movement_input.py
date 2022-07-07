@@ -3,7 +3,7 @@ from datetime import datetime
 import zmq
 from matplotlib import pyplot as plt
 
-from bikipy.perimeter.polygon.base import PolygonPerimeter
+from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
 
 
@@ -26,7 +26,7 @@ perimeters = init_polygon_from_makesense_coco_polygon(
     "./coco_annotations_2021-09-01-02-19-41.json", inspect_image="./maze_example.png"
 )
 fig, ax = plt.subplots()
-PolygonPerimeter.plot_perimeters(tuple(perimeters.values()), inspect_image="./maze_example.png", ax=ax)
+BasePolygonPerimeter.plot_perimeters(tuple(perimeters.values()), inspect_image="./maze_example.png", ax=ax)
 
 cid = fig.canvas.mpl_connect("button_press_event", onclick)
 plt.show()

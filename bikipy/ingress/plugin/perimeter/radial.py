@@ -99,7 +99,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
     @cached_property
     def grouped_radial_maze_perimeters(self) -> dict[str, tuple[SinglePerimeter, ...]]:
         perimeter_set = PerimeterSet(perimeters=[*self.arms, self.center])
-        # perimeter_set.plot()
+        perimeter_set.plot()
         grouped = perimeter_set.group()
         self.ingress.ingress_defined_perimeters[self.label] = grouped
         return grouped

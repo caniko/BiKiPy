@@ -13,7 +13,7 @@ from bikipy.behaviour.object_recognition.novel_object_recognition import (
     EXPERIMENT_STAGE_to_TRIAL_CLASS_NAME,
     NortExperiment,
 )
-from bikipy.perimeter.polygon.base import PolygonPerimeter
+from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
 from bikipy.plugins.belhaj import (
     get_animal_id_to_apparatus,

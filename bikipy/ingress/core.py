@@ -466,7 +466,7 @@ class BaseIngress(BaseBikipy, ABC):
                 if df.columns.nlevels >= self.metadata.columns.nlevels
                 else copycat_assumes_levels_of_icon(df, self.metadata, "")
             )
-            result[trial_label] = df.join(metadata, how="inner")
+            result[trial_label] = metadata.join(df, how="inner")
 
         return result
 

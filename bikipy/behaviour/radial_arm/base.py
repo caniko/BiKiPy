@@ -324,8 +324,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
             ax = self.perimeter_set.plot(coordinates=self.kinematic_coordinates[result[1]], manual_ax=ax)
 
             generic_inspection_finalization(
-                self.class_inspect_arg,
-                f"{self.label}.jpg",
+                self.class_inspect_arg / f"{self.label}.jpg",
                 debug_save_message=f"Saved perimeter_set {self.label} inspect plot to {self.class_inspect_arg}",
             )
 

@@ -1,7 +1,7 @@
 from abc import ABC
 from functools import cached_property
 from logging import getLogger
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, TypeVar
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -30,7 +30,7 @@ from bikipy.utils.plotting import generic_inspection_finalization
 logger = getLogger(__name__)
 
 
-class PolygonPerimeter(BaseSinglePerimeter, ABC):
+class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
     vertices_in_pixels: NDArrayFp64 = ...
 
     category = "perimeter"
@@ -69,6 +69,10 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
     def __repr__(self):
         return super().__repr__() + f"\n\tvertices_in_pixels={self.vertices_in_meters}"
 
+    @property
+    def centroid_meters(self) -> NDArrayFp64:
+        return self.metric_graph.centroid
+
     @cached_property
     def vertices_in_meters(self) -> NDArrayFp64:
         return self.vertices_in_pixels * self.video.meters_per_pixel
@@ -93,7 +97,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
     @cached_property
     def circle(self):
         return CirclePerimeter(
-            center_pixels=self.pixel_graph.centroid,
+            center_pixels=self.pixel_graph.centroid_meters,
             radius_meters=np.mean(self.metric_graph.vertex_midpoint_distances_to_centroid),
             manual_video=self.video,
         )
@@ -293,7 +297,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
             corner_b = vertices[following_index]
             ax.plot(
                 *np.vstack((corner_a, corner_b)).T,
-                label=f"{self.label}{index}",
+                # label=f"{self.label}{index}",     # Uncomment this when inspecting the sorting of edges
                 **plot_kwargs,
             )
 
@@ -311,7 +315,7 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
                 ax.scatter(*midpoint.T, label=f"{self.label}{i}")
 
         if not manual_ax:
-            generic_inspection_finalization(self.class_inspect_arg, f"{self.label}.jpg")
+            generic_inspection_finalization(self.class_inspect_arg / f"{self.label}.jpg")
 
         return ax
 
@@ -323,7 +327,10 @@ class PolygonPerimeter(BaseSinglePerimeter, ABC):
         return in_string
 
 
-def init_polygon(vertices_in_meters: NDArrayFp64, **kwargs):
+PolygonPerimeter = TypeVar("PolygonPerimeter", bound=BasePolygonPerimeter)
+
+
+def init_polygon(vertices_in_meters: NDArrayFp64, **kwargs) -> PolygonPerimeter:
     match vertices_in_meters.shape[0]:  # polygon_order
         case 3:
             from bikipy.perimeter.polygon.triangular import TriangularPerimeter
@@ -334,4 +341,4 @@ def init_polygon(vertices_in_meters: NDArrayFp64, **kwargs):
 
             return RectanglePerimeter(vertices_in_pixels=vertices_in_meters, **kwargs)
         case _:
-            return PolygonPerimeter(vertices_in_pixels=vertices_in_meters, **kwargs)
+            return BasePolygonPerimeter(vertices_in_pixels=vertices_in_meters, **kwargs)

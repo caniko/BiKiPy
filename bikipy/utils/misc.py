@@ -59,7 +59,13 @@ def seek_next_file_index(filepath: Union[PurePath, str]) -> PurePath:
 def int_file_stem_incrementor(starting_filename: Path):
     while starting_filename.exists():
         split_stem = starting_filename.stem.split("-")
-        int_id = int(split_stem[0])
+
+        try:
+            int_id = int(split_stem[0])
+        except ValueError as e:
+            msg = "The filename to increment must have a digit in the beginning that must be split with a dash"
+            raise ValueError(msg) from e
+
         starting_filename = starting_filename.with_stem(f"{int_id}-{'-'.join(split_stem[1:])}")
     return starting_filename
 

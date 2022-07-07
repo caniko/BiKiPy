@@ -77,9 +77,9 @@ def meter_per_pixel_from_diagonal(diagonal_a: NDArrayFp64, diagonal_b: NDArrayFp
 def clockwise_argsort_points(points: NDArrayFp64):
     points = np.asarray(points)
     assert points.ndim == 2
-    centroid = np.mean(points, axis=0)
+    centroid_meters = np.mean(points, axis=0)
 
-    return np.argsort(clockwise_angel_2d((0.0, 1.0), points - centroid))
+    return np.argsort(clockwise_angel_2d((0.0, 1.0), points - centroid_meters))
 
 
 @validate_arguments
@@ -99,7 +99,7 @@ def clockwise_sort_points(points: NDArrayFp64, inspect: bool = False):
 
 @lru_cache
 def clockwise_sort_perimeter_centroids(perimeters: Sequence[Perimeter]):
-    return [perimeters[i] for i in clockwise_argsort_points([perimeter.centroid for perimeter in perimeters])]
+    return [perimeters[i] for i in clockwise_argsort_points([perimeter.centroid_meters for perimeter in perimeters])]
 
 
 @lru_cache

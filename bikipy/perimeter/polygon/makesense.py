@@ -27,7 +27,7 @@ def init_polygon_from_makesense_coco_polygon(
     from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters
     from bikipy.perimeter.polygon.base import init_polygon
 
-    logger.debug("Generating PolygonPerimeter from makesense polygon data in coco format")
+    logger.debug("Generating BasePolygonPerimeter from makesense polygon data in coco format")
 
     with open(data_path, "rb") as in_json:
         coco = json.load(in_json)
@@ -93,7 +93,7 @@ def init_polygon_from_makesense_csv_rectangle(
     from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters
     from bikipy.perimeter.polygon.base import init_polygon
 
-    logger.debug("Generating PolygonPerimeter from makesense polygon data in coco format")
+    logger.debug("Generating BasePolygonPerimeter from makesense polygon data in coco format")
 
     csv_data = read_makesense_rectangle(data_path)
 

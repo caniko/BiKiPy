@@ -42,6 +42,10 @@ class CirclePerimeter(BaseSinglePerimeter):
         result.append(self.center_pixels.data.tobytes())
         return result
 
+    @property
+    def centroid_meters(self) -> NDArrayFp64:
+        return self.center_meters
+
     @cached_property
     def center_meters(self):
         return self.center_pixels * self.video.meters_per_pixel
@@ -113,7 +117,7 @@ class CirclePerimeter(BaseSinglePerimeter):
             ax = plot_circle(self.center_meters, self.radius_meters, ax)
 
         if not manual_ax:
-            generic_inspection_finalization(self.class_inspect_arg, f"{self.label}.jpg")
+            generic_inspection_finalization(self.class_inspect_arg / f"{self.label}.jpg")
 
         return ax
 

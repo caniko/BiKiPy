@@ -20,11 +20,11 @@ class Graph(BaseBikipy):
 
     @cached_property
     def vertex_pairs(self) -> NDArrayFp64:
-        return np.array((self.linked_vertices, self.linked_vertices[1:])).T
+        return np.array(list(zip(self.linked_vertices, self.linked_vertices[1:])))
 
     @cached_property
     def vertex_midpoints(self) -> NDArrayFp64:
-        return self.linked_vertices[1:] - np.diff(self.linked_vertices, axis=2).transpose(2, 0, 1)[0] / 2.0
+        return self.linked_vertices[1:] - np.squeeze(np.diff(self.vertex_pairs, axis=1)) / 2.0
 
     @cached_property
     def vertex_midpoint_distances_to_centroid(self) -> NDArrayFp64:

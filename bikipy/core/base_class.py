@@ -65,13 +65,6 @@ class BaseBikipyInspectMixin(BaseBikipy):
         description="Path to image to use as background in the plots for visualising the analysis data",
     )
 
-    @root_validator(pre=True)
-    def inspect_directory_must_be_defined_when_inspect_is_true(cls, values):
-        if "inspect" in values and values["inspect"] and "inspect_directory" not in values:
-            msg = "inspect is set to True, yet inspect_directory is None"
-            raise AttributeError(msg)
-        return values
-
     @cached_property
     def inspect_image(self):
         return cv2.imread(self.inspect_image_path) if self.inspect_image_path else self.manual_inspect_image

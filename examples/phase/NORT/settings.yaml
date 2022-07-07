@@ -108,7 +108,8 @@ trial:
       required:
         novel: None
 experiment:
-  defined: {}
+  defined:
+    compute_only_one_df_row: true
   optional:
     compute_only_one_df_row: boolean -> False
     data_format_label: string -> deeplabcut

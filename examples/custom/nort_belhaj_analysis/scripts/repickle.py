@@ -7,7 +7,7 @@ import pickle
 from pathlib import Path
 
 from bikipy.behaviour.object_recognition.novel_object_recognition import ObjectField
-from bikipy.perimeter.polygon.base import PolygonPerimeter, init_polygon
+from bikipy.perimeter.polygon.base import BasePolygonPerimeter, init_polygon
 from bikipy.plugins.belhaj import round_to_apparatus_to_general_object_fields
 
 NORT_EXAMPLE_DIR = Path("").resolve().parent

@@ -3,10 +3,10 @@ from typing import ClassVar, Optional, Any
 import numpy as np
 
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
-from bikipy.perimeter.polygon.base import PolygonPerimeter
+from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 
 
-class TriangularPerimeter(PolygonPerimeter):
+class TriangularPerimeter(BasePolygonPerimeter):
     polygon_order: ClassVar[Optional[int]] = 3
 
     @property

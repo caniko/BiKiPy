@@ -427,7 +427,7 @@ class BaseExperiment(Behaviour):
         if "animal_id" not in result:
             result["animal_id"] = trial_id
 
-        result["inspect_directory"] = self.inspect_arg
+        result["inspect_arg"] = self.inspect_arg
         result["manual_inspect_image"] = self.inspect_image
 
         if "label_to_perimeter" in result:
@@ -575,10 +575,10 @@ class BaseExperiment(Behaviour):
                     data_dicts[trial_class_label] = {
                         trial_objects[0].label: trial_objects[0].trial_id_all_features_df_row
                     }
-                    break
-                data_dicts[trial_class_label] = {
-                    trial_object.label: trial_object.trial_id_all_features_df_row for trial_object in trial_objects
-                }
+                else:
+                    data_dicts[trial_class_label] = {
+                        trial_object.label: trial_object.trial_id_all_features_df_row for trial_object in trial_objects
+                    }
 
         result = {}
         for trial_class_label, data_dict in data_dicts.items():
