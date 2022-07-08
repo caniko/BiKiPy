@@ -11,7 +11,7 @@ from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 from bikipy.perimeter.polygon.triangular import TriangularPerimeter
-from bikipy.utils.io.makesense import read_makesense_point
+from bikipy.utils.makesense import read_makesense_point
 from bikipy.utils.math.geometry import clockwise_argsort_points
 
 logger = getLogger(__name__)

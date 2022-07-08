@@ -1,13 +1,11 @@
 from functools import cached_property
 from typing import ClassVar
 
-from pydantic import PositiveInt
-
 from bikipy.core.typing import NDArrayFp64, TrialId
 from bikipy.ingress.plugin.base import BasePluginFile
 from bikipy.perimeter.base import Perimeter, BasePerimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
-from bikipy.utils.io.makesense import image_name_to_point_from_makesense, get_point_from_makesense_row
+from bikipy.utils.makesense import image_name_to_point_from_makesense, get_point_from_makesense_row
 
 
 class PluginChangeReference(BasePluginFile):

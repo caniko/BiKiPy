@@ -2,12 +2,12 @@ from functools import cached_property, lru_cache
 from logging import getLogger
 
 import numpy as np
-from pydantic import DirectoryPath, FilePath, validator, PositiveInt
+from pydantic import DirectoryPath, FilePath, validator
 
 from bikipy.core.typing import NDArrayFp64, TrialId
 from bikipy.ingress.plugin.base import BasePluginFile
 from bikipy.utils.collection_utils import get_first_value_in_dict
-from bikipy.utils.io.makesense import read_first_makesense_line
+from bikipy.utils.makesense import read_first_makesense_line
 from bikipy.utils.math.geometry import meter_per_pixel_from_diagonal
 
 logger = getLogger(__file__)

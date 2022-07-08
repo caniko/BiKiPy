@@ -181,7 +181,6 @@ class PhysicalObject(BaseBikipyInspectMixin):
                     # This will be done twice for row 0, as the perimeter plotter also plots video frame.
                     col_ax.autoscale(enable=True)
                     col_ax.imshow(self.video.frame)
-                    col_ax.invert_yaxis()
                 col_ax.set_aspect("equal", adjustable="box")
 
         self.attention_axes[1][0].set_title("proximity_filtered & gaze_filtered")

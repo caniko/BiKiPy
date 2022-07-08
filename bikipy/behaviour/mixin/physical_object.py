@@ -54,7 +54,7 @@ class PhysicalObjectTrialMixin(BaseBikipy):
 
     @cached_property
     def physical_object_keyword_arguments(self) -> dict[str, Any]:
-        result = {
+        return {
             "reader": self.reader,
             "trial_obj_label": self.label,
             "gaze_travel_direction_point_label": self.gaze_travel_direction_point_label,
@@ -64,12 +64,8 @@ class PhysicalObjectTrialMixin(BaseBikipy):
             "minimum_seconds_attention": self.minimum_seconds_attention,
             "maximum_seconds_distraction": self.maximum_seconds_distraction,
             "perimeter_border_normal_pixels": self.perimeter_border_normal_pixels,
+            "inspect_arg": self.inspect_arg,
         }
-
-        if self.inspect_arg:
-            result["inspect_arg"] = self.inspect_arg
-
-        return result
 
     @cached_property
     def physical_object_set(self) -> PhysicalObjectSet:

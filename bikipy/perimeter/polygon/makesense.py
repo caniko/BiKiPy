@@ -8,7 +8,7 @@ import numpy as np
 from pydantic import DirectoryPath, FilePath
 
 from bikipy.core.typing import NDArrayFp64
-from bikipy.utils.io.makesense import (
+from bikipy.utils.makesense import (
     image_name_to_point_from_makesense,
     read_makesense_rectangle,
 )
@@ -91,7 +91,7 @@ def init_polygon_from_makesense_csv_rectangle(
 
     logger.debug("Generating BasePolygonPerimeter from makesense polygon data in coco format")
 
-    csv_data = read_makesense_rectangle(data_path)
+    csv_data = read_makesense_rectangle(data_path, invert_y)
 
     if reference_point_csv_path:
         image_name_to_reference_point = image_name_to_point_from_makesense(reference_point_csv_path)
@@ -110,16 +110,10 @@ def init_polygon_from_makesense_csv_rectangle(
         if image_name not in result:
             result[image_name] = {}
 
-        y_res = float(row["y_res"])
-        vertices = np.array((start, (start[0], end[1]), end, (end[0], start[1])), dtype=float)
-        if invert_y:
-            x, y = vertices.T
-            vertices = np.array([x, y_res - y]).T
-
         result[image_name][label] = init_polygon(
-            vertices,
+            np.array((start, (start[0], end[1]), end, (end[0], start[1])), dtype=float),
             label=label,
-            manual_recording_resolution=np.array((row["x_res"], y_res), dtype=float),
+            manual_recording_resolution=np.array((row["x_res"], row["y_res"]), dtype=float),
             manual_frame=cv2.imread(image_root / str(image_name)) if image_root else None,
             makesense_image_name=row["image_name"],
             **perimeter_kwargs,

@@ -3,7 +3,6 @@ from glob import iglob
 
 import numpy as np
 import pandas as pd
-from pydantic import PositiveInt
 
 from bikipy.core.typing import TrialId
 from bikipy.ingress.plugin.base import BasePluginDirectory, HasReferenceMixin
@@ -11,7 +10,7 @@ from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
-from bikipy.utils.io.makesense import read_makesense_line
+from bikipy.utils.makesense import read_makesense_line
 from bikipy.utils.math.geometry import clockwise_argsort_points, meter_per_pixel_from_diagonal
 
 

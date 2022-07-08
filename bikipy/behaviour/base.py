@@ -6,12 +6,10 @@ from logging import getLogger
 from operator import attrgetter
 from typing import ClassVar, Hashable, Iterable, Literal, Optional, Sequence, TypeVar
 
-import cv2
 import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath, ValidationError, validator, PositiveInt
 from pydantic.fields import FieldInfo
-from pydantic_numpy import NDArray
 from tqdm import tqdm
 from yaspin import yaspin
 from yaspin.spinners import Spinners
@@ -42,16 +40,6 @@ class Behaviour(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
     data_format_label: Literal["deeplabcut"] = "deeplabcut"
 
     _live: ClassVar[bool] = False
-
-    @classmethod
-    @property
-    def exclude_from_settings_schema(cls) -> set[str]:
-        """
-        Some required fields for a class are sometimes highly specific to its respective object. These fields should
-        be recorded in this class-property to be excluded by the settings generator function in the ingress module
-        :return:
-        """
-        return super().exclude_from_settings_schema.union({"inspect_arg", "manual_inspect_image"})
 
     @staticmethod
     def multi_index_names(index_content: Iterable):
@@ -103,7 +91,10 @@ class BaseTrial(Behaviour):
         be recorded in this class-property to be excluded by the settings generator function in the ingress module
         :return:
         """
-        return super().exclude_from_settings_schema.union({"coordinate_data_path", "reader_kwargs", "animal_id"})
+        unionize = {"coordinate_data_path", "reader_kwargs", "animal_id"}
+        if hasattr(cls, "physical_object_labels"):
+            unionize = unionize.union(cls.physical_object_labels)
+        return super().exclude_from_settings_schema.union(unionize)
 
     @classmethod
     @property
@@ -428,7 +419,6 @@ class BaseExperiment(Behaviour):
             result["animal_id"] = trial_id
 
         result["inspect_arg"] = self.inspect_arg
-        result["manual_inspect_image"] = self.inspect_image
 
         if "label_to_perimeter" in result:
             result.update(result.pop("label_to_perimeter"))

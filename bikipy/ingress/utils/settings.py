@@ -37,12 +37,31 @@ def update_dictionary(old: dict, new: dict, delete_outdated: bool = False) -> di
     outdated_fields = set(old).difference(new)
     if outdated_fields and not delete_outdated:
         new["outdated"] = {}
+
     for field, value in old.items():
         if field in new:
             if isinstance(value, dict):
-                update_dictionary(value, new[field], delete_outdated)
+                if field == "defined":
+                    update_defined_dictionary(value, new[field], new["optional"], delete_outdated)
+                else:
+                    update_dictionary(value, new[field], delete_outdated)
             else:
                 new[field] = value
+        elif not delete_outdated:
+            new["outdated"][field] = value
+
+    return new
+
+
+def update_defined_dictionary(old: dict, new: dict, new_optional: dict, delete_outdated: bool = False) -> dict:
+    new_required_fields = set(old).difference(new)
+    outdated_fields = new_required_fields.difference(new_optional)
+    if outdated_fields and not delete_outdated:
+        new["outdated"] = {}
+
+    for field, value in old.items():
+        if field in new or field in new_optional:
+            new[field] = value
         elif not delete_outdated:
             new["outdated"][field] = value
 

@@ -12,7 +12,7 @@ from bikipy.perimeter.base import (
     perimeter_set_from_image_name_to_perimeters,
 )
 from bikipy.perimeter.radial.utils import plot_circle
-from bikipy.utils.io.makesense import (
+from bikipy.utils.makesense import (
     get_line_endpoints_from_makesense_row,
     read_makesense_line,
     recording_resolution_from_makesense_row,

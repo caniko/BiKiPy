@@ -2,7 +2,7 @@ from abc import abstractmethod
 from collections import defaultdict
 from functools import cached_property, reduce, partial
 from logging import getLogger
-from typing import Any, ClassVar, Literal, Optional, TypeVar
+from typing import Any, Literal, Optional, TypeVar
 
 import matplotlib.pyplot as plt
 import seaborn as sb
@@ -21,7 +21,7 @@ from bikipy.perimeter.polygon.makesense import (
 )
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
 from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence
-from bikipy.utils.io.makesense import get_point_from_makesense_row, read_makesense_point
+from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
 from bikipy.utils.plotting import plot_coordinates, generic_inspection_finalization, InspectArg
 
 logger = getLogger(__name__)

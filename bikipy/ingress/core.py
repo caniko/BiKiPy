@@ -526,10 +526,9 @@ class BaseIngress(BaseBikipy, ABC):
             if key in self.settings:
                 new_settings[key] = settings.update_dictionary(self.settings[key], new_settings[key], **kwargs)
 
-        if "reader_kwargs" in self.settings:
-            new_settings["reader_kwargs"] = settings.update_defined_values(
-                self.settings["reader_kwargs"], new_settings["reader_kwargs"], **kwargs
-            )
+        for key in ("reader_kwargs", "experiment"):
+            if key in self.settings:
+                new_settings[key] = settings.update_defined_values(self.settings[key], new_settings[key], **kwargs)
 
         if "trial" in self.settings:
             new_settings["trial"]["common"] = settings.update_defined_values(
@@ -658,6 +657,7 @@ def init_settings(
             "change_reference_definition_strategy": None,
             "video_definition_strategy": None,
             "center_definition_strategy": None,
+            "frame_upscale_multiplier": "float",
             "profile_runtime": True,
         },
         "perimeter": {

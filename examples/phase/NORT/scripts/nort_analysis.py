@@ -13,7 +13,6 @@ from bikipy.behaviour.object_recognition.novel_object_recognition import (
     EXPERIMENT_STAGE_to_TRIAL_CLASS_NAME,
     NortExperiment,
 )
-from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
 from bikipy.plugins.belhaj import (
     get_animal_id_to_apparatus,
@@ -22,7 +21,7 @@ from bikipy.plugins.belhaj import (
     get_trial_id_to_stage,
 )
 from bikipy.utils.io.general import defer_perimeter_set_from_multi_row_reference
-from bikipy.utils.io.makesense import read_makesense_point
+from bikipy.utils.makesense import read_makesense_point
 
 DEEPLABCUT_DIR = Path("/mnt/soma/Projects/Neuroscience/Imen/data/nort")
 

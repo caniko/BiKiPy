@@ -3,11 +3,11 @@ from functools import cached_property
 from typing import ClassVar, Optional, TypeVar, Any
 
 import pandas as pd
-from pydantic import DirectoryPath, FilePath, Field, PositiveInt
+from pydantic import DirectoryPath, FilePath, Field
 
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayFp64, TrialId
-from bikipy.utils.io.makesense import get_only_point_from_makesense
+from bikipy.utils.makesense import get_only_point_from_makesense
 
 
 class BasePlugin(BaseBikipy, ABC):

@@ -1,7 +1,7 @@
 from functools import cached_property, lru_cache
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import cv2
 import matplotlib.pyplot as plt
@@ -16,7 +16,7 @@ from bikipy.perimeter.base import (
     perimeter_set_from_makesense,
 )
 from bikipy.utils.collection_utils import get_first_key_in_dict
-from bikipy.utils.io.makesense import (
+from bikipy.utils.makesense import (
     first_image_name_from_makesense,
     SHAPE_TO_MAKESENSE_TYPE,
 )

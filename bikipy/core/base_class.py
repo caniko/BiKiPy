@@ -77,10 +77,6 @@ class BaseBikipyInspectMixin(BaseBikipy):
         compress_pickle.dump(self, save_directory_path / f"experiment.pickle.lzma")
 
     @cached_property
-    def inspect_image(self):
-        return cv2.imread(self.inspect_image_path) if self.inspect_image_path else self.manual_inspect_image
-
-    @cached_property
     def class_inspect_arg(self) -> InspectArg:
         if isinstance(self.inspect_arg, Path):
             assert self.category

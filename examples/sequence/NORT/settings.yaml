@@ -59,6 +59,7 @@ reader_kwargs:
 trial:
   common:
     defined:
+      manual_frame: /home/can/Projects/bikipy/examples/sequence/NORT/inspect.png
       familiar: null
       manual_fps: 30
       gaze_start_point_label: center_eye

@@ -7,8 +7,10 @@ bare metadata, and its purpose is to either initialize or relay an existing Vide
 """
 from functools import cached_property, partial
 from logging import getLogger
+from pathlib import Path
 from typing import Any, ClassVar, Optional
 
+import cv2
 import numpy as np
 from numpy import ndarray
 from pydantic import FilePath, Field
@@ -30,7 +32,7 @@ class _VideoMetadataBase(BaseBikipy):
         description="1D array defining the resolution of the recording"
     )
     manual_fps: Optional[float] = Field(description="Frames per second of the recording")
-    manual_frame: Optional[NDArrayUint8 | FilePath] = Field(
+    manual_frame: Optional[FilePath | NDArrayUint8] = Field(
         description="Frame from the video stored in numpy array, use cv2.imread to read from file paths"
     )
 
@@ -116,11 +118,18 @@ class VideoMetadata(_VideoMetadataBase):
     @property
     def frame(self) -> NDArrayUint8 | None:
         if self.manual_frame is not None:
-            return self.manual_frame
+            return self._manual_read_frame
         if self.video_path:
             return self._video_metadata_from_file[2]
 
     @cached_property
+    def _manual_read_frame(self) -> NDArrayUint8 | None:
+        if self.manual_frame is not None:
+            if isinstance(self.manual_frame, (Path, str)):
+                return cv2.imread(str(self.manual_frame))
+            return self.manual_frame
+
+    @property
     def video_metadata(self):
         result = {}
         if self.meters_per_pixel is not None:
@@ -180,6 +189,7 @@ class VideoMetadataMixin(_VideoMetadataBase):
             meters_per_pixel=self.meters_per_pixel,
             manual_fps=self.manual_fps,
             manual_recording_resolution=self.manual_recording_resolution,
+            manual_frame=self.manual_frame,
         )
         if self.manual_video:
             video = VideoMetadata.join(self.manual_video, video, ignore_incongruity=True)

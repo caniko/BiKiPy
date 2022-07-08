@@ -8,7 +8,7 @@ from pydantic import FilePath
 from bikipy.core.typing import NDArrayFp64
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.image import read_image
-from bikipy.utils.io.makesense import read_makesense_point
+from bikipy.utils.makesense import read_makesense_point
 
 if TYPE_CHECKING:
     from bikipy.perimeter.base import Perimeter

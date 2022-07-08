@@ -1,10 +1,10 @@
 from functools import cached_property
 
-from pydantic import DirectoryPath, FilePath, validate_arguments, PositiveInt
+from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from bikipy.core.typing import NDArrayFp64, TrialId
 from bikipy.ingress.plugin.base import BasePluginFile
-from bikipy.utils.io.makesense import get_only_point_from_makesense, read_makesense_point
+from bikipy.utils.makesense import get_only_point_from_makesense
 
 
 class PluginCenter(BasePluginFile):
