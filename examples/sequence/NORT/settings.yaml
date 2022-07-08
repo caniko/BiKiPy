@@ -1,113 +1,103 @@
 ingress_method: animal
+first_stage_is_habituation: false
+manual_dataset_directory: null
 ingress:
-  stageful_metadata: false
-  skip_absent_trials_absent_from_metadata_index: false
   meters_per_pixel_definition_strategy: global
   perimeter_definition_strategy: metadata
+  radial_definition_strategy: null
+  change_reference_definition_strategy: null
+  video_definition_strategy: null
   center_definition_strategy: null
+  profile_runtime: true
 perimeter:
   label_prefix: null
   label_suffix: null
-  perimeter_mapper_key: label
   perimeter_names_in_metadata: true
+  radial_arm_rectangle_diagonal: null
   fields:
     defined: {}
     optional:
-      group_label: string
       impenetrable: boolean -> False
-      int_id: integer
-      label: string
+      inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
+        -> False'
+      inspect_image_path: string
       manual_fps: number
       manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
         ''file-path''}]'
+      manual_inspect_image: np.ndarray
       manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0'
         type=short required=True]
       manual_video: None
       meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
-      reference_point_array: np.ndarray[name='reference_point_array_0' type=short
-        required=True]
-      reference_point_coco_path: string
-      timestamp: string
       video_path: string
-      outdated:
-        inspect_image_array: np.ndarray[name='inspect_image_array_0' type=dobble required=True]
-        inspect_image_path: string
-        save_root: string
 reader_kwargs:
   defined:
     midpoint_groups:
       center_eye:
-        - left_ear
-        - right_ear
+      - left_ear
+      - right_ear
+      torso:
+      - center_eye
+      - tail_base
   optional:
     crop_from_end: boolean -> False
     crop_time_seconds: number -> 0.0
     future_scaling: boolean
-    group_label: string
-    int_id: integer
-    label: string
     manual_fps: number
     manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
       ''file-path''}]'
     manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0' type=short
       required=True]
-    manual_video: None
+    manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
     meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
     midpoint_groups: object
     min_likelihood: number -> 0.8
     reverse_y_axis: boolean -> True
-    timestamp: string
-    timestamp_index: array
     video_path: string
     x_axis_crop_end_point: number -> 0.0
     y_axis_crop_end_point: number -> 0.0
 trial:
   common:
     defined:
-      animal_id: null
-      coordinate_data_path: null
       familiar: null
+      manual_fps: 30
+      gaze_start_point_label: center_eye
+      gaze_travel_direction_point_label: nose
       object_tracking_label_for_kinematics: center
+      outside_perimeter_point_label: torso
+      perimeter_border_normal_meters: 0.02
       physical_object_inspect: true
       maximum_radians_inter_gaze_perimeter: 0.7853981633974483
-      perimeter_border_normal_meters: 0.02
     required:
-      animal_id: '[{''type'': ''string''}, {''type'': ''integer''}]'
-      coordinate_data_path: string
       familiar: None
+      gaze_start_point_label: string
+      gaze_travel_direction_point_label: string
       object_tracking_label_for_kinematics: string
-      reader_kwargs: object
+      outside_perimeter_point_label: string
+      perimeter_border_normal_meters: number
     optional:
-      center_box_to_spatial_resolution_ratio: number
+      center_rectangle_dimensions_to_spatial_resolution_ratio: number
       crop_from_end: boolean -> True
       crop_time_seconds: number -> 0.0
       data_format_label: string -> deeplabcut
-      gaze_start_point_label: string
-      gaze_travel_direction_point_label: string
-      group_label: string
-      inspect: boolean -> False
-      inspect_directory: string
-      inspect_image: np.ndarray
+      inspect_image_path: string
       inspect_quadrants: boolean -> False
-      int_id: integer
-      label: string
       manual_center_pixels: np.ndarray[name='manual_center_pixels_0' type=short required=True]
+      manual_center_rectangle_dimensions_meters: np.ndarray[name='manual_center_rectangle_dimensions_meters_0'
+        type=dobble required=True]
       manual_fps: number
       manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
         ''file-path''}]'
       manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0'
         type=short required=True]
-      manual_video: None
-      maximum_radians_inter_gaze_perimeter: number -> 1.0471975511965976
-      maximum_seconds_distraction: number -> 0.65
+      manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
+      maximum_radians_inter_gaze_perimeter: number -> 0.7853981633974483
+      maximum_seconds_distraction: number -> 0.6666666666666666
       meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
-      minimum_seconds_attention: number -> 0.3
-      perimeter_border_normal_meters: number
+      minimum_seconds_attention: number -> 0.3333333333333333
       physical_object_inspect: boolean -> False
       rectangle_2d_bin: array -> (2, 2)
       rigid_nodes_freezing: array
-      stage: string
-      timestamp: string
       trial_start_perimeter: string
       video_path: string
   specific:
@@ -126,32 +116,20 @@ trial:
       required:
         novel: None
 experiment:
-  defined:
-    manual_fps: 30
-    compute_only_one_df_row: false
+  defined: {}
   optional:
-    common_trial_keyword_arguments: object
     compute_only_one_df_row: boolean -> False
     data_format_label: string -> deeplabcut
-    group_label: string
-    inspect_directory: string
     inspect_image_path: string
-    int_id: integer
-    label: string
     manual_fps: number
     manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
       ''file-path''}]'
     manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0' type=short
       required=True]
     manual_trial_ids: array
-    manual_video: None
+    manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
     meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
     stage: string
-    timestamp: string
-    trial_class_name_to_keyword_arguments: object
-    trial_id_range_to_keyword_arguments: RangedDict
-    trial_id_to_keyword_arguments: object
-    trial_id_to_trial_class_name: object
     video_path: string
 immutable:
   metadata_filename: metadata.xlsx

@@ -85,26 +85,26 @@ def proximity_filter(
             inspect_pixels=inspect_pixels,
         )
 
-        ax.scatter(*inside_perimeter_border[result].T, marker=",", alpha=MATPLOTLIB_SCATTER_ALPHA, label="Valid")
+        ax.scatter(*inside_perimeter_border[result].T, marker="x", alpha=MATPLOTLIB_SCATTER_ALPHA, label="Valid")
 
         not_result = ~result
         if perimeter.impenetrable:
             ax.scatter(
                 *inside_perimeter_border[not_result].T,
-                marker=",",
+                marker="x",
                 alpha=MATPLOTLIB_SCATTER_ALPHA,
                 label="Invalid",
             )
         else:
             ax.scatter(
                 *inside_perimeter_border[inside_perimeter_border_boolean_index & not_result].T,
-                marker=",",
+                marker="x",
                 alpha=MATPLOTLIB_SCATTER_ALPHA,
                 label="Nose valid, invalid outside_perimeter",
             )
             ax.scatter(
                 *inside_perimeter_border[outside_perimeter_boolean_index & not_result].T,
-                marker=",",
+                marker="x",
                 alpha=MATPLOTLIB_SCATTER_ALPHA,
                 label="Center of mass valid, invalid inside_perimeter_border",
             )

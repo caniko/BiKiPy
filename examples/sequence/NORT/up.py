@@ -1,9 +1,4 @@
-import os
-from pathlib import Path
+from bikipy.cli.ingress import _define_project_root_directory
+from bikipy.ingress.core import auto_define_ingress_object
 
-dataset = Path(".").resolve() / "dataset"
-
-for f in dataset.glob("**/*.parquet"):
-    s, name = f.stem.split(".")
-    s = int(s) - 1
-    os.rename(f, f.with_stem(f"{s}.{name}"))
+auto_define_ingress_object(_define_project_root_directory(".")).update_settings(delete_outdated=False)

@@ -207,7 +207,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
 
     def _method_name_inspect_arg(self, method_name: str) -> str:
         if self.makesense_image_name:
-            return f"{self.makesense_image_name}-{method_name}"
+            return f"{self.makesense_image_name.split('.')[0]}-{method_name}"
         return method_name
 
     # @cached_property

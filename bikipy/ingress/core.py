@@ -144,7 +144,7 @@ class BaseIngress(BaseBikipy, ABC):
 
             for trial_class_keyword_arguments in self.trial_class_name_to_keyword_arguments.values():
                 if trial_class_keyword_arguments:
-                    trial_class_name_to_keyword_arguments_fields.extend(*trial_class_keyword_arguments.keys())
+                    trial_class_name_to_keyword_arguments_fields.extend(trial_class_keyword_arguments.keys())
 
             result["trial_class_name_to_keyword_arguments"] = set(trial_class_name_to_keyword_arguments_fields)
 
@@ -293,8 +293,9 @@ class BaseIngress(BaseBikipy, ABC):
                 trial_id_df = pd.DataFrame.from_dict(df_data, orient="index")
 
             else:
+                de_indexed_animal_metadata = self.animal_metadata.reset_index()
                 trial_id_df = pd.concat(
-                    [self.animal_metadata for _ in range(self.experiment_class.trial_sequence_length)], axis=0
+                    [de_indexed_animal_metadata for _ in range(self.experiment_class.trial_sequence_length)], axis=0
                 )
                 trial_id_df.sort_index(inplace=True)
 
@@ -657,6 +658,7 @@ def init_settings(
             "change_reference_definition_strategy": None,
             "video_definition_strategy": None,
             "center_definition_strategy": None,
+            "profile_runtime": True,
         },
         "perimeter": {
             "label_prefix": None,

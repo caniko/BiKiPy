@@ -17,7 +17,7 @@ class AnimalIngress(BaseIngress):
             animal_id = self._get_id_from_path_stem(animal_dir)
 
             for trial_kinematic_data_file_path in animal_dir.glob(f"*{self.kinematic_data_file_extension}"):
-                stage_index = self._get_id_from_path_stem(trial_kinematic_data_file_path)
+                stage_index = int(self._get_id_from_path_stem(trial_kinematic_data_file_path).split(".")[0])
 
                 trial_id = _define_trial_id(animal_id, stage_index)
 
@@ -34,7 +34,7 @@ class AnimalIngress(BaseIngress):
                     data_object = plugin_info["file_path_to_value"](plugin_data_files[0], trial_id, self)
                     plugin_data[plugin_info["bikipy_trial_key"] or data_object.bikipy_trial_key] = data_object
 
-                self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(trial_id)
+                self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(stage_index)
                 self._trial_id_to_keyword_arguments[trial_id] = {
                     "label": trial_id,
                     "animal_id": animal_id,
