@@ -7,26 +7,27 @@ import numpy as np
 import pandas as pd
 from pydantic import FilePath
 
+from bikipy import INVERT_Y_AXIS
 from bikipy.core.typing import NDArrayFp64, NDArrayInt16
 
 logger = getLogger(__name__)
 
 
-def read_makesense_rectangle(data_path: FilePath, invert_y: bool = True) -> pd.DataFrame:
+def read_makesense_rectangle(data_path: FilePath, invert_y_axis: bool = INVERT_Y_AXIS) -> pd.DataFrame:
     result = pd.read_csv(
         data_path, header=None, index_col=0, names=("x", "y", "vec_x", "vec_y", "image_name", "x_res", "y_res")
     )
-    if invert_y:
+    if invert_y_axis:
         result.loc[:, "y"] = result["y_res"] - result.loc[:, "y"]
         result.loc[:, "vec_y"] = -result["vec_y"]
     return result
 
 
-def read_makesense_line(data_path: FilePath, invert_y: bool = True) -> pd.DataFrame:
+def read_makesense_line(data_path: FilePath, invert_y_axis: bool = INVERT_Y_AXIS) -> pd.DataFrame:
     result = pd.read_csv(
         data_path, names=("label", "1x", "1y", "2x", "2y", "image_name", "x_res", "y_res"), index_col=None, header=None
     )
-    if invert_y:
+    if invert_y_axis:
         result.loc[:, "1y"] = result["y_res"] - result.loc[:, "1y"]
         result.loc[:, "2y"] = result["y_res"] - result.loc[:, "2y"]
     return result
@@ -41,12 +42,12 @@ def read_first_makesense_line(data_path: FilePath) -> tuple:
 
 
 @lru_cache
-def read_makesense_point(data_path: FilePath, invert_y: bool = True) -> pd.DataFrame:
+def read_makesense_point(data_path: FilePath, invert_y_axis: bool = INVERT_Y_AXIS) -> pd.DataFrame:
     result = pd.read_csv(
         data_path,
         names=("label", "x", "y", "image_name", "x_res", "y_res"),
     )
-    if invert_y:
+    if invert_y_axis:
         result.loc[:, "y"] = result["y_res"] - result.loc[:, "y"]
     return result
 

@@ -18,7 +18,8 @@ class PluginVideo(BasePluginFile):
         result = VideoMetadata(video_path=self.data_path)
         if self.ingress.settings["ingress"]["frame_upscale_multiplier"] != "float":
             multiplier = float(self.ingress.settings["ingress"]["frame_upscale_multiplier"])
-            result.manual_frame = cv2.resize(result.manual_frame, (0, 0), fx=multiplier, fy=multiplier)
+            result.manual_frame = cv2.resize(result.frame, (0, 0), fx=multiplier, fy=multiplier)
+            result.image_resize_multiplier = multiplier
         return result
 
     def trialwise_and_metadata(self, trial_id: TrialId) -> VideoMetadata:

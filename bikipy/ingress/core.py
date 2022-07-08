@@ -611,9 +611,9 @@ class BaseIngress(BaseBikipy, ABC):
                 msg = f"Plugin {plugin_model.human_readable_index}: Only one file per trial"
                 raise ValueError(msg)
 
-            result[plugin_model.bikipy_trial_key] = plugin_model(data_path=plugin_data_files[0]).trialwise_and_metadata(
-                trial_id
-            )
+            result[plugin_model.bikipy_trial_key] = plugin_model(
+                data_path=plugin_data_files[0], ingress=self
+            ).trialwise_and_metadata(trial_id)
         return result
 
     @staticmethod

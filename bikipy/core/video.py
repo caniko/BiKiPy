@@ -21,6 +21,8 @@ from bikipy.utils.video import get_video_data
 
 logger = getLogger(__name__)
 
+_can_only_be_set_manually = {"meters_per_pixel", "image_resize_multiplier"}
+
 
 class _VideoMetadataBase(BaseBikipy):
     meters_per_pixel: Optional[NDArrayFp64] = Field(description="1D array defining the meter to pixel ratio")
@@ -34,6 +36,10 @@ class _VideoMetadataBase(BaseBikipy):
     manual_fps: Optional[float] = Field(description="Frames per second of the recording")
     manual_frame: Optional[FilePath | NDArrayUint8] = Field(
         description="Frame from the video stored in numpy array, use cv2.imread to read from file paths"
+    )
+    image_resize_multiplier: Optional[float] = Field(
+        description="Must be defined in case the original frame has been resized. "
+        "This might be done during bikipy ingress"
     )
 
 
@@ -73,15 +79,21 @@ class VideoMetadata(_VideoMetadataBase):
 
     @cached_property
     def pixels_per_meter(self) -> NDArrayFp64:
-        return 1.0 / self.meters_per_pixel
+        result = 1.0 / self.meters_per_pixel
+        if self.image_resize_multiplier:
+            result *= self.image_resize_multiplier
+        return result
 
     @cached_property
     def recording_resolution(self) -> NDArrayInt16:
-        return (
+        result = (
             self.manual_recording_resolution
             if self.manual_recording_resolution is not None
             else self._video_metadata_from_file[0]
         )
+        if self.image_resize_multiplier:
+            result = np.round(result.astype(float) * self.image_resize_multiplier).astype(np.int16)
+        return result
 
     @cached_property
     def center_pixel(self) -> NDArrayInt16:
@@ -140,12 +152,15 @@ class VideoMetadata(_VideoMetadataBase):
             result["fps"] = self.fps
         if self.frame is not None:
             result["frame"] = self.frame
+        if self.image_resize_multiplier:
+            result["image_resize_multiplier"] = self.image_resize_multiplier
         return result
 
     @cached_property
     def manual_video_metadata(self):
         return {
-            f"manual_{key}" if key != "meters_per_pixel" else key: value for key, value in self.video_metadata.items()
+            f"manual_{key}" if key not in _can_only_be_set_manually else key: value
+            for key, value in self.video_metadata.items()
         }
 
     @cached_property

@@ -137,16 +137,14 @@ class PhysicalObject(BaseBikipyInspectMixin):
         )
 
         self.attention_axes[1][0].scatter(
-            *gaze_travel_direction_point[self.logical_location_and_gaze].T,
-            alpha=MATPLOTLIB_SCATTER_ALPHA,
+            *gaze_travel_direction_point[self.logical_location_and_gaze].T, alpha=MATPLOTLIB_SCATTER_ALPHA, marker="x"
         )
 
         self.attention_axes[1][1].scatter(
             *gaze_travel_direction_point[self.attention_observance_boolean_index].T,
             alpha=MATPLOTLIB_SCATTER_ALPHA,
+            marker="x",
         )
-
-        self._fig.tight_layout()
 
         if isinstance(self.inspect_arg, Path):
             name = f"{self.inspect_arg.stem}_{self.label}.svg"
@@ -172,7 +170,10 @@ class PhysicalObject(BaseBikipyInspectMixin):
 
     def _init_matplotlib(self):
         self._fig, self._axes = plt.subplots(
-            nrows=2, ncols=2, figsize=(self.video.horizontal_resolution / 50.0, self.video.vertical_resolution / 50.0)
+            nrows=2,
+            ncols=2,
+            figsize=(self.video.horizontal_resolution / 50.0, self.video.vertical_resolution / 50.0),
+            constrained_layout=True,
         )
 
         for row_ax in self._axes:
@@ -181,6 +182,8 @@ class PhysicalObject(BaseBikipyInspectMixin):
                     # This will be done twice for row 0, as the perimeter plotter also plots video frame.
                     col_ax.autoscale(enable=True)
                     col_ax.imshow(self.video.frame)
+                    col_ax.invert_yaxis()
+
                 col_ax.set_aspect("equal", adjustable="box")
 
         self.attention_axes[1][0].set_title("proximity_filtered & gaze_filtered")

@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 from pydantic import DirectoryPath, FilePath
 
+from bikipy import INVERT_Y_AXIS
 from bikipy.core.typing import NDArrayFp64
 from bikipy.utils.makesense import (
     image_name_to_point_from_makesense,
@@ -21,7 +22,7 @@ def init_polygon_from_makesense_coco_polygon(
     image_root: Optional[DirectoryPath] = None,
     reference_point_csv_path: Optional[FilePath] = None,
     reference_point_array: Optional[NDArrayFp64] = None,
-    invert_y: bool = True,
+    invert_y_axis: bool = INVERT_Y_AXIS,
     **perimeter_kwargs,
 ) -> dict:
     from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters
@@ -57,11 +58,14 @@ def init_polygon_from_makesense_coco_polygon(
             reference_point_array = image_name_to_reference_point[image_name] if reference_point_csv_path else None
 
         y_res = float(coco["images"][image_index]["height"])
-        vertices = np.array(
-            _coco_polygon_annotation(annotation["segmentation"][0]),
-            dtype=float,
-        )
-        if invert_y:
+
+        flat_annotation_data = annotation["segmentation"][0]
+        polygon_order = len(flat_annotation_data) / 2
+        assert polygon_order.is_integer()
+
+        vertices = np.array(np.array_split(flat_annotation_data, polygon_order), dtype=float)
+
+        if invert_y_axis:
             x, y = vertices.T
             vertices = np.array([x, y_res - y]).T
 
@@ -83,7 +87,7 @@ def init_polygon_from_makesense_csv_rectangle(
     data_path: FilePath,
     image_root: Optional[DirectoryPath] = None,
     reference_point_csv_path: Optional[FilePath] = None,
-    invert_y: bool = True,
+    invert_y_axis: bool = INVERT_Y_AXIS,
     **perimeter_kwargs,
 ):
     from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters
@@ -91,7 +95,7 @@ def init_polygon_from_makesense_csv_rectangle(
 
     logger.debug("Generating BasePolygonPerimeter from makesense polygon data in coco format")
 
-    csv_data = read_makesense_rectangle(data_path, invert_y)
+    csv_data = read_makesense_rectangle(data_path, invert_y_axis)
 
     if reference_point_csv_path:
         image_name_to_reference_point = image_name_to_point_from_makesense(reference_point_csv_path)
@@ -120,17 +124,3 @@ def init_polygon_from_makesense_csv_rectangle(
         )
 
     return perimeter_set_from_image_name_to_perimeters(result)
-
-
-def _coco_polygon_annotation(flat_annotation_data: Sequence, invert_y_vertical_resolution: Optional[float] = None):
-    return [
-        (
-            flat_annotation_data[i],
-            (
-                invert_y_vertical_resolution - flat_annotation_data[i + 1]
-                if invert_y_vertical_resolution
-                else flat_annotation_data[i + 1]
-            ),
-        )
-        for i in range(0, len(flat_annotation_data) - 1, 2)
-    ]

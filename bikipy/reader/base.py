@@ -10,11 +10,10 @@ import pandas as pd
 from pydantic import Field, FilePath
 from pydantic_numpy import NDArray
 
-from bikipy import ENABLE_PROCESS_POOLING
+from bikipy import ENABLE_PROCESS_POOLING, INVERT_Y_AXIS
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.typing import NDArrayBool
-from bikipy.core.video import VideoMetadata, VideoMetadataMixin
-from bikipy.utils.video import get_video_data
+from bikipy.core.video import VideoMetadataMixin
 
 FILE_EXTENSION_to_PANDAS_READER = {
     ".parquet": pd.read_parquet,
@@ -38,8 +37,8 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     midpoint_groups: Optional[dict] = Field(description="labels that consist of groups that should have their")
     x_axis_crop_end_point: float = 0.0
     y_axis_crop_end_point: float = 0.0
-    reverse_y_axis: bool = Field(
-        True,
+    invert_y_axis: bool = Field(
+        INVERT_Y_AXIS,
         description=(
             "if True will invert the y-axis. Useful when the user wants to work in "
             "traditional Cartesian coordinate system where the origin is on "
@@ -108,7 +107,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
             else:
                 cloned_df = cloned_df.iloc[: self.crop_frames]
 
-        if self.reverse_y_axis:
+        if self.invert_y_axis:
             cloned_df.loc[:, pd.IndexSlice[:, "y"]] = (
                 self.video.vertical_resolution - cloned_df.loc[:, pd.IndexSlice[:, "y"]]
             )
