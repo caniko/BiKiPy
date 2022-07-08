@@ -24,7 +24,7 @@ from bikipy.utils.io.makesense import (
 logger = getLogger(__name__)
 
 
-class PluginPerimeter(BasePluginFile, HasReferenceMixin):
+class PluginSinglePerimeter(BasePluginFile, HasReferenceMixin):
     manual_shape: Optional[StringPerimeterShapes] = None
     warn_missing_re_reference_file: bool = False
 
@@ -60,6 +60,7 @@ class PluginPerimeter(BasePluginFile, HasReferenceMixin):
             self.manual_shape or self.shape,
             meters_per_pixel=self.ingress.get_meter_per_pixel(trial_id),
             reference_point_array=self.reference_point,
+            inspect_arg=self.ingress.inspect_directory_path,
         )
 
         result = {}
@@ -106,10 +107,6 @@ class PluginPerimeter(BasePluginFile, HasReferenceMixin):
             self.ingress.ingress_defined_perimeters[label] = perimeter
 
         return result
-
-
-def perimeter_file_path_to_data_object(file_path: FilePath, trial_id: TrialId, ingress: Any, *args, **kwargs):
-    return PluginPerimeter(data_path=file_path, ingress=ingress, trial_id=trial_id)
 
 
 @validate_arguments

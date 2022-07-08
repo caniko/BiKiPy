@@ -63,7 +63,7 @@ class PhysicalObjectTrialMixin(BaseBikipy):
             "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
             "minimum_seconds_attention": self.minimum_seconds_attention,
             "maximum_seconds_distraction": self.maximum_seconds_distraction,
-            "perimeter_border_normal_meters": self.perimeter_border_normal_meters,
+            "perimeter_border_normal_pixels": self.perimeter_border_normal_pixels,
         }
 
         if self.inspect_arg:

@@ -23,7 +23,7 @@ def proximity_filter(
     perimeter: SinglePerimeter,
     inside_perimeter_border: NDArrayFp64,
     outside_perimeter: NDArrayFp64,
-    perimeter_border_normal_meters: float | NDArrayFp64,
+    perimeter_border_normal_pixels: float | NDArrayFp64,
     inspect_video: Optional[VideoMetadata] = None,
     inspect: bool = False,
     inspect_pixels: bool = False,
@@ -36,20 +36,20 @@ def proximity_filter(
     :param perimeter:
     :param inside_perimeter_border: Cartesian coordinates of the inside_perimeter_border
     :param outside_perimeter: Cartesian coordinates of the center of mass
-    :param perimeter_border_normal_meters: The magnitude of the normal between the perimeter and the perimeter in meters
+    :param perimeter_border_normal_pixels: The magnitude of the normal between the perimeter and the perimeter in pixels
     :param inspect: If True, generate and view an analytics of the resulting filter
     :param manual_ax: matplotlib Axes that the inspection plots will (optionally) be saved in
     :type perimeter: SinglePerimeter
     :type inside_perimeter_border: NDArrayFp64
     :type outside_perimeter: NDArrayFp64
-    :type perimeter_border_normal_meters: float | NDArrayFp64
+    :type perimeter_border_normal_pixels: float | NDArrayFp64
     :type inspect: bool
     :type manual_ax: Any
     :return:
     :rtype: NDArrayFp64
     """
     # Remove inside_perimeter_border points that aren't inside the perimeter
-    perimeter_border = perimeter.expand(perimeter_border_normal_meters)
+    perimeter_border = perimeter.expand(perimeter_border_normal_pixels)
     inside_perimeter_border_boolean_index = perimeter_border.confined_coordinate_boolean_index(
         coordinates=inside_perimeter_border
     )

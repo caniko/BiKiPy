@@ -14,14 +14,14 @@ from bikipy.ingress.plugin.base import Plugin
 from bikipy.ingress.plugin.center import PluginCenter
 from bikipy.ingress.plugin.meters_per_pixel import PluginMeterPerPixel
 from bikipy.ingress.plugin.perimeter.change_reference import PluginChangeReference
-from bikipy.ingress.plugin.perimeter.perimeter import PluginPerimeter
+from bikipy.ingress.plugin.perimeter.single import PluginSinglePerimeter
 from bikipy.ingress.plugin.perimeter.radial import PluginRadial
 from bikipy.ingress.plugin.video import PluginVideo
 
 
 PLUGIN_CODE_KEY_TO_MODEL = {
     PluginMeterPerPixel.code_key: PluginMeterPerPixel,
-    PluginPerimeter.code_key: PluginPerimeter,
+    PluginSinglePerimeter.code_key: PluginSinglePerimeter,
     PluginRadial.code_key: PluginRadial,
     PluginChangeReference.code_key: PluginChangeReference,
     PluginVideo.code_key: PluginVideo,

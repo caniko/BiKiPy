@@ -117,7 +117,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
             cloned_df.loc[:, pd.IndexSlice[:, "x"]] = (
                 self.x_axis_crop_end_point + cloned_df.loc[:, pd.IndexSlice[:, "x"]]
             )
-        if self.reverse_y_axis:
+        if self.y_axis_crop_end_point:
             cloned_df.loc[:, pd.IndexSlice[:, "y"]] = (
                 cloned_df.loc[:, pd.IndexSlice[:, "y"]] - self.y_axis_crop_end_point
             )

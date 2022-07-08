@@ -61,7 +61,7 @@ def int_file_stem_incrementor(starting_filename: Path):
         split_stem = starting_filename.stem.split("-")
 
         try:
-            int_id = int(split_stem[0])
+            int_id = int(split_stem[0]) + 1
         except ValueError as e:
             msg = "The filename to increment must have a digit in the beginning that must be split with a dash"
             raise ValueError(msg) from e

@@ -154,8 +154,10 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         return unit_vector(closest_point_on_edge_to_coordinates - coordinates)
 
     def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
+        if not isinstance(self.confinement_inspect_arg, bool) and self.confinement_inspect_arg.stem == "91-novel.jpg":
+            pass
         return parallel_point_in_polygon(
-            coordinates, self.metric_graph.linked_vertices, merge_ends=False, inspect_arg=self.class_inspect_arg
+            coordinates, self.metric_graph.linked_vertices, merge_ends=False, inspect_arg=self.confinement_inspect_arg
         )
 
     def ray_intersects_on_polygon(

@@ -1,6 +1,6 @@
 ingress_method: phase
 first_stage_is_habituation: true
-manual_dataset_directory: /mnt/soma/Projects/Neuroscience/Imen/data/nort/
+manual_dataset_directory: /home/can/Downloads/Compressed/nort/
 ingress:
   meters_per_pixel_definition_strategy: global
   perimeter_definition_strategy: metadata

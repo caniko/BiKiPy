@@ -37,7 +37,7 @@ class PhysicalObject(BaseBikipyInspectMixin):
     reader: Reader = ...
 
     # Proximity fields
-    perimeter_border_normal_meters: float | NDArrayFp64 = ...
+    perimeter_border_normal_pixels: float | NDArrayFp64 = ...
     outside_perimeter_point_label: Optional[str]
 
     # Gaze fields
@@ -74,7 +74,7 @@ class PhysicalObject(BaseBikipyInspectMixin):
             self.perimeter,
             self._gaze_travel_direction_point,
             self._outside_perimeter_point if self.outside_perimeter_point_label else self._gaze_start_point,
-            self.perimeter_border_normal_meters,
+            self.perimeter_border_normal_pixels,
             manual_ax=self.attention_axes[0][0] if self.inspect_arg else None,
             **self._global_attention_kwargs,
         )

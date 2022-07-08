@@ -65,6 +65,17 @@ class BaseBikipyInspectMixin(BaseBikipy):
         description="Path to image to use as background in the plots for visualising the analysis data",
     )
 
+    def save(self, manual_save_path: Optional[DirectoryPath] = None) -> None:
+        if manual_save_path:
+            save_directory_path = manual_save_path
+        elif isinstance(self.inspect_arg, Path):
+            save_directory_path = self.inspect_arg
+        else:
+            msg = "No path provided to save method"
+            raise ValueError(msg)
+
+        compress_pickle.dump(self, save_directory_path / f"experiment.pickle.lzma")
+
     @cached_property
     def inspect_image(self):
         return cv2.imread(self.inspect_image_path) if self.inspect_image_path else self.manual_inspect_image
@@ -78,13 +89,15 @@ class BaseBikipyInspectMixin(BaseBikipy):
             return result
         return bool(self.inspect_arg)
 
-    def save(self, manual_save_path: Optional[DirectoryPath] = None) -> None:
-        if manual_save_path:
-            save_directory_path = manual_save_path
-        elif isinstance(self.inspect_arg, Path):
-            save_directory_path = self.inspect_arg
-        else:
-            msg = "No path provided to save method"
-            raise ValueError(msg)
+    def _method_inspect_arg(self, method_name: str, with_increment: bool = False) -> InspectArg:
+        if isinstance(self.inspect_arg, bool):
+            return self.inspect_arg
 
-        compress_pickle.dump(self, save_directory_path / f"experiment.pickle.lzma")
+        directory = self.class_inspect_arg / method_name
+        directory.mkdir(exist_ok=True)
+
+        name = f"{self.label}.jpg"
+        if with_increment:
+            name = f"0-{name}"
+
+        return directory / name

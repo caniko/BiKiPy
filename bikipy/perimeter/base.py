@@ -22,7 +22,7 @@ from bikipy.perimeter.polygon.makesense import (
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
 from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence
 from bikipy.utils.io.makesense import get_point_from_makesense_row, read_makesense_point
-from bikipy.utils.plotting import plot_coordinates, generic_inspection_finalization
+from bikipy.utils.plotting import plot_coordinates, generic_inspection_finalization, InspectArg
 
 logger = getLogger(__name__)
 
@@ -80,7 +80,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         ...
 
     @abstractmethod
-    def expand(self, perimeter_border_normal_meters: float | NDArrayFp64):
+    def expand(self, perimeter_border_normal_meters: float | NDArrayFp64) -> "SinglePerimeter":
         ...
 
     @abstractmethod
@@ -196,6 +196,28 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
             _change_reference_loop_func(reference_point, img_name)
             for img_name, reference_point in img_name_to_reference_points.items()
         ]
+
+    @cached_property
+    def expand_inspect_arg(self) -> InspectArg:
+        return self._method_inspect_arg(self._method_name_inspect_arg("expand"), with_increment=True)
+
+    @cached_property
+    def confinement_inspect_arg(self) -> InspectArg:
+        return self._method_inspect_arg(self._method_name_inspect_arg("confinement"), with_increment=True)
+
+    def _method_name_inspect_arg(self, method_name: str) -> str:
+        if self.makesense_image_name:
+            return f"{self.makesense_image_name}-{method_name}"
+        return method_name
+
+    # @cached_property
+    # def class_inspect_arg(self) -> InspectArg:
+    #     upstream = super().class_inspect_arg
+    #
+    #     if self.makesense_image_name and not isinstance(upstream, bool):
+    #         return upstream / self.makesense_image_name
+    #
+    #     return upstream
 
     def plot(
         self,
