@@ -8,7 +8,7 @@ ingress:
   change_reference_definition_strategy: metadata
   video_definition_strategy: trial-wise
   center_definition_strategy: null
-  frame_upscale_multiplier: 2.0
+  frame_upscale_multiplier: 1.3
   profile_runtime: true
 perimeter:
   label_prefix: null

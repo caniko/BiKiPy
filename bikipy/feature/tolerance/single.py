@@ -64,7 +64,10 @@ def _filter(
     i, true_counter, distraction_counter, start = 0, 0, 0, 0
     while i < length:
         if boolean_index[i]:
-            if true_counter >= minimum_frames_attention:
+            if start:
+                # We don't want to use the true counter during a TRUE epoch
+                pass
+            elif true_counter >= minimum_frames_attention:
                 start = i - true_counter  # equivalent to: i - minimum_frames_attention
                 true_counter = 0
             else:
@@ -76,8 +79,8 @@ def _filter(
                     attention_boolean_index[start : i - distraction_counter] = True
                     i += distraction_counter
                     start, distraction_counter = 0, 0
-            else:
-                true_counter = 0
+            elif true_counter > 0:
+                true_counter -= 1
 
         i += 1
 

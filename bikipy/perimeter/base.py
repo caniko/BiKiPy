@@ -103,7 +103,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
                 for i in evenly_spaced_indices_from_sequence(coordinates, 5):
                     ax.plot(*np.vstack((result[i], coordinates[i])).T)
 
-            generic_inspection_finalization(self.class_inspect_arg / f"{self.label}.jpg")
+            generic_inspection_finalization(self.class_inspect_arg, f"{self.label}.jpg")
 
     @abstractmethod
     def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
@@ -124,7 +124,6 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
     def plot_perimeter(
         self,
         inspect_pixels: bool = False,
-        perimeter_border_normal_pixels: Optional[float] = None,
         manual_ax: Any = None,
         **plot_kwargs,
     ):
@@ -432,7 +431,7 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
         if manual_ax:
             pass
         else:
-            generic_inspection_finalization(self.class_inspect_arg / f"{self.label}.jpg")
+            generic_inspection_finalization(self.class_inspect_arg, f"{self.label}.jpg")
 
         return ax
 

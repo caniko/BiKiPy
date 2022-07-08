@@ -5,11 +5,10 @@ from typing import Any, ClassVar, Optional, TypeVar
 
 import matplotlib.pyplot as plt
 import numpy as np
-from pydantic import FilePath, validator
+from pydantic import validator
 from pydantic_numpy import NDArray
 
-from bikipy.core.typing import NDArrayFp64, NDArrayInt16, NDArrayBool
-from bikipy.core.video import convert_meters_to_pixels
+from bikipy.core.typing import NDArrayFp64, NDArrayBool
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.perimeter.radial.circle import CirclePerimeter
 from bikipy.utils.collection_utils import (
@@ -154,8 +153,6 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         return unit_vector(closest_point_on_edge_to_coordinates - coordinates)
 
     def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
-        if not isinstance(self.confinement_inspect_arg, bool) and self.confinement_inspect_arg.stem == "91-novel.jpg":
-            pass
         return parallel_point_in_polygon(
             coordinates, self.metric_graph.linked_vertices, merge_ends=False, inspect_arg=self.confinement_inspect_arg
         )
@@ -277,10 +274,19 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
         return self
 
+    @cached_property
+    def scaled_vertices_in_pixels(self) -> NDArrayFp64:
+        """
+        Vertices must be scaled in accordance with video frame multiplier.
+        :return:
+        """
+        if self.video.image_resize_multiplier:
+            return self.vertices_in_pixels * self.video.image_resize_multiplier
+        return self.vertices_in_pixels
+
     def plot_perimeter(
         self,
         inspect_pixels: bool = False,
-        perimeter_border_normal_pixels: Optional[float] = None,
         with_midpoints: bool = False,
         manual_ax: Any = None,
         **plot_kwargs,
@@ -290,7 +296,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         else:
             ax = manual_ax
 
-        vertices = self.vertices_in_pixels if inspect_pixels else self.vertices_in_meters
+        vertices = self.scaled_vertices_in_pixels if inspect_pixels else self.vertices_in_meters
 
         for index in range(len(vertices)):
             following_index = 0 if index + 1 == len(vertices) else index + 1
@@ -303,21 +309,12 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
                 **plot_kwargs,
             )
 
-            if perimeter_border_normal_pixels is not None:
-                perimeter = self.expand(perimeter_border_normal_pixels)
-                border_a = perimeter[index]
-                border_b = perimeter[following_index]
-                ax.plot(
-                    *np.vstack((border_a, border_b)).T,
-                    **plot_kwargs,
-                )
-
         if with_midpoints:
             for i, midpoint in enumerate(self.metric_graph.vertex_midpoints):
                 ax.scatter(*midpoint.T, label=f"{self.label}{i}")
 
         if not manual_ax:
-            generic_inspection_finalization(self.class_inspect_arg / f"{self.label}.jpg")
+            generic_inspection_finalization(self.class_inspect_arg or True, f"{self.label}.jpg")
 
         return ax
 

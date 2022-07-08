@@ -16,8 +16,10 @@ class PluginVideo(BasePluginFile):
     @cached_property
     def video(self) -> VideoMetadata:
         result = VideoMetadata(video_path=self.data_path)
-        if self.ingress.settings["ingress"]["frame_upscale_multiplier"] != "float":
-            multiplier = float(self.ingress.settings["ingress"]["frame_upscale_multiplier"])
+
+        raw_multiplier = self.ingress.settings["ingress"]["frame_upscale_multiplier"]
+        if raw_multiplier and raw_multiplier != "float":
+            multiplier = float(raw_multiplier)
             result.manual_frame = cv2.resize(result.frame, (0, 0), fx=multiplier, fy=multiplier)
             result.image_resize_multiplier = multiplier
         return result

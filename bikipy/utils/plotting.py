@@ -23,22 +23,26 @@ inspect_arg_description = (
 @validate_arguments
 def generic_inspection_finalization(
     inspect_arg: InspectArg,
+    potential_label: Optional[str] = None,
     debug_save_message: Optional[str] = None,
 ) -> None:
     try:
-        if not inspect_arg.suffix:
-            msg = f"Saving {inspect_arg}: No file-suffix is defined"
+        # This should raise a TypeError if it is a bool and not a Path
+        file_path = inspect_arg / potential_label if potential_label else inspect_arg
+
+        if not file_path.suffix:
+            msg = f"Saving {file_path}: No file-suffix is defined"
             raise ValueError(msg)
 
-        if inspect_arg.stem.split("-")[0].isdigit():
-            inspect_arg = int_file_stem_incrementor(inspect_arg)
+        if file_path.stem.split("-")[0].isdigit():
+            file_path = int_file_stem_incrementor(file_path)
 
-        plt.savefig(inspect_arg)
+        plt.savefig(file_path)
         plt.close()
         if debug_save_message:
             logger.debug(debug_save_message)
 
-    except AttributeError:
+    except TypeError:
         # inspect_arg is most likely a boolean
         if inspect_arg:
             plt.show()

@@ -38,6 +38,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
                     next(iglob(str(self.data_path / "center*"))),
                     reference_point_array=self.reference_point,
                     group_label="center",
+                    inspect_arg=self.ingress.inspect_directory_path,
                 )
             ).get_only_perimeter
 
@@ -78,6 +79,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
                 reference_point_array=self.reference_point,
                 manual_recording_resolution=np.array((index_data["x_res"], index_data["y_res"]), dtype=float),
                 group_label="arms",
+                inspect_arg=self.ingress.inspect_directory_path,
             )
             arm_perimeter.meters_per_pixel = meter_per_pixel_from_diagonal(
                 arm_perimeter.vertices_in_pixels[0],
@@ -98,9 +100,10 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
     @cached_property
     def grouped_radial_maze_perimeters(self) -> dict[str, tuple[SinglePerimeter, ...]]:
         perimeter_set = PerimeterSet(perimeters=[*self.arms, self.center])
-        perimeter_set.plot()
+
         grouped = perimeter_set.group()
         self.ingress.ingress_defined_perimeters[self.label] = grouped
+
         return grouped
 
     def trialwise_and_metadata(self, trial_id: TrialId) -> dict[str, tuple[SinglePerimeter, ...]]:

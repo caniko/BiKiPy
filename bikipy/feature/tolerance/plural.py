@@ -1,3 +1,5 @@
+from typing import Iterable
+
 import numpy as np
 from numba import njit
 from pydantic import validate_arguments
@@ -10,18 +12,28 @@ from bikipy.feature.tolerance.common import tolerance_filter_warning_wrapper
 
 @validate_arguments
 def plural_node_tolerance_filter(
-    *boolean_indices,
+    *boolean_indices: NDArrayBool,
     fps: float,
     minimum_seconds_attention: float = GENERIC_MINIMUM_SECONDS_ATTENTION,
     maximum_seconds_distraction: float = GENERIC_MAXIMUM_SECONDS_DISTRACTION,
 ) -> NDArrayBool | None:
+    all_true = np.logical_and.reduce(boolean_indices)
+    any_true = np.logical_or.reduce(boolean_indices)
+
     return tolerance_filter_warning_wrapper(
-        _filter, len(boolean_indices[0]), *boolean_indices, fps, minimum_seconds_attention, maximum_seconds_distraction
+        _filter,
+        len(boolean_indices[0]),
+        all_true,
+        any_true,
+        fps,
+        minimum_seconds_attention,
+        maximum_seconds_distraction,
     )
 
 
 def _filter(
-    *boolean_indices,
+    all_true: NDArrayBool,
+    any_true: NDArrayBool,
     fps: float,
     minimum_seconds_attention: float = GENERIC_MINIMUM_SECONDS_ATTENTION,
     maximum_seconds_distraction: float = GENERIC_MAXIMUM_SECONDS_DISTRACTION,
@@ -44,9 +56,6 @@ def _filter(
     :param maximum_seconds_distraction:
     :return:
     """
-    all_true = np.logical_and.reduce(boolean_indices)
-    any_true = np.logical_or.reduce(boolean_indices)
-
     if np.sum(all_true) < fps:
         return None
 
@@ -65,10 +74,10 @@ def _filter(
                 true_counter = 0
 
                 # TRUE instance
-                while i + distraction_counter < length:
-                    if any_true[i + distraction_counter]:
-                        i += 1 + distraction_counter
-                        distraction_counter = 0
+                while i < length:
+                    if any_true[i]:
+                        if distraction_counter > 0:
+                            distraction_counter -= 1
                     else:
                         distraction_counter += 1
 
@@ -77,11 +86,12 @@ def _filter(
                             i += 1 + distraction_counter
                             start, distraction_counter = 0, 0
                             break
+                    i += 1
                 if start:
                     attention_boolean_index[start:i] = True
-                    break
-        else:
-            true_counter = 0
+
+        elif true_counter > 0:
+            true_counter -= 1
 
         i += 1
 

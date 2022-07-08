@@ -8,6 +8,8 @@ ingress:
   change_reference_definition_strategy: metadata
   video_definition_strategy: trial-wise
   center_definition_strategy: null
+  frame_upscale_multiplier: float
+  profile_runtime: true
 perimeter:
   label_prefix: null
   label_suffix: null
@@ -16,6 +18,7 @@ perimeter:
   fields:
     defined: {}
     optional:
+      image_resize_multiplier: number
       impenetrable: boolean -> False
       inspect_arg: '[{''type'': ''string'', ''format'': ''directory-path''}, {''type'':
         ''boolean''}] -> False'
@@ -29,23 +32,11 @@ perimeter:
       manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
       meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
       video_path: string
-      outdated:
-        group_label: string
-        int_id: integer
-        makesense_image_name: string
-        reference_point_array: np.ndarray[name='reference_point_array_0' type=short
-          required=True]
-        reference_point_coco_path: string
-        outdated:
-          inspect: boolean -> False
-          inspect_directory: string
-    outdated:
-      required:
-        label: string
 reader_kwargs:
   defined:
     x_axis_crop_end_point: 95.0
     y_axis_crop_end_point: 75.0
+    invert_y_axis: true
     midpoint_groups:
       center_eye:
       - left_ear
@@ -57,16 +48,17 @@ reader_kwargs:
     crop_from_end: boolean -> False
     crop_time_seconds: number -> 0.0
     future_scaling: boolean
+    image_resize_multiplier: number
+    invert_y_axis: boolean -> False
     manual_fps: number
-    manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
-      ''file-path''}]'
+    manual_frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'':
+      ''np.ndarray''}]'
     manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0' type=short
       required=True]
     manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
     meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
     midpoint_groups: object
     min_likelihood: number -> 0.8
-    reverse_y_axis: boolean -> True
     video_path: string
     x_axis_crop_end_point: number -> 0.0
     y_axis_crop_end_point: number -> 0.0
@@ -85,13 +77,15 @@ trial:
       crop_from_end: boolean -> True
       crop_time_seconds: number -> 0.0
       data_format_label: string -> deeplabcut
-      inspect_arg: '[{''type'': ''string'', ''format'': ''directory-path''}, {''type'':
-        ''boolean''}] -> False'
+      image_resize_multiplier: number
+      inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
+        -> False'
       inspect_image_path: string
       manual_center_pixels: np.ndarray[name='manual_center_pixels_0' type=short required=True]
       manual_fps: number
-      manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
-        ''file-path''}]'
+      manual_frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'':
+        ''np.ndarray''}]'
+      manual_inspect_image: np.ndarray
       manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0'
         type=short required=True]
       manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
@@ -106,12 +100,14 @@ experiment:
   optional:
     compute_only_one_df_row: boolean -> False
     data_format_label: string -> deeplabcut
-    inspect_arg: '[{''type'': ''string'', ''format'': ''directory-path''}, {''type'':
-      ''boolean''}] -> False'
+    image_resize_multiplier: number
+    inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
+      -> False'
     inspect_image_path: string
     manual_fps: number
-    manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
-      ''file-path''}]'
+    manual_frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'':
+      ''np.ndarray''}]'
+    manual_inspect_image: np.ndarray
     manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0' type=short
       required=True]
     manual_trial_ids: array

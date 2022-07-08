@@ -99,10 +99,29 @@ class CirclePerimeter(BaseSinglePerimeter):
     def gaze_direction_filter(self, *args, **kwargs) -> NDArrayBool:
         return gaze_direction_filter_circle_triangle(self, *args, **kwargs)
 
+    @cached_property
+    def scaled_center_in_pixels(self) -> NDArrayFp64:
+        """
+        Vertices must be scaled in accordance with video frame multiplier.
+        :return:
+        """
+        if self.video.image_resize_multiplier:
+            return self.center_pixels * self.video.image_resize_multiplier
+        return self.center_pixels
+
+    @cached_property
+    def scaled_radius_in_pixels(self) -> float:
+        """
+        Vertices must be scaled in accordance with video frame multiplier.
+        :return:
+        """
+        if self.video.image_resize_multiplier:
+            return self.radius_pixels * self.video.image_resize_multiplier
+        return self.radius_pixels
+
     def plot_perimeter(
         self,
         inspect_pixels: bool = False,
-        perimeter_border_normal_pixels: Optional[float] = None,
         manual_ax: Any = None,
         **plot_kwargs,
     ):
@@ -112,12 +131,12 @@ class CirclePerimeter(BaseSinglePerimeter):
             ax = manual_ax
 
         if inspect_pixels:
-            ax = plot_circle(self.center_pixels, self.radius_pixels, ax)
+            ax = plot_circle(self.scaled_center_in_pixels, self.scaled_radius_in_pixels, ax)
         else:
             ax = plot_circle(self.center_meters, self.radius_meters, ax)
 
         if not manual_ax:
-            generic_inspection_finalization(self.class_inspect_arg / f"{self.label}.jpg")
+            generic_inspection_finalization(self.class_inspect_arg or True, f"{self.label}.jpg")
 
         return ax
 
