@@ -21,7 +21,7 @@ def init_polygon_from_makesense_coco_polygon(
     image_root: Optional[DirectoryPath] = None,
     reference_point_csv_path: Optional[FilePath] = None,
     reference_point_array: Optional[NDArrayFp64] = None,
-    invert_y: bool = False,
+    invert_y: bool = True,
     **perimeter_kwargs,
 ) -> dict:
     from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters
@@ -58,9 +58,7 @@ def init_polygon_from_makesense_coco_polygon(
 
         y_res = float(coco["images"][image_index]["height"])
         vertices = np.array(
-            _coco_polygon_annotation(
-                annotation["segmentation"][0], invert_y_vertical_resolution=coco["images"][image_index]["height"]
-            ),
+            _coco_polygon_annotation(annotation["segmentation"][0]),
             dtype=float,
         )
         if invert_y:

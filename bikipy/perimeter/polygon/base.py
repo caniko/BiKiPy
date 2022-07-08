@@ -261,7 +261,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             raise AttributeError(msg)
 
         if np.all(self.reference_point == new_reference):
-            logger.warning("The provided reference_point is identical to the current")
+            logger.debug("The provided reference_point is identical to the current")
             return self
 
         if self.reference_point is not None and np.any(self.reference_point):
