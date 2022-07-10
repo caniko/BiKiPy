@@ -35,8 +35,6 @@ class LinePerimeter(BaseBikipyHashable, VideoMetadataMixin):
     )
     logic: Literal["<", "<=", ">", ">=", "=="] = Field(description="The logic of the perimeter")
 
-    polygon_order: ClassVar[Optional[int]] = 1
-
     @classmethod
     @property
     def exclude_from_settings_schema(cls) -> set[str]:

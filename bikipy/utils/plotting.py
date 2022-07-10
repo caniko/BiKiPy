@@ -49,13 +49,20 @@ def generic_inspection_finalization(
 
 
 def plot_coordinates(
-    coordinates: NDArrayFp64, ax: Any = None, inspect_pixels: bool = False, video: Optional["VideoMetadata"] = None
+    coordinates: NDArrayFp64,
+    ax: Any = None,
+    inspect_pixels: bool = False,
+    video: Optional["VideoMetadata"] = None,
+    **plot_kwargs,
 ):
     from bikipy.core.video import convert_meters_to_pixels
 
     if inspect_pixels:
         coordinates = convert_meters_to_pixels(coordinates, video)
 
-    ax.scatter(*coordinates.T)
+    ax.scatter(*coordinates.T, **plot_kwargs)
 
     return ax
+
+
+BOTTOM_LEGEND_KWARGS = {"loc": "upper center", "bbox_to_anchor": (0.5, -0.04), "fancybox": True, "ncol": 3}

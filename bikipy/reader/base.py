@@ -66,6 +66,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     def _isolate_coordinates(self, key: Iterable[Hashable] | Hashable) -> pd.DataFrame:
         ...
 
+    @property
     @abstractmethod
     def tracked_point_labels(self) -> tuple[str, ...]:
         """

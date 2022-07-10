@@ -7,7 +7,7 @@ from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 
 
 class TriangularPerimeter(BasePolygonPerimeter):
-    polygon_order: ClassVar[Optional[int]] = 3
+    polygon_order = 3
 
     @property
     def base_a(self):

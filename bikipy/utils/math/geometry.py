@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from math import sqrt
 from pydantic import validate_arguments
+from pydantic_numpy import NDArray
 
 from bikipy.core.typing import NDArrayFp64
 from bikipy.feature.angle import clockwise_angel_2d
@@ -83,7 +84,7 @@ def clockwise_argsort_points(points: NDArrayFp64):
 
 
 @validate_arguments
-def clockwise_sort_points(points: NDArrayFp64, inspect: bool = False):
+def clockwise_sort_points(points: NDArrayFp64, inspect: bool = False) -> NDArray:
     # Sort from top-right point
     result = points[clockwise_argsort_points(points)]
 

@@ -12,7 +12,7 @@ logger = getLogger(__name__)
 
 
 class RectanglePerimeter(BasePolygonPerimeter):
-    polygon_order: ClassVar[Optional[int]] = 4
+    polygon_order = 4
 
     def expand(self, perimeter_border_normal_pixels: float | NDArrayFp64) -> "RectanglePerimeter":
         result = self.__class__(

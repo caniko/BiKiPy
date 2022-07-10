@@ -20,9 +20,9 @@ from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_csv_rectangle,
 )
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
-from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence
+from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence, chain_lists_to_tuple
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
-from bikipy.utils.plotting import plot_coordinates, generic_inspection_finalization, InspectArg
+from bikipy.utils.plotting import plot_coordinates, generic_inspection_finalization, InspectArg, BOTTOM_LEGEND_KWARGS
 
 logger = getLogger(__name__)
 
@@ -428,10 +428,9 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
         if coordinates is not None:
             ax = plot_coordinates(coordinates, ax, inspect_pixels, self.video)
 
-        if manual_ax:
-            pass
-        else:
-            generic_inspection_finalization(self.class_inspect_arg, f"{self.label}.jpg")
+        if not manual_ax:
+            ax.legend(**BOTTOM_LEGEND_KWARGS)
+            generic_inspection_finalization(self.class_inspect_arg or True, f"0-{self.label}.jpg")
 
         return ax
 

@@ -5,6 +5,8 @@ from itertools import permutations
 from logging import getLogger
 from typing import ClassVar, Optional
 
+import numpy as np
+import seaborn as sb
 from matplotlib import pyplot as plt
 from pydantic import validator
 
@@ -19,7 +21,7 @@ from bikipy.core.typing import NDArrayBool, NDArrayUint8, NDArrayFp64
 from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
 from bikipy.perimeter.confinement import detect_multi_node_sequential_perimeter_presence
 from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
-from bikipy.utils.plotting import generic_inspection_finalization
+from bikipy.utils.plotting import generic_inspection_finalization, plot_coordinates, BOTTOM_LEGEND_KWARGS
 
 logger = getLogger(__name__)
 
@@ -115,12 +117,12 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return [
             ("SpontaneousAlternations", ""),
             *feature_2d_multi_indexer("SecondsInArea", cls._arm_center_labels),
-            ("SecondsInArms", ""),
-            ("SumOfSecondsInArea", ""),
+            ("SecondsInArea", "Arms"),
+            ("SecondsInArea", "Sum"),
             *feature_2d_multi_indexer("ArmEntries", cls.arm_labels),
-            ("SumOfEntries", ""),
+            ("ArmEntries", "Sum"),
             *feature_2d_multi_indexer("PermutationAlternation", cls._arm_label_permutations_as_string),
-            ("SumOfAlternations", ""),
+            ("PermutationAlternation", "Sum"),
         ]
 
     @property
@@ -204,6 +206,9 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
         result = copy(self._arm_center_int_id_to_zero)
         for label, counts in unique_with_counts_zipped(self.alternation_sequence_with_center):
+            if label == 0:
+                continue
+
             assert label in result, f"{label} is not in {tuple(result.keys())})"
             result[label] = counts / self.video.fps
 
@@ -227,6 +232,9 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         dict, arm label vs alternations to arm
         """
         result = dict(unique_with_counts_zipped(self.reduced_alternation_sequence_without_center))
+
+        # Remove 0, which is a subset of entries to center
+        del result[0]
 
         if any(arm not in result for arm in self._arm_int_ids):
             missing = set(result).difference(self.int_ids_to_labels)
@@ -321,12 +329,22 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
         if self.inspect_arg:
             fig, ax = plt.subplots()
-            ax = self.perimeter_set.plot(coordinates=self.kinematic_coordinates[result[1]], manual_ax=ax)
 
-            generic_inspection_finalization(
-                self.class_inspect_arg, f"{self.label}.jpg",
-                debug_save_message=f"Saved perimeter_set {self.label} inspect plot to {self.class_inspect_arg}",
-            )
+            total_number_of_sides_arms = self.arm_len * 4
+
+            with sb.color_palette("cubehelix", n_colors=total_number_of_sides_arms + self.center.polygon_order):
+                self.perimeter_set.plot(manual_ax=ax)
+
+            coord_cmap = sb.color_palette("Spectral", n_colors=self.arm_len + 1)
+            for color, (int_id, label) in zip(coord_cmap, self.int_ids_to_labels.items()):
+                if np.any((boolean_index := result[0] == int_id)):
+                    ax = plot_coordinates(self.kinematic_coordinates[boolean_index], ax, label=label, color=color)
+
+            ax = plot_coordinates(self.kinematic_coordinates[~result[2]], ax, label="NotConfined", color=coord_cmap[-1])
+
+            ax.legend(**BOTTOM_LEGEND_KWARGS)
+            fig.tight_layout()
+            generic_inspection_finalization(self.class_inspect_arg, f"0-{self.label}.jpg")
 
         return result
 

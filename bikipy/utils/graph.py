@@ -1,13 +1,19 @@
 from functools import cached_property
 
 import numpy as np
+from pydantic import validator
 
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayFp64
+from bikipy.utils.math.geometry import clockwise_sort_points
 
 
 class Graph(BaseBikipy):
     vertices: NDArrayFp64 = ...
+
+    @validator("vertices")
+    def sort_clockwise(cls, value) -> NDArrayFp64:
+        return clockwise_sort_points(value)
 
     @cached_property
     def centroid(self) -> NDArrayFp64:
@@ -31,5 +37,9 @@ class Graph(BaseBikipy):
         return np.linalg.norm(self.centroid - self.vertex_midpoints, axis=1)
 
     @cached_property
+    def edge_vectors(self) -> NDArrayFp64:
+        return np.diff(self.linked_vertices, axis=0)
+
+    @cached_property
     def edge_lengths(self) -> NDArrayFp64:
-        return np.linalg.norm(np.diff(self.linked_vertices, axis=0), axis=1)
+        return np.linalg.norm(self.edge_vectors, axis=1)

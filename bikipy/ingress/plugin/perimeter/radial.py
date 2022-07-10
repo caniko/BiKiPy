@@ -1,17 +1,18 @@
 from functools import cached_property
 from glob import iglob
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from bikipy.core.typing import TrialId
+from bikipy.core.typing import TrialId, NDArrayFp64
 from bikipy.ingress.plugin.base import BasePluginDirectory, HasReferenceMixin
 from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
-from bikipy.utils.makesense import read_makesense_line
-from bikipy.utils.math.geometry import clockwise_argsort_points, meter_per_pixel_from_diagonal
+from bikipy.utils.makesense import read_makesense_line, get_all_lines_from_makesense_line_df
+from bikipy.utils.math.geometry import clockwise_argsort_points, meter_per_pixel_from_diagonal, clockwise_sort_points
 
 
 class PluginRadial(BasePluginDirectory, HasReferenceMixin):
@@ -28,7 +29,17 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
 
     @cached_property
     def line_data(self) -> pd.DataFrame:
-        return read_makesense_line(self.data_path / "arm-lines.csv")
+        raw_line_data = read_makesense_line(self.data_path / "arm-lines.csv", invert_y_axis=True)
+
+        lines = get_all_lines_from_makesense_line_df(raw_line_data)
+        line_midpoints = np.mean(lines, axis=1)
+        clockwise_argsort = clockwise_argsort_points(line_midpoints)
+
+        return raw_line_data.iloc[clockwise_argsort, :]
+
+    @property
+    def lines(self) -> NDArrayFp64:
+        return get_all_lines_from_makesense_line_df(self.line_data)
 
     @property
     def center(self) -> SinglePerimeter:
@@ -39,6 +50,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
                     reference_point_array=self.reference_point,
                     group_label="center",
                     inspect_arg=self.ingress.inspect_directory_path,
+                    invert_y_axis=True,
                 )
             ).get_only_perimeter
 
@@ -46,29 +58,15 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
 
     @cached_property
     def arms(self) -> list[RectanglePerimeter]:
-        lines = np.array([np.array_split(line, 2) for _, line in self.line_data.iloc[:, 1:5].iterrows()])
-        line_midpoints = np.mean(lines, axis=1)
-
-        correct_argsort = clockwise_argsort_points(line_midpoints)
-
-        lines = lines[correct_argsort]
-        line_midpoints = line_midpoints[correct_argsort]
-
+        center_vertex_pair = np.array(
+            [self.center.pixel_graph.vertex_pairs[-1], *self.center.pixel_graph.vertex_pairs[:-1]]
+        )
         arm_perimeters = []
-        for line_index, line_midpoint in enumerate(line_midpoints):
-            line_pair_bool_index = np.where(
-                (
-                    np.argsort(
-                        np.linalg.norm(line_midpoint[None, :] - self.center.pixel_graph.vertex_midpoints, axis=1)
-                    )
-                    == 0
-                )
-            )[0][0]
-
+        for line_index in range(len(self.lines)):
             arm_perimeter_vertices = np.concatenate(
                 (
-                    self.center.pixel_graph.vertex_pairs[line_pair_bool_index],
-                    lines[line_index],
+                    center_vertex_pair[line_index],
+                    self.lines[line_index],
                 )
             )
             index_data = self.line_data.loc[line_index, :]
@@ -86,7 +84,6 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
                 arm_perimeter.vertices_in_pixels[2],
                 self.ingress.settings["perimeter"]["radial_arm_rectangle_diagonal"],
             )
-            # arm_perimeter.plot_perimeter(with_midpoints=True)
             arm_perimeters.append(arm_perimeter)
 
         arm_perimeter_mean_meters_per_pixel = PerimeterSet(perimeters=arm_perimeters).mean_meters_per_pixel
@@ -99,7 +96,12 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
 
     @cached_property
     def grouped_radial_maze_perimeters(self) -> dict[str, tuple[SinglePerimeter, ...]]:
-        perimeter_set = PerimeterSet(perimeters=[*self.arms, self.center])
+        perimeter_set = PerimeterSet(
+            perimeters=[*self.arms, self.center],
+            # inspect_arg=self.ingress.inspect_directory_path, label="radial_arm"
+        )
+
+        # perimeter_set.plot(with_midpoints=True)
 
         grouped = perimeter_set.group()
         self.ingress.ingress_defined_perimeters[self.label] = grouped

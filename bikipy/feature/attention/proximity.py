@@ -14,6 +14,7 @@ from bikipy.core.video import (
     inspect_video_is_none_during_inspection,
 )
 from bikipy.perimeter.base import SinglePerimeter
+from bikipy.utils.plotting import BOTTOM_LEGEND_KWARGS
 
 logger = getLogger(__name__)
 
@@ -109,7 +110,7 @@ def proximity_filter(
                 label="Torso valid, invalid nose",
             )
 
-        ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.025), fancybox=True, ncol=3)
+        ax.legend(**BOTTOM_LEGEND_KWARGS)
 
         if not manual_ax:
             plt.tight_layout()

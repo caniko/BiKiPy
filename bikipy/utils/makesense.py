@@ -41,6 +41,10 @@ def read_first_makesense_line(data_path: FilePath) -> tuple:
     return get_line_endpoints_from_makesense_row(read_makesense_line(data_path).iloc[0])
 
 
+def get_all_lines_from_makesense_line_df(line_df: pd.DataFrame) -> NDArrayFp64:
+    return np.array([np.array_split(line, 2) for _, line in line_df.iloc[:, 1:5].iterrows()])
+
+
 @lru_cache
 def read_makesense_point(data_path: FilePath, invert_y_axis: bool = INVERT_Y_AXIS) -> pd.DataFrame:
     result = pd.read_csv(

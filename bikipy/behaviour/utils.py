@@ -10,7 +10,7 @@ from bikipy.core.typing import NDArrayFp64
 logger = getLogger(__name__)
 
 
-def unique_with_counts_zipped(array):
+def unique_with_counts_zipped(array: NDArray):
     return zip(*np.unique(array, return_counts=True))
 
 
