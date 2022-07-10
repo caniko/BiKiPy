@@ -25,14 +25,14 @@ class AnimalIngress(BaseIngress):
                     continue
 
                 plugin_data = {}
-                for plugin_info in self._trial_wise_plugins:
-                    plugin_data_files = tuple(animal_dir.glob(f"{trial_id}.{plugin_info['code_key']}*"))
+                for plugin_model in self._trial_wise_plugins:
+                    plugin_data_files = tuple(animal_dir.glob(f"{stage_index}.{plugin_model.code_key}*"))
                     if len(plugin_data_files) > 1:
-                        msg = f"Plugin {plugin_info['human_readable_index']}: Only one file per trial"
+                        msg = f"Plugin {plugin_model.human_readable_index}: Only one file per trial"
                         raise ValueError(msg)
 
-                    data_object = plugin_info["file_path_to_value"](plugin_data_files[0], trial_id, self)
-                    plugin_data[plugin_info["bikipy_trial_key"] or data_object.bikipy_trial_key] = data_object
+                    data_object = plugin_model(plugin_data_files[0], trial_id, self)
+                    plugin_data[plugin_model.bikipy_trial_key or data_object.bikipy_trial_key] = data_object
 
                 self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(stage_index)
                 self._trial_id_to_keyword_arguments[trial_id] = {

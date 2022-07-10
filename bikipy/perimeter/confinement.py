@@ -78,20 +78,20 @@ def detect_multi_node_sequential_perimeter_presence(
 
     int_id_to_overlap_boolean_index = defaultdict(partial(np.zeros_like, presence, dtype=bool))
     for perimeter in inferior_to_superior_perimeter_instances:
-
         confined_coord_booleans_index = plural_node_tolerance_filter(
             *(confinements[perimeter.int_id]),
             fps=perimeter.video.fps,
         )
 
-        if presence[confined_coord_booleans_index].any():
-            overlap_boolean_index = confined_coord_booleans_index | np.any(presence, axis=0)
-            overlap_boolean_index = overlap_boolean_index & confinements[perimeter.int_id][-1]
-
-            # Remove overlaps that are not on superior node
-            confined_coord_booleans_index[~overlap_boolean_index] = False
-
-            int_id_to_overlap_boolean_index[perimeter.int_id][overlap_boolean_index] = True
+        # if presence[confined_coord_booleans_index].any():
+        #     overlap_boolean_index = confined_coord_booleans_index & presence.astype(bool)
+        #     overlap_boolean_index = overlap_boolean_index & confinements[perimeter.int_id][-1]
+        #
+        #     # Remove overlaps that are not on superior node
+        #     overlap_boolean_index[~confinements[perimeter.int_id][-1]] = False
+        #     confined_coord_booleans_index[overlap_boolean_index & ~confinements[perimeter.int_id][-1]] = False
+        #
+        #     int_id_to_overlap_boolean_index[perimeter.int_id][overlap_boolean_index] = True
 
         presence[confined_coord_booleans_index] = perimeter.int_id
 
@@ -99,7 +99,7 @@ def detect_multi_node_sequential_perimeter_presence(
     if clean_outliers:
         presence = presence[valid_indices]
 
-    boolean_array = np.zeros(multi_node_coordinates[0].shape[0], dtype=np.bool)
+    boolean_array = np.zeros_like(presence, dtype=bool)
     boolean_array[valid_indices] = True
 
     return presence, valid_indices, boolean_array
