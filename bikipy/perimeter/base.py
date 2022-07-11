@@ -405,6 +405,16 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
     def number_of_perimeters(self) -> int:
         return len(self.all_perimeters)
 
+    @cached_property
+    def number_of_vertices(self) -> int:
+        vertex_numbers = []
+        for p in self.all_perimeters:
+            if hasattr(p, "polygon_order"):
+                vertex_numbers.append(p.polygon_order)
+            elif hasattr(p, "center_pixels"):  # circle
+                vertex_numbers.append(1)
+        return sum(vertex_numbers)
+
     @property
     def get_only_perimeter(self) -> SinglePerimeter:
         assert self.number_of_perimeters == 1

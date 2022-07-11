@@ -48,7 +48,7 @@ def _filter(
     2) After the TRUE event starts we track distraction by observing when "any true" becomes FALSE. When it is FALSE for
     M seconds, defined by maximum_seconds_distraction.
 
-    start is set to 0 when in fact it should be None to support njit mode in numba.
+    Event though it should be None, start is set to 0 to support njit mode in numba.
 
     :param boolean_indices:
     :param fps:

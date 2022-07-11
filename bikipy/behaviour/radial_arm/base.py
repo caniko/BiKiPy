@@ -206,9 +206,6 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
         result = copy(self._arm_center_int_id_to_zero)
         for label, counts in unique_with_counts_zipped(self.alternation_sequence_with_center):
-            if label == 0:
-                continue
-
             assert label in result, f"{label} is not in {tuple(result.keys())})"
             result[label] = counts / self.video.fps
 
@@ -232,9 +229,6 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         dict, arm label vs alternations to arm
         """
         result = dict(unique_with_counts_zipped(self.reduced_alternation_sequence_without_center))
-
-        # Remove 0, which is a subset of entries to center
-        del result[0]
 
         if any(arm not in result for arm in self._arm_int_ids):
             missing = set(result).difference(self.int_ids_to_labels)
@@ -322,31 +316,12 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
     @cached_property
     def _border_presence_data(self):
         # alternation_sequence, valid_indices, valid_boolean_index
-        result = detect_multi_node_sequential_perimeter_presence(
+        return detect_multi_node_sequential_perimeter_presence(
             self._multi_node_coordinates,
             self.arms,
+            inspect_arg=self.class_inspect_arg,
+            inspect_coords=self.kinematic_coordinates,
         )
-
-        if self.inspect_arg:
-            fig, ax = plt.subplots()
-
-            total_number_of_sides_arms = self.arm_len * 4
-
-            with sb.color_palette("cubehelix", n_colors=total_number_of_sides_arms + self.center.polygon_order):
-                self.perimeter_set.plot(manual_ax=ax)
-
-            coord_cmap = sb.color_palette("Spectral", n_colors=self.arm_len + 1)
-            for color, (int_id, label) in zip(coord_cmap, self.int_ids_to_labels.items()):
-                if np.any((boolean_index := result[0] == int_id)):
-                    ax = plot_coordinates(self.kinematic_coordinates[boolean_index], ax, label=label, color=color)
-
-            ax = plot_coordinates(self.kinematic_coordinates[~result[2]], ax, label="NotConfined", color=coord_cmap[-1])
-
-            ax.legend(**BOTTOM_LEGEND_KWARGS)
-            fig.tight_layout()
-            generic_inspection_finalization(self.class_inspect_arg, f"0-{self.label}.jpg")
-
-        return result
 
     @cached_property
     def _arm_permutation_to_zero(self):
