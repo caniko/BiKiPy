@@ -31,7 +31,9 @@ class AnimalIngress(BaseIngress):
                         msg = f"Plugin {plugin_model.human_readable_index}: Only one file per trial"
                         raise ValueError(msg)
 
-                    data_object = plugin_model(plugin_data_files[0], trial_id, self)
+                    data_object = plugin_model(data_path=plugin_data_files[0], ingress=self).trialwise_and_metadata(
+                        trial_id=trial_id
+                    )
                     plugin_data[plugin_model.bikipy_trial_key or data_object.bikipy_trial_key] = data_object
 
                 self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(stage_index)

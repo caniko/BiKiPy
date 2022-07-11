@@ -19,6 +19,7 @@ perimeter:
     defined:
       impenetrable: true
     optional:
+      image_resize_multiplier: number
       impenetrable: boolean -> False
       inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
         -> False'
@@ -42,6 +43,8 @@ reader_kwargs:
     crop_from_end: boolean -> False
     crop_time_seconds: number -> 0.0
     future_scaling: boolean
+    image_resize_multiplier: number
+    invert_y_axis: boolean -> False
     manual_fps: number
     manual_frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'':
       ''np.ndarray''}]'
@@ -51,7 +54,6 @@ reader_kwargs:
     meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
     midpoint_groups: object
     min_likelihood: number -> 0.8
-    reverse_y_axis: boolean -> True
     video_path: string
     x_axis_crop_end_point: number -> 0.0
     y_axis_crop_end_point: number -> 0.0
@@ -74,6 +76,7 @@ trial:
       crop_from_end: boolean -> True
       crop_time_seconds: number -> 0.0
       data_format_label: string -> deeplabcut
+      image_resize_multiplier: number
       inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
         -> False'
       inspect_image_path: string
@@ -103,6 +106,7 @@ experiment:
   optional:
     compute_only_one_df_row: boolean -> False
     data_format_label: string -> deeplabcut
+    image_resize_multiplier: number
     inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
       -> False'
     inspect_image_path: string
