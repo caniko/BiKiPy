@@ -31,16 +31,20 @@ class AnimalIngress(BaseIngress):
                         msg = f"Plugin {plugin_model.human_readable_index}: Only one file per trial"
                         raise ValueError(msg)
 
-                    data_object = plugin_model(data_path=plugin_data_files[0], ingress=self).trialwise_and_metadata(
-                        trial_id=trial_id
-                    )
+                    try:
+                        data_object = plugin_model(data_path=plugin_data_files[0], ingress=self).trialwise_and_metadata(
+                            trial_id=trial_id
+                        )
+                    except IndexError:
+                        continue
+
                     plugin_data[plugin_model.bikipy_trial_key or data_object.bikipy_trial_key] = data_object
 
                 self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(stage_index)
                 self._trial_id_to_keyword_arguments[trial_id] = {
                     "label": trial_id,
                     "animal_id": animal_id,
-                    **self._gather_coordinates_and_potential_timestamp_data(framewise_coordinates_path),
+                    "framewise_coordinates_path": framewise_coordinates_path,
                     **self.trialwise_plugins_for_trial_id(trial_id, animal_dir),
                     **self._trial_id_to_keyword_arguments[trial_id],
                     **plugin_data,

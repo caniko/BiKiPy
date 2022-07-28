@@ -10,7 +10,7 @@ definition_strategies:
   perimeter: trial-wise
   radial: null
   change_reference: null
-  video: null
+  video: trial-wise
   timestamp: trial-wise
   center: metadata
 perimeter:

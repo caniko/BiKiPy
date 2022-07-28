@@ -28,7 +28,7 @@ class PhaseIngress(BaseIngress):
                 self._trial_id_to_keyword_arguments[trial_id] = {
                     "label": trial_id,
                     "animal_id": self.metadata.loc[trial_id, "Animal"],
-                    **self._gather_coordinates_and_potential_timestamp_data(framewise_coordinates_path),
+                    "framewise_coordinates_path": framewise_coordinates_path,
                     **self.trialwise_plugins_for_trial_id(trial_number, phase_dir),
                     **self._trial_id_to_keyword_arguments[trial_id],
                 }

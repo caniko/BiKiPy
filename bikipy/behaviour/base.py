@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath, ValidationError, validator, PositiveInt
 from pydantic.fields import FieldInfo
+from pydantic_numpy import NDArray
 from tqdm import tqdm
 from yaspin import yaspin
 from yaspin.spinners import Spinners
@@ -60,7 +61,7 @@ class BaseTrial(Behaviour):
     object_tracking_label_for_kinematics: Optional[str] = Field(
         ..., description="Label of the node that will be used to track general animal movement"
     )
-    coordinate_timestamp_set_path: Optional[FilePath]
+    coordinate_timestamp_set: Optional[NDArray]
     manual_center_pixels: Optional[NDArrayInt16]
     rigid_nodes_freezing: Optional[Sequence[str | PositiveInt]] = Field(
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
@@ -149,6 +150,7 @@ class BaseTrial(Behaviour):
 
         return reader_init_func(
             df_path=self.framewise_coordinates_path,
+            timestamp_index=self.coordinate_timestamp_set,
             label=self.framewise_coordinates_path.stem,
             manual_video=self.video,
             crop_time_seconds=self.crop_time_seconds,

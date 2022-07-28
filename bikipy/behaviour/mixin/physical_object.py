@@ -1,5 +1,5 @@
 from functools import cached_property, lru_cache
-from typing import Any, ClassVar, TypeVar
+from typing import Any, ClassVar, TypeVar, Optional
 
 import numpy as np
 import pandas as pd
@@ -17,10 +17,14 @@ class PhysicalObjectTrialMixin(BaseBikipy):
         ...,
         description="The magnitude of the normal between the perimeter and the perimeter given in meters",
     )
-    outside_perimeter_point_label: str = ...
+    gaze_start_point_label: str = Field(
+        ..., description="Label of the eye center (or the origin of the gaze) in the df"
+    )
+    gaze_travel_direction_point_label: str = Field(
+        ..., description="Label signifying the area where the gaze vector will be cast"
+    )
 
-    gaze_start_point_label: str = Field(..., description="Label of the eye center in the df")
-    gaze_travel_direction_point_label: str = Field(..., description="Label signifying the area where the gaze vector")
+    outside_perimeter_point_label: Optional[str] = Field(description="Label signifying the area where the gaze vector")
 
     maximum_radians_inter_gaze_perimeter: float = np.pi / 4.0
     minimum_seconds_attention: float = GENERIC_MINIMUM_SECONDS_ATTENTION
