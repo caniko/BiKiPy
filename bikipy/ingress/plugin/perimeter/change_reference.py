@@ -9,7 +9,7 @@ from bikipy.utils.makesense import image_name_to_point_from_makesense, get_point
 
 
 class PluginChangeReference(BasePluginFile):
-    ingress_key = "change_reference_definition_strategy"
+    ingress_key = "change_reference"
     code_key = "change_reference"
     bikipy_trial_key = "change_reference"
 

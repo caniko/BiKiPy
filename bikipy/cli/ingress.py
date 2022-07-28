@@ -30,14 +30,14 @@ def ingress():
     "project_root_directory",
     help="Path to the sequence formatted project directory, uses current directory on omition",
 )
-@click.option("-s", "--data_file_suffix", "kinematic_data_file_extension", default=".h5")
+@click.option("-s", "--data_file_suffix", "framewise_coordinates_file_suffix", default=".h5")
 @click.option("-d", "--dry_run", is_flag=True)
 @validate_arguments
 def init(
     ingress_method: str,
     experiment_name: str,
     project_root_directory: Optional[DirectoryPath] = None,
-    kinematic_data_file_extension: str = "h5",
+    framewise_coordinates_file_suffix: str = "h5",
     dry_run: bool = False,
 ) -> None:
     project_root_directory = _define_project_root_directory(project_root_directory)
@@ -47,7 +47,7 @@ def init(
     ).strip().lower() != "y":
         return print("User aborted re-initialisation")
 
-    init_settings(ingress_method, experiment_name, project_root_directory, kinematic_data_file_extension, dry_run)
+    init_settings(ingress_method, experiment_name, project_root_directory, framewise_coordinates_file_suffix, dry_run)
 
 
 @ingress.command()

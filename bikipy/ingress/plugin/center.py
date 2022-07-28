@@ -8,7 +8,7 @@ from bikipy.utils.makesense import get_only_point_from_makesense
 
 
 class PluginCenter(BasePluginFile):
-    ingress_key = "center_definition_strategy"
+    ingress_key = "center"
     code_key = "center"
     bikipy_trial_key = "manual_center_pixels"
     human_readable_index = "Center"

@@ -1,15 +1,18 @@
 ingress_method: animal
+framewise_coordinates_file_suffix: .parquet
 first_stage_is_habituation: false
-manual_dataset_directory: null
+manual_dataset_directory: /mnt/BigData/oul_dataset
 ingress:
-  meters_per_pixel_definition_strategy: metadata
-  perimeter_definition_strategy: trial-wise
-  radial_definition_strategy: null
-  change_reference_definition_strategy: null
-  video_definition_strategy: null
-  center_definition_strategy: metadata
   frame_upscale_multiplier: float
   profile_runtime: true
+definition_strategies:
+  meters_per_pixel: metadata
+  perimeter: trial-wise
+  radial: null
+  change_reference: null
+  video: null
+  timestamp: trial-wise
+  center: metadata
 perimeter:
   label_prefix: object
   label_suffix: null
@@ -42,6 +45,7 @@ reader_kwargs:
   optional:
     crop_from_end: boolean -> False
     crop_time_seconds: number -> 0.0
+    df_read_kwargs: object
     future_scaling: boolean
     image_resize_multiplier: number
     invert_y_axis: boolean -> False
@@ -123,7 +127,6 @@ experiment:
     video_path: string
 immutable:
   metadata_filename: metadata.xlsx
-  kinematic_data_file_extension: .parquet
   experiment_class: ObjectsInUpdatingLocationsExperiment
   stage_index_to_trial_class_name:
     0: ObjectsInUpdatingLocationsTrainingTrial

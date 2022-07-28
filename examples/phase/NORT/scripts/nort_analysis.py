@@ -110,7 +110,7 @@ for period_index, period_letter in enumerate(("A", "B"), start=1):
         trial_id_range_to_exp_meta, trial_id_to_trial_class_name = {}, {}
         for trial_id, paths in trial_id_to_paths.items():
             trial_id_range_to_exp_meta[trial_id] = {
-                "coordinate_data_path": paths["data"],
+                "framewise_coordinates_path": paths["data"],
                 "video_path": paths["video"],
                 "stage": (stage := trial_id_to_stage[trial_id]),
                 "animal_id": (animal_id := exp_to_animal[trial_id]),

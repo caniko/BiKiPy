@@ -16,7 +16,7 @@ from bikipy.utils.math.geometry import clockwise_argsort_points, meter_per_pixel
 
 
 class PluginRadial(BasePluginDirectory, HasReferenceMixin):
-    ingress_key = "radial_definition_strategy"
+    ingress_key = "radial"
     code_key = "radial"
     bikipy_trial_key = "radial"
     human_readable_index = "Radial"

@@ -16,7 +16,7 @@ from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayFp64, TrialId
-from bikipy.ingress.plugin import ingress_key_to_model, PluginMeterPerPixel
+from bikipy.ingress.plugin import ingress_key_to_model, PluginMeterPerPixel, ALL_PLUGINS
 from bikipy.ingress.plugin.base import Plugin
 from bikipy.ingress.plugin.meters_per_pixel import detect_meters_per_pixel_in_perimeter_directory
 from bikipy.ingress.utils import settings
@@ -352,9 +352,9 @@ class BaseIngress(BaseBikipy, ABC):
 
     # Constants =============================
 
-    @property
-    def kinematic_data_file_extension(self):
-        return self.settings["immutable"]["kinematic_data_file_extension"]
+    @cached_property
+    def framewise_coordinates_file_suffix(self):
+        return self.settings["framewise_coordinates_file_suffix"]
 
     # Backend functions =================================
 
@@ -515,20 +515,26 @@ class BaseIngress(BaseBikipy, ABC):
             self.ingress_method,
             self.experiment_name,
             self.project_root_directory,
-            self.kinematic_data_file_extension,
+            self.framewise_coordinates_file_suffix,
             dry_run=True,
             silent=True,
         )
 
         kwargs = {"delete_outdated": delete_outdated}
 
-        for key in ("ingress", "perimeter"):
+        for key in ("ingress", "definition_strategies", "perimeter"):
             if key in self.settings:
-                new_settings[key] = settings.update_dictionary(self.settings[key], new_settings[key], **kwargs)
+                try:
+                    new_settings[key] = settings.update_dictionary(self.settings[key], new_settings[key], **kwargs)
+                except KeyError:
+                    pass
 
         for key in ("reader_kwargs", "experiment"):
             if key in self.settings:
-                new_settings[key] = settings.update_defined_values(self.settings[key], new_settings[key], **kwargs)
+                try:
+                    new_settings[key] = settings.update_defined_values(self.settings[key], new_settings[key], **kwargs)
+                except KeyError:
+                    pass
 
         if "trial" in self.settings:
             new_settings["trial"]["common"] = settings.update_defined_values(
@@ -563,7 +569,7 @@ class BaseIngress(BaseBikipy, ABC):
     def _global_plugins(self) -> list[Plugin, ...]:
         return [
             ingress_key_to_model[ingress_key]
-            for ingress_key, strategy in self.settings["ingress"].items()
+            for ingress_key, strategy in self.settings["definition_strategies"].items()
             if strategy == "global"
         ]
 
@@ -571,7 +577,7 @@ class BaseIngress(BaseBikipy, ABC):
     def _metadata_plugins(self) -> list[Plugin, ...]:
         return [
             ingress_key_to_model[ingress_key]
-            for ingress_key, strategy in self.settings["ingress"].items()
+            for ingress_key, strategy in self.settings["definition_strategies"].items()
             if strategy == "metadata"
         ]
 
@@ -579,12 +585,12 @@ class BaseIngress(BaseBikipy, ABC):
     def _trial_wise_plugins(self) -> list[Plugin]:
         return [
             ingress_key_to_model[ingress_key]
-            for ingress_key, strategy in self.settings["ingress"].items()
+            for ingress_key, strategy in self.settings["definition_strategies"].items()
             if strategy == "trial-wise"
         ]
 
     def get_meter_per_pixel(self, trial_id: Optional[str | PositiveInt] = None) -> NDArrayFp64:
-        match self.settings["ingress"]["meters_per_pixel_definition_strategy"]:
+        match self.settings["definition_strategies"]["meters_per_pixel"]:
             case "global":
                 return self._common_trial_keyword_arguments[PluginMeterPerPixel.bikipy_trial_key]
             case "metadata":
@@ -616,6 +622,24 @@ class BaseIngress(BaseBikipy, ABC):
             ).trialwise_and_metadata(trial_id)
         return result
 
+    @validate_arguments
+    def _glob_coordinate_files_in_directory(self, directory_path: DirectoryPath) -> Iterable:
+        return directory_path.glob(f"*{self.framewise_coordinates_file_suffix}")
+
+    @validate_arguments
+    def _gather_coordinates_and_potential_timestamp_data(self, coordinate_path: FilePath) -> dict[str, FilePath]:
+        timestamp_stem = coordinate_path.stem.replace("coordinates", "timestamps").split("-")[0]
+        potential_timestamp_set_path_finder = tuple(
+            coordinate_path.parent.glob(f"{timestamp_stem}*.{self.timestamp_file_suffix}")
+        )
+
+        result = {"framewise_coordinates_path": coordinate_path}
+        if potential_timestamp_set_path_finder:
+            assert len(potential_timestamp_set_path_finder) == 1
+            result["coordinate_timestamp_set_path"] = potential_timestamp_set_path_finder[0]
+
+        return result
+
     @staticmethod
     def _get_id_from_path_stem(path: Path) -> str | PositiveInt:
         stem = path.stem
@@ -636,7 +660,7 @@ def init_settings(
     ingress_method: str,
     experiment_name: str,
     project_root_directory: DirectoryPath,
-    kinematic_data_file_extension: str,
+    framewise_coordinates_file_suffix: str,
     dry_run: bool = False,
     silent: bool = False,
 ) -> dict[str, str | dict]:
@@ -648,18 +672,14 @@ def init_settings(
 
     generic_settings = {
         "ingress_method": ingress_method,
+        "framewise_coordinates_file_suffix": framewise_coordinates_file_suffix,
         "first_stage_is_habituation": False,
         "manual_dataset_directory": None,
         "ingress": {
-            "meters_per_pixel_definition_strategy": "global",
-            "perimeter_definition_strategy": "metadata",
-            "radial_definition_strategy": None,
-            "change_reference_definition_strategy": None,
-            "video_definition_strategy": None,
-            "center_definition_strategy": None,
             "frame_upscale_multiplier": "float",
             "profile_runtime": True,
         },
+        "definition_strategies": {plugin.ingress_key: None for plugin in ALL_PLUGINS},
         "perimeter": {
             "label_prefix": None,
             "label_suffix": None,
@@ -672,7 +692,6 @@ def init_settings(
         "experiment": extended_schema(experiment_class),
         "immutable": {
             "metadata_filename": "metadata.xlsx",
-            "kinematic_data_file_extension": kinematic_data_file_extension,
             "experiment_class": experiment_name,
         },
     }

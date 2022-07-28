@@ -8,7 +8,7 @@ from bikipy.ingress.plugin.base import BasePluginFile
 
 
 class PluginVideo(BasePluginFile):
-    ingress_key = "video_definition_strategy"
+    ingress_key = "video"
     code_key = "video"
     bikipy_trial_key = "manual_video"
     human_readable_index = "Video"

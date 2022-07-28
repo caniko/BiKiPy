@@ -11,6 +11,7 @@ as the first and only argument. This gives the method the context necessary to d
 """
 
 from bikipy.ingress.plugin.base import Plugin
+from bikipy.ingress.plugin.bonsai_timestamp import PluginBonsaiTimestamp
 from bikipy.ingress.plugin.center import PluginCenter
 from bikipy.ingress.plugin.meters_per_pixel import PluginMeterPerPixel
 from bikipy.ingress.plugin.perimeter.change_reference import PluginChangeReference
@@ -19,13 +20,15 @@ from bikipy.ingress.plugin.perimeter.radial import PluginRadial
 from bikipy.ingress.plugin.video import PluginVideo
 
 
-PLUGIN_CODE_KEY_TO_MODEL = {
-    PluginMeterPerPixel.code_key: PluginMeterPerPixel,
-    PluginSinglePerimeter.code_key: PluginSinglePerimeter,
-    PluginRadial.code_key: PluginRadial,
-    PluginChangeReference.code_key: PluginChangeReference,
-    PluginVideo.code_key: PluginVideo,
-    PluginCenter.code_key: PluginCenter,
-}
+ALL_PLUGINS = (
+    PluginMeterPerPixel,
+    PluginSinglePerimeter,
+    PluginRadial,
+    PluginChangeReference,
+    PluginVideo,
+    PluginBonsaiTimestamp,
+    PluginCenter,
+)
 
-ingress_key_to_model: dict[str, Plugin] = {model.ingress_key: model for model in PLUGIN_CODE_KEY_TO_MODEL.values()}
+plugin_code_key_to_model = {plugin.code_key: plugin for plugin in ALL_PLUGINS}
+ingress_key_to_model: dict[str, Plugin] = {model.ingress_key: model for model in plugin_code_key_to_model.values()}

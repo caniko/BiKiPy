@@ -48,21 +48,10 @@ class DeepLabCutReader(BaseReader):
 
     @cached_property
     def raw_df(self) -> pd.DataFrame:
-        if not self._df_needs_to_be_cleaned:
-            return super().raw_df
-
-        if self.df_path.suffix == ".csv":
-            return pd.read_csv(self.df_path, **DEEPLABCUT_DF_INIT_KWARGS)
-        elif self.df_path.suffix == ".h5":
-            return pd.read_hdf(self.df_path, **DEEPLABCUT_DF_INIT_KWARGS).droplevel(0, axis=1)
-        else:
-            # DeepLabCut doesn't support other formats natively
-            logger.debug(
-                f"{self.df_path.suffix}, is not natively supported by DeepLabCut, "
-                f"assuming user has manually cleaned and exported the data file"
-                f"to another format that is supported by BiKiPy.BaseReader. Fingers crossed"
-            )
-            return super().raw_df
+        upstream_df = super().raw_df
+        if self.df_path.suffix == ".h5":
+            upstream_df = upstream_df.droplevel(0, axis=1)
+        return upstream_df
 
     @cached_property
     def augmented(self) -> pd.DataFrame:

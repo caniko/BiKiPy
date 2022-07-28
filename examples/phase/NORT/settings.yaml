@@ -125,7 +125,7 @@ experiment:
     video_path: string
 immutable:
   metadata_filename: metadata.xlsx
-  kinematic_data_file_extension: .parquet
+  framewise_coordinates_file_suffix: .parquet
   experiment_class: nort
   stage_index_to_trial_class_name:
     0: NortTrainingTrial

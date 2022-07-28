@@ -10,7 +10,7 @@ EXPERIMENT_KWARGS = {
     "reader_kwargs": {"init_from": "parquet", "midpoint_groups": {"center_eye": ["left_ear", "right_ear"]}},
     "trial_id_to_keyword_arguments": {
         1: {
-            "coordinate_data_path": path_to_this_directory / "test_tracking.csv",
+            "framewise_coordinates_path": path_to_this_directory / "test_tracking.csv",
             "animal_id": 1,
         }
     },

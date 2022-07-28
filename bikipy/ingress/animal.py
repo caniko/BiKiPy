@@ -16,8 +16,8 @@ class AnimalIngress(BaseIngress):
         for animal_dir in self.dataset_directory_path.iterdir():
             animal_id = self._get_id_from_path_stem(animal_dir)
 
-            for trial_kinematic_data_file_path in animal_dir.glob(f"*{self.kinematic_data_file_extension}"):
-                stage_index = int(self._get_id_from_path_stem(trial_kinematic_data_file_path).split(".")[0])
+            for framewise_coordinates_path in self._glob_coordinate_files_in_directory(animal_dir):
+                stage_index = int(self._get_id_from_path_stem(framewise_coordinates_path).split(".")[0])
 
                 trial_id = _define_trial_id(animal_id, stage_index)
 
@@ -40,7 +40,7 @@ class AnimalIngress(BaseIngress):
                 self._trial_id_to_keyword_arguments[trial_id] = {
                     "label": trial_id,
                     "animal_id": animal_id,
-                    "coordinate_data_path": trial_kinematic_data_file_path,
+                    **self._gather_coordinates_and_potential_timestamp_data(framewise_coordinates_path),
                     **self.trialwise_plugins_for_trial_id(trial_id, animal_dir),
                     **self._trial_id_to_keyword_arguments[trial_id],
                     **plugin_data,
@@ -60,7 +60,7 @@ class AnimalIngress(BaseIngress):
             animal_ids.add(animal_id)
 
             stage_ids = set()
-            for filename in trial_set_dir.glob(f"*{self.kinematic_data_file_extension}"):
+            for filename in trial_set_dir.glob(f"*{self.framewise_coordinates_file_suffix}"):
                 stage_ids.add(int(filename.stem.split("-")[0]))
             trial_set_stage_ids.append(stage_ids)
 

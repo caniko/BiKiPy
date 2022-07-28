@@ -15,7 +15,7 @@ from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.typing import NDArrayBool
 from bikipy.core.video import VideoMetadataMixin
 
-FILE_EXTENSION_to_PANDAS_READER = {
+FILE_EXTENSION_TO_PANDAS_READER = {
     ".parquet": pd.read_parquet,
     ".hdf": pd.read_hdf,
     ".h5": pd.read_hdf,
@@ -26,7 +26,10 @@ logger = getLogger(__name__)
 
 
 class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
-    df_path: FilePath = Field(description="Path to kinematic data, that will be " "converted to pd.DataFrame")
+    df_path: FilePath = Field(..., description="Path to kinematic data, that will be " "converted to pd.DataFrame")
+    df_read_kwargs: Optional[dict] = Field(
+        default_factory=dict, description="Keyword arguments to pass to the padnas dataframe reader"
+    )
     timestamp_index: Optional[Sequence] = Field(
         description="Sequence of same length as df that stores the" "timestamp of each index i.e. frame."
     )
@@ -151,7 +154,18 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
 
     @cached_property
     def raw_df(self) -> pd.DataFrame:
-        return FILE_EXTENSION_to_PANDAS_READER[self.df_path.suffix](self.df_path)
+        try:
+            df = FILE_EXTENSION_TO_PANDAS_READER[self.df_path.suffix](self.df_path, **self.df_read_kwargs)
+        except KeyError:
+            msg = (
+                f"{self.df_path.suffix}, is not natively supported by DeepLabCut, "
+                f"assuming user has manually cleaned and exported the data file"
+                f"to another format that is supported by BiKiPy.BaseReader. Fingers crossed"
+            )
+            raise ValueError(msg)
+        if self.timestamp_index:
+            df.set_index(self.timestamp_index, inplace=True)
+        return df
 
     @property
     def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:

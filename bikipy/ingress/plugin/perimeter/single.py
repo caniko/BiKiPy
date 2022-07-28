@@ -28,7 +28,7 @@ class PluginSinglePerimeter(BasePluginFile, HasReferenceMixin):
     manual_shape: Optional[StringPerimeterShapes] = None
     warn_missing_re_reference_file: bool = False
 
-    ingress_key = "perimeter_definition_strategy"
+    ingress_key = "perimeter"
     code_key = "perimeter"
     bikipy_trial_key = "label_to_perimeter"
     human_readable_index = "Perimeter"

@@ -54,12 +54,13 @@ class Behaviour(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
 
 
 class BaseTrial(Behaviour):
-    coordinate_data_path: FilePath = Field(..., description="Path to file storing coordinate data")
+    framewise_coordinates_path: FilePath = Field(..., description="Path to file storing coordinate data")
     reader_kwargs: dict = Field(..., description="Keyword arguments that will be passed on the reader objects on init")
     animal_id: str | PositiveInt = Field(..., description="The ID of the animal in the trial")
     object_tracking_label_for_kinematics: Optional[str] = Field(
         ..., description="Label of the node that will be used to track general animal movement"
     )
+    coordinate_timestamp_set_path: Optional[FilePath]
     manual_center_pixels: Optional[NDArrayInt16]
     rigid_nodes_freezing: Optional[Sequence[str | PositiveInt]] = Field(
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
@@ -91,7 +92,7 @@ class BaseTrial(Behaviour):
         be recorded in this class-property to be excluded by the settings generator function in the ingress module
         :return:
         """
-        unionize = {"coordinate_data_path", "reader_kwargs", "animal_id"}
+        unionize = {"framewise_coordinates_path", "coordinate_timestamp_set_path", "reader_kwargs", "animal_id"}
         if hasattr(cls, "physical_object_labels"):
             unionize = unionize.union(cls.physical_object_labels)
         return super().exclude_from_settings_schema.union(unionize)
@@ -147,8 +148,8 @@ class BaseTrial(Behaviour):
             raise NotImplemented(msg) from e
 
         return reader_init_func(
-            df_path=self.coordinate_data_path,
-            label=self.coordinate_data_path.stem,
+            df_path=self.framewise_coordinates_path,
+            label=self.framewise_coordinates_path.stem,
             manual_video=self.video,
             crop_time_seconds=self.crop_time_seconds,
             # crop_from_end=self.crop_from_end,
@@ -413,7 +414,7 @@ class BaseExperiment(Behaviour):
                 raise AttributeError(msg)
             result.update(self.trial_id_range_to_keyword_arguments[trial_id])
 
-        assert result["coordinate_data_path"]
+        assert result["framewise_coordinates_path"]
 
         if "animal_id" not in result:
             result["animal_id"] = trial_id

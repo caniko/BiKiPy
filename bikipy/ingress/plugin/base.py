@@ -3,7 +3,7 @@ from functools import cached_property
 from typing import ClassVar, Optional, TypeVar, Any
 
 import pandas as pd
-from pydantic import DirectoryPath, FilePath, Field
+from pydantic import DirectoryPath, FilePath, Field, BaseModel
 
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayFp64, TrialId
@@ -20,6 +20,7 @@ class BasePlugin(BaseBikipy, ABC):
     human_readable_index: ClassVar[str] = ...
     additional_context_columns: ClassVar[Optional[tuple[str]]]
 
+    required: ClassVar[bool] = False
     _inspect: ClassVar[bool] = False
 
     @cached_property
@@ -72,3 +73,9 @@ class HasReferenceMixin(BaseBikipy):
             return self.manual_reference
         if (path_to_reference_file := self.data_path.parent / f"reference-{self.label}.csv").exists():
             return get_only_point_from_makesense(path_to_reference_file)
+
+
+class TrialWiseMetadataOnlyMixin(BaseModel):
+    def globally_defined(self) -> None:
+        msg = f"{self.__class__.__name__} does not support globally defined"
+        raise AttributeError(msg)

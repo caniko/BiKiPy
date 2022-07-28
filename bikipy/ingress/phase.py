@@ -17,8 +17,8 @@ class PhaseIngress(BaseIngress):
         for phase_dir in self.dataset_directory_path.iterdir():
             phase_id = self._get_id_from_path_stem(phase_dir)
 
-            for trial_kinematic_data_file_path in phase_dir.glob(f"*{self.kinematic_data_file_extension}"):
-                phase_designated_trial_id = self._get_id_from_path_stem(trial_kinematic_data_file_path)
+            for framewise_coordinates_path in self._glob_coordinate_files_in_directory(phase_dir):
+                phase_designated_trial_id = self._get_id_from_path_stem(framewise_coordinates_path)
                 trial_id = _define_trial_id(phase_id, phase_designated_trial_id)
                 trial_number = int(trial_id.split("_")[1])
 
@@ -28,7 +28,7 @@ class PhaseIngress(BaseIngress):
                 self._trial_id_to_keyword_arguments[trial_id] = {
                     "label": trial_id,
                     "animal_id": self.metadata.loc[trial_id, "Animal"],
-                    "coordinate_data_path": trial_kinematic_data_file_path,
+                    **self._gather_coordinates_and_potential_timestamp_data(framewise_coordinates_path),
                     **self.trialwise_plugins_for_trial_id(trial_number, phase_dir),
                     **self._trial_id_to_keyword_arguments[trial_id],
                 }
