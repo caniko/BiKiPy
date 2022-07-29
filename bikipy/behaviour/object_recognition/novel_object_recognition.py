@@ -2,6 +2,8 @@ from functools import cached_property
 from logging import getLogger
 from typing import ClassVar
 
+import pandas as pd
+
 from bikipy.behaviour.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
 from bikipy.behaviour.rectangle import RectangleEnclosedExperiment, RectangleEnclosedHabituationTrial
 from bikipy.core.typing import TrialId
@@ -33,25 +35,29 @@ class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
     experiment_class_name = "NortExperiment"
     trial_label = "Novelty"
 
-    @classmethod
-    @property
-    def feature_headers(cls) -> list[tuple[str, ...]]:
-        return super().feature_headers + [
-            ("AbsoluteDiscrimination", "novel-familiar"),
-            ("DiscriminationIndex", "novel-familiar"),
-            ("NoveltyPreference", "novel-familiar"),
-            ("ObjectBiasScore", "familiar"),
-            ("ObjectBiasScore", "novel"),
-        ]
+    constant_feature_headers = (
+        ("AbsoluteDiscrimination", "NovelFamiliar"),
+        ("DiscriminationIndex", "NovelFamiliar"),
+        ("NoveltyPreference", "NovelFamiliar"),
+        ("ObjectBiasScore", "Familiar"),
+        ("ObjectBiasScore", "Novel"),
+    )
 
-    @property
-    def feature_df_rows(self):
-        return super().feature_df_rows + [
-            self.nort_absolute_discrimination,
-            self.discrimination_index,
-            self.novelty_preference,
-            *self.physical_object_set.object_bias_score.values(),
-        ]
+    @cached_property
+    def _trial_physical_object_feature_series_list(self) -> list[pd.Series]:
+        upstream_list = super()._trial_physical_object_feature_series_list
+        upstream_list.append(
+            pd.Series(
+                (
+                    self.nort_absolute_discrimination,
+                    self.discrimination_index,
+                    self.novelty_preference,
+                    *self.physical_object_set.object_bias_score.values(),
+                ),
+                index=self.constant_feature_headers,
+            )
+        )
+        return upstream_list
 
     @property
     def all_physical_object_perimeters(self):

@@ -72,7 +72,7 @@ def inaccurate_points_in_rectangle(
 
 
 @validate_arguments
-def parallel_point_in_polygon(
+def parallel_point_inside_polygon(
     points: NDArrayFp64,
     polygon: NDArrayFp64,
     merge_ends: bool = True,

@@ -6,6 +6,7 @@ from logging import getLogger
 from typing import ClassVar, Optional
 
 import numpy as np
+import pandas as pd
 import seaborn as sb
 from matplotlib import pyplot as plt
 from pydantic import validator
@@ -113,7 +114,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
     @classmethod
     @property
-    def feature_headers(cls) -> list[tuple[str, ...]]:
+    def radial_arm_feature_headers(cls) -> list[tuple[str, ...]]:
         return [
             ("SpontaneousAlternations", ""),
             *feature_2d_multi_indexer("SecondsInArea", cls._arm_center_labels),
@@ -126,17 +127,26 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         ]
 
     @property
-    def feature_df_rows(self) -> list:
-        return [
-            self.spontaneous_alternations,
-            *self.area_to_seconds_spent.values(),
-            self.sum_of_seconds_in_arms,
-            self.sum_of_seconds_in_perimeters,
-            *self.arm_to_entries.values(),
-            self.sum_of_entries,
-            *self.permutation_alternation_distribution.values(),
-            self.sum_of_permutation_alternation_distribution,
-        ]
+    def _trial_feature_series_list(self) -> list[pd.Series]:
+        upstream_list = super()._trial_feature_series_list
+
+        upstream_list.append(
+            pd.Series(
+                (
+                    self.spontaneous_alternations,
+                    *self.area_to_seconds_spent.values(),
+                    self.sum_of_seconds_in_arms,
+                    self.sum_of_seconds_in_perimeters,
+                    *self.arm_to_entries.values(),
+                    self.sum_of_entries,
+                    *self.permutation_alternation_distribution.values(),
+                    self.sum_of_permutation_alternation_distribution,
+                ),
+                index=self.radial_arm_feature_headers,
+            )
+        )
+
+        return upstream_list
 
     @cached_property
     def perimeters(self):

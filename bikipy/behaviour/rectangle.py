@@ -4,6 +4,7 @@ from typing import Any, ClassVar, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from pydantic import validate_arguments
 from pydantic_numpy import NDArray
 from skg import ngauss_fit
@@ -19,7 +20,7 @@ from bikipy.feature.motion import (
 from bikipy.perimeter.utils import perimeter_multi_indexer
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.geometry import clockwise_sort_points
-from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
+from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
 from bikipy.utils.plotting import generic_inspection_finalization
 
 logger = getLogger(__name__)
@@ -28,7 +29,7 @@ quadrant_grid_typing = tuple[int, int]
 A = 1
 
 
-def motion_multi_indexer_for_quadrant(category: Any, level: int):
+def motion_multi_indexer_for_subsection(category: Any, level: int):
     return generic_multi_indexer(
         "Displacement", "MedianSpeed", "MedianAcceleration", "FreezingTime", "Entries", "SecondsPresent"
     )(category, level)
@@ -42,7 +43,7 @@ class Quadrant(BaseBikipy):
 
     @cached_property
     def confinement_boolean_index(self) -> NDArrayBool:
-        return parallel_point_in_polygon(self.kinematic_coordinates, clockwise_sort_points(self.vertices_in_meters))
+        return parallel_point_inside_polygon(self.kinematic_coordinates, clockwise_sort_points(self.vertices_in_meters))
 
     @cached_property
     def seconds_present(self) -> float:
@@ -58,49 +59,7 @@ class Quadrant(BaseBikipy):
 
 
 class RectangleEnclosedExperiment(BaseExperiment):
-    rectangle_2d_bin: ClassVar[tuple[int, int]] = (2, 2)
-    manual_center_rectangle_dimensions_meters: ClassVar[tuple[float, float]] = (0.2, 0.2)
-    center_rectangle_dimensions_to_spatial_resolution_ratio: ClassVar[Optional[float]] = None
-
-    @classmethod
-    @property
-    def quadrant_grid_coordinates(cls):
-        result = []
-        for h in range(1, cls.rectangle_2d_bin[0] + 1):
-            for v in range(1, cls.rectangle_2d_bin[1] + 1):
-                result.append((h, v))
-        return result
-
-    @classmethod
-    @property
-    def motion_column_headers(cls) -> list:
-        quadrant_summary_columns = []
-        for quadrant_grid_coordinate in cls.quadrant_grid_coordinates:
-            category = f"Quadrant{quadrant_grid_coordinate}"
-            quadrant_summary_columns.extend(motion_multi_indexer_for_quadrant(category, 2))
-        result = [
-            *super().motion_column_headers,
-            # ["Gaussian", "CenterToPeriphery"],
-            *quadrant_summary_columns,
-        ]
-        if cls.manual_center_rectangle_dimensions_meters or cls.center_rectangle_dimensions_to_spatial_resolution_ratio:
-            result += [
-                *motion_multi_indexer("Center", cls.column_index_levels),
-                ("Center", "Entries"),
-                *perimeter_multi_indexer("Center", cls.column_index_levels),
-                *motion_multi_indexer("Periphery", cls.column_index_levels),
-                ("Periphery", "Entries"),
-                *perimeter_multi_indexer("Periphery", cls.column_index_levels),
-            ]
-        return result
-
-    def trial_keyword_arguments(self, trial_id: TrialId) -> dict:
-        return {
-            "rectangle_2d_bin": self.rectangle_2d_bin,
-            "manual_center_rectangle_dimensions_meters": self.manual_center_rectangle_dimensions_meters,
-            "center_rectangle_dimensions_to_spatial_resolution_ratio": self.center_rectangle_dimensions_to_spatial_resolution_ratio,
-            **super().trial_keyword_arguments(trial_id),
-        }
+    pass
 
 
 class RectangleEnclosedTrial(BaseTrial):
@@ -116,25 +75,6 @@ class RectangleEnclosedTrial(BaseTrial):
             self.manual_center_rectangle_dimensions_meters is not None
             or self.center_rectangle_dimensions_to_spatial_resolution_ratio
         )
-
-    @cached_property
-    def rectangle_df(self) -> list:
-        quadrant_summary_columns = []
-        for quadrant_grid_coordinate in self.quadrant_grid_coordinate_to_vertices:
-            category = f"Quadrant{quadrant_grid_coordinate}"
-            quadrant_summary_columns.extend(motion_multi_indexer_for_quadrant(category, 2))
-        result = [
-            ["Gaussian", "CenterToPeriphery"],
-            *quadrant_summary_columns,
-        ]
-        if self.center_periphery_is_defined:
-            result += [
-                *motion_multi_indexer("Center", self.column_index_levels),
-                *perimeter_multi_indexer("Center", self.column_index_levels),
-                *motion_multi_indexer("Periphery", self.column_index_levels),
-                *perimeter_multi_indexer("Periphery", self.column_index_levels),
-            ]
-        return result
 
     @cached_property
     def _inspect_center_periphery_directory(self):
@@ -185,6 +125,10 @@ class RectangleEnclosedTrial(BaseTrial):
         return result
 
     @cached_property
+    def quadrant_grid_coordinates(self) -> tuple[tuple[int, int], ...]:
+        return tuple(self.quadrant_grid_coordinate_to_vertices)
+
+    @cached_property
     def quadrant_index_to_quadrant_grid_coordinate(self) -> dict[int, quadrant_grid_typing]:
         return {
             i: quadrant_grid_coordinate
@@ -231,7 +175,7 @@ class RectangleEnclosedTrial(BaseTrial):
             ax.scatter(*self.kinematic_coordinates[~confined].T, color=colors[-1], label="Unconfined")
             ax.scatter(*self.video.center_meters.T, color="r", label="VideoCenter")
 
-            if self.manual_center_meters:
+            if self.manual_center_meters is not None:
                 ax.scatter(*self.manual_center_meters.T, color="k", label="ManualCenter")
 
             plt.legend()
@@ -299,7 +243,7 @@ class RectangleEnclosedTrial(BaseTrial):
 
     @cached_property
     def center_boolean_index(self) -> NDArrayBool:
-        return parallel_point_in_polygon(
+        return parallel_point_inside_polygon(
             self.kinematic_coordinates,
             self.center_rectangle_vertices,
             inspect_arg=self.class_inspect_arg / f"{self.label}.jpg",
@@ -355,36 +299,40 @@ class RectangleEnclosedTrial(BaseTrial):
         return np.sum(self.periphery_boolean_index) / self.video.fps
 
     @property
-    def motion_features(self) -> list:
+    def _trial_feature_series_list(self) -> list[pd.Series]:
+        upstream_list = super()._trial_feature_series_list
         if self.video.recording_resolution is None:
-            return super().motion_features
+            return upstream_list
 
-        quadrant_motion_values = []
+        data = [
+            # self.gaussian_center_to_periphery_score,
+        ]
         for (qgc_i, quadrant), (qgc_ii, entries) in zip(
             self.quadrant_grid_coordinate_to_quadrant.items(), self.quadrant_grid_coordinate_to_entries.items()
         ):
             assert qgc_i == qgc_ii
-            quadrant_motion_values.extend((*quadrant.motion.values(), entries, quadrant.seconds_present))
-
-        result = [
-            *super().motion_features,
-            # self.gaussian_center_to_periphery_score,
-            *quadrant_motion_values,
-        ]
+            data.extend((*quadrant.motion.values(), entries, quadrant.seconds_present))
 
         if self.center_periphery_is_defined:
-            result.extend(
-                [
+            data.extend(
+                (
                     *self.motion_center.values(),
                     self.center_entries,
                     self.seconds_on_center,
                     *self.motion_periphery.values(),
                     self.periphery_entries,
                     self.seconds_on_periphery,
-                ]
+                )
             )
 
-        return result
+        upstream_list.append(
+            pd.Series(
+                data,
+                index=motion_column_headers(self.quadrant_grid_coordinates, 2, self.center_periphery_is_defined),
+            )
+        )
+
+        return upstream_list
 
 
 class RectangleEnclosedHabituationTrial(RectangleEnclosedTrial):
@@ -406,3 +354,26 @@ def gaussian_scoring_field(resolution: NDArrayInt16, scale: int = 1):
 
     scale_as_float = float(scale)
     return lambda x, y: model[round(x * scale_as_float)][round(y * scale_as_float)]
+
+
+@lru_cache
+def motion_column_headers(
+    quadrant_grid_coordinates: tuple[tuple[int, int], ...], column_index_levels: int, center_periphery_is_defined: bool
+) -> list[tuple, ...]:
+    result = [
+        # ("Gaussian", "CenterToPeriphery")
+    ]
+    for quadrant_grid_coordinate in quadrant_grid_coordinates:
+        category = f"Quadrant{quadrant_grid_coordinate}"
+        result.extend(motion_multi_indexer_for_subsection(category, 2))
+
+    if center_periphery_is_defined:
+        result.extend(
+            (
+                *motion_multi_indexer_for_subsection("Center", column_index_levels),
+                *perimeter_multi_indexer("Center", column_index_levels),
+                *motion_multi_indexer_for_subsection("Periphery", column_index_levels),
+                *perimeter_multi_indexer("Periphery", column_index_levels),
+            )
+        )
+    return result

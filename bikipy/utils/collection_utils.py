@@ -62,6 +62,7 @@ def copycat_assumes_levels_of_icon(copycat: pd.DataFrame, icon: pd.DataFrame, fi
     return clone_df
 
 
+@lru_cache
 def generic_multi_indexer(*basis_labels):
     number_of_levels = 1 if isinstance(basis_labels[0], str) else len(basis_labels[0])
     assert not any(number_of_levels != 1 if isinstance(label, str) else len(label) for label in basis_labels)

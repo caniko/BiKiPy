@@ -40,21 +40,19 @@ class PhysicalObjectTrialMixin(BaseBikipy):
     def number_of_physical_objects(cls) -> int:
         return len(cls.physical_object_labels)
 
-    @classmethod
-    @property
-    def feature_headers(cls) -> list[tuple[str, ...]]:
-        return list(pd.MultiIndex.from_product([["SecondsObserving"], ["All", *cls.physical_object_labels]]))
-
     @cached_property
     def perimeters(self):
         return self.all_physical_object_perimeters
 
-    @property
-    def feature_df_rows(self) -> list:
-        return [
-            self.physical_object_set.seconds_observing,
-            *self.physical_object_set.object_specific_observation.values(),
-        ]
+    @cached_property
+    def trial_feature_series(self):
+        return pd.concat((*self._trial_feature_series_list, *self._trial_physical_object_feature_series_list), axis=0)
+
+    @cached_property
+    def _trial_physical_object_feature_series_list(self) -> list[pd.Series]:
+        series = self.physical_object_set.feature_summary
+        series.index = pd.MultiIndex.from_product([["SecondsObserving"], ["All", *self.physical_object_labels]])
+        return [series]
 
     @cached_property
     def physical_object_keyword_arguments(self) -> dict[str, Any]:

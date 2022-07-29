@@ -17,7 +17,7 @@ from bikipy.utils.collection_utils import (
 )
 from bikipy.utils.graph import Graph
 from bikipy.utils.math.geometry import clockwise_sort_points
-from bikipy.utils.math.point_in_polygon import parallel_point_in_polygon
+from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
 from bikipy.utils.math.vector import (
     nearest_point_on_line_segment_to_coordinates,
     unit_vector,
@@ -153,7 +153,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         return unit_vector(closest_point_on_edge_to_coordinates - coordinates)
 
     def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
-        return parallel_point_in_polygon(
+        return parallel_point_inside_polygon(
             coordinates, self.metric_graph.linked_vertices, merge_ends=False, inspect_arg=self.confinement_inspect_arg
         )
 

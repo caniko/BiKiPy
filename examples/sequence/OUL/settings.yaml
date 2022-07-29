@@ -11,7 +11,7 @@ definition_strategies:
   radial: null
   change_reference: null
   video: trial-wise
-  timestamp: trial-wise
+  timestamp: null
   center: metadata
 perimeter:
   label_prefix: object
@@ -46,6 +46,7 @@ reader_kwargs:
     crop_from_end: boolean -> False
     crop_time_seconds: number -> 0.0
     df_read_kwargs: object
+    export_timestamp_data_as_parquet: boolean -> False
     future_scaling: boolean
     image_resize_multiplier: number
     invert_y_axis: boolean -> False
@@ -67,16 +68,15 @@ trial:
       gaze_start_point_label: center_eye
       gaze_travel_direction_point_label: nose
       object_tracking_label_for_kinematics: center_eye
-      outside_perimeter_point_label: null
       perimeter_border_normal_meters: 0.05
     required:
       gaze_start_point_label: string
       gaze_travel_direction_point_label: string
       object_tracking_label_for_kinematics: string
-      outside_perimeter_point_label: string
       perimeter_border_normal_meters: number
     optional:
       center_rectangle_dimensions_to_spatial_resolution_ratio: number
+      coordinate_timestamp_set: np.ndarray
       crop_from_end: boolean -> True
       crop_time_seconds: number -> 0.0
       data_format_label: string -> deeplabcut
@@ -99,14 +99,25 @@ trial:
       maximum_seconds_distraction: number -> 0.6666666666666666
       meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
       minimum_seconds_attention: number -> 0.3333333333333333
+      outside_perimeter_point_label: string
       physical_object_inspect: boolean -> False
       rectangle_2d_bin: array -> (2, 2)
       rigid_nodes_freezing: array
       trial_start_perimeter: string
       video_path: string
-  specific: {}
+  specific:
+    ObjectsInUpdatingLocationsTrainingTrial:
+      defined:
+        crop_time_seconds: 900
+    ObjectsInUpdatingLocationsUpdateTrial:
+      defined:
+        crop_time_seconds: 300
+    ObjectsInUpdatingLocationsTestTrial:
+      defined:
+        crop_time_seconds: 300
 experiment:
-  defined: {}
+  defined:
+    compute_only_one_df_row: true
   optional:
     compute_only_one_df_row: boolean -> False
     data_format_label: string -> deeplabcut

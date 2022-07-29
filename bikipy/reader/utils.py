@@ -12,7 +12,7 @@ def merge_timestamps_with_dlc(
     file_to_timestamp_series: Callable,
     timestamp_file_lookup_expression: str = "*-timestamp*",
     coordinate_file_lookup_expression: str = "*.parquet",
-    delimiter: str = "-",
+    delimiter: str = ".",
 ):
     def get_first_delimited_value_from_str(string: str):
         return string.split(delimiter)[0]

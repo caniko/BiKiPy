@@ -33,6 +33,9 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     timestamp_index: Optional[Sequence] = Field(
         description="Sequence of same length as df that stores the" "timestamp of each index i.e. frame."
     )
+    df_is_timestamped: bool = Field(
+        False, description="When True, the reader will interpret the DataFrame index as timestamps in seconds"
+    )
     future_scaling: bool = Field(
         None,
         description="Scales the coordinates with respect to their min and max. " "True requires x_max and y_max",
@@ -53,6 +56,10 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     crop_from_end: bool = Field(
         False,
         description="Only affective if crop_frames is not 0. " "Will crop from start instead when set to False",
+    )
+
+    export_timestamp_data_as_parquet: bool = Field(
+        False, description="When timestemp index is defined, export re-indexed df as parquet"
     )
 
     @classmethod
@@ -84,6 +91,8 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
 
     @cached_property
     def crop_frames(self) -> int:
+        if self.df_is_timestamped:
+            return np.where(self.df.index.values >= self.crop_time_seconds)[0][0]
         return round(self.video.fps * self.crop_time_seconds)
 
     @property
@@ -163,8 +172,12 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
                 f"to another format that is supported by BiKiPy.BaseReader. Fingers crossed"
             )
             raise ValueError(msg)
-        if self.timestamp_index:
+
+        if "timestamped" in self.df_path.stem:
+            self.df_is_timestamped = True
+        elif self.timestamp_index:
             df.set_index(self.timestamp_index, inplace=True)
+
         return df
 
     @property

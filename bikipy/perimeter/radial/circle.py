@@ -17,13 +17,14 @@ from bikipy.utils.makesense import (
     read_makesense_line,
     recording_resolution_from_makesense_row,
 )
+from bikipy.utils.math.inside.ellipse import point_inside_ellipse
 from bikipy.utils.math.vector import unit_vector
 from bikipy.utils.plotting import generic_inspection_finalization
 
 
 class CirclePerimeter(BaseSinglePerimeter):
     center_pixels: NDArrayFp64
-    radius_meters: float
+    radius_meters: float | NDArrayFp64
 
     @classmethod
     @property
@@ -82,8 +83,11 @@ class CirclePerimeter(BaseSinglePerimeter):
         return self.__class__(**kwargs)
 
     def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64, *args, **kwargs):
-        distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
-        return np.abs(distance_of_point_from_center) <= self.radius_meters
+        if isinstance(self.radius_meters, float):
+            distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
+            return np.abs(distance_of_point_from_center) <= self.radius_meters
+        elif isinstance(self.radius_meters, np.ndarray):
+            return point_inside_ellipse(coordinates, self.center_meters, self.radius_meters)
 
     def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         return self.center_meters + self.radius_meters * unit_vector(self.vector_to_closest_point_on_edge(coordinates))

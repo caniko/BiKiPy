@@ -66,5 +66,7 @@ def extended_group_schema(model_classes: Iterable, *args, **kwargs) -> dict:
                 if name not in specific:
                     specific[name] = {}
                 specific[name][component] = {k: v for k, v in schema[component].items() if k in difference}
+            else:
+                specific[name] = {"defined": {}}
 
     return {"common": common, "specific": specific}

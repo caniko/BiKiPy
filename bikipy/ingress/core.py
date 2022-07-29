@@ -542,12 +542,15 @@ class BaseIngress(BaseBikipy, ABC):
             )
             common_settings_between_trials = get_definable_settings(new_settings["trial"]["common"])
             for trial_class_name, trial_class_settings in new_settings["trial"]["specific"].items():
-                new_settings["trial"]["specific"][trial_class_name] = settings.update_defined_values(
-                    self.settings["trial"]["specific"][trial_class_name],
-                    trial_class_settings,
-                    common_settings=common_settings_between_trials,
-                    **kwargs,
-                )
+                try:
+                    new_settings["trial"]["specific"][trial_class_name] = settings.update_defined_values(
+                        self.settings["trial"]["specific"][trial_class_name],
+                        trial_class_settings,
+                        common_settings=common_settings_between_trials,
+                        **kwargs,
+                    )
+                except KeyError:
+                    pass
 
         for field, value in self.settings.items():
             if isinstance(value, dict):

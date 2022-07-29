@@ -5,7 +5,8 @@ from typing import Any, ClassVar, Iterable, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
-from pydantic import validator
+import pandas as pd
+from pydantic import validator, root_validator
 
 from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.behaviour.utils import reduce_repeating_sequences
@@ -22,6 +23,7 @@ from bikipy.feature.attention.proximity import (
 from bikipy.feature.tolerance.single import single_node_tolerance_filter
 from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
 from bikipy.reader.base import Reader
+from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.plotting import generic_inspection_finalization, InspectArg
 
 logger = getLogger(__name__)
@@ -38,7 +40,7 @@ class PhysicalObject(BaseBikipyInspectMixin):
 
     # Proximity fields
     perimeter_border_normal_pixels: float | NDArrayFp64 = ...
-    outside_perimeter_point_label: Optional[str]
+    outside_perimeter_point_label: str | None
 
     # Gaze fields
     gaze_start_point_label: str = ...
@@ -56,6 +58,16 @@ class PhysicalObject(BaseBikipyInspectMixin):
     _exporting_figure: bool = False
 
     category = "physical_object"
+
+    @root_validator
+    def outside_perimeter_point_label_only_when_perimeter_is_impenetrable(cls, values):
+        if not values["outside_perimeter_point_label"] and not values["perimeter"].impenetrable:
+            msg = (
+                f"Perimeter {values['perimeter'].label}: Physical object perimeter must be impenetrable "
+                f"if outside_perimeter_point_label is set to None"
+            )
+            raise AttributeError(msg)
+        return values
 
     def __len__(self) -> int:
         return self.reader.frames
@@ -279,6 +291,10 @@ class PhysicalObjectSet(VideoMetadataMixin):
             physical_object.label: physical_object.attention_filtered_seconds_observing
             for physical_object in self.physical_objects
         }
+
+    @property
+    def feature_summary(self) -> pd.Series:
+        return pd.Series((self.seconds_observing, *self.object_specific_observation.values()))
 
     @cached_property
     def observation_sequence(self):

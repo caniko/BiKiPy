@@ -1,4 +1,4 @@
-from functools import cached_property
+from functools import cached_property, lru_cache
 from logging import getLogger
 from typing import Any, Iterable
 
@@ -195,7 +195,9 @@ class Motion(BaseBikipy):
         return self.total_displacement, self.median_speed, self.median_acceleration, self.freezing_time
 
 
-def motion_multi_indexer(category: Any, level: int):
+@lru_cache
+def motion_multi_indexer(category: str, level: int):
+    assert level >= 2, "Must be at least 2 levels"
     return generic_multi_indexer("Displacement", "MedianSpeed", "MedianAcceleration", "FreezingTime")(category, level)
 
 
