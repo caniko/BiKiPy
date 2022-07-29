@@ -12,8 +12,8 @@ class PluginBonsaiTimestamp(TrialWiseMetadataOnlyMixin, BasePluginFile):
     bikipy_trial_key = "coordinate_timestamp_set"
     human_readable_index = "Timestamp"
 
-    def trialwise_and_metadata(self, trial_id: TrialId) -> NDArray[np.timedelta64]:
+    def trialwise_and_metadata(self, trial_id: TrialId) -> NDArray:
         datetime_array = (
             pd.read_csv(self.data_path, header=None, usecols=[16], parse_dates=[0]).values.T[0].astype(np.datetime64)
         )
-        return datetime_array - datetime_array[0]
+        return (datetime_array - datetime_array[0]).astype(float) / 10**6

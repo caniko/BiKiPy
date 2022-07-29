@@ -110,9 +110,9 @@ trial:
         novel: None
 experiment:
   defined:
-    compute_only_one_df_row: true
+    compute_first_two_feature_series_only: true
   optional:
-    compute_only_one_df_row: boolean -> False
+    compute_first_two_feature_series_only: boolean -> False
     data_format_label: string -> deeplabcut
     inspect_image_path: string
     manual_fps: number

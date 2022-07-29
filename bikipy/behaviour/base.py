@@ -226,7 +226,9 @@ class BaseExperiment(Behaviour):
     stage: Optional[str] = Field(
         description="Experiment stage label, if experiment object is in a sequence of experiment objects"
     )
-    compute_only_one_df_row: bool = Field(False, description="Used to rapidly generate combo df during debugging")
+    compute_first_two_feature_series_only: bool = Field(
+        False, description="Used to rapidly generate combo df during debugging"
+    )
 
     habituation_trial_class: ClassVar[Trial] = Field(
         ..., description="The trial class that will be used in case first_trial_is_habituation is called"
@@ -263,7 +265,7 @@ class BaseExperiment(Behaviour):
         return self.trial_id_to_trial_object[item]
 
     def save(self):
-        self.trial_label_to_df
+        self._trial_class_to_trial_series_set
         super().save()
 
     @classmethod
@@ -504,6 +506,9 @@ class BaseExperiment(Behaviour):
             with yaspin(Spinners.pong, text="Computing experiment features..."):
                 with ProcessPoolExecutor() as executor:
                     for trial_class_label, trial_objects in self._trial_class_label_to_trial_objects.items():
+                        trial_objects = (
+                            trial_objects[:2] if self.compute_first_two_feature_series_only else trial_objects
+                        )
                         result[trial_class_label] = {
                             trial_object.label: features
                             for trial_object, features in zip(
@@ -514,12 +519,12 @@ class BaseExperiment(Behaviour):
             for trial_class_label, trial_objects in tqdm(
                 self._trial_class_label_to_trial_objects.items(), desc="Computing experiment features"
             ):
-                if self.compute_only_one_df_row:
-                    result[trial_class_label] = {trial_objects[0].label: trial_objects[0].trial_feature_series}
-                else:
-                    result[trial_class_label] = {
-                        trial_object.label: trial_object.trial_feature_series for trial_object in trial_objects
-                    }
+                trial_objects = trial_objects[:2] if self.compute_first_two_feature_series_only else trial_objects
+                result[trial_class_label] = {
+                    trial_object.label: trial_object.trial_feature_series
+                    for trial_object in trial_objects
+                    if trial_object.label == "136_2"
+                }
         return result
 
     @cached_property

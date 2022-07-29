@@ -92,7 +92,11 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     @cached_property
     def crop_frames(self) -> int:
         if self.df_is_timestamped:
-            return np.where(self.df.index.values >= self.crop_time_seconds)[0][0]
+            try:
+                return np.where(self.raw_df.index.values >= self.crop_time_seconds)[0][0]
+            except IndexError:
+                logger.warning(f"The defined crop seconds, {self.crop_time_seconds}, is out of bounds for DataFrame")
+                return len(self.raw_df)
         return round(self.video.fps * self.crop_time_seconds)
 
     @property

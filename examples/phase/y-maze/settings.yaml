@@ -98,7 +98,7 @@ trial:
 experiment:
   defined: {}
   optional:
-    compute_only_one_df_row: boolean -> False
+    compute_first_two_feature_series_only: boolean -> False
     data_format_label: string -> deeplabcut
     image_resize_multiplier: number
     inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]

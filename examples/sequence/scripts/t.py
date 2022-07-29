@@ -1,18 +1,14 @@
-import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
-from bikipy.behaviour.rectangle import gaussian_scoring_field
+df = pd.read_parquet("/mnt/BigData/oul_dataset/136/2.coordinates-136.parquet")
 
-resolution = (1000, 2000)
-my_pic = np.empty(resolution, dtype=np.uint8)
+datetime_array = (
+    pd.read_csv("/mnt/BigData/oul_dataset/136/2.timestamps-136.csv", header=None, usecols=[16], parse_dates=[0])
+    .values.T[0]
+    .astype(np.datetime64)
+)
+timestamp = (datetime_array - datetime_array[0]).astype(float) / 10**6
 
-model = gaussian_scoring_field(resolution)
-
-r = range(500)
-for x in r:
-    for y in r:
-        my_pic[x, y] = round(model(x, y) * 255)
-
-
-plt.imshow(my_pic)
-plt.show()
+df.index = datetime_array
+1
