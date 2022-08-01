@@ -70,7 +70,7 @@ class DeepLabCutReader(BaseReader):
                     midpoint_based_midpoints[name] = group
                 else:
                     msg = (
-                        f"Midpoint {name}, cannot be derived as its components are "
+                        f"{self.df_path}: Midpoint {name}, cannot be derived as its components are "
                         f"not defined in the tracked dataset nor in midpoint_groups.\n"
                         f"The following are tracked: {self.tracked_point_labels}"
                     )

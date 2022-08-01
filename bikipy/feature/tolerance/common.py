@@ -2,8 +2,10 @@ from logging import getLogger
 from typing import Callable
 
 import numpy as np
+from numba import njit
 from pydantic import validate_arguments
 
+from bikipy import ENABLE_NUMBA
 from bikipy.core.typing import NDArrayBool
 
 logger = getLogger(__name__)
@@ -22,3 +24,13 @@ def tolerance_filter_warning_wrapper(tolerance_filter: Callable, result_length: 
         logger.warning(f"Tolerance filter has less than 1% True, {truth_percentage}")
 
     return attention_boolean_index
+
+
+def common_preparation(
+    minimum_seconds_attention: float, maximum_seconds_distraction: float, fps: float, boolean_index: NDArrayBool
+) -> tuple[float, float, int]:
+    return round(minimum_seconds_attention * fps), round(maximum_seconds_distraction * fps), len(boolean_index)
+
+
+if ENABLE_NUMBA:
+    common_preparation = njit(cache=True)(common_preparation)

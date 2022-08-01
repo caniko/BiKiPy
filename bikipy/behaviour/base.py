@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from copy import copy
@@ -504,7 +505,7 @@ class BaseExperiment(Behaviour):
         result = defaultdict(dict)
         if ENABLE_PROCESS_POOLING:
             with yaspin(Spinners.pong, text="Computing experiment features..."):
-                with ProcessPoolExecutor() as executor:
+                with ProcessPoolExecutor(max_workers=round(os.cpu_count() * 0.60)) as executor:
                     for trial_class_label, trial_objects in self._trial_class_label_to_trial_objects.items():
                         trial_objects = (
                             trial_objects[:2] if self.compute_first_two_feature_series_only else trial_objects
@@ -521,9 +522,7 @@ class BaseExperiment(Behaviour):
             ):
                 trial_objects = trial_objects[:2] if self.compute_first_two_feature_series_only else trial_objects
                 result[trial_class_label] = {
-                    trial_object.label: trial_object.trial_feature_series
-                    for trial_object in trial_objects
-                    if trial_object.label == "136_2"
+                    trial_object.label: trial_object.trial_feature_series for trial_object in trial_objects
                 }
         return result
 

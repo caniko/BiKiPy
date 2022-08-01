@@ -117,7 +117,7 @@ class BaseIngress(BaseBikipy, ABC):
             )
             raise ValueError(msg)
 
-        if self.settings["first_stage_is_habituation"]:
+        if self.settings["ingress"]["first_stage_is_habituation"]:
             return experiment.first_trial_is_habituation()
         return experiment
 
@@ -329,9 +329,9 @@ class BaseIngress(BaseBikipy, ABC):
 
     @property
     def dataset_directory_path(self) -> DirectoryPath:
-        if self.settings["manual_dataset_directory"]:
-            if not (path := Path(self.settings["manual_dataset_directory"])).exists():
-                msg = f"manual_dataset_directory must exist: {path}"
+        if self.settings["ingress"]["dataset_directory"]:
+            if not (path := Path(self.settings["ingress"]["dataset_directory"])).exists():
+                msg = f"dataset_directory must exist: {path}"
                 raise AttributeError(msg)
             return path
         return get_dataset_directory_path(self.project_root_directory)
@@ -354,7 +354,7 @@ class BaseIngress(BaseBikipy, ABC):
 
     @cached_property
     def framewise_coordinates_file_suffix(self):
-        return self.settings["framewise_coordinates_file_suffix"]
+        return self.settings["ingress"]["framewise_coordinates_file_suffix"]
 
     # Backend functions =================================
 
@@ -677,12 +677,12 @@ def init_settings(
     experiment_class = EXPERIMENT_NAME_TO_CLASS[experiment_name]
 
     generic_settings = {
-        "ingress_method": ingress_method,
-        "framewise_coordinates_file_suffix": framewise_coordinates_file_suffix,
-        "first_stage_is_habituation": False,
-        "manual_dataset_directory": None,
         "ingress": {
+            "method": ingress_method,
+            "first_stage_is_habituation": False,
+            "framewise_coordinates_file_suffix": framewise_coordinates_file_suffix,
             "frame_upscale_multiplier": "float",
+            "dataset_directory": None,
             "profile_runtime": True,
         },
         "definition_strategies": {plugin.ingress_key: None for plugin in ALL_PLUGINS},
@@ -726,7 +726,7 @@ def auto_define_ingress_object(project_root_directory: DirectoryPath) -> Ingress
 
     with open(project_root_directory / "settings.yaml", "r") as in_file:
         settings = yaml.safe_load(in_file)
-    return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[settings["ingress_method"]](
+    return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[settings["ingress"]["method"]](
         project_root_directory=project_root_directory
     )
 

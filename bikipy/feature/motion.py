@@ -4,7 +4,9 @@ from typing import Any, Iterable
 
 import numpy as np
 import pandas as pd
+from numba import njit, jit
 
+from bikipy import ENABLE_NUMBA
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import NDArrayBool, NDArrayFp64
 from bikipy.utils.collection_utils import generic_multi_indexer
@@ -221,6 +223,8 @@ def get_combined_features_from_merged_motion_island_data(
         new_start, new_end = indexes[starting_index], indexes[starting_index := starting_index + 1]
         while new_end - new_start > fps:
             new_start, new_end = indexes[starting_index], indexes[starting_index := starting_index + 1]
+            if starting_index < number_of_frames:
+                return False
         return starting_index + 1, new_start, new_end
 
     number_of_frames = np.sum(boolean_index)
@@ -232,7 +236,11 @@ def get_combined_features_from_merged_motion_island_data(
     third_of_a_second = fps / 3.0
 
     last_index = number_of_frames - 1
-    i, start, _end = find_index_start_n_end()
+    finder_result = find_index_start_n_end()
+
+    if not finder_result:
+        return _zero_return
+    i, start, _end = finder_result
 
     data = []
     while i < number_of_frames:
@@ -261,7 +269,12 @@ def get_combined_features_from_merged_motion_island_data(
                 if i == last_index:
                     break
 
-                i, start, end = find_index_start_n_end(i)
+                finder_result = find_index_start_n_end()
+
+                if not finder_result:
+                    break
+                i, start, _end = finder_result
+
                 continue
         else:  # potential_end < next_step_from_previous_end
             msg = "potential_end < next_step_from_end cannot be true in a sorted index"
@@ -284,3 +297,9 @@ def get_combined_features_from_merged_motion_island_data(
         "median_acceleration": np.average(df["median_acceleration"], weights=df["weight"]),
         "freezing_time": df["freezing_time"].sum(),
     }
+
+
+if ENABLE_NUMBA:
+    get_combined_features_from_merged_motion_island_data = jit(cache=True)(
+        get_combined_features_from_merged_motion_island_data
+    )

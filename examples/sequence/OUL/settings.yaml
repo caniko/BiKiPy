@@ -1,9 +1,9 @@
-ingress_method: animal
-framewise_coordinates_file_suffix: .parquet
-first_stage_is_habituation: false
-manual_dataset_directory: /mnt/BigData/oul_dataset
 ingress:
+  method: animal
   frame_upscale_multiplier: float
+  framewise_coordinates_file_suffix: .parquet
+  first_stage_is_habituation: false
+  dataset_directory: /mnt/BigData/oul_dataset
   profile_runtime: true
 definition_strategies:
   meters_per_pixel: metadata

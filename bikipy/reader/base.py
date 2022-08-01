@@ -54,7 +54,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
 
     crop_time_seconds: float = 0.0
     crop_from_end: bool = Field(
-        False,
+        True,
         description="Only affective if crop_frames is not 0. " "Will crop from start instead when set to False",
     )
 
@@ -89,16 +89,6 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     def meters_augmented(self) -> pd.DataFrame:
         ...
 
-    @cached_property
-    def crop_frames(self) -> int:
-        if self.df_is_timestamped:
-            try:
-                return np.where(self.raw_df.index.values >= self.crop_time_seconds)[0][0]
-            except IndexError:
-                logger.warning(f"The defined crop seconds, {self.crop_time_seconds}, is out of bounds for DataFrame")
-                return len(self.raw_df)
-        return round(self.video.fps * self.crop_time_seconds)
-
     @property
     def required_video_metadata_fields(self) -> set:
         base = {"meters_per_pixel", "recording_resolution"}
@@ -113,16 +103,27 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         include midpoints and inner interpolations.
         """
         cloned_df = self.raw_df.copy()
+
+        crop_frames = None
+        if self.df_is_timestamped:
+            try:
+                crop_frames = np.where(self.raw_df.index.values >= self.crop_time_seconds)[0][0]
+            except IndexError:
+                logger.warning(f"The defined crop seconds, {self.crop_time_seconds}, is out of bounds for DataFrame")
+                self.crop_time_seconds = False
+
         if self.crop_time_seconds:
-            if self.crop_frames > self.raw_frames:
+            crop_frames = crop_frames or round(self.video.fps * self.crop_time_seconds)
+
+            if not crop_frames > self.raw_frames:
                 logger.warning(
-                    f"(cropping frames: {self.crop_time_seconds} seconds -> {self.crop_frames} frames) "
+                    f"(cropping frames: {self.crop_time_seconds} seconds -> {crop_frames} frames) "
                     f"> total of {self.raw_frames} frames"
                 )
             if self.crop_from_end:
-                cloned_df = cloned_df.iloc[self.raw_frames - self.crop_frames :]
+                cloned_df = cloned_df.iloc[self.raw_frames - crop_frames :]
             else:
-                cloned_df = cloned_df.iloc[: self.crop_frames]
+                cloned_df = cloned_df.iloc[:crop_frames]
 
         if self.invert_y_axis:
             cloned_df.loc[:, pd.IndexSlice[:, "y"]] = (
@@ -181,6 +182,9 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
             self.df_is_timestamped = True
         elif self.timestamp_index:
             df.set_index(self.timestamp_index, inplace=True)
+
+        if df.index.dtype == np.timedelta64:
+            df.index = df.index.seconds
 
         return df
 

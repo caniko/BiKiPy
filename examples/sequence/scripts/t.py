@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
 
-df = pd.read_parquet("/mnt/BigData/oul_dataset/136/2.coordinates-136.parquet")
+from bikipy.reader import DeepLabCutReader
+
+df = DeepLabCutReader(df_path="/mnt/BigData/oul_dataset/136/2.coordinates-136.h5").raw_df
 
 datetime_array = (
     pd.read_csv("/mnt/BigData/oul_dataset/136/2.timestamps-136.csv", header=None, usecols=[16], parse_dates=[0])
@@ -10,5 +12,6 @@ datetime_array = (
 )
 timestamp = (datetime_array - datetime_array[0]).astype(float) / 10**6
 
-df.index = datetime_array
+df.index = timestamp
 1
+df.to_parquet("/mnt/BigData/oul_dataset/136/2.coordinates-136-timestamped.parquet")

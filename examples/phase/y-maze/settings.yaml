@@ -1,6 +1,6 @@
 ingress_method: phase
 first_stage_is_habituation: false
-manual_dataset_directory: /mnt/soma/Projects/Neuroscience/Imen/data/y_maze/
+dataset_directory: /mnt/soma/Projects/Neuroscience/Imen/data/y_maze/
 ingress:
   meters_per_pixel_definition_strategy: radial
   perimeter_definition_strategy: null
