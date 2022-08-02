@@ -8,7 +8,7 @@ import numpy as np
 from pydantic import DirectoryPath, FilePath
 
 from bikipy import INVERT_Y_AXIS
-from bikipy.core.typing import NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 from bikipy.utils.makesense import (
     image_name_to_point_from_makesense,
     read_makesense_rectangle,

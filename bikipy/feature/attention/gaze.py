@@ -5,7 +5,7 @@ import seaborn as sb
 from matplotlib import pyplot as plt
 
 from bikipy import MATPLOTLIB_SCATTER_ALPHA
-from bikipy.core.typing import NDArrayBool, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from bikipy.core.video import VideoMetadata, convert_meters_to_pixels
 from bikipy.feature.angle import angle_from_a_to_b
 from bikipy.perimeter.base import SinglePerimeter

@@ -15,7 +15,9 @@ import yaml
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 
 from bikipy.core.base_class import BaseBikipy
-from bikipy.core.typing import NDArrayFp64, TrialId
+from pydantic_numpy.dtype import NDArrayFp64
+
+from bikipy.core.typing import TrialId
 from bikipy.ingress.plugin import ingress_key_to_model, PluginMeterPerPixel, ALL_PLUGINS
 from bikipy.ingress.plugin.base import Plugin
 from bikipy.ingress.plugin.meters_per_pixel import detect_meters_per_pixel_in_perimeter_directory

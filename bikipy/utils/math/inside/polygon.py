@@ -9,7 +9,7 @@ from pydantic import validate_arguments
 from seaborn import set_theme
 
 from bikipy import ENABLE_NUMBA
-from bikipy.core.typing import NDArrayBool, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from bikipy.utils.math.vector import dot_axis_1_1d, orthogonal_unit_vector
 from bikipy.utils.plotting import generic_inspection_finalization, InspectArg
 

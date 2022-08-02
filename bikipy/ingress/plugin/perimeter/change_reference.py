@@ -1,7 +1,9 @@
 from functools import cached_property
 from typing import ClassVar
 
-from bikipy.core.typing import NDArrayFp64, TrialId
+from pydantic_numpy.dtype import NDArrayFp64
+
+from bikipy.core.typing import TrialId
 from bikipy.ingress.plugin.base import BasePluginFile
 from bikipy.perimeter.base import Perimeter, BasePerimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict

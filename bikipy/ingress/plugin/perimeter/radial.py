@@ -1,11 +1,11 @@
 from functools import cached_property
 from glob import iglob
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from pydantic_numpy import NDArrayFp64
 
-from bikipy.core.typing import TrialId, NDArrayFp64
+from bikipy.core.typing import TrialId
 from bikipy.ingress.plugin.base import BasePluginDirectory, HasReferenceMixin
 from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon

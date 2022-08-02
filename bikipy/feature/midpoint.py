@@ -5,7 +5,7 @@ from typing import Sequence
 
 import numpy as np
 
-from bikipy.core.typing import NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 
 
 def compute_midpoint(point_1: NDArrayFp64, point_2: NDArrayFp64) -> NDArrayFp64:

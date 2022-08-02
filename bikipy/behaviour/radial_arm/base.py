@@ -18,7 +18,7 @@ from bikipy.behaviour.utils import (
     unique_with_counts_zipped,
 )
 from bikipy.core.base_class import BaseBikipyHashable
-from bikipy.core.typing import NDArrayBool, NDArrayUint8, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8, NDArrayFp64
 from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
 from bikipy.perimeter.confinement import detect_multi_node_sequential_perimeter_presence
 from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids

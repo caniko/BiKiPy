@@ -8,7 +8,7 @@ import numpy as np
 from pydantic import validator
 from pydantic_numpy import NDArray
 
-from bikipy.core.typing import NDArrayFp64, NDArrayBool
+from pydantic_numpy.dtype import NDArrayFp64, NDArrayBool
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.perimeter.radial.circle import CirclePerimeter
 from bikipy.utils.collection_utils import (
@@ -96,8 +96,8 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
     @cached_property
     def circle(self):
         return CirclePerimeter(
-            center_pixels=self.pixel_graph.centroid_meters,
-            radius_meters=np.mean(self.metric_graph.vertex_midpoint_distances_to_centroid),
+            center_pixels=self.pixel_graph.centroid,
+            radius_pixels=np.mean(self.pixel_graph.vertex_midpoint_distances_to_centroid),
             manual_video=self.video,
         )
 

@@ -2,7 +2,9 @@ from functools import cached_property
 
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
-from bikipy.core.typing import NDArrayFp64, TrialId
+from pydantic_numpy.dtype import NDArrayFp64
+
+from bikipy.core.typing import TrialId
 from bikipy.ingress.plugin.base import BasePluginFile
 from bikipy.utils.makesense import get_only_point_from_makesense
 

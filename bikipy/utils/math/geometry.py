@@ -1,3 +1,4 @@
+import math
 from functools import lru_cache
 from typing import Sequence, TYPE_CHECKING
 
@@ -7,7 +8,7 @@ from math import sqrt
 from pydantic import validate_arguments
 from pydantic_numpy import NDArray
 
-from bikipy.core.typing import NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 from bikipy.feature.angle import clockwise_angel_2d
 from bikipy.perimeter.base import Perimeter
 
@@ -72,7 +73,10 @@ def meter_per_pixel_from_diagonal(diagonal_a: NDArrayFp64, diagonal_b: NDArrayFp
         pixel_x, pixel_y, length_meters
     )
 
-    return np.array([meter_x / pixel_x, meter_y / pixel_y])
+    result = np.array([meter_x / pixel_x, meter_y / pixel_y])
+    if math.isclose(*result, rel_tol=10**-5):
+        return np.mean(result)
+    return result
 
 
 def clockwise_argsort_points(points: NDArrayFp64):

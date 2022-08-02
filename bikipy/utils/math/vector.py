@@ -9,7 +9,7 @@ from pydantic import validate_arguments
 from pydantic_numpy import NDArray
 
 from bikipy import ENABLE_NUMBA, MATPLOTLIB_SCATTER_ALPHA
-from bikipy.core.typing import NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 from bikipy.utils.collection_utils import (
     evenly_spaced_indices_from_sequence,
     evenly_spaced_indices,

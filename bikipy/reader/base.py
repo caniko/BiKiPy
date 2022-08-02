@@ -12,7 +12,7 @@ from pydantic_numpy import NDArray
 
 from bikipy import ENABLE_PROCESS_POOLING, INVERT_Y_AXIS
 from bikipy.core.base_class import BaseBikipyHashable
-from bikipy.core.typing import NDArrayBool
+from pydantic_numpy.dtype import NDArrayBool
 from bikipy.core.video import VideoMetadataMixin
 
 FILE_EXTENSION_TO_PANDAS_READER = {

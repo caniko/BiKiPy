@@ -6,7 +6,9 @@ import pandas as pd
 from pydantic import DirectoryPath, FilePath, Field, BaseModel
 
 from bikipy.core.base_class import BaseBikipy
-from bikipy.core.typing import NDArrayFp64, TrialId
+from pydantic_numpy.dtype import NDArrayFp64
+
+from bikipy.core.typing import TrialId
 from bikipy.utils.makesense import get_only_point_from_makesense
 
 

@@ -12,7 +12,7 @@ from skg import ngauss_fit
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipy
-from bikipy.core.typing import NDArrayBool, NDArrayFp64, NDArrayInt16, TrialId
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 from bikipy.feature.motion import (
     get_combined_features_from_merged_motion_island_data,
     motion_multi_indexer,

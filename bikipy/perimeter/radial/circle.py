@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pydantic import FilePath, validator
 
-from bikipy.core.typing import NDArrayBool, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from bikipy.feature.attention.gaze import gaze_direction_filter_circle_triangle
 from bikipy.perimeter.base import (
     BaseSinglePerimeter,
@@ -24,7 +24,7 @@ from bikipy.utils.plotting import generic_inspection_finalization
 
 class CirclePerimeter(BaseSinglePerimeter):
     center_pixels: NDArrayFp64
-    radius_meters: float | NDArrayFp64
+    radius_pixels: float
 
     @classmethod
     @property
@@ -34,13 +34,13 @@ class CirclePerimeter(BaseSinglePerimeter):
         be recorded in this class-property to be excluded by the settings generator function in the ingress module
         :return:
         """
-        return super().exclude_from_settings_schema.union({"center_pixels", "radius_meters"})
+        return super().exclude_from_settings_schema.union({"center_pixels", "radius_pixels"})
 
     @property
     def _to_hash(self) -> list:
         result = super()._to_hash
-        result.append(self.radius_meters)
         result.append(self.center_pixels.data.tobytes())
+        result.append(self.radius_pixels)
         return result
 
     @property
@@ -48,12 +48,12 @@ class CirclePerimeter(BaseSinglePerimeter):
         return self.center_meters
 
     @cached_property
-    def center_meters(self):
+    def center_meters(self) -> NDArrayFp64:
         return self.center_pixels * self.video.meters_per_pixel
 
     @cached_property
-    def radius_pixels(self):
-        return self.radius_meters * self.video.pixels_per_meter
+    def radius_meters(self) -> float:
+        return np.mean(self.radius_pixels * self.video.meters_per_pixel)
 
     @validator("center_pixels")
     def center_vector_is_2d(cls, value):
@@ -77,9 +77,9 @@ class CirclePerimeter(BaseSinglePerimeter):
             }
         )
 
-    def expand(self, perimeter_border_normal_meters: float | NDArrayFp64):
+    def expand(self, perimeter_border_normal_pixels: float | NDArrayFp64):
         kwargs = self.dict()
-        kwargs["radius_meters"] += perimeter_border_normal_meters
+        kwargs["radius_pixels"] += perimeter_border_normal_pixels
         return self.__class__(**kwargs)
 
     def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64, *args, **kwargs):
@@ -154,7 +154,7 @@ class CirclePerimeter(BaseSinglePerimeter):
 
             perimeter = cls(
                 center_pixels=a,
-                radius_meters=np.linalg.norm((a - b) * meters_per_pixel),  # AB vector is in pixels, must be meters
+                radius_pixels=np.linalg.norm((a - b)),  # AB vector is in pixels, must be meters
                 label=row["label"],
                 manual_recording_resolution=recording_resolution_from_makesense_row(row),
                 makesense_image_name=row["image_name"],

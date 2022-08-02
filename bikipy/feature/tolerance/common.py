@@ -6,7 +6,7 @@ from numba import njit
 from pydantic import validate_arguments
 
 from bikipy import ENABLE_NUMBA
-from bikipy.core.typing import NDArrayBool
+from pydantic_numpy.dtype import NDArrayBool
 
 logger = getLogger(__name__)
 
@@ -27,9 +27,9 @@ def tolerance_filter_warning_wrapper(tolerance_filter: Callable, result_length: 
 
 
 def common_preparation(
-    minimum_seconds_attention: float, maximum_seconds_distraction: float, fps: float, boolean_index: NDArrayBool
+    minimum_seconds_attention: float, maximum_seconds_distraction: float, fps: float, boolean_sequence: NDArrayBool
 ) -> tuple[float, float, int]:
-    return round(minimum_seconds_attention * fps), round(maximum_seconds_distraction * fps), len(boolean_index)
+    return round(minimum_seconds_attention * fps), round(maximum_seconds_distraction * fps), len(boolean_sequence)
 
 
 if ENABLE_NUMBA:

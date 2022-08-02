@@ -3,7 +3,7 @@ from typing import Any
 import numpy as np
 from matplotlib import pyplot as plt
 
-from bikipy.core.typing import NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 
 
 def plot_circle(center: NDArrayFp64, radius: NDArrayFp64 | float, ax: Any = None):

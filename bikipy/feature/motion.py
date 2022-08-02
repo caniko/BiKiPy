@@ -1,14 +1,14 @@
 from functools import cached_property, lru_cache
 from logging import getLogger
-from typing import Any, Iterable
+from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
-from numba import njit, jit
+from pydantic import Field
 
-from bikipy import ENABLE_NUMBA
 from bikipy.core.base_class import BaseBikipy
-from bikipy.core.typing import NDArrayBool, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+from bikipy.feature.tolerance.single import arg_single_node_tolerance_filter
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.calculus import np_abs_diff
 
@@ -140,8 +140,11 @@ def frozen_frames(
 
 
 class Motion(BaseBikipy):
-    coordinate_sequence: NDArrayFp64
-    fps: float
+    coordinate_sequence: NDArrayFp64 = ...
+    fps: float = ...
+    weight: Optional[int] = Field(
+        description="The weight of the Motion instance defines relative weight to related Motion instances"
+    )
 
     @cached_property
     def int_fps(self) -> int:
@@ -193,7 +196,9 @@ class Motion(BaseBikipy):
         return np.nanmedian(self.acceleration)
 
     @property
-    def as_tuple(self) -> tuple[float, float, float, float]:
+    def as_tuple(self) -> tuple:
+        if self.weight:
+            return self.total_displacement, self.median_speed, self.median_acceleration, self.freezing_time, self.weight
         return self.total_displacement, self.median_speed, self.median_acceleration, self.freezing_time
 
 
@@ -215,78 +220,19 @@ def get_combined_features_from_merged_motion_island_data(
 
     A simple merge would make the computation of speed and acceleration wrong.
     """
+    tolerance_args = arg_single_node_tolerance_filter(
+        boolean_index, fps, minimum_seconds_attention=minimum_seconds_of_data
+    )
 
-    def motion_object_from_slice(slice_start, slice_end) -> Motion:
-        return Motion(coordinate_sequence=coordinate_sequence[slice_start:slice_end], fps=fps)
-
-    def find_index_start_n_end(starting_index: int = 0):
-        new_start, new_end = indexes[starting_index], indexes[starting_index := starting_index + 1]
-        while new_end - new_start > fps:
-            new_start, new_end = indexes[starting_index], indexes[starting_index := starting_index + 1]
-            if starting_index < number_of_frames:
-                return False
-        return starting_index + 1, new_start, new_end
-
-    number_of_frames = np.sum(boolean_index)
-    minimum_frames = minimum_seconds_of_data * fps
-    if number_of_frames < minimum_frames:
-        return _zero_return
-
-    indexes = np.where(boolean_index)[0]
-    third_of_a_second = fps / 3.0
-
-    last_index = number_of_frames - 1
-    finder_result = find_index_start_n_end()
-
-    if not finder_result:
-        return _zero_return
-    i, start, _end = finder_result
-
-    data = []
-    while i < number_of_frames:
-        potential_end = indexes[i]
-        next_step_from_previous_end = indexes[i - 1] + 1
-        if potential_end == next_step_from_previous_end:
-            pass
-        elif potential_end > next_step_from_previous_end:
-            jump_length = potential_end - next_step_from_previous_end
-            if jump_length <= third_of_a_second:
-                end = potential_end
-
-                # Look ahead before committing to end index
-                if i != last_index and end - indexes[i + 1] < third_of_a_second:
-                    i += 1
-                    continue
-
-            else:
-                end = indexes[i - 1]
-
-            if (slice_len := end - start) > minimum_frames:
-                motion = motion_object_from_slice(start, end)
-                if not np.isnan(motion.median_acceleration):
-                    data.append((*motion.as_tuple, slice_len))
-
-                if i == last_index:
-                    break
-
-                finder_result = find_index_start_n_end()
-
-                if not finder_result:
-                    break
-                i, start, _end = finder_result
-
-                continue
-        else:  # potential_end < next_step_from_previous_end
-            msg = "potential_end < next_step_from_end cannot be true in a sorted index"
-            raise RuntimeError(msg)
-
-        i += 1
-
-    if not data:
+    if not tolerance_args:
         return _zero_return
 
     df = pd.DataFrame(
-        data, columns=["total_displacement", "median_speed", "median_acceleration", "freezing_time", "weight"]
+        [
+            Motion(coordinate_sequence=coordinate_sequence[start:end], fps=fps, weight=length).as_tuple
+            for start, end, length in tolerance_args
+        ],
+        columns=["total_displacement", "median_speed", "median_acceleration", "freezing_time", "weight"],
     )
     # Making sure to not have any np.nans before np.average
     df.dropna(axis=0, how="any", thresh=None, subset=None, inplace=True)
@@ -297,9 +243,3 @@ def get_combined_features_from_merged_motion_island_data(
         "median_acceleration": np.average(df["median_acceleration"], weights=df["weight"]),
         "freezing_time": df["freezing_time"].sum(),
     }
-
-
-if ENABLE_NUMBA:
-    get_combined_features_from_merged_motion_island_data = jit(cache=True)(
-        get_combined_features_from_merged_motion_island_data
-    )

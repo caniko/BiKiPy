@@ -1,9 +1,10 @@
 import numpy as np
 from numba import njit
 from pydantic import validate_arguments
+from pydantic_numpy import NDArray
 
 from bikipy import ENABLE_NUMBA
-from bikipy.core.typing import NDArrayBool
+from pydantic_numpy.dtype import NDArrayBool, NDArrayInt64
 from bikipy.feature.tolerance import GENERIC_MINIMUM_SECONDS_ATTENTION, GENERIC_MAXIMUM_SECONDS_DISTRACTION
 from bikipy.feature.tolerance.common import tolerance_filter_warning_wrapper, common_preparation
 
@@ -55,7 +56,7 @@ def _filter(
     if np.sum(boolean_index) < fps:
         return None
 
-    distraction_tolerance, minimum_frames_attention, length = common_preparation(
+    minimum_frames_attention, distraction_tolerance, length = common_preparation(
         minimum_seconds_attention, maximum_seconds_distraction, fps, boolean_index
     )
 
@@ -87,12 +88,12 @@ def _filter(
     return attention_boolean_index
 
 
-def tolerated_islands(
+def arg_single_node_tolerance_filter(
     boolean_index: NDArrayBool,
     fps: float,
-    minimum_seconds_attention: float,
-    maximum_seconds_distraction: float,
-):
+    minimum_seconds_attention: float = GENERIC_MINIMUM_SECONDS_ATTENTION,
+    maximum_seconds_distraction: float = GENERIC_MAXIMUM_SECONDS_DISTRACTION,
+) -> list[NDArrayInt64, ...]:
     """
     Deal with islands of data that need to be aggregated for analysis. These islands
     of data have to be merged arbitrarily.
@@ -100,68 +101,44 @@ def tolerated_islands(
     A simple merge would make the computation of speed and acceleration wrong.
     """
     if np.sum(boolean_index) < fps:
-        return []
+        return [np.array((x, x, x)) for x in range(0)]
 
-    distraction_tolerance, minimum_frames_attention, length = common_preparation(
+    minimum_frames_attention, distraction_tolerance, length = common_preparation(
         minimum_seconds_attention, maximum_seconds_distraction, fps, boolean_index
     )
 
-    last_index = length - 1
-    finder_result = find_index_start_n_end()
-
-    if not finder_result:
-        return []
-    i, start, _end = finder_result
-
     data = []
+    i, true_counter, distraction_counter, start = 0, 0, 0, 0
     while i < length:
-        potential_end = indexes[i]
-        next_step_from_previous_end = indexes[i - 1] + 1
-        if potential_end == next_step_from_previous_end:
-            pass
-        elif potential_end > next_step_from_previous_end:
-            jump_length = potential_end - next_step_from_previous_end
-            if jump_length <= third_of_a_second:
-                end = potential_end
-
-                # Look ahead before committing to end index
-                if i != last_index and end - indexes[i + 1] < third_of_a_second:
-                    i += 1
-                    continue
-
+        if boolean_index[i]:
+            if start:
+                # We don't want to use the true counter during a TRUE epoch
+                pass
+            elif true_counter >= minimum_frames_attention:
+                start = i - true_counter  # equivalent to: i - minimum_frames_attention
+                true_counter = 0
             else:
-                end = indexes[i - 1]
+                true_counter += 1
+        else:
+            if start:
 
-            if end - start > minimum_frames:
-                data.append((start, end))
+                distraction_counter += 1
+                if distraction_counter == distraction_tolerance:
+                    end = i - distraction_counter
+                    data.append(np.array((start, end, end - start)))
 
-                if i == last_index:
-                    break
+                    i += distraction_counter
+                    start, distraction_counter = 0, 0
 
-                finder_result = find_index_start_n_end()
-
-                if not finder_result:
-                    break
-                i, start, _end = finder_result
-
-                continue
-        else:  # potential_end < next_step_from_previous_end
-            msg = "potential_end < next_step_from_end cannot be true in a sorted index"
-            raise RuntimeError(msg)
+            elif true_counter > 0:
+                true_counter -= 1
 
         i += 1
 
     return data
 
 
-def find_index_start_n_end(starting_index: int = 0):
-    new_start, new_end = indexes[starting_index], indexes[starting_index := starting_index + 1]
-    while new_end - new_start > fps:
-        new_start, new_end = indexes[starting_index], indexes[starting_index := starting_index + 1]
-        if starting_index < length:
-            return False
-    return starting_index + 1, new_start, new_end
-
-
 if ENABLE_NUMBA:
     _filter = njit(cache=True)(_filter)
+
+    arg_single_node_tolerance_filter = njit(cache=True)(arg_single_node_tolerance_filter)

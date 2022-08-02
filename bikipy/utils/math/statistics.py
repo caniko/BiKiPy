@@ -2,7 +2,7 @@ from typing import Optional, Sequence
 
 import numpy as np
 
-from bikipy.core.typing import NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 
 
 def feature_scale(

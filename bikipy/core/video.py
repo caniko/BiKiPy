@@ -16,7 +16,7 @@ from numpy import ndarray
 from pydantic import FilePath, Field
 
 from bikipy.core.base_class import BaseBikipy
-from bikipy.core.typing import NDArrayFp64, NDArrayInt16, NDArrayUint8
+from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
 from bikipy.utils.video import get_video_data
 
 logger = getLogger(__name__)
@@ -25,7 +25,9 @@ _can_only_be_set_manually = {"meters_per_pixel", "image_resize_multiplier"}
 
 
 class _VideoMetadataBase(BaseBikipy):
-    meters_per_pixel: Optional[NDArrayFp64] = Field(description="1D array defining the meter to pixel ratio")
+    meters_per_pixel: Optional[float | NDArrayFp64] = Field(
+        description="Float or 1D array defining the meter to pixel ratio"
+    )
 
     video_path: Optional[FilePath] = Field(
         description="Path to video, used to infer recording resolution, fps, and frame"
@@ -78,7 +80,7 @@ class VideoMetadata(_VideoMetadataBase):
         return cls(**new_metadata)
 
     @cached_property
-    def pixels_per_meter(self) -> NDArrayFp64:
+    def pixels_per_meter(self) -> float | NDArrayFp64:
         result = 1.0 / self.meters_per_pixel
         if self.image_resize_multiplier:
             result *= self.image_resize_multiplier

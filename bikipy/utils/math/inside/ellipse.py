@@ -1,7 +1,7 @@
 from numba import njit
 
 from bikipy import ENABLE_NUMBA
-from bikipy.core.typing import NDArrayFp64, NDArrayBool
+from pydantic_numpy.dtype import NDArrayFp64, NDArrayBool
 
 
 def point_inside_ellipse(points: NDArrayFp64, center: NDArrayFp64, ellipse_radius: NDArrayFp64) -> NDArrayBool:

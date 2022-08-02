@@ -11,7 +11,9 @@ from pydantic import validator, root_validator
 from bikipy import MATPLOTLIB_SCATTER_ALPHA
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipyInspectMixin
-from bikipy.core.typing import NDArrayBool, NDArrayFp64, TrialId
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+
+from bikipy.core.typing import TrialId
 from bikipy.core.video import (
     VideoMetadata,
     VideoMetadataMixin,

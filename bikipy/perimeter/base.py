@@ -10,7 +10,7 @@ import numpy as np
 from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments, PositiveInt
 
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
-from bikipy.core.typing import NDArrayFp64, NDArrayInt16, NDArrayBool
+from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayBool
 from bikipy.core.video import (
     VideoMetadataMixin,
     VideoMetadata,

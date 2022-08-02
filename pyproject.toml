@@ -14,7 +14,7 @@ setuptools = "*"
 
 click = "^8.1.3"
 pydantic = "^1.8.2"
-pydantic-numpy = "^1.2.1"
+pydantic-numpy = "^1.3.0"
 
 numpy = "^1.21.6"
 scipy = "^1.8.0"

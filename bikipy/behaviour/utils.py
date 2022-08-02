@@ -5,7 +5,7 @@ import numpy as np
 from pydantic import validate_arguments
 from pydantic_numpy import NDArray
 
-from bikipy.core.typing import NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 
 logger = getLogger(__name__)
 

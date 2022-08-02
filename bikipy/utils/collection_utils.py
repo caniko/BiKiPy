@@ -5,7 +5,7 @@ from typing import Any, Iterable, Optional, Sequence
 import numpy as np
 import pandas as pd
 
-from bikipy.core.typing import NDArray
+from pydantic_numpy.dtype import NDArray
 
 
 def chain_lists_to_tuple(lists: Iterable[list]) -> tuple:

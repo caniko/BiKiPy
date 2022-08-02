@@ -5,9 +5,9 @@ from numba import njit
 from pydantic import validate_arguments
 
 from bikipy import ENABLE_NUMBA
-from bikipy.core.typing import NDArrayBool
+from pydantic_numpy.dtype import NDArrayBool
 from bikipy.feature.tolerance import GENERIC_MINIMUM_SECONDS_ATTENTION, GENERIC_MAXIMUM_SECONDS_DISTRACTION
-from bikipy.feature.tolerance.common import tolerance_filter_warning_wrapper
+from bikipy.feature.tolerance.common import tolerance_filter_warning_wrapper, common_preparation
 
 
 @validate_arguments
@@ -59,10 +59,9 @@ def _filter(
     if np.sum(all_true) < fps:
         return None
 
-    distraction_tolerance = round(maximum_seconds_distraction * fps)
-    minimum_frames_attention = round(minimum_seconds_attention * fps)
-
-    length = len(all_true)
+    minimum_frames_attention, distraction_tolerance, length = common_preparation(
+        minimum_seconds_attention, maximum_seconds_distraction, fps, all_true
+    )
     attention_boolean_index = np.zeros(length, dtype=np.bool_)
 
     i, true_counter, distraction_counter, start = 0, 0, 0, 0

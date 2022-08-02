@@ -2,11 +2,11 @@ from functools import cached_property
 from pathlib import Path
 from typing import ClassVar, Optional, TypeVar
 
-import cv2
 from compress_pickle import compress_pickle
-from pydantic import BaseModel, DirectoryPath, Field, root_validator, FilePath
+from pydantic import BaseModel, DirectoryPath, Field, FilePath
+from pydantic_numpy.dtype import NDArrayUint8
 
-from bikipy.core.typing import TrialId, NDArrayUint8
+from bikipy.core.typing import TrialId
 from bikipy.utils.plotting import InspectArg, inspect_arg_description
 
 

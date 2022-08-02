@@ -17,8 +17,10 @@ from yaspin import yaspin
 from yaspin.spinners import Spinners
 
 from bikipy import ENABLE_PROCESS_POOLING
-from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin, BaseBikipy
-from bikipy.core.typing import NDArrayFp64, NDArrayInt16, NDArrayUint8, TrialId
+from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
+from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
+
+from bikipy.core.typing import TrialId
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin, incongruity_permissive_video_join
 from bikipy.feature.motion import Motion, motion_multi_indexer
 from bikipy.ingress.plugin import PluginChangeReference, PluginRadial
@@ -505,7 +507,7 @@ class BaseExperiment(Behaviour):
         result = defaultdict(dict)
         if ENABLE_PROCESS_POOLING:
             with yaspin(Spinners.pong, text="Computing experiment features..."):
-                with ProcessPoolExecutor(max_workers=round(os.cpu_count() * 0.60)) as executor:
+                with ProcessPoolExecutor(max_workers=round(os.cpu_count() * 2.0 / 3.0)) as executor:
                     for trial_class_label, trial_objects in self._trial_class_label_to_trial_objects.items():
                         trial_objects = (
                             trial_objects[:2] if self.compute_first_two_feature_series_only else trial_objects

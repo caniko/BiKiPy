@@ -8,7 +8,7 @@ import pandas as pd
 from pydantic import FilePath
 
 from bikipy import INVERT_Y_AXIS
-from bikipy.core.typing import NDArrayFp64, NDArrayInt16
+from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16
 
 logger = getLogger(__name__)
 

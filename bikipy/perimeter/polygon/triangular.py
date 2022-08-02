@@ -2,7 +2,7 @@ from typing import ClassVar, Optional, Any
 
 import numpy as np
 
-from bikipy.core.typing import NDArrayBool, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 
 

@@ -8,7 +8,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pydantic import validate_arguments
 
-from bikipy.core.typing import NDArrayFp64, NDArrayBool
+from pydantic_numpy.dtype import NDArrayFp64, NDArrayBool
 from bikipy.feature.tolerance.plural import plural_node_tolerance_filter
 from bikipy.feature.tolerance.single import single_node_tolerance_filter
 from bikipy.perimeter.base import Perimeter, PerimeterSet

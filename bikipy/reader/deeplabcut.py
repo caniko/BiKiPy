@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from pydantic import Field
 
-from bikipy.core.typing import NDArrayBool, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.reader.base import BaseReader
 
@@ -110,8 +110,17 @@ class DeepLabCutReader(BaseReader):
     @cached_property
     def meters_augmented(self) -> pd.DataFrame:
         result = self.augmented.copy()
-        result.loc[:, pd.IndexSlice[:, "x"]] = result.loc[:, pd.IndexSlice[:, "x"]] * self.video.meters_per_pixel[0]
-        result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] * self.video.meters_per_pixel[1]
+
+        if isinstance(self.video.meters_per_pixel, float):
+            result.loc[:, pd.IndexSlice[:, ("x", "y")]] = (
+                result.loc[:, pd.IndexSlice[:, ("x", "y")]] * self.video.meters_per_pixel
+            )
+        elif isinstance(self.video.meters_per_pixel, np.ndarray):
+            result.loc[:, pd.IndexSlice[:, "x"]] = result.loc[:, pd.IndexSlice[:, "x"]] * self.video.meters_per_pixel[0]
+            result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] * self.video.meters_per_pixel[1]
+        else:
+            raise RuntimeError(f"Could not match video.meters_per_pixel type: {type(self.video.meters_per_pixel)}")
+
         return result
 
     @property

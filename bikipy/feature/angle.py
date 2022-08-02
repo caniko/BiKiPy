@@ -6,7 +6,7 @@ import numpy as np
 from numba import jit, njit
 
 from bikipy import ENABLE_NUMBA
-from bikipy.core.typing import NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 from bikipy.utils.math.vector import dot_axis_1_1d, unit_vector
 
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}

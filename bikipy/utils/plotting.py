@@ -5,7 +5,7 @@ from typing import Any, Optional, TYPE_CHECKING
 from matplotlib import pyplot as plt
 from pydantic import validate_arguments
 
-from bikipy.core.typing import NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 from bikipy.utils.misc import int_file_stem_incrementor
 
 if TYPE_CHECKING:

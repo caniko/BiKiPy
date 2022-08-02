@@ -4,7 +4,7 @@ import numpy as np
 from pydantic import validator
 
 from bikipy.core.base_class import BaseBikipy
-from bikipy.core.typing import NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 from bikipy.utils.math.geometry import clockwise_sort_points
 
 
