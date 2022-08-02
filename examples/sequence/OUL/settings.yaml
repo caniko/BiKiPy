@@ -114,7 +114,7 @@ trial:
         crop_time_seconds: 300
     ObjectsInUpdatingLocationsTestTrial:
       defined:
-        crop_time_seconds: 300
+        crop_time_seconds: 600
 experiment:
   defined:
     compute_first_two_feature_series_only: false
