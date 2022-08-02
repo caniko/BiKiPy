@@ -5,6 +5,8 @@
 
 Store for functions and workflows for kinematic post-hoc data-analysis.
 
-BiKiPy has been under a major overhaul using the LTT Floatplane business strategy for the last 4 years. The work is kept private for my own protection against potential scoops from the scientific world.
+BiKiPy has been under a major overhaul using the LTT Floatplane business strategy for the last 4 years. The work is kept private for my own protection against potential scoops from the scientific world. The release strategy of the package is currently a secret.
 
-Please contact me if you wish to try out the package.
+The package has 4 upcoming citations.
+
+Please contact me through the discussions tab in this repository if you wish to discuss the package with me.
