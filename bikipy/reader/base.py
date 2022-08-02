@@ -54,7 +54,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
 
     crop_time_seconds: float = 0.0
     crop_from_end: bool = Field(
-        True,
+        False,
         description="Only affective if crop_frames is not 0. " "Will crop from start instead when set to False",
     )
 

@@ -69,6 +69,7 @@ trial:
       gaze_travel_direction_point_label: nose
       object_tracking_label_for_kinematics: center_eye
       perimeter_border_normal_meters: 0.05
+      crop_from_end: true
     required:
       gaze_start_point_label: string
       gaze_travel_direction_point_label: string
@@ -112,9 +113,10 @@ trial:
     ObjectsInUpdatingLocationsUpdateTrial:
       defined:
         crop_time_seconds: 300
+        crop_from_end: false
     ObjectsInUpdatingLocationsTestTrial:
       defined:
-        crop_time_seconds: 600
+        crop_time_seconds: 300
 experiment:
   defined:
     compute_first_two_feature_series_only: false
