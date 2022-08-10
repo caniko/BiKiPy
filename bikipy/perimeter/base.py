@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sb
 import numpy as np
 from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments, PositiveInt
+from typing_extensions import LiteralString
 
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayBool
@@ -20,7 +21,8 @@ from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_csv_rectangle,
 )
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
-from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence, chain_lists_to_tuple
+from bikipy.reader.base import Reader
+from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
 from bikipy.utils.plotting import plot_coordinates, generic_inspection_finalization, InspectArg, BOTTOM_LEGEND_KWARGS
 
@@ -50,6 +52,9 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
     reference_point_coco_path: Optional[FilePath]
     reference_point_array: Optional[NDArrayInt16]
 
+    moving_field_name: Optional[LiteralString["reference_point_array"]]
+    reader: Optional[Reader]
+
     category = "perimeter"
     required_video_metadata_fields = {"recording_resolution"}
 
@@ -72,7 +77,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         return result
 
     @abstractmethod
-    def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64):
+    def compute_confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
         ...
 
     @abstractmethod
@@ -91,6 +96,13 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
     @abstractmethod
     def centroid_meters(self) -> NDArrayFp64:
         ...
+
+    def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
+        if not self.moving_field_name:
+            return self.compute_confined_coordinate_boolean_index(coordinates)
+        if not self.reader:
+            msg = "reader must be passed to Perimeter when moving field name is utilized"
+            raise AttributeError(msg)
 
     def inspect_closest_point_on_edge_to_coordinates(self, result: NDArrayFp64, coordinates: NDArrayFp64):
         if self.inspect_arg:
@@ -336,7 +348,7 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
             )
         return present
 
-    def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64):
+    def compute_confined_coordinate_boolean_index(self, coordinates: NDArrayFp64):
         return self.combined_framewise_confined_coordinates(coordinates)
 
     def change_reference(self, **perimeter_change_reference_kwargs):

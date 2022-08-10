@@ -24,7 +24,7 @@ class TriangularPerimeter(BasePolygonPerimeter):
     def expand(self, perimeter_border_normal_meters: float | NDArrayFp64):
         pass
 
-    def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayFp64:
+    def compute_confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         """
         indices of the coordinates that are inside the respective perimeter
 

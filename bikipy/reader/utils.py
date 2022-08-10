@@ -4,7 +4,7 @@ from typing import Callable, Iterable, Optional
 
 from pydantic import DirectoryPath, validate_arguments
 
-from bikipy.reader import DeepLabCutReader
+from bikipy.reader.data_with_likelihood import DataWithLikelihoodReader
 
 
 @lru_cache
@@ -43,7 +43,7 @@ def merge_timestamps_with_dlc(
 
             timestamp_label = get_first_delimited_value_from_str(coord_file.stem)
 
-            df = DeepLabCutReader(df_path=coord_file).raw_df
+            df = DataWithLikelihoodReader(df_path=coord_file).raw_df
             if len(label_to_timestamp[timestamp_label]) != len(df):
                 os.remove(label_to_timestamp_path[timestamp_label])
                 continue

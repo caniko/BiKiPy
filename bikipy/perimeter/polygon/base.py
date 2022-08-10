@@ -152,7 +152,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             closest_point_on_edge_to_coordinates = self.closest_point_on_edge_to_coordinates(coordinates)
         return unit_vector(closest_point_on_edge_to_coordinates - coordinates)
 
-    def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
+    def compute_confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
         return parallel_point_inside_polygon(
             coordinates, self.metric_graph.linked_vertices, merge_ends=False, inspect_arg=self.confinement_inspect_arg
         )
