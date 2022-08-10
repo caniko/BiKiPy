@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from bikipy.reader.deeplabcut import DeepLabCutReader
+from bikipy.reader.data_with_likelihood import DeepLabCutReader
 
 EXAMPLES_ROOT = Path(__file__).resolve().parent.parent / "test_data"
 HDF_PATH = EXAMPLES_ROOT / "data_for_angle.h5"

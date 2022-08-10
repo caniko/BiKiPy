@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import abc
 from concurrent.futures import ProcessPoolExecutor
-from functools import cached_property, lru_cache, partial
+from functools import cached_property, partial
 from logging import getLogger
 from typing import Any, Generator, Hashable, Iterable, Optional, Sequence, TypeVar
 
@@ -10,10 +10,12 @@ import pandas as pd
 from pydantic import Field, FilePath
 from pydantic_numpy import NDArray
 
+from bikipy.reader.utils import compute_midpoint_label
 from bikipy import ENABLE_PROCESS_POOLING, INVERT_Y_AXIS
 from bikipy.core.base_class import BaseBikipyHashable
 from pydantic_numpy.dtype import NDArrayBool
 from bikipy.core.video import VideoMetadataMixin
+from bikipy.feature import recursive_midpoint
 
 FILE_EXTENSION_TO_PANDAS_READER = {
     ".parquet": pd.read_parquet,
@@ -76,18 +78,15 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     def _isolate_coordinates(self, key: Iterable[Hashable] | Hashable) -> pd.DataFrame:
         ...
 
-    @property
-    @abstractmethod
+    @cached_property
     def tracked_point_labels(self) -> tuple[str, ...]:
-        """
-        :return: tuple storing all regions of interest that are directly tracked, no midpoints
-        """
-        ...
+        return tuple(self.raw_df.columns.levels[0])
 
-    @property
-    @abstractmethod
-    def meters_augmented(self) -> pd.DataFrame:
-        ...
+    @cached_property
+    def tracked_and_midpoint_labels(self) -> tuple[str, ...]:
+        if self.midpoint_groups:
+            return *self.tracked_point_labels, *self.midpoint_groups.keys()
+        return self.tracked_point_labels
 
     @property
     def required_video_metadata_fields(self) -> set:
@@ -102,7 +101,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         :return: Tracking and augmented data stored in the same frame. The augmented data should
         include midpoints and inner interpolations.
         """
-        cloned_df = self.raw_df.copy()
+        result_df = self.raw_df.copy()
 
         crop_frames = None
         if self.df_is_timestamped:
@@ -121,25 +120,58 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
                     f"> total of {self.raw_frames} frames"
                 )
             if self.crop_from_end:
-                cloned_df = cloned_df.iloc[self.raw_frames - crop_frames :]
+                result_df = result_df.iloc[self.raw_frames - crop_frames :]
             else:
-                cloned_df = cloned_df.iloc[:crop_frames]
+                result_df = result_df.iloc[:crop_frames]
 
         if self.invert_y_axis:
-            cloned_df.loc[:, pd.IndexSlice[:, "y"]] = (
-                self.video.vertical_resolution - cloned_df.loc[:, pd.IndexSlice[:, "y"]]
+            result_df.loc[:, pd.IndexSlice[:, "y"]] = (
+                self.video.vertical_resolution - result_df.loc[:, pd.IndexSlice[:, "y"]]
             )
 
         if self.x_axis_crop_end_point:
-            cloned_df.loc[:, pd.IndexSlice[:, "x"]] = (
-                self.x_axis_crop_end_point + cloned_df.loc[:, pd.IndexSlice[:, "x"]]
+            result_df.loc[:, pd.IndexSlice[:, "x"]] = (
+                self.x_axis_crop_end_point + result_df.loc[:, pd.IndexSlice[:, "x"]]
             )
         if self.y_axis_crop_end_point:
-            cloned_df.loc[:, pd.IndexSlice[:, "y"]] = (
-                cloned_df.loc[:, pd.IndexSlice[:, "y"]] - self.y_axis_crop_end_point
+            result_df.loc[:, pd.IndexSlice[:, "y"]] = (
+                result_df.loc[:, pd.IndexSlice[:, "y"]] - self.y_axis_crop_end_point
             )
 
-        return cloned_df
+        if self.midpoint_groups:
+            midpoint_loop_iterator = list(self.midpoint_groups.items())
+            for name, group in midpoint_loop_iterator:
+                if all(component in self.tracked_point_labels for component in group):
+                    result_df.append(self._compute_midpoint(result_df, group, name))
+                elif all(component in self.tracked_and_midpoint_labels for component in group):
+                    # This midpoint depends on another midpoint, which has not been generated yet.
+                    # Putting it at the end of the loop
+                    midpoint_loop_iterator.append((name, group))
+                else:
+                    msg = (
+                        f"{self.df_path}: Midpoint {name}, cannot be derived as its components are "
+                        f"not defined in the tracked dataset nor in midpoint_groups.\n"
+                        f"The following are tracked: {self.tracked_point_labels}"
+                    )
+                    raise ValueError(msg)
+
+        return result_df
+
+    @cached_property
+    def meters_augmented(self) -> pd.DataFrame:
+        result = self.augmented.copy()
+
+        if isinstance(self.video.meters_per_pixel, float):
+            result.loc[:, pd.IndexSlice[:, ("x", "y")]] = (
+                result.loc[:, pd.IndexSlice[:, ("x", "y")]] * self.video.meters_per_pixel
+            )
+        elif isinstance(self.video.meters_per_pixel, np.ndarray):
+            result.loc[:, pd.IndexSlice[:, "x"]] = result.loc[:, pd.IndexSlice[:, "x"]] * self.video.meters_per_pixel[0]
+            result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] * self.video.meters_per_pixel[1]
+        else:
+            raise RuntimeError(f"Could not match video.meters_per_pixel type: {type(self.video.meters_per_pixel)}")
+
+        return result
 
     @property
     def df(self) -> pd.DataFrame:
@@ -161,10 +193,6 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     @property
     def frames(self) -> int:
         return len(self.df)
-
-    @cached_property
-    def tracked_and_midpoint_labels(self) -> tuple[str, ...]:
-        return tuple(*self.tracked_point_labels, *self.midpoint_groups)
 
     @cached_property
     def raw_df(self) -> pd.DataFrame:
@@ -220,6 +248,16 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
             for roi in self.tracked_point_labels
         }
 
+    @staticmethod
+    def _compute_midpoint(
+        df: pd.DataFrame, midpoint_group: Iterable[str], manual_midpoint_label: Optional[Hashable] = None
+    ) -> pd.DataFrame:
+        group_points = [
+            df.loc[:, pd.IndexSlice[component_name, ("x", "y")]].values for component_name in midpoint_group
+        ]
+        midpoint_label = compute_midpoint_label(midpoint_group, manual_midpoint_label)
+        return pd.DataFrame(recursive_midpoint(group_points).T, columns=[(midpoint_label, "x"), (midpoint_label, "y")])
+
     @classmethod
     def init_many_mapper(
         cls,
@@ -255,12 +293,3 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
 
 
 Reader = TypeVar("Reader", bound=BaseReader)
-
-
-@lru_cache
-def _find_longest_tails(valid_tails, items, as_slice: bool = True) -> slice | tuple[int, int]:
-    left_valid_tails, right_valid_tails = np.array([valid_tails[item] for item in items]).T
-
-    result = (left_valid_tails.max(), right_valid_tails.min())
-
-    return slice(*result) if as_slice else result

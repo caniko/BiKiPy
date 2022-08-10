@@ -1,1 +1,1 @@
-from .deeplabcut import DeepLabCutReader
+from .data_with_likelihood import DeepLabCutReader

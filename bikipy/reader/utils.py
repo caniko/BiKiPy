@@ -1,9 +1,15 @@
 import os
-from typing import Callable
+from functools import lru_cache
+from typing import Callable, Iterable, Optional
 
 from pydantic import DirectoryPath, validate_arguments
 
 from bikipy.reader import DeepLabCutReader
+
+
+@lru_cache
+def compute_midpoint_label(midpoint_group: Iterable[str], manual_midpoint_label: Optional[str] = None) -> str:
+    return manual_midpoint_label or f"{'_'.join(midpoint_group)}_midpoint"
 
 
 @validate_arguments

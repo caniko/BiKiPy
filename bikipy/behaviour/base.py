@@ -25,7 +25,7 @@ from bikipy.core.video import VideoMetadata, VideoMetadataMixin, incongruity_per
 from bikipy.feature.motion import Motion, motion_multi_indexer
 from bikipy.ingress.plugin import PluginChangeReference, PluginRadial
 from bikipy.perimeter.base import SinglePerimeter, PerimeterSet, BaseSinglePerimeter
-from bikipy.reader.deeplabcut import DeepLabCutReader
+from bikipy.reader.data_with_likelihood import DeepLabCutReader
 from bikipy.utils.collection_utils import (
     max_len_in_iterable,
 )

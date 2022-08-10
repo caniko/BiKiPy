@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from bikipy.core.video import VideoMetadata
-from bikipy.reader.deeplabcut import DeepLabCutReader
+from bikipy.reader.data_with_likelihood import DeepLabCutReader
 
 EXAMPLES_ROOT = Path(__file__).resolve().parent.parent / "test_data"
 
