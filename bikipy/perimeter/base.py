@@ -53,7 +53,6 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
     reference_point_array: Optional[NDArrayInt16]
 
     moving_field_name: Optional[LiteralString["reference_point_array"]]
-    reader: Optional[Reader]
 
     category = "perimeter"
     required_video_metadata_fields = {"recording_resolution"}
@@ -97,12 +96,18 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
     def centroid_meters(self) -> NDArrayFp64:
         ...
 
-    def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
+    def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64, reader: Optional[Reader] = None) -> NDArrayBool:
+        """
+        This function integrates moving perimeter routine into the static perimeter workflow
+        """
         if not self.moving_field_name:
             return self.compute_confined_coordinate_boolean_index(coordinates)
-        if not self.reader:
+        if not reader:
             msg = "reader must be passed to Perimeter when moving field name is utilized"
             raise AttributeError(msg)
+
+        if self.moving_field_name == "reference_point_array":
+
 
     def inspect_closest_point_on_edge_to_coordinates(self, result: NDArrayFp64, coordinates: NDArrayFp64):
         if self.inspect_arg:

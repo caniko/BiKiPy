@@ -9,11 +9,12 @@ import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath
 from pydantic_numpy import NDArray
+from sklearn.neighbors import NearestNeighbors
 
 from bikipy.reader.utils import compute_midpoint_label
 from bikipy import ENABLE_PROCESS_POOLING, INVERT_Y_AXIS
 from bikipy.core.base_class import BaseBikipyHashable
-from pydantic_numpy.dtype import NDArrayBool
+from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature import recursive_midpoint
 
@@ -63,6 +64,8 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     export_timestamp_data_as_parquet: bool = Field(
         False, description="When timestemp index is defined, export re-indexed df as parquet"
     )
+
+    _region_of_interest_to_fused_neighbouring_points: dict[str, NDArrayUint8] = Field(default_factory=dict)
 
     @classmethod
     @property
@@ -247,6 +250,12 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
             roi: np.sum(self.region_of_interest_to_boolean_index[roi]) / len(self.raw_df)
             for roi in self.tracked_point_labels
         }
+
+    def fused_neighbouring_points(self, region_of_interest: str) -> pd.DataFrame:
+        if region_of_interest in self._region_of_interest_to_fused_neighbouring_points:
+            return self._region_of_interest_to_fused_neighbouring_points[region_of_interest]
+        coordinates = self.df.loc[:, pd.IndexSlice[region_of_interest, ("x", "y")]].values
+        nbrs = NearestNeighbors().fit(coordinates)
 
     @staticmethod
     def _compute_midpoint(
