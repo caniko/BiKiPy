@@ -4,8 +4,6 @@ from typing import Callable, Iterable, Optional
 
 from pydantic import DirectoryPath, validate_arguments
 
-from bikipy.reader.data_with_likelihood import DataWithLikelihoodReader
-
 
 @lru_cache
 def compute_midpoint_label(midpoint_group: Iterable[str], manual_midpoint_label: Optional[str] = None) -> str:
@@ -16,10 +14,12 @@ def compute_midpoint_label(midpoint_group: Iterable[str], manual_midpoint_label:
 def merge_timestamps_with_dlc(
     dataset_dir: DirectoryPath,
     file_to_timestamp_series: Callable,
-    timestamp_file_lookup_expression: str = "*-timestamp*",
+    timestamp_file_lookup_expression: str = "*timestamps-*.csv",
     coordinate_file_lookup_expression: str = "*.parquet",
     delimiter: str = ".",
 ):
+    from bikipy.reader.data_with_likelihood import DataWithLikelihoodReader
+
     def get_first_delimited_value_from_str(string: str):
         return string.split(delimiter)[0]
 

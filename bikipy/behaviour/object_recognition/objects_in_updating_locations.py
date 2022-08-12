@@ -12,9 +12,12 @@ Object 4, present in stage 2 and 3, positive control for updated memory
 
 Test hypothesis:
 TG: Equal
-WT: 3 > 4 > 1 > 2
+WT: 4 > 3 > 2 >~ 1
 """
+from functools import cached_property
 from typing import ClassVar
+
+import pandas as pd
 
 from bikipy.behaviour.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
 from bikipy.behaviour.rectangle import RectangleEnclosedExperiment, RectangleEnclosedHabituationTrial
@@ -37,16 +40,16 @@ class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTri
 
 class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial):
     object_1: SinglePerimeter = ...
-    object_4: SinglePerimeter = ...
+    object_3: SinglePerimeter = ...
 
-    physical_object_labels = ("object_1", "object_4")
+    physical_object_labels = ("object_1", "object_3")
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     trial_label = "Update"
 
     @property
     def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
-        return self.object_1, self.object_4
+        return self.object_1, self.object_3
 
 
 class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
@@ -63,6 +66,12 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
     @property
     def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.object_1, self.object_2, self.object_3, self.object_4
+
+    @cached_property
+    def _trial_physical_object_feature_series_list(self) -> list[pd.Series]:
+        base = super()._trial_physical_object_feature_series_list
+        base.append()
+        return base
 
 
 class ObjectsInUpdatingLocationsExperiment(RectangleEnclosedExperiment):

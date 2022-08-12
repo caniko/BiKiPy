@@ -16,7 +16,7 @@ def gaze_direction_filter_circle_triangle(
     gaze_travel_direction_point: NDArrayFp64,
     gaze_start_point: NDArrayFp64,
     max_radians: float,
-    inspect: bool = False,
+    inspect: bool = True,
     **inspect_kwargs,
 ) -> NDArrayBool:
     gaze_vectors = gaze_travel_direction_point - gaze_start_point
@@ -61,8 +61,8 @@ def gaze_inspection_plot(
 
     quiver_kwargs = {
         "angles": "xy",
-        # "scale_units": "xy",
-        "scale": 1.0,
+        "scale_units": "xy",
+        # "scale": 1.0,
         "alpha": MATPLOTLIB_SCATTER_ALPHA,
     }
 

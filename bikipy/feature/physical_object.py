@@ -343,6 +343,15 @@ class PhysicalObjectSet(VideoMetadataMixin):
         return sum(self.physical_object_id_to_observation_instances.values())
 
     @cached_property
+    def object_bias_relative_score(self) -> dict:
+        if not self.seconds_observing:
+            return self._label_to_zero
+        return {
+            label: 100.0 * physical_object.attention_filtered_seconds_observing / self.seconds_observing
+            for label, physical_object in self.label_to_physical_object.items()
+        }
+
+    @cached_property
     def object_bias_score(self) -> dict:
         if not self.seconds_observing:
             return self._label_to_zero

@@ -117,8 +117,8 @@ class RectangleEnclosedTrial(BaseTrial):
                     )
                 )
 
-                # if self.center_meter_translation is not None:
-                #     quadrant += self.center_meter_translation
+                if self.center_meter_translation is not None:
+                    quadrant += self.center_meter_translation
 
                 result[(h, v)] = quadrant
 

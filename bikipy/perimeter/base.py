@@ -4,11 +4,11 @@ from functools import cached_property, reduce, partial
 from logging import getLogger
 from typing import Any, Literal, Optional, TypeVar
 
+import cv2
 import matplotlib.pyplot as plt
 import seaborn as sb
 import numpy as np
 from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments, PositiveInt
-from typing_extensions import LiteralString
 
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayBool
@@ -52,7 +52,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
     reference_point_coco_path: Optional[FilePath]
     reference_point_array: Optional[NDArrayInt16]
 
-    moving_field_name: Optional[LiteralString["reference_point_array"]]
+    moving_field_name: Optional[str]
 
     category = "perimeter"
     required_video_metadata_fields = {"recording_resolution"}
@@ -96,7 +96,9 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
     def centroid_meters(self) -> NDArrayFp64:
         ...
 
-    def confined_coordinate_boolean_index(self, coordinates: NDArrayFp64, reader: Optional[Reader] = None) -> NDArrayBool:
+    def confined_coordinate_boolean_index(
+        self, coordinates: NDArrayFp64, reader: Optional[Reader] = None
+    ) -> NDArrayBool:
         """
         This function integrates moving perimeter routine into the static perimeter workflow
         """
@@ -106,8 +108,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
             msg = "reader must be passed to Perimeter when moving field name is utilized"
             raise AttributeError(msg)
 
-        if self.moving_field_name == "reference_point_array":
-
+        # if self.moving_field_name == "reference_point_array":
 
     def inspect_closest_point_on_edge_to_coordinates(self, result: NDArrayFp64, coordinates: NDArrayFp64):
         if self.inspect_arg:
@@ -263,7 +264,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
             ax.set_title(self.label)
 
         if self.video.frame is not None:
-            ax.imshow(self.video.frame)
+            ax.imshow(cv2.cvtColor(self.video.frame, cv2.COLOR_BGR2GRAY))
             ax.invert_yaxis()
 
         if coordinates is not None:

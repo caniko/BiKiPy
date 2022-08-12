@@ -61,22 +61,24 @@ class DataWithLikelihoodReader(BaseReader):
     def frames(self) -> int:
         return self.df.shape[0]
 
-    @staticmethod
     def _compute_midpoint(
-        df: pd.DataFrame, midpoint_group: Iterable[str], manual_midpoint_label: Optional[Hashable] = None
+        self, df: pd.DataFrame, midpoint_group: Iterable[str], manual_midpoint_label: Optional[Hashable] = None
     ) -> pd.DataFrame:
         base = super()._compute_midpoint(df, midpoint_group, manual_midpoint_label)
         reduced_likelihoods = np.multiply.reduce(
             df.loc[:, pd.IndexSlice[midpoint_group, "likelihood"]].values,
             axis=1,
         )
-        base.append(
-            pd.DataFrame(
-                reduced_likelihoods,
-                columns=[(compute_midpoint_label(midpoint_group, manual_midpoint_label), "likelihood")],
-            )
+        return pd.concat(
+            (
+                base,
+                pd.DataFrame(
+                    reduced_likelihoods,
+                    columns=[(compute_midpoint_label(midpoint_group, manual_midpoint_label), "likelihood")],
+                ),
+            ),
+            axis=1,
         )
-        return base
 
 
 class DeepLabCutReader(DataWithLikelihoodReader):

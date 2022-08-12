@@ -182,8 +182,9 @@ class BaseTrial(Behaviour):
     # Miscellaneous
 
     @cached_property
-    def trial_feature_series(self):
-        return pd.concat(self._trial_feature_series_list, axis=0)
+    def trial_feature_series(self) -> pd.Series:
+        # Concatenate and reverse the order
+        return pd.concat(self._trial_feature_series_list[::-1], axis=0)
 
     @property
     def _trial_feature_series_list(self) -> list[pd.Series]:
@@ -497,8 +498,27 @@ class BaseExperiment(Behaviour):
         return result
 
     @cached_property
+    def animals_ids(self) -> set:
+        return set(self.animal_id_to_trial_objects)
+
+    @cached_property
     def number_of_trials(self) -> int:
         return len(self.trial_ids)
+
+    @property
+    def _animal_id_to_sequential_features_list(self) -> list[pd.DataFrame]:
+        """
+        example:
+            base = super()._animal_id_to_sequential_features_list
+            animal_id_to_features = {}
+            for animal_id, trial_ids in self.animal_id_to_trial_ids.items():
+                animal_series = []
+                for trial_class_name in self.trial_class_names:
+                    pass
+            return base
+        :return:
+        """
+        return []
 
     # DataFrame methods =========================================
 
@@ -529,11 +549,20 @@ class BaseExperiment(Behaviour):
         return result
 
     @cached_property
+    def _animal_id_to_sequential_features(self) -> pd.DataFrame | None:
+        if self._animal_id_to_sequential_features_list:
+            # Concatenate and reverse the order
+            return pd.concat(self._animal_id_to_sequential_features_list[::-1], axis=0)
+
+    @cached_property
     def trial_label_to_df(self) -> dict[str | PositiveInt, pd.DataFrame]:
         result = {}
         for trial_class_label, data_dict in self._trial_class_to_trial_series_set.items():
             result[trial_class_label] = pd.DataFrame.from_dict(data_dict, orient="index")
             result[trial_class_label].index.name = "Trial ID"
+
+        if self._animal_id_to_sequential_features:
+            result["AnimalToSequential"] = self._animal_id_to_sequential_features
 
         return result
 
@@ -559,6 +588,8 @@ class BaseExperiment(Behaviour):
             animal_id_to_feature_series[animal_id] = pd.concat(animal_series, axis=1)
 
         result = pd.DataFrame.from_dict(animal_id_to_feature_series, orient="index")
+        if self._animal_id_to_sequential_features:
+            result = pd.concat((self._animal_id_to_sequential_features, result), axis=0)
         result.index.name = "Animal"
 
         return result

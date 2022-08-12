@@ -134,10 +134,11 @@ class CirclePerimeter(BaseSinglePerimeter):
         else:
             ax = manual_ax
 
-        if inspect_pixels:
-            ax = plot_circle(self.scaled_center_in_pixels, self.scaled_radius_in_pixels, ax)
-        else:
-            ax = plot_circle(self.center_meters, self.radius_meters, ax)
+        ax = (
+            plot_circle(self.scaled_center_in_pixels, self.scaled_radius_in_pixels, ax)
+            if inspect_pixels
+            else plot_circle(self.center_meters, self.radius_meters, ax)
+        )
 
         if not manual_ax:
             generic_inspection_finalization(self.class_inspect_arg or True, f"{self.label}.jpg")

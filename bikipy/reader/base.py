@@ -43,7 +43,9 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         None,
         description="Scales the coordinates with respect to their min and max. " "True requires x_max and y_max",
     )
-    midpoint_groups: Optional[dict] = Field(description="labels that consist of groups that should have their")
+    midpoint_groups: Optional[dict[str, tuple]] = Field(
+        description="labels that consist of groups that should have their"
+    )
     x_axis_crop_end_point: float = 0.0
     y_axis_crop_end_point: float = 0.0
     invert_y_axis: bool = Field(
@@ -145,7 +147,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
             midpoint_loop_iterator = list(self.midpoint_groups.items())
             for name, group in midpoint_loop_iterator:
                 if all(component in self.tracked_point_labels for component in group):
-                    result_df.append(self._compute_midpoint(result_df, group, name))
+                    result_df = pd.concat((result_df, self._compute_midpoint(result_df, group, name)), axis=1)
                 elif all(component in self.tracked_and_midpoint_labels for component in group):
                     # This midpoint depends on another midpoint, which has not been generated yet.
                     # Putting it at the end of the loop
@@ -215,7 +217,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
             df.set_index(self.timestamp_index, inplace=True)
 
         if df.index.dtype == np.timedelta64:
-            df.index = df.index.seconds
+            df.index = df.index.values.astype(float) / 10**6
 
         return df
 
@@ -257,15 +259,14 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         coordinates = self.df.loc[:, pd.IndexSlice[region_of_interest, ("x", "y")]].values
         nbrs = NearestNeighbors().fit(coordinates)
 
-    @staticmethod
     def _compute_midpoint(
-        df: pd.DataFrame, midpoint_group: Iterable[str], manual_midpoint_label: Optional[Hashable] = None
+        self, df: pd.DataFrame, midpoint_group: Iterable[str], manual_midpoint_label: Optional[Hashable] = None
     ) -> pd.DataFrame:
         group_points = [
             df.loc[:, pd.IndexSlice[component_name, ("x", "y")]].values for component_name in midpoint_group
         ]
         midpoint_label = compute_midpoint_label(midpoint_group, manual_midpoint_label)
-        return pd.DataFrame(recursive_midpoint(group_points).T, columns=[(midpoint_label, "x"), (midpoint_label, "y")])
+        return pd.DataFrame(recursive_midpoint(group_points), columns=[(midpoint_label, "x"), (midpoint_label, "y")])
 
     @classmethod
     def init_many_mapper(
