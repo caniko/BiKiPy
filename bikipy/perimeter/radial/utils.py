@@ -15,5 +15,6 @@ def plot_circle(center: NDArrayFp64, radius: NDArrayFp64 | float, ax: Any = None
         fig, ax = plt.subplots()
 
     ax.plot(*result.T)
+    ax.scatter(*center, marker=",")
 
     return ax

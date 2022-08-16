@@ -52,6 +52,7 @@ jupyter = { version = "^1.0.0", optional = true }
 jupyterthemes = { version = "^0.20.0", optional = true }
 yaspin = "^2.1.0"
 pytest = "^7.1.2"
+scikit-image = "^0.19.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.2"

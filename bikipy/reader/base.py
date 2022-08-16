@@ -216,8 +216,8 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         elif self.timestamp_index:
             df.set_index(self.timestamp_index, inplace=True)
 
-        if df.index.dtype == np.timedelta64:
-            df.index = df.index.values.astype(float) / 10**6
+        if isinstance(df.index, (np.timedelta64, pd.TimedeltaIndex)):
+            df.index = df.index.values.astype(float) / 10**9
 
         return df
 

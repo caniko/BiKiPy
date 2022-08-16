@@ -74,6 +74,7 @@ def proximity_filter(
 
         if inspect_pixels:
             inside_perimeter_border = convert_meters_to_pixels(inside_perimeter_border, inspect_video)
+            inspect_video.ax_ticks_metric_to_pixel(ax)
 
         ax.set_title("Proximity filter")
 

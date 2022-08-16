@@ -16,7 +16,7 @@ def gaze_direction_filter_circle_triangle(
     gaze_travel_direction_point: NDArrayFp64,
     gaze_start_point: NDArrayFp64,
     max_radians: float,
-    inspect: bool = True,
+    inspect: bool = False,
     **inspect_kwargs,
 ) -> NDArrayBool:
     gaze_vectors = gaze_travel_direction_point - gaze_start_point
@@ -30,10 +30,11 @@ def gaze_direction_filter_circle_triangle(
 
     angle_from_normal_to_gaze = angle_from_a_to_b(vector_to_closest_point_on_edge, gaze_vectors)
 
-    result = direction_point_is_closer_than_start_point & (np.abs(angle_from_normal_to_gaze) <= max_radians)
+    result = direction_point_is_closer_than_start_point
+    # result = direction_point_is_closer_than_start_point & (np.abs(angle_from_normal_to_gaze) <= max_radians)
 
     if inspect:
-        gaze_inspection_plot(perimeter, result, gaze_travel_direction_point, gaze_start_point, **inspect_kwargs)
+        gaze_inspection_plot(perimeter, result, gaze_vectors, gaze_travel_direction_point, **inspect_kwargs)
 
     return result
 
@@ -55,6 +56,7 @@ def gaze_inspection_plot(
 
     if inspect_pixels:
         gaze_travel_direction_point = convert_meters_to_pixels(gaze_travel_direction_point, inspect_video)
+        inspect_video.ax_ticks_metric_to_pixel(ax)
 
     perimeter.plot(inspect_pixels=inspect_pixels, ax=ax)
     ax.set_title("Gaze direction filter")
@@ -62,7 +64,7 @@ def gaze_inspection_plot(
     quiver_kwargs = {
         "angles": "xy",
         "scale_units": "xy",
-        # "scale": 1.0,
+        "scale": 1.0,
         "alpha": MATPLOTLIB_SCATTER_ALPHA,
     }
 

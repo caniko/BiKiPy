@@ -101,6 +101,10 @@ class CirclePerimeter(BaseSinglePerimeter):
         return unit_vector(self.center_meters - coordinates)
 
     def gaze_direction_filter(self, *args, **kwargs) -> NDArrayBool:
+        try:
+            kwargs["inspect"] = kwargs["inspect_pixels"]
+        except KeyError:
+            pass
         return gaze_direction_filter_circle_triangle(self, *args, **kwargs)
 
     @cached_property
@@ -134,11 +138,11 @@ class CirclePerimeter(BaseSinglePerimeter):
         else:
             ax = manual_ax
 
-        ax = (
+        if inspect_pixels:
             plot_circle(self.scaled_center_in_pixels, self.scaled_radius_in_pixels, ax)
-            if inspect_pixels
-            else plot_circle(self.center_meters, self.radius_meters, ax)
-        )
+            self.video.ax_ticks_metric_to_pixel(ax)
+        else:
+            plot_circle(self.center_meters, self.radius_meters, ax)
 
         if not manual_ax:
             generic_inspection_finalization(self.class_inspect_arg or True, f"{self.label}.jpg")

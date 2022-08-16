@@ -21,6 +21,8 @@ from bikipy.utils.video import get_video_data
 
 logger = getLogger(__name__)
 
+_TICK_END_OFFSET_RATIO = 0.9
+
 _can_only_be_set_manually = {"meters_per_pixel", "image_resize_multiplier"}
 
 
@@ -173,6 +175,21 @@ class VideoMetadata(_VideoMetadataBase):
         frame, horizontal_resolution, vertical_resolution, fps = get_video_data(self.video_path)
 
         return np.array((horizontal_resolution, vertical_resolution), dtype=np.int16), fps, frame
+
+    def ax_ticks_metric_to_pixel(self, ax, number_of_ticks: int = 7):
+        ax.set_xticks(
+            ticks=np.linspace(0.0, self.horizontal_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
+            labels=np.round(
+                np.linspace(0.0, self.metric_horizontal_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
+                decimals=2,
+            ),
+        )
+        ax.set_yticks(
+            ticks=np.linspace(0.0, self.vertical_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
+            labels=np.round(
+                np.linspace(0.0, self.metric_vertical_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks), decimals=2
+            ),
+        )
 
 
 class VideoMetadataMixin(_VideoMetadataBase):

@@ -1,9 +1,10 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 import cv2
 import numpy as np
 from pydantic import FilePath
+from pydantic_numpy import NDArray
 
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayUint8
 
@@ -28,3 +29,16 @@ def read_image(image: FilePath | NDArrayUint8, imread_flagg: Optional[list]) -> 
         assert isinstance(image, NDArrayFp64), f"image must be either path or NDArrayFp64, but got:\n{image}"
 
     return image
+
+
+def axis_imshow_gray(ax: Any, image: NDArray, bgr_not_rgb: bool = True):
+    grey_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY if bgr_not_rgb else cv2.COLOR_RGB2GRAY)
+
+    ax.autoscale(enable=True)
+
+    ax.imshow(grey_image, cmap="gray", vmin=0, vmax=255)
+
+    ax.invert_yaxis()
+    ax.set_aspect("equal", adjustable="box")
+
+    return ax

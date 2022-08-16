@@ -59,6 +59,7 @@ def plot_coordinates(
 
     if inspect_pixels:
         coordinates = convert_meters_to_pixels(coordinates, video)
+        video.ax_ticks_metric_to_pixel(ax)
 
     ax.scatter(*coordinates.T, **plot_kwargs)
 

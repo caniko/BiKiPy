@@ -63,6 +63,10 @@ class TriangularPerimeter(BasePolygonPerimeter):
         **kwargs
     ) -> NDArrayBool:
         if self.equilateral:
+            try:
+                kwargs["inspect"] = kwargs["inspect_pixels"]
+            except KeyError:
+                pass
             return self.circle.gaze_direction_filter_circle_triangle(
                 gaze_travel_direction_point=gaze_travel_direction_point,
                 gaze_start_point=gaze_start_point,

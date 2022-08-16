@@ -23,6 +23,7 @@ from bikipy.perimeter.polygon.makesense import (
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
 from bikipy.reader.base import Reader
 from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence
+from bikipy.utils.image import axis_imshow_gray
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
 from bikipy.utils.plotting import plot_coordinates, generic_inspection_finalization, InspectArg, BOTTOM_LEGEND_KWARGS
 
@@ -264,8 +265,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
             ax.set_title(self.label)
 
         if self.video.frame is not None:
-            ax.imshow(cv2.cvtColor(self.video.frame, cv2.COLOR_BGR2GRAY))
-            ax.invert_yaxis()
+            axis_imshow_gray(ax, self.video.frame)
 
         if coordinates is not None:
             ax = plot_coordinates(coordinates, ax, inspect_pixels, self.video)

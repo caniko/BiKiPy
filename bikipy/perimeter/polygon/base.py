@@ -296,7 +296,11 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         else:
             ax = manual_ax
 
-        vertices = self.scaled_vertices_in_pixels if inspect_pixels else self.vertices_in_meters
+        if inspect_pixels:
+            vertices = self.scaled_vertices_in_pixels
+            self.video.ax_ticks_metric_to_pixel(ax)
+        else:
+            vertices = self.vertices_in_meters
 
         for index in range(len(vertices)):
             following_index = 0 if index + 1 == len(vertices) else index + 1
