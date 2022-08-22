@@ -15,7 +15,7 @@ class PluginVideo(BasePluginFile):
 
     @cached_property
     def video(self) -> VideoMetadata:
-        result = VideoMetadata(video_path=self.data_path)
+        result = mextractor(video_path=self.data_path)
 
         raw_multiplier = self.ingress.settings["ingress"]["frame_upscale_multiplier"]
         if raw_multiplier and raw_multiplier != "float":

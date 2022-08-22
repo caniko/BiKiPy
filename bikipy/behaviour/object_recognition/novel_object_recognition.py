@@ -39,8 +39,6 @@ class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
         ("AbsoluteDiscrimination", "NovelFamiliar"),
         ("DiscriminationIndex", "NovelFamiliar"),
         ("NoveltyPreference", "NovelFamiliar"),
-        ("ObjectBiasScore", "Familiar"),
-        ("ObjectBiasScore", "Novel"),
     )
 
     @cached_property
@@ -52,7 +50,8 @@ class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
                     self.nort_absolute_discrimination,
                     self.discrimination_index,
                     self.novelty_preference,
-                    *self.physical_object_set.object_bias_score.values(),
+                    *self.physical_object_set.relative_object_bias_score.values(),
+                    *self.physical_object_set.absolute_object_bias_score.values(),
                 ),
                 index=self.constant_feature_headers,
             )

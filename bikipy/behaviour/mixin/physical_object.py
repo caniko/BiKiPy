@@ -52,8 +52,15 @@ class PhysicalObjectTrialMixin(BaseBikipy):
 
     @cached_property
     def _trial_physical_object_feature_series_list(self) -> list[pd.Series]:
-        series = self.physical_object_set.feature_summary
-        series.index = pd.MultiIndex.from_product([["SecondsObserving"], ["All", *self.physical_object_labels]])
+        series_physical_objects_with_all = self.physical_object_set.feature_summary
+        series_physical_objects_with_all.index = pd.MultiIndex.from_product([["SecondsObserving"], ["All", *self.physical_object_labels]])
+
+        series_physical_objects =
+        ("RelativeObjectBiasScore", "Familiar"),
+        ("RelativeObjectBiasScore", "Novel"),
+        ("AbsoluteObjectBiasScore", "Familiar"),
+        ("AbsoluteObjectBiasScore", "Novel"),
+
         return [series]
 
     @cached_property

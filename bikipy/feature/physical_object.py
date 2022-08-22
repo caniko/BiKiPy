@@ -239,6 +239,26 @@ class PhysicalObjectSet(VideoMetadataMixin):
 
     overlapping_frame_to_total_frame_warning_ratio: ClassVar[float] = 0.05
 
+    @validator("physical_objects", pre=True)
+    def identical_fps(cls, value):
+        if any(value[0].video.fps != physical_object.video.fps for physical_object in value[1:]):
+            msg = (
+                f"Frames per second differ across physical objects:\n"
+                f"{', '.join((physical_object.video.fps for physical_object in value))}"
+            )
+            raise AttributeError(msg)
+        return value
+
+    @validator("physical_objects")
+    def readers_must_be_identical(cls, value) -> tuple[PhysicalObject, ...]:
+        if len(value) == 1:
+            return value
+        first_reader = value[0].reader
+        if any(first_reader != other_reader for other_reader in value[1:]):
+            msg = "Readers of the physical objects are not identical"
+            raise AttributeError(msg)
+        return value
+
     @cached_property
     def __len__(self) -> int:
         return len(self.physical_objects)
@@ -250,27 +270,17 @@ class PhysicalObjectSet(VideoMetadataMixin):
     def _video(self):
         return reduce(VideoMetadata.join, (physical_object.video for physical_object in self.physical_objects))
 
-    @classmethod
-    def from_perimeter(cls, *perimeters, **kwargs):
-        return cls(physical_objects=tuple(PhysicalObject(perimeter=perimeter, **kwargs) for perimeter in perimeters))
-
-    @classmethod
-    def from_perimeter_set(cls, perimeter_set: PerimeterSet):
-        assert not perimeter_set.restricted_perimeters
-        return cls.from_perimeter(*perimeter_set.perimeters)
-
-    @classmethod
-    def from_bikipy_trial(cls, perimeters: Iterable[SinglePerimeter], trial_class):
-        return cls(
-            physical_objects=tuple(
-                PhysicalObject(perimeter=perimeter, **trial_class.physical_object_keyword_arguments)
-                for perimeter in perimeters
-            )
-        )
+    @property
+    def reader(self) -> Reader:
+        return self.physical_objects[0].reader
 
     @cached_property
     def frames(self) -> int:
         return len(self._first_object)
+
+    @cached_property
+    def labels(self) -> tuple[str, ...]:
+        return tuple(physical_object.label for physical_object in self.physical_objects)
 
     @cached_property
     def observing_per_frame(self):
@@ -299,7 +309,7 @@ class PhysicalObjectSet(VideoMetadataMixin):
 
     @property
     def feature_summary(self) -> pd.Series:
-        return pd.Series((self.seconds_observing, *self.object_specific_observation.values()))
+        return pd.Series((*self.relative_object_bias_score, self.seconds_observing, *self.object_specific_observation.values()), index=)
 
     @cached_property
     def observation_sequence(self):
@@ -346,7 +356,7 @@ class PhysicalObjectSet(VideoMetadataMixin):
         return sum(self.physical_object_id_to_observation_instances.values())
 
     @cached_property
-    def object_bias_relative_score(self) -> dict:
+    def relative_object_bias_score(self) -> dict[str, float]:
         if not self.seconds_observing:
             return self._label_to_zero
         return {
@@ -354,12 +364,20 @@ class PhysicalObjectSet(VideoMetadataMixin):
             for label, physical_object in self.label_to_physical_object.items()
         }
 
+    @property
+    def object_bias_score(self) -> dict[str, float]:
+        """
+        Academic literature, and statistics concludes relative_object_bias_score is the best for comparison across
+        animals.
+        """
+        return self.relative_object_bias_score
+
     @cached_property
-    def object_bias_score(self) -> dict:
+    def absolute_object_bias_score(self) -> dict[str, float]:
         if not self.seconds_observing:
             return self._label_to_zero
         return {
-            label: 100.0 * physical_object.attention_filtered_seconds_observing / self.seconds_observing
+            label: 100.0 * physical_object.attention_filtered_seconds_observing / self.reader.trial_length_seconds
             for label, physical_object in self.label_to_physical_object.items()
         }
 
@@ -410,12 +428,20 @@ class PhysicalObjectSet(VideoMetadataMixin):
             raise AttributeError(msg)
         return value
 
-    @validator("physical_objects", pre=True)
-    def identical_fps(cls, value):
-        if any(value[0].video.fps != physical_object.video.fps for physical_object in value[1:]):
-            msg = (
-                f"Frames per second differ across physical objects:\n"
-                f"{', '.join((physical_object.video.fps for physical_object in value))}"
+    @classmethod
+    def from_perimeter(cls, *perimeters, **kwargs):
+        return cls(physical_objects=tuple(PhysicalObject(perimeter=perimeter, **kwargs) for perimeter in perimeters))
+
+    @classmethod
+    def from_perimeter_set(cls, perimeter_set: PerimeterSet):
+        assert not perimeter_set.restricted_perimeters
+        return cls.from_perimeter(*perimeter_set.perimeters)
+
+    @classmethod
+    def from_bikipy_trial(cls, perimeters: Iterable[SinglePerimeter], trial_class):
+        return cls(
+            physical_objects=tuple(
+                PhysicalObject(perimeter=perimeter, **trial_class.physical_object_keyword_arguments)
+                for perimeter in perimeters
             )
-            raise AttributeError(msg)
-        return value
+        )

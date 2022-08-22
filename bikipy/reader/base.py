@@ -215,9 +215,10 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
             self.df_is_timestamped = True
         elif self.timestamp_index:
             df.set_index(self.timestamp_index, inplace=True)
-
-        if isinstance(df.index, (np.timedelta64, pd.TimedeltaIndex)):
+            self.df_is_timestamped = True
+        elif isinstance(df.index, (np.timedelta64, pd.TimedeltaIndex)):
             df.index = df.index.values.astype(float) / 10**9
+            self.df_is_timestamped = True
 
         return df
 
@@ -252,6 +253,12 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
             roi: np.sum(self.region_of_interest_to_boolean_index[roi]) / len(self.raw_df)
             for roi in self.tracked_point_labels
         }
+
+    @cached_property
+    def trial_length_seconds(self) -> float:
+        if self.df_is_timestamped:
+            return self.raw_df.index.values[-1]
+        return len(self.raw_df) * self.video.fps
 
     def fused_neighbouring_points(self, region_of_interest: str) -> pd.DataFrame:
         if region_of_interest in self._region_of_interest_to_fused_neighbouring_points:
