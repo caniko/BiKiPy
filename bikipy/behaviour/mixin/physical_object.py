@@ -46,22 +46,7 @@ class PhysicalObjectTrialMixin(BaseBikipy):
 
     @cached_property
     def trial_feature_series(self):
-        return pd.concat(
-            (*self._trial_physical_object_feature_series_list[::-1], *self._trial_feature_series_list[::-1]), axis=0
-        )
-
-    @cached_property
-    def _trial_physical_object_feature_series_list(self) -> list[pd.Series]:
-        series_physical_objects_with_all = self.physical_object_set.feature_summary
-        series_physical_objects_with_all.index = pd.MultiIndex.from_product([["SecondsObserving"], ["All", *self.physical_object_labels]])
-
-        series_physical_objects =
-        ("RelativeObjectBiasScore", "Familiar"),
-        ("RelativeObjectBiasScore", "Novel"),
-        ("AbsoluteObjectBiasScore", "Familiar"),
-        ("AbsoluteObjectBiasScore", "Novel"),
-
-        return [series]
+        return pd.concat((*self.physical_object_set.feature_summary, *self._trial_feature_series_list[::-1]), axis=0)
 
     @cached_property
     def physical_object_keyword_arguments(self) -> dict[str, Any]:

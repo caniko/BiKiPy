@@ -438,6 +438,7 @@ class BaseIngress(BaseBikipy, ABC):
             **self.settings["experiment"]["defined"],
             **self.experiment_class_kwargs,
             inspect_arg=self.inspect_directory_path,
+            trial_init_error_out_dir=self.result_directory_path,
         )
 
     # Motion <-> Feature fitting ===================================

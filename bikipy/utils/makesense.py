@@ -17,6 +17,8 @@ def read_makesense_rectangle(data_path: FilePath, invert_y_axis: bool = INVERT_Y
     result = pd.read_csv(
         data_path, header=None, index_col=0, names=("x", "y", "vec_x", "vec_y", "image_name", "x_res", "y_res")
     )
+    if len(result) == 3:
+        result.drop(index="label_name", inplace=True)
     if invert_y_axis:
         result.loc[:, "y"] = result["y_res"] - result.loc[:, "y"]
         result.loc[:, "vec_y"] = -result["vec_y"]

@@ -9,7 +9,7 @@ from typing import ClassVar, Hashable, Iterable, Literal, Optional, Sequence, Ty
 
 import numpy as np
 import pandas as pd
-from pydantic import Field, FilePath, ValidationError, validator, PositiveInt
+from pydantic import Field, FilePath, ValidationError, validator, PositiveInt, DirectoryPath
 from pydantic.fields import FieldInfo
 from pydantic_numpy import NDArray
 from tqdm import tqdm
@@ -233,6 +233,7 @@ class BaseExperiment(Behaviour):
     compute_first_two_feature_series_only: bool = Field(
         False, description="Used to rapidly generate combo df during debugging"
     )
+    trial_init_error_out_dir: Optional[DirectoryPath] = Field(description="Directory to write Trial class init errors")
 
     habituation_trial_class: ClassVar[Trial] = Field(
         ..., description="The trial class that will be used in case first_trial_is_habituation is called"
@@ -430,8 +431,13 @@ class BaseExperiment(Behaviour):
                 continue
         if bad_trial_ids_to_error_msg:
             msg = f"Some trial IDs yielded pydantic validation errors:"
-            for trial_id, msg in bad_trial_ids_to_error_msg.items():
-                msg += f"\n{trial_id}:\n{msg}\n"
+            for trial_id, trial_msg in bad_trial_ids_to_error_msg.items():
+                msg += f"\n{trial_id}:\n{trial_msg}\n"
+            if self.trial_init_error_out_dir:
+                error_out_path = self.trial_init_error_out_dir / "trial_init_error.log"
+                with open(error_out_path, "w") as out_file:
+                    out_file.write(msg)
+                    msg += f"\nError logs were saved to {error_out_path}\n"
             raise ValueError(f"{msg}\n{len(bad_trial_ids_to_error_msg)} errors out of {len(self.trial_ids)} Trials")
         return result
 

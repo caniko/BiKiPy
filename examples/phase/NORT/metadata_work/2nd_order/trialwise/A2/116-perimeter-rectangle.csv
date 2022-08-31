@@ -1,0 +1,3 @@
+label_name,bbox_x,bbox_y,bbox_width,bbox_height,image_name,image_width,image_height
+familiar,55,139,24,33,116-image.png,232,216
+novel,159,45,19,21,116-image.png,232,216

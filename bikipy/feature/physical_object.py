@@ -309,7 +309,14 @@ class PhysicalObjectSet(VideoMetadataMixin):
 
     @property
     def feature_summary(self) -> pd.Series:
-        return pd.Series((*self.relative_object_bias_score, self.seconds_observing, *self.object_specific_observation.values()), index=)
+        without_all = pd.Series(
+            self.object_bias_score, index=pd.MultiIndex.from_product([["ObjectBiasScore"], list(self.labels)])
+        )
+        with_all = pd.Series(
+            (*self.relative_object_bias_score, self.seconds_observing, *self.object_specific_observation.values()),
+            index=pd.MultiIndex.from_product([[["SecondsObserving"], ["ObjectBiasScore"]], ["All", *self.labels]]),
+        )
+        return pd.concat((without_all, with_all))
 
     @cached_property
     def observation_sequence(self):

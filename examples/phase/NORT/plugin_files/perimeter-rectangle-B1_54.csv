@@ -1,0 +1,3 @@
+label_name,bbox_x,bbox_y,bbox_width,bbox_height,image_name,image_width,image_height
+familiar,51,44,18,20,54-video.png,224,212
+familiar,154,146,19,20,54-video.png,224,212
