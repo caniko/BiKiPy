@@ -7,13 +7,15 @@ import numpy as np
 import pandas as pd
 from pydantic import FilePath
 
-from bikipy import runtime_settings.matplotlib_invert_y_axis
+from bikipy import runtime_settings
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16
 
 logger = getLogger(__name__)
 
 
-def read_makesense_rectangle(data_path: FilePath, invert_y_axis: bool = runtime_settings.matplotlib_invert_y_axis) -> pd.DataFrame:
+def read_makesense_rectangle(
+    data_path: FilePath, invert_y_axis: bool = runtime_settings.matplotlib_invert_y_axis
+) -> pd.DataFrame:
     result = pd.read_csv(
         data_path, header=None, index_col=0, names=("x", "y", "vec_x", "vec_y", "image_name", "x_res", "y_res")
     )
@@ -25,7 +27,9 @@ def read_makesense_rectangle(data_path: FilePath, invert_y_axis: bool = runtime_
     return result
 
 
-def read_makesense_line(data_path: FilePath, invert_y_axis: bool = runtime_settings.matplotlib_invert_y_axis) -> pd.DataFrame:
+def read_makesense_line(
+    data_path: FilePath, invert_y_axis: bool = runtime_settings.matplotlib_invert_y_axis
+) -> pd.DataFrame:
     result = pd.read_csv(
         data_path, names=("label", "1x", "1y", "2x", "2y", "image_name", "x_res", "y_res"), index_col=None, header=None
     )
@@ -48,7 +52,9 @@ def get_all_lines_from_makesense_line_df(line_df: pd.DataFrame) -> NDArrayFp64:
 
 
 @lru_cache
-def read_makesense_point(data_path: FilePath, invert_y_axis: bool = runtime_settings.matplotlib_invert_y_axis) -> pd.DataFrame:
+def read_makesense_point(
+    data_path: FilePath, invert_y_axis: bool = runtime_settings.matplotlib_invert_y_axis
+) -> pd.DataFrame:
     result = pd.read_csv(
         data_path,
         names=("label", "x", "y", "image_name", "x_res", "y_res"),

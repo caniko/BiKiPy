@@ -12,7 +12,7 @@ from pydantic_numpy import NDArray
 from sklearn.neighbors import NearestNeighbors
 
 from bikipy.reader.utils import compute_midpoint_label
-from bikipy import runtime_settings, runtime_settings.matplotlib_invert_y_axis
+from bikipy import runtime_settings
 from bikipy.core.base_class import BaseBikipyHashable
 from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8
 from bikipy.core.video import VideoMetadataMixin
