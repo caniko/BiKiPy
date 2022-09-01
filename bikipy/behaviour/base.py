@@ -16,7 +16,7 @@ from tqdm import tqdm
 from yaspin import yaspin
 from yaspin.spinners import Spinners
 
-from bikipy import ENABLE_PROCESS_POOLING
+from bikipy import runtime_settings
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
 
@@ -531,9 +531,9 @@ class BaseExperiment(Behaviour):
     @cached_property
     def _trial_class_to_trial_series_set(self):
         result = defaultdict(dict)
-        if ENABLE_PROCESS_POOLING:
+        if not runtime_settings.disable_process_pooling:
             with yaspin(Spinners.pong, text="Computing experiment features..."):
-                with ProcessPoolExecutor(max_workers=round(os.cpu_count() * 2.0 / 3.0)) as executor:
+                with ProcessPoolExecutor(max_workers=round(os.cpu_count() * 0.5)) as executor:
                     for trial_class_label, trial_objects in self._trial_class_label_to_trial_objects.items():
                         trial_objects = (
                             trial_objects[:2] if self.compute_first_two_feature_series_only else trial_objects

@@ -5,7 +5,7 @@ import numpy as np
 from numba import njit
 from pydantic import validate_arguments
 
-from bikipy import ENABLE_NUMBA
+from bikipy import runtime_settings
 from pydantic_numpy.dtype import NDArrayBool
 
 logger = getLogger(__name__)
@@ -32,5 +32,5 @@ def common_preparation(
     return round(minimum_seconds_attention * fps), round(maximum_seconds_distraction * fps), len(boolean_sequence)
 
 
-if ENABLE_NUMBA:
+if not runtime_settings.disable_numba:
     common_preparation = njit(cache=True)(common_preparation)

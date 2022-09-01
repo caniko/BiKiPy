@@ -12,7 +12,7 @@ from pydantic_numpy import NDArray
 from sklearn.neighbors import NearestNeighbors
 
 from bikipy.reader.utils import compute_midpoint_label
-from bikipy import ENABLE_PROCESS_POOLING, INVERT_Y_AXIS
+from bikipy import runtime_settings, runtime_settings.matplotlib_invert_y_axis
 from bikipy.core.base_class import BaseBikipyHashable
 from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8
 from bikipy.core.video import VideoMetadataMixin
@@ -49,7 +49,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     x_axis_crop_end_point: float = 0.0
     y_axis_crop_end_point: float = 0.0
     invert_y_axis: bool = Field(
-        INVERT_Y_AXIS,
+        runtime_settings.matplotlib_invert_y_axis,
         description=(
             "if True will invert the y-axis. Useful when the user wants to work in "
             "traditional Cartesian coordinate system where the origin is on "
@@ -300,7 +300,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         kwarg_loaded_init = partial(cls, **init_kwargs)
 
         # Process pooling in windows is subpar and is not supported.
-        if ENABLE_PROCESS_POOLING:
+        if not runtime_settings.disable_process_pooling:
             with ProcessPoolExecutor() as executor:
                 for dlc_obj in executor.map(kwarg_loaded_init, data_path, labels):
                     yield dlc_obj

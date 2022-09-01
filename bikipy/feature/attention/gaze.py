@@ -4,7 +4,7 @@ import numpy as np
 import seaborn as sb
 from matplotlib import pyplot as plt
 
-from bikipy import MATPLOTLIB_SCATTER_ALPHA
+from bikipy import runtime_settings
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from bikipy.core.video import VideoMetadata, convert_meters_to_pixels
 from bikipy.feature.angle import angle_from_a_to_b
@@ -65,7 +65,7 @@ def gaze_inspection_plot(
         "angles": "xy",
         "scale_units": "xy",
         "scale": 1.0,
-        "alpha": MATPLOTLIB_SCATTER_ALPHA,
+        "alpha": runtime_settings.matplotlib_scatter_alpha,
     }
 
     ax.quiver(

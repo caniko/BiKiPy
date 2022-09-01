@@ -12,6 +12,7 @@ from typing import Any, ClassVar, Optional
 
 import cv2
 import numpy as np
+from mextractor.video import extract_video
 from numpy import ndarray
 from pydantic import FilePath, Field
 
@@ -80,6 +81,11 @@ class VideoMetadata(_VideoMetadataBase):
         new_metadata = slave.manual_video_metadata
         new_metadata.update(master.manual_video_metadata)
         return cls(**new_metadata)
+
+    @classmethod
+    def with_mextractor(cls, video_path: FilePath, image_resize_multiplier: Optional[float] = None):
+        info = extract_video(path_to_video=video_path, compress_image=False)
+        return cls(manual_recording_resolution=info.resolution, manual_fps=info.fps, manual_frame=info.image_array)
 
     @cached_property
     def pixels_per_meter(self) -> float | NDArrayFp64:

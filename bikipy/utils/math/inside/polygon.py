@@ -8,7 +8,7 @@ from numba import njit
 from pydantic import validate_arguments
 from seaborn import set_theme
 
-from bikipy import ENABLE_NUMBA
+from bikipy import runtime_settings
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from bikipy.utils.math.vector import dot_axis_1_1d, orthogonal_unit_vector
 from bikipy.utils.plotting import generic_inspection_finalization, InspectArg
@@ -139,7 +139,17 @@ def _is_inside_sm(point: NDArrayFp64, polygon: NDArrayFp64):
     return intersections & 1
 
 
-if ENABLE_NUMBA:
+if runtime_settings.disable_numba:
+    is_inside_sm = _is_inside_sm
+
+    def is_inside_sm_parallel(points: NDArrayFp64, polygon: NDArrayFp64) -> NDArrayBool:
+        ln = len(points)
+        result = np.empty(ln, dtype=bool)
+        for i in range(ln):
+            result[i] = is_inside_sm(points[i], polygon)
+        return result
+
+else:
     is_inside_sm = njit(nogil=True, cache=True)(_is_inside_sm)
 
     @njit(parallel=True, cache=True)
@@ -147,15 +157,5 @@ if ENABLE_NUMBA:
         ln = len(points)
         result = np.empty(ln, dtype=numba.boolean)
         for i in numba.prange(ln):
-            result[i] = is_inside_sm(points[i], polygon)
-        return result
-
-else:
-    is_inside_sm = _is_inside_sm
-
-    def is_inside_sm_parallel(points: NDArrayFp64, polygon: NDArrayFp64) -> NDArrayBool:
-        ln = len(points)
-        result = np.empty(ln, dtype=bool)
-        for i in range(ln):
             result[i] = is_inside_sm(points[i], polygon)
         return result

@@ -4,7 +4,7 @@ import numpy as np
 from numba import njit
 from pydantic import validate_arguments
 
-from bikipy import ENABLE_NUMBA
+from bikipy import runtime_settings
 from pydantic_numpy.dtype import NDArrayBool
 from bikipy.feature.tolerance import GENERIC_MINIMUM_SECONDS_ATTENTION, GENERIC_MAXIMUM_SECONDS_DISTRACTION
 from bikipy.feature.tolerance.common import tolerance_filter_warning_wrapper, common_preparation
@@ -97,5 +97,5 @@ def _filter(
     return attention_boolean_index
 
 
-if ENABLE_NUMBA:
+if not runtime_settings.disable_numba:
     _filter = njit(cache=True)(_filter)

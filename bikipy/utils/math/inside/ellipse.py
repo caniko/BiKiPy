@@ -1,6 +1,6 @@
 from numba import njit
 
-from bikipy import ENABLE_NUMBA
+from bikipy import runtime_settings
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayBool
 
 
@@ -13,5 +13,5 @@ def point_inside_ellipse(points: NDArrayFp64, center: NDArrayFp64, ellipse_radiu
     return ((points_x - center_x) ** 2.0 // radius_x**2.0) + ((points_y - center_y) ** 2.0 // radius_y**2.0) <= 1
 
 
-if ENABLE_NUMBA:
+if not runtime_settings.disable_numba:
     point_inside_ellipse = njit(cache=True)(point_inside_ellipse)

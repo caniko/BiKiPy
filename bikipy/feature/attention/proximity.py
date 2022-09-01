@@ -6,7 +6,7 @@ import numpy as np
 import seaborn as sb
 from pydantic import validate_arguments
 
-from bikipy import MATPLOTLIB_SCATTER_ALPHA
+from bikipy import runtime_settings
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from bikipy.core.video import (
     VideoMetadata,
@@ -87,27 +87,32 @@ def proximity_filter(
             inspect_pixels=inspect_pixels,
         )
 
-        ax.scatter(*inside_perimeter_border[result].T, marker="x", alpha=MATPLOTLIB_SCATTER_ALPHA, label="Valid")
+        ax.scatter(
+            *inside_perimeter_border[result].T,
+            marker="x",
+            alpha=runtime_settings.matplotlib_scatter_alpha,
+            label="Valid",
+        )
 
         not_result = ~result
         if perimeter.impenetrable:
             ax.scatter(
                 *inside_perimeter_border[not_result].T,
                 marker="x",
-                alpha=MATPLOTLIB_SCATTER_ALPHA,
+                alpha=runtime_settings.matplotlib_scatter_alpha,
                 label="Invalid",
             )
         else:
             ax.scatter(
                 *inside_perimeter_border[inside_perimeter_border_boolean_index & not_result].T,
                 marker="x",
-                alpha=MATPLOTLIB_SCATTER_ALPHA,
+                alpha=runtime_settings.matplotlib_scatter_alpha,
                 label="Nose valid, invalid torso",
             )
             ax.scatter(
                 *inside_perimeter_border[outside_perimeter_boolean_index & not_result].T,
                 marker="x",
-                alpha=MATPLOTLIB_SCATTER_ALPHA,
+                alpha=runtime_settings.matplotlib_scatter_alpha,
                 label="Torso valid, invalid nose",
             )
 

@@ -1,0 +1,3 @@
+label_name,bbox_x,bbox_y,bbox_width,bbox_height,image_name,image_width,image_height
+familiar,50,41,23,36,101-video.png,224,224
+novel,155,149,23,26,101-video.png,224,224

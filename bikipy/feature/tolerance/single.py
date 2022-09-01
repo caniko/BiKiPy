@@ -3,7 +3,7 @@ from numba import njit
 from pydantic import validate_arguments
 from pydantic_numpy import NDArray
 
-from bikipy import ENABLE_NUMBA
+from bikipy import runtime_settings
 from pydantic_numpy.dtype import NDArrayBool, NDArrayInt64
 from bikipy.feature.tolerance import GENERIC_MINIMUM_SECONDS_ATTENTION, GENERIC_MAXIMUM_SECONDS_DISTRACTION
 from bikipy.feature.tolerance.common import tolerance_filter_warning_wrapper, common_preparation
@@ -138,7 +138,7 @@ def arg_single_node_tolerance_filter(
     return data
 
 
-if ENABLE_NUMBA:
+if not runtime_settings.disable_numba:
     _filter = njit(cache=True)(_filter)
 
     arg_single_node_tolerance_filter = njit(cache=True)(arg_single_node_tolerance_filter)

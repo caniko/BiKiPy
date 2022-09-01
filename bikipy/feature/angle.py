@@ -5,7 +5,7 @@ import numba
 import numpy as np
 from numba import jit, njit
 
-from bikipy import ENABLE_NUMBA
+from bikipy import runtime_settings
 from pydantic_numpy.dtype import NDArrayFp64
 from bikipy.utils.math.vector import dot_axis_1_1d, unit_vector
 
@@ -110,7 +110,7 @@ def inner_angle(vector_set_1: NDArrayFp64, vector_set_2: NDArrayFp64):
     v1_magnitudes = np.linalg.norm(vector_set_1, axis=1)
     v2_magnitudes = np.linalg.norm(vector_set_2, axis=1)
 
-    return njit(parallel=True, cache=True)(inner_angle_func)() if ENABLE_NUMBA else inner_angle_func()
+    return inner_angle_func() if runtime_settings.disable_numba else njit(parallel=True, cache=True)(inner_angle_func)()
 
 
 def compute_angles_from_points_abc(
@@ -194,6 +194,6 @@ ANGLE_METHOD_TO_FUNC = {
 }
 
 
-if ENABLE_NUMBA:
+if not runtime_settings.disable_numba:
     pass
     # angle_from_a_to_b = jit(cache=True)(angle_from_a_to_b)

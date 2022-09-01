@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from pydantic import validator, root_validator
 
-from bikipy import MATPLOTLIB_SCATTER_ALPHA
+from bikipy import runtime_settings
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipyInspectMixin
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
@@ -152,12 +152,14 @@ class PhysicalObject(BaseBikipyInspectMixin):
         )
 
         self.attention_axes[1][0].scatter(
-            *gaze_travel_direction_point[self.logical_location_and_gaze].T, alpha=MATPLOTLIB_SCATTER_ALPHA, marker="x"
+            *gaze_travel_direction_point[self.logical_location_and_gaze].T,
+            alpha=runtime_settings.matplotlib_scatter_alpha,
+            marker="x",
         )
 
         self.attention_axes[1][1].scatter(
             *gaze_travel_direction_point[self.attention_observance_boolean_index].T,
-            alpha=MATPLOTLIB_SCATTER_ALPHA,
+            alpha=runtime_settings.matplotlib_scatter_alpha,
             marker="x",
         )
 

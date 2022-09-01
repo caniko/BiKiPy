@@ -1,10 +1,15 @@
-import os
+from pydantic import BaseSettings, Field
 
-# initialize each DeepLabCutReader object with multiprocessing.
-# Useful when initialize approximately 20 or more dlc objects
-ENABLE_PROCESS_POOLING = not os.getenv("DISABLE_PROCESS_POOLING", False)
-ENABLE_NUMBA = not os.getenv("DISABLE_NUMBA", False)
 
-MATPLOTLIB_SCATTER_ALPHA = 0.30
+class BikipyRuntimeSettings(BaseSettings):
+    disable_process_pooling: bool = Field(
+        True,
+        description="initialize each DeepLabCutReader object with multiprocessing. Useful when initialize approximately 20 or more dlc objects",
+    )
+    enable_numba: bool = True
 
-INVERT_Y_AXIS = False
+    matplotlib_scatter_alpha: float = 0.30
+    matplotlib_invert_y_axis: bool = False
+
+
+runtime_settings = BikipyRuntimeSettings()

@@ -8,7 +8,7 @@ from numpy.linalg import LinAlgError
 from pydantic import validate_arguments
 from pydantic_numpy import NDArray
 
-from bikipy import ENABLE_NUMBA, MATPLOTLIB_SCATTER_ALPHA
+from bikipy import runtime_settings
 from pydantic_numpy.dtype import NDArrayFp64
 from bikipy.utils.collection_utils import (
     evenly_spaced_indices_from_sequence,
@@ -190,7 +190,7 @@ def ray_and_line_segment_intersection(
             *ray_directions[line_segment_intersection_bool][indices].T,
             angles="xy",
             scale_units="xy",
-            alpha=MATPLOTLIB_SCATTER_ALPHA,
+            alpha=runtime_settings.matplotlib_scatter_alpha,
             label="Valid",
             color="b",
         )
@@ -202,7 +202,7 @@ def ray_and_line_segment_intersection(
             *ray_directions[non_intersection_bool][indices].T,
             angles="xy",
             scale_units="xy",
-            alpha=MATPLOTLIB_SCATTER_ALPHA,
+            alpha=runtime_settings.matplotlib_scatter_alpha,
             label="Invalid",
             color="r",
         )
@@ -302,7 +302,7 @@ def rotate_vectors_with_angle(vectors: NDArrayFp64, angle: NDArrayFp64) -> NDArr
     return np.array([np.dot(vector, rotation_matrix) for vector in vectors]).transpose(1, 0, 2)
 
 
-if ENABLE_NUMBA:
+if not runtime_settings.disable_numba:
 
     # rotation_matrix_from_radians = jit(cache=True)(rotation_matrix_from_radians)
     # dot_axis_1_1d = njit(cache=True)(dot_axis_1_1d)   https://github.com/numba/numba/issues/1269

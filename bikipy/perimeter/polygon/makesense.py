@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 from pydantic import DirectoryPath, FilePath
 
-from bikipy import INVERT_Y_AXIS
+from bikipy import runtime_settings
 from pydantic_numpy.dtype import NDArrayFp64
 from bikipy.utils.makesense import (
     image_name_to_point_from_makesense,
@@ -22,7 +22,7 @@ def init_polygon_from_makesense_coco_polygon(
     image_root: Optional[DirectoryPath] = None,
     reference_point_csv_path: Optional[FilePath] = None,
     reference_point_array: Optional[NDArrayFp64] = None,
-    invert_y_axis: bool = INVERT_Y_AXIS,
+    invert_y_axis: bool = runtime_settings.matplotlib_invert_y_axis,
     **perimeter_kwargs,
 ) -> dict:
     from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters
@@ -87,7 +87,7 @@ def init_polygon_from_makesense_csv_rectangle(
     data_path: FilePath,
     image_root: Optional[DirectoryPath] = None,
     reference_point_csv_path: Optional[FilePath] = None,
-    invert_y_axis: bool = INVERT_Y_AXIS,
+    invert_y_axis: bool = runtime_settings.matplotlib_invert_y_axis,
     **perimeter_kwargs,
 ):
     from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters
