@@ -26,7 +26,7 @@ from bikipy.feature.tolerance.single import single_node_tolerance_filter
 from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
 from bikipy.reader.base import Reader
 from bikipy.utils.collection_utils import generic_multi_indexer
-from bikipy.utils.image import axis_imshow_gray
+from bikipy.utils.image import axis_frame_imshow
 from bikipy.utils.plotting import generic_inspection_finalization, InspectArg
 
 logger = getLogger(__name__)
@@ -200,7 +200,7 @@ class PhysicalObject(BaseBikipyInspectMixin):
         elif self.video.frame is not None:
             # axes row 1 will be targeted by analysis inspect function, no need to do that here
             for ax in (self.attention_axes[1][0], self.attention_axes[1][1]):
-                axis_imshow_gray(ax, self.video.frame)
+                axis_frame_imshow(ax, self.video.frame)
                 self.video.ax_ticks_metric_to_pixel(ax)
         else:
             raise RuntimeError(f"Video frame is None and not None: {self.video.frame}")

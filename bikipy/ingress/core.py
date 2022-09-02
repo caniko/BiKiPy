@@ -684,7 +684,7 @@ def init_settings(
             "method": ingress_method,
             "first_stage_is_habituation": False,
             "framewise_coordinates_file_suffix": framewise_coordinates_file_suffix,
-            "frame_upscale_multiplier": "float",
+            "minimum_frame_length": 500,
             "dataset_directory": None,
             "profile_runtime": True,
         },

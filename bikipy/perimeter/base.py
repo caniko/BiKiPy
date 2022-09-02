@@ -4,7 +4,6 @@ from functools import cached_property, reduce, partial
 from logging import getLogger
 from typing import Any, Literal, Optional, TypeVar
 
-import cv2
 import matplotlib.pyplot as plt
 import seaborn as sb
 import numpy as np
@@ -23,7 +22,7 @@ from bikipy.perimeter.polygon.makesense import (
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
 from bikipy.reader.base import Reader
 from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence
-from bikipy.utils.image import axis_imshow_gray
+from bikipy.utils.image import axis_frame_imshow
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
 from bikipy.utils.plotting import plot_coordinates, generic_inspection_finalization, InspectArg, BOTTOM_LEGEND_KWARGS
 
@@ -97,33 +96,6 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
     def centroid_meters(self) -> NDArrayFp64:
         ...
 
-    def confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, reader: Optional[Reader] = None
-    ) -> NDArrayBool:
-        """
-        This function integrates moving perimeter routine into the static perimeter workflow
-        """
-        if not self.moving_field_name:
-            return self.compute_confined_coordinate_boolean_index(coordinates)
-        if not reader:
-            msg = "reader must be passed to Perimeter when moving field name is utilized"
-            raise AttributeError(msg)
-
-        # if self.moving_field_name == "reference_point_array":
-
-    def inspect_closest_point_on_edge_to_coordinates(self, result: NDArrayFp64, coordinates: NDArrayFp64):
-        if self.inspect_arg:
-            sb.set_theme(style="darkgrid")
-            fig, ax = plt.subplots(dpi=500)
-
-            self.plot_perimeter(manual_ax=ax)
-
-            with sb.color_palette("Spectral", n_colors=5):
-                for i in evenly_spaced_indices_from_sequence(coordinates, 5):
-                    ax.plot(*np.vstack((result[i], coordinates[i])).T)
-
-            generic_inspection_finalization(self.class_inspect_arg, f"{self.label}.jpg")
-
     @abstractmethod
     def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         ...
@@ -154,6 +126,33 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
             msg = "reference_point_coco_path and reference_point_array must be " "defined mutually exclusive"
             raise AttributeError(msg)
         return values
+
+    def confined_coordinate_boolean_index(
+        self, coordinates: NDArrayFp64, reader: Optional[Reader] = None
+    ) -> NDArrayBool:
+        """
+        This function integrates moving perimeter routine into the static perimeter workflow
+        """
+        if not self.moving_field_name:
+            return self.compute_confined_coordinate_boolean_index(coordinates)
+        if not reader:
+            msg = "reader must be passed to Perimeter when moving field name is utilized"
+            raise AttributeError(msg)
+
+        # if self.moving_field_name == "reference_point_array":
+
+    def inspect_closest_point_on_edge_to_coordinates(self, result: NDArrayFp64, coordinates: NDArrayFp64):
+        if self.inspect_arg:
+            sb.set_theme(style="darkgrid")
+            fig, ax = plt.subplots(dpi=500)
+
+            self.plot_perimeter(manual_ax=ax)
+
+            with sb.color_palette("Spectral", n_colors=5):
+                for i in evenly_spaced_indices_from_sequence(coordinates, 5):
+                    ax.plot(*np.vstack((result[i], coordinates[i])).T)
+
+            generic_inspection_finalization(self.class_inspect_arg, f"{self.label}.jpg")
 
     @property
     def reference_point(self):
@@ -265,7 +264,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
             ax.set_title(self.label)
 
         if self.video.frame is not None:
-            axis_imshow_gray(ax, self.video.frame)
+            axis_frame_imshow(ax, self.video.frame)
 
         if coordinates is not None:
             ax = plot_coordinates(coordinates, ax, inspect_pixels, self.video)

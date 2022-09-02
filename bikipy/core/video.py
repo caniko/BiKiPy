@@ -42,7 +42,7 @@ class _VideoMetadataBase(BaseBikipy):
     manual_frame: Optional[FilePath | NDArrayUint8] = Field(
         description="Frame from the video stored in numpy array, use cv2.imread to read from file paths"
     )
-    image_resize_multiplier: Optional[float] = Field(
+    minimum_frame_length: Optional[float] = Field(
         description="Must be defined in case the original frame has been resized. "
         "This might be done during bikipy ingress"
     )
@@ -83,9 +83,14 @@ class VideoMetadata(_VideoMetadataBase):
         return cls(**new_metadata)
 
     @classmethod
-    def with_mextractor(cls, video_path: FilePath, image_resize_multiplier: Optional[float] = None):
+    def with_mextractor(cls, video_path: FilePath, minimum_frame_length: Optional[float] = None):
         info = extract_video(path_to_video=video_path, compress_image=False)
-        return cls(manual_recording_resolution=info.resolution, manual_fps=info.fps, manual_frame=info.image_array)
+        return cls(
+            manual_recording_resolution=info.resolution,
+            manual_fps=info.fps,
+            manual_frame=info.image_array,
+            minimum_frame_length=minimum_frame_length,
+        )
 
     @cached_property
     def pixels_per_meter(self) -> float | NDArrayFp64:
@@ -137,8 +142,28 @@ class VideoMetadata(_VideoMetadataBase):
     def fps(self) -> float:
         return self.manual_fps or self._video_metadata_from_file[1]
 
-    @property
+    @cached_property
+    def image_resize_multiplier(self) -> float | None:
+        if self.minimum_frame_length:
+            shortest_side_size = min(self._raw_frame.shape[:2])
+            if shortest_side_size < self.minimum_frame_length:
+                return self.minimum_frame_length / shortest_side_size
+
+    @cached_property
     def frame(self) -> NDArrayUint8 | None:
+        if self._raw_frame is not None:
+            if not self.image_resize_multiplier:
+                return self._raw_frame
+            return cv2.resize(
+                self._raw_frame,
+                (0, 0),
+                fx=self.image_resize_multiplier,
+                fy=self.image_resize_multiplier,
+                interpolation=cv2.INTER_CUBIC,
+            )
+
+    @cached_property
+    def _raw_frame(self) -> NDArrayUint8 | None:
         if self.manual_frame is not None:
             return self._manual_read_frame
         if self.video_path:
