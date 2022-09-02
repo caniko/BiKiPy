@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import validator
 from pydantic_numpy import NDArray
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
-from pydantic_numpy.dtype import NDArrayFp64, NDArrayBool
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.perimeter.radial.circle import CirclePerimeter
 from bikipy.utils.collection_utils import (
@@ -20,9 +20,9 @@ from bikipy.utils.math.geometry import clockwise_sort_points
 from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
 from bikipy.utils.math.vector import (
     nearest_point_on_line_segment_to_coordinates,
-    unit_vector,
     ray_and_line_segment_intersection,
     rotate_vectors_with_angle,
+    unit_vector,
 )
 from bikipy.utils.plotting import generic_inspection_finalization
 
@@ -274,16 +274,6 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
         return self
 
-    @cached_property
-    def scaled_vertices_in_pixels(self) -> NDArrayFp64:
-        """
-        Vertices must be scaled in accordance with video frame multiplier.
-        :return:
-        """
-        if self.video.image_resize_multiplier:
-            return self.vertices_in_pixels * self.video.image_resize_multiplier
-        return self.vertices_in_pixels
-
     def plot_perimeter(
         self,
         inspect_pixels: bool = False,
@@ -297,10 +287,12 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             ax = manual_ax
 
         if inspect_pixels:
-            vertices = self.scaled_vertices_in_pixels
-            self.video.ax_ticks_metric_to_pixel(ax)
+            vertices = self.vertices_in_pixels
         else:
             vertices = self.vertices_in_meters
+
+        if self.video.image_resize_multiplier:
+            vertices = vertices * self.video.image_resize_multiplier
 
         for index in range(len(vertices)):
             following_index = 0 if index + 1 == len(vertices) else index + 1

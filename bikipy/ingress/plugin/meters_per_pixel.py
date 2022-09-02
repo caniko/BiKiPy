@@ -3,7 +3,6 @@ from logging import getLogger
 
 import numpy as np
 from pydantic import DirectoryPath, FilePath, validator
-
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.typing import TrialId

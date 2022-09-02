@@ -3,10 +3,10 @@ from typing import Any, Optional
 import numpy as np
 import seaborn as sb
 from matplotlib import pyplot as plt
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy import runtime_settings
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
-from bikipy.core.video import VideoMetadata, convert_meters_to_pixels
+from bikipy.core.video import VideoMetadata, prepare_data_for_plotting
 from bikipy.feature.angle import angle_from_a_to_b
 from bikipy.perimeter.base import SinglePerimeter
 
@@ -28,7 +28,7 @@ def gaze_direction_filter_circle_triangle(
         closest_points_on_edges - gaze_travel_direction_point, axis=1
     ) < np.linalg.norm(closest_points_on_edges - gaze_start_point, axis=1)
 
-    angle_from_normal_to_gaze = angle_from_a_to_b(vector_to_closest_point_on_edge, gaze_vectors)
+    angle_from_a_to_b(vector_to_closest_point_on_edge, gaze_vectors)
 
     result = direction_point_is_closer_than_start_point
     # result = direction_point_is_closer_than_start_point & (np.abs(angle_from_normal_to_gaze) <= max_radians)
@@ -54,8 +54,10 @@ def gaze_inspection_plot(
     else:
         ax = manual_ax
 
+    gaze_travel_direction_point = prepare_data_for_plotting(gaze_travel_direction_point, inspect_pixels, inspect_video)
+    gaze_vectors = prepare_data_for_plotting(gaze_vectors, inspect_pixels, inspect_video)
+
     if inspect_pixels:
-        gaze_travel_direction_point = convert_meters_to_pixels(gaze_travel_direction_point, inspect_video)
         inspect_video.ax_ticks_metric_to_pixel(ax)
 
     perimeter.plot(inspect_pixels=inspect_pixels, ax=ax)

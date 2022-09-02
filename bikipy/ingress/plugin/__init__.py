@@ -15,10 +15,9 @@ from bikipy.ingress.plugin.bonsai_timestamp import PluginBonsaiTimestamp
 from bikipy.ingress.plugin.center import PluginCenter
 from bikipy.ingress.plugin.meters_per_pixel import PluginMeterPerPixel
 from bikipy.ingress.plugin.perimeter.change_reference import PluginChangeReference
-from bikipy.ingress.plugin.perimeter.single import PluginSinglePerimeter
 from bikipy.ingress.plugin.perimeter.radial import PluginRadial
+from bikipy.ingress.plugin.perimeter.single import PluginSinglePerimeter
 from bikipy.ingress.plugin.video import PluginVideo
-
 
 ALL_PLUGINS = (
     PluginMeterPerPixel,

@@ -5,9 +5,12 @@ from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.typing import TrialId
 from bikipy.ingress.plugin.base import BasePluginFile
-from bikipy.perimeter.base import Perimeter, BasePerimeter
+from bikipy.perimeter.base import BasePerimeter, Perimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
-from bikipy.utils.makesense import image_name_to_point_from_makesense, get_point_from_makesense_row
+from bikipy.utils.makesense import (
+    get_point_from_makesense_row,
+    image_name_to_point_from_makesense,
+)
 
 
 class PluginChangeReference(BasePluginFile):

@@ -1,26 +1,26 @@
 import json
 import pstats
 from abc import ABC, abstractmethod
-from cProfile import Profile
 from collections import defaultdict
+from cProfile import Profile
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, ClassVar, Hashable, Iterable, TypeVar, Optional
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar, Hashable, Iterable, Optional, TypeVar
 
 import numpy as np
 import pandas as pd
 import yaml
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
-
-from bikipy.core.base_class import BaseBikipy
 from pydantic_numpy.dtype import NDArrayFp64
 
+from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import TrialId
-from bikipy.ingress.plugin import ingress_key_to_model, PluginMeterPerPixel, ALL_PLUGINS
+from bikipy.ingress.plugin import ALL_PLUGINS, PluginMeterPerPixel, ingress_key_to_model
 from bikipy.ingress.plugin.base import Plugin
-from bikipy.ingress.plugin.meters_per_pixel import detect_meters_per_pixel_in_perimeter_directory
+from bikipy.ingress.plugin.meters_per_pixel import (
+    detect_meters_per_pixel_in_perimeter_directory,
+)
 from bikipy.ingress.utils import settings
 from bikipy.ingress.utils.io import (
     get_dataset_directory_path,
@@ -34,8 +34,11 @@ from bikipy.ingress.utils.model_schema import extended_group_schema, extended_sc
 from bikipy.ingress.utils.settings import get_definable_settings
 from bikipy.perimeter.base import BaseSinglePerimeter, Perimeter
 from bikipy.reader import DeepLabCutReader
-from bikipy.utils.collection_utils import copycat_assumes_levels_of_icon, get_first_value_in_dict
-from bikipy.utils.misc import sheet_names_from_path, dict_deepmerge
+from bikipy.utils.collection_utils import (
+    copycat_assumes_levels_of_icon,
+    get_first_value_in_dict,
+)
+from bikipy.utils.misc import dict_deepmerge, sheet_names_from_path
 
 if TYPE_CHECKING:
     from bikipy.behaviour.base import Experiment, Trial

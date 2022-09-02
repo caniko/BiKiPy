@@ -1,17 +1,17 @@
 from logging import getLogger
-from typing import Any, Optional, Sequence
+from typing import Any, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sb
 from pydantic import validate_arguments
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy import runtime_settings
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from bikipy.core.video import (
     VideoMetadata,
-    convert_meters_to_pixels,
     inspect_video_is_none_during_inspection,
+    prepare_data_for_plotting,
 )
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.utils.plotting import BOTTOM_LEGEND_KWARGS
@@ -72,8 +72,9 @@ def proximity_filter(
         else:
             ax = manual_ax
 
+        inside_perimeter_border = prepare_data_for_plotting(inside_perimeter_border, inspect_pixels, inspect_video)
+
         if inspect_pixels:
-            inside_perimeter_border = convert_meters_to_pixels(inside_perimeter_border, inspect_video)
             inspect_video.ax_ticks_metric_to_pixel(ax)
 
         ax.set_title("Proximity filter")

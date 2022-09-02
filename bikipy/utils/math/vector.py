@@ -1,4 +1,4 @@
-from typing import Callable, Any
+from typing import Callable
 
 import numba
 import numpy as np
@@ -7,12 +7,12 @@ from numba import jit, njit
 from numpy.linalg import LinAlgError
 from pydantic import validate_arguments
 from pydantic_numpy import NDArray
+from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import runtime_settings
-from pydantic_numpy.dtype import NDArrayFp64
 from bikipy.utils.collection_utils import (
-    evenly_spaced_indices_from_sequence,
     evenly_spaced_indices,
+    evenly_spaced_indices_from_sequence,
     flatten_sequence,
 )
 

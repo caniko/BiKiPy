@@ -1,18 +1,18 @@
 from functools import cached_property, lru_cache
 from logging import getLogger
-from typing import Any, ClassVar, Optional
+from typing import Any, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pydantic import validate_arguments
 from pydantic_numpy import NDArray
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 from skg import ngauss_fit
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipy
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 from bikipy.feature.motion import (
     get_combined_features_from_merged_motion_island_data,
     motion_multi_indexer,

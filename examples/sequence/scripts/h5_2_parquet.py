@@ -1,4 +1,3 @@
-from glob import glob
 from pathlib import Path
 
 from bikipy.reader.data_with_likelihood import convert_hdf_to_parquet

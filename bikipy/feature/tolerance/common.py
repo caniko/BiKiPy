@@ -4,9 +4,9 @@ from typing import Callable
 import numpy as np
 from numba import njit
 from pydantic import validate_arguments
+from pydantic_numpy.dtype import NDArrayBool
 
 from bikipy import runtime_settings
-from pydantic_numpy.dtype import NDArrayBool
 
 logger = getLogger(__name__)
 

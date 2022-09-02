@@ -14,10 +14,12 @@ import cv2
 import numpy as np
 from mextractor.video import extract_video
 from numpy import ndarray
-from pydantic import FilePath, Field
+from pydantic import Field, FilePath
+from pydantic_numpy import NDArray
+from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
 
 from bikipy.core.base_class import BaseBikipy
-from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
+from bikipy.utils.image import read_image_from_path
 from bikipy.utils.video import get_video_data
 
 logger = getLogger(__name__)
@@ -40,7 +42,7 @@ class _VideoMetadataBase(BaseBikipy):
     )
     manual_fps: Optional[float] = Field(description="Frames per second of the recording")
     manual_frame: Optional[FilePath | NDArrayUint8] = Field(
-        description="Frame from the video stored in numpy array, use cv2.imread to read from file paths"
+        description="Frame from the video stored in numpy array, use read_image_from_path to read from file paths"
     )
     minimum_frame_length: Optional[float] = Field(
         description="Must be defined in case the original frame has been resized. "
@@ -149,33 +151,6 @@ class VideoMetadata(_VideoMetadataBase):
             if shortest_side_size < self.minimum_frame_length:
                 return self.minimum_frame_length / shortest_side_size
 
-    @cached_property
-    def frame(self) -> NDArrayUint8 | None:
-        if self._raw_frame is not None:
-            if not self.image_resize_multiplier:
-                return self._raw_frame
-            return cv2.resize(
-                self._raw_frame,
-                (0, 0),
-                fx=self.image_resize_multiplier,
-                fy=self.image_resize_multiplier,
-                interpolation=cv2.INTER_CUBIC,
-            )
-
-    @cached_property
-    def _raw_frame(self) -> NDArrayUint8 | None:
-        if self.manual_frame is not None:
-            return self._manual_read_frame
-        if self.video_path:
-            return self._video_metadata_from_file[2]
-
-    @cached_property
-    def _manual_read_frame(self) -> NDArrayUint8 | None:
-        if self.manual_frame is not None:
-            if isinstance(self.manual_frame, (Path, str)):
-                return cv2.imread(str(self.manual_frame))
-            return self.manual_frame
-
     @property
     def video_metadata(self):
         result = {}
@@ -197,6 +172,28 @@ class VideoMetadata(_VideoMetadataBase):
             f"manual_{key}" if key not in _can_only_be_set_manually else key: value
             for key, value in self.video_metadata.items()
         }
+
+    @cached_property
+    def frame(self) -> NDArrayUint8 | None:
+        if self._raw_frame is not None:
+            if not self.image_resize_multiplier:
+                return self._raw_frame
+            return cv2.resize(
+                self._raw_frame,
+                (0, 0),
+                fx=self.image_resize_multiplier,
+                fy=self.image_resize_multiplier,
+                interpolation=cv2.INTER_CUBIC,
+            )
+
+    @cached_property
+    def _raw_frame(self) -> NDArrayUint8 | None:
+        if self.manual_frame is not None:
+            if isinstance(self.manual_frame, (Path, str)):
+                return read_image_from_path(self.manual_frame)
+            return self.manual_frame
+        if self.video_path:
+            return self._video_metadata_from_file[2]
 
     @cached_property
     def _video_metadata_from_file(self) -> tuple[None, None, None] | tuple[ndarray, Any, Any]:
@@ -261,8 +258,12 @@ class VideoMetadataMixin(_VideoMetadataBase):
         return video
 
 
-def convert_meters_to_pixels(data: NDArrayFp64, video: VideoMetadata) -> NDArrayFp64:
-    return data * video.pixels_per_meter
+def prepare_data_for_plotting(data: NDArray | float, inspect_pixels: bool, video: VideoMetadata) -> NDArrayFp64 | float:
+    if inspect_pixels:
+        data *= video.pixels_per_meter
+    if video.image_resize_multiplier:
+        data *= video.image_resize_multiplier
+    return data
 
 
 def inspect_video_is_none_during_inspection(inspect_video: VideoMetadata | None):

@@ -1,7 +1,6 @@
 from functools import cached_property
 
 from pydantic import DirectoryPath, FilePath, validate_arguments
-
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.typing import TrialId

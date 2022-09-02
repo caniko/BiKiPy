@@ -10,6 +10,7 @@ import pandas as pd
 import seaborn as sb
 from matplotlib import pyplot as plt
 from pydantic import validator
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayUint8
 
 from bikipy.behaviour.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import (
@@ -18,11 +19,14 @@ from bikipy.behaviour.utils import (
     unique_with_counts_zipped,
 )
 from bikipy.core.base_class import BaseBikipyHashable
-from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8, NDArrayFp64
-from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
+from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.perimeter.confinement import detect_multi_node_sequential_perimeter_presence
 from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
-from bikipy.utils.plotting import generic_inspection_finalization, plot_coordinates, BOTTOM_LEGEND_KWARGS
+from bikipy.utils.plotting import (
+    BOTTOM_LEGEND_KWARGS,
+    generic_inspection_finalization,
+    plot_coordinates,
+)
 
 logger = getLogger(__name__)
 

@@ -1,8 +1,8 @@
-from typing import ClassVar, Optional, Any
+from typing import Any
 
 import numpy as np
-
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 
 
@@ -60,7 +60,7 @@ class TriangularPerimeter(BasePolygonPerimeter):
         gaze_start_point: NDArrayFp64,
         max_radians: float,
         manual_ax: Any = None,
-        **kwargs
+        **kwargs,
     ) -> NDArrayBool:
         if self.equilateral:
             try:
@@ -72,12 +72,12 @@ class TriangularPerimeter(BasePolygonPerimeter):
                 gaze_start_point=gaze_start_point,
                 max_radians=max_radians,
                 manual_ax=manual_ax,
-                **kwargs
+                **kwargs,
             )
         return super().gaze_direction_filter(
             gaze_travel_direction_point=gaze_travel_direction_point,
             gaze_start_point=gaze_start_point,
             max_radians=max_radians,
             manual_ax=manual_ax,
-            **kwargs
+            **kwargs,
         )

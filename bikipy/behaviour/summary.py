@@ -55,7 +55,6 @@ class StatisticalAnalysis(BaseBikipy):
         pd.concat(result).to_excel(self.analysis_path / "tukey.xlsx")
 
     def categorical_to_feature_pairwise_bonferroni(self):
-        results = []
         for category in self.category_columns:
             for feature_column in self.feature_columns:
                 tukey = posthoc_ttest(

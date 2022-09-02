@@ -1,15 +1,18 @@
 from functools import cached_property, lru_cache
-from typing import Any, ClassVar, TypeVar, Optional
+from typing import Any, ClassVar, Optional, TypeVar
 
 import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, Field
+from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.behaviour.rectangle import RectangleEnclosedTrial
 from bikipy.core.base_class import BaseBikipy
-from pydantic_numpy.dtype import NDArrayFp64
 from bikipy.feature.physical_object import PhysicalObjectSet
-from bikipy.feature.tolerance import GENERIC_MINIMUM_SECONDS_ATTENTION, GENERIC_MAXIMUM_SECONDS_DISTRACTION
+from bikipy.feature.tolerance import (
+    GENERIC_MAXIMUM_SECONDS_DISTRACTION,
+    GENERIC_MINIMUM_SECONDS_ATTENTION,
+)
 
 
 class PhysicalObjectTrialMixin(BaseBikipy):

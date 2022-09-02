@@ -1,7 +1,6 @@
 from typing import Optional, Sequence
 
 import numpy as np
-
 from pydantic_numpy.dtype import NDArrayFp64
 
 

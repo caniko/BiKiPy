@@ -1,4 +1,4 @@
-from pathlib import PurePath, Path
+from pathlib import PurePath
 from typing import Any, Optional
 
 import matplotlib.pyplot as plt
@@ -6,12 +6,12 @@ import numba
 import numpy as np
 from numba import njit
 from pydantic import validate_arguments
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from seaborn import set_theme
 
 from bikipy import runtime_settings
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from bikipy.utils.math.vector import dot_axis_1_1d, orthogonal_unit_vector
-from bikipy.utils.plotting import generic_inspection_finalization, InspectArg
+from bikipy.utils.plotting import InspectArg, generic_inspection_finalization
 
 
 def inaccurate_points_in_rectangle(

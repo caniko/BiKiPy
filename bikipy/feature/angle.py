@@ -4,9 +4,9 @@ from warnings import warn
 import numba
 import numpy as np
 from numba import jit, njit
+from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import runtime_settings
-from pydantic_numpy.dtype import NDArrayFp64
 from bikipy.utils.math.vector import dot_axis_1_1d, unit_vector
 
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}

@@ -2,7 +2,7 @@ from collections import UserDict
 from functools import lru_cache
 from typing import Any
 
-from pydantic import validate_arguments, Field
+from pydantic import Field, validate_arguments
 
 
 def translate_keys(store: dict, translation: dict) -> dict:

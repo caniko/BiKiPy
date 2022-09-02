@@ -1,11 +1,11 @@
+from functools import lru_cache
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any, Optional
 
 import cv2
 import numpy as np
-from pydantic import FilePath
+from pydantic import FilePath, validate_arguments
 from pydantic_numpy import NDArray
-
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayUint8
 
 
@@ -20,15 +20,21 @@ def save_plt_fig_cv(figure, save_path: Path) -> None:
     cv2.imwrite(str(save_path.with_suffix(".png")), img, [cv2.IMWRITE_PNG_COMPRESSION, 9])
 
 
-def read_image(image: FilePath | NDArrayUint8, imread_flagg: Optional[list]) -> NDArrayUint8:
+def read_image(image: FilePath | NDArrayUint8, imread_flagg: Optional[list] = None) -> NDArrayUint8:
     if isinstance(image, (Path, str)):
         image_path = Path(image).resolve()
         assert image_path.exists(), image_path
-        image = cv2.imread(str(image_path), flags=imread_flagg)
+        image = read_image_from_path(image_path, flags=imread_flagg)
     else:
         assert isinstance(image, NDArrayFp64), f"image must be either path or NDArrayFp64, but got:\n{image}"
 
     return image
+
+
+@validate_arguments
+@lru_cache
+def read_image_from_path(image_path: FilePath, imread_flagg: Optional[list] = None) -> NDArrayUint8:
+    return cv2.imread(str(image_path), imread_flagg)
 
 
 def axis_frame_imshow(ax: Any, image: NDArray):

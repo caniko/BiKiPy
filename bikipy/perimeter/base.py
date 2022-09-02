@@ -1,20 +1,24 @@
 from abc import abstractmethod
 from collections import defaultdict
-from functools import cached_property, reduce, partial
+from functools import cached_property, partial, reduce
 from logging import getLogger
 from typing import Any, Literal, Optional, TypeVar
 
 import matplotlib.pyplot as plt
-import seaborn as sb
 import numpy as np
-from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments, PositiveInt
+import seaborn as sb
+from pydantic import (
+    DirectoryPath,
+    Field,
+    FilePath,
+    PositiveInt,
+    root_validator,
+    validate_arguments,
+)
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
-from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayBool
-from bikipy.core.video import (
-    VideoMetadataMixin,
-    VideoMetadata,
-)
+from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_coco_polygon,
     init_polygon_from_makesense_csv_rectangle,
@@ -24,7 +28,12 @@ from bikipy.reader.base import Reader
 from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence
 from bikipy.utils.image import axis_frame_imshow
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
-from bikipy.utils.plotting import plot_coordinates, generic_inspection_finalization, InspectArg, BOTTOM_LEGEND_KWARGS
+from bikipy.utils.plotting import (
+    BOTTOM_LEGEND_KWARGS,
+    InspectArg,
+    generic_inspection_finalization,
+    plot_coordinates,
+)
 
 logger = getLogger(__name__)
 
@@ -269,11 +278,14 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         if coordinates is not None:
             ax = plot_coordinates(coordinates, ax, inspect_pixels, self.video)
 
+        if inspect_pixels:
+            self.video.ax_ticks_metric_to_pixel(ax)
+
         ax.set_title(self.label)
 
-        return self.plot_perimeter(
-            **perimeter_plot_kwargs if perimeter_plot_kwargs else {}, manual_ax=ax, inspect_pixels=inspect_pixels
-        )
+        perimeter_plot_kwargs = {**perimeter_plot_kwargs, "manual_ax": ax, "inspect_pixels": inspect_pixels}
+
+        return self.plot_perimeter(**perimeter_plot_kwargs)
 
 
 SinglePerimeter = TypeVar("SinglePerimeter", bound=BaseSinglePerimeter)

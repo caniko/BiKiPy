@@ -1,11 +1,11 @@
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 from matplotlib import pyplot as plt
 from pydantic import validate_arguments
-
 from pydantic_numpy.dtype import NDArrayFp64
+
 from bikipy.utils.misc import int_file_stem_incrementor
 
 if TYPE_CHECKING:
@@ -55,11 +55,12 @@ def plot_coordinates(
     video: Optional["VideoMetadata"] = None,
     **plot_kwargs,
 ):
-    from bikipy.core.video import convert_meters_to_pixels
+    from bikipy.core.video import prepare_data_for_plotting
 
-    if inspect_pixels:
-        coordinates = convert_meters_to_pixels(coordinates, video)
-        video.ax_ticks_metric_to_pixel(ax)
+    coordinates = prepare_data_for_plotting(coordinates, inspect_pixels, video)
+
+    if video.image_resize_multiplier:
+        coordinates = coordinates * video.image_resize_multiplier
 
     ax.scatter(*coordinates.T, **plot_kwargs)
 

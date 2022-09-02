@@ -5,9 +5,9 @@ from typing import Iterable, Optional
 import numpy as np
 import pandas as pd
 from pydantic import Field
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy.core.base_class import BaseBikipy
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from bikipy.feature.tolerance.single import arg_single_node_tolerance_filter
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.calculus import np_abs_diff

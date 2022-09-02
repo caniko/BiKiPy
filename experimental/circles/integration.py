@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from uuid import uuid4
 
-import cv2
 from examples.circles.mpl_widget import MplWidget
 from pydantic import FilePath
 from PyQt5 import QtWidgets
+
+from bikipy.utils.image import read_image_from_path
 
 
 class CircleAnnotatorQtBase(ABC):
@@ -13,7 +14,7 @@ class CircleAnnotatorQtBase(ABC):
         self.horizontalSlider: QtWidgets.QSlider
 
         self.circles = {}
-        self.overlay_image = cv2.imread(overlay_image)
+        self.overlay_image = read_image_from_path(overlay_image)
 
         self.app = QtWidgets.QApplication([])
         self.Dialog = QtWidgets.QDialog()

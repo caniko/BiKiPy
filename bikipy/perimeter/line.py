@@ -1,13 +1,13 @@
-from typing import ClassVar, Literal, Optional
+from typing import ClassVar, Literal
 
 import numpy as np
 from pydantic import Field, PositiveInt
 
-from bikipy.core.base_class import BaseBikipyHashable
-
 # 0: Use the x coordinate(s) as the perimeter
 # 1: Use the y coordinate(s) as the perimeter
 from pydantic_numpy.dtype import NDArrayFp64
+
+from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.video import VideoMetadataMixin
 
 ORIENTATION_TO_INDEX = {"vertical": 0, "horizontal": 1}

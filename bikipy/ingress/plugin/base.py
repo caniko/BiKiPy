@@ -1,13 +1,12 @@
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import ClassVar, Optional, TypeVar, Any
+from typing import Any, ClassVar, Optional, TypeVar
 
 import pandas as pd
-from pydantic import DirectoryPath, FilePath, Field, BaseModel
-
-from bikipy.core.base_class import BaseBikipy
+from pydantic import BaseModel, DirectoryPath, Field, FilePath
 from pydantic_numpy.dtype import NDArrayFp64
 
+from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import TrialId
 from bikipy.utils.makesense import get_only_point_from_makesense
 

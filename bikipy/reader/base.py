@@ -1,22 +1,21 @@
 from abc import ABC, abstractmethod
 from collections import abc
-from concurrent.futures import ProcessPoolExecutor
-from functools import cached_property, partial
+from functools import cached_property
 from logging import getLogger
-from typing import Any, Generator, Hashable, Iterable, Optional, Sequence, TypeVar
+from typing import Hashable, Iterable, Optional, Sequence, TypeVar
 
 import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath
 from pydantic_numpy import NDArray
+from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8
 from sklearn.neighbors import NearestNeighbors
 
-from bikipy.reader.utils import compute_midpoint_label
 from bikipy import runtime_settings
 from bikipy.core.base_class import BaseBikipyHashable
-from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature import recursive_midpoint
+from bikipy.reader.utils import compute_midpoint_label
 
 FILE_EXTENSION_TO_PANDAS_READER = {
     ".parquet": pd.read_parquet,
@@ -272,7 +271,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         if region_of_interest in self._region_of_interest_to_fused_neighbouring_points:
             return self._region_of_interest_to_fused_neighbouring_points[region_of_interest]
         coordinates = self.df.loc[:, pd.IndexSlice[region_of_interest, ("x", "y")]].values
-        nbrs = NearestNeighbors().fit(coordinates)
+        NearestNeighbors().fit(coordinates)
 
     def _compute_midpoint(
         self, df: pd.DataFrame, midpoint_group: Iterable[str], manual_midpoint_label: Optional[Hashable] = None

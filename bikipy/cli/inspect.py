@@ -1,7 +1,7 @@
 from typing import Optional
 
 import click
-from pydantic import FilePath, DirectoryPath, validate_arguments
+from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from bikipy.cli import cli_root
 from bikipy.ingress.plugin.perimeter.single import inspect_annotations

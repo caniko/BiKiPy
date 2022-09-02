@@ -6,28 +6,25 @@ from typing import Any, ClassVar, Iterable, Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pydantic import validator, root_validator
+from pydantic import root_validator, validator
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy import runtime_settings
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipyInspectMixin
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
-
 from bikipy.core.typing import TrialId
 from bikipy.core.video import (
     VideoMetadata,
     VideoMetadataMixin,
-    convert_meters_to_pixels,
+    prepare_data_for_plotting,
 )
-from bikipy.feature.attention.proximity import (
-    proximity_filter,
-)
+from bikipy.feature.attention.proximity import proximity_filter
 from bikipy.feature.tolerance.single import single_node_tolerance_filter
-from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
+from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.reader.base import Reader
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.image import axis_frame_imshow
-from bikipy.utils.plotting import generic_inspection_finalization, InspectArg
+from bikipy.utils.plotting import InspectArg, generic_inspection_finalization
 
 logger = getLogger(__name__)
 
@@ -145,10 +142,8 @@ class PhysicalObject(BaseBikipyInspectMixin):
     def inspect_attention(self):
         self._exporting_figure = True
 
-        gaze_travel_direction_point = (
-            convert_meters_to_pixels(self._gaze_travel_direction_point, self.video)
-            if self._inspect_pixels
-            else self._gaze_travel_direction_point
+        gaze_travel_direction_point = prepare_data_for_plotting(
+            self._gaze_travel_direction_point, self._inspect_pixels, self.video
         )
 
         self.attention_axes[1][0].scatter(
@@ -189,7 +184,7 @@ class PhysicalObject(BaseBikipyInspectMixin):
         self._fig, self._axes = plt.subplots(
             nrows=2,
             ncols=2,
-            figsize=(self.video.horizontal_resolution / 50.0, self.video.vertical_resolution / 50.0),
+            figsize=(self.video.horizontal_resolution * 0.66, self.video.vertical_resolution * 0.66),
             constrained_layout=True,
         )
 

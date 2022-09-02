@@ -4,7 +4,6 @@ from typing import Any, Iterable, Optional, Sequence
 
 import numpy as np
 import pandas as pd
-
 from pydantic_numpy.dtype import NDArray
 
 

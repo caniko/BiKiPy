@@ -7,12 +7,19 @@ from pydantic_numpy import NDArrayFp64
 
 from bikipy.core.typing import TrialId
 from bikipy.ingress.plugin.base import BasePluginDirectory, HasReferenceMixin
-from bikipy.perimeter.base import SinglePerimeter, PerimeterSet
+from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
-from bikipy.utils.makesense import read_makesense_line, get_all_lines_from_makesense_line_df
-from bikipy.utils.math.geometry import clockwise_argsort_points, meter_per_pixel_from_diagonal, clockwise_sort_points
+from bikipy.utils.makesense import (
+    get_all_lines_from_makesense_line_df,
+    read_makesense_line,
+)
+from bikipy.utils.math.geometry import (
+    clockwise_argsort_points,
+    clockwise_sort_points,
+    meter_per_pixel_from_diagonal,
+)
 
 
 class PluginRadial(BasePluginDirectory, HasReferenceMixin):

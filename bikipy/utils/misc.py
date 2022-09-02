@@ -9,7 +9,6 @@ from odf import opendocument
 from odf.table import Table
 from pydantic import FilePath
 
-
 logger = getLogger(__name__)
 
 

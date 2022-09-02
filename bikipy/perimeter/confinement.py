@@ -1,18 +1,23 @@
 from collections import defaultdict
 from functools import partial
 from logging import getLogger
-from typing import Sequence, Iterable, Optional
+from typing import Iterable, Optional, Sequence
 
-import seaborn as sb
 import numpy as np
+import seaborn as sb
 from matplotlib import pyplot as plt
 from pydantic import validate_arguments
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
-from pydantic_numpy.dtype import NDArrayFp64, NDArrayBool
 from bikipy.feature.tolerance.plural import plural_node_tolerance_filter
 from bikipy.feature.tolerance.single import single_node_tolerance_filter
 from bikipy.perimeter.base import Perimeter, PerimeterSet
-from bikipy.utils.plotting import InspectArg, plot_coordinates, BOTTOM_LEGEND_KWARGS, generic_inspection_finalization
+from bikipy.utils.plotting import (
+    BOTTOM_LEGEND_KWARGS,
+    InspectArg,
+    generic_inspection_finalization,
+    plot_coordinates,
+)
 
 logger = getLogger(__file__)
 

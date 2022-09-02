@@ -15,12 +15,14 @@ TG: Equal
 WT: 4 > 3 > 2 >~ 1
 """
 from functools import cached_property
-from typing import ClassVar
 
 import pandas as pd
 
 from bikipy.behaviour.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
-from bikipy.behaviour.rectangle import RectangleEnclosedExperiment, RectangleEnclosedHabituationTrial
+from bikipy.behaviour.rectangle import (
+    RectangleEnclosedExperiment,
+    RectangleEnclosedHabituationTrial,
+)
 from bikipy.perimeter.base import SinglePerimeter
 
 

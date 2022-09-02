@@ -2,13 +2,13 @@ import os
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Iterable, Hashable, Optional
+from typing import Hashable, Iterable, Optional
 
 import numpy as np
 import pandas as pd
 from pydantic import Field
-
 from pydantic_numpy.dtype import NDArrayBool
+
 from bikipy.reader.base import BaseReader
 from bikipy.reader.utils import compute_midpoint_label
 

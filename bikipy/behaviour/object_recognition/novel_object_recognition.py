@@ -5,7 +5,10 @@ from typing import ClassVar
 import pandas as pd
 
 from bikipy.behaviour.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
-from bikipy.behaviour.rectangle import RectangleEnclosedExperiment, RectangleEnclosedHabituationTrial
+from bikipy.behaviour.rectangle import (
+    RectangleEnclosedExperiment,
+    RectangleEnclosedHabituationTrial,
+)
 from bikipy.core.typing import TrialId
 from bikipy.perimeter.base import SinglePerimeter
 

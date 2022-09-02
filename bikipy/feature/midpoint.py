@@ -4,7 +4,6 @@ Note that points in this context is the location of a region of interest across 
 from typing import Sequence
 
 import numpy as np
-
 from pydantic_numpy.dtype import NDArrayFp64
 
 

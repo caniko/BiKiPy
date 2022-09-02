@@ -4,8 +4,8 @@ from typing import Any, Optional
 import numpy as np
 from matplotlib import pyplot as plt
 from pydantic import FilePath, validator
-
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+
 from bikipy.feature.attention.gaze import gaze_direction_filter_circle_triangle
 from bikipy.perimeter.base import (
     BaseSinglePerimeter,
@@ -107,26 +107,6 @@ class CirclePerimeter(BaseSinglePerimeter):
             pass
         return gaze_direction_filter_circle_triangle(self, *args, **kwargs)
 
-    @cached_property
-    def scaled_center_in_pixels(self) -> NDArrayFp64:
-        """
-        Vertices must be scaled in accordance with video frame multiplier.
-        :return:
-        """
-        if self.video.image_resize_multiplier:
-            return self.center_pixels * self.video.image_resize_multiplier
-        return self.center_pixels
-
-    @cached_property
-    def scaled_radius_in_pixels(self) -> float:
-        """
-        Vertices must be scaled in accordance with video frame multiplier.
-        :return:
-        """
-        if self.video.image_resize_multiplier:
-            return self.radius_pixels * self.video.image_resize_multiplier
-        return self.radius_pixels
-
     def plot_perimeter(
         self,
         inspect_pixels: bool = False,
@@ -139,10 +119,14 @@ class CirclePerimeter(BaseSinglePerimeter):
             ax = manual_ax
 
         if inspect_pixels:
-            plot_circle(self.scaled_center_in_pixels, self.scaled_radius_in_pixels, ax)
-            self.video.ax_ticks_metric_to_pixel(ax)
+            center, radius = self.center_pixels, self.radius_pixels
         else:
-            plot_circle(self.center_meters, self.radius_meters, ax)
+            center, radius = self.center_meters, self.radius_meters
+
+        if self.video.image_resize_multiplier:
+            center, radius = center * self.video.image_resize_multiplier, radius * self.video.image_resize_multiplier
+
+        plot_circle(center, radius, ax)
 
         if not manual_ax:
             generic_inspection_finalization(self.class_inspect_arg or True, f"{self.label}.jpg")

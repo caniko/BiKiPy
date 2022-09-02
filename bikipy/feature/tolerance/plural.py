@@ -1,13 +1,17 @@
-from typing import Iterable
-
 import numpy as np
 from numba import njit
 from pydantic import validate_arguments
+from pydantic_numpy.dtype import NDArrayBool
 
 from bikipy import runtime_settings
-from pydantic_numpy.dtype import NDArrayBool
-from bikipy.feature.tolerance import GENERIC_MINIMUM_SECONDS_ATTENTION, GENERIC_MAXIMUM_SECONDS_DISTRACTION
-from bikipy.feature.tolerance.common import tolerance_filter_warning_wrapper, common_preparation
+from bikipy.feature.tolerance import (
+    GENERIC_MAXIMUM_SECONDS_DISTRACTION,
+    GENERIC_MINIMUM_SECONDS_ATTENTION,
+)
+from bikipy.feature.tolerance.common import (
+    common_preparation,
+    tolerance_filter_warning_wrapper,
+)
 
 
 @validate_arguments

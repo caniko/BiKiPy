@@ -1,9 +1,8 @@
 from logging import getLogger
-from typing import ClassVar, Optional
 
 import matplotlib.pyplot as plt
-
 from pydantic_numpy.dtype import NDArrayFp64
+
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 from bikipy.utils.math.geometry import expand_rectangle
 from bikipy.utils.plotting import generic_inspection_finalization

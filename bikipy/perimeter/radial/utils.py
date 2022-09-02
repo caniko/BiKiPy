@@ -2,7 +2,6 @@ from typing import Any
 
 import numpy as np
 from matplotlib import pyplot as plt
-
 from pydantic_numpy.dtype import NDArrayFp64
 
 

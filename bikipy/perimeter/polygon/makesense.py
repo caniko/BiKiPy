@@ -1,14 +1,15 @@
 import json
 from logging import getLogger
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Optional
 
 import cv2
 import numpy as np
 from pydantic import DirectoryPath, FilePath
+from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import runtime_settings
-from pydantic_numpy.dtype import NDArrayFp64
+from bikipy.utils.image import read_image_from_path
 from bikipy.utils.makesense import (
     image_name_to_point_from_makesense,
     read_makesense_rectangle,
@@ -73,7 +74,7 @@ def init_polygon_from_makesense_coco_polygon(
             vertices,
             label=label,
             reference_point_array=reference_point_array,
-            manual_frame=cv2.imread(image_root / image_name) if image_root else None,
+            manual_frame=read_image_from_path(image_root / image_name) if image_root else None,
             manual_recording_resolution=np.array((coco["images"][image_index]["width"], y_res), dtype=float),
             makesense_image_name=image_name,
             **current_kwargs,
@@ -118,7 +119,7 @@ def init_polygon_from_makesense_csv_rectangle(
             np.array((start, (start[0], end[1]), end, (end[0], start[1])), dtype=float),
             label=label,
             manual_recording_resolution=np.array((row["x_res"], row["y_res"]), dtype=float),
-            manual_frame=cv2.imread(image_root / str(image_name)) if image_root else None,
+            manual_frame=read_image_from_path(image_root / str(image_name)) if image_root else None,
             makesense_image_name=row["image_name"],
             **perimeter_kwargs,
         )

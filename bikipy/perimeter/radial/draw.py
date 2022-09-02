@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from bikipy.perimeter.radial.utils import plot_circle
-from bikipy.utils.misc import read_image
+from bikipy.utils.image import read_image
 
 
 def draw_bikipy_circle(radius: float, img: Any = None):
@@ -22,7 +22,7 @@ def draw_bikipy_circle(radius: float, img: Any = None):
         )
         if event.button:
             plot_circle((event.xdata, event.ydata), radius, ax)
-            center = np.array((event.xdata, event.ydata))
+            np.array((event.xdata, event.ydata))
 
     def on_pick(event: Any):
         """

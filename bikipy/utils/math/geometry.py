@@ -1,14 +1,14 @@
 import math
 from functools import lru_cache
-from typing import Sequence, TYPE_CHECKING
+from math import sqrt
+from typing import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
-from math import sqrt
 from pydantic import validate_arguments
 from pydantic_numpy import NDArray
-
 from pydantic_numpy.dtype import NDArrayFp64
+
 from bikipy.feature.angle import clockwise_angel_2d
 from bikipy.perimeter.base import Perimeter
 

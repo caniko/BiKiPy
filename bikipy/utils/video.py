@@ -1,6 +1,5 @@
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
 
 import cv2
 from pydantic import FilePath, PositiveInt

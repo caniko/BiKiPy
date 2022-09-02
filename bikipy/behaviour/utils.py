@@ -4,7 +4,6 @@ from typing import Any, Iterable, Sequence
 import numpy as np
 from pydantic import validate_arguments
 from pydantic_numpy import NDArray
-
 from pydantic_numpy.dtype import NDArrayFp64
 
 logger = getLogger(__name__)

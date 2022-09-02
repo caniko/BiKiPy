@@ -1,32 +1,40 @@
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
-from functools import cached_property, reduce, lru_cache
+from functools import cached_property, lru_cache, reduce
 from logging import getLogger
 from operator import attrgetter
 from typing import ClassVar, Hashable, Iterable, Literal, Optional, Sequence, TypeVar
 
 import numpy as np
 import pandas as pd
-from pydantic import Field, FilePath, ValidationError, validator, PositiveInt, DirectoryPath
+from pydantic import (
+    DirectoryPath,
+    Field,
+    FilePath,
+    PositiveInt,
+    ValidationError,
+    validator,
+)
 from pydantic.fields import FieldInfo
 from pydantic_numpy import NDArray
+from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
 from tqdm import tqdm
 from yaspin import yaspin
 from yaspin.spinners import Spinners
 
 from bikipy import runtime_settings
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
-from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
-
 from bikipy.core.typing import TrialId
-from bikipy.core.video import VideoMetadata, VideoMetadataMixin, incongruity_permissive_video_join
+from bikipy.core.video import (
+    VideoMetadata,
+    VideoMetadataMixin,
+    incongruity_permissive_video_join,
+)
 from bikipy.feature.motion import Motion, motion_multi_indexer
 from bikipy.ingress.plugin import PluginChangeReference, PluginRadial
-from bikipy.perimeter.base import SinglePerimeter, PerimeterSet, BaseSinglePerimeter
+from bikipy.perimeter.base import BaseSinglePerimeter, PerimeterSet, SinglePerimeter
 from bikipy.reader.data_with_likelihood import DeepLabCutReader
-from bikipy.utils.collection_utils import (
-    max_len_in_iterable,
-)
+from bikipy.utils.collection_utils import max_len_in_iterable
 from bikipy.utils.ranged_dict import RangeDict
 
 LABEL_to_DATA_READER = {"deeplabcut": DeepLabCutReader}

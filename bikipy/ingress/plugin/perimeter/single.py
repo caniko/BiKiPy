@@ -6,7 +6,7 @@ from typing import Optional
 import cv2
 import matplotlib.pyplot as plt
 import pandas as pd
-from pydantic import FilePath, PositiveInt, DirectoryPath, validate_arguments
+from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 
 from bikipy.core.typing import TrialId
 from bikipy.ingress.plugin.base import BasePluginFile, HasReferenceMixin
@@ -16,9 +16,10 @@ from bikipy.perimeter.base import (
     perimeter_set_from_makesense,
 )
 from bikipy.utils.collection_utils import get_first_key_in_dict
+from bikipy.utils.image import read_image_from_path
 from bikipy.utils.makesense import (
-    first_image_name_from_makesense,
     SHAPE_TO_MAKESENSE_TYPE,
+    first_image_name_from_makesense,
 )
 
 logger = getLogger(__name__)
@@ -126,7 +127,7 @@ def inspect_annotations(annotation_path: FilePath, image_directory: Optional[Dir
         axes = [axes]
 
     for ax, (image_name, perimeter_set) in zip(axes, image_name_to_perimeter_set.items()):
-        ax.imshow(cv2.imread(str(image_directory / image_name)))
+        ax.imshow(read_image_from_path(image_directory / image_name))
         ax.invert_yaxis()
 
         perimeter_set.plot(manual_ax=ax, inspect_pixels=True)

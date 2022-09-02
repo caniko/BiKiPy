@@ -5,8 +5,8 @@ from typing import Optional
 import click
 from pydantic import DirectoryPath, validate_arguments
 
-from bikipy.cli import cli_root
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
+from bikipy.cli import cli_root
 from bikipy.ingress.core import (
     analyze_and_save,
     auto_define_ingress_object,

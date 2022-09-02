@@ -8,9 +8,9 @@ from typing import Optional
 
 import numpy as np
 from pydantic import BaseModel, DirectoryPath, validator
+from pydantic_numpy.dtype import NDArrayFp64
 from tqdm import tqdm
 
-from pydantic_numpy.dtype import NDArrayFp64
 from bikipy.utils.misc import clear_console
 from bikipy.utils.ranged_dict import RangeDict
 
