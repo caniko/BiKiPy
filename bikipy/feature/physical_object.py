@@ -251,15 +251,15 @@ class PhysicalObjectSet(VideoMetadataMixin):
             raise AttributeError(msg)
         return value
 
-    @validator("physical_objects")
-    def readers_must_be_identical(cls, value) -> tuple[PhysicalObject, ...]:
-        if len(value) == 1:
-            return value
-        first_reader = value[0].reader
-        if any(first_reader != other_reader for other_reader in value[1:]):
-            msg = "Readers of the physical objects are not identical"
-            raise AttributeError(msg)
-        return value
+    # @validator("physical_objects")
+    # def readers_must_be_identical(cls, value) -> tuple[PhysicalObject, ...]:
+    #     if len(value) == 1:
+    #         return value
+    #     first_reader = value[0].reader
+    #     if any(first_reader != other_reader for other_reader in value[1:]):
+    #         msg = "Readers of the physical objects are not identical"
+    #         raise AttributeError(msg)
+    #     return value
 
     @cached_property
     def __len__(self) -> int:
@@ -312,11 +312,17 @@ class PhysicalObjectSet(VideoMetadataMixin):
     @property
     def feature_summary(self) -> pd.Series:
         without_all = pd.Series(
-            self.object_bias_score, index=pd.MultiIndex.from_product([["ObjectBiasScore"], list(self.labels)])
+            self.object_bias_score.values(), index=pd.MultiIndex.from_product([["ObjectBiasScore"], list(self.labels)])
         )
+
+        # with_all_indexes = []
+        # base_indexes_with_all = ("All", *self.labels)
+        # for feature_label in ("SecondsObserving",):
+        #     for base_index in base_indexes_with_all:
+        #         with_all_indexes.append((feature_label, base_index))
         with_all = pd.Series(
-            (*self.relative_object_bias_score, self.seconds_observing, *self.object_specific_observation.values()),
-            index=pd.MultiIndex.from_product([[["SecondsObserving"], ["ObjectBiasScore"]], ["All", *self.labels]]),
+            (self.seconds_observing, *self.object_specific_observation.values()),
+            index=pd.MultiIndex.from_product([["SecondsObserving"], ["All", *self.labels]]),
         )
         return pd.concat((without_all, with_all))
 

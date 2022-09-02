@@ -44,7 +44,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         description="Scales the coordinates with respect to their min and max. " "True requires x_max and y_max",
     )
     midpoint_groups: Optional[dict[str, tuple]] = Field(
-        description="labels that consist of groups that should have their"
+        description="labels that consist of groups that should have their midpoints computed in the DataFrame"
     )
     x_axis_crop_end_point: float = 0.0
     y_axis_crop_end_point: float = 0.0
@@ -84,14 +84,18 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         ...
 
     @cached_property
-    def tracked_point_labels(self) -> tuple[str, ...]:
-        return tuple(self.raw_df.columns.levels[0])
+    def physically_tracked_labels(self) -> set[str]:
+        return set(self.raw_df.columns.levels[0])
 
     @cached_property
-    def tracked_and_midpoint_labels(self) -> tuple[str, ...]:
+    def tracked_midpoint_labels(self) -> set[str]:
         if self.midpoint_groups:
-            return *self.tracked_point_labels, *self.midpoint_groups.keys()
-        return self.tracked_point_labels
+            return set(self.midpoint_groups.keys())
+        return set()
+
+    @cached_property
+    def all_tracked_labels(self) -> set[str]:
+        return self.physically_tracked_labels | self.tracked_midpoint_labels
 
     @property
     def required_video_metadata_fields(self) -> set:
@@ -144,11 +148,13 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
             )
 
         if self.midpoint_groups:
+            generated_midpoints = set()
             midpoint_loop_iterator = list(self.midpoint_groups.items())
             for name, group in midpoint_loop_iterator:
-                if all(component in self.tracked_point_labels for component in group):
+                if (self.physically_tracked_labels | generated_midpoints).issuperset(group):
                     result_df = pd.concat((result_df, self._compute_midpoint(result_df, group, name)), axis=1)
-                elif all(component in self.tracked_and_midpoint_labels for component in group):
+                    generated_midpoints.add(name)
+                elif (self.tracked_midpoint_labels | self.physically_tracked_labels).issuperset(group):
                     # This midpoint depends on another midpoint, which has not been generated yet.
                     # Putting it at the end of the loop
                     midpoint_loop_iterator.append((name, group))
@@ -156,7 +162,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
                     msg = (
                         f"{self.df_path}: Midpoint {name}, cannot be derived as its components are "
                         f"not defined in the tracked dataset nor in midpoint_groups.\n"
-                        f"The following are tracked: {self.tracked_point_labels}"
+                        f"The following are tracked: {self.physically_tracked_labels}"
                     )
                     raise ValueError(msg)
 
@@ -186,7 +192,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         if not isinstance(query, str) and isinstance(query, abc.Iterable):
             return pd.merge([self._isolate_coordinates(item) for item in query], axis=1)
         else:
-            if query not in self.tracked_and_midpoint_labels:
+            if query not in self.all_tracked_labels:
                 msg = f"'{query}' is not in object DataFrame (self.summary_frame)"
                 raise AttributeError(msg)
             return self._isolate_coordinates(query)
@@ -228,7 +234,9 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
 
     @cached_property
     def valid_point_indices(self) -> dict[str, NDArray]:
-        return {roi: np.where(self.region_of_interest_to_boolean_index[roi])[0] for roi in self.tracked_point_labels}
+        return {
+            roi: np.where(self.region_of_interest_to_boolean_index[roi])[0] for roi in self.physically_tracked_labels
+        }
 
     @cached_property
     def valid_tails(self) -> dict[str, tuple[int, int]]:
@@ -237,21 +245,21 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
                 self.valid_point_indices[item][0],
                 self.valid_point_indices[item][-1],
             )
-            for item in self.tracked_point_labels
+            for item in self.physically_tracked_labels
         }
 
     @cached_property
     def valid_slices(self) -> dict[str, slice]:
         return {
             item: slice(self.valid_point_indices[item][0], self.valid_point_indices[item][-1])
-            for item in self.tracked_point_labels
+            for item in self.physically_tracked_labels
         }
 
     @cached_property
     def validity_ratio(self) -> dict[str, float]:
         return {
             roi: np.sum(self.region_of_interest_to_boolean_index[roi]) / len(self.raw_df)
-            for roi in self.tracked_point_labels
+            for roi in self.physically_tracked_labels
         }
 
     @cached_property
@@ -274,39 +282,6 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         ]
         midpoint_label = compute_midpoint_label(midpoint_group, manual_midpoint_label)
         return pd.DataFrame(recursive_midpoint(group_points), columns=[(midpoint_label, "x"), (midpoint_label, "y")])
-
-    @classmethod
-    def init_many_mapper(
-        cls,
-        data_path: Iterable[Any],
-        labels: Iterable[str],
-        **init_kwargs,
-    ) -> Generator:
-        """
-        Create many BaseReader instances using specified mapping-function for initialization
-
-        :param init_method: Most often a classmethod that calls the init method after importing the data from specific
-            data format
-        :param data_path: Path to the data that will imported
-        :param labels: labels of the data
-        :param init_kwargs: Keyword arguments for the class init-method
-        :type init_method: Callable
-        :type data_path: Iterable[Any]
-        :type labels: Iterable[str]
-        :type init_kwargs: dict
-        :return: Objects instanced from the respective class with the provided data
-        :rtype: tuple
-        """
-        kwarg_loaded_init = partial(cls, **init_kwargs)
-
-        # Process pooling in windows is subpar and is not supported.
-        if not runtime_settings.disable_process_pooling:
-            with ProcessPoolExecutor() as executor:
-                for dlc_obj in executor.map(kwarg_loaded_init, data_path, labels):
-                    yield dlc_obj
-        else:
-            for data_path, label in zip(data_path, labels):
-                yield kwarg_loaded_init(data_path, label=label)
 
 
 Reader = TypeVar("Reader", bound=BaseReader)

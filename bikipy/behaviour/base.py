@@ -528,8 +528,7 @@ class BaseExperiment(Behaviour):
 
     # DataFrame methods =========================================
 
-    @cached_property
-    def _trial_class_to_trial_series_set(self):
+    def analyse_trials(self, self_destruct_trials: bool = False):
         result = defaultdict(dict)
         if not runtime_settings.disable_process_pooling:
             with yaspin(Spinners.pong, text="Computing experiment features..."):
@@ -554,6 +553,10 @@ class BaseExperiment(Behaviour):
                     trial_object.label: trial_object.trial_feature_series for trial_object in trial_objects
                 }
         return result
+
+    @cached_property
+    def _trial_class_to_trial_series_set(self):
+        return self.analyse_trials(self_destruct_trials=False)
 
     @cached_property
     def _animal_id_to_sequential_features(self) -> pd.DataFrame | None:
@@ -643,3 +646,9 @@ class BaseExperiment(Behaviour):
 
 
 Experiment = TypeVar("Experiment", bound=BaseExperiment)
+
+
+def compute_trial_series_and_destroy_trial(trial_obj: Trial) -> pd.Series:
+    result = trial_obj.trial_feature_series
+    del globals()[trial_obj]
+    return result

@@ -46,7 +46,13 @@ class PhysicalObjectTrialMixin(BaseBikipy):
 
     @cached_property
     def trial_feature_series(self):
-        return pd.concat((*self.physical_object_set.feature_summary, *self._trial_feature_series_list[::-1]), axis=0)
+        return pd.concat(
+            (*self._trial_physical_object_feature_series_list[::-1], *self._trial_feature_series_list[::-1]), axis=0
+        )
+
+    @cached_property
+    def _trial_physical_object_feature_series_list(self) -> list[pd.Series, ...]:
+        return [self.physical_object_set.feature_summary]
 
     @cached_property
     def physical_object_keyword_arguments(self) -> dict[str, Any]:

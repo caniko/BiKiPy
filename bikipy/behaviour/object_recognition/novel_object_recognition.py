@@ -35,12 +35,6 @@ class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
     experiment_class_name = "NortExperiment"
     trial_label = "Novelty"
 
-    constant_feature_headers = (
-        ("AbsoluteDiscrimination", "NovelFamiliar"),
-        ("DiscriminationIndex", "NovelFamiliar"),
-        ("NoveltyPreference", "NovelFamiliar"),
-    )
-
     @cached_property
     def _trial_physical_object_feature_series_list(self) -> list[pd.Series]:
         upstream_list = super()._trial_physical_object_feature_series_list
@@ -50,10 +44,12 @@ class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
                     self.nort_absolute_discrimination,
                     self.discrimination_index,
                     self.novelty_preference,
-                    *self.physical_object_set.relative_object_bias_score.values(),
-                    *self.physical_object_set.absolute_object_bias_score.values(),
                 ),
-                index=self.constant_feature_headers,
+                index=(
+                    ("AbsoluteDiscrimination", "NovelFamiliar"),
+                    ("DiscriminationIndex", "NovelFamiliar"),
+                    ("NoveltyPreference", "NovelFamiliar"),
+                ),
             )
         )
         return upstream_list
