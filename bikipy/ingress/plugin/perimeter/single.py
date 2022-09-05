@@ -16,7 +16,7 @@ from bikipy.perimeter.base import (
     perimeter_set_from_makesense,
 )
 from bikipy.utils.collection_utils import get_first_key_in_dict
-from bikipy.utils.image import read_image_from_path
+from bikipy.utils.image import read_image_from_path, axis_frame_imshow
 from bikipy.utils.makesense import (
     SHAPE_TO_MAKESENSE_TYPE,
     first_image_name_from_makesense,
@@ -127,7 +127,7 @@ def inspect_annotations(annotation_path: FilePath, image_directory: Optional[Dir
         axes = [axes]
 
     for ax, (image_name, perimeter_set) in zip(axes, image_name_to_perimeter_set.items()):
-        ax.imshow(read_image_from_path(image_directory / image_name))
+        axis_frame_imshow(ax, read_image_from_path(image_directory / image_name))
         ax.invert_yaxis()
 
         perimeter_set.plot(manual_ax=ax, inspect_pixels=True)

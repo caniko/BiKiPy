@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from bikipy.perimeter.radial.utils import plot_circle
-from bikipy.utils.image import read_image
+from bikipy.utils.image import read_image, axis_frame_imshow
 
 
 def draw_bikipy_circle(radius: float, img: Any = None):
@@ -65,7 +65,7 @@ def draw_bikipy_circle(radius: float, img: Any = None):
 
     fig, ax = plt.subplots()
     if img is not None:
-        ax.imshow(read_image(img))
+        axis_frame_imshow(ax, read_image(img))
 
     center = None
 

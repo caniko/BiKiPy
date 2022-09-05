@@ -7,20 +7,18 @@ bare metadata, and its purpose is to either initialize or relay an existing Vide
 """
 from functools import cached_property, partial
 from logging import getLogger
-from pathlib import Path
-from typing import Any, ClassVar, Optional
+from typing import ClassVar, Optional
 
 import cv2
+import mextractor
 import numpy as np
-from mextractor.video import extract_video
-from numpy import ndarray
-from pydantic import Field, FilePath
+from mextractor.extractors import extract_video
+from pydantic import Field, FilePath, DirectoryPath
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
 
 from bikipy.core.base_class import BaseBikipy
-from bikipy.utils.image import read_image_from_path
-from bikipy.utils.video import get_video_data
+from bikipy.core.typing import MeterPerPixel
 
 logger = getLogger(__name__)
 
@@ -30,18 +28,13 @@ _can_only_be_set_manually = {"meters_per_pixel", "image_resize_multiplier"}
 
 
 class _VideoMetadataBase(BaseBikipy):
-    meters_per_pixel: Optional[float | NDArrayFp64] = Field(
-        description="Float or 1D array defining the meter to pixel ratio"
-    )
+    meters_per_pixel: Optional[MeterPerPixel] = Field(description="Float or 1D array defining the meter to pixel ratio")
 
-    video_path: Optional[FilePath] = Field(
-        description="Path to video, used to infer recording resolution, fps, and frame"
-    )
-    manual_recording_resolution: Optional[NDArrayInt16] = Field(
+    recording_resolution: Optional[NDArrayInt16] = Field(
         description="1D array defining the resolution of the recording"
     )
-    manual_fps: Optional[float] = Field(description="Frames per second of the recording")
-    manual_frame: Optional[FilePath | NDArrayUint8] = Field(
+    fps: Optional[float] = Field(description="Frames per second of the recording")
+    frame: Optional[FilePath | NDArrayUint8] = Field(
         description="Frame from the video stored in numpy array, use read_image_from_path to read from file paths"
     )
     minimum_frame_length: Optional[float] = Field(
@@ -52,17 +45,17 @@ class _VideoMetadataBase(BaseBikipy):
 
 class VideoMetadata(_VideoMetadataBase):
     def __and__(self, other: "VideoMetadata") -> bool:
-        for key in set(self.manual_video_metadata).intersection(other.manual_video_metadata):
-            if np.any(self.manual_video_metadata[key] != other.manual_video_metadata[key]):
+        for key in set(self.dict(exclude_unset=True)).intersection(other.dict(exclude_unset=True)):
+            if np.any(self.dict(exclude_unset=True)[key] != other.dict(exclude_unset=True)[key]):
                 logger.debug(
                     f"self and other are incongruent on {key}: "
-                    f"{self.manual_video_metadata[key]} != {other.manual_video_metadata[key]}"
+                    f"{self.dict(exclude_unset=True)[key]} != {other.dict(exclude_unset=True)[key]}"
                 )
                 return False
         return True
 
     def __eq__(self, other: "VideoMetadata") -> bool:
-        return set(self.manual_video_metadata) == set(other.manual_video_metadata)
+        return set(self.dict(exclude_unset=True)) == set(other.dict(exclude_unset=True))
 
     def __add__(self, other: "VideoMetadata") -> "VideoMetadata":
         return self.join(self, other)
@@ -80,37 +73,41 @@ class VideoMetadata(_VideoMetadataBase):
             raise AttributeError(msg)
         if meters_per_pixel_mean and "meters_per_pixel" in slave and "meters_per_pixel" in master:
             master.meters_per_pixel = np.mean([slave.meters_per_pixel, master.meters_per_pixel], axis=0)
-        new_metadata = slave.manual_video_metadata
-        new_metadata.update(master.manual_video_metadata)
+        new_metadata = slave.dict(exclude_unset=True)
+        new_metadata.update(master.dict(exclude_unset=True))
         return cls(**new_metadata)
 
     @classmethod
-    def with_mextractor(cls, video_path: FilePath, minimum_frame_length: Optional[float] = None):
-        info = extract_video(path_to_video=video_path, compress_image=False)
+    def from_path(cls, video_path: FilePath, minimum_frame_length: Optional[float] = None) -> "VideoMetadata":
+        info = extract_video(path_to_video=video_path, greyscale=True)
         return cls(
-            manual_recording_resolution=info.resolution,
-            manual_fps=info.fps,
-            manual_frame=info.image_array,
+            recording_resolution=info.resolution,
+            fps=info.fps,
+            frame=info.image,
+            minimum_frame_length=minimum_frame_length,
+        )
+
+    @classmethod
+    def from_mextractor(
+        cls, mextractor_dir: DirectoryPath, minimum_frame_length: Optional[float] = None
+    ) -> "VideoMetadata":
+        info = mextractor.load(mextractor_dir)
+        return cls(
+            recording_resolution=info.resolution,
+            fps=info.fps,
+            frame=info.image,
             minimum_frame_length=minimum_frame_length,
         )
 
     @cached_property
-    def pixels_per_meter(self) -> float | NDArrayFp64:
-        result = 1.0 / self.meters_per_pixel
-        if self.image_resize_multiplier:
-            result *= self.image_resize_multiplier
-        return result
+    def pixels_per_meter(self) -> MeterPerPixel | None:
+        if self.meters_per_pixel is not None:
+            return 1.0 / self.meters_per_pixel
 
     @cached_property
-    def recording_resolution(self) -> NDArrayInt16:
-        result = (
-            self.manual_recording_resolution
-            if self.manual_recording_resolution is not None
-            else self._video_metadata_from_file[0]
-        )
+    def multiplied_resolution(self) -> NDArrayInt16:
         if self.image_resize_multiplier:
-            result = np.round(result.astype(float) * self.image_resize_multiplier).astype(np.int16)
-        return result
+            return np.round(self.recording_resolution * self.image_resize_multiplier).astype(np.int16)
 
     @cached_property
     def center_pixel(self) -> NDArrayInt16:
@@ -140,69 +137,29 @@ class VideoMetadata(_VideoMetadataBase):
     def metric_vertical_resolution(self) -> int:
         return self.metric_resolution[1]
 
-    @property
-    def fps(self) -> float:
-        return self.manual_fps or self._video_metadata_from_file[1]
-
     @cached_property
     def image_resize_multiplier(self) -> float | None:
         if self.minimum_frame_length:
-            shortest_side_size = min(self._raw_frame.shape[:2])
+            shortest_side_size = min(self.frame.shape[:2])
             if shortest_side_size < self.minimum_frame_length:
                 return self.minimum_frame_length / shortest_side_size
 
-    @property
-    def video_metadata(self):
-        result = {}
-        if self.meters_per_pixel is not None:
-            result["meters_per_pixel"] = self.meters_per_pixel
-        if self.recording_resolution is not None:
-            result["recording_resolution"] = self.recording_resolution
-        if self.fps:
-            result["fps"] = self.fps
-        if self.frame is not None:
-            result["frame"] = self.frame
-        if self.image_resize_multiplier:
-            result["image_resize_multiplier"] = self.image_resize_multiplier
-        return result
-
     @cached_property
-    def manual_video_metadata(self):
-        return {
-            f"manual_{key}" if key not in _can_only_be_set_manually else key: value
-            for key, value in self.video_metadata.items()
-        }
-
-    @cached_property
-    def frame(self) -> NDArrayUint8 | None:
-        if self._raw_frame is not None:
-            if not self.image_resize_multiplier:
-                return self._raw_frame
-            return cv2.resize(
-                self._raw_frame,
-                (0, 0),
-                fx=self.image_resize_multiplier,
-                fy=self.image_resize_multiplier,
-                interpolation=cv2.INTER_CUBIC,
-            )
-
-    @cached_property
-    def _raw_frame(self) -> NDArrayUint8 | None:
-        if self.manual_frame is not None:
-            if isinstance(self.manual_frame, (Path, str)):
-                return read_image_from_path(self.manual_frame)
-            return self.manual_frame
-        if self.video_path:
-            return self._video_metadata_from_file[2]
-
-    @cached_property
-    def _video_metadata_from_file(self) -> tuple[None, None, None] | tuple[ndarray, Any, Any]:
-        if not self.video_path:
-            return None, None, None
-
-        frame, horizontal_resolution, vertical_resolution, fps = get_video_data(self.video_path)
-
-        return np.array((horizontal_resolution, vertical_resolution), dtype=np.int16), fps, frame
+    def upscaled_video(self) -> "VideoMetadata":
+        if not self.image_resize_multiplier:
+            return self
+        new_frame = cv2.resize(
+            self.frame.copy(),
+            (0, 0),
+            fx=self.image_resize_multiplier,
+            fy=self.image_resize_multiplier,
+            interpolation=cv2.INTER_CUBIC,
+        )
+        return self.__class__(
+            **self.dict(exclude={"frame", "recording_resolution"}, exclude_unset=True),
+            frame=new_frame,
+            recording_resolution=new_frame.shape[0:2:-1],
+        )
 
     def ax_ticks_metric_to_pixel(self, ax, number_of_ticks: int = 7):
         ax.set_xticks(
@@ -231,7 +188,7 @@ class VideoMetadataMixin(_VideoMetadataBase):
     def video(self) -> VideoMetadata:
         # TODO: computed_field validation
         if self.required_video_metadata_fields and (
-            missing_fields := self.required_video_metadata_fields.difference(self._video.video_metadata)
+            missing_fields := self.required_video_metadata_fields.difference(self._video.dict(exclude_unset=True))
         ):
             msg = (
                 f"{self.__class__.__name__} requires {self.required_video_metadata_fields}, "
@@ -242,16 +199,15 @@ class VideoMetadataMixin(_VideoMetadataBase):
 
     @property
     def video_metadata(self):
-        return self.video.video_metadata
+        return self.video.dict(exclude_unset=True)
 
     @property
     def _video(self):
         video = VideoMetadata(
-            video_path=self.video_path,
             meters_per_pixel=self.meters_per_pixel,
-            manual_fps=self.manual_fps,
-            manual_recording_resolution=self.manual_recording_resolution,
-            manual_frame=self.manual_frame,
+            fps=self.fps,
+            recording_resolution=self.recording_resolution,
+            frame=self.frame,
         )
         if self.manual_video:
             video = VideoMetadata.join(self.manual_video, video, ignore_incongruity=True)

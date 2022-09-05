@@ -38,7 +38,7 @@ from bikipy.utils.collection_utils import (
     copycat_assumes_levels_of_icon,
     get_first_value_in_dict,
 )
-from bikipy.utils.misc import dict_deepmerge, sheet_names_from_path
+from bikipy.utils.misc import sheet_names_from_path
 
 if TYPE_CHECKING:
     from bikipy.behaviour.base import Experiment, Trial

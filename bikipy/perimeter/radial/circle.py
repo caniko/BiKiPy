@@ -145,7 +145,7 @@ class CirclePerimeter(BaseSinglePerimeter):
                 center_pixels=a,
                 radius_pixels=np.linalg.norm((a - b)),  # AB vector is in pixels, must be meters
                 label=row["label"],
-                manual_recording_resolution=recording_resolution_from_makesense_row(row),
+                recording_resolution=recording_resolution_from_makesense_row(row),
                 makesense_image_name=row["image_name"],
                 meters_per_pixel=meters_per_pixel,
                 **perimeter_kwargs,

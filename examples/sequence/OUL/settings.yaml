@@ -1,8 +1,8 @@
 ingress:
   method: animal
-  frame_upscale_multiplier: float
-  framewise_coordinates_file_suffix: .parquet
   first_stage_is_habituation: false
+  framewise_coordinates_file_suffix: .parquet
+  minimum_frame_length: 500
   dataset_directory: /mnt/BigData/oul_dataset
   profile_runtime: true
 definition_strategies:
@@ -22,7 +22,6 @@ perimeter:
     defined:
       impenetrable: true
     optional:
-      image_resize_multiplier: number
       impenetrable: boolean -> False
       inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
         -> False'
@@ -35,6 +34,8 @@ perimeter:
         type=short required=True]
       manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
       meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
+      minimum_frame_length: number
+      moving_field_name: string
       video_path: string
 reader_kwargs:
   defined:
@@ -45,20 +46,21 @@ reader_kwargs:
   optional:
     crop_from_end: boolean -> False
     crop_time_seconds: number -> 0.0
+    df_is_timestamped: boolean -> False
     df_read_kwargs: object
     export_timestamp_data_as_parquet: boolean -> False
     future_scaling: boolean
-    image_resize_multiplier: number
     invert_y_axis: boolean -> False
     manual_fps: number
     manual_frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'':
-      ''np.ndarray''}]'
+      ''uint8''}]'
     manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0' type=short
       required=True]
     manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
-    meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
+    meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
     midpoint_groups: object
     min_likelihood: number -> 0.8
+    minimum_frame_length: number
     video_path: string
     x_axis_crop_end_point: number -> 0.0
     y_axis_crop_end_point: number -> 0.0
@@ -81,7 +83,6 @@ trial:
       crop_from_end: boolean -> True
       crop_time_seconds: number -> 0.0
       data_format_label: string -> deeplabcut
-      image_resize_multiplier: number
       inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
         -> False'
       inspect_image_path: string
@@ -91,14 +92,15 @@ trial:
         type=dobble required=True]
       manual_fps: number
       manual_frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'':
-        ''np.ndarray''}]'
-      manual_inspect_image: np.ndarray
+        ''uint8''}]'
+      manual_inspect_image: np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]
       manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0'
         type=short required=True]
       manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
       maximum_radians_inter_gaze_perimeter: number -> 0.7853981633974483
       maximum_seconds_distraction: number -> 0.6666666666666666
-      meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
+      meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
+      minimum_frame_length: number
       minimum_seconds_attention: number -> 0.3333333333333333
       outside_perimeter_point_label: string
       physical_object_inspect: boolean -> False
@@ -123,20 +125,21 @@ experiment:
   optional:
     compute_first_two_feature_series_only: boolean -> False
     data_format_label: string -> deeplabcut
-    image_resize_multiplier: number
     inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
       -> False'
     inspect_image_path: string
     manual_fps: number
     manual_frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'':
-      ''np.ndarray''}]'
-    manual_inspect_image: np.ndarray
+      ''uint8''}]'
+    manual_inspect_image: np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]
     manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0' type=short
       required=True]
     manual_trial_ids: array
     manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
-    meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
+    meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
+    minimum_frame_length: number
     stage: string
+    trial_init_error_out_dir: string
     video_path: string
 immutable:
   metadata_filename: metadata.xlsx

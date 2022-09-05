@@ -483,7 +483,7 @@ def perimeter_set_from_makesense(
         case "circle":
             from bikipy.perimeter.radial.circle import CirclePerimeter
 
-            return CirclePerimeter.from_makesense_line(perimeter_path, meters_per_pixel=None, **perimeter_kwargs)
+            return CirclePerimeter.from_makesense_line(perimeter_path, **perimeter_kwargs)
         case "rectangle":
             match perimeter_path.suffix:
                 case ".csv":

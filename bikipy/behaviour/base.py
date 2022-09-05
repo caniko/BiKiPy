@@ -368,7 +368,7 @@ class BaseExperiment(Behaviour):
         """
         Function useful for customizing initiation parameters for trial objects
         """
-        result = {**self.video.manual_video_metadata, "data_format_label": self.data_format_label}
+        result = {**self.video.dict(exclude_unset=True), "data_format_label": self.data_format_label}
 
         if self.common_trial_keyword_arguments:
             result.update(self.common_trial_keyword_arguments)

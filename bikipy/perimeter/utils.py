@@ -7,7 +7,7 @@ from pydantic import FilePath
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.utils.collection_utils import generic_multi_indexer
-from bikipy.utils.image import read_image
+from bikipy.utils.image import read_image, axis_frame_imshow
 from bikipy.utils.makesense import read_makesense_point
 
 if TYPE_CHECKING:
@@ -62,7 +62,7 @@ def plot_perimeters(
                 break
 
     if inspect_image is not None:
-        ax.imshow(read_image(inspect_image), cmap="gray", vmin=0, vmax=255)
+        axis_frame_imshow(ax, read_image(inspect_image))
 
     perimeter_plot_kwargs = perimeter_plot_kwargs or {}
     for perimeter in perimeters:

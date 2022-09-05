@@ -10,6 +10,7 @@ from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from seaborn import set_theme
 
 from bikipy import runtime_settings
+from bikipy.utils.image import axis_frame_imshow
 from bikipy.utils.math.vector import dot_axis_1_1d, orthogonal_unit_vector
 from bikipy.utils.plotting import InspectArg, generic_inspection_finalization
 
@@ -56,7 +57,7 @@ def inaccurate_points_in_rectangle(
         set_theme(style="darkgrid")
         fig, ax = plt.subplots()
         if inspect_image is not None:
-            ax.imshow(inspect_image)
+            axis_frame_imshow(inspect_image, ax)
 
         ax.plot(*np.array((corner_a, ab_mid_corner)).T)
         ax.plot(*np.array((corner_b, ab_mid_corner)).T)

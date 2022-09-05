@@ -3,18 +3,18 @@ import numpy as np
 from bikipy.core.video import VideoMetadata
 
 video_test_a = VideoMetadata(
-    manual_recording_resolution=[1920, 1080],
-    manual_fps=30,
+    recording_resolution=[1920, 1080],
+    fps=30,
 )
 video_test_b = VideoMetadata(
     meters_per_pixel=[1, 1],
-    manual_recording_resolution=[1920, 1080],
+    recording_resolution=[1920, 1080],
 )
 
 INCONGRUENT_RESOLUTION = np.array([1000, 1080], dtype=np.int16)
 video_test_c = VideoMetadata(
     meters_per_pixel=[1, 1],
-    manual_recording_resolution=INCONGRUENT_RESOLUTION,
+    recording_resolution=INCONGRUENT_RESOLUTION,
 )
 
 

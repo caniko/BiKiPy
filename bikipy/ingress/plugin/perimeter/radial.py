@@ -82,7 +82,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
                 int_id=line_index + 1,
                 label=index_data["label"],
                 reference_point_array=self.reference_point,
-                manual_recording_resolution=np.array((index_data["x_res"], index_data["y_res"]), dtype=float),
+                recording_resolution=np.array((index_data["x_res"], index_data["y_res"]), dtype=float),
                 group_label="arms",
                 inspect_arg=self.ingress.inspect_directory_path,
             )

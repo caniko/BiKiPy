@@ -13,7 +13,7 @@ class PluginVideo(BasePluginFile):
 
     @cached_property
     def video(self) -> VideoMetadata:
-        return VideoMetadata.with_mextractor(
+        return VideoMetadata.from_path(
             video_path=self.data_path, minimum_frame_length=self.ingress.settings["ingress"]["minimum_frame_length"]
         )
 

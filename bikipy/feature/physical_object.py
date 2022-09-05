@@ -159,7 +159,7 @@ class PhysicalObject(BaseBikipyInspectMixin):
         )
 
         if isinstance(self.inspect_arg, Path):
-            name = f"{self.inspect_arg.stem}_{self.label}.svg"
+            name = f"{self.inspect_arg.stem}_{self.label}.jpg"
             if self.trial_obj_label:
                 name = f"{self.trial_obj_label}_{name}"
             generic_inspection_finalization(self.class_inspect_arg / name)
@@ -184,7 +184,10 @@ class PhysicalObject(BaseBikipyInspectMixin):
         self._fig, self._axes = plt.subplots(
             nrows=2,
             ncols=2,
-            figsize=(self.video.horizontal_resolution * 0.66, self.video.vertical_resolution * 0.66),
+            figsize=(
+                self.video.upscaled_video.horizontal_resolution * 0.066,
+                self.video.upscaled_video.vertical_resolution * 0.066,
+            ),
             constrained_layout=True,
         )
 
@@ -192,18 +195,16 @@ class PhysicalObject(BaseBikipyInspectMixin):
             for row_ax in self._axes:
                 for col_ax in row_ax:
                     col_ax.set_aspect("equal", adjustable="box")
-        elif self.video.frame is not None:
+        else:
             # axes row 1 will be targeted by analysis inspect function, no need to do that here
             for ax in (self.attention_axes[1][0], self.attention_axes[1][1]):
-                axis_frame_imshow(ax, self.video.frame)
+                axis_frame_imshow(ax, self.video.upscaled_video.frame)
                 self.video.ax_ticks_metric_to_pixel(ax)
-        else:
-            raise RuntimeError(f"Video frame is None and not None: {self.video.frame}")
 
         self.attention_axes[1][0].set_title("proximity_filtered & gaze_filtered")
         self.attention_axes[1][1].set_title("Observation")
 
-        self._fig.suptitle("Observation cumulative filtration analysis", fontsize=30)
+        self._fig.suptitle("Observation cumulative filtration analysis", fontsize=23)
 
     @cached_property
     def _inspect_pixels(self) -> bool:

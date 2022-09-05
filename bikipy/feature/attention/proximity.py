@@ -14,6 +14,7 @@ from bikipy.core.video import (
     prepare_data_for_plotting,
 )
 from bikipy.perimeter.base import SinglePerimeter
+from bikipy.utils.image import axis_frame_imshow
 from bikipy.utils.plotting import BOTTOM_LEGEND_KWARGS
 
 logger = getLogger(__name__)
@@ -68,7 +69,7 @@ def proximity_filter(
             sb.set_theme(style="darkgrid")
             fig, ax = plt.subplots(dpi=300)
             if np.any(perimeter.inspect_image):
-                ax.imshow(perimeter.inspect_image)
+                axis_frame_imshow(ax, perimeter.inspect_image)
         else:
             ax = manual_ax
 

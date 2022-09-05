@@ -74,8 +74,8 @@ def init_polygon_from_makesense_coco_polygon(
             vertices,
             label=label,
             reference_point_array=reference_point_array,
-            manual_frame=read_image_from_path(image_root / image_name) if image_root else None,
-            manual_recording_resolution=np.array((coco["images"][image_index]["width"], y_res), dtype=float),
+            frame=read_image_from_path(image_root / image_name) if image_root else None,
+            recording_resolution=np.array((coco["images"][image_index]["width"], y_res), dtype=float),
             makesense_image_name=image_name,
             **current_kwargs,
             **perimeter_kwargs,
@@ -118,8 +118,8 @@ def init_polygon_from_makesense_csv_rectangle(
         result[image_name][label] = init_polygon(
             np.array((start, (start[0], end[1]), end, (end[0], start[1])), dtype=float),
             label=label,
-            manual_recording_resolution=np.array((row["x_res"], row["y_res"]), dtype=float),
-            manual_frame=read_image_from_path(image_root / str(image_name)) if image_root else None,
+            recording_resolution=np.array((row["x_res"], row["y_res"]), dtype=float),
+            frame=read_image_from_path(image_root / str(image_name)) if image_root else None,
             makesense_image_name=row["image_name"],
             **perimeter_kwargs,
         )

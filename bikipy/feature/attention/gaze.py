@@ -26,12 +26,12 @@ def gaze_direction_filter_circle_triangle(
 
     direction_point_is_closer_than_start_point = np.linalg.norm(
         closest_points_on_edges - gaze_travel_direction_point, axis=1
-    ) < np.linalg.norm(closest_points_on_edges - gaze_start_point, axis=1)
+    ) <= np.linalg.norm(closest_points_on_edges - gaze_start_point, axis=1)
 
-    angle_from_a_to_b(vector_to_closest_point_on_edge, gaze_vectors)
+    angle_from_normal_to_gaze = angle_from_a_to_b(vector_to_closest_point_on_edge, gaze_vectors)
 
-    result = direction_point_is_closer_than_start_point
-    # result = direction_point_is_closer_than_start_point & (np.abs(angle_from_normal_to_gaze) <= max_radians)
+    # result = direction_point_is_closer_than_start_point
+    result = direction_point_is_closer_than_start_point & (np.abs(angle_from_normal_to_gaze) <= max_radians)
 
     if inspect:
         gaze_inspection_plot(perimeter, result, gaze_vectors, gaze_travel_direction_point, **inspect_kwargs)
@@ -65,7 +65,7 @@ def gaze_inspection_plot(
 
     quiver_kwargs = {
         "angles": "xy",
-        "scale_units": "xy",
+        "scale_units": "dots",
         "scale": 1.0,
         "alpha": runtime_settings.matplotlib_scatter_alpha,
     }
