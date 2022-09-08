@@ -2,6 +2,7 @@ from logging import getLogger
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
+import seaborn
 from matplotlib import pyplot as plt
 from pydantic import validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
@@ -65,6 +66,10 @@ def plot_coordinates(
     ax.scatter(*coordinates.T, **plot_kwargs)
 
     return ax
+
+
+def make_color_map(n_colors: int):
+    return seaborn.color_palette("dark", n_colors)
 
 
 BOTTOM_LEGEND_KWARGS = {"loc": "upper center", "bbox_to_anchor": (0.5, -0.04), "fancybox": True, "ncol": 3}

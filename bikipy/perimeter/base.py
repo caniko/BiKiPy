@@ -236,15 +236,6 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
             return f"{self.makesense_image_name.split('.')[0]}-{method_name}"
         return method_name
 
-    # @cached_property
-    # def class_inspect_arg(self) -> InspectArg:
-    #     upstream = super().class_inspect_arg
-    #
-    #     if self.makesense_image_name and not isinstance(upstream, bool):
-    #         return upstream / self.makesense_image_name
-    #
-    #     return upstream
-
     def plot(
         self,
         ax: Any = None,
@@ -273,13 +264,10 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
             ax.set_title(self.label)
 
         if self.video.frame is not None:
-            axis_frame_imshow(ax, self.video.frame)
+            axis_frame_imshow(ax, self.video.upscaled_video.greyscale_frame)
 
         if coordinates is not None:
             ax = plot_coordinates(coordinates, ax, inspect_pixels, self.video)
-
-        if inspect_pixels:
-            self.video.ax_ticks_metric_to_pixel(ax)
 
         ax.set_title(self.label)
 

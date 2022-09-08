@@ -15,7 +15,7 @@ from bikipy.core.video import (
 )
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.utils.image import axis_frame_imshow
-from bikipy.utils.plotting import BOTTOM_LEGEND_KWARGS
+from bikipy.utils.plotting import BOTTOM_LEGEND_KWARGS, make_color_map
 
 logger = getLogger(__name__)
 
@@ -73,12 +73,14 @@ def proximity_filter(
         else:
             ax = manual_ax
 
-        inside_perimeter_border = prepare_data_for_plotting(inside_perimeter_border, inspect_pixels, inspect_video)
+        inside_perimeter_border_plot_scaled = prepare_data_for_plotting(
+            inside_perimeter_border, inspect_pixels, inspect_video
+        )
 
         if inspect_pixels:
-            inspect_video.ax_ticks_metric_to_pixel(ax)
+            inspect_video.upscaled_video.ax_ticks_metric_to_pixel(ax)
 
-        ax.set_title("Proximity filter")
+        ax.set_title("Proximity filter", fontsize=inspect_video.upscaled_video.plotting_title_font_size)
 
         perimeter.plot(
             ax=ax,
@@ -89,36 +91,42 @@ def proximity_filter(
             inspect_pixels=inspect_pixels,
         )
 
+        color_map = make_color_map(2 if perimeter.impenetrable else 3)
+
         ax.scatter(
-            *inside_perimeter_border[result].T,
+            *inside_perimeter_border_plot_scaled[result].T,
             marker="x",
             alpha=runtime_settings.matplotlib_scatter_alpha,
             label="Valid",
+            color=color_map[0],
         )
 
         not_result = ~result
         if perimeter.impenetrable:
             ax.scatter(
-                *inside_perimeter_border[not_result].T,
+                *inside_perimeter_border_plot_scaled[not_result].T,
                 marker="x",
                 alpha=runtime_settings.matplotlib_scatter_alpha,
                 label="Invalid",
+                color=color_map[1],
             )
         else:
             ax.scatter(
-                *inside_perimeter_border[inside_perimeter_border_boolean_index & not_result].T,
+                *inside_perimeter_border_plot_scaled[inside_perimeter_border_boolean_index & not_result].T,
                 marker="x",
                 alpha=runtime_settings.matplotlib_scatter_alpha,
                 label="Nose valid, invalid torso",
+                color=color_map[1],
             )
             ax.scatter(
-                *inside_perimeter_border[outside_perimeter_boolean_index & not_result].T,
+                *inside_perimeter_border_plot_scaled[outside_perimeter_boolean_index & not_result].T,
                 marker="x",
                 alpha=runtime_settings.matplotlib_scatter_alpha,
                 label="Torso valid, invalid nose",
+                color=color_map[2],
             )
 
-        ax.legend(**BOTTOM_LEGEND_KWARGS)
+        ax.legend(**BOTTOM_LEGEND_KWARGS, fontsize=inspect_video.upscaled_video.plotting_default_font_size)
 
         if not manual_ax:
             plt.tight_layout()

@@ -148,15 +148,19 @@ class PhysicalObject(BaseBikipyInspectMixin):
 
         self.attention_axes[1][0].scatter(
             *gaze_travel_direction_point[self.logical_location_and_gaze].T,
-            alpha=runtime_settings.matplotlib_scatter_alpha,
+            # alpha=runtime_settings.matplotlib_scatter_alpha,
             marker="x",
+            color="b",
         )
 
         self.attention_axes[1][1].scatter(
             *gaze_travel_direction_point[self.attention_observance_boolean_index].T,
-            alpha=runtime_settings.matplotlib_scatter_alpha,
+            # alpha=runtime_settings.matplotlib_scatter_alpha,
             marker="x",
+            color="b",
         )
+
+        # plt.tight_layout(pad=10)
 
         if isinstance(self.inspect_arg, Path):
             name = f"{self.inspect_arg.stem}_{self.label}.jpg"
@@ -184,11 +188,11 @@ class PhysicalObject(BaseBikipyInspectMixin):
         self._fig, self._axes = plt.subplots(
             nrows=2,
             ncols=2,
-            figsize=(
-                self.video.upscaled_video.horizontal_resolution * 0.066,
-                self.video.upscaled_video.vertical_resolution * 0.066,
-            ),
             constrained_layout=True,
+            figsize=(
+                self.video.upscaled_video.horizontal_resolution * 0.1,
+                self.video.upscaled_video.vertical_resolution * 0.1,
+            ),
         )
 
         if self.video.frame is None:
@@ -198,13 +202,18 @@ class PhysicalObject(BaseBikipyInspectMixin):
         else:
             # axes row 1 will be targeted by analysis inspect function, no need to do that here
             for ax in (self.attention_axes[1][0], self.attention_axes[1][1]):
-                axis_frame_imshow(ax, self.video.upscaled_video.frame)
-                self.video.ax_ticks_metric_to_pixel(ax)
+                axis_frame_imshow(ax, self.video.upscaled_video.greyscale_frame)
+                self.video.upscaled_video.ax_ticks_metric_to_pixel(ax)
 
-        self.attention_axes[1][0].set_title("proximity_filtered & gaze_filtered")
-        self.attention_axes[1][1].set_title("Observation")
+        self.attention_axes[1][0].set_title(
+            "proximity_filtered & gaze_filtered", fontsize=self.video.upscaled_video.plotting_title_font_size
+        )
+        self.attention_axes[1][1].set_title("Observation", fontsize=self.video.upscaled_video.plotting_title_font_size)
 
-        self._fig.suptitle("Observation cumulative filtration analysis", fontsize=23)
+        self._fig.suptitle(
+            "Observation cumulative filtration analysis",
+            fontsize=self.video.upscaled_video.plotting_title_font_size * 1.1,
+        )
 
     @cached_property
     def _inspect_pixels(self) -> bool:

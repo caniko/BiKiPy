@@ -120,8 +120,7 @@ trial:
       defined:
         crop_time_seconds: 600
 experiment:
-  defined:
-    compute_first_two_feature_series_only: false
+  defined: {}
   optional:
     compute_first_two_feature_series_only: boolean -> False
     data_format_label: string -> deeplabcut

@@ -8,7 +8,7 @@ class BikipyRuntimeSettings(BaseSettings):
     )
     disable_numba: bool = False
 
-    matplotlib_scatter_alpha: float = 0.30
+    matplotlib_scatter_alpha: float = 0.60
     matplotlib_invert_y_axis: bool = False
 
 

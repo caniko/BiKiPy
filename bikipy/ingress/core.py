@@ -44,6 +44,9 @@ if TYPE_CHECKING:
     from bikipy.behaviour.base import Experiment, Trial
 
 
+FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD = "first_stage_is_habituation"
+
+
 logger = getLogger(__name__)
 
 
@@ -122,8 +125,8 @@ class BaseIngress(BaseBikipy, ABC):
             )
             raise ValueError(msg)
 
-        if self.settings["ingress"]["first_stage_is_habituation"]:
-            return experiment.first_trial_is_habituation()
+        if self.settings["ingress"][FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD]:
+            return experiment.set_first_trial_to_habituation()
         return experiment
 
     @property
@@ -685,7 +688,7 @@ def init_settings(
     generic_settings = {
         "ingress": {
             "method": ingress_method,
-            "first_stage_is_habituation": False,
+            FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD: False,
             "framewise_coordinates_file_suffix": framewise_coordinates_file_suffix,
             "minimum_frame_length": 500,
             "dataset_directory": None,
@@ -702,6 +705,7 @@ def init_settings(
         "reader_kwargs": extended_schema(DeepLabCutReader, with_required=False),
         "trial": extended_group_schema(experiment_class.trial_classes),
         "experiment": extended_schema(experiment_class),
+        "debug": {"activate_debugging": False, "no_numba": False, "no_process_pooling": False},  # TODO: Implement
         "immutable": {
             "metadata_filename": "metadata.xlsx",
             "experiment_class": experiment_name,

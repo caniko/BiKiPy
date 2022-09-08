@@ -31,6 +31,7 @@ from bikipy.core.video import (
     incongruity_permissive_video_join,
 )
 from bikipy.feature.motion import Motion, motion_multi_indexer
+from bikipy.ingress.core import FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD
 from bikipy.ingress.plugin import PluginChangeReference, PluginRadial
 from bikipy.perimeter.base import BaseSinglePerimeter, PerimeterSet, SinglePerimeter
 from bikipy.reader.data_with_likelihood import DeepLabCutReader
@@ -236,14 +237,19 @@ class BaseExperiment(Behaviour):
     stage: Optional[str] = Field(
         description="Experiment stage label, if experiment object is in a sequence of experiment objects"
     )
+    trial_init_error_out_dir: Optional[DirectoryPath] = Field(description="Directory to write Trial class init errors")
+
     compute_first_two_feature_series_only: bool = Field(
         False, description="Used to rapidly generate combo df during debugging"
     )
-    trial_init_error_out_dir: Optional[DirectoryPath] = Field(description="Directory to write Trial class init errors")
-
-    habituation_trial_class: ClassVar[Trial] = Field(
-        ..., description="The trial class that will be used in case first_trial_is_habituation is called"
+    skip_habituation: bool = Field(
+        False, description="Skip the habituation class during analysis, practically skipping the the habituation class"
     )
+
+    habituation_trial_class: ClassVar[Optional[Trial]] = Field(
+        description="The trial class that will be used in case set_first_trial_to_habituation is called"
+    )
+    _first_trial_is_habituation: ClassVar[bool] = False
     trial_classes: ClassVar[tuple[Trial]] = Field(..., description="Trial classes designed for this experiment class")
 
     @classmethod
@@ -280,9 +286,17 @@ class BaseExperiment(Behaviour):
         super().save()
 
     @classmethod
-    def first_trial_is_habituation(cls) -> "Experiment":
+    def set_first_trial_to_habituation(cls) -> "Experiment":
+        if not cls.habituation_trial_class:
+            msg = f"Habituation trial class for {cls.__name__} has not been defined, contact the maintainers"
+            raise AttributeError(msg)
+        if cls._first_trial_is_habituation:
+            msg = "The first trial has already been set to habituation"
+            raise AttributeError(msg)
+
         cls.habituation_trial_class.experiment_class_name = cls.__name__
         cls.trial_classes = (cls.habituation_trial_class, *cls.trial_classes)
+        cls._first_trial_is_habituation = True
         return cls
 
     @classmethod
@@ -541,9 +555,6 @@ class BaseExperiment(Behaviour):
                 # with ProcessPoolExecutor(max_workers=round(2.0 * os.cpu_count() * 0.80)) as executor:
                 with ProcessPoolExecutor() as executor:
                     for trial_class_label, trial_objects in self._trial_class_label_to_trial_objects.items():
-                        trial_objects = (
-                            trial_objects[:2] if self.compute_first_two_feature_series_only else trial_objects
-                        )
                         result[trial_class_label] = {
                             trial_object.label: features
                             for trial_object, features in zip(
@@ -554,7 +565,6 @@ class BaseExperiment(Behaviour):
             for trial_class_label, trial_objects in tqdm(
                 self._trial_class_label_to_trial_objects.items(), desc="Computing experiment features"
             ):
-                trial_objects = trial_objects[:2] if self.compute_first_two_feature_series_only else trial_objects
                 result[trial_class_label] = {
                     trial_object.label: trial_object.trial_feature_series for trial_object in trial_objects
                 }
@@ -630,12 +640,33 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _trial_class_label_to_trial_objects(self) -> dict:
+        def filter_trial_objects(trial_objects):
+            if self.compute_first_two_feature_series_only:
+                return trial_objects[:2]
+            return trial_objects
+
         if not self.has_stages:
-            return {self.trial_class.trial_label: self.trial_objects}
+            return {self.trial_class.trial_label: filter_trial_objects(self.trial_objects)}
+
+        if self.skip_habituation:
+            if not self._first_trial_is_habituation:
+                msg = (
+                    f"skip_habituation is True, but the experiment has no habituation trial set. Possible mistakes:\n"
+                    f"  - skip_habituation was set to True by mistake.\n"
+                    f'  - users of ingress forgot to set {FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD} to "true" '
+                    f"in the project settings.yaml file.\n"
+                    f"  - advanced users did not run set_first_trial_to_habituation, "
+                    f"an Experiment classmethod that is required for habituation inclusive workflows."
+                )
+                raise AttributeError(msg)
+            logger.warning(
+                "skip_habituation is True, skipping the the habituation class, thereby, the belonging trial object set"
+            )
 
         return {
-            self.trial_class_name_to_label[trial_class_name]: trial_objects
+            self.trial_class_name_to_label[trial_class_name]: filter_trial_objects(trial_objects)
             for trial_class_name, trial_objects in self.trial_class_name_to_trial_objects.items()
+            if not (self.skip_habituation and self.trial_class_name_to_label[trial_class_name] == "Habituation")
         }
 
     @cached_property

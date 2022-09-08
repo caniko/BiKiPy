@@ -29,7 +29,6 @@ _can_only_be_set_manually = {"meters_per_pixel", "image_resize_multiplier"}
 
 class _VideoMetadataBase(BaseBikipy):
     meters_per_pixel: Optional[MeterPerPixel] = Field(description="Float or 1D array defining the meter to pixel ratio")
-
     recording_resolution: Optional[NDArrayInt16] = Field(
         description="1D array defining the resolution of the recording"
     )
@@ -41,6 +40,8 @@ class _VideoMetadataBase(BaseBikipy):
         description="Must be defined in case the original frame has been resized. "
         "This might be done during bikipy ingress"
     )
+
+    category = "video_metadata"
 
 
 class VideoMetadata(_VideoMetadataBase):
@@ -79,7 +80,7 @@ class VideoMetadata(_VideoMetadataBase):
 
     @classmethod
     def from_path(cls, video_path: FilePath, minimum_frame_length: Optional[float] = None) -> "VideoMetadata":
-        info = extract_video(path_to_video=video_path, greyscale=True)
+        info = extract_video(path_to_video=video_path)
         return cls(
             recording_resolution=info.resolution,
             fps=info.fps,
@@ -145,6 +146,15 @@ class VideoMetadata(_VideoMetadataBase):
                 return self.minimum_frame_length / shortest_side_size
 
     @cached_property
+    def greyscale_frame(self) -> NDArrayUint8:
+        if len(self.frame.shape) == 3 and self.frame.shape[2] == 3:
+            return cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+        if len(self.frame.shape) == 2:
+            return self.frame
+        msg = f"The frame has an unsupported shape, {self.frame.shape}"
+        raise AttributeError(msg)
+
+    @cached_property
     def upscaled_video(self) -> "VideoMetadata":
         if not self.image_resize_multiplier:
             return self
@@ -158,7 +168,7 @@ class VideoMetadata(_VideoMetadataBase):
         return self.__class__(
             **self.dict(exclude={"frame", "recording_resolution"}, exclude_unset=True),
             frame=new_frame,
-            recording_resolution=new_frame.shape[0:2:-1],
+            recording_resolution=new_frame.shape[0:2:][::-1],
         )
 
     def ax_ticks_metric_to_pixel(self, ax, number_of_ticks: int = 7):
@@ -168,13 +178,31 @@ class VideoMetadata(_VideoMetadataBase):
                 np.linspace(0.0, self.metric_horizontal_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
                 decimals=2,
             ),
+            fontsize=self.plotting_default_font_size,
         )
         ax.set_yticks(
             ticks=np.linspace(0.0, self.vertical_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
             labels=np.round(
                 np.linspace(0.0, self.metric_vertical_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks), decimals=2
             ),
+            fontsize=self.plotting_default_font_size,
         )
+
+    @cached_property
+    def plotting_mean_side_length(self) -> float:
+        return np.sum(self.center_pixel)
+
+    @cached_property
+    def plotting_default_font_size(self) -> float:
+        return self.plotting_mean_side_length / 10.0  # sum(center) == mean
+
+    @cached_property
+    def plotting_title_font_size(self) -> float:
+        return self.plotting_default_font_size * 1.25
+
+    @cached_property
+    def plotting_line_thickness(self) -> float:
+        return self.plotting_default_font_size / 10.0
 
 
 class VideoMetadataMixin(_VideoMetadataBase):
