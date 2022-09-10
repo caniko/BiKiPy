@@ -36,6 +36,7 @@ perimeter:
       recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
 reader_kwargs:
   defined:
+    filter_method: arima
     midpoint_groups:
       center_eye:
       - left_ear
@@ -46,9 +47,12 @@ reader_kwargs:
     df_is_timestamped: boolean -> False
     df_read_kwargs: object
     export_timestamp_data_as_parquet: boolean -> False
+    filter_kwargs: object
+    filter_method: string
     fps: number
     frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'': ''uint8''}]'
     future_scaling: boolean
+    ignore_likelihoods: boolean -> False
     invert_y_axis: boolean -> False
     manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
     meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
@@ -109,7 +113,7 @@ trial:
         crop_from_end: false
     ObjectsInUpdatingLocationsTestTrial:
       defined:
-        crop_time_seconds: 300
+        crop_time_seconds: 600
 experiment:
   defined: {}
   optional:

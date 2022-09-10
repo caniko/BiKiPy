@@ -3,6 +3,7 @@ from collections import abc
 from functools import cached_property
 from logging import getLogger
 from typing import Hashable, Iterable, Optional, Sequence, TypeVar
+from typing_extensions import Literal
 
 import numpy as np
 import pandas as pd
@@ -37,7 +38,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         description="labels that consist of groups that should have their midpoints computed in the DataFrame"
     )
 
-    filter_method: Optional[str]
+    filter_method: Optional[Literal["arima", "median", "spline"]]
     filter_kwargs: dict = Field(default_factory=dict)
     ignore_likelihoods: bool = False
 
@@ -298,7 +299,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
             index=df.index,
         )
 
-    def _flush_reads(self) -> None:
+    def flush_reads(self) -> None:
         self.raw_df.fget.cache_clear()
         self.augmented.fget.cache_clear()
         self.meters_augmented.fget.cache_clear()

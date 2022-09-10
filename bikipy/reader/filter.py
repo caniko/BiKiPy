@@ -1,4 +1,6 @@
 """
+Augmented from; thereby, licensed under:
+
 DeepLabCut2.0 Toolbox (deeplabcut.org)
 © A. & M. Mathis Labs
 https://github.com/DeepLabCut/DeepLabCut
@@ -134,10 +136,6 @@ def filter_data(
             columns=df.columns,
             index=df.index,
         )
-    elif method == "median":
-        data = df.copy()
-        mask = data.columns.get_level_values("coords") != "likelihood"
-        data.loc[:, mask] = df.loc[:, mask].apply(signal.medfilt, args=(windowlength,), axis=0)
     elif method == "spline":
         data = df.copy()
         mask_data = data.columns.get_level_values("coords").isin(("x", "y"))
@@ -155,6 +153,10 @@ def filter_data(
             prob[inds[:, 0], inds[:, 1]] = 0.01
             data.loc[:, ~mask_data] = prob
         data.loc[:, mask_data] = xy
+    elif method == "median":
+        data = df.copy()
+        mask = data.columns.get_level_values("coords") != "likelihood"
+        data.loc[:, mask] = df.loc[:, mask].apply(signal.medfilt, args=(windowlength,), axis=0)
     else:
         raise ValueError(f"Unknown filter type {method}")
 
