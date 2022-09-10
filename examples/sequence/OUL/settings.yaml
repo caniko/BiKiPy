@@ -22,21 +22,18 @@ perimeter:
     defined:
       impenetrable: true
     optional:
+      fps: number
+      frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'': ''uint8''}]'
       impenetrable: boolean -> False
       inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
         -> False'
       inspect_image_path: string
-      manual_fps: number
-      manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
-        ''file-path''}]'
       manual_inspect_image: np.ndarray
-      manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0'
-        type=short required=True]
       manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
       meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
       minimum_frame_length: number
       moving_field_name: string
-      video_path: string
+      recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
 reader_kwargs:
   defined:
     midpoint_groups:
@@ -49,19 +46,16 @@ reader_kwargs:
     df_is_timestamped: boolean -> False
     df_read_kwargs: object
     export_timestamp_data_as_parquet: boolean -> False
+    fps: number
+    frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'': ''uint8''}]'
     future_scaling: boolean
     invert_y_axis: boolean -> False
-    manual_fps: number
-    manual_frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'':
-      ''uint8''}]'
-    manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0' type=short
-      required=True]
     manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
     meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
     midpoint_groups: object
     min_likelihood: number -> 0.8
     minimum_frame_length: number
-    video_path: string
+    recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
     x_axis_crop_end_point: number -> 0.0
     y_axis_crop_end_point: number -> 0.0
 trial:
@@ -83,6 +77,8 @@ trial:
       crop_from_end: boolean -> True
       crop_time_seconds: number -> 0.0
       data_format_label: string -> deeplabcut
+      fps: number
+      frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'': ''uint8''}]'
       inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
         -> False'
       inspect_image_path: string
@@ -90,12 +86,7 @@ trial:
       manual_center_pixels: np.ndarray[name='manual_center_pixels_0' type=short required=True]
       manual_center_rectangle_dimensions_meters: np.ndarray[name='manual_center_rectangle_dimensions_meters_0'
         type=dobble required=True]
-      manual_fps: number
-      manual_frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'':
-        ''uint8''}]'
       manual_inspect_image: np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]
-      manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0'
-        type=short required=True]
       manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
       maximum_radians_inter_gaze_perimeter: number -> 0.7853981633974483
       maximum_seconds_distraction: number -> 0.6666666666666666
@@ -104,10 +95,10 @@ trial:
       minimum_seconds_attention: number -> 0.3333333333333333
       outside_perimeter_point_label: string
       physical_object_inspect: boolean -> False
+      recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
       rectangle_2d_bin: array -> (2, 2)
       rigid_nodes_freezing: array
       trial_start_perimeter: string
-      video_path: string
   specific:
     ObjectsInUpdatingLocationsTrainingTrial:
       defined:
@@ -118,28 +109,30 @@ trial:
         crop_from_end: false
     ObjectsInUpdatingLocationsTestTrial:
       defined:
-        crop_time_seconds: 600
+        crop_time_seconds: 300
 experiment:
   defined: {}
   optional:
     compute_first_two_feature_series_only: boolean -> False
     data_format_label: string -> deeplabcut
+    fps: number
+    frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'': ''uint8''}]'
     inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
       -> False'
     inspect_image_path: string
-    manual_fps: number
-    manual_frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'':
-      ''uint8''}]'
     manual_inspect_image: np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]
-    manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0' type=short
-      required=True]
     manual_trial_ids: array
     manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
     meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
     minimum_frame_length: number
+    recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
+    skip_habituation: boolean -> False
     stage: string
     trial_init_error_out_dir: string
-    video_path: string
+debug:
+  activate_debugging: false
+  no_numba: false
+  no_process_pooling: false
 immutable:
   metadata_filename: metadata.xlsx
   experiment_class: ObjectsInUpdatingLocationsExperiment

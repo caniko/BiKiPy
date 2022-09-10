@@ -15,6 +15,7 @@ from bikipy import runtime_settings
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature import recursive_midpoint
+from bikipy.reader.filter import filter_data
 from bikipy.reader.utils import compute_midpoint_label
 
 FILE_EXTENSION_TO_PANDAS_READER = {
@@ -32,19 +33,26 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     df_read_kwargs: Optional[dict] = Field(
         default_factory=dict, description="Keyword arguments to pass to the padnas dataframe reader"
     )
+    midpoint_groups: Optional[dict[str, tuple]] = Field(
+        description="labels that consist of groups that should have their midpoints computed in the DataFrame"
+    )
+
+    filter_method: Optional[str]
+    filter_kwargs: dict = Field(default_factory=dict)
+    ignore_likelihoods: bool = False
+
+    future_scaling: bool = Field(
+        None,
+        description="Scales the coordinates with respect to their min and max. " "True requires x_max and y_max",
+    )
+
     timestamp_index: Optional[Sequence] = Field(
         description="Sequence of same length as df that stores the" "timestamp of each index i.e. frame."
     )
     df_is_timestamped: bool = Field(
         False, description="When True, the reader will interpret the DataFrame index as timestamps in seconds"
     )
-    future_scaling: bool = Field(
-        None,
-        description="Scales the coordinates with respect to their min and max. " "True requires x_max and y_max",
-    )
-    midpoint_groups: Optional[dict[str, tuple]] = Field(
-        description="labels that consist of groups that should have their midpoints computed in the DataFrame"
-    )
+
     x_axis_crop_end_point: float = 0.0
     y_axis_crop_end_point: float = 0.0
     invert_y_axis: bool = Field(
@@ -110,6 +118,9 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         include midpoints and inner interpolations.
         """
         result_df = self.raw_df.copy()
+
+        if self.filter_method:
+            result_df = filter_data(result_df, self.filter_method, **self.filter_kwargs)
 
         crop_frames = None
         if self.df_is_timestamped:
@@ -218,10 +229,11 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
 
         if "timestamped" in self.df_path.stem:
             self.df_is_timestamped = True
-        elif self.timestamp_index:
+        if self.timestamp_index:
             df.set_index(self.timestamp_index, inplace=True)
             self.df_is_timestamped = True
-        elif isinstance(df.index, (np.timedelta64, pd.TimedeltaIndex)):
+
+        if isinstance(df.index, (np.timedelta64, pd.TimedeltaIndex)):
             df.index = df.index.values.astype(float) / 10**9
             self.df_is_timestamped = True
 
@@ -280,7 +292,16 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
             df.loc[:, pd.IndexSlice[component_name, ("x", "y")]].values for component_name in midpoint_group
         ]
         midpoint_label = compute_midpoint_label(midpoint_group, manual_midpoint_label)
-        return pd.DataFrame(recursive_midpoint(group_points), columns=[(midpoint_label, "x"), (midpoint_label, "y")])
+        return pd.DataFrame(
+            recursive_midpoint(group_points),
+            columns=[(midpoint_label, "x"), (midpoint_label, "y")],
+            index=df.index,
+        )
+
+    def _flush_reads(self) -> None:
+        self.raw_df.fget.cache_clear()
+        self.augmented.fget.cache_clear()
+        self.meters_augmented.fget.cache_clear()
 
 
 Reader = TypeVar("Reader", bound=BaseReader)

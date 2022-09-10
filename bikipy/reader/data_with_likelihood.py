@@ -65,9 +65,12 @@ class DataWithLikelihoodReader(BaseReader):
         self, df: pd.DataFrame, midpoint_group: Iterable[str], manual_midpoint_label: Optional[Hashable] = None
     ) -> pd.DataFrame:
         base = super()._compute_midpoint(df, midpoint_group, manual_midpoint_label)
-        reduced_likelihoods = np.multiply.reduce(
-            df.loc[:, pd.IndexSlice[midpoint_group, "likelihood"]].values,
-            axis=1,
+        reduced_likelihoods = pd.Series(
+            np.multiply.reduce(
+                df.loc[:, pd.IndexSlice[midpoint_group, "likelihood"]].values,
+                axis=1,
+            ),
+            index=df.index,
         )
         return pd.concat(
             (

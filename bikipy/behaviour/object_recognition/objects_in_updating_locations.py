@@ -69,11 +69,10 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
     def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.object_1, self.object_2, self.object_3, self.object_4
 
-    @cached_property
-    def _trial_physical_object_feature_series_list(self) -> list[pd.Series]:
-        base = super()._trial_physical_object_feature_series_list
-        base.append()
-        return base
+    # @cached_property
+    # def _trial_physical_object_feature_series_list(self) -> list[pd.Series]:
+    #     base = super()._trial_physical_object_feature_series_list
+    #     return base
 
 
 class ObjectsInUpdatingLocationsExperiment(RectangleEnclosedExperiment):

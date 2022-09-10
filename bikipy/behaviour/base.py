@@ -191,7 +191,9 @@ class BaseTrial(Behaviour):
     @cached_property
     def trial_feature_series(self) -> pd.Series:
         # Concatenate and reverse the order
-        return pd.concat(self._trial_feature_series_list[::-1], axis=0)
+        result = pd.concat(self._trial_feature_series_list[::-1], axis=0)
+        self._post_analysis_flush()
+        return result
 
     @property
     def _trial_feature_series_list(self) -> list[pd.Series]:
@@ -222,6 +224,9 @@ class BaseTrial(Behaviour):
     @cached_property
     def _frame_tolerance(self) -> int:
         return round(self.second_tolerance * self.video.fps)
+
+    def _post_analysis_flush(self) -> None:
+        self.reader.flush_reads()
 
 
 Trial = TypeVar("Trial", bound=BaseTrial)
