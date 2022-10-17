@@ -14,13 +14,23 @@
             "justMyCode": true
         },
         {
-            "name": "OUL_off",
+            "name": "OUL_vanilla",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/examples/sequence/OUL/analy.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/examples/sequence/OUL",
             "env": {"DISABLE_PROCESS_POOLING": "1", "DISABLE_NUMBA": "1"},
+            "justMyCode": true
+        },
+        {
+            "name": "OUL_no_pooling",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/sequence/OUL/analy.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/examples/sequence/OUL",
+            "env": {"DISABLE_PROCESS_POOLING": "1"},
             "justMyCode": true
         }
     ]

@@ -1,11 +1,16 @@
 from functools import cached_property
 
+from mextractor import constants
+from pydantic import DirectoryPath, FilePath
+
 from bikipy.core.typing import TrialId
 from bikipy.core.video import VideoMetadata
-from bikipy.ingress.plugin.base import BasePluginFile
+from bikipy.ingress.plugin.base import BasePlugin
 
 
-class PluginVideo(BasePluginFile):
+class PluginVideo(BasePlugin):
+    data_path: FilePath | DirectoryPath
+
     ingress_key = "video"
     code_key = "video"
     bikipy_trial_key = "manual_video"
@@ -13,6 +18,8 @@ class PluginVideo(BasePluginFile):
 
     @cached_property
     def video(self) -> VideoMetadata:
+        if self.data_path.suffix == constants.DUMP_PATH_SUFFIX:
+            return VideoMetadata.from_mextractor(self.data_path)
         return VideoMetadata.from_path(
             video_path=self.data_path, minimum_frame_length=self.ingress.settings["ingress"]["minimum_frame_length"]
         )

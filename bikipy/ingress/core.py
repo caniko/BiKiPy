@@ -635,6 +635,7 @@ class BaseIngress(BaseBikipy, ABC):
                 ).trialwise_and_metadata(trial_id)
             except IndexError:
                 pass
+
         return result
 
     @validate_arguments

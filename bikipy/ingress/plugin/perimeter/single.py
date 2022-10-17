@@ -16,7 +16,7 @@ from bikipy.perimeter.base import (
     perimeter_set_from_makesense,
 )
 from bikipy.utils.collection_utils import get_first_key_in_dict
-from bikipy.utils.image import read_image_from_path, axis_frame_imshow
+from bikipy.utils.image import axis_frame_imshow, read_image_from_path
 from bikipy.utils.makesense import (
     SHAPE_TO_MAKESENSE_TYPE,
     first_image_name_from_makesense,

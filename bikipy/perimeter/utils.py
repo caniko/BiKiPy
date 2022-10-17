@@ -7,7 +7,7 @@ from pydantic import FilePath
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.utils.collection_utils import generic_multi_indexer
-from bikipy.utils.image import read_image, axis_frame_imshow
+from bikipy.utils.image import axis_frame_imshow, read_image
 from bikipy.utils.makesense import read_makesense_point
 
 if TYPE_CHECKING:

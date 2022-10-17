@@ -3,7 +3,7 @@ ingress:
   first_stage_is_habituation: false
   framewise_coordinates_file_suffix: .parquet
   minimum_frame_length: 500
-  dataset_directory: /mnt/BigData/oul_dataset
+  dataset_directory: /mnt/BigData/mextracted/oul_dataset_mextracted
   profile_runtime: true
 definition_strategies:
   meters_per_pixel: metadata
@@ -42,11 +42,13 @@ reader_kwargs:
       - left_ear
       - right_ear
   optional:
+    cache_meters_augmented: boolean -> True
     crop_from_end: boolean -> False
     crop_time_seconds: number -> 0.0
     df_is_timestamped: boolean -> False
     df_read_kwargs: object
     export_timestamp_data_as_parquet: boolean -> False
+    filter_data: boolean -> True
     filter_kwargs: object
     filter_method: string
     fps: number
@@ -69,7 +71,7 @@ trial:
       gaze_travel_direction_point_label: nose
       object_tracking_label_for_kinematics: center_eye
       perimeter_border_normal_meters: 0.05
-      crop_from_end: true
+      crop_from_end: false
     required:
       gaze_start_point_label: string
       gaze_travel_direction_point_label: string
@@ -113,7 +115,7 @@ trial:
         crop_from_end: false
     ObjectsInUpdatingLocationsTestTrial:
       defined:
-        crop_time_seconds: 600
+        crop_time_seconds: 300
 experiment:
   defined: {}
   optional:

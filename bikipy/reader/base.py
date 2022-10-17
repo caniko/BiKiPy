@@ -3,7 +3,6 @@ from collections import abc
 from functools import cached_property
 from logging import getLogger
 from typing import Hashable, Iterable, Optional, Sequence, TypeVar
-from typing_extensions import Literal
 
 import numpy as np
 import pandas as pd
@@ -11,6 +10,7 @@ from pydantic import Field, FilePath
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8
 from sklearn.neighbors import NearestNeighbors
+from typing_extensions import Literal
 
 from bikipy import runtime_settings
 from bikipy.core.base_class import BaseBikipyHashable
@@ -38,6 +38,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         description="labels that consist of groups that should have their midpoints computed in the DataFrame"
     )
 
+    filter_data: bool = True
     filter_method: Optional[Literal["arima", "median", "spline"]]
     filter_kwargs: dict = Field(default_factory=dict)
     ignore_likelihoods: bool = False
@@ -46,6 +47,8 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         None,
         description="Scales the coordinates with respect to their min and max. " "True requires x_max and y_max",
     )
+
+    cache_meters_augmented: bool = True
 
     timestamp_index: Optional[Sequence] = Field(
         description="Sequence of same length as df that stores the" "timestamp of each index i.e. frame."
@@ -113,6 +116,10 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         return base
 
     @cached_property
+    def cached_augmented_df_path(self) -> FilePath:
+        return self.df_path.with_name(f"{self.df_path.stem}_augmented.parquet")
+
+    @cached_property
     def augmented(self) -> pd.DataFrame:
         """
         :return: Tracking and augmented data stored in the same frame. The augmented data should
@@ -120,7 +127,9 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         """
         result_df = self.raw_df.copy()
 
-        if self.filter_method:
+        if self.filter_data:
+            self.filter_method = self.filter_method or "arima"
+            logger.debug(f"Filtering {self.df_path.stem} with the {self.filter_method} method")
             result_df = filter_data(result_df, self.filter_method, **self.filter_kwargs)
 
         crop_frames = None
@@ -134,15 +143,17 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         if self.crop_time_seconds:
             crop_frames = crop_frames or round(self.video.fps * self.crop_time_seconds)
 
-            if not crop_frames > self.raw_frames:
+            if crop_frames > self.raw_frames:
                 logger.warning(
                     f"(cropping frames: {self.crop_time_seconds} seconds -> {crop_frames} frames) "
                     f"> total of {self.raw_frames} frames"
                 )
-            if self.crop_from_end:
-                result_df = result_df.iloc[self.raw_frames - crop_frames :]
             else:
-                result_df = result_df.iloc[:crop_frames]
+                result_df = (
+                    result_df.iloc[self.raw_frames - crop_frames :]
+                    if self.crop_from_end
+                    else result_df.iloc[:crop_frames]
+                )
 
         if self.invert_y_axis:
             result_df.loc[:, pd.IndexSlice[:, "y"]] = (
@@ -181,6 +192,9 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
 
     @cached_property
     def meters_augmented(self) -> pd.DataFrame:
+        if self.cache_meters_augmented and self.cached_augmented_df_path.exists():
+            return pd.read_parquet(self.cached_augmented_df_path)
+
         result = self.augmented.copy()
 
         if isinstance(self.video.meters_per_pixel, float):
@@ -192,6 +206,9 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
             result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] * self.video.meters_per_pixel[1]
         else:
             raise RuntimeError(f"Could not match video.meters_per_pixel type: {type(self.video.meters_per_pixel)}")
+
+        if self.cache_meters_augmented:
+            result.to_parquet(self.cached_augmented_df_path)
 
         return result
 

@@ -235,7 +235,7 @@ def get_combined_features_from_merged_motion_island_data(
         columns=["total_displacement", "median_speed", "median_acceleration", "freezing_time", "weight"],
     )
     # Making sure to not have any np.nans before np.average
-    df.dropna(axis=0, how="any", thresh=None, subset=None, inplace=True)
+    df.dropna(axis=0, inplace=True)
 
     return {
         "total_displacement": df["total_displacement"].sum(),

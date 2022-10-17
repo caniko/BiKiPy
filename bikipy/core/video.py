@@ -13,7 +13,7 @@ import cv2
 import mextractor
 import numpy as np
 from mextractor.extractors import extract_video
-from pydantic import Field, FilePath, DirectoryPath
+from pydantic import DirectoryPath, Field, FilePath
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
 

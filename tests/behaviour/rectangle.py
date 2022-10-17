@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import assert_allclose
 
-from bikipy.behaviour.rectangle import _compute_quadrant_grid_coordinates
+from bikipy.behaviour.enclosure.rectangle import _compute_quadrant_grid_coordinates
 
 
 def test_compute_quadrant_grid_coordinates():

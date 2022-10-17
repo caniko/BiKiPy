@@ -10,7 +10,9 @@ from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 from skg import ngauss_fit
 
-from bikipy.behaviour.base import BaseExperiment, BaseTrial
+from bikipy.behaviour.base import BaseExperiment
+from bikipy.behaviour.enclosure.base import EnclosedTrial
+from bikipy.behaviour.enclosure.quadrant import Quadrant
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipy
 from bikipy.feature.motion import (
@@ -19,7 +21,6 @@ from bikipy.feature.motion import (
 )
 from bikipy.perimeter.utils import perimeter_multi_indexer
 from bikipy.utils.collection_utils import generic_multi_indexer
-from bikipy.utils.math.geometry import clockwise_sort_points
 from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
 from bikipy.utils.plotting import generic_inspection_finalization
 
@@ -35,42 +36,18 @@ def motion_multi_indexer_for_subsection(category: Any, level: int):
     )(category, level)
 
 
-class Quadrant(BaseBikipy):
-    vertices_in_meters: NDArrayFp64
-    kinematic_coordinates: NDArrayFp64
-    fps: float
-    quadrant_index: int
-
-    @cached_property
-    def confinement_boolean_index(self) -> NDArrayBool:
-        return parallel_point_inside_polygon(self.kinematic_coordinates, clockwise_sort_points(self.vertices_in_meters))
-
-    @cached_property
-    def seconds_present(self) -> float:
-        return np.sum(self.confinement_boolean_index) / self.fps
-
-    @cached_property
-    def motion(self) -> dict[str, float]:
-        return get_combined_features_from_merged_motion_island_data(
-            self.confinement_boolean_index,
-            self.kinematic_coordinates,
-            self.fps,
-        )
-
-
 class RectangleEnclosedExperiment(BaseExperiment):
     pass
 
 
-class RectangleEnclosedTrial(BaseTrial):
-    inspect_quadrants: bool = False
+class RectangleEnclosedTrial(EnclosedTrial):
     rectangle_2d_bin: quadrant_grid_typing = (2, 2)
 
     manual_center_rectangle_dimensions_meters: Optional[NDArrayFp64]
     center_rectangle_dimensions_to_spatial_resolution_ratio: Optional[float]
 
     @cached_property
-    def center_periphery_is_defined(self) -> bool:
+    def _center_periphery_is_defined(self) -> bool:
         return (
             self.manual_center_rectangle_dimensions_meters is not None
             or self.center_rectangle_dimensions_to_spatial_resolution_ratio
@@ -216,7 +193,7 @@ class RectangleEnclosedTrial(BaseTrial):
     # Center vs Periphery ==============================================================
     @cached_property
     def center_rectangle_dimensions_meters(self) -> NDArrayFp64 | None:
-        if self.center_periphery_is_defined is None:
+        if self._center_periphery_is_defined is None:
             return None
         if self.manual_center_rectangle_dimensions_meters is not None:
             return self.manual_center_rectangle_dimensions_meters
@@ -225,7 +202,7 @@ class RectangleEnclosedTrial(BaseTrial):
 
     @cached_property
     def center_rectangle_vertices(self) -> NDArrayFp64:
-        if not self.center_periphery_is_defined:
+        if not self._center_periphery_is_defined:
             msg = (
                 "manual_center_rectangle_dimensions_meters or center_rectangle_dimensions_to_spatial_resolution_ratio "
                 "must be defined for center_rectangle_vertices to be defined"
@@ -313,7 +290,7 @@ class RectangleEnclosedTrial(BaseTrial):
             assert qgc_i == qgc_ii
             data.extend((*quadrant.motion.values(), entries, quadrant.seconds_present))
 
-        if self.center_periphery_is_defined:
+        if self._center_periphery_is_defined:
             data.extend(
                 (
                     *self.motion_center.values(),
@@ -328,7 +305,7 @@ class RectangleEnclosedTrial(BaseTrial):
         upstream_list.append(
             pd.Series(
                 data,
-                index=motion_column_headers(self.quadrant_grid_coordinates, 2, self.center_periphery_is_defined),
+                index=motion_column_headers(self.quadrant_grid_coordinates, 2, self._center_periphery_is_defined),
             )
         )
 
