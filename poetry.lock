@@ -2048,7 +2048,7 @@ live = ["pyzmq"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10.0, <3.11"
-content-hash = "c2994c04aa21842ba2bbcf829a81c7be74600709c5d46f39bf7b47eeab48df29"
+content-hash = "c4203b7992de42c9a47e4c44fba4c3d1f0cd24a1e59f2cc9adb9f9574ef78868"
 
 [metadata.files]
 alabaster = [

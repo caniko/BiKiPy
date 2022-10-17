@@ -8,7 +8,6 @@ import pandas as pd
 from pydantic import validate_arguments
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
-from skg import ngauss_fit
 
 from bikipy.behaviour.base import BaseExperiment
 from bikipy.behaviour.enclosure.base import EnclosedTrial
@@ -64,14 +63,6 @@ class RectangleEnclosedTrial(EnclosedTrial):
         result = self.inspect_arg / "quadrant"
         result.mkdir(exist_ok=True)
         return result
-
-    @cached_property
-    def gaussian_center_to_periphery_score(self) -> float:
-        func = gaussian_scoring_field(tuple(self.video.metric_resolution))
-        scores = np.array(
-            [func(*coordinate) for coordinate in self.kinematic_coordinates if not np.any(np.isnan(coordinate))]
-        )
-        return np.sum(scores) / (A * self.number_of_frames)
 
     @cached_property
     def quadrant_grid_coordinate_to_vertices(self) -> dict[quadrant_grid_typing, NDArrayFp64]:
@@ -314,23 +305,6 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
 class RectangleEnclosedHabituationTrial(RectangleEnclosedTrial):
     trial_label = "Habituation"
-
-
-@lru_cache
-@validate_arguments
-def gaussian_scoring_field(resolution: NDArrayInt16, scale: int = 1):
-    resolution *= scale
-
-    model = ngauss_fit.model(
-        x=np.indices(resolution, dtype=float),
-        a=A,
-        mu=resolution / 2.0,
-        sigma=np.array([[resolution[0] ** 2, 0.0], [0.0, resolution[1] ** 2]]),
-        axis=0,
-    )
-
-    scale_as_float = float(scale)
-    return lambda x, y: model[round(x * scale_as_float)][round(y * scale_as_float)]
 
 
 @lru_cache

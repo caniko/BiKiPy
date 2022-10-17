@@ -26,7 +26,7 @@ scikit-guess = {git = "https://github.com/madphysicist/scikit-guess"}
 pandas = "^1.4.1"
 tables = "*"
 
-mextractor = "^2.0.0"
+mextractor = "^2.1.0"
 
 pyarrow = "*"
 h5py = "*"
