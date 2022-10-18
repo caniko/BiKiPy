@@ -4,7 +4,7 @@ from typing import ClassVar
 
 import pandas as pd
 
-from bikipy.behaviour.enclosure.rectangle import (
+from bikipy.behaviour.core.enclosure.rectangle import (
     RectangleEnclosedExperiment,
     RectangleEnclosedHabituationTrial,
 )

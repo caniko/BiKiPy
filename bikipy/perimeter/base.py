@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
@@ -40,14 +40,25 @@ logger = getLogger(__name__)
 StringPerimeterShapes = Literal["circle", "polygon", "rectangle"]
 
 
-class BasePerimeter(BaseBikipyHashable):
-    pass
+class BasePerimeter(BaseBikipyHashable, ABC):
+    @abstractmethod
+    def compute_confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
+        ...
+
+    @abstractmethod
+    def change_reference(self, new_reference: NDArrayFp64, makesense_image_name: Optional[str] = None):
+        ...
+
+    @property
+    @abstractmethod
+    def centroid_meters(self) -> NDArrayFp64:
+        ...
 
 
 Perimeter = TypeVar("Perimeter", bound=BasePerimeter)
 
 
-class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMixin):
+class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMixin, ABC):
     impenetrable: bool = Field(
         False,
         description="Signifies the impenetrability of the perimeter. "
@@ -85,24 +96,11 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         return result
 
     @abstractmethod
-    def compute_confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
-        ...
-
-    @abstractmethod
-    def change_reference(self, new_reference: NDArrayFp64, makesense_image_name: Optional[str] = None):
-        ...
-
-    @abstractmethod
     def expand(self, perimeter_border_normal_meters: float | NDArrayFp64) -> "SinglePerimeter":
         ...
 
     @abstractmethod
     def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> NDArrayFp64:
-        ...
-
-    @property
-    @abstractmethod
-    def centroid_meters(self) -> NDArrayFp64:
         ...
 
     @abstractmethod

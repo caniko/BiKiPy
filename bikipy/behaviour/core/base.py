@@ -14,6 +14,7 @@ from pydantic import (
     PositiveInt,
     ValidationError,
     validator,
+    BaseModel,
 )
 from pydantic.fields import FieldInfo
 from pydantic_numpy import NDArray
@@ -255,7 +256,14 @@ class BaseExperiment(Behaviour):
         description="The trial class that will be used in case set_first_trial_to_habituation is called"
     )
     _first_trial_is_habituation: ClassVar[bool] = False
-    trial_classes: ClassVar[tuple[Trial]] = Field(..., description="Trial classes designed for this experiment class")
+
+    # "Used when performing operations that don't include experiment analysis. Introduced specifically for ingress"
+    _ignore_unset_trial_sequence_repetition: ClassVar[bool] = False
+    trial_classes: ClassVar[tuple[Trial, ...]] = Field(
+        ..., description="Trial classes designed for this experiment class"
+    )
+    # "Number of times that the sequence in trial_classes is repeated"
+    trial_sequence_repetition: ClassVar[int] = 1
 
     @classmethod
     @property
@@ -274,6 +282,21 @@ class BaseExperiment(Behaviour):
                 "common_trial_keyword_arguments",
             }
         )
+
+    @classmethod
+    @property
+    def trial_sequence(cls) -> tuple[Trial, ...]:
+        try:
+            return cls.trial_sequence_repetition * cls.trial_classes
+        except TypeError:
+            if cls._ignore_unset_trial_sequence_repetition:
+                logger.warning(
+                    f"{cls.__name__}.trial_sequence_repetition is unset! "
+                    f"You can ignore this warning if the current runtime isn't for analysis"
+                )
+                return cls.trial_classes
+            msg = f"{cls.__name__}.trial_sequence_repetition has to be set"
+            raise ValueError(msg)
 
     @validator("trial_id_to_trial_class_name")
     def sort_trial_id_to_trial_class_name_ascending(cls, value):
@@ -302,17 +325,18 @@ class BaseExperiment(Behaviour):
         cls.habituation_trial_class.experiment_class_name = cls.__name__
         cls.trial_classes = (cls.habituation_trial_class, *cls.trial_classes)
         cls._first_trial_is_habituation = True
+
         return cls
 
     @classmethod
     @property
     def trial_class_name_to_stage_index(cls) -> dict[str, int]:
-        return {trial_class_name: i for trial_class_name, i in enumerate(cls.trial_classes)}
+        return {trial_class_name: i for trial_class_name, i in enumerate(cls.trial_sequence)}
 
     @classmethod
     @property
     def trial_sequence_length(cls) -> int:
-        return len(cls.trial_classes)
+        return len(cls.trial_sequence)
 
     @classmethod
     @property
@@ -322,12 +346,12 @@ class BaseExperiment(Behaviour):
     @classmethod
     @property
     def trial_class_names(cls) -> tuple[str, ...]:
-        return tuple(trial_class.__name__ for trial_class in cls.trial_classes)
+        return tuple(trial_class.__name__ for trial_class in cls.trial_sequence)
 
     @classmethod
     @property
     def trial_class_labels(cls) -> tuple[str, ...]:
-        return tuple(trial_class.trial_label for trial_class in cls.trial_classes)
+        return tuple(trial_class.trial_label for trial_class in cls.trial_sequence)
 
     @classmethod
     @property
@@ -341,7 +365,7 @@ class BaseExperiment(Behaviour):
         if cls.has_stages:
             msg = f"{cls.__name__}: trial_class attribute can only be utilized when there is only one Trial class"
             raise AttributeError(msg)
-        return cls.trial_classes[0]
+        return cls.trial_sequence[0]
 
     @classmethod
     @property
@@ -351,7 +375,7 @@ class BaseExperiment(Behaviour):
             raise AttributeError(msg)
 
         try:
-            return {i: trial_class for i, trial_class in enumerate(cls.trial_classes)}
+            return {i: trial_class for i, trial_class in enumerate(cls.trial_sequence)}
         except AttributeError:
             msg = "experiment_stage_index must be defined for each trial class when working with a sequence of trial classes"
             raise AttributeError(msg)
@@ -361,7 +385,7 @@ class BaseExperiment(Behaviour):
     def stage_index_to_trial_class_name(cls):
         if isinstance(tuple(cls.stage_index_to_trial_class.values())[-1], FieldInfo):
             msg = (
-                f"To the developers: Setting the trial_classes class variable is required; "
+                f"To the developers: Setting the trial_sequence class variable is required; "
                 f"please do so for {cls.__name__}"
             )
             raise AttributeError(msg)
@@ -378,7 +402,7 @@ class BaseExperiment(Behaviour):
             raise AttributeError(msg)
 
         try:
-            return {trial_class.__name__: trial_class for trial_class in cls.trial_classes}
+            return {trial_class.__name__: trial_class for trial_class in cls.trial_sequence}
         except AttributeError:
             msg = "experiment_stage_index must be defined for each trial class when working with a sequence of trial classes"
             raise AttributeError(msg)
@@ -676,7 +700,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _class_labels(self):
-        return tuple(trial_class.trial_label for trial_class in self.trial_classes)
+        return tuple(trial_class.trial_label for trial_class in self.trial_sequence)
 
     @staticmethod
     def _neither_singular_trial_class_or_trial_id_to_trial_class_name(self):
@@ -688,6 +712,10 @@ class BaseExperiment(Behaviour):
 
 
 Experiment = TypeVar("Experiment", bound=BaseExperiment)
+
+
+class HabituationTrialMixin(BaseModel):
+    trial_label = "Habituation"
 
 
 def compute_trial_series_and_destroy_trial(trial_obj: Trial) -> pd.Series:

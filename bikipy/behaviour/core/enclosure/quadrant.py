@@ -1,5 +1,9 @@
-import numpy as np
+from functools import cached_property
 
+import numpy as np
+from pydantic_numpy import NDArrayFp64, NDArrayBool
+
+from bikipy.core.base_class import BaseBikipy
 from bikipy.feature.motion import get_combined_features_from_merged_motion_island_data
 from bikipy.utils.math.geometry import clockwise_sort_points
 from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon

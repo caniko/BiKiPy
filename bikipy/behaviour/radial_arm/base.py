@@ -5,14 +5,11 @@ from itertools import permutations
 from logging import getLogger
 from typing import ClassVar, Optional
 
-import numpy as np
 import pandas as pd
-import seaborn as sb
-from matplotlib import pyplot as plt
 from pydantic import validator
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayUint8
 
-from bikipy.behaviour.base import BaseExperiment, BaseTrial
+from bikipy.behaviour.core.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import (
     feature_2d_multi_indexer,
     reduce_repeating_sequences,
@@ -22,11 +19,6 @@ from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.perimeter.confinement import detect_multi_node_sequential_perimeter_presence
 from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
-from bikipy.utils.plotting import (
-    BOTTOM_LEGEND_KWARGS,
-    generic_inspection_finalization,
-    plot_coordinates,
-)
 
 logger = getLogger(__name__)
 

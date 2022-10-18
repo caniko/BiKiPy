@@ -41,7 +41,7 @@ from bikipy.utils.collection_utils import (
 from bikipy.utils.misc import sheet_names_from_path
 
 if TYPE_CHECKING:
-    from bikipy.behaviour.base import Experiment, Trial
+    from bikipy.behaviour.core.base import Experiment, Trial
 
 
 FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD = "first_stage_is_habituation"
@@ -126,7 +126,11 @@ class BaseIngress(BaseBikipy, ABC):
             raise ValueError(msg)
 
         if self.settings["ingress"][FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD]:
-            return experiment.set_first_trial_to_habituation()
+            experiment = experiment.set_first_trial_to_habituation()
+
+        if self.settings["ingress"]["manual_trial_sequence_repetitions"]:
+            experiment.trial_sequence_repetition = self.settings["ingress"]["manual_trial_sequence_repetitions"]
+
         return experiment
 
     @property
@@ -685,11 +689,13 @@ def init_settings(
     logger.info(f"Generating experiment configuration at {project_root_directory}")
 
     experiment_class = EXPERIMENT_NAME_TO_CLASS[experiment_name]
+    experiment_class._ignore_unset_trial_sequence_repetition = True
 
     generic_settings = {
         "ingress": {
             "method": ingress_method,
             FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD: False,
+            "manual_trial_sequence_repetitions": None,
             "framewise_coordinates_file_suffix": framewise_coordinates_file_suffix,
             "minimum_frame_length": 500,
             "dataset_directory": None,
@@ -704,7 +710,7 @@ def init_settings(
             "fields": extended_schema(BaseSinglePerimeter),
         },
         "reader_kwargs": extended_schema(DeepLabCutReader, with_required=False),
-        "trial": extended_group_schema(experiment_class.trial_classes),
+        "trial": extended_group_schema(experiment_class.trial_sequence),
         "experiment": extended_schema(experiment_class),
         "debug": {"activate_debugging": False, "no_numba": False, "no_process_pooling": False},  # TODO: Implement
         "immutable": {
@@ -718,7 +724,7 @@ def init_settings(
             "stage_index_to_trial_class_name"
         ] = experiment_class.stage_index_to_trial_class_name
     else:
-        generic_settings["immutable"]["trial_classes"] = experiment_class.trial_class_names
+        generic_settings["immutable"]["trial_sequence"] = experiment_class.trial_class_names
 
     if dry_run:
         if not silent:

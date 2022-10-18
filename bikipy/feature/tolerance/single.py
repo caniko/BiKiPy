@@ -1,7 +1,6 @@
 import numpy as np
 from numba import njit
 from pydantic import validate_arguments
-from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayInt64
 
 from bikipy import runtime_settings

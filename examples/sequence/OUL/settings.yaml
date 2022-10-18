@@ -1,6 +1,7 @@
 ingress:
   method: animal
   first_stage_is_habituation: false
+  manual_trial_sequence_repetitions: null
   framewise_coordinates_file_suffix: .parquet
   minimum_frame_length: 500
   dataset_directory: /mnt/BigData/mextracted/oul_dataset_mextracted
@@ -88,7 +89,6 @@ trial:
       inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
         -> False'
       inspect_image_path: string
-      inspect_quadrants: boolean -> False
       manual_center_pixels: np.ndarray[name='manual_center_pixels_0' type=short required=True]
       manual_center_rectangle_dimensions_meters: np.ndarray[name='manual_center_rectangle_dimensions_meters_0'
         type=dobble required=True]

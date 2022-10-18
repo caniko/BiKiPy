@@ -5,18 +5,15 @@ from typing import Any, Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pydantic import validate_arguments
 from pydantic_numpy import NDArray
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
-from bikipy.behaviour.base import BaseExperiment
-from bikipy.behaviour.enclosure.base import EnclosedTrial
-from bikipy.behaviour.enclosure.quadrant import Quadrant
+from bikipy.behaviour.core.base import HabituationTrialMixin
+from bikipy.behaviour.core.enclosure.base import EnclosedTrial, EnclosedExperiment
+from bikipy.behaviour.core.enclosure.quadrant import Quadrant
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.core.base_class import BaseBikipy
 from bikipy.feature.motion import (
     get_combined_features_from_merged_motion_island_data,
-    motion_multi_indexer,
 )
 from bikipy.perimeter.utils import perimeter_multi_indexer
 from bikipy.utils.collection_utils import generic_multi_indexer
@@ -35,7 +32,7 @@ def motion_multi_indexer_for_subsection(category: Any, level: int):
     )(category, level)
 
 
-class RectangleEnclosedExperiment(BaseExperiment):
+class RectangleEnclosedExperiment(EnclosedExperiment):
     pass
 
 
@@ -303,8 +300,8 @@ class RectangleEnclosedTrial(EnclosedTrial):
         return upstream_list
 
 
-class RectangleEnclosedHabituationTrial(RectangleEnclosedTrial):
-    trial_label = "Habituation"
+class RectangleEnclosedHabituationTrial(HabituationTrialMixin, RectangleEnclosedTrial):
+    pass
 
 
 @lru_cache

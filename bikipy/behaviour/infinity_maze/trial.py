@@ -2,7 +2,7 @@ import datetime
 from logging import getLogger
 from math import floor
 
-from bikipy.behaviour.base import BaseTrial
+from bikipy.behaviour.core.base import BaseTrial
 from bikipy.behaviour.mixin.live import LiveTrial
 from bikipy.perimeter.base import SinglePerimeter
 

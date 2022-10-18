@@ -1,6 +1,6 @@
 from functools import lru_cache
 from itertools import chain
-from typing import Any, Iterable, Optional, Sequence
+from typing import Any, Iterable, Optional, Sequence, Callable, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -62,7 +62,7 @@ def copycat_assumes_levels_of_icon(copycat: pd.DataFrame, icon: pd.DataFrame, fi
 
 
 @lru_cache
-def generic_multi_indexer(*basis_labels):
+def generic_multi_indexer(*basis_labels) -> Callable[[Any, int], list[tuple[Any, Any, Any]]]:
     number_of_levels = 1 if isinstance(basis_labels[0], str) else len(basis_labels[0])
     assert not any(number_of_levels != 1 if isinstance(label, str) else len(label) for label in basis_labels)
 

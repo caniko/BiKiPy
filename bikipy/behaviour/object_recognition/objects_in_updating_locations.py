@@ -15,7 +15,7 @@ TG: Equal
 WT: 4 > 3 > 2 >~ 1
 """
 
-from bikipy.behaviour.enclosure.rectangle import (
+from bikipy.behaviour.core.enclosure.rectangle import (
     RectangleEnclosedExperiment,
     RectangleEnclosedHabituationTrial,
 )
