@@ -1,7 +1,7 @@
 from abc import ABC
 from functools import cached_property
 from logging import getLogger
-from typing import Any, ClassVar, Optional, TypeVar
+from typing import Any, ClassVar, Optional, TypeVar, Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,6 +9,7 @@ from pydantic import validator
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
+from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.perimeter.radial.circle import CirclePerimeter
 from bikipy.utils.collection_utils import (
@@ -31,6 +32,7 @@ logger = getLogger(__name__)
 
 class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
     vertices_in_pixels: NDArrayFp64 = ...
+    derived_meters_per_pixel_source: Literal["side", None]
 
     category = "perimeter"
 
@@ -67,6 +69,16 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
     def __repr__(self):
         return super().__repr__() + f"\n\tvertices_in_pixels={self.vertices_in_meters}"
+
+    @property
+    def derived_meters_per_pixel(self) -> float:
+        if self.derived_meters_per_pixel_source == "side":
+            first_side = self.vertices_in_pixels.edge_lengths[0]
+            if not np.allclose(first_side, self.vertices_in_pixels.edge_lengths[1:]):
+                msg = "Sides of polygon are not equal, side cannot be used as source for computing meters_per_pixel"
+                raise AttributeError(msg)
+
+            return self.derived_meters_per_pixel_source_metric_length / first_side
 
     @property
     def centroid_meters(self) -> NDArrayFp64:

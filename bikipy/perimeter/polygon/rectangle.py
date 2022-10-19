@@ -1,6 +1,8 @@
 from logging import getLogger
+from typing import Literal
 
 import matplotlib.pyplot as plt
+import numpy as np
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.typing import MetersPerPixel
@@ -12,7 +14,18 @@ logger = getLogger(__name__)
 
 
 class RectanglePerimeter(BasePolygonPerimeter):
+    derived_meters_per_pixel_source: Literal["diagonal", "side", None]
+
     polygon_order = 4
+
+    @property
+    def derived_meters_per_pixel(self) -> float:
+        if upstream := super().derived_meters_per_pixel:
+            return upstream
+        elif self.derived_meters_per_pixel_source == "diagonal":
+            return self.derived_meters_per_pixel_source_metric_length / np.linalg.norm(
+                self.vertices_in_pixels.edge_lengths[0] - self.vertices_in_pixels.edge_lengths[2]
+            )
 
     def expand(self, perimeter_border_normal_pixels: float | NDArrayFp64) -> "RectanglePerimeter":
         result = self.__class__(
@@ -36,6 +49,3 @@ class RectanglePerimeter(BasePolygonPerimeter):
             generic_inspection_finalization(self.expand_inspect_arg)
 
         return result
-
-    def derive_meters_per_pixel(self, method: str, **kwargs) -> MetersPerPixel:
-        pass

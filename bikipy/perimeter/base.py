@@ -2,7 +2,7 @@ from abc import abstractmethod, ABC
 from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
-from typing import Any, Literal, Optional, TypeVar
+from typing import Any, Literal, Optional, TypeVar, ClassVar, Callable
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -65,6 +65,15 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         description="Signifies the impenetrability of the perimeter. "
         "Usually because the perimeter is insurmountable or slippery",
     )
+
+    derive_meters_per_pixel: bool = Field(
+        False,
+        description="Derive meters per pixel from perimeter. The ratio is derived from source defined in "
+        "meters_per_pixel_from_perimeter_source",
+    )
+    derived_meters_per_pixel_source: Optional[str]
+    derived_meters_per_pixel_source_metric_length: Optional[float]
+
     int_id: Optional[int] = Field(description="For multi-perimeter trials where sequential confinement is used")
     group_label: Optional[str]
 
@@ -96,9 +105,27 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         result.append(self.int_id)
         return result
 
-    def derive_meters_per_pixel(self, method: str, **kwargs) -> MetersPerPixel:
-        msg = f"This SinglePerimeter class, {self.__class__.__name__}, does not have meters_per_pixel derivation"
-        raise NotImplementedError(msg)
+    @property
+    def _video(self) -> VideoMetadata:
+        upstream_video = super()._video()
+
+        if self.derive_meters_per_pixel:
+            logger.debug("derive_meters_per_pixel -> True: Deriving meters_per_pixel from perimeter")
+            if not self.derived_meters_per_pixel_source:
+                msg = "Derivation source, meters_per_pixel_from_perimeter_source, for meters_per_pixel undefined"
+                raise AttributeError(msg)
+            if not self.derived_meters_per_pixel_source_metric_length:
+                msg = "Length of source, length_meters_of_meters_per_pixel_source, for deriving meters_per_pixel is undefined"
+                raise AttributeError(msg)
+
+            upstream_video.meters_per_pixel = self.derived_meters_per_pixel
+
+        return upstream_video
+
+    @property
+    @abstractmethod
+    def derived_meters_per_pixel(self) -> float:
+        ...
 
     @abstractmethod
     def expand(self, perimeter_border_normal_meters: float | NDArrayFp64) -> "SinglePerimeter":
