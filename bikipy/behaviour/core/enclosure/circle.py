@@ -1,4 +1,4 @@
-from bikipy.behaviour.core.base import HabituationTrialMixin
+from bikipy.behaviour.core import HabituationTrialMixin
 from bikipy.behaviour.core.enclosure.base import EnclosedTrial, EnclosedExperiment
 
 

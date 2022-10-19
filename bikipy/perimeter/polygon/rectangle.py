@@ -3,6 +3,7 @@ from logging import getLogger
 import matplotlib.pyplot as plt
 from pydantic_numpy.dtype import NDArrayFp64
 
+from bikipy.core.typing import MetersPerPixel
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 from bikipy.utils.math.geometry import expand_rectangle
 from bikipy.utils.plotting import generic_inspection_finalization
@@ -35,3 +36,6 @@ class RectanglePerimeter(BasePolygonPerimeter):
             generic_inspection_finalization(self.expand_inspect_arg)
 
         return result
+
+    def derive_meters_per_pixel(self, method: str, **kwargs) -> MetersPerPixel:
+        pass

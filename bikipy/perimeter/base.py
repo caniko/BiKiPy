@@ -18,6 +18,7 @@ from pydantic import (
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
+from bikipy.core.typing import MetersPerPixel
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_coco_polygon,
@@ -94,6 +95,10 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         result = super()._to_hash
         result.append(self.int_id)
         return result
+
+    def derive_meters_per_pixel(self, method: str, **kwargs) -> MetersPerPixel:
+        msg = f"This SinglePerimeter class, {self.__class__.__name__}, does not have meters_per_pixel derivation"
+        raise NotImplementedError(msg)
 
     @abstractmethod
     def expand(self, perimeter_border_normal_meters: float | NDArrayFp64) -> "SinglePerimeter":

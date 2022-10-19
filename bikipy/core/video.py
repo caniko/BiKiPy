@@ -18,7 +18,7 @@ from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
 
 from bikipy.core.base_class import BaseBikipy
-from bikipy.core.typing import MeterPerPixel
+from bikipy.core.typing import MetersPerPixel
 
 logger = getLogger(__name__)
 
@@ -28,7 +28,9 @@ _can_only_be_set_manually = {"meters_per_pixel", "image_resize_multiplier"}
 
 
 class _VideoMetadataBase(BaseBikipy):
-    meters_per_pixel: Optional[MeterPerPixel] = Field(description="Float or 1D array defining the meter to pixel ratio")
+    meters_per_pixel: Optional[MetersPerPixel] = Field(
+        description="Float or 1D array defining the meter to pixel ratio"
+    )
     recording_resolution: Optional[NDArrayInt16] = Field(
         description="1D array defining the resolution of the recording"
     )
@@ -101,7 +103,7 @@ class VideoMetadata(_VideoMetadataBase):
         )
 
     @cached_property
-    def pixels_per_meter(self) -> MeterPerPixel | None:
+    def pixels_per_meter(self) -> MetersPerPixel | None:
         if self.meters_per_pixel is not None:
             return 1.0 / self.meters_per_pixel
 

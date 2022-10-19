@@ -9,7 +9,7 @@ import pandas as pd
 from pydantic import validator
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayUint8
 
-from bikipy.behaviour.core.base import BaseExperiment, BaseTrial
+from bikipy.behaviour.core import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import (
     feature_2d_multi_indexer,
     reduce_repeating_sequences,

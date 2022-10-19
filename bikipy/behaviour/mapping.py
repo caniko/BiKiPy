@@ -1,4 +1,4 @@
-from bikipy.behaviour.core.base import Experiment
+from bikipy.behaviour.core import Experiment
 from bikipy.behaviour.object_recognition.novel_object_recognition import NortExperiment
 from bikipy.behaviour.object_recognition.objects_in_updating_locations import (
     ObjectsInUpdatingLocationsExperiment,

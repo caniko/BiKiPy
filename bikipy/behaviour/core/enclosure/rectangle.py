@@ -8,7 +8,7 @@ import pandas as pd
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
-from bikipy.behaviour.core.base import HabituationTrialMixin
+from bikipy.behaviour.core import HabituationTrialMixin
 from bikipy.behaviour.core.enclosure.base import EnclosedTrial, EnclosedExperiment
 from bikipy.behaviour.core.enclosure.quadrant import Quadrant
 from bikipy.behaviour.utils import reduce_repeating_sequences

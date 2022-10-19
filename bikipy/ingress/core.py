@@ -41,7 +41,7 @@ from bikipy.utils.collection_utils import (
 from bikipy.utils.misc import sheet_names_from_path
 
 if TYPE_CHECKING:
-    from bikipy.behaviour.core.base import Experiment, Trial
+    from bikipy.behaviour.core import Experiment, Trial
 
 
 FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD = "first_stage_is_habituation"
