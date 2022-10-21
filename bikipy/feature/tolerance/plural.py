@@ -4,10 +4,7 @@ from pydantic import validate_arguments
 from pydantic_numpy.dtype import NDArrayBool
 
 from bikipy import runtime_settings
-from bikipy.feature.tolerance import (
-    GENERIC_MAXIMUM_SECONDS_DISTRACTION,
-    GENERIC_MINIMUM_SECONDS_ATTENTION,
-)
+
 from bikipy.feature.tolerance.common import (
     common_preparation,
     tolerance_filter_warning_wrapper,
@@ -18,8 +15,8 @@ from bikipy.feature.tolerance.common import (
 def plural_node_tolerance_filter(
     *boolean_indices: NDArrayBool,
     fps: float,
-    minimum_seconds_attention: float = GENERIC_MINIMUM_SECONDS_ATTENTION,
-    maximum_seconds_distraction: float = GENERIC_MAXIMUM_SECONDS_DISTRACTION,
+    minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
+    maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
 ) -> NDArrayBool | None:
     all_true = np.logical_and.reduce(boolean_indices)
     any_true = np.logical_or.reduce(boolean_indices)
@@ -39,8 +36,8 @@ def _filter(
     all_true: NDArrayBool,
     any_true: NDArrayBool,
     fps: float,
-    minimum_seconds_attention: float = GENERIC_MINIMUM_SECONDS_ATTENTION,
-    maximum_seconds_distraction: float = GENERIC_MAXIMUM_SECONDS_DISTRACTION,
+    minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
+    maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
 ) -> NDArrayBool | None:
     """
     Combines boolean indices into one boolean index into one. We do this with both an AND and OR filter, yielding two

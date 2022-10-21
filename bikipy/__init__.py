@@ -11,5 +11,8 @@ class BikipyRuntimeSettings(BaseSettings):
     matplotlib_scatter_alpha: float = 0.60
     matplotlib_invert_y_axis: bool = False
 
+    minimum_seconds_tolerance: float = 1.0 / 3.0
+    maximum_seconds_distraction: float = 2.0 / 3.0
+
 
 runtime_settings = BikipyRuntimeSettings()

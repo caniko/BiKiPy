@@ -29,16 +29,17 @@ class BaseBikipy(BaseModel):
 
 
 class BaseBikipyHashable(BaseBikipy):
-    label: Optional[TrialId] = Field(description="")
+    label: Optional[TrialId]
+    int_id: Optional[int]
 
     @classmethod
     @property
     def exclude_from_settings_schema(cls) -> set[str]:
-        return super().exclude_from_settings_schema.union({"label"})
+        return super().exclude_from_settings_schema.union({"label", "int_id"})
 
     @property
     def _to_hash(self) -> list:
-        return [self.__class__.__name__, self.category, self.label]
+        return [self.__class__.__name__, self.category, self.int_id, self.label]
 
     def __hash__(self):
         return hash(tuple(self._to_hash))

@@ -249,14 +249,10 @@ class BaseTrial(Behaviour):
                 if not self.perimeter_to_derive_meters_per_pixel:
                     msg = f"perimeter_to_derive_meters_per_pixel is not defined for class, {self.__class__.__name__}"
                     raise AttributeError(msg)
-                if not self.meters_per_pixel_from_perimeter_source:
-                    msg = "Derivation source, meters_per_pixel_from_perimeter_source, for meters_per_pixel undefined"
-                    raise AttributeError(msg)
-                if not self.length_meters_of_meters_per_pixel_source:
-                    msg = "Length of source, length_meters_of_meters_per_pixel_source, for deriving meters_per_pixel is undefined"
-                    raise AttributeError(msg)
 
-                final_video.meters_per_pixel =
+                final_video.meters_per_pixel = (
+                    self.perimeter_to_derive_meters_per_pixel.derived_meters_per_pixel.derived_meters_per_pixel
+                )
 
             for perimeter in self.perimeters:
                 perimeter.manual_video = final_video

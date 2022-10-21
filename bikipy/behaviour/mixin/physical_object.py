@@ -9,10 +9,6 @@ from pydantic_numpy.dtype import NDArrayFp64
 from bikipy.behaviour.core.enclosure.rectangle import RectangleEnclosedTrial
 from bikipy.core.base_class import BaseBikipy
 from bikipy.feature.physical_object import PhysicalObjectSet
-from bikipy.feature.tolerance import (
-    GENERIC_MAXIMUM_SECONDS_DISTRACTION,
-    GENERIC_MINIMUM_SECONDS_ATTENTION,
-)
 
 
 class PhysicalObjectTrialMixin(BaseBikipy):
@@ -30,8 +26,8 @@ class PhysicalObjectTrialMixin(BaseBikipy):
     outside_perimeter_point_label: Optional[str] = Field(description="Label signifying the area where the gaze vector")
 
     maximum_radians_inter_gaze_perimeter: float = np.pi / 4.0
-    minimum_seconds_attention: float = GENERIC_MINIMUM_SECONDS_ATTENTION
-    maximum_seconds_distraction: float = GENERIC_MAXIMUM_SECONDS_DISTRACTION
+    minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance
+    maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction
 
     physical_object_inspect: bool = False
 

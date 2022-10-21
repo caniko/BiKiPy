@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pydantic_numpy.dtype import NDArrayFp64
 
-from bikipy.core.typing import MetersPerPixel
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 from bikipy.utils.math.geometry import expand_rectangle
 from bikipy.utils.plotting import generic_inspection_finalization
@@ -22,7 +21,7 @@ class RectanglePerimeter(BasePolygonPerimeter):
     def derived_meters_per_pixel(self) -> float:
         if upstream := super().derived_meters_per_pixel:
             return upstream
-        elif self.derived_meters_per_pixel_source == "diagonal":
+        if self.derived_meters_per_pixel_source == "diagonal":
             return self.derived_meters_per_pixel_source_metric_length / np.linalg.norm(
                 self.vertices_in_pixels.edge_lengths[0] - self.vertices_in_pixels.edge_lengths[2]
             )

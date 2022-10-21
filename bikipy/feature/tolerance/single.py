@@ -4,10 +4,7 @@ from pydantic import validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayInt64
 
 from bikipy import runtime_settings
-from bikipy.feature.tolerance import (
-    GENERIC_MAXIMUM_SECONDS_DISTRACTION,
-    GENERIC_MINIMUM_SECONDS_ATTENTION,
-)
+
 from bikipy.feature.tolerance.common import (
     common_preparation,
     tolerance_filter_warning_wrapper,
@@ -18,8 +15,8 @@ from bikipy.feature.tolerance.common import (
 def single_node_tolerance_filter(
     boolean_index: NDArrayBool,
     fps: float,
-    minimum_seconds_attention: float = GENERIC_MINIMUM_SECONDS_ATTENTION,
-    maximum_seconds_distraction: float = GENERIC_MAXIMUM_SECONDS_DISTRACTION,
+    minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
+    maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
 ) -> NDArrayBool | None:
     return tolerance_filter_warning_wrapper(
         _filter, len(boolean_index), boolean_index, fps, minimum_seconds_attention, maximum_seconds_distraction
@@ -96,8 +93,8 @@ def _filter(
 def arg_single_node_tolerance_filter(
     boolean_index: NDArrayBool,
     fps: float,
-    minimum_seconds_attention: float = GENERIC_MINIMUM_SECONDS_ATTENTION,
-    maximum_seconds_distraction: float = GENERIC_MAXIMUM_SECONDS_DISTRACTION,
+    minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
+    maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
 ) -> list[NDArrayInt64, ...]:
     """
     Deal with islands of data that need to be aggregated for analysis. These islands

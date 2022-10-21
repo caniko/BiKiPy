@@ -17,6 +17,7 @@ from pydantic import DirectoryPath, Field, FilePath
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
 
+from bikipy import runtime_settings
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import MetersPerPixel
 
@@ -139,6 +140,14 @@ class VideoMetadata(_VideoMetadataBase):
     @property
     def metric_vertical_resolution(self) -> int:
         return self.metric_resolution[1]
+
+    @cached_property
+    def minimum_frames_tolerance(self) -> int:
+        return round(self.fps * runtime_settings.minimum_seconds_tolerance)
+
+    @cached_property
+    def maximum_frames_distraction(self) -> int:
+        return round(self.fps * runtime_settings.maximum_seconds_distraction)
 
     @cached_property
     def image_resize_multiplier(self) -> float | None:
