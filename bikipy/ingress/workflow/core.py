@@ -739,7 +739,7 @@ def init_settings(
 
 @validate_arguments
 def auto_define_ingress_object(project_root_directory: DirectoryPath) -> Ingress:
-    from bikipy.ingress import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
+    from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
 
     with open(project_root_directory / "settings.yaml", "r") as in_file:
         settings = yaml.safe_load(in_file)

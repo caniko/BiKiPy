@@ -16,7 +16,7 @@ from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayUint8
 
 from bikipy import runtime_settings
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.core.base_class import BaseBikipyInspectMixin
+from bikipy.core.base_class import BaseBikipyInspectMixin, BaseBikipyHashable
 from bikipy.core.typing import TrialId
 from bikipy.core.video import (
     VideoMetadata,
@@ -35,7 +35,7 @@ from bikipy.utils.plotting import InspectArg, generic_inspection_finalization
 logger = getLogger(__name__)
 
 
-class PhysicalObjectSetAnalysis(VideoMetadataMixin):
+class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
     analysis_label: str
 
     physical_object_label_to_observation_boolean_index: dict[str, NDArrayBool]
@@ -84,9 +84,11 @@ class PhysicalObjectSetAnalysis(VideoMetadataMixin):
         overlapping_frames = 0
 
         observation_sequence = np.zeros(self.frames, dtype=np.uint8)
-        for object_int_id, object_boolean_index in enumerate(self.physical_object_label_to_observation_boolean_index.values(), start=1):
+        for object_int_id, object_boolean_index in enumerate(
+            self.physical_object_label_to_observation_boolean_index.values(), start=1
+        ):
             overlapping_frames += np.sum(object_boolean_index & observation_sequence)
-            observation_sequence[object_boolean_index] = object_int_id    # TODO: Revert
+            observation_sequence[object_boolean_index] = object_int_id  # TODO: Revert
 
         if overlapping_frames:
             ratio = overlapping_frames / self.frames
@@ -100,9 +102,6 @@ class PhysicalObjectSetAnalysis(VideoMetadataMixin):
                     "MIGHT be empirically wrong. You may re-annotate the perimeters "
                     "of the objects for improved results"
                 )
-
-        for label in self.labels:
-
 
         return observation_sequence
 

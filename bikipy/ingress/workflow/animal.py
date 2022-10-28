@@ -4,7 +4,7 @@ from typing import ClassVar
 from pydantic import DirectoryPath, PositiveInt
 
 from bikipy.core.typing import TrialId
-from bikipy.ingress.core import BaseIngress
+from bikipy.ingress.workflow.core import BaseIngress
 
 logger = getLogger(__name__)
 
@@ -13,13 +13,16 @@ class AnimalIngress(BaseIngress):
     ingress_method: ClassVar[str] = "animal"
 
     def _dataset_reader(self) -> None:
+        def define_trial_id():
+            return f"{animal_id}_{stage_index}"
+
         for animal_dir in self.dataset_directory_path.iterdir():
             animal_id = self._get_id_from_path_stem(animal_dir)
 
             for framewise_coordinates_path in self._glob_coordinate_files_in_directory(animal_dir):
                 stage_index = int(self._get_id_from_path_stem(framewise_coordinates_path).split(".")[0])
 
-                trial_id = _define_trial_id(animal_id, stage_index)
+                trial_id = define_trial_id()
 
                 if trial_id not in self.metadata.index:
                     continue
@@ -52,39 +55,3 @@ class AnimalIngress(BaseIngress):
 
     def trialwise_plugins_for_trial_id(self, trial_id: TrialId, trial_directory: DirectoryPath):
         return self._trialwise_plugins_for_trial_id(trial_id, trial_directory, "{trial_id}.{plugin_code_key}*")
-
-    def verify_project_structure(self):
-        animal_ids = set()
-        trial_set_stage_ids = []
-        for trial_set_dir in self.dataset_directory_path.iterdir():
-            if trial_set_dir.is_file() or trial_set_dir.name == "perimeter":
-                continue
-
-            animal_id = trial_set_dir.name.split("-")[0]
-            animal_ids.add(animal_id)
-
-            stage_ids = set()
-            for filename in trial_set_dir.glob(f"*{self.framewise_coordinates_file_suffix}"):
-                stage_ids.add(int(filename.stem.split("-")[0]))
-            trial_set_stage_ids.append(stage_ids)
-
-        if any(trial_set_stage_ids[0] != stage_ids for stage_ids in trial_set_stage_ids[1:]):
-            msg = f"The trial sets do not have identical trial stage sequence:\n{trial_set_stage_ids}"
-            raise ValueError(msg)
-
-        try:
-            metadata_animal_id_column_set = set(self.metadata.index)
-        except KeyError:
-            msg = f"Animal column, Animal, is not defined in the metadata sheet. Defined columns:\n{self.metadata.columns}"
-            raise KeyError(msg)
-
-        if metadata_animal_id_column_set.issubset(animal_ids):
-            msg = (
-                "The animal ID sets in the metadata and the trial_set directory names do not match:\n"
-                f"- metadata: {sorted(metadata_animal_id_column_set)}\n- trial_sets: {sorted(animal_ids)}"
-            )
-            raise ValueError(msg)
-
-
-def _define_trial_id(animal_id: str | PositiveInt, stage_index: str | PositiveInt):
-    return f"{animal_id}_{stage_index}"

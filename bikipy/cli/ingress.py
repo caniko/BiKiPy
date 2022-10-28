@@ -7,7 +7,7 @@ from pydantic import DirectoryPath, validate_arguments
 
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.cli import cli_root
-from bikipy.ingress.core import (
+from bikipy.ingress.workflow.core import (
     analyze_and_save,
     auto_define_ingress_object,
     init_settings,
@@ -68,13 +68,6 @@ def update(
     auto_define_ingress_object(_define_project_root_directory(project_root_directory)).update_settings(
         delete_outdated=delete_outdated, dry_run=dry_run
     )
-
-
-@ingress.command()
-@click.argument("project_root_directory")
-@validate_arguments
-def verify(project_root_directory: Optional[DirectoryPath]) -> None:
-    auto_define_ingress_object(_define_project_root_directory(project_root_directory)).verify_project_structure()
 
 
 def _define_project_root_directory(project_root_directory: Optional[DirectoryPath]):

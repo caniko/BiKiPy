@@ -1,6 +1,6 @@
 from functools import cached_property
 from pathlib import Path
-from typing import ClassVar, Optional, TypeVar
+from typing import ClassVar, Optional, TypeVar, Generic
 
 from compress_pickle import compress_pickle
 from pydantic import BaseModel, DirectoryPath, Field, FilePath

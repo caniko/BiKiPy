@@ -4,7 +4,7 @@ from typing import ClassVar
 from pydantic import DirectoryPath, PositiveInt
 
 from bikipy.core.typing import TrialId
-from bikipy.ingress.core import BaseIngress
+from bikipy.ingress.workflow.core import BaseIngress
 
 logger = getLogger(__name__)
 

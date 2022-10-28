@@ -13,7 +13,7 @@ import cv2
 import mextractor
 import numpy as np
 from mextractor.extractors import extract_video
-from pydantic import DirectoryPath, Field, FilePath
+from pydantic import DirectoryPath, Field, FilePath, BaseModel
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
 
@@ -28,7 +28,10 @@ _TICK_END_OFFSET_RATIO = 0.9
 _can_only_be_set_manually = {"meters_per_pixel", "image_resize_multiplier"}
 
 
-class _VideoMetadataBase(BaseBikipy):
+class _VideoMetadataBase(BaseModel):
+    class Config:
+        keep_untouched = (cached_property,)
+
     meters_per_pixel: Optional[MetersPerPixel] = Field(
         description="Float or 1D array defining the meter to pixel ratio"
     )

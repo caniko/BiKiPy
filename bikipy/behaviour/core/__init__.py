@@ -32,7 +32,7 @@ from bikipy.core.video import (
     incongruity_permissive_video_join,
 )
 from bikipy.feature.motion import Motion, motion_multi_indexer
-from bikipy.ingress.core import FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD
+from bikipy.ingress.workflow.core import FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD
 from bikipy.ingress.plugin import PluginChangeReference, PluginRadial
 from bikipy.perimeter.base import BaseSinglePerimeter, PerimeterSet, SinglePerimeter, Perimeter
 from bikipy.reader.data_with_likelihood import DeepLabCutReader

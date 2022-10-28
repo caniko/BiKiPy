@@ -1,3 +1,3 @@
-from bikipy.ingress.core import analyze_and_save
+from bikipy.ingress.workflow.core import analyze_and_save
 
 analyze_and_save(".")
