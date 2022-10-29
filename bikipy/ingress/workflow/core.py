@@ -90,22 +90,17 @@ class BaseIngress(BaseBikipy, ABC):
 
     @classmethod
     def from_project_root_directory(cls, project_root_directory: DirectoryPath):
+        from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
+
         kwargs = {"project_root_directory": project_root_directory}
-        match auto_define_ingress_object(project_root_directory).ingress_method:
-            case "animal":
-                from bikipy.ingress import AnimalIngress
-
-                return AnimalIngress(**kwargs)
-            case "phase":
-                from bikipy.ingress import PhaseIngress
-
-                return PhaseIngress(**kwargs)
-            case _:
-                msg = (
-                    f"Defined ingress method, {auto_define_ingress_object(project_root_directory).ingress_method}, "
-                    f"is not supported"
-                )
-                raise AttributeError(msg)
+        try:
+            return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[auto_define_ingress_object(project_root_directory).ingress_method](**kwargs)
+        except KeyError:
+            msg = (
+                f"Defined ingress method, {auto_define_ingress_object(project_root_directory).ingress_method}, "
+                f"is not supported"
+            )
+            raise AttributeError(msg)
 
     @property
     def experiment_name(self) -> str:

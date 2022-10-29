@@ -6,9 +6,10 @@ import pandas as pd
 from pydantic import DirectoryPath, Field
 from pydantic_numpy.dtype import NDArrayFp64
 
+from bikipy import runtime_settings
 from bikipy.behaviour.core.enclosure.rectangle import RectangleEnclosedTrial
 from bikipy.core.base_class import BaseBikipy
-from bikipy.feature.physical_object import PhysicalObjectSet
+from bikipy.feature.physical_object.set import PhysicalObjectSet
 
 
 class PhysicalObjectTrialMixin(BaseBikipy):
