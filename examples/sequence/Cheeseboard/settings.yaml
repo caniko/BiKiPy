@@ -1,0 +1,134 @@
+ingress:
+  method: animal_day
+  first_stage_is_habituation: true
+  manual_trial_sequence_repetitions: null
+  framewise_coordinates_file_suffix: .parquet
+  minimum_frame_length: 500
+  dataset_directory: null
+  profile_runtime: true
+definition_strategies:
+  meters_per_pixel: null
+  perimeter: null
+  radial: null
+  change_reference: null
+  video: null
+  timestamp: null
+  center: null
+perimeter:
+  label_prefix: null
+  label_suffix: null
+  perimeter_names_in_metadata: false
+  radial_arm_rectangle_diagonal: null
+  fields:
+    defined: {}
+    optional:
+      category: string -> video_metadata
+      derive_meters_per_pixel: boolean -> False
+      derived_meters_per_pixel_source: string
+      derived_meters_per_pixel_source_metric_length: number
+      fps: number
+      frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'': ''uint8''}]'
+      impenetrable: boolean -> False
+      inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
+        -> False'
+      inspect_image_path: string
+      manual_inspect_image: np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]
+      manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
+      meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
+      minimum_frame_length: number
+      moving_field_name: string
+      recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
+reader_kwargs:
+  defined: {}
+  optional:
+    cache_meters_augmented: boolean -> True
+    category: string -> video_metadata
+    crop_from_end: boolean -> False
+    crop_time_seconds: number -> 0.0
+    df_is_timestamped: boolean -> False
+    df_read_kwargs: object
+    export_timestamp_data_as_parquet: boolean -> False
+    filter_data: boolean -> True
+    filter_kwargs: object
+    filter_method: string
+    fps: number
+    frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'': ''uint8''}]'
+    future_scaling: boolean
+    ignore_likelihoods: boolean -> False
+    invert_y_axis: boolean -> False
+    manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
+    meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
+    midpoint_groups: object
+    min_likelihood: number -> 0.8
+    minimum_frame_length: number
+    recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
+    x_axis_crop_end_point: number -> 0.0
+    y_axis_crop_end_point: number -> 0.0
+trial:
+  common:
+    defined:
+      manual_perimeter_to_derive_meters_per_pixel: null
+      meters_per_pixel_from_perimeter_source: null
+      object_tracking_label_for_kinematics: null
+      reward_perimeter: null
+      start_perimeter: null
+    required:
+      manual_perimeter_to_derive_meters_per_pixel: string
+      meters_per_pixel_from_perimeter_source: string
+      object_tracking_label_for_kinematics: string
+      reward_perimeter: None
+      start_perimeter: None
+    optional:
+      category: string -> video_metadata
+      coordinate_timestamp_set: np.ndarray
+      crop_from_end: boolean -> True
+      crop_time_seconds: number -> 0.0
+      data_format_label: string -> deeplabcut
+      fps: number
+      frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'': ''uint8''}]'
+      inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
+        -> False'
+      inspect_image_path: string
+      length_meters_of_meters_per_pixel_source: number
+      manual_center_pixels: np.ndarray[name='manual_center_pixels_0' type=short required=True]
+      manual_inspect_image: np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]
+      manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
+      meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
+      meters_per_pixel_from_perimeter: boolean -> False
+      minimum_frame_length: number
+      recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
+      rigid_nodes_freezing: array
+      temporal_tolerance: number -> 0.3333333333333333
+      trial_start_perimeter: string
+  specific:
+    CheeseboardTrial:
+      defined: {}
+experiment:
+  defined: {}
+  optional:
+    category: string -> video_metadata
+    compute_first_two_feature_series_only: boolean -> False
+    data_format_label: string -> deeplabcut
+    fps: number
+    frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'': ''uint8''}]'
+    inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
+      -> False'
+    inspect_image_path: string
+    manual_inspect_image: np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]
+    manual_trial_ids: array
+    manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
+    meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
+    minimum_frame_length: number
+    recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
+    skip_habituation: boolean -> False
+    stage: string
+    trial_init_error_out_dir: string
+debug:
+  activate_debugging: false
+  no_numba: false
+  no_process_pooling: false
+immutable:
+  metadata_filename: metadata.xlsx
+  experiment_class: cheeseboard
+  trial_sequence:
+  - CheeseboardTrial

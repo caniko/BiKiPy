@@ -686,6 +686,9 @@ def init_settings(
     experiment_class = EXPERIMENT_NAME_TO_CLASS[experiment_name]
     experiment_class._ignore_unset_trial_sequence_repetition = True
 
+    if framewise_coordinates_file_suffix[0] != ".":
+        framewise_coordinates_file_suffix = f".{framewise_coordinates_file_suffix}"
+
     generic_settings = {
         "ingress": {
             "method": ingress_method,

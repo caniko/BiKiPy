@@ -3,8 +3,9 @@ from bikipy.behaviour.object_recognition.novel_object_recognition import NortExp
 from bikipy.behaviour.object_recognition.objects_in_updating_locations import (
     ObjectsInUpdatingLocationsExperiment,
 )
-from bikipy.behaviour.radial_arm.base import BaseRadialMazeExperiment
+from bikipy.behaviour.radial_arm import BaseRadialMazeExperiment
 from bikipy.behaviour.radial_arm.y_maze import YMazeExperiment
+from bikipy.behaviour.reward_tracing.cheeseboard import CheeseboardExperiment
 
 EXPERIMENT_NAME_TO_CLASS: dict[str, Experiment] = {
     "nort": NortExperiment,
@@ -22,4 +23,7 @@ EXPERIMENT_NAME_TO_CLASS: dict[str, Experiment] = {
     "ymaze": YMazeExperiment,
     "y_maze": YMazeExperiment,
     "YMazeExperiment": YMazeExperiment,
+    # ---
+    "cheeseboard": CheeseboardExperiment,
+    "CheeseboardExperiment": CheeseboardExperiment,
 }
