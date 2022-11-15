@@ -3,19 +3,22 @@ from typing import Any, Optional
 
 import numpy as np
 from matplotlib import pyplot as plt
-from pydantic import FilePath, validator
+from pydantic import FilePath, validator, validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy.feature.attention.gaze import gaze_direction_filter_circle_triangle
 from bikipy.perimeter.base import (
     BaseSinglePerimeter,
     perimeter_set_from_image_name_to_perimeters,
+    SinglePerimeter,
 )
 from bikipy.perimeter.radial.utils import plot_circle
 from bikipy.utils.makesense import (
     get_line_endpoints_from_makesense_row,
     read_makesense_line,
     recording_resolution_from_makesense_row,
+    read_makesense_point,
+    get_point_from_makesense_row,
 )
 from bikipy.utils.math.inside.ellipse import point_inside_ellipse
 from bikipy.utils.math.vector import unit_vector
@@ -42,6 +45,10 @@ class CirclePerimeter(BaseSinglePerimeter):
         result.append(self.center_pixels.data.tobytes())
         result.append(self.radius_pixels)
         return result
+
+    @property
+    def derived_meters_per_pixel(self) -> float:
+        return self.derived_meters_per_pixel_source_metric_length / self.radius_pixels
 
     @property
     def centroid_meters(self) -> NDArrayFp64:
@@ -134,9 +141,33 @@ class CirclePerimeter(BaseSinglePerimeter):
         return ax
 
     @classmethod
+    @validate_arguments
+    def from_makesense_point(
+        cls, data_path: FilePath, meters_radius: float, meters_per_pixel: NDArrayFp64, **perimeter_kwargs
+    ) -> dict[str, SinglePerimeter]:
+        result = {}
+        for _, row in read_makesense_point(data_path).iterrows():
+            perimeter = cls(
+                center_pixels=get_point_from_makesense_row(row),
+                radius_pixels=meters_radius / meters_per_pixel,
+                label=row["label"],
+                recording_resolution=recording_resolution_from_makesense_row(row),
+                makesense_image_name=row["image_name"],
+                meters_per_pixel=meters_per_pixel,
+                **perimeter_kwargs,
+            )
+
+            if row["image_name"] not in result:
+                result[row["image_name"]] = {}
+            result[row["image_name"]][row["label"]] = perimeter
+
+        return perimeter_set_from_image_name_to_perimeters(result)
+
+    @classmethod
+    @validate_arguments
     def from_makesense_line(
         cls, data_path: FilePath, meters_per_pixel: NDArrayFp64, **perimeter_kwargs
-    ) -> dict[str, Any]:
+    ) -> dict[str, SinglePerimeter]:
         result = {}
         for _, row in read_makesense_line(data_path).iterrows():
             a, b = get_line_endpoints_from_makesense_row(row)

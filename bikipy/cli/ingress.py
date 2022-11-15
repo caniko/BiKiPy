@@ -7,7 +7,7 @@ from pydantic import DirectoryPath, validate_arguments
 
 from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
 from bikipy.cli import cli_root
-from bikipy.ingress.workflow.core import (
+from bikipy.ingress.workflow.base import (
     analyze_and_save,
     auto_define_ingress_object,
     init_settings,
@@ -30,7 +30,7 @@ def ingress():
     "project_root_directory",
     help="Path to the sequence formatted project directory, uses current directory on omition",
 )
-@click.option("-s", "--data_file_suffix", "framewise_coordinates_file_suffix", default=".h5")
+@click.option("-s", "--data_file_suffi  x", "framewise_coordinates_file_suffix", default=".h5")
 @click.option("-d", "--dry_run", is_flag=True)
 @validate_arguments
 def init(

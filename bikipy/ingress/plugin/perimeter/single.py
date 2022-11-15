@@ -26,8 +26,14 @@ logger = getLogger(__name__)
 
 
 class PluginSinglePerimeter(BasePluginFile, HasReferenceMixin):
+    """
+    This plugin ensures the
+    """
+
     manual_shape: Optional[StringPerimeterShapes] = None
     warn_missing_re_reference_file: bool = False
+
+    plural_entries = True
 
     ingress_key = "perimeter"
     code_key = "perimeter"
@@ -39,8 +45,14 @@ class PluginSinglePerimeter(BasePluginFile, HasReferenceMixin):
         return self._info[1]
 
     @property
+    def init_args(self) -> list:
+        if len(self._info) == 3:
+            return []
+        return self._info[2:-1]
+
+    @property
     def label(self) -> str:
-        return self._info[2]
+        return self._info[-1]
 
     @cached_property
     def image_name(self):
@@ -59,6 +71,7 @@ class PluginSinglePerimeter(BasePluginFile, HasReferenceMixin):
         image_name_to_perimeter_set = perimeter_set_from_makesense(
             self.data_path,
             self.manual_shape or self.shape,
+            init_args=self.init_args,
             meters_per_pixel=self.ingress.get_meter_per_pixel(trial_id),
             reference_point_array=self.reference_point,
             inspect_arg=self.ingress.inspect_directory_path,

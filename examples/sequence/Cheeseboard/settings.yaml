@@ -4,13 +4,14 @@ ingress:
   manual_trial_sequence_repetitions: null
   framewise_coordinates_file_suffix: .parquet
   minimum_frame_length: 500
-  dataset_directory: null
+  dataset_directory: /mnt/bigbrain/Chrys_Behavior_Analysis/cheeseboard/dataset
   profile_runtime: true
 definition_strategies:
-  meters_per_pixel: null
-  perimeter: null
+  meters_per_pixel: metadata
+  perimeter: metadata
   radial: null
   change_reference: null
+  frame: trial-wise
   video: null
   timestamp: null
   center: null

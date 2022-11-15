@@ -13,7 +13,7 @@ logger = getLogger(__name__)
 
 
 class RectanglePerimeter(BasePolygonPerimeter):
-    derived_meters_per_pixel_source: Literal["diagonal", "side", None]
+    derived_meters_per_pixel_source: Literal["diagonal", "side", None] = None
 
     polygon_order = 4
 

@@ -1,0 +1,28 @@
+from functools import cached_property
+
+import cv2
+from pydantic import DirectoryPath, FilePath
+
+from bikipy.core.typing import TrialId
+from bikipy.core.video import VideoMetadata
+from bikipy.ingress.plugin.base import BasePlugin
+
+
+class PluginFrame(BasePlugin):
+    data_path: FilePath | DirectoryPath
+
+    ingress_key = "frame"
+    code_key = "frame"
+    bikipy_trial_key = "manual_frame"
+    human_readable_index = "Frame"
+
+    @cached_property
+    def frame(self) -> VideoMetadata:
+        return cv2.imread(self.data_path)
+
+    def trialwise_and_metadata(self, trial_id: TrialId) -> VideoMetadata:
+        return self.frame
+
+    @property
+    def globally_defined(self) -> VideoMetadata:
+        return self.frame

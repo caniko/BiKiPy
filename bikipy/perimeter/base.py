@@ -38,7 +38,7 @@ from bikipy.utils.plotting import (
 
 logger = getLogger(__name__)
 
-StringPerimeterShapes = Literal["circle", "polygon", "rectangle"]
+StringPerimeterShapes = Literal["circle", "circle_line", "circle_point", "polygon", "rectangle"]
 
 
 class BasePerimeter(BaseBikipyHashable, ABC):
@@ -494,26 +494,36 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
 
 @validate_arguments
 def perimeter_set_from_makesense(
-    perimeter_path: FilePath, shape: Optional[StringPerimeterShapes], **perimeter_kwargs
+    perimeter_path: FilePath, shape: StringPerimeterShapes, init_args: Optional[list] = None, **perimeter_kwargs
 ) -> dict[str, PerimeterSet]:
-    msg = "Unsupported format"
+    unsupported_msg = f"Unsupported format, {shape}"
+
+    init_args = init_args or []
+
     match shape:
-        case "circle":
+        case "circle_line" | "circle":
             from bikipy.perimeter.radial.circle import CirclePerimeter
 
-            return CirclePerimeter.from_makesense_line(perimeter_path, **perimeter_kwargs)
+            return CirclePerimeter.from_makesense_line(perimeter_path, *init_args, **perimeter_kwargs)
+        case "circle_point":
+            from bikipy.perimeter.radial.circle import CirclePerimeter
+
+            return CirclePerimeter.from_makesense_point(perimeter_path, *init_args, **perimeter_kwargs)
+
         case "rectangle":
             match perimeter_path.suffix:
                 case ".csv":
-                    return init_polygon_from_makesense_csv_rectangle(perimeter_path, **perimeter_kwargs)
+                    return init_polygon_from_makesense_csv_rectangle(perimeter_path, *init_args, **perimeter_kwargs)
                 case ".json":
-                    return init_polygon_from_makesense_coco_polygon(perimeter_path, **perimeter_kwargs)
+                    return init_polygon_from_makesense_coco_polygon(perimeter_path, *init_args, **perimeter_kwargs)
                 case _:
-                    raise ValueError(msg)
+                    raise ValueError(unsupported_msg)
+
         case "polygon" | "triangle":
-            return init_polygon_from_makesense_coco_polygon(perimeter_path, **perimeter_kwargs)
+            return init_polygon_from_makesense_coco_polygon(perimeter_path, *init_args, **perimeter_kwargs)
+
         case _:
-            raise ValueError(msg)
+            raise ValueError(unsupported_msg)
 
 
 def perimeter_set_from_image_name_to_perimeters(image_name_to_perimeters: dict[str, "SinglePerimeter"]):

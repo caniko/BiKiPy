@@ -49,7 +49,12 @@ class CheeseboardTrial(CircleEnclosedTrial):
     def _trial_feature_series_list(self) -> list[pd.Series]:
         upstream_list = super()._trial_feature_series_list
 
-        upstream_list.append(pd.Series([self.seconds_to_find_reward, self.seconds_spent_in_reward_area], index=[("Cheeseboard", "RewardTraceSeconds"), ("Cheeseboard", "RewardAreaSeconds")]))
+        upstream_list.append(
+            pd.Series(
+                [self.seconds_to_find_reward, self.seconds_spent_in_reward_area],
+                index=[("Cheeseboard", "RewardTraceSeconds"), ("Cheeseboard", "RewardAreaSeconds")],
+            )
+        )
 
         return upstream_list
 

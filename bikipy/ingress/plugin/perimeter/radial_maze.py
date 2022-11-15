@@ -17,7 +17,6 @@ from bikipy.utils.makesense import (
 )
 from bikipy.utils.math.geometry import (
     clockwise_argsort_points,
-    clockwise_sort_points,
     meter_per_pixel_from_diagonal,
 )
 

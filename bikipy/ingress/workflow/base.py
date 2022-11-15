@@ -94,7 +94,9 @@ class BaseIngress(BaseBikipy, ABC):
 
         kwargs = {"project_root_directory": project_root_directory}
         try:
-            return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[auto_define_ingress_object(project_root_directory).ingress_method](**kwargs)
+            return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[
+                auto_define_ingress_object(project_root_directory).ingress_method
+            ](**kwargs)
         except KeyError:
             msg = (
                 f"Defined ingress method, {auto_define_ingress_object(project_root_directory).ingress_method}, "
@@ -259,6 +261,25 @@ class BaseIngress(BaseBikipy, ABC):
             trial_id_df.index = trial_id_df.index.map(lambda idx: f"{idx[0]}_{idx[1]}")
             trial_id_df.index.names = ["Trial"]
 
+        elif "animal_day" in self._metadata_sheet_names:
+            """
+            The Animal-Sequence layout derives trial ID from Animal and Day.
+            """
+            trial_id_df = pd.read_excel(
+                self.metadata_path,
+                sheet_name="animal_day",
+                index_col=[0, 1],
+            )
+            trial_id_df.index.names = ["Animal", "Day"]
+            trial_id_df = join_trial_df_with_animal_metadata(trial_id_df)
+
+            new_index = trial_id_df.index.map(lambda idx: f"{idx[0]}_{idx[1]}")
+
+            trial_id_df.reset_index(inplace=True)
+            trial_id_df.set_index(new_index, inplace=True)
+
+            trial_id_df.index.names = ["Trial"]
+
         elif self.animal_metadata is not None:
             if "Phase" in self.animal_metadata.columns:
                 """
@@ -382,14 +403,29 @@ class BaseIngress(BaseBikipy, ABC):
                 for file_path in self.plugin_directory_path.glob(f"{plugin_model.code_key}*")
             }
             for trial_id, row in self.metadata.iterrows():
-                trial_id_plugin_label = row[plugin_model.human_readable_index]
+                if plugin_model.human_readable_index in row:
+                    trial_id_plugin_label = row[plugin_model.human_readable_index]
+                    if isinstance(trial_id_plugin_label, float) and np.isnan(trial_id_plugin_label):
+                        continue
 
-                if isinstance(trial_id_plugin_label, float) and np.isnan(trial_id_plugin_label):
-                    continue
+                    self._trial_id_to_keyword_arguments[trial_id][plugin_model.bikipy_trial_key] = plugin_model(
+                        data_path=label_to_file_path[str(trial_id_plugin_label)], ingress=self
+                    ).trialwise_and_metadata(trial_id)
 
-                self._trial_id_to_keyword_arguments[trial_id][plugin_model.bikipy_trial_key] = plugin_model(
-                    data_path=label_to_file_path[str(trial_id_plugin_label)], ingress=self
-                ).trialwise_and_metadata(trial_id)
+                elif plugin_model.plural_entries:
+                    for key, trial_id_plugin_label in row.items():
+                        if isinstance(trial_id_plugin_label, float) and np.isnan(trial_id_plugin_label):
+                            continue
+                        if plugin_model.human_readable_index in key:
+                            self._trial_id_to_keyword_arguments[trial_id][key] = plugin_model(
+                                data_path=label_to_file_path[str(trial_id_plugin_label)], ingress=self
+                            ).trialwise_and_metadata(trial_id)
+
+                else:
+                    msg = (
+                        f"{plugin_model.human_readable_index} is active in the settings, but is missing in the metadata"
+                    )
+                    raise ValueError(msg)
 
         self._dataset_reader()
 

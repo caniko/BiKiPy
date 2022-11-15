@@ -1,5 +1,5 @@
 from bikipy.ingress.workflow.animal import sequence_generate_configuration
-from bikipy.ingress.workflow.core import analyze
+from bikipy.ingress.workflow.base import analyze
 from tests.constant import SEQUENCE_NORT_EXAMPLE_PROJECT_PATH
 
 
