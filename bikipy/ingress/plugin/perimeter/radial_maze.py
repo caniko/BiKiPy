@@ -114,7 +114,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
 
         return grouped
 
-    def trialwise_and_metadata(self, trial_id: TrialId) -> dict[str, tuple[SinglePerimeter, ...]]:
+    def trialwise_and_metadata(self, trial_id: TrialId, naive: bool = False) -> dict[str, tuple[SinglePerimeter, ...]]:
         return self.grouped_radial_maze_perimeters
 
     @property

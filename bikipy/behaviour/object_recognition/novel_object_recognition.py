@@ -8,7 +8,7 @@ from bikipy.behaviour.core.enclosure.rectangle import (
     RectangleEnclosedExperiment,
     RectangleEnclosedHabituationTrial,
 )
-from bikipy.behaviour.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
+from bikipy.behaviour.core.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
 from bikipy.core.typing import TrialId
 from bikipy.perimeter.base import SinglePerimeter
 
@@ -19,7 +19,7 @@ class NortTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
     variable: SinglePerimeter = ...
     familiar: SinglePerimeter = ...
 
-    physical_object_labels = ("variable", "familiar")
+    physical_object_labels = {"variable", "familiar"}
 
     experiment_class_name = "NortExperiment"
     trial_label = "Training"
@@ -33,7 +33,7 @@ class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
     novel: SinglePerimeter = ...
     familiar: SinglePerimeter = ...
 
-    physical_object_labels = ("novel", "familiar")
+    physical_object_labels = {"novel", "familiar"}
 
     experiment_class_name = "NortExperiment"
     trial_label = "Novelty"
@@ -93,7 +93,7 @@ class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
 class NortExperiment(RectangleEnclosedExperiment):
     habituation_trial_class = RectangleEnclosedHabituationTrial
 
-    trial_classes = (NortTrainingTrial, NortNoveltyTrial)
+    trial_sequence = (NortTrainingTrial, NortNoveltyTrial)
 
     experiment_stage_name_to_stage_index: ClassVar[dict[str, int]] = {
         "habituation": 0,

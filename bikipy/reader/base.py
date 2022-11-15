@@ -38,8 +38,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         description="labels that consist of groups that should have their midpoints computed in the DataFrame"
     )
 
-    filter_data: bool = True
-    filter_method: Optional[Literal["arima", "median", "spline"]]
+    filter_method: Literal["arima", "median", "spline", None] = None
     filter_kwargs: dict = Field(default_factory=dict)
     ignore_likelihoods: bool = False
 
@@ -127,8 +126,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         """
         result_df = self.raw_df.copy()
 
-        if self.filter_data:
-            self.filter_method = self.filter_method or "arima"
+        if self.filter_method:
             logger.debug(f"Filtering {self.df_path.stem} with the {self.filter_method} method")
             result_df = filter_data(result_df, self.filter_method, **self.filter_kwargs)
 

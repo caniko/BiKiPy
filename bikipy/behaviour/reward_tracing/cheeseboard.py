@@ -20,11 +20,15 @@ class CheeseboardTrial(CircleEnclosedTrial):
 
     temporal_tolerance: float = 1.0 / 3.0
 
+    perimeter_labels = {"start_perimeter", "reward_perimeter"}
+    trial_label = "cheeseboard"
+
     @cached_property
     def reward_boolean(self) -> NDArrayBool:
-        return single_node_tolerance_filter(
-            self.reward_perimeter.compute_confined_coordinate_boolean_index(self.kinematic_coordinates), self.video.fps
-        )
+        # return single_node_tolerance_filter(
+        #     self.reward_perimeter.compute_confined_coordinate_boolean_index(self.kinematic_coordinates), self.video.fps
+        # )
+        return self.reward_perimeter.compute_confined_coordinate_boolean_index(self.kinematic_coordinates)
 
     @property
     def seconds_to_find_reward(self) -> float:
@@ -32,14 +36,15 @@ class CheeseboardTrial(CircleEnclosedTrial):
         Seconds taken to find reward
         :return:
         """
-        start_boolean = single_node_tolerance_filter(
-            self.start_perimeter.compute_confined_coordinate_boolean_index(self.kinematic_coordinates), self.video.fps
-        )
+        start_boolean = self.start_perimeter.compute_confined_coordinate_boolean_index(self.kinematic_coordinates)
 
         trace_start_idx = np.where(start_boolean)[0]
         reward_arrival_idx = np.where(self.reward_boolean)[0]
 
-        return (reward_arrival_idx - trace_start_idx) * self.video.fps
+        try:
+            return (reward_arrival_idx[0] - trace_start_idx[0]) / self.video.fps
+        except IndexError:
+            return float("inf")
 
     @property
     def seconds_spent_in_reward_area(self) -> float:
@@ -62,5 +67,4 @@ class CheeseboardTrial(CircleEnclosedTrial):
 class CheeseboardExperiment(CircleEnclosedExperiment):
     habituation_trial_class = CircleEnclosedHabituationTrial
 
-    trial_classes = (CheeseboardTrial,)
-    trial_sequence_repetition = ...
+    trial_sequence = (CheeseboardTrial,)

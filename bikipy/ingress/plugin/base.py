@@ -45,7 +45,7 @@ class BasePlugin(BaseBikipy, ABC):
             return int(self.plugin_name[0])
 
     @abstractmethod
-    def trialwise_and_metadata(self, trial_id: TrialId):
+    def trialwise_and_metadata(self, trial_id: TrialId, naive: bool = False):
         ...
 
     @property

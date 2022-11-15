@@ -20,7 +20,7 @@ class PluginFrame(BasePlugin):
     def frame(self) -> VideoMetadata:
         return cv2.imread(self.data_path)
 
-    def trialwise_and_metadata(self, trial_id: TrialId) -> VideoMetadata:
+    def trialwise_and_metadata(self, trial_id: TrialId, naive: bool = False) -> VideoMetadata:
         return self.frame
 
     @property

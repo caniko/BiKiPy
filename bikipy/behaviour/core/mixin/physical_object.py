@@ -32,7 +32,7 @@ class PhysicalObjectTrialMixin(BaseBikipy):
 
     physical_object_inspect: bool = False
 
-    physical_object_labels: ClassVar[tuple[str, ...]] = ...
+    physical_object_labels: ClassVar[set[str]] = set()
     all_perimeters_are_physical_objects: ClassVar[bool] = True
 
     @classmethod

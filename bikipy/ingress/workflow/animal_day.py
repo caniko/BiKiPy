@@ -14,7 +14,7 @@ class AnimalDayIngress(BaseIngress):
 
     def _dataset_reader(self) -> None:
         def define_trial_id():
-            return f"{animal_id}_{day}_{stage_index}"
+            return f"{animal_id}_{day}_{daily_trial_number}"
 
         for animal_dir in self.dataset_directory_path.iterdir():
             animal_id = self._get_id_from_path_stem(animal_dir)
@@ -23,18 +23,18 @@ class AnimalDayIngress(BaseIngress):
                 day = day_dir.stem.lower().replace("D", "").strip()
 
                 for framewise_coordinates_path in self._glob_coordinate_files_in_directory(day_dir):
-                    stage_index = int(self._get_id_from_path_stem(framewise_coordinates_path).split(".")[0])
+                    daily_trial_number = int(self._get_id_from_path_stem(framewise_coordinates_path).split(".")[0])
 
                     trial_id = define_trial_id()
 
-                    if trial_id not in self.metadata.index:
+                    if not self.trial_id_exists(trial_id):
                         continue
 
                     plugin_data = {}
                     for plugin_model in self._trial_wise_plugins:
-                        plugin_data_files = tuple(animal_dir.glob(f"{stage_index}.{plugin_model.code_key}*"))
+                        plugin_data_files = tuple(animal_dir.glob(f"{daily_trial_number}.{plugin_model.code_key}*"))
                         if len(plugin_data_files) > 1:
-                            msg = f"Only one file per trial: Animal {animal_id} -> Stage {stage_index} -> Plugin {plugin_model.human_readable_index}"
+                            msg = f"Only one file per trial: Animal {animal_id} -> Stage {daily_trial_number} -> Plugin {plugin_model.human_readable_index}"
                             raise ValueError(msg)
 
                         try:
@@ -46,7 +46,10 @@ class AnimalDayIngress(BaseIngress):
 
                         plugin_data[plugin_model.bikipy_trial_key or data_object.bikipy_trial_key] = data_object
 
-                    self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(stage_index)
+                    #  TODO: Must implement a versatile way of determining when singular trial_class
+                    #        and many trial_classes across all ingress
+                    self._trial_id_to_trial_class_name[trial_id] = self.experiment_class.trial_class
+
                     self._trial_id_to_keyword_arguments[trial_id] = {
                         "label": trial_id,
                         "animal_id": animal_id,
@@ -55,6 +58,10 @@ class AnimalDayIngress(BaseIngress):
                         **self._trial_id_to_keyword_arguments[trial_id],
                         **plugin_data,
                     }
+                    if self._designator_id_to_kwargs:
+                        self._trial_id_to_keyword_arguments[trial_id].update(
+                            self._designator_id_to_kwargs[self._trial_id_to_designator_id[trial_id]]
+                        )
 
     def trialwise_plugins_for_trial_id(self, trial_id: TrialId, trial_directory: DirectoryPath):
         return self._trialwise_plugins_for_trial_id(trial_id, trial_directory, "{trial_id}.{plugin_code_key}*")

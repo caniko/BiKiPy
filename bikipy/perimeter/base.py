@@ -107,7 +107,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
 
     @property
     def _video(self) -> VideoMetadata:
-        upstream_video = super()._video()
+        upstream_video = super()._video
 
         if self.derive_meters_per_pixel:
             logger.debug("derive_meters_per_pixel -> True: Deriving meters_per_pixel from perimeter")

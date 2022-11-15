@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Hashable, Iterable, Optional, T
 import numpy as np
 import pandas as pd
 import yaml
+from inflection import underscore
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
@@ -45,6 +46,7 @@ if TYPE_CHECKING:
 
 
 FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD = "first_stage_is_habituation"
+METADATA_TRIAL_IDS_ARE_HIGHER_LEVEL_FIELD = "metadata_trial_ids_are_higher_level"
 
 
 logger = getLogger(__name__)
@@ -72,10 +74,13 @@ class BaseIngress(BaseBikipy, ABC):
     ingress_defined_perimeters: dict[str, Perimeter] = {}
 
     _experiment_data_defined: bool = False
-    _trial_id_to_trial_class_name: dict[Hashable, str] = {}
+    _trial_id_to_trial_class_name: dict[TrialId, str] = {}
     _common_trial_keyword_arguments: dict[str, Any] = {}
-    _trial_id_to_keyword_arguments: dict[Hashable, dict[str, Any]] = defaultdict(dict)
+    _trial_id_to_keyword_arguments: dict[TrialId, dict[str, Any]] = defaultdict(dict)
     _trial_class_name_to_keyword_arguments: dict[str, Any] = {}
+
+    _trial_id_to_designator_id: dict[str, str] = {}
+    _designator_id_to_kwargs: dict[str, dict] = defaultdict(dict)
 
     ingress_method: ClassVar[str]
 
@@ -122,11 +127,11 @@ class BaseIngress(BaseBikipy, ABC):
             )
             raise ValueError(msg)
 
+        if self.settings["ingress"]["trial_sequence_repetitions"]:
+            experiment = experiment.trial_sequence_repetition(self.settings["ingress"]["trial_sequence_repetitions"])
+
         if self.settings["ingress"][FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD]:
             experiment = experiment.set_first_trial_to_habituation()
-
-        if self.settings["ingress"]["manual_trial_sequence_repetitions"]:
-            experiment.trial_sequence_repetition = self.settings["ingress"]["manual_trial_sequence_repetitions"]
 
         return experiment
 
@@ -380,9 +385,13 @@ class BaseIngress(BaseBikipy, ABC):
 
     # Constants =============================
 
-    @cached_property
+    @property
     def framewise_coordinates_file_suffix(self):
         return self.settings["ingress"]["framewise_coordinates_file_suffix"]
+
+    @property
+    def metadata_trial_ids_are_higher_level(self):
+        return self.settings["ingress"][METADATA_TRIAL_IDS_ARE_HIGHER_LEVEL_FIELD]
 
     # Backend functions =================================
 
@@ -397,6 +406,12 @@ class BaseIngress(BaseBikipy, ABC):
                 data_path=first_file, ingress=self
             ).globally_defined
 
+        metadata_trial_target_dict = (
+            self._designator_id_to_kwargs
+            if self.metadata_trial_ids_are_higher_level
+            else self._trial_id_to_keyword_arguments
+        )
+
         for plugin_model in self._metadata_plugins:
             label_to_file_path = {
                 file_path.stem.split("-")[-1]: file_path
@@ -408,7 +423,7 @@ class BaseIngress(BaseBikipy, ABC):
                     if isinstance(trial_id_plugin_label, float) and np.isnan(trial_id_plugin_label):
                         continue
 
-                    self._trial_id_to_keyword_arguments[trial_id][plugin_model.bikipy_trial_key] = plugin_model(
+                    metadata_trial_target_dict[trial_id][plugin_model.bikipy_trial_key] = plugin_model(
                         data_path=label_to_file_path[str(trial_id_plugin_label)], ingress=self
                     ).trialwise_and_metadata(trial_id)
 
@@ -417,9 +432,9 @@ class BaseIngress(BaseBikipy, ABC):
                         if isinstance(trial_id_plugin_label, float) and np.isnan(trial_id_plugin_label):
                             continue
                         if plugin_model.human_readable_index in key:
-                            self._trial_id_to_keyword_arguments[trial_id][key] = plugin_model(
+                            metadata_trial_target_dict[trial_id][underscore(key)] = plugin_model(
                                 data_path=label_to_file_path[str(trial_id_plugin_label)], ingress=self
-                            ).trialwise_and_metadata(trial_id)
+                            ).trialwise_and_metadata(trial_id, naive=True)
 
                 else:
                     msg = (
@@ -448,7 +463,7 @@ class BaseIngress(BaseBikipy, ABC):
                 global_reader_kwargs[key] = value
         if "defined" in self.settings["reader_kwargs"] and self.settings["reader_kwargs"]["defined"]:
             global_reader_kwargs.update(self.settings["reader_kwargs"]["defined"])
-        assert global_reader_kwargs, "reader_kwargs must be defined"
+        # assert global_reader_kwargs, "reader_kwargs must be defined"
         self._common_trial_keyword_arguments["reader_kwargs"] = global_reader_kwargs
 
         if self.experiment_class.has_stages:
@@ -465,6 +480,17 @@ class BaseIngress(BaseBikipy, ABC):
                         self._trial_class_name_to_keyword_arguments[trial_class_name][field] = value
 
         self._experiment_data_defined = True
+
+    def trial_id_exists(self, trial_id: TrialId) -> bool:
+        if trial_id in self.metadata.index:
+            return True
+        if self.settings["ingress"][METADATA_TRIAL_IDS_ARE_HIGHER_LEVEL_FIELD] and isinstance(trial_id, str):
+            for designator_id in self.metadata.index:
+                if designator_id in trial_id:
+                    self._trial_id_to_designator_id[trial_id] = designator_id
+                    return True
+
+        return False
 
     @cached_property
     def experiment(self) -> "Experiment":
@@ -501,6 +527,9 @@ class BaseIngress(BaseBikipy, ABC):
 
     @cached_property
     def trial_label_to_df(self) -> dict[str | PositiveInt, pd.DataFrame]:
+        if self.metadata_trial_ids_are_higher_level:
+            return self.experiment.trial_label_to_df
+
         result = {}
         for trial_label, analysis_df in self.experiment.trial_label_to_df.items():
             metadata = (
@@ -720,7 +749,6 @@ def init_settings(
     logger.info(f"Generating experiment configuration at {project_root_directory}")
 
     experiment_class = EXPERIMENT_NAME_TO_CLASS[experiment_name]
-    experiment_class._ignore_unset_trial_sequence_repetition = True
 
     if framewise_coordinates_file_suffix[0] != ".":
         framewise_coordinates_file_suffix = f".{framewise_coordinates_file_suffix}"
@@ -729,7 +757,8 @@ def init_settings(
         "ingress": {
             "method": ingress_method,
             FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD: False,
-            "manual_trial_sequence_repetitions": None,
+            METADATA_TRIAL_IDS_ARE_HIGHER_LEVEL_FIELD: False,
+            "trial_sequence_repetitions": None,
             "framewise_coordinates_file_suffix": framewise_coordinates_file_suffix,
             "minimum_frame_length": 500,
             "dataset_directory": None,

@@ -86,25 +86,27 @@ class BaseTrial(Behaviour):
         "meters_per_pixel_from_perimeter_source",
     )
     meters_per_pixel_from_perimeter_source: Literal["side", "diagonal", "diameter", "radius", None] = Field(
+        None,
         description="The perimeter attribute that will be used to derive meters_per_pixel. Supported sources with "
         "respect to SinglePerimeter type:\n"
         "Polygon: To be decided\n"
         "Regular polygon (every side has equal length): side\n"
         "Rectangle: diagonal\n"
-        "Circle: diameter, radius\n"
+        "Circle: diameter, radius\n",
     )
     length_meters_of_meters_per_pixel_source: Optional[float]
-    manual_perimeter_to_derive_meters_per_pixel: str
-    _fallback_perimeter_to_derive_meters_per_pixel: ClassVar[Optional[SinglePerimeter]]
+    manual_perimeter_to_derive_meters_per_pixel: Optional[str]
+
+    # Class variables
+    category = "trial"
+
+    perimeter_labels: ClassVar[set[str]] = set()
     _label_to_perimeter: ClassVar[dict[str, SinglePerimeter] | None]
 
     # Variables for trials with zones, see doc for more info.
     trial_start_perimeter: Optional[str]
 
     required_video_metadata_fields = {"meters_per_pixel", "recording_resolution", "fps"}
-
-    # Class variables
-    category = "trial"
 
     experiment_class_name: ClassVar[str] = ...
     trial_label: ClassVar[str] = ...
@@ -120,10 +122,22 @@ class BaseTrial(Behaviour):
         be recorded in this class-property to be excluded by the settings generator function in the ingress module
         :return:
         """
-        unionize = {"framewise_coordinates_path", "coordinate_timestamp_set_path", "reader_kwargs", "animal_id"}
+        return {
+            "framewise_coordinates_path",
+            "coordinate_timestamp_set_path",
+            "reader_kwargs",
+            "animal_id",
+            *cls.perimeter_physical_object_labels,
+            *super().exclude_from_settings_schema,
+        }
+
+    @classmethod
+    @property
+    def perimeter_physical_object_labels(cls) -> set[str]:
+        result = cls.perimeter_labels
         if hasattr(cls, "physical_object_labels"):
-            unionize = unionize.union(cls.physical_object_labels)
-        return super().exclude_from_settings_schema.union(unionize)
+            result = result.union(cls.physical_object_labels)
+        return result
 
     @classmethod
     @property
@@ -141,7 +155,6 @@ class BaseTrial(Behaviour):
                 # self._label_to_perimeter is None -> TypeError
                 msg = f"The class, {self.__class__.__name__}, does not define _label_to_perimeter, which makes the mapping of manual_perimeter_to_derive_meters_per_pixel to a Perimeter object impossible"
                 raise AttributeError(msg)
-        return self._fallback_perimeter_to_derive_meters_per_pixel
 
     @cached_property
     def manual_center_meters(self) -> NDArrayFp64 | None:
@@ -268,10 +281,15 @@ class BaseTrial(Behaviour):
         return round(self.second_tolerance * self.video.fps)
 
     def _post_analysis_flush(self) -> None:
-        self.reader.flush_reads()
+        # self.reader.flush_reads()
+        pass
 
 
 Trial = TypeVar("Trial", bound=BaseTrial)
+
+
+class HabituationTrialMixin(BaseModel):
+    trial_label = "Habituation"
 
 
 class BaseExperiment(Behaviour):
@@ -298,13 +316,14 @@ class BaseExperiment(Behaviour):
     )
     _first_trial_is_habituation: ClassVar[bool] = False
 
-    # "Used when performing operations that don't include experiment analysis. Introduced specifically for ingress"
-    _ignore_unset_trial_sequence_repetition: ClassVar[bool] = False
-    trial_classes: ClassVar[tuple[Trial, ...]] = Field(
-        ..., description="Trial classes designed for this experiment class"
-    )
-    # "Number of times that the sequence in trial_classes is repeated"
-    trial_sequence_repetition: ClassVar[int] = 1
+    # "Sequence of trial classes designed for the experiment class"
+    trial_sequence: ClassVar[tuple[Trial, ...]] = ...
+
+    @classmethod
+    @property
+    def trial_classes(cls) -> set[Trial]:
+        """All trials designed for the experiment class"""
+        return set(cls.trial_sequence)
 
     @classmethod
     @property
@@ -324,21 +343,6 @@ class BaseExperiment(Behaviour):
             }
         )
 
-    @classmethod
-    @property
-    def trial_sequence(cls) -> tuple[Trial, ...]:
-        try:
-            return cls.trial_sequence_repetition * cls.trial_classes
-        except TypeError:
-            if cls._ignore_unset_trial_sequence_repetition:
-                logger.warning(
-                    f"{cls.__name__}.trial_sequence_repetition is unset! "
-                    f"You can ignore this warning if the current runtime isn't for analysis"
-                )
-                return cls.trial_classes
-            msg = f"{cls.__name__}.trial_sequence_repetition has to be set"
-            raise ValueError(msg)
-
     @validator("trial_id_to_trial_class_name")
     def sort_trial_id_to_trial_class_name_ascending(cls, value):
         return dict(sorted(value.items()))
@@ -355,6 +359,11 @@ class BaseExperiment(Behaviour):
         super().save()
 
     @classmethod
+    def trial_sequence_repetition(cls, repetitions: int) -> "Experiment":
+        cls.trial_sequence = tuple(cls.trial_classes) * repetitions
+        return cls
+
+    @classmethod
     def set_first_trial_to_habituation(cls) -> "Experiment":
         if not cls.habituation_trial_class:
             msg = f"Habituation trial class for {cls.__name__} has not been defined, contact the maintainers"
@@ -364,7 +373,7 @@ class BaseExperiment(Behaviour):
             raise AttributeError(msg)
 
         cls.habituation_trial_class.experiment_class_name = cls.__name__
-        cls.trial_classes = (cls.habituation_trial_class, *cls.trial_classes)
+        cls.trial_sequence = (cls.habituation_trial_class, *cls.trial_classes)
         cls._first_trial_is_habituation = True
 
         return cls
@@ -753,10 +762,6 @@ class BaseExperiment(Behaviour):
 
 
 Experiment = TypeVar("Experiment", bound=BaseExperiment)
-
-
-class HabituationTrialMixin(BaseModel):
-    trial_label = "Habituation"
 
 
 def compute_trial_series_and_destroy_trial(trial_obj: Trial) -> pd.Series:

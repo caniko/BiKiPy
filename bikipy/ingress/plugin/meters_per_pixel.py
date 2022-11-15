@@ -74,7 +74,7 @@ class PluginMeterPerPixel(BasePluginFile):
                 msg = f"Method {self.annotation_method} is not supported"
                 raise NotImplementedError(msg)
 
-    def trialwise_and_metadata(self, trial_id: TrialId) -> float:
+    def trialwise_and_metadata(self, trial_id: TrialId, naive: bool = False) -> float:
         return self.ratio
 
     @property

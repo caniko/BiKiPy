@@ -18,7 +18,7 @@ class PluginCenter(BasePluginFile):
     def only_center(self) -> NDArrayFp64:
         return get_only_point_from_makesense(self.data_path)
 
-    def trialwise_and_metadata(self, trial_id: TrialId) -> NDArrayFp64:
+    def trialwise_and_metadata(self, trial_id: TrialId, naive: bool = False) -> NDArrayFp64:
         return self.only_center
 
     @property

@@ -24,7 +24,7 @@ class PluginVideo(BasePlugin):
             video_path=self.data_path, minimum_frame_length=self.ingress.settings["ingress"]["minimum_frame_length"]
         )
 
-    def trialwise_and_metadata(self, trial_id: TrialId) -> VideoMetadata:
+    def trialwise_and_metadata(self, trial_id: TrialId, naive: bool = False) -> VideoMetadata:
         return self.video
 
     @property

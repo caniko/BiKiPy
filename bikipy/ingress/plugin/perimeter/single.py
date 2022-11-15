@@ -3,7 +3,6 @@ from logging import getLogger
 from pathlib import Path
 from typing import Optional
 
-import cv2
 import matplotlib.pyplot as plt
 import pandas as pd
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
@@ -88,7 +87,9 @@ class PluginSinglePerimeter(BasePluginFile, HasReferenceMixin):
 
         return result
 
-    def trialwise_and_metadata(self, trial_id: TrialId) -> dict[str, SinglePerimeter]:
+    def trialwise_and_metadata(
+        self, trial_id: TrialId, naive: bool = False
+    ) -> dict[str, SinglePerimeter] | SinglePerimeter:
         result = {}
         for label, perimeter in self.perimeter_mapper(trial_id).items():
             if self.label_to_trial_label_df is not None:
@@ -104,6 +105,8 @@ class PluginSinglePerimeter(BasePluginFile, HasReferenceMixin):
                 self.ingress.ingress_defined_perimeters[self.label] = {}
             self.ingress.ingress_defined_perimeters[self.label][label] = perimeter
 
+        if naive:
+            return next(iter(result.values()))
         return result
 
     @property

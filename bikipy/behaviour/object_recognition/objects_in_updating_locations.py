@@ -19,7 +19,7 @@ from bikipy.behaviour.core.enclosure.rectangle import (
     RectangleEnclosedExperiment,
     RectangleEnclosedHabituationTrial,
 )
-from bikipy.behaviour.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
+from bikipy.behaviour.core.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
 from bikipy.perimeter.base import SinglePerimeter
 
 
@@ -27,7 +27,7 @@ class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTri
     object_1: SinglePerimeter = ...
     object_2: SinglePerimeter = ...
 
-    physical_object_labels = ("object_1", "object_2")
+    physical_object_labels = {"object_1", "object_2"}
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     trial_label = "Training"
@@ -41,7 +41,7 @@ class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial
     object_1: SinglePerimeter = ...
     object_3: SinglePerimeter = ...
 
-    physical_object_labels = ("object_1", "object_3")
+    physical_object_labels = {"object_1", "object_3"}
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     trial_label = "Update"
@@ -57,7 +57,7 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
     object_3: SinglePerimeter = ...
     object_4: SinglePerimeter = ...
 
-    physical_object_labels = ("object_1", "object_2", "object_3", "object_4")
+    physical_object_labels = {"object_1", "object_2", "object_3", "object_4"}
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     trial_label = "Test"
@@ -75,7 +75,7 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
 class ObjectsInUpdatingLocationsExperiment(RectangleEnclosedExperiment):
     habituation_trial_class = RectangleEnclosedHabituationTrial
 
-    trial_classes = (
+    trial_sequence = (
         ObjectsInUpdatingLocationsTrainingTrial,
         ObjectsInUpdatingLocationsUpdateTrial,
         ObjectsInUpdatingLocationsTestTrial,
