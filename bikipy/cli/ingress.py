@@ -5,7 +5,7 @@ from typing import Optional
 import click
 from pydantic import DirectoryPath, validate_arguments
 
-from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
+from bikipy.behaviour.mapping import experiment_name_to_class
 from bikipy.cli import cli_root
 from bikipy.ingress.workflow.base import (
     analyze_and_save,
@@ -22,7 +22,7 @@ def ingress():
 @ingress.command()
 @click.argument("ingress_method")
 @click.option(
-    "-e", "--experiment_name", help=f"Name of experiment. Choose from:\n{', '.join(EXPERIMENT_NAME_TO_CLASS.keys())}"
+    "-e", "--experiment_name", help=f"Name of experiment. Choose from:\n{', '.join(experiment_name_to_class.keys())}"
 )
 @click.option(
     "-p",

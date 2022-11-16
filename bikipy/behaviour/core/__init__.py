@@ -142,9 +142,9 @@ class BaseTrial(Behaviour):
     @classmethod
     @property
     def experiment_class(cls) -> "Experiment":
-        from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
+        from bikipy.behaviour.mapping import experiment_name_to_class
 
-        return EXPERIMENT_NAME_TO_CLASS[cls.experiment_class_name]
+        return experiment_name_to_class[cls.experiment_class_name]
 
     @property
     def perimeter_to_derive_meters_per_pixel(self) -> Perimeter:
@@ -310,6 +310,8 @@ class BaseExperiment(Behaviour):
     skip_habituation: bool = Field(
         False, description="Skip the habituation class during analysis, practically skipping the the habituation class"
     )
+
+    experiment_labels: ClassVar[set[str]] = ...
 
     habituation_trial_class: ClassVar[Optional[Trial]] = Field(
         description="The trial class that will be used in case set_first_trial_to_habituation is called"

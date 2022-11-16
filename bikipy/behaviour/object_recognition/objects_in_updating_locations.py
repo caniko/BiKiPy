@@ -73,8 +73,9 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
 
 
 class ObjectsInUpdatingLocationsExperiment(RectangleEnclosedExperiment):
-    habituation_trial_class = RectangleEnclosedHabituationTrial
+    experiment_labels = {"oul", "objects_in_updating_locations"}
 
+    habituation_trial_class = RectangleEnclosedHabituationTrial
     trial_sequence = (
         ObjectsInUpdatingLocationsTrainingTrial,
         ObjectsInUpdatingLocationsUpdateTrial,

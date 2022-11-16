@@ -91,8 +91,9 @@ class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
 
 
 class NortExperiment(RectangleEnclosedExperiment):
-    habituation_trial_class = RectangleEnclosedHabituationTrial
+    experiment_labels = {"nort", "novel_object_recognition_test"}
 
+    habituation_trial_class = RectangleEnclosedHabituationTrial
     trial_sequence = (NortTrainingTrial, NortNoveltyTrial)
 
     experiment_stage_name_to_stage_index: ClassVar[dict[str, int]] = {

@@ -20,4 +20,6 @@ class YMazeTrial(BaseYMaze, BaseRadialMazeTrial):
 
 
 class YMazeExperiment(BaseYMaze, BaseRadialMazeExperiment):
+    experiment_labels = {"ymaze", "y_maze"}
+
     trial_sequence = (YMazeTrial,)

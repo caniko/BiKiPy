@@ -304,6 +304,19 @@ class RectangleEnclosedHabituationTrial(HabituationTrialMixin, RectangleEnclosed
     pass
 
 
+class GenericRectangleEnclosedTrial(RectangleEnclosedTrial):
+    trial_label = "generic_rectangle_enclosed_trial"
+
+    experiment_class_name = "GenericRectangleEnclosedExperiment"
+
+
+class GenericRectangleEnclosedExperiment(RectangleEnclosedExperiment):
+    experiment_labels = {"rectangle", "rectangle_enclosed", "RectangleEnclosed"}
+
+    habituation_trial_class = RectangleEnclosedHabituationTrial
+    trial_sequence = (GenericRectangleEnclosedTrial,)
+
+
 @lru_cache
 def motion_column_headers(
     quadrant_grid_coordinates: tuple[tuple[int, int], ...], column_index_levels: int, center_periphery_is_defined: bool

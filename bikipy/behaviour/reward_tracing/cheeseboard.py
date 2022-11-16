@@ -65,6 +65,7 @@ class CheeseboardTrial(CircleEnclosedTrial):
 
 
 class CheeseboardExperiment(CircleEnclosedExperiment):
-    habituation_trial_class = CircleEnclosedHabituationTrial
+    experiment_labels = {"cheeseboard"}
 
+    habituation_trial_class = CircleEnclosedHabituationTrial
     trial_sequence = (CheeseboardTrial,)

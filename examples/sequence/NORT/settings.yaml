@@ -1,13 +1,12 @@
 ingress:
   method: animal
   first_stage_is_habituation: false
+  metadata_trial_ids_are_higher_level: false
   trial_sequence_repetitions: null
   framewise_coordinates_file_suffix: .parquet
   minimum_frame_length: 500
   dataset_directory: /home/can/Downloads/Compressed/rosy_nort/dataset/
   profile_runtime: true
-  outdated:
-    frame_upscale_multiplier: float
 definition_strategies:
   meters_per_pixel: global
   perimeter: metadata
@@ -41,14 +40,6 @@ perimeter:
       minimum_frame_length: number
       moving_field_name: string
       recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
-      outdated:
-        image_resize_multiplier: number
-        manual_fps: number
-        manual_frame: '[{''type'': ''np.ndarray''}, {''type'': ''string'', ''format'':
-          ''file-path''}]'
-        manual_recording_resolution: np.ndarray[name='manual_recording_resolution_0'
-          type=short required=True]
-        video_path: string
 reader_kwargs:
   defined:
     midpoint_groups:
@@ -66,7 +57,6 @@ reader_kwargs:
     df_is_timestamped: boolean -> False
     df_read_kwargs: object
     export_timestamp_data_as_parquet: boolean -> False
-    filter_data: boolean -> True
     filter_kwargs: object
     filter_method: string
     fps: number
@@ -87,19 +77,17 @@ trial:
     defined:
       gaze_start_point_label: center_eye
       gaze_travel_direction_point_label: nose
-      meters_per_pixel_from_perimeter_source: null
       object_tracking_label_for_kinematics: torso
       perimeter_border_normal_meters: 0.03
+      meters_per_pixel_from_perimeter_source: null
       outside_perimeter_point_label: torso
-      outdated:
-        manual_frame: /home/can/Projects/bikipy/examples/sequence/NORT/inspect.png
-        manual_fps: 30
+      frame: /home/can/Projects/bikipy/examples/sequence/NORT/inspect.png
+      fps: 30
       physical_object_inspect: true
       maximum_radians_inter_gaze_perimeter: 0.7853981633974483
     required:
       gaze_start_point_label: string
       gaze_travel_direction_point_label: string
-      meters_per_pixel_from_perimeter_source: string
       object_tracking_label_for_kinematics: string
       perimeter_border_normal_meters: number
     optional:
@@ -125,6 +113,7 @@ trial:
       maximum_seconds_distraction: number -> 0.6666666666666666
       meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
       meters_per_pixel_from_perimeter: boolean -> False
+      meters_per_pixel_from_perimeter_source: string
       minimum_frame_length: number
       minimum_seconds_attention: number -> 0.3333333333333333
       outside_perimeter_point_label: string

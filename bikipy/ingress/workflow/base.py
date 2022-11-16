@@ -115,10 +115,10 @@ class BaseIngress(BaseBikipy, ABC):
 
     @cached_property
     def experiment_class(self) -> "Experiment":
-        from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
+        from bikipy.behaviour.mapping import experiment_name_to_class
 
         try:
-            experiment = EXPERIMENT_NAME_TO_CLASS[self.experiment_name]
+            experiment = experiment_name_to_class[self.experiment_name]
         except KeyError:
             msg = (
                 f"experiment_class in settings is set to an invalid value: "
@@ -744,11 +744,11 @@ def init_settings(
     dry_run: bool = False,
     silent: bool = False,
 ) -> dict[str, str | dict]:
-    from bikipy.behaviour.mapping import EXPERIMENT_NAME_TO_CLASS
+    from bikipy.behaviour.mapping import experiment_name_to_class
 
     logger.info(f"Generating experiment configuration at {project_root_directory}")
 
-    experiment_class = EXPERIMENT_NAME_TO_CLASS[experiment_name]
+    experiment_class = experiment_name_to_class[experiment_name]
 
     if framewise_coordinates_file_suffix[0] != ".":
         framewise_coordinates_file_suffix = f".{framewise_coordinates_file_suffix}"
