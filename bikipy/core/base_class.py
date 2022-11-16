@@ -1,5 +1,6 @@
+import os
 from functools import cached_property
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import ClassVar, Optional, TypeVar, Generic
 
 from compress_pickle import compress_pickle
@@ -66,6 +67,8 @@ class BaseBikipyInspectMixin(BaseBikipy):
         description="Path to image to use as background in the plots for visualising the analysis data",
     )
 
+    class_inspect_directory_name: ClassVar[Optional[str]]
+
     def save(self, manual_save_path: Optional[DirectoryPath] = None) -> None:
         if manual_save_path:
             save_directory_path = manual_save_path
@@ -80,21 +83,8 @@ class BaseBikipyInspectMixin(BaseBikipy):
     @cached_property
     def class_inspect_arg(self) -> InspectArg:
         if isinstance(self.inspect_arg, Path):
-            assert self.category
-            result = self.inspect_arg / self.category
+            result = self.inspect_arg / (self.class_inspect_directory_name or self.category)
             result.mkdir(exist_ok=True)
             return result
-        return bool(self.inspect_arg)
 
-    def _method_inspect_arg(self, method_name: str, with_increment: bool = False) -> InspectArg:
-        if isinstance(self.inspect_arg, bool):
-            return self.inspect_arg
-
-        directory = self.class_inspect_arg / method_name
-        directory.mkdir(exist_ok=True)
-
-        name = f"{self.label}.jpg"
-        if with_increment:
-            name = f"0-{name}"
-
-        return directory / name
+        return self.inspect_arg

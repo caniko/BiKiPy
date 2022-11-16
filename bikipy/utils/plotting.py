@@ -32,8 +32,7 @@ def generic_inspection_finalization(
         file_path = inspect_arg / potential_label if potential_label else inspect_arg
 
         if not file_path.suffix:
-            msg = f"Saving {file_path}: No file-suffix is defined"
-            raise ValueError(msg)
+            file_path = file_path.with_suffix(".jpg")
 
         if file_path.stem.split("-")[0].isdigit():
             file_path = int_file_stem_incrementor(file_path)

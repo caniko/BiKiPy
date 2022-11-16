@@ -1,6 +1,7 @@
 from abc import ABC
 from functools import cached_property
 from logging import getLogger
+from pathlib import Path
 from typing import Any, ClassVar, Optional, TypeVar, Literal
 
 import matplotlib.pyplot as plt
@@ -25,7 +26,7 @@ from bikipy.utils.math.vector import (
     rotate_vectors_with_angle,
     unit_vector,
 )
-from bikipy.utils.plotting import generic_inspection_finalization
+from bikipy.utils.plotting import generic_inspection_finalization, InspectArg
 
 logger = getLogger(__name__)
 
@@ -34,7 +35,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
     vertices_in_pixels: NDArrayFp64 = ...
     derived_meters_per_pixel_source: Literal["side", None]
 
-    category = "perimeter"
+    category = "polygon_perimeter"
 
     polygon_order: ClassVar[Optional[int]]
 
@@ -134,7 +135,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             indexable_t = closest_edge_point_to_coordinates_matrix.transpose(1, 2, 0)
 
             for i in evenly_spaced_indices_from_sequence(coordinates, 9):
-                fig, ax = plt.subplots()
+                fig, ax = self.video.subplots()
                 to_skip = []
                 for y, point in enumerate(indexable_t[i].T):
                     if y in to_skip:
@@ -164,9 +165,16 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             closest_point_on_edge_to_coordinates = self.closest_point_on_edge_to_coordinates(coordinates)
         return unit_vector(closest_point_on_edge_to_coordinates - coordinates)
 
-    def compute_confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
+    def compute_confined_coordinate_boolean_index(
+        self, coordinates: NDArrayFp64, ax: Any = None, **inspect_kwargs
+    ) -> NDArrayBool:
         return parallel_point_inside_polygon(
-            coordinates, self.metric_graph.linked_vertices, merge_ends=False, inspect_arg=self.confinement_inspect_arg
+            coordinates,
+            self.metric_graph.linked_vertices,
+            inspect_arg=self.class_inspect_arg,
+            merge_ends=False,
+            ax=ax,
+            **inspect_kwargs,
         )
 
     def ray_intersects_on_polygon(

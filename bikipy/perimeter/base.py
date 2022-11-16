@@ -2,7 +2,7 @@ from abc import abstractmethod, ABC
 from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
-from typing import Any, Literal, Optional, TypeVar, ClassVar, Callable
+from typing import Any, Literal, Optional, TypeVar
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,7 +18,7 @@ from pydantic import (
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
-from bikipy.core.typing import MetersPerPixel
+from bikipy.core.typing import TrialId
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_coco_polygon,
@@ -43,7 +43,9 @@ StringPerimeterShapes = Literal["circle", "circle_line", "circle_point", "polygo
 
 class BasePerimeter(BaseBikipyHashable, ABC):
     @abstractmethod
-    def compute_confined_coordinate_boolean_index(self, coordinates: NDArrayFp64) -> NDArrayBool:
+    def compute_confined_coordinate_boolean_index(
+        self, coordinates: NDArrayFp64, trial_id: Optional[TrialId] = None, ax: Any = None, **inspect_kwargs
+    ) -> NDArrayBool:
         ...
 
     @abstractmethod
@@ -253,14 +255,6 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
             for img_name, reference_point in img_name_to_reference_points.items()
         ]
 
-    @cached_property
-    def expand_inspect_arg(self) -> InspectArg:
-        return self._method_inspect_arg(self._method_name_inspect_arg("expand"), with_increment=True)
-
-    @cached_property
-    def confinement_inspect_arg(self) -> InspectArg:
-        return self._method_inspect_arg(self._method_name_inspect_arg("confinement"), with_increment=True)
-
     def _method_name_inspect_arg(self, method_name: str) -> str:
         if self.makesense_image_name:
             return f"{self.makesense_image_name.split('.')[0]}-{method_name}"
@@ -290,7 +284,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         Axes object with plots
         """
         if not ax:
-            fig, ax = plt.subplots()
+            fig, ax = self.video.subplots()
             ax.set_title(self.label)
 
         if self.video.frame is not None:
@@ -383,7 +377,9 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
             )
         return present
 
-    def compute_confined_coordinate_boolean_index(self, coordinates: NDArrayFp64):
+    def compute_confined_coordinate_boolean_index(
+        self, coordinates: NDArrayFp64, trial_id: Optional[TrialId] = None, ax: Any = None, **inspect_kwargs
+    ):
         return self.combined_framewise_confined_coordinates(coordinates)
 
     def change_reference(self, **perimeter_change_reference_kwargs):

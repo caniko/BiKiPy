@@ -257,7 +257,7 @@ class PhysicalObjectSet(VideoMetadataMixin):
 
     def plot(self, ax: Any = None):
         if not ax:
-            fix, ax = plt.subplots()
+            fix, ax = self.video.subplots()
         for physical_objects in self.physical_objects:
             ax = physical_objects.perimeter.plot(ax=ax)
 

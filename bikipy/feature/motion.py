@@ -202,6 +202,10 @@ class Motion(BaseBikipy):
         return self.total_displacement, self.median_speed, self.median_acceleration, self.freezing_time
 
 
+EMPTY_MOTION = np.full(4, np.nan)
+EMPTY_MOTION_WEIGHT = np.full(5, np.nan)
+
+
 @lru_cache
 def motion_multi_indexer(category: str, level: int):
     assert level >= 2, "Must be at least 2 levels"

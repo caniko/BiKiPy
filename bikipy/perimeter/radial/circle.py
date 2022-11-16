@@ -6,6 +6,8 @@ from matplotlib import pyplot as plt
 from pydantic import FilePath, validator, validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
+from bikipy import runtime_settings
+from bikipy.core.typing import TrialId
 from bikipy.feature.attention.gaze import gaze_direction_filter_circle_triangle
 from bikipy.perimeter.base import (
     BaseSinglePerimeter,
@@ -22,12 +24,15 @@ from bikipy.utils.makesense import (
 )
 from bikipy.utils.math.inside.ellipse import point_inside_ellipse
 from bikipy.utils.math.vector import unit_vector
-from bikipy.utils.plotting import generic_inspection_finalization
+from bikipy.utils.plotting import generic_inspection_finalization, InspectArg
 
 
 class CirclePerimeter(BaseSinglePerimeter):
     center_pixels: NDArrayFp64
     radius_pixels: float
+
+    category = "circle_perimeter"
+    class_inspect_directory_name = "circle"
 
     @classmethod
     @property
@@ -89,12 +94,29 @@ class CirclePerimeter(BaseSinglePerimeter):
         kwargs["radius_pixels"] += perimeter_border_normal_pixels
         return self.__class__(**kwargs)
 
-    def compute_confined_coordinate_boolean_index(self, coordinates: NDArrayFp64, *args, **kwargs):
+    def compute_confined_coordinate_boolean_index(self, coordinates: NDArrayFp64, ax: Any = None, **inspect_kwargs):
         if isinstance(self.radius_meters, float):
             distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
-            return np.abs(distance_of_point_from_center) <= self.radius_meters
+            result = np.abs(distance_of_point_from_center) <= self.radius_meters
         elif isinstance(self.radius_meters, np.ndarray):
-            return point_inside_ellipse(coordinates, self.center_meters, self.radius_meters)
+            result = point_inside_ellipse(coordinates, self.center_meters, self.radius_meters)
+        else:
+            raise RuntimeError
+
+        if self.inspect_arg:
+            if ax is None:
+                fig, ax = self.video.subplots()
+
+            ax = self.plot_perimeter(manual_ax=ax)
+
+            ax.scatter(*coordinates[result].T, label="Inside", alpha=runtime_settings.matplotlib_scatter_alpha)
+            ax.scatter(*coordinates[~result].T, label="Outside", alpha=runtime_settings.matplotlib_scatter_alpha)
+
+            ax.legend()
+
+            generic_inspection_finalization(self.class_inspect_arg, **inspect_kwargs)
+
+        return result
 
     def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> NDArrayFp64:
         return self.center_meters + self.radius_meters * unit_vector(self.vector_to_closest_point_on_edge(coordinates))
@@ -121,7 +143,7 @@ class CirclePerimeter(BaseSinglePerimeter):
         **plot_kwargs,
     ):
         if not manual_ax:
-            fig, ax = plt.subplots()
+            fig, ax = self.video.subplots()
         else:
             ax = manual_ax
 

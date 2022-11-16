@@ -8,7 +8,7 @@ from bikipy.behaviour.core.enclosure.rectangle import (
     RectangleEnclosedExperiment,
     RectangleEnclosedHabituationTrial,
 )
-from bikipy.behaviour.core.mixin.physical_object import RectangleEnclosedPhysicalObjectTrial
+from bikipy.behaviour.object_recognition.physical_object import RectangleEnclosedPhysicalObjectTrial
 from bikipy.core.typing import TrialId
 from bikipy.perimeter.base import SinglePerimeter
 
@@ -25,7 +25,7 @@ class NortTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
     trial_label = "Training"
 
     @property
-    def all_physical_object_perimeters(self):
+    def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.variable, self.familiar
 
 
@@ -58,7 +58,7 @@ class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
         return upstream_list
 
     @property
-    def all_physical_object_perimeters(self):
+    def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.novel, self.familiar
 
     @cached_property

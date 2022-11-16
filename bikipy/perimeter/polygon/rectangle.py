@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Literal
+from typing import Literal, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,6 +17,8 @@ class RectanglePerimeter(BasePolygonPerimeter):
 
     polygon_order = 4
 
+    class_inspect_directory_name = "rectangle"
+
     @property
     def derived_meters_per_pixel(self) -> float:
         if upstream := super().derived_meters_per_pixel:
@@ -26,7 +28,9 @@ class RectanglePerimeter(BasePolygonPerimeter):
                 self.vertices_in_pixels.edge_lengths[0] - self.vertices_in_pixels.edge_lengths[2]
             )
 
-    def expand(self, perimeter_border_normal_pixels: float | NDArrayFp64) -> "RectanglePerimeter":
+    def expand(
+        self, perimeter_border_normal_pixels: float | NDArrayFp64, ax: Any = None, **inspect_kwargs
+    ) -> "RectanglePerimeter":
         result = self.__class__(
             vertices_in_pixels=expand_rectangle(
                 self.vertices_in_pixels,
@@ -37,14 +41,15 @@ class RectanglePerimeter(BasePolygonPerimeter):
         )
 
         if self.inspect_arg:
-            fig, ax = plt.subplots()
-            ax.set_title("ExpandPerimeter")
+            if ax is None:
+                fig, ax = self.video.subplots()
+                ax.set_title("ExpandPerimeter")
 
             self.plot_perimeter(manual_ax=ax, label="Original")
             result.plot_perimeter(manual_ax=ax, label="Expanded")
 
             ax.legend()
 
-            generic_inspection_finalization(self.expand_inspect_arg)
+            generic_inspection_finalization(self.class_inspect_arg / "expand", **inspect_kwargs)
 
         return result

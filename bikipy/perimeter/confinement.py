@@ -73,6 +73,7 @@ def detect_multi_node_sequential_perimeter_presence(
     clean_outliers: bool = True,
     inspect_arg: InspectArg = False,
     inspect_coords: Optional[NDArrayFp64] = None,
+    **inspect_kwargs,
 ) -> NDArrayBool:
     number_of_perimeters = len(inferior_to_superior_perimeter_instances)
 
@@ -130,7 +131,7 @@ def detect_multi_node_sequential_perimeter_presence(
 
         ax.legend(**BOTTOM_LEGEND_KWARGS)
         fig.tight_layout()
-        generic_inspection_finalization(inspect_arg, f"0-{label}.jpg")
+        generic_inspection_finalization(inspect_arg, f"0-{label}.jpg", **inspect_kwargs)
 
     if clean_outliers:
         presence = presence[valid_indices]

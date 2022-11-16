@@ -3,7 +3,7 @@ from logging import getLogger
 from math import floor
 
 from bikipy.behaviour.core import BaseTrial
-from bikipy.behaviour.core.mixin import LiveTrial
+from bikipy.behaviour.live import LiveTrial
 from bikipy.perimeter.base import SinglePerimeter
 
 logger = getLogger(__name__)

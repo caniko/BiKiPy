@@ -123,7 +123,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             for quadrant_index, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items()
         }
         if self.inspect_arg:
-            fig, ax = plt.subplots()
+            fig, ax = self.video.subplots()
             ax.set_title(f"Quadrants_Trial_#{self.label}")
 
             confined = np.zeros(self.reader.frames, dtype=bool)

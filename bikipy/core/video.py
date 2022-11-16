@@ -5,11 +5,13 @@ Purpose of VideoMetadataMixin
 Classes that define videos should have this mixin: VideoMetadata, BaseExperiment, and BaseTrial. This class is
 bare metadata, and its purpose is to either initialize or relay an existing VideoMetadata object
 """
+from collections.abc import Iterable
 from functools import cached_property, partial
 from logging import getLogger
 from typing import ClassVar, Optional
 
 import cv2
+import matplotlib.pyplot as plt
 import mextractor
 import numpy as np
 from mextractor.extractors import extract_video
@@ -217,6 +219,20 @@ class VideoMetadata(_VideoMetadataBase):
     @cached_property
     def plotting_line_thickness(self) -> float:
         return self.plotting_default_font_size / 10.0
+
+    def subplots(self, *args, **kwargs) -> tuple:
+        fig, axes = plt.subplots(*args, **kwargs)
+        if self.frame is None:
+            logger.debug("Video object was used to make subplot, but no frame was defined. Figure got no background.")
+            return fig, axes
+
+        if not isinstance(axes, Iterable):
+            axes = [axes]
+
+        for ax in np.array(axes).flatten():
+            ax.imshow(self.frame)
+
+        return fig, axes
 
 
 class VideoMetadataMixin(_VideoMetadataBase):
