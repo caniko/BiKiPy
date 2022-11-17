@@ -1,8 +1,11 @@
+from functools import lru_cache
 from logging import getLogger
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
+import numpy as np
 import seaborn
+from matplotlib import cm
 from matplotlib import pyplot as plt
 from pydantic import validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
@@ -48,6 +51,11 @@ def generic_inspection_finalization(
             plt.show()
 
 
+@lru_cache
+def cmap(n: int):
+    return tuple(cm.cool(x) for x in np.linspace(0.0, 1.0, n))
+
+
 def plot_coordinates(
     coordinates: NDArrayFp64,
     ax: Any = None,
@@ -62,7 +70,7 @@ def plot_coordinates(
     if video.image_resize_multiplier:
         coordinates = coordinates * video.image_resize_multiplier
 
-    ax.scatter(*coordinates.T, **plot_kwargs)
+    ax.plot(*coordinates.T, color=cmap(len(coordinates)), **plot_kwargs)
 
     return ax
 

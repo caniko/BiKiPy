@@ -31,7 +31,6 @@ from bikipy.utils.image import axis_frame_imshow
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
 from bikipy.utils.plotting import (
     BOTTOM_LEGEND_KWARGS,
-    InspectArg,
     generic_inspection_finalization,
     plot_coordinates,
 )
