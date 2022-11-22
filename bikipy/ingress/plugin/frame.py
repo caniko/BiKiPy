@@ -13,7 +13,7 @@ class PluginFrame(BasePlugin):
 
     ingress_key = "frame"
     code_key = "frame"
-    bikipy_trial_key = "manual_frame"
+    bikipy_trial_key = "frame"
     human_readable_index = "Frame"
 
     @cached_property

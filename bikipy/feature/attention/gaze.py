@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy import runtime_settings
-from bikipy.core.video import VideoMetadata, prepare_data_for_plotting
+from bikipy.core.video import VideoMetadata
 from bikipy.feature.angle import angle_from_a_to_b
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.utils.math.vector import unit_vector
@@ -56,8 +56,8 @@ def gaze_inspection_plot(
     else:
         ax = manual_ax
 
-    gaze_travel_direction_point = prepare_data_for_plotting(gaze_travel_direction_point, inspect_pixels, inspect_video)
-    gaze_vectors = prepare_data_for_plotting(gaze_vectors, inspect_pixels, inspect_video)
+    gaze_travel_direction_point = inspect_video.prepare_data_for_plotting(gaze_travel_direction_point, inspect_pixels)
+    gaze_vectors = inspect_video.prepare_data_for_plotting(gaze_vectors, inspect_pixels)
 
     if inspect_pixels:
         inspect_video.upscaled_video.ax_ticks_metric_to_pixel(ax)

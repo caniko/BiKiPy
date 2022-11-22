@@ -135,7 +135,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             indexable_t = closest_edge_point_to_coordinates_matrix.transpose(1, 2, 0)
 
             for i in evenly_spaced_indices_from_sequence(coordinates, 9):
-                fig, ax = self.video.subplots()
+                fig, ax, _ = self.video.subplots()
                 to_skip = []
                 for y, point in enumerate(indexable_t[i].T):
                     if y in to_skip:

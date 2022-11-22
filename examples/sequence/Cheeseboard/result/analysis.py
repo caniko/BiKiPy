@@ -32,7 +32,7 @@ for cm_directory in os.listdir():
             animal = int(animal)
             day_day_id = f"{day}_{daily_id}"
             if day_day_id == "6_1" or day_day_id == "13_1":
-                probe_records[(animal, day_day_id)] = row
+                probe_records[(animal, day)] = row
             else:
                 day = int(day)
                 reward_trace_raw[animal][day].append(row[("Cheeseboard", "RewardTraceSeconds")])
@@ -43,7 +43,7 @@ for cm_directory in os.listdir():
             result = defaultdict(dict)
             for animal, days in raw_data.items():
                 for day, data in days.items():
-                    result[(animal, day)] = np.nanmean(data)
+                    result[(animal, int(day))] = np.nanmean(data)
             return result
 
         reward_trace_records = pd.DataFrame.from_dict(
@@ -56,7 +56,16 @@ for cm_directory in os.listdir():
             average_day(distance_raw), orient="index", columns=["DistanceToReward"]
         )
 
-        df = pd.concat([reward_trace_records, in_reward_area_records, distance_records], axis=1, join="inner")
-        df.index = pd.MultiIndex.from_tuples(df.index, names=("Animal", "Day"))
+        find_reward_df = pd.concat(
+            [reward_trace_records, in_reward_area_records, distance_records], axis=1, join="inner"
+        )
+        find_reward_df.index = pd.MultiIndex.from_tuples(find_reward_df.index, names=("Animal", "Day"))
+        find_reward_df.sort_index(inplace=True)
 
-        df.to_excel(f"{directory}/result.xlsx")
+        probe_df = pd.DataFrame.from_dict(probe_records, orient="index")
+        probe_df.index = pd.MultiIndex.from_tuples(probe_df.index, names=("Animal", "Day"))
+        probe_df.sort_index(ascending=[True, False], inplace=True)
+
+        with pd.ExcelWriter(f"{directory}/result.xlsx") as writer:
+            find_reward_df.to_excel(writer, sheet_name="find_reward")
+            probe_df.to_excel(writer, sheet_name="probe")

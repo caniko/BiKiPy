@@ -21,7 +21,6 @@ from bikipy.core.typing import TrialId
 from bikipy.core.video import (
     VideoMetadata,
     VideoMetadataMixin,
-    prepare_data_for_plotting,
 )
 from bikipy.feature.attention.proximity import proximity_filter
 from bikipy.feature.physical_object.single import PhysicalObject

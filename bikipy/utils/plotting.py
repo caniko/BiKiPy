@@ -63,9 +63,7 @@ def plot_coordinates(
     video: Optional["VideoMetadata"] = None,
     **plot_kwargs,
 ):
-    from bikipy.core.video import prepare_data_for_plotting
-
-    coordinates = prepare_data_for_plotting(coordinates, inspect_pixels, video)
+    coordinates = video.prepare_data_for_plotting(coordinates, inspect_pixels)
 
     if video.image_resize_multiplier:
         coordinates = coordinates * video.image_resize_multiplier

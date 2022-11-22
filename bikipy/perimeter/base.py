@@ -283,7 +283,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         Axes object with plots
         """
         if not ax:
-            fig, ax = self.video.subplots()
+            fig, ax, _ = self.video.subplots()
             ax.set_title(self.label)
 
         if self.video.frame is not None:

@@ -52,8 +52,9 @@ def get_inspect_directory_path(project_root_directory: DirectoryPath) -> Directo
 
     if not runtime_settings.ignore_pre_existing_inspection_directory and result.exists():
         already_exists_prompt = input(
-            f"Inspection directory, {result}, already exists."
-            f"Proceeding would result in deletion of directory tree. Would you like to proceed? y/N"
+            f"Inspection directory, {result}, already exists. "
+            "Proceeding would result in deletion of directory tree. "
+            "Would you like to proceed? y/N "
         )
         if already_exists_prompt.strip().lower() != "y":
             import sys

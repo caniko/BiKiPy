@@ -16,7 +16,6 @@ from bikipy.core.typing import TrialId
 from bikipy.core.video import (
     VideoMetadata,
     VideoMetadataMixin,
-    prepare_data_for_plotting,
 )
 from bikipy.feature.attention.proximity import proximity_filter
 from bikipy.feature.tolerance.single import single_node_tolerance_filter
@@ -138,8 +137,8 @@ class PhysicalObject(BaseBikipyInspectMixin):
     def inspect_attention(self):
         self._exporting_figure = True
 
-        gaze_travel_direction_point = prepare_data_for_plotting(
-            self._gaze_travel_direction_point, self._inspect_pixels, self.video
+        gaze_travel_direction_point = self.video.prepare_data_for_plotting(
+            self._gaze_travel_direction_point, self._inspect_pixels
         )
 
         self.attention_axes[1][0].scatter(

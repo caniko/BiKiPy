@@ -22,7 +22,7 @@ from bikipy.utils.makesense import (
 )
 from bikipy.utils.math.inside.ellipse import point_inside_ellipse
 from bikipy.utils.math.vector import unit_vector
-from bikipy.utils.plotting import generic_inspection_finalization, InspectArg
+from bikipy.utils.plotting import generic_inspection_finalization
 
 
 class CirclePerimeter(BaseSinglePerimeter):
@@ -103,7 +103,7 @@ class CirclePerimeter(BaseSinglePerimeter):
 
         if self.inspect_arg:
             if ax is None:
-                fig, ax = self.video.subplots()
+                fig, ax, coordinates = self.video.subplots(coordinates=coordinates)
 
             ax = self.plot_perimeter(manual_ax=ax)
 
@@ -141,7 +141,7 @@ class CirclePerimeter(BaseSinglePerimeter):
         **plot_kwargs,
     ):
         if not manual_ax:
-            fig, ax = self.video.subplots()
+            fig, ax, _ = self.video.subplots()
         else:
             ax = manual_ax
 

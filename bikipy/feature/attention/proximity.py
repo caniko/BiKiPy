@@ -11,7 +11,6 @@ from bikipy import runtime_settings
 from bikipy.core.video import (
     VideoMetadata,
     inspect_video_is_none_during_inspection,
-    prepare_data_for_plotting,
 )
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.utils.image import axis_frame_imshow
@@ -73,8 +72,8 @@ def proximity_filter(
         else:
             ax = manual_ax
 
-        inside_perimeter_border_plot_scaled = prepare_data_for_plotting(
-            inside_perimeter_border, inspect_pixels, inspect_video
+        inside_perimeter_border_plot_scaled = inspect_video.prepare_data_for_plotting(
+            inside_perimeter_border, inspect_pixels
         )
 
         if inspect_pixels:
