@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 
-for directory in ("no_tol", "tol"):
+for directory in ("circle-5cm/no_tol", "circle-5cm/tol", "circle-10cm/no_tol", "circle-10cm/tol"):
     df = pd.read_parquet(f"{directory}/cheeseboard_reward_trace-cheeseboard.parquet")
 
     dict_dict_list = partial(defaultdict, list)
