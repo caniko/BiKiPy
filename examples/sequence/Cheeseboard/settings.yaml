@@ -5,7 +5,7 @@ ingress:
   trial_sequence_repetitions: null
   framewise_coordinates_file_suffix: .parquet
   minimum_frame_length: 500
-  dataset_directory: /mnt/bigbrain/Chrys_Behavior_Analysis/cheeseboard/dataset
+  dataset_directory: /data/behaviour_dataset/Chrys_Behavior_Analysis/cheeseboard_dataset_plugins/dataset
   profile_runtime: true
 definition_strategies:
   meters_per_pixel: metadata
@@ -74,8 +74,13 @@ trial:
   common:
     defined:
       object_tracking_label_for_kinematics: center_eye
+      tolerate_boolean_index: false
+      reward_perimeter: null
+      start_perimeter: null
     required:
       object_tracking_label_for_kinematics: string
+      reward_perimeter: None
+      start_perimeter: None
     optional:
       category: string -> video_metadata
       coordinate_timestamp_set: np.ndarray
@@ -84,8 +89,7 @@ trial:
       data_format_label: string -> deeplabcut
       fps: number
       frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'': ''uint8''}]'
-      inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]
-        -> False'
+      inspect_arg: '[{''type'': ''string'', ''format'': ''path''}, {''type'': ''boolean''}]'
       inspect_image_path: string
       length_meters_of_meters_per_pixel_source: number
       manual_center_pixels: np.ndarray[name='manual_center_pixels_0' type=short required=True]
@@ -96,9 +100,11 @@ trial:
       meters_per_pixel_from_perimeter: boolean -> False
       meters_per_pixel_from_perimeter_source: string
       minimum_frame_length: number
+      perimeter_labels: array -> ['reward_perimeter', 'start_perimeter']
       recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
       rigid_nodes_freezing: array
       temporal_tolerance: number -> 0.3333333333333333
+      tolerate_boolean_index: boolean -> True
       trial_start_perimeter: string
   specific:
     CheeseboardTrial:

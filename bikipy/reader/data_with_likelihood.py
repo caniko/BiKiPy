@@ -89,7 +89,7 @@ class DeepLabCutReader(DataWithLikelihoodReader):
     pass
 
 
-def convert_hdf_to_parquet(data_path, delete_hdf: bool = False):
+def convert_hdf_to_parquet(data_path, delete_hdf: bool = False, ignore_pre_existing: bool = False) -> Path:
     """
     Convert deeplabcut hdf files to parquet format, by replacing the filename suffix
     with parquet. Thereby, keeping the original path.
@@ -101,8 +101,10 @@ def convert_hdf_to_parquet(data_path, delete_hdf: bool = False):
     data_path = Path(data_path)
     parquet_path = data_path.with_suffix(".parquet")
 
-    if not parquet_path.exists():
-        pd.read_hdf(data_path, **DEEPLABCUT_DF_INIT_KWARGS).droplevel(0, axis=1).to_parquet(parquet_path)
+    df = pd.read_hdf(data_path, **DEEPLABCUT_DF_INIT_KWARGS).droplevel(0, axis=1)
+
+    if ignore_pre_existing or not parquet_path.exists():
+        df.to_parquet(parquet_path)
 
     if delete_hdf:
         os.remove(data_path)

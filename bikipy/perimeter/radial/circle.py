@@ -2,12 +2,10 @@ from functools import cached_property
 from typing import Any, Optional
 
 import numpy as np
-from matplotlib import pyplot as plt
 from pydantic import FilePath, validator, validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy import runtime_settings
-from bikipy.core.typing import TrialId
 from bikipy.feature.attention.gaze import gaze_direction_filter_circle_triangle
 from bikipy.perimeter.base import (
     BaseSinglePerimeter,

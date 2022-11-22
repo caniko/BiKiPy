@@ -8,6 +8,7 @@ from pydantic_numpy import NDArrayBool
 from bikipy.behaviour.core.abstract import AbstractTrial
 from bikipy.behaviour.core.enclosure.base import EnclosedTrial, EnclosedExperiment
 from bikipy.feature.motion import Motion, motion_multi_indexer, EMPTY_MOTION
+from bikipy.feature.tolerance.single import single_node_tolerance_filter
 from bikipy.perimeter.base import Perimeter
 
 
@@ -15,18 +16,21 @@ class RewardTraceTrialMixin(AbstractTrial, ABC):
     start_perimeter: Perimeter
     reward_perimeter: Perimeter
 
+    tolerate_boolean_index: bool = True
     temporal_tolerance: float = 1.0 / 3.0
 
     perimeter_labels = {"start_perimeter", "reward_perimeter"}
 
     @cached_property
     def _start_frame_idx(self) -> int:
+        boolean = self.start_perimeter.compute_confined_coordinate_boolean_index(
+            self.kinematic_coordinates, potential_label=f"{self.label}_start"
+        )
+        if self.tolerate_boolean_index:
+            boolean = single_node_tolerance_filter(boolean, self.video.fps)
+
         try:
-            return np.where(
-                self.start_perimeter.compute_confined_coordinate_boolean_index(
-                    self.kinematic_coordinates, potential_label=f"{self.label}_start"
-                )
-            )[0][0]
+            return np.where(boolean)[0][0]
         except IndexError:
             return np.nan
 
@@ -43,12 +47,13 @@ class RewardTraceTrialMixin(AbstractTrial, ABC):
 
     @cached_property
     def reward_boolean(self) -> NDArrayBool:
-        # return single_node_tolerance_filter(
-        #     self.reward_perimeter.compute_confined_coordinate_boolean_index(self.kinematic_coordinates), self.video.fps
-        # )
-        return self.reward_perimeter.compute_confined_coordinate_boolean_index(
+        boolean = self.reward_perimeter.compute_confined_coordinate_boolean_index(
             self.kinematic_coordinates, potential_label=f"{self.label}_reward"
         )
+        if self.tolerate_boolean_index:
+            boolean = single_node_tolerance_filter(boolean, self.video.fps)
+
+        return boolean
 
     @property
     def start_to_reward_motion(self) -> tuple:

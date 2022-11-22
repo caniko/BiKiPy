@@ -61,7 +61,7 @@ class Behaviour(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
                 raise AttributeError(msg)
 
 
-class BaseTrial(Behaviour):
+class BaseTrial(Behaviour, VideoMetadataMixin):
     framewise_coordinates_path: FilePath = Field(..., description="Path to file storing coordinate data")
     reader_kwargs: dict = Field(..., description="Keyword arguments that will be passed on the reader objects on init")
     animal_id: str | PositiveInt = Field(..., description="The ID of the animal in the trial")
@@ -629,7 +629,7 @@ class BaseExperiment(Behaviour):
 
     # DataFrame methods =========================================
 
-    def analyse_trials(self, self_destruct_trials: bool = False):
+    def analyze_trials(self, self_destruct_trials: bool = False):
         result = defaultdict(dict)
         if not runtime_settings.disable_process_pooling:
             with yaspin(Spinners.pong, text="Computing experiment features..."):
@@ -653,7 +653,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _trial_class_to_trial_series_set(self):
-        return self.analyse_trials(self_destruct_trials=False)
+        return self.analyze_trials(self_destruct_trials=False)
 
     @cached_property
     def _animal_id_to_sequential_features(self) -> pd.DataFrame | None:

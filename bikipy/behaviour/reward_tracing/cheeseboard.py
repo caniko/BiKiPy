@@ -6,7 +6,7 @@ from bikipy.behaviour.core.enclosure.circle import (
 from bikipy.behaviour.reward_tracing import RewardTraceTrialMixin
 
 
-class CheeseboardTrial(CircleEnclosedTrial, RewardTraceTrialMixin):
+class CheeseboardTrial(RewardTraceTrialMixin, CircleEnclosedTrial):
     trial_label = "cheeseboard_reward_trace"
 
 

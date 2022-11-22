@@ -37,8 +37,8 @@ class ObjectRecognitionTrialMixin(AbstractTrial, ABC):
     physical_object_labels: ClassVar[set[str]] = set()
     all_perimeters_are_physical_objects: ClassVar[bool] = True
 
-    @abstractmethod
     @property
+    @abstractmethod
     def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         ...
 
@@ -84,10 +84,6 @@ class ObjectRecognitionTrialMixin(AbstractTrial, ABC):
 
 
 PhysicalObjectTrial = TypeVar("PhysicalObjectTrial", bound=ObjectRecognitionTrialMixin)
-
-
-class RectangleEnclosedPhysicalObjectTrial(ObjectRecognitionTrialMixin, RectangleEnclosedTrial, ABC):
-    pass
 
 
 @lru_cache(1)
