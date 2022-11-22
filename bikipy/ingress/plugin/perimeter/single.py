@@ -24,6 +24,7 @@ from bikipy.utils.makesense import (
 logger = getLogger(__name__)
 
 
+# TODO: Manual radius readings from settings.yaml read.
 class PluginSinglePerimeter(BasePluginFile, HasReferenceMixin):
     """
     This plugin ensures the

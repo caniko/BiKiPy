@@ -74,7 +74,7 @@ trial:
   common:
     defined:
       object_tracking_label_for_kinematics: center_eye
-      tolerate_boolean_index: true
+      tolerate_boolean_index: false
       reward_perimeter: null
       start_perimeter: null
     required:
