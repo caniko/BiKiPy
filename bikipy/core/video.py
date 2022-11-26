@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import mextractor
 import numpy as np
 from mextractor.extractors import extract_video
-from pydantic import DirectoryPath, Field, FilePath, BaseModel
+from pydantic import DirectoryPath, Field, FilePath, BaseModel, root_validator
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
 
@@ -50,6 +50,13 @@ class _VideoMetadataBase(BaseModel):
     )
 
     category = "video_metadata"
+
+    @cached_property
+    def resolution(self) -> NDArrayInt16 | None:
+        if self.recording_resolution is not None:
+            return self.recording_resolution
+        if self.frame is not None:
+            return np.array([self.frame.shape[1], self.frame.shape[0]], dtype=np.int16)
 
 
 class VideoMetadata(_VideoMetadataBase):
@@ -116,23 +123,23 @@ class VideoMetadata(_VideoMetadataBase):
     @cached_property
     def multiplied_resolution(self) -> NDArrayInt16:
         if self.image_resize_multiplier:
-            return np.round(self.recording_resolution * self.image_resize_multiplier).astype(np.int16)
+            return np.round(self.resolution * self.image_resize_multiplier).astype(np.int16)
 
     @cached_property
     def center_pixel(self) -> NDArrayInt16:
-        return np.round(self.recording_resolution / 2.0)
+        return np.round(self.resolution / 2.0)
 
     @property
     def horizontal_resolution(self) -> int:
-        return self.recording_resolution[0]
+        return self.resolution[0]
 
     @property
     def vertical_resolution(self) -> int:
-        return self.recording_resolution[1]
+        return self.resolution[1]
 
     @cached_property
     def metric_resolution(self) -> NDArrayFp64:
-        return self.recording_resolution * self.meters_per_pixel
+        return self.resolution * self.meters_per_pixel
 
     @cached_property
     def center_meters(self) -> NDArrayFp64:
@@ -273,7 +280,7 @@ class VideoMetadataMixin(_VideoMetadataBase):
         video = VideoMetadata(
             meters_per_pixel=self.meters_per_pixel,
             fps=self.fps,
-            recording_resolution=self.recording_resolution,
+            recording_resolution=self.resolution,
             frame=self.frame,
         )
         if self.manual_video:

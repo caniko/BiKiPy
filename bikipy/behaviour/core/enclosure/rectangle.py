@@ -266,7 +266,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
     @property
     def _trial_feature_series_list(self) -> list[pd.Series]:
         upstream_list = super()._trial_feature_series_list
-        if self.video.recording_resolution is None:
+        if self.video.resolution is None:
             return upstream_list
 
         data = [
