@@ -17,6 +17,7 @@ from pydantic import (
 )
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
+from bikipy import runtime_settings
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from bikipy.core.typing import TrialId
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
@@ -40,10 +41,47 @@ logger = getLogger(__name__)
 StringPerimeterShapes = Literal["circle", "circle_line", "circle_point", "polygon", "rectangle"]
 
 
-class BasePerimeter(BaseBikipyHashable, ABC):
+class BasePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, ABC):
+    @staticmethod
+    def _trial_video_metadata_derived_inspection_preparation(
+        trial_video: Optional[VideoMetadata] = None,
+        coordinates: Optional[NDArrayFp64] = None,
+        ax: Any = None,
+    ):
+        if ax:
+            if trial_video:
+                logger.error("trial_video and ax should defined mutually exclusively, contact developers please")
+            return ax, coordinates
+        if trial_video:
+            _, ax = trial_video.subplots()
+        if coordinates is not None:
+            coordinates = trial_video.prepare_coordinates_for_plotting(coordinates, True)
+        return ax, coordinates
+
+    def _post_confinement_analysis_inspect_plot(
+        self,
+        boolean_index: NDArrayBool,
+        coordinates: Optional[NDArrayFp64] = None,
+        trial_video: Optional[VideoMetadata] = None,
+        ax: Any = None,
+        **inspect_kwargs,
+    ):
+        if not self.inspect_arg:
+            return
+
+        ax, coordinates = self._trial_video_metadata_derived_inspection_preparation(trial_video, coordinates, ax)
+        ax = self.plot_perimeter(manual_ax=ax)
+
+        ax.scatter(*coordinates[boolean_index].T, label="Inside", alpha=runtime_settings.matplotlib_scatter_alpha)
+        ax.scatter(*coordinates[~boolean_index].T, label="Outside", alpha=runtime_settings.matplotlib_scatter_alpha)
+
+        ax.legend()
+
+        generic_inspection_finalization(self.class_inspect_arg, **inspect_kwargs)
+
     @abstractmethod
     def compute_confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, trial_id: Optional[TrialId] = None, ax: Any = None, **inspect_kwargs
+        self, coordinates: NDArrayFp64, trial_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
     ) -> NDArrayBool:
         ...
 
@@ -56,11 +94,21 @@ class BasePerimeter(BaseBikipyHashable, ABC):
     def centroid_meters(self) -> NDArrayFp64:
         ...
 
+    @property
+    @abstractmethod
+    def plot_perimeter(
+        self,
+        inspect_pixels: bool = False,
+        manual_ax: Any = None,
+        **plot_kwargs,
+    ):
+        ...
+
 
 Perimeter = TypeVar("Perimeter", bound=BasePerimeter)
 
 
-class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMixin, ABC):
+class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     impenetrable: bool = Field(
         False,
         description="Signifies the impenetrability of the perimeter. "
@@ -283,7 +331,7 @@ class BaseSinglePerimeter(BasePerimeter, BaseBikipyInspectMixin, VideoMetadataMi
         Axes object with plots
         """
         if not ax:
-            fig, ax, _ = self.video.subplots()
+            fig, ax = self.video.subplots()
             ax.set_title(self.label)
 
         if self.video.frame is not None:
@@ -377,9 +425,13 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
         return present
 
     def compute_confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, trial_id: Optional[TrialId] = None, ax: Any = None, **inspect_kwargs
-    ):
-        return self.combined_framewise_confined_coordinates(coordinates)
+        self, coordinates: NDArrayFp64, trial_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
+    ) -> NDArrayBool:
+        result = self.combined_framewise_confined_coordinates(coordinates)
+
+        self._post_confinement_analysis_inspect_plot(result, coordinates, trial_video, ax, **inspect_kwargs)
+
+        return result
 
     def change_reference(self, **perimeter_change_reference_kwargs):
         return self.__class__(
@@ -461,6 +513,22 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
     def get_only_perimeter(self) -> SinglePerimeter:
         assert self.number_of_perimeters == 1
         return self.all_perimeters[0]
+
+    def plot_perimeter(
+        self,
+        inspect_pixels: bool = False,
+        manual_ax: Any = None,
+        **plot_kwargs,
+    ):
+        if manual_ax is None:
+            fig, ax = plt.subplots(constrained_layout=True)
+        else:
+            ax = manual_ax
+
+        for perimeter in self.all_perimeters:
+            perimeter.plot_perimeter(inspect_pixels, manual_ax=ax, **plot_kwargs)
+
+        return ax
 
     def plot(
         self,

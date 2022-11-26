@@ -135,7 +135,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             indexable_t = closest_edge_point_to_coordinates_matrix.transpose(1, 2, 0)
 
             for i in evenly_spaced_indices_from_sequence(coordinates, 9):
-                fig, ax, _ = self.video.subplots()
+                fig, ax = self.video.subplots()
                 to_skip = []
                 for y, point in enumerate(indexable_t[i].T):
                     if y in to_skip:
@@ -166,16 +166,13 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         return unit_vector(closest_point_on_edge_to_coordinates - coordinates)
 
     def compute_confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, ax: Any = None, **inspect_kwargs
+        self, coordinates: NDArrayFp64, trial_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
     ) -> NDArrayBool:
-        return parallel_point_inside_polygon(
-            coordinates,
-            self.metric_graph.linked_vertices,
-            inspect_arg=self.class_inspect_arg,
-            merge_ends=False,
-            ax=ax,
-            **inspect_kwargs,
-        )
+        result = parallel_point_inside_polygon(coordinates, self.metric_graph.linked_vertices, merge_ends=False)
+
+        self._post_confinement_analysis_inspect_plot(result, coordinates, trial_video, ax, **inspect_kwargs)
+
+        return result
 
     def ray_intersects_on_polygon(
         self,
@@ -297,7 +294,6 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
     def plot_perimeter(
         self,
         inspect_pixels: bool = False,
-        with_midpoints: bool = False,
         manual_ax: Any = None,
         **plot_kwargs,
     ):
@@ -324,10 +320,6 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
                 # label=f"{self.label}{index}",     # Uncomment this when inspecting the sorting of edges
                 **plot_kwargs,
             )
-
-        if with_midpoints:
-            for i, midpoint in enumerate(self.metric_graph.vertex_midpoints):
-                ax.scatter(*midpoint.T, label=f"{self.label}{i}")
 
         if not manual_ax:
             generic_inspection_finalization(self.class_inspect_arg or True, f"{self.label}.jpg")

@@ -63,7 +63,7 @@ def plot_coordinates(
     video: Optional["VideoMetadata"] = None,
     **plot_kwargs,
 ):
-    coordinates = video.prepare_data_for_plotting(coordinates, inspect_pixels)
+    coordinates = video.prepare_coordinates_for_plotting(coordinates, inspect_pixels)
 
     if video.image_resize_multiplier:
         coordinates = coordinates * video.image_resize_multiplier

@@ -6,6 +6,7 @@ from pydantic import FilePath, validator, validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy import runtime_settings
+from bikipy.core.video import VideoMetadata
 from bikipy.feature.attention.gaze import gaze_direction_filter_circle_triangle
 from bikipy.perimeter.base import (
     BaseSinglePerimeter,
@@ -92,7 +93,9 @@ class CirclePerimeter(BaseSinglePerimeter):
         kwargs["radius_pixels"] += perimeter_border_normal_pixels
         return self.__class__(**kwargs)
 
-    def compute_confined_coordinate_boolean_index(self, coordinates: NDArrayFp64, ax: Any = None, **inspect_kwargs):
+    def compute_confined_coordinate_boolean_index(
+        self, coordinates: NDArrayFp64, trial_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
+    ):
         if isinstance(self.radius_meters, float):
             distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
             result = np.abs(distance_of_point_from_center) <= self.radius_meters
@@ -101,18 +104,7 @@ class CirclePerimeter(BaseSinglePerimeter):
         else:
             raise RuntimeError
 
-        if self.inspect_arg:
-            if ax is None:
-                fig, ax, coordinates = self.video.subplots(coordinates=coordinates)
-
-            ax = self.plot_perimeter(manual_ax=ax)
-
-            ax.scatter(*coordinates[result].T, label="Inside", alpha=runtime_settings.matplotlib_scatter_alpha)
-            ax.scatter(*coordinates[~result].T, label="Outside", alpha=runtime_settings.matplotlib_scatter_alpha)
-
-            ax.legend()
-
-            generic_inspection_finalization(self.class_inspect_arg, **inspect_kwargs)
+        self._post_confinement_analysis_inspect_plot(result, coordinates, trial_video, ax, **inspect_kwargs)
 
         return result
 
@@ -141,7 +133,7 @@ class CirclePerimeter(BaseSinglePerimeter):
         **plot_kwargs,
     ):
         if not manual_ax:
-            fig, ax, _ = self.video.subplots()
+            fig, ax = self.video.subplots()
         else:
             ax = manual_ax
 

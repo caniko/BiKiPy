@@ -26,8 +26,8 @@ class TriangularPerimeter(BasePolygonPerimeter):
         pass
 
     def compute_confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, trial_id: Optional[TrialId] = None, ax: Any = None, **inspect_kwargs
-    ) -> NDArrayFp64:
+        self, coordinates: NDArrayFp64, trial_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
+    ) -> NDArrayBool:
         """
         indices of the coordinates that are inside the respective perimeter
 

@@ -5,7 +5,7 @@ ingress:
   trial_sequence_repetitions: null
   framewise_coordinates_file_suffix: .parquet
   minimum_frame_length: 500
-  dataset_directory: /data/behaviour_dataset/Chrys_Behavior_Analysis/cheeseboard_dataset_plugins/dataset
+  dataset_directory: /data/can/dataset/
   profile_runtime: true
 definition_strategies:
   meters_per_pixel: metadata

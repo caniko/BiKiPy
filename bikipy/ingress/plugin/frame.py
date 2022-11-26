@@ -18,7 +18,7 @@ class PluginFrame(BasePlugin):
 
     @cached_property
     def frame(self) -> VideoMetadata:
-        return cv2.imread(self.data_path)
+        return cv2.imread(str(self.data_path))
 
     def trialwise_and_metadata(self, trial_id: TrialId, naive: bool = False) -> VideoMetadata:
         return self.frame

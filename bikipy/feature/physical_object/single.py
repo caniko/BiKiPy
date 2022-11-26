@@ -137,7 +137,7 @@ class PhysicalObject(BaseBikipyInspectMixin):
     def inspect_attention(self):
         self._exporting_figure = True
 
-        gaze_travel_direction_point = self.video.prepare_data_for_plotting(
+        gaze_travel_direction_point = self.video.prepare_coordinates_for_plotting(
             self._gaze_travel_direction_point, self._inspect_pixels
         )
 

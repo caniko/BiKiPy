@@ -72,7 +72,7 @@ def proximity_filter(
         else:
             ax = manual_ax
 
-        inside_perimeter_border_plot_scaled = inspect_video.prepare_data_for_plotting(
+        inside_perimeter_border_plot_scaled = inspect_video.prepare_coordinates_for_plotting(
             inside_perimeter_border, inspect_pixels
         )
 

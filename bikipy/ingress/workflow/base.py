@@ -431,6 +431,7 @@ class BaseIngress(BaseBikipy, ABC):
                     for key, trial_id_plugin_label in row.items():
                         if isinstance(trial_id_plugin_label, float) and np.isnan(trial_id_plugin_label):
                             continue
+
                         if plugin_model.human_readable_index in key:
                             metadata_trial_target_dict[trial_id][underscore(key)] = plugin_model(
                                 data_path=label_to_file_path[str(trial_id_plugin_label)], ingress=self
@@ -486,7 +487,7 @@ class BaseIngress(BaseBikipy, ABC):
             return True
         if self.settings["ingress"][METADATA_TRIAL_IDS_ARE_HIGHER_LEVEL_FIELD] and isinstance(trial_id, str):
             for designator_id in self.metadata.index:
-                if designator_id in trial_id:
+                if f"{designator_id}_" in trial_id:
                     self._trial_id_to_designator_id[trial_id] = designator_id
                     return True
 

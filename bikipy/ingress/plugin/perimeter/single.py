@@ -26,10 +26,6 @@ logger = getLogger(__name__)
 
 # TODO: Manual radius readings from settings.yaml read.
 class PluginSinglePerimeter(BasePluginFile, HasReferenceMixin):
-    """
-    This plugin ensures the
-    """
-
     manual_shape: Optional[StringPerimeterShapes] = None
     warn_missing_re_reference_file: bool = False
 

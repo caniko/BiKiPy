@@ -56,8 +56,10 @@ def gaze_inspection_plot(
     else:
         ax = manual_ax
 
-    gaze_travel_direction_point = inspect_video.prepare_data_for_plotting(gaze_travel_direction_point, inspect_pixels)
-    gaze_vectors = inspect_video.prepare_data_for_plotting(gaze_vectors, inspect_pixels)
+    gaze_travel_direction_point = inspect_video.prepare_coordinates_for_plotting(
+        gaze_travel_direction_point, inspect_pixels
+    )
+    gaze_vectors = inspect_video.prepare_coordinates_for_plotting(gaze_vectors, inspect_pixels)
 
     if inspect_pixels:
         inspect_video.upscaled_video.ax_ticks_metric_to_pixel(ax)

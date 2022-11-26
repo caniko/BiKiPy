@@ -220,39 +220,23 @@ class VideoMetadata(_VideoMetadataBase):
     def plotting_line_thickness(self) -> float:
         return self.plotting_default_font_size / 10.0
 
-    def subplots(self, *, coordinates: Optional[NDArrayFp64] = None, axes=None, **kwargs) -> tuple | bool:
-        if axes:
-            fig = None
-            try:
-                len(axes)
-            except TypeError:
-                # Make sure that even singles axes is in
-                axes = (axes,)
-        else:
-            fig, axes = plt.subplots(**kwargs)
-
+    def subplots(self, *args, **kwargs) -> tuple:
+        fig, axes = plt.subplots(*args, **kwargs)
         if self.frame is None:
             logger.debug("Video object was used to make subplot, but no frame was defined. Figure got no background.")
-            return (
-                fig,
-                axes,
-                None if coordinates is None else self.prepare_data_for_plotting(coordinates, inspect_pixels=False),
-            )
+            return fig, axes
 
         if not isinstance(axes, Iterable):
-            axes = [axes]
+            axes.imshow(self.frame)
+            self.ax_ticks_metric_to_pixel(axes)
+        else:
+            for ax in np.array(axes).flatten():
+                ax.imshow(self.frame)
+                self.ax_ticks_metric_to_pixel(ax)
 
-        for ax in np.array(axes).flatten():
-            ax.imshow(self.frame)
-            self.ax_ticks_metric_to_pixel(ax)
+        return fig, axes
 
-        return (
-            fig,
-            axes,
-            None if coordinates is None else self.prepare_data_for_plotting(coordinates, inspect_pixels=True),
-        )
-
-    def prepare_data_for_plotting(self, data: NDArray | float, inspect_pixels: bool) -> NDArrayFp64 | float:
+    def prepare_coordinates_for_plotting(self, data: NDArray | float, inspect_pixels: bool) -> NDArrayFp64 | float:
         if inspect_pixels:
             data *= self.pixels_per_meter
         if self.image_resize_multiplier:

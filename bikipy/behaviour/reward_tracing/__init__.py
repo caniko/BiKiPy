@@ -24,7 +24,7 @@ class RewardTraceTrialMixin(AbstractTrial, ABC):
     @cached_property
     def _start_frame_idx(self) -> int:
         boolean = self.start_perimeter.compute_confined_coordinate_boolean_index(
-            self.kinematic_coordinates, potential_label=f"{self.label}_start"
+            self.kinematic_coordinates, potential_label=f"{self.label}_start", trial_video=self.video
         )
         if self.tolerate_boolean_index:
             boolean = single_node_tolerance_filter(boolean, self.video.fps)
@@ -48,7 +48,7 @@ class RewardTraceTrialMixin(AbstractTrial, ABC):
     @cached_property
     def reward_boolean(self) -> NDArrayBool:
         boolean = self.reward_perimeter.compute_confined_coordinate_boolean_index(
-            self.kinematic_coordinates, potential_label=f"{self.label}_reward"
+            self.kinematic_coordinates, potential_label=f"{self.label}_reward", trial_video=self.video
         )
         if self.tolerate_boolean_index:
             boolean = single_node_tolerance_filter(boolean, self.video.fps)
