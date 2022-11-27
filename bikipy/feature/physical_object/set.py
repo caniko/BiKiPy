@@ -5,31 +5,19 @@ Some methods are designed specifically for sets with a specific number of object
 
 from functools import cached_property, reduce
 from logging import getLogger
-from pathlib import Path
-from typing import Any, ClassVar, Iterable, Optional
+from typing import Any, ClassVar, Iterable
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pydantic import root_validator, validator
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayUint8
+from pydantic import validator
+from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8
 
-from bikipy import runtime_settings
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.core.base_class import BaseBikipyInspectMixin, BaseBikipyHashable
-from bikipy.core.typing import TrialId
-from bikipy.core.video import (
-    VideoMetadata,
-    VideoMetadataMixin,
-)
-from bikipy.feature.attention.proximity import proximity_filter
+from bikipy.core.base_class import BaseBikipyHashable
+from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.feature.physical_object.single import PhysicalObject
-from bikipy.feature.tolerance.single import single_node_tolerance_filter
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.reader.base import Reader
-from bikipy.utils.collection_utils import generic_multi_indexer
-from bikipy.utils.image import axis_frame_imshow
-from bikipy.utils.plotting import InspectArg, generic_inspection_finalization
 
 logger = getLogger(__name__)
 

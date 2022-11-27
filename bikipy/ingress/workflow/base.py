@@ -6,7 +6,7 @@ from cProfile import Profile
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Hashable, Iterable, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -30,6 +30,7 @@ from bikipy.ingress.utils.io import (
     get_project_settings_path,
     infer_metadata_path,
     load_settings,
+    result_directory_path,
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
 from bikipy.ingress.utils.settings import get_definable_settings
@@ -379,9 +380,7 @@ class BaseIngress(BaseBikipy, ABC):
 
     @property
     def result_directory_path(self) -> DirectoryPath:
-        result_directory = self.project_root_directory / "result"
-        result_directory.mkdir(exist_ok=True)
-        return result_directory
+        return result_directory_path(self.project_root_directory)
 
     # Constants =============================
 
@@ -761,7 +760,6 @@ def init_settings(
             METADATA_TRIAL_IDS_ARE_HIGHER_LEVEL_FIELD: False,
             "trial_sequence_repetitions": None,
             "framewise_coordinates_file_suffix": framewise_coordinates_file_suffix,
-            "minimum_frame_length": 500,
             "dataset_directory": None,
             "profile_runtime": True,
         },

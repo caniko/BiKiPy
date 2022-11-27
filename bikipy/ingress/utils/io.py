@@ -50,7 +50,7 @@ def get_plugin_directory_path(project_root_directory: DirectoryPath) -> Director
 def get_inspect_directory_path(project_root_directory: DirectoryPath) -> DirectoryPath:
     result = project_root_directory / "inspect"
 
-    if not runtime_settings.ignore_pre_existing_inspection_directory and result.exists():
+    if not runtime_settings.ignore_pre_existing_inspection_directory and result.exists() and tuple(result.glob("**/*")):
         already_exists_prompt = input(
             f"Inspection directory, {result}, already exists. "
             "Proceeding would result in deletion of directory tree. "
@@ -66,3 +66,11 @@ def get_inspect_directory_path(project_root_directory: DirectoryPath) -> Directo
 
     result.mkdir(exist_ok=True)
     return result
+
+
+@lru_cache(1)
+@validate_arguments
+def result_directory_path(project_root_directory: DirectoryPath) -> DirectoryPath:
+    result_directory = project_root_directory / "result"
+    result_directory.mkdir(exist_ok=True)
+    return result_directory

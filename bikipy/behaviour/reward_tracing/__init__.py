@@ -1,15 +1,18 @@
 from abc import ABC
 from functools import cached_property
+from logging import getLogger
 
 import numpy as np
 import pandas as pd
 from pydantic_numpy import NDArrayBool
 
 from bikipy.behaviour.core.abstract import AbstractTrial
-from bikipy.behaviour.core.enclosure.base import EnclosedTrial, EnclosedExperiment
-from bikipy.feature.motion import Motion, motion_multi_indexer, EMPTY_MOTION
+from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
+from bikipy.feature.motion import EMPTY_MOTION, Motion, motion_multi_indexer
 from bikipy.feature.tolerance.single import single_node_tolerance_filter
 from bikipy.perimeter.base import Perimeter
+
+logger = getLogger(__name__)
 
 
 class RewardTraceTrialMixin(AbstractTrial, ABC):
@@ -23,23 +26,37 @@ class RewardTraceTrialMixin(AbstractTrial, ABC):
 
     @cached_property
     def _start_frame_idx(self) -> int:
-        boolean = self.start_perimeter.compute_confined_coordinate_boolean_index(
-            self.kinematic_coordinates, potential_label=f"{self.label}_start", trial_video=self.video
+        confined_bool = self.start_perimeter.compute_confined_coordinate_boolean_index(
+            self.kinematic_coordinates, potential_label=f"{self.label}_start", manual_video=self.video
         )
-        if self.tolerate_boolean_index:
-            boolean = single_node_tolerance_filter(boolean, self.video.fps)
-
-        try:
-            return np.where(boolean)[0][0]
-        except IndexError:
+        if not np.any(confined_bool):
             return np.nan
+
+        if self.tolerate_boolean_index:
+            confined_bool = single_node_tolerance_filter(confined_bool, self.video.fps)
+
+        was_confined = False
+        for i, b in enumerate(confined_bool):
+            if b:
+                was_confined = True
+
+            elif was_confined:
+                logger.debug(f"Subject {self.label} was in the start area, and then left the starting area")
+                return i
+
+        logger.debug(f"Subject {self.label} never left, or was never was in start area")
+        return np.nan
 
     @cached_property
     def _reward_arrival_idx(self) -> int:
-        try:
-            return np.where(self.reward_boolean)[0][0]
-        except IndexError:
-            return np.nan
+        """
+        Iterate through boolean index till value is greater than start
+        :return:
+        """
+        for idx in np.where(self.reward_boolean)[0]:
+            if idx > self._start_frame_idx:
+                return idx
+        return np.nan
 
     @cached_property
     def either_start_or_reward_undetected(self) -> bool:
@@ -47,13 +64,13 @@ class RewardTraceTrialMixin(AbstractTrial, ABC):
 
     @cached_property
     def reward_boolean(self) -> NDArrayBool:
-        boolean = self.reward_perimeter.compute_confined_coordinate_boolean_index(
-            self.kinematic_coordinates, potential_label=f"{self.label}_reward", trial_video=self.video
+        confined_bool = self.reward_perimeter.compute_confined_coordinate_boolean_index(
+            self.kinematic_coordinates, potential_label=f"{self.label}_reward", manual_video=self.video
         )
         if self.tolerate_boolean_index:
-            boolean = single_node_tolerance_filter(boolean, self.video.fps)
+            confined_bool = single_node_tolerance_filter(confined_bool, self.video.fps)
 
-        return boolean
+        return confined_bool
 
     @property
     def start_to_reward_motion(self) -> tuple:

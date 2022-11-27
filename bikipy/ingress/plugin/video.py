@@ -20,9 +20,7 @@ class PluginVideo(BasePlugin):
     def video(self) -> VideoMetadata:
         if self.data_path.suffix == constants.DUMP_PATH_SUFFIX:
             return VideoMetadata.from_mextractor(self.data_path)
-        return VideoMetadata.from_path(
-            video_path=self.data_path, minimum_frame_length=self.ingress.settings["ingress"]["minimum_frame_length"]
-        )
+        return VideoMetadata.from_path(video_path=self.data_path)
 
     def trialwise_and_metadata(self, trial_id: TrialId, naive: bool = False) -> VideoMetadata:
         return self.video

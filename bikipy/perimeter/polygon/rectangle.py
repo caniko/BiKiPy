@@ -1,7 +1,6 @@
 from logging import getLogger
-from typing import Literal, Any
+from typing import Any, Literal
 
-import matplotlib.pyplot as plt
 import numpy as np
 from pydantic_numpy.dtype import NDArrayFp64
 
@@ -42,7 +41,7 @@ class RectanglePerimeter(BasePolygonPerimeter):
 
         if self.inspect_arg:
             if ax is None:
-                fig, axes, _coordinates = self.video.subplots(axes=[ax])
+                fig, axes, _coordinates = self.video.subplots()
                 ax = axes[0]
                 ax.set_title("ExpandPerimeter")
 

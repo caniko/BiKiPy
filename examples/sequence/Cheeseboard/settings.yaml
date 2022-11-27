@@ -4,7 +4,6 @@ ingress:
   metadata_trial_ids_are_higher_level: true
   trial_sequence_repetitions: null
   framewise_coordinates_file_suffix: .parquet
-  minimum_frame_length: 500
   dataset_directory: /data/can/dataset/
   profile_runtime: true
 definition_strategies:
@@ -42,11 +41,11 @@ perimeter:
       recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
 reader_kwargs:
   defined:
-    filter_method: null
-    midpoint_groups:
-      center_eye:
-      - left_ear
-      - right_ear
+    filter_method: arima
+#    midpoint_groups:
+#      center_eye:
+#      - left_ear
+#      - right_ear
   optional:
     cache_meters_augmented: boolean -> True
     category: string -> video_metadata
@@ -66,17 +65,18 @@ reader_kwargs:
     meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
     midpoint_groups: object
     min_likelihood: number -> 0.8
-    minimum_frame_length: number
+    minimum_frame_length: integer -> 600
     recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
     x_axis_crop_end_point: number -> 0.0
     y_axis_crop_end_point: number -> 0.0
 trial:
   common:
     defined:
-      object_tracking_label_for_kinematics: center_eye
-      tolerate_boolean_index: false
+      object_tracking_label_for_kinematics: nose
       reward_perimeter: null
       start_perimeter: null
+      tolerate_boolean_index: true
+      minimum_frame_length: 600
     required:
       object_tracking_label_for_kinematics: string
       reward_perimeter: None
@@ -99,7 +99,7 @@ trial:
       meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
       meters_per_pixel_from_perimeter: boolean -> False
       meters_per_pixel_from_perimeter_source: string
-      minimum_frame_length: number
+      minimum_frame_length: integer -> 600
       perimeter_labels: array -> ['reward_perimeter', 'start_perimeter']
       recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
       rigid_nodes_freezing: array
@@ -125,7 +125,7 @@ experiment:
     manual_trial_ids: array
     manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
     meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
-    minimum_frame_length: number
+    minimum_frame_length: integer -> 600
     recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
     skip_habituation: boolean -> False
     stage: string

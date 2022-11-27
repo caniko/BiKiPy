@@ -7,7 +7,6 @@ from bikipy.behaviour.object_recognition.objects_in_updating_locations import (
 from bikipy.behaviour.radial_arm.y_maze import YMazeExperiment
 from bikipy.behaviour.reward_tracing.cheeseboard import CheeseboardExperiment
 
-
 IMPLEMENTED_EXPERIMENTS: set[Experiment] = {
     NortExperiment,
     ObjectsInUpdatingLocationsExperiment,

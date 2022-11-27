@@ -19,7 +19,9 @@ from bikipy.behaviour.core.enclosure.rectangle import (
     RectangleEnclosedExperiment,
     RectangleEnclosedHabituationTrial,
 )
-from bikipy.behaviour.object_recognition.generic import RectangleEnclosedPhysicalObjectTrial
+from bikipy.behaviour.object_recognition.generic import (
+    RectangleEnclosedPhysicalObjectTrial,
+)
 from bikipy.perimeter.base import SinglePerimeter
 
 

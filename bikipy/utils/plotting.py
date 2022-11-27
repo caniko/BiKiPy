@@ -8,7 +8,7 @@ import seaborn
 from matplotlib import cm
 from matplotlib import pyplot as plt
 from pydantic import validate_arguments
-from pydantic_numpy.dtype import NDArrayFp64
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy.utils.misc import int_file_stem_incrementor
 
@@ -22,6 +22,32 @@ InspectArg = Path | bool
 inspect_arg_description = (
     "When path to a directory it is used to define the save directory of figures that will be used for inspection"
 )
+
+
+def ax_plot_coordinate_with_boolean_index(
+    ax, boolean_index: NDArrayBool, coordinates: NDArrayFp64, plot_line: bool = False
+) -> None:
+    length = len(boolean_index)
+    assert length == len(coordinates)
+
+    if plot_line:
+        inside_colors = plt.cm.winter(np.linspace(0, 1, length))
+        # outside_colors = plt.cm.Wistia(np.linspace(0, 1, length))
+
+        plot_colors = plt.cm.Wistia(np.linspace(0, 1, length))
+        plot_colors[boolean_index] = inside_colors[boolean_index]
+
+        for color, point_a, point_b in zip(plot_colors, coordinates, coordinates[1:]):
+            ax.plot(*np.vstack((point_a, point_b)).T, c=color, linewidth=3.0)
+    else:
+        ax.scatter(*coordinates[boolean_index].T, label="Inside", color="dodgerblue")
+        ax.scatter(*coordinates[~boolean_index].T, label="Outside", color="crimson")
+
+        ax.legend()
+
+
+def ax_imshow_gray(ax, image: NDArrayFp64) -> None:
+    ax.imshow(image, cmap="gray", vmin=0, vmax=255)
 
 
 @validate_arguments

@@ -3,7 +3,7 @@ from typing import Callable
 import numba
 import numpy as np
 from matplotlib import pyplot as plt
-from numba import jit, njit
+from numba import njit
 from numpy.linalg import LinAlgError
 from pydantic import validate_arguments
 from pydantic_numpy import NDArray

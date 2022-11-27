@@ -2,24 +2,23 @@ from functools import cached_property
 from typing import Any, Optional
 
 import numpy as np
-from pydantic import FilePath, validator, validate_arguments
+from pydantic import FilePath, validate_arguments, validator
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
-from bikipy import runtime_settings
 from bikipy.core.video import VideoMetadata
 from bikipy.feature.attention.gaze import gaze_direction_filter_circle_triangle
 from bikipy.perimeter.base import (
     BaseSinglePerimeter,
-    perimeter_set_from_image_name_to_perimeters,
     SinglePerimeter,
+    perimeter_set_from_image_name_to_perimeters,
 )
 from bikipy.perimeter.radial.utils import plot_circle
 from bikipy.utils.makesense import (
     get_line_endpoints_from_makesense_row,
-    read_makesense_line,
-    recording_resolution_from_makesense_row,
-    read_makesense_point,
     get_point_from_makesense_row,
+    read_makesense_line,
+    read_makesense_point,
+    recording_resolution_from_makesense_row,
 )
 from bikipy.utils.math.inside.ellipse import point_inside_ellipse
 from bikipy.utils.math.vector import unit_vector
@@ -94,7 +93,7 @@ class CirclePerimeter(BaseSinglePerimeter):
         return self.__class__(**kwargs)
 
     def compute_confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, trial_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
+        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
     ):
         if isinstance(self.radius_meters, float):
             distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
@@ -104,7 +103,7 @@ class CirclePerimeter(BaseSinglePerimeter):
         else:
             raise RuntimeError
 
-        self._post_confinement_analysis_inspect_plot(result, coordinates, trial_video, ax, **inspect_kwargs)
+        self._post_confinement_analysis_inspect_plot(result, coordinates, manual_video, ax, **inspect_kwargs)
 
         return result
 
@@ -126,31 +125,18 @@ class CirclePerimeter(BaseSinglePerimeter):
             pass
         return gaze_direction_filter_circle_triangle(self, *args, **kwargs)
 
-    def plot_perimeter(
-        self,
-        inspect_pixels: bool = False,
-        manual_ax: Any = None,
-        **plot_kwargs,
-    ):
-        if not manual_ax:
-            fig, ax = self.video.subplots()
-        else:
-            ax = manual_ax
+    def plot_perimeter_on_ax(
+        self, ax, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs
+    ) -> None:
+        center, radius = (
+            (self.center_pixels, self.radius_pixels) if inspect_pixels else (self.center_meters, self.radius_meters)
+        )
 
         if inspect_pixels:
-            center, radius = self.center_pixels, self.radius_pixels
-        else:
-            center, radius = self.center_meters, self.radius_meters
-
-        if self.video.image_resize_multiplier:
-            center, radius = center * self.video.image_resize_multiplier, radius * self.video.image_resize_multiplier
+            image_resize_multiplier = manual_resize_multiplier or self.video.image_resize_multiplier
+            center, radius = center * image_resize_multiplier, radius * image_resize_multiplier
 
         plot_circle(center, radius, ax)
-
-        if not manual_ax:
-            generic_inspection_finalization(self.class_inspect_arg or True, f"{self.label}.jpg")
-
-        return ax
 
     @classmethod
     @validate_arguments

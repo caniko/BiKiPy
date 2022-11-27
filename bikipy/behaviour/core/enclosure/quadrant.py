@@ -1,7 +1,7 @@
 from functools import cached_property
 
 import numpy as np
-from pydantic_numpy import NDArrayFp64, NDArrayBool
+from pydantic_numpy import NDArrayBool, NDArrayFp64
 
 from bikipy.core.base_class import BaseBikipy
 from bikipy.feature.motion import get_combined_features_from_merged_motion_island_data

@@ -1,8 +1,7 @@
 from abc import ABC
 from functools import cached_property
 from logging import getLogger
-from pathlib import Path
-from typing import Any, ClassVar, Optional, TypeVar, Literal
+from typing import Any, ClassVar, Literal, Optional, TypeVar
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,7 +25,7 @@ from bikipy.utils.math.vector import (
     rotate_vectors_with_angle,
     unit_vector,
 )
-from bikipy.utils.plotting import generic_inspection_finalization, InspectArg
+from bikipy.utils.plotting import generic_inspection_finalization
 
 logger = getLogger(__name__)
 
@@ -166,11 +165,11 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         return unit_vector(closest_point_on_edge_to_coordinates - coordinates)
 
     def compute_confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, trial_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
+        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
     ) -> NDArrayBool:
         result = parallel_point_inside_polygon(coordinates, self.metric_graph.linked_vertices, merge_ends=False)
 
-        self._post_confinement_analysis_inspect_plot(result, coordinates, trial_video, ax, **inspect_kwargs)
+        self._post_confinement_analysis_inspect_plot(result, coordinates, manual_video, ax, **inspect_kwargs)
 
         return result
 
@@ -291,24 +290,13 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
         return self
 
-    def plot_perimeter(
-        self,
-        inspect_pixels: bool = False,
-        manual_ax: Any = None,
-        **plot_kwargs,
-    ):
-        if not manual_ax:
-            fig, ax = plt.subplots()
-        else:
-            ax = manual_ax
+    def plot_perimeter_on_ax(
+        self, ax, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs
+    ) -> None:
+        vertices = self.vertices_in_pixels if inspect_pixels else self.vertices_in_meters
 
         if inspect_pixels:
-            vertices = self.vertices_in_pixels
-        else:
-            vertices = self.vertices_in_meters
-
-        if self.video.image_resize_multiplier:
-            vertices = vertices * self.video.image_resize_multiplier
+            vertices = vertices * (manual_resize_multiplier or self.video.image_resize_multiplier)
 
         for index in range(len(vertices)):
             following_index = 0 if index + 1 == len(vertices) else index + 1
@@ -320,11 +308,6 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
                 # label=f"{self.label}{index}",     # Uncomment this when inspecting the sorting of edges
                 **plot_kwargs,
             )
-
-        if not manual_ax:
-            generic_inspection_finalization(self.class_inspect_arg or True, f"{self.label}.jpg")
-
-        return ax
 
     def _add_label_to_str(self, in_string):
         if self.label:

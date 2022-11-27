@@ -8,13 +8,13 @@ from typing import ClassVar, Hashable, Iterable, Literal, Optional, Sequence, Ty
 import numpy as np
 import pandas as pd
 from pydantic import (
+    BaseModel,
     DirectoryPath,
     Field,
     FilePath,
     PositiveInt,
     ValidationError,
     validator,
-    BaseModel,
 )
 from pydantic.fields import FieldInfo
 from pydantic_numpy import NDArray
@@ -32,9 +32,14 @@ from bikipy.core.video import (
     incongruity_permissive_video_join,
 )
 from bikipy.feature.motion import Motion, motion_multi_indexer
-from bikipy.ingress.workflow.base import FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD
 from bikipy.ingress.plugin import PluginChangeReference, PluginRadial
-from bikipy.perimeter.base import BaseSinglePerimeter, PerimeterSet, SinglePerimeter, Perimeter
+from bikipy.ingress.workflow.base import FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD
+from bikipy.perimeter.base import (
+    BaseSinglePerimeter,
+    Perimeter,
+    PerimeterSet,
+    SinglePerimeter,
+)
 from bikipy.reader.data_with_likelihood import DeepLabCutReader
 from bikipy.utils.collection_utils import max_len_in_iterable
 from bikipy.utils.ranged_dict import RangeDict

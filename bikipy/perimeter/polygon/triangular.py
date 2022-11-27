@@ -4,7 +4,6 @@ import numpy as np
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
-from bikipy.utils.plotting import InspectArg
 
 
 class TriangularPerimeter(BasePolygonPerimeter):
@@ -26,7 +25,7 @@ class TriangularPerimeter(BasePolygonPerimeter):
         pass
 
     def compute_confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, trial_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
+        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
     ) -> NDArrayBool:
         """
         indices of the coordinates that are inside the respective perimeter

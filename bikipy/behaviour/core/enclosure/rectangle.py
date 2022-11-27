@@ -9,12 +9,10 @@ from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy.behaviour.core import HabituationTrialMixin
-from bikipy.behaviour.core.enclosure.base import EnclosedTrial, EnclosedExperiment
+from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.core.enclosure.quadrant import Quadrant
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.feature.motion import (
-    get_combined_features_from_merged_motion_island_data,
-)
+from bikipy.feature.motion import get_combined_features_from_merged_motion_island_data
 from bikipy.perimeter.utils import perimeter_multi_indexer
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon

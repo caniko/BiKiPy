@@ -4,7 +4,6 @@ from pydantic import validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayInt64
 
 from bikipy import runtime_settings
-
 from bikipy.feature.tolerance.common import (
     common_preparation,
     tolerance_filter_warning_wrapper,

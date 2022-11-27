@@ -79,7 +79,7 @@ def parallel_point_inside_polygon(
     merge_ends: bool = True,
     inspect_arg: InspectArg = False,
     ax: Any = None,
-    **inspect_kwargs
+    **inspect_kwargs,
 ) -> NDArrayBool:
     if merge_ends:
         polygon = np.append(polygon, np.expand_dims(polygon[0], 0), axis=0)

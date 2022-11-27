@@ -1,5 +1,5 @@
 from bikipy.behaviour.core import HabituationTrialMixin
-from bikipy.behaviour.core.enclosure.base import EnclosedTrial, EnclosedExperiment
+from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 
 
 class CircleEnclosedTrial(EnclosedTrial):

@@ -3,7 +3,6 @@ from logging import getLogger
 from pathlib import Path
 from typing import Optional
 
-import cv2
 import numpy as np
 from pydantic import DirectoryPath, FilePath
 from pydantic_numpy.dtype import NDArrayFp64

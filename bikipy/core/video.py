@@ -15,13 +15,13 @@ import matplotlib.pyplot as plt
 import mextractor
 import numpy as np
 from mextractor.extractors import extract_video
-from pydantic import DirectoryPath, Field, FilePath, BaseModel, root_validator
+from pydantic import BaseModel, DirectoryPath, Field, FilePath
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
 
 from bikipy import runtime_settings
-from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import MetersPerPixel
+from bikipy.utils.plotting import ax_imshow_gray
 
 logger = getLogger(__name__)
 
@@ -44,9 +44,10 @@ class _VideoMetadataBase(BaseModel):
     frame: Optional[FilePath | NDArrayUint8] = Field(
         description="Frame from the video stored in numpy array, use read_image_from_path to read from file paths"
     )
-    minimum_frame_length: Optional[float] = Field(
+    minimum_frame_length: Optional[int] = Field(
+        600,
         description="Must be defined in case the original frame has been resized. "
-        "This might be done during bikipy ingress"
+        "This might be done during bikipy ingress",
     )
 
     category = "video_metadata"
@@ -182,7 +183,7 @@ class VideoMetadata(_VideoMetadataBase):
         if not self.image_resize_multiplier:
             return self
         new_frame = cv2.resize(
-            self.frame.copy(),
+            self.frame,
             (0, 0),
             fx=self.image_resize_multiplier,
             fy=self.image_resize_multiplier,
@@ -227,24 +228,38 @@ class VideoMetadata(_VideoMetadataBase):
     def plotting_line_thickness(self) -> float:
         return self.plotting_default_font_size / 10.0
 
-    def subplots(self, *args, **kwargs) -> tuple:
-        fig, axes = plt.subplots(*args, **kwargs)
+    @cached_property
+    def coordinates_need_to_be_scaled_for_plot(self) -> bool:
+        return self.frame is not None
+
+    def subplots(self, nrows: int = 1, ncols: int = 1, **kwargs) -> tuple:
         if self.frame is None:
             logger.debug("Video object was used to make subplot, but no frame was defined. Figure got no background.")
-            return fig, axes
+            return plt.subplots(nrows, ncols)
 
+        fig, axes = plt.subplots(
+            nrows,
+            ncols,
+            figsize=(
+                self.upscaled_video.horizontal_resolution * min(0.1, ncols / nrows),
+                self.upscaled_video.vertical_resolution * min(0.1, nrows / ncols),
+            ),
+            **kwargs,
+        )
         if not isinstance(axes, Iterable):
-            axes.imshow(self.frame)
+            ax_imshow_gray(axes, self.upscaled_video.greyscale_frame)
             self.ax_ticks_metric_to_pixel(axes)
         else:
             for ax in np.array(axes).flatten():
-                ax.imshow(self.frame)
+                ax_imshow_gray(ax, self.upscaled_video.greyscale_frame)
                 self.ax_ticks_metric_to_pixel(ax)
 
         return fig, axes
 
-    def prepare_coordinates_for_plotting(self, data: NDArray | float, inspect_pixels: bool) -> NDArrayFp64 | float:
-        if inspect_pixels:
+    def prepare_coordinates_for_plotting(
+        self, data: NDArray | float, manual_inspect_pixels: bool = False
+    ) -> NDArrayFp64 | float:
+        if manual_inspect_pixels or self.coordinates_need_to_be_scaled_for_plot:
             data *= self.pixels_per_meter
         if self.image_resize_multiplier:
             data *= self.image_resize_multiplier

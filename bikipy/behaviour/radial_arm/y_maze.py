@@ -3,10 +3,7 @@ from typing import ClassVar, Optional
 
 from pydantic import BaseModel
 
-from bikipy.behaviour.radial_arm import (
-    BaseRadialMazeExperiment,
-    BaseRadialMazeTrial,
-)
+from bikipy.behaviour.radial_arm import BaseRadialMazeExperiment, BaseRadialMazeTrial
 
 logger = getLogger(__name__)
 

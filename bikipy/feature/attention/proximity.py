@@ -8,10 +8,7 @@ from pydantic import validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy import runtime_settings
-from bikipy.core.video import (
-    VideoMetadata,
-    inspect_video_is_none_during_inspection,
-)
+from bikipy.core.video import VideoMetadata, inspect_video_is_none_during_inspection
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.utils.image import axis_frame_imshow
 from bikipy.utils.plotting import BOTTOM_LEGEND_KWARGS, make_color_map

@@ -1,7 +1,7 @@
 from bikipy.behaviour.core.enclosure.circle import (
-    CircleEnclosedTrial,
     CircleEnclosedExperiment,
     CircleEnclosedHabituationTrial,
+    CircleEnclosedTrial,
 )
 from bikipy.behaviour.reward_tracing import RewardTraceTrialMixin
 

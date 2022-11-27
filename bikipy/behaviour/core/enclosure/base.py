@@ -6,7 +6,7 @@ from pydantic import validate_arguments
 from pydantic_numpy import NDArrayInt16
 from skg import ngauss_fit
 
-from bikipy.behaviour.core import BaseTrial, BaseExperiment
+from bikipy.behaviour.core import BaseExperiment, BaseTrial
 
 
 class EnclosedTrial(BaseTrial):

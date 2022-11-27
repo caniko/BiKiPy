@@ -7,7 +7,7 @@ from logging import getLogger
 from typing import Optional
 
 import numpy as np
-from pydantic import BaseModel, DirectoryPath, validator
+from pydantic import BaseModel, validator
 from pydantic_numpy.dtype import NDArrayFp64
 from tqdm import tqdm
 

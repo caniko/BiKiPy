@@ -1,14 +1,10 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from functools import cached_property
 from typing import Optional
 
-import pandas as pd
 from pydantic import BaseModel
-from pydantic_numpy import NDArrayFp64
 
 from bikipy.core.typing import TrialId
-from bikipy.core.video import VideoMetadata
-from bikipy.reader.base import Reader
 from bikipy.utils.plotting import InspectArg
 
 

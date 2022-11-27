@@ -1,29 +1,22 @@
-from functools import cached_property, reduce
+from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, ClassVar, Iterable, Optional
+from typing import Any, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-from pydantic import root_validator, validator
+from pydantic import root_validator
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
-from bikipy import runtime_settings
-from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipyInspectMixin
 from bikipy.core.typing import TrialId
-from bikipy.core.video import (
-    VideoMetadata,
-    VideoMetadataMixin,
-)
+from bikipy.core.video import VideoMetadata
 from bikipy.feature.attention.proximity import proximity_filter
 from bikipy.feature.tolerance.single import single_node_tolerance_filter
-from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
+from bikipy.perimeter.base import SinglePerimeter
 from bikipy.reader.base import Reader
-from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.image import axis_frame_imshow
-from bikipy.utils.plotting import InspectArg, generic_inspection_finalization
+from bikipy.utils.plotting import generic_inspection_finalization
 
 logger = getLogger(__name__)
 

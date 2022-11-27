@@ -8,6 +8,8 @@ from pydantic import FilePath, validate_arguments
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayUint8
 
+from bikipy.utils.plotting import ax_imshow_gray
+
 
 def save_plt_fig_cv(figure, save_path: Path) -> None:
     figure.canvas.draw()
@@ -40,7 +42,7 @@ def read_image_from_path(image_path: FilePath, imread_flagg: Optional[list] = No
 def axis_frame_imshow(ax: Any, image: NDArray):
     ax.autoscale(enable=True)
 
-    ax.imshow(image, cmap="gray", vmin=0, vmax=255)
+    ax_imshow_gray(ax, image)
 
     ax.invert_yaxis()
     # ax.set_aspect("equal", adjustable="box")

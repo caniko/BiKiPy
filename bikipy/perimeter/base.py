@@ -1,4 +1,4 @@
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
@@ -19,7 +19,6 @@ from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
 from bikipy import runtime_settings
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
-from bikipy.core.typing import TrialId
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_coco_polygon,
@@ -32,6 +31,7 @@ from bikipy.utils.image import axis_frame_imshow
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
 from bikipy.utils.plotting import (
     BOTTOM_LEGEND_KWARGS,
+    ax_plot_coordinate_with_boolean_index,
     generic_inspection_finalization,
     plot_coordinates,
 )
@@ -42,47 +42,78 @@ StringPerimeterShapes = Literal["circle", "circle_line", "circle_point", "polygo
 
 
 class BasePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, ABC):
-    @staticmethod
-    def _trial_video_metadata_derived_inspection_preparation(
-        trial_video: Optional[VideoMetadata] = None,
+    def _manual_video_metadata_derived_inspection_preparation(
+        self,
+        manual_video: Optional[VideoMetadata] = None,
         coordinates: Optional[NDArrayFp64] = None,
         ax: Any = None,
-    ):
+        **plot_kwargs,
+    ) -> tuple[Any, NDArrayFp64, VideoMetadata]:
         if ax:
-            if trial_video:
-                logger.error("trial_video and ax should defined mutually exclusively, contact developers please")
-            return ax, coordinates
-        if trial_video:
-            _, ax = trial_video.subplots()
+            if manual_video:
+                msg = "manual_video and ax should defined mutually exclusively, contact developers please"
+                raise ValueError(msg)
+            return ax, coordinates, self.video
+
+        _, ax = self.subplot(manual_video, **plot_kwargs)
+
+        video: VideoMetadata = manual_video or self.video
         if coordinates is not None:
-            coordinates = trial_video.prepare_coordinates_for_plotting(coordinates, True)
-        return ax, coordinates
+            coordinates: NDArrayFp64 = video.prepare_coordinates_for_plotting(coordinates, True)
+
+        return ax, coordinates, video
 
     def _post_confinement_analysis_inspect_plot(
         self,
         boolean_index: NDArrayBool,
         coordinates: Optional[NDArrayFp64] = None,
-        trial_video: Optional[VideoMetadata] = None,
+        manual_video: Optional[VideoMetadata] = None,
         ax: Any = None,
         **inspect_kwargs,
     ):
         if not self.inspect_arg:
             return
 
-        ax, coordinates = self._trial_video_metadata_derived_inspection_preparation(trial_video, coordinates, ax)
-        ax = self.plot_perimeter(manual_ax=ax)
+        ax, coordinates, video = self._manual_video_metadata_derived_inspection_preparation(
+            manual_video, coordinates, ax
+        )
+        self.plot_perimeter_on_ax(
+            ax,
+            inspect_pixels=video.coordinates_need_to_be_scaled_for_plot,
+            manual_resize_multiplier=video.image_resize_multiplier,
+        )
 
-        ax.scatter(*coordinates[boolean_index].T, label="Inside", alpha=runtime_settings.matplotlib_scatter_alpha)
-        ax.scatter(*coordinates[~boolean_index].T, label="Outside", alpha=runtime_settings.matplotlib_scatter_alpha)
-
-        ax.legend()
+        if coordinates is not None:
+            ax_plot_coordinate_with_boolean_index(ax, boolean_index, coordinates)
 
         generic_inspection_finalization(self.class_inspect_arg, **inspect_kwargs)
 
+    def subplot(self, manual_video: Optional[VideoMetadata] = None, **plot_kwargs):
+        return manual_video.subplots(**plot_kwargs) if manual_video else self.video.subplots(**plot_kwargs)
+
+    @property
+    def plot_perimeter(
+        self,
+        manual_video: Optional[VideoMetadata] = None,
+        **plot_kwargs,
+    ):
+        video = manual_video or self.video
+        fig, ax = video.subplots()
+
+        return self.plot_perimeter_on_ax(
+            ax, inspect_pixels=video.coordinates_need_to_be_scaled_for_plot, manual_video=video
+        )
+
     @abstractmethod
     def compute_confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, trial_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
+        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
     ) -> NDArrayBool:
+        ...
+
+    @abstractmethod
+    def plot_perimeter_on_ax(
+        self, ax, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs
+    ) -> None:
         ...
 
     @abstractmethod
@@ -92,16 +123,6 @@ class BasePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, ABC):
     @property
     @abstractmethod
     def centroid_meters(self) -> NDArrayFp64:
-        ...
-
-    @property
-    @abstractmethod
-    def plot_perimeter(
-        self,
-        inspect_pixels: bool = False,
-        manual_ax: Any = None,
-        **plot_kwargs,
-    ):
         ...
 
 
@@ -197,15 +218,6 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         manual_ax: Any = None,
         **kwargs,
     ) -> NDArrayBool:
-        ...
-
-    @abstractmethod
-    def plot_perimeter(
-        self,
-        inspect_pixels: bool = False,
-        manual_ax: Any = None,
-        **plot_kwargs,
-    ):
         ...
 
     @root_validator(pre=True)
@@ -425,11 +437,11 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
         return present
 
     def compute_confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, trial_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
+        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
     ) -> NDArrayBool:
         result = self.combined_framewise_confined_coordinates(coordinates)
 
-        self._post_confinement_analysis_inspect_plot(result, coordinates, trial_video, ax, **inspect_kwargs)
+        self._post_confinement_analysis_inspect_plot(result, coordinates, manual_video, ax, **inspect_kwargs)
 
         return result
 
@@ -514,21 +526,11 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
         assert self.number_of_perimeters == 1
         return self.all_perimeters[0]
 
-    def plot_perimeter(
-        self,
-        inspect_pixels: bool = False,
-        manual_ax: Any = None,
-        **plot_kwargs,
-    ):
-        if manual_ax is None:
-            fig, ax = plt.subplots(constrained_layout=True)
-        else:
-            ax = manual_ax
-
+    def plot_perimeter_on_ax(
+        self, ax, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs
+    ) -> None:
         for perimeter in self.all_perimeters:
-            perimeter.plot_perimeter(inspect_pixels, manual_ax=ax, **plot_kwargs)
-
-        return ax
+            perimeter.plot_perimeter_on_ax(ax, inspect_pixels, manual_resize_multiplier, **plot_kwargs)
 
     def plot(
         self,
