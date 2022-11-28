@@ -16,7 +16,7 @@ from bikipy.feature.motion import get_combined_features_from_merged_motion_islan
 from bikipy.perimeter.utils import perimeter_multi_indexer
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
-from bikipy.utils.plotting import generic_inspection_finalization
+from bikipy.utils.plotting import generic_inspection_finalization, BOTTOM_LEGEND_KWARGS
 
 logger = getLogger(__name__)
 quadrant_grid_typing = tuple[int, int]
@@ -124,24 +124,33 @@ class RectangleEnclosedTrial(EnclosedTrial):
             fig, ax = self.video.subplots()
             ax.set_title(f"Quadrants_Trial_#{self.label}")
 
+            coordinates = self.video.prepare_coordinates_for_plotting(self.kinematic_coordinates)
+
             confined = np.zeros(self.reader.frames, dtype=bool)
 
             colors = plt.cm.rainbow(np.linspace(0, 1, len(result) + 1))
             for color, (grid_coordinate, quadrant) in zip(colors, result.items()):
                 ax.plot(
-                    *quadrant.vertices_in_meters.T, label=f"({grid_coordinate[0]}, {grid_coordinate[1]})", color=color
+                    *quadrant.plot_vertices(self.video).T,
+                    label=f"({grid_coordinate[0]}, {grid_coordinate[1]})",
+                    color=color,
                 )
-                ax.scatter(*self.kinematic_coordinates[quadrant.confinement_boolean_index].T, color=color)
+                ax.scatter(*coordinates[quadrant.confinement_boolean_index].T, color=color)
 
                 confined = confined | quadrant.confinement_boolean_index
 
-            ax.scatter(*self.kinematic_coordinates[~confined].T, color=colors[-1], label="Unconfined")
-            ax.scatter(*self.video.center_meters.T, color="r", label="VideoCenter")
+            ax.scatter(*coordinates[~confined].T, color=colors[-1], label="Unconfined")
+            ax.scatter(*self.video.center_for_plot.T, color="r", label="VideoCenter")
 
             if self.manual_center_meters is not None:
-                ax.scatter(*self.manual_center_meters.T, color="k", label="ManualCenter")
+                manual_center = self.manual_center_meters
+                if self.video.coordinates_need_to_be_scaled_for_plot:
+                    manual_center *= self.video.pixels_per_meter
 
-            plt.legend()
+                ax.scatter(*manual_center.T, color="k", label="ManualCenter")
+
+            plt.legend(**BOTTOM_LEGEND_KWARGS)
+
             generic_inspection_finalization(
                 self._inspect_quadrant_directory / f"{self.label}.jpg",
                 debug_save_message=f"Saved perimeter_set {self.label} inspect plot to {self.class_inspect_arg}",
@@ -210,6 +219,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             self.kinematic_coordinates,
             self.center_rectangle_vertices,
             inspect_arg=self.class_inspect_arg / f"{self.label}.jpg",
+            video=self.video,
         )
 
     @cached_property
@@ -270,11 +280,6 @@ class RectangleEnclosedTrial(EnclosedTrial):
         data = [
             # self.gaussian_center_to_periphery_score,
         ]
-        for (qgc_i, quadrant), (qgc_ii, entries) in zip(
-            self.quadrant_grid_coordinate_to_quadrant.items(), self.quadrant_grid_coordinate_to_entries.items()
-        ):
-            assert qgc_i == qgc_ii
-            data.extend((*quadrant.motion.values(), entries, quadrant.seconds_present))
 
         if self._center_periphery_is_defined:
             data.extend(
@@ -288,6 +293,12 @@ class RectangleEnclosedTrial(EnclosedTrial):
                 )
             )
 
+        for (qgc_i, quadrant), (qgc_ii, entries) in zip(
+            self.quadrant_grid_coordinate_to_quadrant.items(), self.quadrant_grid_coordinate_to_entries.items()
+        ):
+            assert qgc_i == qgc_ii
+            data.extend((*quadrant.motion.values(), entries, quadrant.seconds_present))
+
         upstream_list.append(
             pd.Series(
                 data,
@@ -298,8 +309,9 @@ class RectangleEnclosedTrial(EnclosedTrial):
         return upstream_list
 
 
-class RectangleEnclosedHabituationTrial(HabituationTrialMixin, RectangleEnclosedTrial):
-    pass
+class RectangleEnclosedHabituationTrial(RectangleEnclosedTrial, HabituationTrialMixin):
+    # TODO: Fix incorrect trial_label, when using this class
+    trial_label = "Habituation"
 
 
 class GenericRectangleEnclosedTrial(RectangleEnclosedTrial):
@@ -322,17 +334,17 @@ def motion_column_headers(
     result = [
         # ("Gaussian", "CenterToPeriphery")
     ]
-    for quadrant_grid_coordinate in quadrant_grid_coordinates:
-        category = f"Quadrant{quadrant_grid_coordinate}"
-        result.extend(motion_multi_indexer_for_subsection(category, 2))
 
     if center_periphery_is_defined:
         result.extend(
             (
                 *motion_multi_indexer_for_subsection("Center", column_index_levels),
-                *perimeter_multi_indexer("Center", column_index_levels),
                 *motion_multi_indexer_for_subsection("Periphery", column_index_levels),
-                *perimeter_multi_indexer("Periphery", column_index_levels),
             )
         )
+
+    for quadrant_grid_coordinate in quadrant_grid_coordinates:
+        category = f"Quadrant{quadrant_grid_coordinate}"
+        result.extend(motion_multi_indexer_for_subsection(category, 2))
+
     return result

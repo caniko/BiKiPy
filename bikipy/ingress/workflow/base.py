@@ -567,13 +567,13 @@ class BaseIngress(BaseBikipy, ABC):
                 self.experiment.trial_label_to_df
             stats = pstats.Stats(pr)
             stats.sort_stats(pstats.SortKey.TIME)
-            stats.dump_stats(self.inspect_directory_path / "analysis_performance.prof")
+            stats.dump_stats(self.inspect_directory_path / "performance_analysis.prof")
         else:
             self.experiment.trial_label_to_df
 
         with pd.ExcelWriter(self.result_directory_path / f"{self.experiment_name}.xlsx") as writer:
             for trial_label, df in self.trial_label_to_df.items():
-                df.to_excel(writer, sheet_name=trial_label)
+                df.to_excel(writer, sheet_name=str(trial_label))
 
         if len(self.trial_label_to_df) != 1:
             parquet_dir = self.result_directory_path / "parquet"

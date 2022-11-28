@@ -4,6 +4,7 @@ import numpy as np
 from pydantic_numpy import NDArrayBool, NDArrayFp64
 
 from bikipy.core.base_class import BaseBikipy
+from bikipy.core.video import VideoMetadata
 from bikipy.feature.motion import get_combined_features_from_merged_motion_island_data
 from bikipy.utils.math.geometry import clockwise_sort_points
 from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
@@ -14,6 +15,9 @@ class Quadrant(BaseBikipy):
     kinematic_coordinates: NDArrayFp64
     fps: float
     quadrant_index: int
+
+    def plot_vertices(self, video: VideoMetadata) -> NDArrayFp64:
+        return video.prepare_coordinates_for_plotting(self.vertices_in_meters)
 
     @cached_property
     def confinement_boolean_index(self) -> NDArrayBool:

@@ -59,7 +59,7 @@ class BasePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, ABC):
 
         video: VideoMetadata = manual_video or self.video
         if coordinates is not None:
-            coordinates: NDArrayFp64 = video.prepare_coordinates_for_plotting(coordinates, True)
+            coordinates: NDArrayFp64 = video.prepare_coordinates_for_plotting(coordinates)
 
         return ax, coordinates, video
 

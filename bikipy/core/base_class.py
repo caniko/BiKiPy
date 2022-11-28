@@ -67,7 +67,7 @@ class BaseBikipyInspectMixin(BaseBikipy):
         description="Path to image to use as background in the plots for visualising the analysis data",
     )
 
-    class_inspect_directory_name: ClassVar[Optional[str]]
+    class_inspect_directory_name: ClassVar[Optional[str]] = None
 
     def save(self, manual_save_path: Optional[DirectoryPath] = None) -> None:
         if manual_save_path:

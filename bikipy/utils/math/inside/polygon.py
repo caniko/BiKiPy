@@ -10,6 +10,7 @@ from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from seaborn import set_theme
 
 from bikipy import runtime_settings
+from bikipy.core.video import VideoMetadata
 from bikipy.utils.image import axis_frame_imshow
 from bikipy.utils.math.vector import dot_axis_1_1d, orthogonal_unit_vector
 from bikipy.utils.plotting import InspectArg, generic_inspection_finalization
@@ -78,6 +79,7 @@ def parallel_point_inside_polygon(
     polygon: NDArrayFp64,
     merge_ends: bool = True,
     inspect_arg: InspectArg = False,
+    video: Optional[VideoMetadata] = None,
     ax: Any = None,
     **inspect_kwargs,
 ) -> NDArrayBool:
@@ -90,15 +92,23 @@ def parallel_point_inside_polygon(
     )
 
     if inspect_arg or ax is not None:
-        if ax is None:
-            fig, ax = plt.subplots()
+        if video:
+            fig, ax = video.subplots()
 
-        ax.plot(*np.vstack(polygon).T, label="Polygon")
-        ax.scatter(*points[result].T, label="Inside")
-        ax.scatter(*points[~result].T, label="Outside")
+            points = video.prepare_coordinates_for_plotting(points)
+
+            ax.plot(*np.vstack(video.prepare_coordinates_for_plotting(polygon)).T, label="Polygon")
+            ax.scatter(*points[result].T, label="Inside")
+            ax.scatter(*points[~result].T, label="Outside")
+        else:
+            if ax is None:
+                fig, ax = plt.subplots()
+
+            ax.plot(*np.vstack(polygon).T, label="Polygon")
+            ax.scatter(*points[result].T, label="Inside")
+            ax.scatter(*points[~result].T, label="Outside")
 
         ax.legend()
-
         generic_inspection_finalization(inspect_arg, **inspect_kwargs)
 
     return result

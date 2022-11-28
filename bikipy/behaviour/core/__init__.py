@@ -638,8 +638,7 @@ class BaseExperiment(Behaviour):
         result = defaultdict(dict)
         if not runtime_settings.disable_process_pooling:
             with yaspin(Spinners.pong, text="Computing experiment features..."):
-                # with ProcessPoolExecutor(max_workers=round(2.0 * os.cpu_count() * 0.80)) as executor:
-                with ProcessPoolExecutor() as executor:
+                with ProcessPoolExecutor(max_workers=runtime_settings.threads_to_use) as executor:
                     for trial_class_label, trial_objects in self._trial_class_label_to_trial_objects.items():
                         result[trial_class_label] = {
                             trial_object.label: features

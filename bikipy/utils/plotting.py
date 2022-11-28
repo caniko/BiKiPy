@@ -91,9 +91,6 @@ def plot_coordinates(
 ):
     coordinates = video.prepare_coordinates_for_plotting(coordinates, inspect_pixels)
 
-    if video.image_resize_multiplier:
-        coordinates = coordinates * video.image_resize_multiplier
-
     ax.plot(*coordinates.T, color=cmap(len(coordinates)), **plot_kwargs)
 
     return ax

@@ -123,8 +123,9 @@ class VideoMetadata(_VideoMetadataBase):
 
     @cached_property
     def multiplied_resolution(self) -> NDArrayInt16:
-        if self.image_resize_multiplier:
-            return np.round(self.resolution * self.image_resize_multiplier).astype(np.int16)
+        if self.image_resize_multiplier == 1:
+            return self.recording_resolution
+        return np.round(self.resolution * self.image_resize_multiplier).astype(np.int16)
 
     @cached_property
     def center_pixel(self) -> NDArrayInt16:
@@ -147,6 +148,10 @@ class VideoMetadata(_VideoMetadataBase):
         return self.metric_resolution / 2.0
 
     @property
+    def center_for_plot(self) -> NDArrayFp64:
+        return self.center_pixel if self.coordinates_need_to_be_scaled_for_plot else self.center_meters
+
+    @property
     def metric_horizontal_resolution(self) -> int:
         return self.metric_resolution[0]
 
@@ -163,11 +168,12 @@ class VideoMetadata(_VideoMetadataBase):
         return round(self.fps * runtime_settings.maximum_seconds_distraction)
 
     @cached_property
-    def image_resize_multiplier(self) -> float | None:
+    def image_resize_multiplier(self) -> float:
         if self.minimum_frame_length:
             shortest_side_size = min(self.frame.shape[:2])
             if shortest_side_size < self.minimum_frame_length:
                 return self.minimum_frame_length / shortest_side_size
+        return 1.0
 
     @cached_property
     def greyscale_frame(self) -> NDArrayUint8:
@@ -180,7 +186,7 @@ class VideoMetadata(_VideoMetadataBase):
 
     @cached_property
     def upscaled_video(self) -> "VideoMetadata":
-        if not self.image_resize_multiplier:
+        if self.image_resize_multiplier == 1:
             return self
         new_frame = cv2.resize(
             self.frame,
@@ -260,9 +266,7 @@ class VideoMetadata(_VideoMetadataBase):
         self, data: NDArray | float, manual_inspect_pixels: bool = False
     ) -> NDArrayFp64 | float:
         if manual_inspect_pixels or self.coordinates_need_to_be_scaled_for_plot:
-            data *= self.pixels_per_meter
-        if self.image_resize_multiplier:
-            data *= self.image_resize_multiplier
+            return data * self.pixels_per_meter * self.image_resize_multiplier
         return data
 
 
