@@ -43,7 +43,7 @@ def ax_plot_coordinate_with_boolean_index(
         ax.scatter(*coordinates[boolean_index].T, label="Inside", color="dodgerblue")
         ax.scatter(*coordinates[~boolean_index].T, label="Outside", color="crimson")
 
-        ax.legend()
+        ax.legend(**BOTTOM_LEGEND_KWARGS)
 
 
 def ax_imshow_gray(ax, image: NDArrayFp64) -> None:
