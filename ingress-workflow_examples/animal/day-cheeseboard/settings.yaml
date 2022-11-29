@@ -4,7 +4,7 @@ ingress:
   metadata_trial_ids_are_higher_level: true
   trial_sequence_repetitions: null
   framewise_coordinates_file_suffix: .parquet
-  dataset_directory: /data/can/dataset/
+  dataset_directory: /data/behaviour_dataset/Chrys_Behavior_Analysis/cheeseboard_dataset_plugins/dataset
   profile_runtime: true
 definition_strategies:
   meters_per_pixel: metadata
@@ -20,6 +20,7 @@ perimeter:
   label_suffix: null
   perimeter_names_in_metadata: false
   radial_arm_rectangle_diagonal: null
+  inspect_arg: false
   fields:
     defined: {}
     optional:

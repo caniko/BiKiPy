@@ -20,7 +20,6 @@ class RewardTraceTrialMixin(AbstractTrial, ABC):
     reward_perimeter: Perimeter
 
     tolerate_boolean_index: bool = True
-    temporal_tolerance: float = 1.0 / 3.0
 
     perimeter_labels = {"start_perimeter", "reward_perimeter"}
 
