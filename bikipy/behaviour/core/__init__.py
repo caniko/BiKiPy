@@ -286,8 +286,8 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
         return round(self.second_tolerance * self.video.fps)
 
     def _post_analysis_flush(self) -> None:
-        # self.reader.flush_reads()
-        pass
+        self.reader.flush_reads()
+        self.video.flush()
 
 
 Trial = TypeVar("Trial", bound=BaseTrial)

@@ -269,6 +269,15 @@ class VideoMetadata(_VideoMetadataBase):
             return data * self.pixels_per_meter * self.image_resize_multiplier
         return data
 
+    def flush(self) -> None:
+        if self.frame is not None:
+            self.frame = None
+            try:
+                del self.upscaled_video
+                del self.greyscale_frame
+            except AttributeError as e:
+                logger.debug(str(e))
+
 
 class VideoMetadataMixin(_VideoMetadataBase):
     manual_video: Optional[VideoMetadata] = Field(

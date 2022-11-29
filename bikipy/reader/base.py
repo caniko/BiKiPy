@@ -208,6 +208,9 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         if self.cache_meters_augmented:
             result.to_parquet(self.cached_augmented_df_path)
 
+        # Clear augmented from memory as we don't need it anymore
+        del self.augmented
+
         return result
 
     @property
@@ -315,9 +318,11 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         )
 
     def flush_reads(self) -> None:
-        self.raw_df.fget.cache_clear()
-        self.augmented.fget.cache_clear()
-        self.meters_augmented.fget.cache_clear()
+        try:
+            del self.raw_df
+            del self.meters_augmented
+        except AttributeError as e:
+            logger.error(str(e))
 
 
 Reader = TypeVar("Reader", bound=BaseReader)
