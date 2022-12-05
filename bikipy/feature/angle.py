@@ -1,9 +1,8 @@
 from typing import Optional, Sequence
 from warnings import warn
 
-import numba
 import numpy as np
-from numba import jit, njit
+from numba import njit
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import runtime_settings

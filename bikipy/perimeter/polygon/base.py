@@ -25,7 +25,6 @@ from bikipy.utils.math.vector import (
     rotate_vectors_with_angle,
     unit_vector,
 )
-from bikipy.utils.plotting import generic_inspection_finalization
 
 logger = getLogger(__name__)
 

@@ -22,7 +22,6 @@ from bikipy.utils.makesense import (
 )
 from bikipy.utils.math.inside.ellipse import point_inside_ellipse
 from bikipy.utils.math.vector import unit_vector
-from bikipy.utils.plotting import generic_inspection_finalization
 
 
 class CirclePerimeter(BaseSinglePerimeter):

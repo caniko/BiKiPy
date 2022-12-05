@@ -1,7 +1,6 @@
-import os
 from functools import cached_property
-from pathlib import Path, PurePath
-from typing import ClassVar, Generic, Optional, TypeVar
+from pathlib import Path
+from typing import ClassVar, Optional, TypeVar
 
 from compress_pickle import compress_pickle
 from pydantic import BaseModel, DirectoryPath, Field, FilePath

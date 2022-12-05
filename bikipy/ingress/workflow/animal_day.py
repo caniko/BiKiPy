@@ -17,9 +17,15 @@ class AnimalDayIngress(BaseIngress):
             return f"{animal_id}_{day}_{daily_trial_number}"
 
         for animal_dir in self.dataset_directory_path.iterdir():
+            if animal_dir.is_file():
+                continue
+
             animal_id = self._get_id_from_path_stem(animal_dir)
 
             for day_dir in animal_dir.iterdir():
+                if day_dir.name.startswith("."):
+                    continue
+
                 day = day_dir.stem.lower().replace("D", "").strip()
 
                 for framewise_coordinates_path in self._glob_coordinate_files_in_directory(day_dir):

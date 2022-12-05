@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
+from time import sleep
 from typing import Any, Literal, Optional, TypeVar
 
 import matplotlib.pyplot as plt
@@ -17,7 +18,6 @@ from pydantic import (
 )
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
-from bikipy import runtime_settings
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.perimeter.polygon.makesense import (
@@ -74,7 +74,7 @@ class BasePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, ABC):
         if not self.inspect_arg:
             return
 
-        ax, coordinates, video = self._manual_video_metadata_derived_inspection_preparation(
+        ax, inspection_coordinates, video = self._manual_video_metadata_derived_inspection_preparation(
             manual_video, coordinates, ax
         )
         self.plot_perimeter_on_ax(
@@ -84,7 +84,7 @@ class BasePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, ABC):
         )
 
         if coordinates is not None:
-            ax_plot_coordinate_with_boolean_index(ax, boolean_index, coordinates)
+            ax_plot_coordinate_with_boolean_index(ax, boolean_index, inspection_coordinates)
 
         generic_inspection_finalization(self.class_inspect_arg, **inspect_kwargs)
 

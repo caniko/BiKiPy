@@ -15,7 +15,7 @@ from typing_extensions import Literal
 from bikipy import runtime_settings
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.video import VideoMetadataMixin
-from bikipy.feature import recursive_midpoint
+from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.reader.filter import filter_data
 from bikipy.reader.utils import compute_midpoint_label
 

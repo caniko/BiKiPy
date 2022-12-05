@@ -35,7 +35,7 @@ from bikipy.ingress.utils.io import (
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
 from bikipy.ingress.utils.settings import get_definable_settings
 from bikipy.perimeter.base import BaseSinglePerimeter, Perimeter
-from bikipy.reader import DeepLabCutReader
+from bikipy.reader.data_with_likelihood import DeepLabCutReader
 from bikipy.utils.collection_utils import (
     copycat_assumes_levels_of_icon,
     get_first_value_in_dict,

@@ -634,7 +634,7 @@ class BaseExperiment(Behaviour):
 
     # DataFrame methods =========================================
 
-    def analyze_trials(self, self_destruct_trials: bool = False):
+    def analyze_trials(self):
         result = defaultdict(dict)
         if not runtime_settings.disable_process_pooling:
             with yaspin(Spinners.pong, text="Computing experiment features..."):
@@ -657,7 +657,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _trial_class_to_trial_series_set(self):
-        return self.analyze_trials(self_destruct_trials=False)
+        return self.analyze_trials()
 
     @cached_property
     def _animal_id_to_sequential_features(self) -> pd.DataFrame | None:

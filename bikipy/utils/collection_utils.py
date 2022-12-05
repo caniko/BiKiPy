@@ -1,6 +1,6 @@
 from functools import lru_cache
 from itertools import chain
-from typing import Any, Callable, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Iterable, Optional, Sequence
 
 import numpy as np
 import pandas as pd

@@ -8,7 +8,6 @@ from pydantic import DirectoryPath, validator
 from bikipy.core.base_class import BaseBikipy
 
 try:
-    from statsmodels.multivariate.manova import MANOVA
     from statsmodels.stats.multicomp import pairwise_tukeyhsd
 except ImportError:
     msg = "Install bikipy[stats] module to perform statistical analysis"

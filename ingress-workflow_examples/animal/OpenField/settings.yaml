@@ -5,7 +5,7 @@ ingress:
   trial_sequence_repetitions: null
   framewise_coordinates_file_suffix: .h5
   minimum_frame_length: 500
-  dataset_directory: /home/neo/Downloads/Compressed/OF/habituation_dataset/
+  dataset_directory: /Users/can/Downloads/habituation_dataset
   profile_runtime: true
 definition_strategies:
   meters_per_pixel: metadata
@@ -42,7 +42,7 @@ perimeter:
       recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
 reader_kwargs:
   defined:
-    filter_method: median
+    cache_meters_augmented: false
   optional:
     cache_meters_augmented: boolean -> True
     category: string -> video_metadata
@@ -105,7 +105,7 @@ trial:
       defined: {}
 experiment:
   defined:
-    fps: 30
+    fps: 15
   optional:
     category: string -> video_metadata
     compute_first_two_feature_series_only: boolean -> False
