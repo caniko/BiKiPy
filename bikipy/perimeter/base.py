@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
-from time import sleep
 from typing import Any, Literal, Optional, TypeVar
 
 import matplotlib.pyplot as plt
