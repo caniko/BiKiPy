@@ -55,7 +55,7 @@ class DataWithLikelihoodReader(BaseReader):
 
     @cached_property
     def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:
-        return {roi: self.df[(roi, "likelihood")].values >= self.min_likelihood for roi in self.tracked_point_labels}
+        return {roi: self.df[(roi, "likelihood")].values >= self.min_likelihood for roi in self.all_tracked_labels}
 
     @property
     def frames(self) -> int:

@@ -7,8 +7,7 @@ from typing import Hashable, Iterable, Optional, Sequence, TypeVar
 import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath
-from pydantic_numpy import NDArray
-from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayUint8
 from sklearn.neighbors import NearestNeighbors
 from typing_extensions import Literal
 
@@ -16,6 +15,7 @@ from bikipy import runtime_settings
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.midpoint import recursive_midpoint
+from bikipy.feature.motion import Motion
 from bikipy.reader.filter import filter_data
 from bikipy.reader.utils import compute_midpoint_label
 
@@ -24,6 +24,7 @@ FILE_EXTENSION_TO_PANDAS_READER = {
     ".hdf": pd.read_hdf,
     ".h5": pd.read_hdf,
 }
+BAD_COORDINATE = ((np.nan, np.nan, 0.0),)  # x, y, likelihood
 
 
 logger = getLogger(__name__)
@@ -38,9 +39,15 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         description="labels that consist of groups that should have their midpoints computed in the DataFrame"
     )
 
-    filter_method: Literal["arima", "median", "spline", None] = None
+    filter_method: Literal["arima", "median", "spline", None] = Field(
+        "arima", description="Post-hoc filtration method of data, adapted from DeepLabCut"
+    )
     filter_kwargs: dict = Field(default_factory=dict)
     ignore_likelihoods: bool = False
+
+    required_tail_likelihood: float = Field(
+        0.8, description="The pd.DataFrame will be cropped to this combined likelihood score"
+    )
 
     future_scaling: bool = Field(
         None,
@@ -72,9 +79,18 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         False,
         description="Only affective if crop_frames is not 0. " "Will crop from start instead when set to False",
     )
+    filter_displacement_by_std: Optional[float] = Field(
+        2.0,
+        description="When set the maximum displacement by frame will have an upper bound defined by the given scale of the STD",
+    )
 
     export_timestamp_data_as_parquet: bool = Field(
         False, description="When timestemp index is defined, export re-indexed df as parquet"
+    )
+
+    _using_bikipy_ingress: bool = Field(
+        False,
+        description="This is a flagg used by the developer to signal the use of bikipy ingress to the class. Currently, it only affects augmented df caching",
     )
 
     _region_of_interest_to_fused_neighbouring_points: dict[str, NDArrayUint8] = Field(default_factory=dict)
@@ -87,10 +103,15 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         be recorded in this class-property to be excluded by the settings generator function in the ingress module
         :return:
         """
-        return super().exclude_from_settings_schema.union({"df_path", "timestamp_index"})
+        return super().exclude_from_settings_schema.union({"df_path", "timestamp_index", "_using_bikipy_ingress"})
 
     @abstractmethod
     def _isolate_coordinates(self, key: Iterable[Hashable] | Hashable) -> pd.DataFrame:
+        ...
+
+    @property
+    @abstractmethod
+    def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:
         ...
 
     @cached_property
@@ -116,6 +137,10 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
 
     @cached_property
     def cached_augmented_df_path(self) -> FilePath:
+        if self._using_bikipy_ingress:
+            return self.df_path.with_name(
+                f"{self.df_path.stem.replace('coordinate', 'augmented_coord')}.parquet"
+            )
         return self.df_path.with_name(f"{self.df_path.stem}_augmented.parquet")
 
     @cached_property
@@ -125,6 +150,14 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         include midpoints and inner interpolations.
         """
         result_df = self.raw_df.copy()
+
+        # Remove warm up tail with low likelihoods
+        tail_likelihood_capped_boolean_idx = np.where(self.combined_raw_likelihood >= self.required_tail_likelihood)[0]
+        start_idx, _end_idx = tail_likelihood_capped_boolean_idx[0], tail_likelihood_capped_boolean_idx[-1]
+        logger.debug(
+            f"Likelihood filtering (>={self.required_tail_likelihood}): " f"Slicing [{start_idx}:] from coordinates"
+        )
+        result_df = result_df.iloc[start_idx:]
 
         if self.filter_method:
             logger.debug(f"Filtering {self.df_path.stem} with the {self.filter_method} method")
@@ -166,6 +199,10 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
             result_df.loc[:, pd.IndexSlice[:, "y"]] = (
                 result_df.loc[:, pd.IndexSlice[:, "y"]] - self.y_axis_crop_end_point
             )
+
+        # for label in self.physically_tracked_labels:
+        #     motion = Motion(coordinate_sequence=np.delete(result_df[label].values, 2, 1), fps=self.video.fps)
+        #     idx = motion.lowpass_std_filter()
 
         if self.midpoint_groups:
             generated_midpoints = set()
@@ -234,6 +271,13 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     def frames(self) -> int:
         return len(self.df)
 
+    @property
+    def info(self) -> pd.Series:
+        return pd.Series(
+            [self.raw_frames, self.frames, self.frames / self.video.fps],
+            index=[("Reader", "RawFrames"), ("Reader", "AugmentedFrames"), ("Reader", "AugmentedDurationSeconds")],
+        )
+
     @cached_property
     def raw_df(self) -> pd.DataFrame:
         try:
@@ -259,38 +303,8 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         return df
 
     @property
-    def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:
-        raise NotImplementedError
-
-    @cached_property
-    def valid_point_indices(self) -> dict[str, NDArray]:
-        return {
-            roi: np.where(self.region_of_interest_to_boolean_index[roi])[0] for roi in self.physically_tracked_labels
-        }
-
-    @cached_property
-    def valid_tails(self) -> dict[str, tuple[int, int]]:
-        return {
-            item: (
-                self.valid_point_indices[item][0],
-                self.valid_point_indices[item][-1],
-            )
-            for item in self.physically_tracked_labels
-        }
-
-    @cached_property
-    def valid_slices(self) -> dict[str, slice]:
-        return {
-            item: slice(self.valid_point_indices[item][0], self.valid_point_indices[item][-1])
-            for item in self.physically_tracked_labels
-        }
-
-    @cached_property
-    def validity_ratio(self) -> dict[str, float]:
-        return {
-            roi: np.sum(self.region_of_interest_to_boolean_index[roi]) / len(self.raw_df)
-            for roi in self.physically_tracked_labels
-        }
+    def combined_raw_likelihood(self) -> NDArrayFp64:
+        return np.multiply.reduce(self.raw_df.loc[:, pd.IndexSlice[:, "likelihood"]], axis=1)
 
     @cached_property
     def trial_length_seconds(self) -> float:

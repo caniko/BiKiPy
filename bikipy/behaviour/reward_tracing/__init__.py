@@ -38,8 +38,7 @@ class RewardTraceTrialMixin(AbstractTrial, ABC):
         for i, b in enumerate(confined_bool):
             if b:
                 was_confined = True
-
-            elif was_confined:
+            elif was_confined:  # and not b
                 logger.debug(f"Subject {self.label} was in the start area, and then left the starting area")
                 return i
 

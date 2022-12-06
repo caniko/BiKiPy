@@ -48,13 +48,9 @@ for cm_directory in os.listdir():
     in_reward_area_records = pd.DataFrame.from_dict(
         average_day(in_reward_area_raw), orient="index", columns=["InRewardArea"]
     )
-    distance_records = pd.DataFrame.from_dict(
-        average_day(distance_raw), orient="index", columns=["DistanceToReward"]
-    )
+    distance_records = pd.DataFrame.from_dict(average_day(distance_raw), orient="index", columns=["DistanceToReward"])
 
-    find_reward_df = pd.concat(
-        [reward_trace_records, in_reward_area_records, distance_records], axis=1, join="inner"
-    )
+    find_reward_df = pd.concat([reward_trace_records, in_reward_area_records, distance_records], axis=1, join="inner")
     find_reward_df.index = pd.MultiIndex.from_tuples(find_reward_df.index, names=("Animal", "Day"))
     find_reward_df.sort_index(inplace=True)
 

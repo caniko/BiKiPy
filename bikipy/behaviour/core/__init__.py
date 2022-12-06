@@ -246,7 +246,7 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
 
     @property
     def _trial_feature_series_list(self) -> list[pd.Series]:
-        return [pd.Series(self.motion.as_tuple, index=self.constant_feature_headers)]
+        return [self.reader.info, pd.Series(self.motion.as_tuple, index=self.constant_feature_headers)]
 
     @property
     def _video(self) -> VideoMetadata:

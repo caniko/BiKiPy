@@ -5,7 +5,7 @@ from typing import Iterable, Optional
 import numpy as np
 import pandas as pd
 from pydantic import Field
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt32
 
 from bikipy.core.base_class import BaseBikipy
 from bikipy.feature.tolerance.single import arg_single_node_tolerance_filter
@@ -200,6 +200,16 @@ class Motion(BaseBikipy):
         if self.weight:
             return self.total_displacement, self.median_speed, self.median_acceleration, self.freezing_time, self.weight
         return self.total_displacement, self.median_speed, self.median_acceleration, self.freezing_time
+
+    def lowpass_std_filter(self, sd_scale: float = 2.0):
+        displacement = np.diff(self.coordinate_sequence, axis=0)
+        displacement_sd = np.std(np.abs(displacement), axis=0)
+
+        filter_boolean_idx = displacement > (displacement_sd * sd_scale)
+        if not np.any(filter_boolean_idx):
+            return []
+
+        return np.where(filter_boolean_idx)[0]
 
 
 EMPTY_MOTION = np.full(4, np.nan)

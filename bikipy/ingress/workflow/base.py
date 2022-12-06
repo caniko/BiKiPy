@@ -454,7 +454,7 @@ class BaseIngress(BaseBikipy, ABC):
                     raise ValueError(msg)
                 self._common_trial_keyword_arguments[field] = value
 
-        global_reader_kwargs = {}
+        global_reader_kwargs = {"_using_bikipy_ingress": True}
         # Data source priority in ascending order
         if "defined" in self.settings["trial"]["common"] and self.settings["trial"]["common"]["defined"]:
             for key, value in self.settings["trial"]["common"]["defined"].items():
