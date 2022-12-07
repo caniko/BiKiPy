@@ -39,7 +39,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         description="labels that consist of groups that should have their midpoints computed in the DataFrame"
     )
 
-    filter_method: Literal["arima", "median", "spline", None] = Field(
+    filter_method: Literal["arima", "median", "spline"] | None = Field(
         "arima", description="Post-hoc filtration method of data, adapted from DeepLabCut"
     )
     filter_kwargs: dict = Field(default_factory=dict)

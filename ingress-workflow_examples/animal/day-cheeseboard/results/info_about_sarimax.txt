@@ -1,0 +1,28 @@
+The SARIMAX, or the Seasonal Autoregressive Integrated Moving Average Exogenous model, is used to remove outliers from tracking, and also smoothen rapid changes in the speed of the tracked points.
+
+Compared to ARIMA, this method introduces seasonality into the modeling, which allows us to predict movement trajectories that are recognisent to patterns throughout the entire trial.
+
+The method has previously been used in DeepLabCut, which is the state of the art in markerless pose estimation.
+
+Note from Can:
+I suggest that you copy the part in Notes on this page over to your article.
+
+https://www.statsmodels.org/dev/generated/statsmodels.tsa.statespace.sarimax.SARIMAX.html
+
+We used:
+sm.tsa.statespace.SARIMAX(
+	Y.flatten(),
+	order=(ARdegree, 0, MAdegree),
+	seasonal_order=(0, 0, 0, 0),
+	simple_differencing=True,
+)
+
+If not stated above, these are the defaults: (endog, exog=None, order=(1, 0, 0),
+ seasonal_order=(0, 0, 0, 0), trend=None,
+ measurement_error=False, time_varying_regression=False,
+ mle_regression=True, simple_differencing=False,
+ enforce_stationarity=True, enforce_invertibility=True,
+ hamilton_representation=False, concentrate_scale=False,
+ trend_offset=1, use_exact_diffuse=False, dates=None,
+ freq=None, missing='none', validate_specification=True,
+ **kwargs):

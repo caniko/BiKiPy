@@ -1,4 +1,4 @@
-import os
+import glob
 from collections import defaultdict
 from functools import partial
 from pathlib import Path
@@ -8,12 +8,8 @@ import pandas as pd
 
 file = Path(__file__).name
 
-for cm_directory in os.listdir():
-    directory = f"{cm_directory}/"
-    if not os.path.exists(directory):
-        continue
-
-    df = pd.read_parquet(f"{directory}/cheeseboard_reward_trace-cheeseboard.parquet")
+for f in glob.iglob("**/**/*.parquet"):
+    df = pd.read_parquet(f)
 
     dict_dict_list = partial(defaultdict, list)
     reward_trace_raw, in_reward_area_raw, distance_raw, probe_records = (

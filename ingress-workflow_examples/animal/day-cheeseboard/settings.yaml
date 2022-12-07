@@ -42,7 +42,8 @@ perimeter:
       recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
 reader_kwargs:
   defined:
-    cache_meters_augmented: true
+    cache_meters_augmented: false
+    filter_method: null
   optional:
     cache_meters_augmented: boolean -> True
     category: string -> video_metadata
