@@ -25,4 +25,4 @@ If not stated above, these are the defaults: (endog, exog=None, order=(1, 0, 0),
  hamilton_representation=False, concentrate_scale=False,
  trend_offset=1, use_exact_diffuse=False, dates=None,
  freq=None, missing='none', validate_specification=True,
- **kwargs):
+ **kwargs
