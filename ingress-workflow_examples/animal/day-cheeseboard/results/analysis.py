@@ -6,9 +6,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-file = Path(__file__).name
 
 for f in glob.iglob("**/**/*.parquet"):
+    f = Path(f)
     df = pd.read_parquet(f)
 
     dict_dict_list = partial(defaultdict, list)
@@ -54,6 +54,6 @@ for f in glob.iglob("**/**/*.parquet"):
     probe_df.index = pd.MultiIndex.from_tuples(probe_df.index, names=("Animal", "Day"))
     probe_df.sort_index(ascending=[True, False], inplace=True)
 
-    with pd.ExcelWriter(f"{directory}/result.xlsx") as writer:
+    with pd.ExcelWriter(f.with_name("averaged_result.xlsx")) as writer:
         find_reward_df.to_excel(writer, sheet_name="find_reward")
         probe_df.to_excel(writer, sheet_name="probe")

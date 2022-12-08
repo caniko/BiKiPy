@@ -43,7 +43,6 @@ perimeter:
 reader_kwargs:
   defined:
     cache_meters_augmented: false
-    filter_method: null
   optional:
     cache_meters_augmented: boolean -> True
     category: string -> video_metadata
