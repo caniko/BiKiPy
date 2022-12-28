@@ -16,6 +16,7 @@ from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.feature.motion import Motion
+from bikipy.perimeter.base import Perimeter
 from bikipy.reader.filter import filter_data
 from bikipy.reader.utils import compute_midpoint_label
 
@@ -35,6 +36,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     df_read_kwargs: Optional[dict] = Field(
         default_factory=dict, description="Keyword arguments to pass to the padnas dataframe reader"
     )
+    enclosure: Optional[Perimeter] = Field(description="Perimeter defining the enclosure of the trial")
     midpoint_groups: Optional[dict[str, tuple]] = Field(
         description="labels that consist of groups that should have their midpoints computed in the DataFrame"
     )
@@ -43,7 +45,6 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         "arima", description="Post-hoc filtration method label for improving data accuracy, adapted from DeepLabCut"
     )
     filter_kwargs: dict = Field(default_factory=dict)
-    ignore_likelihoods: bool = False
 
     required_tail_likelihood: float = Field(
         0.8, description="The pd.DataFrame will be cropped to this combined likelihood score"
@@ -63,8 +64,8 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         False, description="When True, the reader will interpret the DataFrame index as timestamps in seconds"
     )
 
-    x_axis_crop_end_point: float = 0.0
-    y_axis_crop_end_point: float = 0.0
+    x_axis_crop_end_point: float = Field(0.0, description="x component of the raw video crop of video")
+    y_axis_crop_end_point: float = Field(0.0, description="y component of the raw video crop of video")
     invert_y_axis: bool = Field(
         runtime_settings.matplotlib_invert_y_axis,
         description=(
@@ -138,9 +139,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     @cached_property
     def cached_augmented_df_path(self) -> FilePath:
         if self._using_bikipy_ingress:
-            return self.df_path.with_name(
-                f"{self.df_path.stem.replace('coordinate', 'augmented_coord')}.parquet"
-            )
+            return self.df_path.with_name(f"{self.df_path.stem.replace('coordinate', 'augmented_coord')}.parquet")
         return self.df_path.with_name(f"{self.df_path.stem}_augmented.parquet")
 
     @cached_property
@@ -158,6 +157,9 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
             f"Likelihood filtering (>={self.required_tail_likelihood}): " f"Slicing [{start_idx}:] from coordinates"
         )
         result_df = result_df.iloc[start_idx:]
+
+        if self.enclosure:
+            logger.debug(f"Removing coordinates outside the defined enclosure for {self.label}")
 
         if self.filter_method:
             logger.debug(f"Filtering {self.df_path.stem} with the {self.filter_method} method")
