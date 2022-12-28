@@ -1,6 +1,7 @@
 from abc import ABC
 from functools import cached_property
 from logging import getLogger
+from typing import Generic, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -10,14 +11,17 @@ from bikipy.behaviour.core.abstract import AbstractTrial
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.feature.motion import EMPTY_MOTION, Motion, motion_multi_indexer
 from bikipy.feature.tolerance.single import single_node_tolerance_filter
-from bikipy.perimeter.base import Perimeter
+from bikipy.perimeter.base import BaseSinglePerimeter, Perimeter
 
 logger = getLogger(__name__)
 
+StartPerimeter = TypeVar("StartPerimeter", bound=BaseSinglePerimeter)
+RewardPerimeter = TypeVar("RewardPerimeter", bound=BaseSinglePerimeter)
 
-class RewardTraceTrialMixin(AbstractTrial, ABC):
-    start_perimeter: Perimeter
-    reward_perimeter: Perimeter
+
+class RewardTraceTrialMixin(Generic[StartPerimeter, RewardPerimeter], AbstractTrial, ABC):
+    start_perimeter: StartPerimeter
+    reward_perimeter: RewardPerimeter
 
     tolerate_boolean_index: bool = True
 

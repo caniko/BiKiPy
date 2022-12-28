@@ -30,7 +30,7 @@ perimeter:
       manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
       meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
       video_path: string
-reader_kwargs:
+manual_reader_kwargs:
   defined:
     midpoint_groups:
       center_eye:

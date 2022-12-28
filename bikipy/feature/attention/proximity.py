@@ -11,7 +11,8 @@ from bikipy import runtime_settings
 from bikipy.core.video import VideoMetadata, inspect_video_is_none_during_inspection
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.utils.image import axis_frame_imshow
-from bikipy.utils.plotting import BOTTOM_LEGEND_KWARGS, make_color_map
+from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
+from bikipy.utils.plot.color import make_color_map
 
 logger = getLogger(__name__)
 

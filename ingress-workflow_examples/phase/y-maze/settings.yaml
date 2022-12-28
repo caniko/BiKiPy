@@ -32,7 +32,7 @@ perimeter:
       manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
       meters_per_pixel: np.ndarray[name='meters_per_pixel_0' type=dobble required=True]
       video_path: string
-reader_kwargs:
+manual_reader_kwargs:
   defined:
     x_axis_crop_end_point: 95.0
     y_axis_crop_end_point: 75.0

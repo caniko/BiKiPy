@@ -103,13 +103,7 @@ def recording_resolution_from_makesense_row(row: pd.Series) -> NDArrayInt16:
 def image_names_from_makesense(
     data_path: FilePath, makesense_shape: Literal["rectangle", "line", "point"]
 ) -> pd.DataFrame:
-    match makesense_shape:
-        case "rectangle":
-            data = read_makesense_rectangle(data_path)
-        case "line":
-            data = read_makesense_line(data_path)
-        case "point":
-            data = read_makesense_point(data_path)
+    data = MAKESENSE_SHAPE_TO_MAKESENSE_READER[makesense_shape](data_path)
 
     if len(data) > 1:
         logger.warning(f"first_image_name_from_makesense detected more than one perimeter in one file: {data_path}")
@@ -121,6 +115,11 @@ def first_image_name_from_makesense(*args, **kwargs) -> str:
     return image_names_from_makesense(*args, **kwargs).iloc[0]
 
 
+MAKESENSE_SHAPE_TO_MAKESENSE_READER = {
+    "rectangle": read_makesense_rectangle,
+    "line": read_makesense_line,
+    "point": read_makesense_point,
+}
 SHAPE_TO_MAKESENSE_TYPE = {
     "circle": "line",
     "triangle": "polygon",

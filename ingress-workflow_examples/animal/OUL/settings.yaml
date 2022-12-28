@@ -35,7 +35,7 @@ perimeter:
       minimum_frame_length: number
       moving_field_name: string
       recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
-reader_kwargs:
+manual_reader_kwargs:
   defined:
     filter_method: arima
     midpoint_groups:

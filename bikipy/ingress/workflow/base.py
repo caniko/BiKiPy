@@ -461,10 +461,10 @@ class BaseIngress(BaseBikipy, ABC):
                 if value is None:
                     continue
                 global_reader_kwargs[key] = value
-        if "defined" in self.settings["reader_kwargs"] and self.settings["reader_kwargs"]["defined"]:
-            global_reader_kwargs.update(self.settings["reader_kwargs"]["defined"])
-        # assert global_reader_kwargs, "reader_kwargs must be defined"
-        self._common_trial_keyword_arguments["reader_kwargs"] = global_reader_kwargs
+        if "defined" in self.settings["manual_reader_kwargs"] and self.settings["manual_reader_kwargs"]["defined"]:
+            global_reader_kwargs.update(self.settings["manual_reader_kwargs"]["defined"])
+        # assert global_reader_kwargs, "manual_reader_kwargs must be defined"
+        self._common_trial_keyword_arguments["manual_reader_kwargs"] = global_reader_kwargs
 
         if self.experiment_class.has_stages:
             for trial_class_name, dataset in self.settings["trial"]["specific"].items():
@@ -602,7 +602,7 @@ class BaseIngress(BaseBikipy, ABC):
                 except KeyError:
                     pass
 
-        for key in ("reader_kwargs", "experiment"):
+        for key in ("manual_reader_kwargs", "experiment"):
             if key in self.settings:
                 try:
                     new_settings[key] = settings.update_defined_values(self.settings[key], new_settings[key], **kwargs)
@@ -771,7 +771,7 @@ def init_settings(
             "radial_arm_rectangle_diagonal": None,
             "fields": extended_schema(BaseSinglePerimeter),
         },
-        "reader_kwargs": extended_schema(DeepLabCutReader, with_required=False),
+        "manual_reader_kwargs": extended_schema(DeepLabCutReader, with_required=False),
         "trial": extended_group_schema(experiment_class.trial_sequence),
         "experiment": extended_schema(experiment_class),
         "debug": {"activate_debugging": False, "no_numba": False, "no_process_pooling": False},  # TODO: Implement

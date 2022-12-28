@@ -2,67 +2,22 @@ from functools import cached_property
 from typing import Any, Optional
 
 import numpy as np
-from pydantic import FilePath, validate_arguments, validator
+from pydantic import validator
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy.core.video import VideoMetadata
 from bikipy.feature.attention.gaze import gaze_direction_filter_circle_triangle
-from bikipy.perimeter.base import (
-    BaseSinglePerimeter,
-    SinglePerimeter,
-    perimeter_set_from_image_name_to_perimeters,
-)
-from bikipy.perimeter.radial.utils import plot_circle
-from bikipy.utils.makesense import (
-    get_line_endpoints_from_makesense_row,
-    get_point_from_makesense_row,
-    read_makesense_line,
-    read_makesense_point,
-    recording_resolution_from_makesense_row,
-)
+from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.utils.math.inside.ellipse import point_inside_ellipse
 from bikipy.utils.math.vector import unit_vector
+from bikipy.utils.plot.generic import plot_circle
 
 
-class CirclePerimeter(BaseSinglePerimeter):
+class BaseCirclePerimeter(BaseSinglePerimeter):
     center_pixels: NDArrayFp64
-    radius_pixels: float
 
     category = "circle_perimeter"
     class_inspect_directory_name = "circle"
-
-    @classmethod
-    @property
-    def exclude_from_settings_schema(cls) -> set[str]:
-        """
-        Some required fields for a class are sometimes highly specific to its respective object. These fields should
-        be recorded in this class-property to be excluded by the settings generator function in the ingress module
-        :return:
-        """
-        return super().exclude_from_settings_schema.union({"center_pixels", "radius_pixels"})
-
-    @property
-    def _to_hash(self) -> list:
-        result = super()._to_hash
-        result.append(self.center_pixels.data.tobytes())
-        result.append(self.radius_pixels)
-        return result
-
-    @property
-    def derived_meters_per_pixel(self) -> float:
-        return self.derived_meters_per_pixel_source_metric_length / self.radius_pixels
-
-    @property
-    def centroid_meters(self) -> NDArrayFp64:
-        return self.center_meters
-
-    @cached_property
-    def center_meters(self) -> NDArrayFp64:
-        return self.center_pixels * self.video.meters_per_pixel
-
-    @cached_property
-    def radius_meters(self) -> float:
-        return np.mean(self.radius_pixels * self.video.meters_per_pixel)
 
     @validator("center_pixels")
     def center_vector_is_2d(cls, value):
@@ -76,6 +31,14 @@ class CirclePerimeter(BaseSinglePerimeter):
             msg = f"The center_meters of {cls.__name__} must be a single coordinate tuple"
             raise ValueError(msg)
         return value.astype(float)
+
+    @property
+    def centroid_meters(self) -> NDArrayFp64:
+        return self.center_meters
+
+    @cached_property
+    def center_meters(self) -> NDArrayFp64:
+        return self.center_pixels * self.video.meters_per_pixel
 
     def change_reference(self, new_reference: NDArrayFp64, makesense_image_name: Optional[str] = None):
         return self.copy(
@@ -138,49 +101,63 @@ class CirclePerimeter(BaseSinglePerimeter):
         plot_circle(center, radius, ax)
 
     @classmethod
-    @validate_arguments
-    def from_makesense_point(
-        cls, data_path: FilePath, meters_radius: float, meters_per_pixel: NDArrayFp64, **perimeter_kwargs
-    ) -> dict[str, SinglePerimeter]:
-        result = {}
-        for _, row in read_makesense_point(data_path).iterrows():
-            perimeter = cls(
-                center_pixels=get_point_from_makesense_row(row),
-                radius_pixels=meters_radius / meters_per_pixel,
-                label=row["label"],
-                recording_resolution=recording_resolution_from_makesense_row(row),
-                makesense_image_name=row["image_name"],
-                meters_per_pixel=meters_per_pixel,
-                **perimeter_kwargs,
-            )
+    @property
+    def exclude_from_settings_schema(cls) -> set[str]:
+        """
+        Some required fields for a class are sometimes highly specific to its respective object. These fields should
+        be recorded in this class-property to be excluded by the settings generator function in the ingress module
+        :return:
+        """
+        return super().exclude_from_settings_schema.union({"center_pixels"})
 
-            if row["image_name"] not in result:
-                result[row["image_name"]] = {}
-            result[row["image_name"]][row["label"]] = perimeter
+    @property
+    def _to_hash(self) -> list:
+        result = super()._to_hash
+        result.append(self.center_pixels.data.tobytes())
+        return result
 
-        return perimeter_set_from_image_name_to_perimeters(result)
+
+class CircleVariableRadiusPerimeter(BaseCirclePerimeter):
+    radius_meters: float
+
+    @property
+    def radius_pixels(self) -> float:
+        return self.radius_meters * self.video.pixels_per_meter
+
+    @property
+    def _to_hash(self) -> list:
+        result = super()._to_hash
+        result.append(self.radius_meters)
+        return result
+
+
+class CircleFixedRadiusPerimeter(BaseCirclePerimeter):
+    radius_pixels: float
+
+    @property
+    def derived_meters_per_pixel(self) -> float:
+        return self.derived_meters_per_pixel_source_metric_length / self.radius_pixels
+
+    @cached_property
+    def radius_meters(self) -> float:
+        return np.mean(self.radius_pixels * self.video.meters_per_pixel)
 
     @classmethod
-    @validate_arguments
-    def from_makesense_line(
-        cls, data_path: FilePath, meters_per_pixel: NDArrayFp64, **perimeter_kwargs
-    ) -> dict[str, SinglePerimeter]:
-        result = {}
-        for _, row in read_makesense_line(data_path).iterrows():
-            a, b = get_line_endpoints_from_makesense_row(row)
+    @property
+    def exclude_from_settings_schema(cls) -> set[str]:
+        """
+        Some required fields for a class are sometimes highly specific to its respective object. These fields should
+        be recorded in this class-property to be excluded by the settings generator function in the ingress module
+        :return:
+        """
+        return super().exclude_from_settings_schema.union({"radius_pixels"})
 
-            perimeter = cls(
-                center_pixels=a,
-                radius_pixels=np.linalg.norm((a - b)),  # AB vector is in pixels, must be meters
-                label=row["label"],
-                recording_resolution=recording_resolution_from_makesense_row(row),
-                makesense_image_name=row["image_name"],
-                meters_per_pixel=meters_per_pixel,
-                **perimeter_kwargs,
-            )
+    @property
+    def _to_hash(self) -> list:
+        result = super()._to_hash
+        result.append(self.radius_pixels)
+        return result
 
-            if row["image_name"] not in result:
-                result[row["image_name"]] = {}
-            result[row["image_name"]][row["label"]] = perimeter
 
-        return perimeter_set_from_image_name_to_perimeters(result)
+class CirclePerimeter(CircleFixedRadiusPerimeter):
+    pass

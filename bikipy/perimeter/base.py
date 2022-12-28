@@ -28,7 +28,7 @@ from bikipy.reader.base import Reader
 from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence
 from bikipy.utils.image import axis_frame_imshow
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
-from bikipy.utils.plotting import (
+from bikipy.utils.plot import (
     BOTTOM_LEGEND_KWARGS,
     ax_plot_coordinate_with_boolean_index,
     generic_inspection_finalization,
@@ -141,7 +141,10 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         "meters_per_pixel_from_perimeter_source",
     )
     derived_meters_per_pixel_source: Optional[str]
-    derived_meters_per_pixel_source_metric_length: Optional[float]
+    derived_meters_per_pixel_source_metric_length: Optional[float] = Field(
+        description="Metric length of the pre-determined component, see derived pixels per pixel from perimeter in "
+        "the documentation.",
+    )
 
     int_id: Optional[int] = Field(description="For multi-perimeter trials where sequential confinement is used")
     group_label: Optional[str]
@@ -192,9 +195,8 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         return upstream_video
 
     @property
-    @abstractmethod
-    def derived_meters_per_pixel(self) -> float:
-        ...
+    def derived_meters_per_pixel(self) -> float | None:
+        return
 
     @abstractmethod
     def expand(self, perimeter_border_normal_meters: float | NDArrayFp64) -> "SinglePerimeter":
@@ -383,13 +385,27 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
         result.extend(perimeter._to_hash for perimeter in self.all_perimeters)
         return result
 
-    def __add__(self, other):
+    def __mod__(self, other: "PerimeterSet") -> "PerimeterSet":
         return PerimeterSet(
             perimeters=self.perimeters + other.perimeters,
             restricted_perimeters=self.restricted_perimeters + other.restricted_perimeters,
         )
 
-    def __getitem__(self, item: str | PositiveInt):
+    def __add__(self, other: SinglePerimeter) -> "PerimeterSet":
+        # Subtraction includes the area in the PerimeterSet
+        return PerimeterSet(
+            perimeters=self.perimeters + other,
+            restricted_perimeters=self.restricted_perimeters,
+        )
+
+    def __sub__(self, other: SinglePerimeter) -> "PerimeterSet":
+        # Subtraction excludes the area from the PerimeterSet
+        return PerimeterSet(
+            perimeters=self.perimeters,
+            restricted_perimeters=self.restricted_perimeters + other,
+        )
+
+    def __getitem__(self, item: str | PositiveInt) -> SinglePerimeter:
         for perimeter in self.all_perimeters:
             if perimeter.label == item or perimeter.int_id == item:
                 return perimeter
@@ -566,13 +582,13 @@ def perimeter_set_from_makesense(
 
     match shape:
         case "circle_line" | "circle":
-            from bikipy.perimeter.radial.circle import CirclePerimeter
+            from bikipy.perimeter.circle.makesense import circle_from_makesense_line
 
-            return CirclePerimeter.from_makesense_line(perimeter_path, *init_args, **perimeter_kwargs)
+            return circle_from_makesense_line(perimeter_path, **perimeter_kwargs)
         case "circle_point":
-            from bikipy.perimeter.radial.circle import CirclePerimeter
+            from bikipy.perimeter.circle.makesense import circle_from_makesense_point
 
-            return CirclePerimeter.from_makesense_point(perimeter_path, *init_args, **perimeter_kwargs)
+            return circle_from_makesense_point(perimeter_path, **perimeter_kwargs)
 
         case "rectangle":
             match perimeter_path.suffix:

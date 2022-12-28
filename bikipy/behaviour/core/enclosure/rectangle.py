@@ -15,7 +15,7 @@ from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.motion import get_combined_features_from_merged_motion_island_data
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
-from bikipy.utils.plotting import BOTTOM_LEGEND_KWARGS, generic_inspection_finalization
+from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS, generic_inspection_finalization
 
 logger = getLogger(__name__)
 quadrant_grid_typing = tuple[int, int]

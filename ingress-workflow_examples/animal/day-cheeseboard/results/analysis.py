@@ -6,7 +6,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-
 for f in glob.iglob("**/**/*.parquet"):
     f = Path(f)
     df = pd.read_parquet(f)

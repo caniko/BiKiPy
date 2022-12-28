@@ -16,7 +16,7 @@ from bikipy.feature.tolerance.single import single_node_tolerance_filter
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.reader.base import Reader
 from bikipy.utils.image import axis_frame_imshow
-from bikipy.utils.plotting import generic_inspection_finalization
+from bikipy.utils.plot import generic_inspection_finalization
 
 logger = getLogger(__name__)
 

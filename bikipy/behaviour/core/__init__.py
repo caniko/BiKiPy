@@ -68,7 +68,9 @@ class Behaviour(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
 
 class BaseTrial(Behaviour, VideoMetadataMixin):
     framewise_coordinates_path: FilePath = Field(..., description="Path to file storing coordinate data")
-    reader_kwargs: dict = Field(..., description="Keyword arguments that will be passed on the reader objects on init")
+    manual_reader_kwargs: dict = Field(
+        ..., description="Keyword arguments that will be passed on the reader objects on init"
+    )
     animal_id: str | PositiveInt = Field(..., description="The ID of the animal in the trial")
     object_tracking_label_for_kinematics: Optional[str] = Field(
         ..., description="Label of the node that will be used to track general animal movement"
@@ -130,7 +132,7 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
         return {
             "framewise_coordinates_path",
             "coordinate_timestamp_set_path",
-            "reader_kwargs",
+            "manual_reader_kwargs",
             "animal_id",
             *cls.perimeter_physical_object_labels,
             *super().exclude_from_settings_schema,
@@ -171,6 +173,17 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
         if self.manual_center_meters is not None:
             return self.manual_center_meters - self.video.center_meters
 
+    @property
+    def _reader_kwargs(self) -> dict:
+        return {
+            "df_path": self.framewise_coordinates_path,
+            "timestamp_index": self.coordinate_timestamp_set,
+            "label": self.framewise_coordinates_path.stem,
+            "manual_video": self.video,
+            "crop_time_seconds": self.crop_time_seconds,
+            **self.manual_reader_kwargs,
+        }
+
     @cached_property
     def reader(self):
         try:
@@ -182,15 +195,7 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
             )
             raise NotImplemented(msg) from e
 
-        return reader_init_func(
-            df_path=self.framewise_coordinates_path,
-            timestamp_index=self.coordinate_timestamp_set,
-            label=self.framewise_coordinates_path.stem,
-            manual_video=self.video,
-            crop_time_seconds=self.crop_time_seconds,
-            # crop_from_end=self.crop_from_end,
-            **self.reader_kwargs,
-        )
+        return reader_init_func(**self._reader_kwargs)
 
     @property
     def kinematic_coordinates(self) -> NDArrayFp64:

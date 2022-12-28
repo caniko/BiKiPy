@@ -13,7 +13,7 @@ from bikipy import runtime_settings
 from bikipy.core.video import VideoMetadata
 from bikipy.utils.image import axis_frame_imshow
 from bikipy.utils.math.vector import dot_axis_1_1d, orthogonal_unit_vector
-from bikipy.utils.plotting import InspectArg, generic_inspection_finalization
+from bikipy.utils.plot import InspectArg, generic_inspection_finalization
 
 
 def inaccurate_points_in_rectangle(

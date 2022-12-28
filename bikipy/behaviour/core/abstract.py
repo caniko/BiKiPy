@@ -5,7 +5,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from bikipy.core.typing import TrialId
-from bikipy.utils.plotting import InspectArg
+from bikipy.utils.plot import InspectArg
 
 
 class AbstractTrial(BaseModel, ABC):

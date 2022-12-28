@@ -12,7 +12,7 @@ from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from bikipy.feature.tolerance.plural import plural_node_tolerance_filter
 from bikipy.feature.tolerance.single import single_node_tolerance_filter
 from bikipy.perimeter.base import Perimeter, PerimeterSet
-from bikipy.utils.plotting import (
+from bikipy.utils.plot import (
     BOTTOM_LEGEND_KWARGS,
     InspectArg,
     generic_inspection_finalization,

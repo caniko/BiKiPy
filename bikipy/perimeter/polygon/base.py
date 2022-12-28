@@ -11,7 +11,7 @@ from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.base import BaseSinglePerimeter
-from bikipy.perimeter.radial.circle import CirclePerimeter
+from bikipy.perimeter.circle import CirclePerimeter
 from bikipy.utils.collection_utils import (
     evenly_spaced_indices_from_sequence,
     project_mask_to_original,

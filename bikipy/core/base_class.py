@@ -7,7 +7,7 @@ from pydantic import BaseModel, DirectoryPath, Field, FilePath
 from pydantic_numpy.dtype import NDArrayUint8
 
 from bikipy.core.typing import TrialId
-from bikipy.utils.plotting import InspectArg, inspect_arg_description
+from bikipy.utils.plot import InspectArg, inspect_arg_description
 
 
 class BaseBikipy(BaseModel):
