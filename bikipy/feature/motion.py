@@ -8,7 +8,7 @@ from pydantic import Field
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt32
 
 from bikipy.core.base_class import BaseBikipy
-from bikipy.feature.tolerance.single import arg_single_node_tolerance_filter
+from bikipy.feature.tolerance.single import arg_single_node_tolerance_model
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.calculus import np_abs_diff
 
@@ -234,7 +234,7 @@ def get_combined_features_from_merged_motion_island_data(
 
     A simple merge would make the computation of speed and acceleration wrong.
     """
-    tolerance_args = arg_single_node_tolerance_filter(
+    tolerance_args = arg_single_node_tolerance_model(
         boolean_index, fps, minimum_seconds_attention=minimum_seconds_of_data
     )
 

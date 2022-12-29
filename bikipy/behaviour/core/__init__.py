@@ -20,6 +20,7 @@ from pydantic.fields import FieldInfo
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
 from tqdm import tqdm
+from typing_inspect import is_generic_type
 from yaspin import yaspin
 from yaspin.spinners import Spinners
 
@@ -152,6 +153,11 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
         from bikipy.behaviour.mapping import experiment_name_to_class
 
         return experiment_name_to_class[cls.experiment_class_name]
+
+    @classmethod
+    @property
+    def has_perimeter(cls) -> bool:
+        return is_generic_type(cls)
 
     @property
     def perimeter_to_derive_meters_per_pixel(self) -> Perimeter:

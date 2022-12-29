@@ -128,8 +128,8 @@ class BaseIngress(BaseBikipy, ABC):
             )
             raise ValueError(msg)
 
-        if self.settings["ingress"]["trial_sequence_repetitions"]:
-            experiment = experiment.trial_sequence_repetition(self.settings["ingress"]["trial_sequence_repetitions"])
+        if self.settings["ingress"]["trial_sequence_loops"]:
+            experiment = experiment.trial_sequence_repetition(self.settings["ingress"]["trial_sequence_loops"])
 
         if self.settings["ingress"][FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD]:
             experiment = experiment.set_first_trial_to_habituation()
@@ -363,7 +363,7 @@ class BaseIngress(BaseBikipy, ABC):
 
     @property
     def dataset_directory_path(self) -> DirectoryPath:
-        if self.settings["ingress"]["dataset_directory"]:
+        if self.settings["ingress"]["dataset_directory"] != ".":
             if not (path := Path(self.settings["ingress"]["dataset_directory"])).exists():
                 msg = f"dataset_directory must exist: {path}"
                 raise AttributeError(msg)
@@ -758,17 +758,17 @@ def init_settings(
             "method": ingress_method,
             FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD: False,
             METADATA_TRIAL_IDS_ARE_HIGHER_LEVEL_FIELD: False,
-            "trial_sequence_repetitions": None,
+            "trial_sequence_loops": 1,
             "framewise_coordinates_file_suffix": framewise_coordinates_file_suffix,
-            "dataset_directory": None,
+            "dataset_directory": ".",
             "profile_runtime": True,
         },
         "definition_strategies": {plugin.ingress_key: None for plugin in ALL_PLUGINS},
         "perimeter": {
-            "label_prefix": None,
-            "label_suffix": None,
+            "label_prefix": "",
+            "label_suffix": "",
             "perimeter_names_in_metadata": False,
-            "radial_arm_rectangle_diagonal": None,
+            "radial_arm_rectangle_diagonal": -1,
             "fields": extended_schema(BaseSinglePerimeter),
         },
         "manual_reader_kwargs": extended_schema(DeepLabCutReader, with_required=False),
@@ -805,6 +805,7 @@ def auto_define_ingress_object(project_root_directory: DirectoryPath) -> Ingress
 
     with open(project_root_directory / "settings.yaml", "r") as in_file:
         settings = yaml.safe_load(in_file)
+
     return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[settings["ingress"]["method"]](
         project_root_directory=project_root_directory
     )

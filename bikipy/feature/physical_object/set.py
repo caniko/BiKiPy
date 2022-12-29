@@ -122,7 +122,7 @@ class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
         if not self.seconds_observing:
             return self._label_to_zero
         return {
-            label: 100.0 * physical_object.tolerance_filtered_proximity_and_gaze_seconds / (self.frames * self.fps)
+            label: 100.0 * physical_object.tolerance_modeled_proximity_and_gaze_seconds / (self.frames * self.fps)
             for label, physical_object in self.physical_object_label_to_observation_boolean_index.items()
         }
 
@@ -215,7 +215,7 @@ class PhysicalObjectSet(VideoMetadataMixin):
     @cached_property
     def filtration_levels_to_analysis(self) -> dict[str, PhysicalObjectSetAnalysis]:
         return {
-            physical_object.label: physical_object.tolerance_filtered_proximity_and_gaze_seconds
+            physical_object.label: physical_object.tolerance_modeled_proximity_and_gaze_seconds
             for physical_object in self.physical_objects
         }
 
@@ -234,7 +234,7 @@ class PhysicalObjectSet(VideoMetadataMixin):
             (
                 self.seconds_observing,
                 *(
-                    physical_object.tolerance_filtered_proximity_and_gaze_seconds
+                    physical_object.tolerance_modeled_proximity_and_gaze_seconds
                     for physical_object in self.physical_objects
                 ),
             ),

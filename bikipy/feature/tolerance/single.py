@@ -6,18 +6,18 @@ from pydantic_numpy.dtype import NDArrayBool, NDArrayInt64
 from bikipy import runtime_settings
 from bikipy.feature.tolerance.common import (
     common_preparation,
-    tolerance_filter_warning_wrapper,
+    tolerance_model_warning_wrapper,
 )
 
 
 @validate_arguments
-def single_node_tolerance_filter(
+def single_node_tolerance_model(
     boolean_index: NDArrayBool,
     fps: float,
     minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
     maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
 ) -> NDArrayBool | None:
-    return tolerance_filter_warning_wrapper(
+    return tolerance_model_warning_wrapper(
         _filter, len(boolean_index), boolean_index, fps, minimum_seconds_attention, maximum_seconds_distraction
     )
 
@@ -89,7 +89,7 @@ def _filter(
     return attention_boolean_index
 
 
-def arg_single_node_tolerance_filter(
+def arg_single_node_tolerance_model(
     boolean_index: NDArrayBool,
     fps: float,
     minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
@@ -142,4 +142,4 @@ def arg_single_node_tolerance_filter(
 if not runtime_settings.disable_numba:
     _filter = njit(cache=True)(_filter)
 
-    arg_single_node_tolerance_filter = njit(cache=True)(arg_single_node_tolerance_filter)
+    arg_single_node_tolerance_model = njit(cache=True)(arg_single_node_tolerance_model)

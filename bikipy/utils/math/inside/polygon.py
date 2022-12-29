@@ -115,6 +115,10 @@ def parallel_point_inside_polygon(
 
 
 def _is_inside_sm(point: NDArrayFp64, polygon: NDArrayFp64):
+    """
+    https://stackoverflow.com/a/66189882
+    https://github.com/sasamil/PointInPolygon_Py/blob/master/pointInside.py
+    """
     length = len(polygon) - 1
     dy2 = point[1] - polygon[0][1]
     intersections = 0

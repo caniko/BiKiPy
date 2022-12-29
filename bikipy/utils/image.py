@@ -8,7 +8,7 @@ from pydantic import FilePath, validate_arguments
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayUint8
 
-from bikipy.utils.plot.io import ax_imshow_gray
+from bikipy.utils.plot import ax_imshow_gray
 
 
 def save_plt_fig_cv(figure, save_path: Path) -> None:

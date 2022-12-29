@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import abc
 from functools import cached_property
 from logging import getLogger
-from typing import Hashable, Iterable, Optional, Sequence, TypeVar
+from typing import Hashable, Iterable, Optional, Sequence, TypeVar, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -15,10 +15,11 @@ from bikipy import runtime_settings
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.midpoint import recursive_midpoint
-from bikipy.feature.motion import Motion
-from bikipy.perimeter.base import Perimeter
 from bikipy.reader.filter import filter_data
 from bikipy.reader.utils import compute_midpoint_label
+
+if TYPE_CHECKING:
+    from bikipy.perimeter.base import Perimeter
 
 FILE_EXTENSION_TO_PANDAS_READER = {
     ".parquet": pd.read_parquet,
@@ -36,7 +37,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     df_read_kwargs: Optional[dict] = Field(
         default_factory=dict, description="Keyword arguments to pass to the padnas dataframe reader"
     )
-    enclosure: Optional[Perimeter] = Field(description="Perimeter defining the enclosure of the trial")
+    enclosure: Optional["Perimeter"] = Field(description="Perimeter defining the enclosure of the trial")
     midpoint_groups: Optional[dict[str, tuple]] = Field(
         description="labels that consist of groups that should have their midpoints computed in the DataFrame"
     )
@@ -148,6 +149,9 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         :return: Tracking and augmented data stored in the same frame. The augmented data should
         include midpoints and inner interpolations.
         """
+        if self.cache_meters_augmented and self.cached_augmented_df_path.exists():
+            return pd.read_parquet(self.cached_augmented_df_path)
+
         result_df = self.raw_df.copy()
 
         # Remove warm up tail with low likelihoods
@@ -160,6 +164,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
 
         if self.enclosure:
             logger.debug(f"Removing coordinates outside the defined enclosure for {self.label}")
+            result_df.loc[:, pd.IndexSlice[:, ("x", "y")]]
 
         if self.filter_method:
             logger.debug(f"Filtering {self.df_path.stem} with the {self.filter_method} method")
@@ -202,9 +207,20 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
                 result_df.loc[:, pd.IndexSlice[:, "y"]] - self.y_axis_crop_end_point
             )
 
-        # for label in self.physically_tracked_labels:
-        #     motion = Motion(coordinate_sequence=np.delete(result_df[label].values, 2, 1), fps=self.video.fps)
-        #     idx = motion.lowpass_std_filter()
+        # convert to meters
+        if isinstance(self.video.meters_per_pixel, float):
+            result_df.loc[:, pd.IndexSlice[:, ("x", "y")]] = (
+                result_df.loc[:, pd.IndexSlice[:, ("x", "y")]] * self.video.meters_per_pixel
+            )
+        elif isinstance(self.video.meters_per_pixel, np.ndarray):
+            result_df.loc[:, pd.IndexSlice[:, "x"]] = (
+                result_df.loc[:, pd.IndexSlice[:, "x"]] * self.video.meters_per_pixel[0]
+            )
+            result_df.loc[:, pd.IndexSlice[:, "y"]] = (
+                result_df.loc[:, pd.IndexSlice[:, "y"]] * self.video.meters_per_pixel[1]
+            )
+        else:
+            raise RuntimeError(f"Could not match video.meters_per_pixel type: {type(self.video.meters_per_pixel)}")
 
         if self.midpoint_groups:
             generated_midpoints = set()
@@ -225,36 +241,14 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
                     )
                     raise ValueError(msg)
 
-        return result_df
-
-    @cached_property
-    def meters_augmented(self) -> pd.DataFrame:
-        if self.cache_meters_augmented and self.cached_augmented_df_path.exists():
-            return pd.read_parquet(self.cached_augmented_df_path)
-
-        result = self.augmented.copy()
-
-        if isinstance(self.video.meters_per_pixel, float):
-            result.loc[:, pd.IndexSlice[:, ("x", "y")]] = (
-                result.loc[:, pd.IndexSlice[:, ("x", "y")]] * self.video.meters_per_pixel
-            )
-        elif isinstance(self.video.meters_per_pixel, np.ndarray):
-            result.loc[:, pd.IndexSlice[:, "x"]] = result.loc[:, pd.IndexSlice[:, "x"]] * self.video.meters_per_pixel[0]
-            result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] * self.video.meters_per_pixel[1]
-        else:
-            raise RuntimeError(f"Could not match video.meters_per_pixel type: {type(self.video.meters_per_pixel)}")
-
         if self.cache_meters_augmented:
-            result.to_parquet(self.cached_augmented_df_path)
+            result_df.to_parquet(self.cached_augmented_df_path)
 
-        # Clear augmented from memory as we don't need it anymore
-        del self.augmented
-
-        return result
+        return result_df
 
     @property
     def df(self) -> pd.DataFrame:
-        return self.meters_augmented
+        return self.augmented
 
     def __getitem__(self, query: Iterable[Hashable] | Hashable) -> pd.DataFrame:
         if not isinstance(query, str) and isinstance(query, abc.Iterable):
@@ -336,7 +330,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     def flush_reads(self) -> None:
         try:
             del self.raw_df
-            del self.meters_augmented
+            del self.augmented
         except AttributeError as e:
             logger.error(str(e))
 

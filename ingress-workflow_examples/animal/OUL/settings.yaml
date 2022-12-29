@@ -1,7 +1,7 @@
 ingress:
   method: animal
   first_stage_is_habituation: false
-  trial_sequence_repetitions: null
+  trial_sequence_loops: null
   framewise_coordinates_file_suffix: .parquet
   minimum_frame_length: 500
   dataset_directory: /mnt/BigData/mextracted/oul_dataset_mextracted

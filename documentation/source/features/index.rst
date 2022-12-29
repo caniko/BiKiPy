@@ -15,6 +15,7 @@ Features is a subpackage that stores functions for the computation of behavioura
    attention.rst
    midpoint.rst
    motion.rst
+   tolerance.rst
 
 
 .. _NumPy: https://en.wikipedia.org/wiki/NumPy

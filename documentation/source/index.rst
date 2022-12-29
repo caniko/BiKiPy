@@ -1,16 +1,17 @@
+====================
+BiKiPy documentation
+====================
 
-Welcome to BiKiPy's documentation!
-==================================
-Behavioral kinematics_ Python, or BiKiPy (pronounced like bee-key-py), is a data analysis platform.
+Behavioral kinematics_ Python, or BiKiPy (pronounced like bee-ki-py), is a post-hoc_ data analysis platform.
 
 Motivation
 ----------
-Behavioral research doesn't have any centralized repository for standardization, which ultimately slows down progress. *BiKiPy* is the solution.
+Behavioral experiment analyses doesn't have any standardization and community, which ultimately decreases efficiency. *BiKiPy* is the solution.
 
 Goals
 -----
 - Function as an information store for the technical implementations of behavioral neuroscience and psychology experiments with kinematics.
-- Provide a full stack for the analysis of these experiments.
+- Provide a full stack for kinematic analysis of these experiments.
 
 Overview
 --------
@@ -22,7 +23,7 @@ Many of the analytical pipelines have been placed in auxiliary subpackages to en
 
 reader
 ++++++
-Data can be loaded with an instance of the :code:`reader.base.BaseReader`. :code:`reader.DeepLabCutReader`, inherits from :code:`BaseReader`, and provides abstractions for 2D DeepLabCut_ data; state-of-the-art package that can perform marker-less tracking (2021).
+Data can be loaded with an instance of the :code:`reader.base.BaseReader`. :code:`reader.DeepLabCutReader`, inherits from :code:`BaseReader`, can be used for 2D DeepLabCut_ data.
 
 behavior
 ++++++++
@@ -43,6 +44,7 @@ Common analytical methods are available in the classes located in :code:`behavio
    math
 
 
+.. _post-hoc: https://en.wikipedia.org/wiki/Post_hoc_analysis
 .. _kinematics: https://en.wikipedia.org/wiki/Kinematics
 .. _TLDR: https://www.urbandictionary.com/define.php?term=tl%3Bdr
 .. _DeepLabCut: https://github.com/DeepLabCut/DeepLabCut

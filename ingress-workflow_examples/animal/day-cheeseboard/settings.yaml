@@ -2,7 +2,7 @@ ingress:
   method: animal_day
   first_stage_is_habituation: false
   metadata_trial_ids_are_higher_level: true
-  trial_sequence_repetitions: null
+  trial_sequence_loops: null
   framewise_coordinates_file_suffix: .parquet
   dataset_directory: /Users/can/Downloads/dataset
   profile_runtime: true

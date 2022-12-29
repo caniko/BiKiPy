@@ -6,12 +6,12 @@ from pydantic_numpy.dtype import NDArrayBool
 from bikipy import runtime_settings
 from bikipy.feature.tolerance.common import (
     common_preparation,
-    tolerance_filter_warning_wrapper,
+    tolerance_model_warning_wrapper,
 )
 
 
 @validate_arguments
-def plural_node_tolerance_filter(
+def plural_node_tolerance_model(
     *boolean_indices: NDArrayBool,
     fps: float,
     minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
@@ -20,7 +20,7 @@ def plural_node_tolerance_filter(
     all_true = np.logical_and.reduce(boolean_indices)
     any_true = np.logical_or.reduce(boolean_indices)
 
-    return tolerance_filter_warning_wrapper(
+    return tolerance_model_warning_wrapper(
         _filter,
         len(boolean_indices[0]),
         all_true,

@@ -10,7 +10,7 @@ from pydantic_numpy import NDArrayBool
 from bikipy.behaviour.core.abstract import AbstractTrial
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.feature.motion import EMPTY_MOTION, Motion, motion_multi_indexer
-from bikipy.feature.tolerance.single import single_node_tolerance_filter
+from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import BaseSinglePerimeter, Perimeter
 
 logger = getLogger(__name__)
@@ -36,7 +36,7 @@ class RewardTraceTrialMixin(Generic[StartPerimeter, RewardPerimeter], AbstractTr
             return np.nan
 
         if self.tolerate_boolean_index:
-            confined_bool = single_node_tolerance_filter(confined_bool, self.video.fps)
+            confined_bool = single_node_tolerance_model(confined_bool, self.video.fps)
 
         was_confined = False
         for i, b in enumerate(confined_bool):
@@ -70,7 +70,7 @@ class RewardTraceTrialMixin(Generic[StartPerimeter, RewardPerimeter], AbstractTr
             self.kinematic_coordinates, potential_label=f"{self.label}_reward", manual_video=self.video
         )
         if self.tolerate_boolean_index:
-            confined_bool = single_node_tolerance_filter(confined_bool, self.video.fps)
+            confined_bool = single_node_tolerance_model(confined_bool, self.video.fps)
 
         return confined_bool
 

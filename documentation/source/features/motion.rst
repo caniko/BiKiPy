@@ -5,7 +5,9 @@ The motion subpackage computes motion related features.
 
 Most applications should use the :code:`features.motion.Motion` class to compute and store these features.
 
-Before computing the displacement, the coordinates have their magnitude or `Euclidean norm`_ computed. Any values that are missing, defined as :code:`np.nan`, are interpolated with the akima_ method. The `finite difference`_ of the prepared displacement data, the resulting data is speed; the finite difference of speed is acceleration:
+Before computing the displacement, the coordinates have their magnitude or `Euclidean norm`_ computed. Any values that are missing, defined as :code:`numpy.nan` or undefined (**N**ot **A** **N**umber), are either interpolated or separated. This is required
+
+The `finite difference`_ of the prepared displacement data, the resulting data is speed; the finite difference of speed is acceleration:
 
 .. math::
     s_{n} = p_{n+1} - p_{n} \quad m \in [0, k-1]
@@ -19,6 +21,11 @@ Acceleration:
 
 .. math::
     a_{l} = v_{l+1} - v_{l} \quad l \in [0, m-1]
+
+The total displacement is computed by:
+
+.. math::
+    s_{tot} = \sum_{i=0}^{k} p_{i+1} - p_{i}
 
 Where :math:`p` is position; :math:`s` is displacement; :math:`v` is speed; :math:`\mathbf{a}` is acceleration; :math:`k` is the number of frames in the video recording.
 

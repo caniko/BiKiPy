@@ -5,8 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
-from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
-from bikipy.utils.plot.color import cmap
+from bikipy.utils.plot import cmap
 
 if TYPE_CHECKING:
     from bikipy.core.video import VideoMetadata
@@ -18,6 +17,8 @@ logger = getLogger(__file__)
 def ax_plot_coordinate_with_boolean_index(
     ax, boolean_index: NDArrayBool, coordinates: NDArrayFp64, plot_line: bool = False
 ) -> None:
+    from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
+
     length = len(boolean_index)
     assert length == len(coordinates)
 

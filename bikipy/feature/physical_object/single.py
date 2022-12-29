@@ -12,7 +12,7 @@ from bikipy.core.base_class import BaseBikipyInspectMixin
 from bikipy.core.typing import TrialId
 from bikipy.core.video import VideoMetadata
 from bikipy.feature.attention.proximity import proximity_filter
-from bikipy.feature.tolerance.single import single_node_tolerance_filter
+from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.reader.base import Reader
 from bikipy.utils.image import axis_frame_imshow
@@ -81,12 +81,12 @@ class PhysicalObject(BaseBikipyInspectMixin):
         return np.sum(self.logical_location_and_gaze) / self.video.fps
 
     @cached_property
-    def tolerance_filtered_proximity_and_gaze_seconds(self) -> float:
+    def tolerance_modeled_proximity_and_gaze_seconds(self) -> float:
         return np.sum(self.attention_observance_boolean_index) / self.video.fps
 
     @cached_property
     def tolerance_vs_unfiltered_ratio(self) -> float:
-        return self.tolerance_filtered_proximity_and_gaze_seconds / self.proximity_and_gaze_seconds
+        return self.tolerance_modeled_proximity_and_gaze_seconds / self.proximity_and_gaze_seconds
 
     @cached_property
     def attention_proximity_boolean_index(self) -> NDArrayBool:
@@ -115,7 +115,7 @@ class PhysicalObject(BaseBikipyInspectMixin):
 
     @cached_property
     def attention_observance_boolean_index(self) -> NDArrayBool:
-        result = single_node_tolerance_filter(
+        result = single_node_tolerance_model(
             self.logical_location_and_gaze,
             self.video.fps,
             self.minimum_seconds_attention,

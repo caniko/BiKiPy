@@ -5,7 +5,7 @@ Consists primarily of :code:`feature.attention.perimeter_attention` that compute
 
 Filters
 =======
-Note that these filters are designed for rodents, and may be challenging to species with different anatomies. The sequence of explanation is also the sequence of application.
+Note that these filters are designed for rodents recorded by a camera from above, and may be challenging to species with different anatomies. The sequence of explanation is also the sequence of application.
 
 Proximity filter
 ----------------
@@ -17,9 +17,5 @@ The filter has two rules (logical AND) that signify the specimen being close eno
 Gaze filter
 -----------
 The filter makes sure that the :ref:`features/angle:Inner angle` between the gaze vector and the vector of the closes side is less than or equal to a maximum value defined by the user (default: :code:`75`).
-
-Tolerance filter
-----------------
-The tolerance filter is a temporal filter with two filtering parameters; minimum seconds of attention, and maximum seconds of distraction. The values are converted to number of frame with the :code:`fps` (frames per second) value.
 
 .. _qualia: https://en.wikipedia.org/wiki/Qualia

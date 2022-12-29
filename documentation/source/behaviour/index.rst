@@ -8,6 +8,7 @@ The :code:`bikipy.behaviour` package stores the implementations of currently sup
 
    nort/nort.rst
    radial_maze/y_maze.rst
+   reward_tracing.rst
 
 Purpose and requirements
 ========================

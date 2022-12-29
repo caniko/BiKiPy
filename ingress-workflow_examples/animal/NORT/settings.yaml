@@ -2,7 +2,7 @@ ingress:
   method: animal
   first_stage_is_habituation: false
   metadata_trial_ids_are_higher_level: false
-  trial_sequence_repetitions: null
+  trial_sequence_loops: null
   framewise_coordinates_file_suffix: .parquet
   minimum_frame_length: 500
   dataset_directory: /home/can/Downloads/Compressed/rosy_nort/dataset/

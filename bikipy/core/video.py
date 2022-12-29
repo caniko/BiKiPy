@@ -21,7 +21,7 @@ from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
 
 from bikipy import runtime_settings
 from bikipy.core.typing import MetersPerPixel
-from bikipy.utils.plot.io import ax_imshow_gray
+from bikipy.utils.plot import ax_imshow_gray
 
 logger = getLogger(__name__)
 

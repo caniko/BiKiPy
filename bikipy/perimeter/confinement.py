@@ -9,8 +9,8 @@ from matplotlib import pyplot as plt
 from pydantic import validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
-from bikipy.feature.tolerance.plural import plural_node_tolerance_filter
-from bikipy.feature.tolerance.single import single_node_tolerance_filter
+from bikipy.feature.tolerance.plural import plural_node_tolerance_model
+from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import Perimeter, PerimeterSet
 from bikipy.utils.plot import (
     BOTTOM_LEGEND_KWARGS,
@@ -43,7 +43,7 @@ def detect_sequential_perimeter_presence(
 
     overlap_locations = {}
     for perimeter in inferior_to_superior_perimeter_instances:
-        confined_coord_booleans_index = single_node_tolerance_filter(
+        confined_coord_booleans_index = single_node_tolerance_model(
             perimeter.confined_coordinate_boolean_index(coordinates), perimeter.video
         )
 
@@ -91,7 +91,7 @@ def detect_multi_node_sequential_perimeter_presence(
 
     int_id_to_overlap_boolean_index = defaultdict(partial(np.zeros_like, presence, dtype=bool))
     for perimeter in inferior_to_superior_perimeter_instances:
-        confined_coord_booleans_index = plural_node_tolerance_filter(
+        confined_coord_booleans_index = plural_node_tolerance_model(
             *(confinements[perimeter.int_id]),
             fps=perimeter.video.fps,
         )
