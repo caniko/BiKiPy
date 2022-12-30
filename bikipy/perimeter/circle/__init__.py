@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 import numpy as np
 from pydantic import validator
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
 from bikipy.core.video import VideoMetadata
 from bikipy.feature.attention.gaze import gaze_direction_filter_circle_triangle
@@ -14,7 +14,7 @@ from bikipy.utils.plot import plot_circle
 
 
 class BaseCirclePerimeter(BaseSinglePerimeter):
-    center_pixels: NDArrayFp64
+    center_pixels: NDArrayInt16
 
     category = "circle_perimeter"
     class_inspect_directory_name = "circle"

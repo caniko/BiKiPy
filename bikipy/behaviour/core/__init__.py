@@ -35,6 +35,7 @@ from bikipy.core.video import (
 from bikipy.feature.motion import Motion, motion_multi_indexer
 from bikipy.ingress.plugin import PluginChangeReference, PluginRadial
 from bikipy.ingress.workflow.base import FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD
+from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
 from bikipy.perimeter.base import (
     BaseSinglePerimeter,
     Perimeter,
@@ -158,6 +159,24 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
     @property
     def has_perimeter(cls) -> bool:
         return is_generic_type(cls)
+
+    @classmethod
+    @property
+    def _perimeter_field_name_to_perimeter_class(cls) -> dict | None:
+        if cls.has_perimeter:
+            result = {}
+            schema = cls.schema()["properties"]
+            for perimeter_label in cls.perimeter_labels:
+                try:
+                    field_schema = schema[perimeter_label]
+                except KeyError as e:
+                    msg = f"{perimeter_label} is defined as a perimeter label yet it is not a field in the class {cls.__name__}"
+                    raise AttributeError(msg) from e
+
+                perimeter_class_name = field_schema["$ref"].split("/")[-1]  # hacky pydantic-oriented solution
+                result[perimeter_label] = PERIMETER_CLASS_NAME_TO_CLASS[perimeter_class_name]
+
+            return result
 
     @property
     def perimeter_to_derive_meters_per_pixel(self) -> Perimeter:
@@ -337,30 +356,6 @@ class BaseExperiment(Behaviour):
     # "Sequence of trial classes designed for the experiment class"
     trial_sequence: ClassVar[tuple[Trial, ...]] = ...
 
-    @classmethod
-    @property
-    def trial_classes(cls) -> set[Trial]:
-        """All trials designed for the experiment class"""
-        return set(cls.trial_sequence)
-
-    @classmethod
-    @property
-    def exclude_from_settings_schema(cls) -> set[str]:
-        """
-        Some required fields for a class are sometimes highly specific to its respective object. These fields should
-        be recorded in this class-property to be excluded by the settings generator function in the ingress module
-        :return:
-        """
-        return super().exclude_from_settings_schema.union(
-            {
-                "trial_id_to_trial_class_name",
-                "trial_id_to_keyword_arguments",
-                "trial_class_name_to_keyword_arguments",
-                "trial_id_range_to_keyword_arguments",
-                "common_trial_keyword_arguments",
-            }
-        )
-
     @validator("trial_id_to_trial_class_name")
     def sort_trial_id_to_trial_class_name_ascending(cls, value):
         return dict(sorted(value.items()))
@@ -371,6 +366,17 @@ class BaseExperiment(Behaviour):
 
     def __getitem__(self, item: int):
         return self.trial_id_to_trial_object[item]
+
+    @classmethod
+    @property
+    def trial_classes(cls) -> set[Trial]:
+        """All trials designed for the experiment class"""
+        return set(cls.trial_sequence)
+
+    @classmethod
+    @property
+    def at_least_one_trial_has_perimeter(cls) -> bool:
+        return any(trial_class.has_perimeter for trial_class in cls.trial_classes)
 
     def save(self):
         self._trial_class_to_trial_series_set
@@ -776,6 +782,24 @@ class BaseExperiment(Behaviour):
             "or trial_id_to_trial_class_name have to be exclusively defined"
         )
         raise AttributeError(msg)
+
+    @classmethod
+    @property
+    def exclude_from_settings_schema(cls) -> set[str]:
+        """
+        Some required fields for a class are sometimes highly specific to its respective object. These fields should
+        be recorded in this class-property to be excluded by the settings generator function in the ingress module
+        :return:
+        """
+        return super().exclude_from_settings_schema.union(
+            {
+                "trial_id_to_trial_class_name",
+                "trial_id_to_keyword_arguments",
+                "trial_class_name_to_keyword_arguments",
+                "trial_id_range_to_keyword_arguments",
+                "common_trial_keyword_arguments",
+            }
+        )
 
 
 Experiment = TypeVar("Experiment", bound=BaseExperiment)

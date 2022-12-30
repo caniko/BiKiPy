@@ -754,6 +754,10 @@ def init_settings(
         framewise_coordinates_file_suffix = f".{framewise_coordinates_file_suffix}"
 
     generic_settings = {
+        "immutable": {
+            "metadata_filename": "metadata.xlsx",
+            "experiment_class": experiment_name,
+        },
         "ingress": {
             "method": ingress_method,
             FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD: False,
@@ -764,22 +768,20 @@ def init_settings(
             "profile_runtime": True,
         },
         "definition_strategies": {plugin.ingress_key: None for plugin in ALL_PLUGINS},
-        "perimeter": {
+        "manual_reader_kwargs": extended_schema(DeepLabCutReader, with_required=False),
+        "trial": extended_group_schema(experiment_class.trial_sequence),
+        "experiment": extended_schema(experiment_class),
+        "debug": {"activate_debugging": False, "no_numba": False, "no_process_pooling": False},  # TODO: Implement
+    }
+
+    if experiment_class.at_least_one_trial_has_perimeter:
+        generic_settings["perimeter"] = {
             "label_prefix": "",
             "label_suffix": "",
             "perimeter_names_in_metadata": False,
             "radial_arm_rectangle_diagonal": -1,
             "fields": extended_schema(BaseSinglePerimeter),
-        },
-        "manual_reader_kwargs": extended_schema(DeepLabCutReader, with_required=False),
-        "trial": extended_group_schema(experiment_class.trial_sequence),
-        "experiment": extended_schema(experiment_class),
-        "debug": {"activate_debugging": False, "no_numba": False, "no_process_pooling": False},  # TODO: Implement
-        "immutable": {
-            "metadata_filename": "metadata.xlsx",
-            "experiment_class": experiment_name,
-        },
-    }
+        }
 
     if experiment_class.has_stages:
         generic_settings["immutable"][
@@ -804,9 +806,9 @@ def auto_define_ingress_object(project_root_directory: DirectoryPath) -> Ingress
     from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
 
     with open(project_root_directory / "settings.yaml", "r") as in_file:
-        settings = yaml.safe_load(in_file)
+        project_settings = yaml.safe_load(in_file)
 
-    return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[settings["ingress"]["method"]](
+    return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[project_settings["ingress"]["method"]](
         project_root_directory=project_root_directory
     )
 

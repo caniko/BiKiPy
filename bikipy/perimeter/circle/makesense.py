@@ -17,6 +17,7 @@ def circle_from_makesense_point(data_path: FilePath, **perimeter_kwargs) -> dict
     result = defaultdict(dict)
     for _, row in read_makesense_point(data_path).iterrows():
         result[row["image_name"]][row["label"]] = CircleVariableRadiusPerimeter(
+            center_pixels=np.array([row["x"], row["y"]], dtype=np.int16),
             label=row["label"],
             recording_resolution=recording_resolution_from_makesense_row(row),
             makesense_image_name=row["image_name"],

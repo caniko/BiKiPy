@@ -29,19 +29,20 @@ def _filter(
     maximum_seconds_distraction: float,
 ) -> NDArrayBool | None:
     """
-    Filters boolean_index with respect to attention. The filter tolerates distraction, and requires
-    minimum_seconds_attention to be fulfilled before accepting the sequence as attention.
+    MinFA and MaxFD are used to tolerance model the provided binary sequence as follows:
 
-    1. Including an attention event requires attention time to be greater than minimum_seconds_attention
-    2. During an attention event, the subject may be distracted for maximum_seconds_distraction seconds.
-        This triggers a sub event:
-            a) The subject has to be attentive for minimum_seconds_attention to merge the gap between the new attention
-            with the previous.
+    #. :code:`True` must persist for MinFA elements for a tolerated sequence to *start*, and we set the beginning of the sequence to the index of the first :code:`True` value in the sequence.
 
-            b) The events will remain if the distraction time surpasses the maximum_seconds_distraction.
-            Note that the new attention might be removed if it is shorter than minimum_seconds_attention
+    .. note::
+       The entirety of the tolerated sequence will be set to :code:`True`
 
-    start is set to 0 when in fact it should be None to support njit mode in numba.
+    #. Every :code:`False` will accumulate to a distraction counter till the counter is equal to MaxFD.
+
+    .. note::
+       When :code:`True`, and the distraction counter is more than 0, decrement by 1.
+
+    #. The tolerance sequence is terminated at the index before the final :code:`False` element.
+
 
     :param boolean_index:
     :param fps: Frames per second (fps) of the recording used to generate the data in boolean_index
@@ -74,6 +75,10 @@ def _filter(
                 true_counter = 0
             else:
                 true_counter += 1
+
+            if distraction_counter:
+                distraction_counter -= 1
+
         else:
             if start:
                 distraction_counter += 1
@@ -120,6 +125,10 @@ def arg_single_node_tolerance_model(
                 true_counter = 0
             else:
                 true_counter += 1
+
+            if distraction_counter:
+                distraction_counter -= 1
+
         else:
             if start:
 

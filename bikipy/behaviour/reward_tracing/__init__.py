@@ -1,10 +1,11 @@
 from abc import ABC
 from functools import cached_property
 from logging import getLogger
-from typing import Generic, TypeVar
+from typing import TypeVar, Generic, ClassVar
 
 import numpy as np
 import pandas as pd
+from pydantic.generics import GenericModel
 from pydantic_numpy import NDArrayBool
 
 from bikipy.behaviour.core.abstract import AbstractTrial
@@ -19,13 +20,13 @@ StartPerimeter = TypeVar("StartPerimeter", bound=BaseSinglePerimeter)
 RewardPerimeter = TypeVar("RewardPerimeter", bound=BaseSinglePerimeter)
 
 
-class RewardTraceTrialMixin(Generic[StartPerimeter, RewardPerimeter], AbstractTrial, ABC):
+class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimeter], AbstractTrial, ABC):
     start_perimeter: StartPerimeter
     reward_perimeter: RewardPerimeter
 
     tolerate_boolean_index: bool = True
 
-    perimeter_labels = {"start_perimeter", "reward_perimeter"}
+    perimeter_labels: ClassVar[str] = {"start_perimeter", "reward_perimeter"}
 
     @cached_property
     def _start_frame_idx(self) -> int:
