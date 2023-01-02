@@ -1,31 +1,30 @@
 [immutable]
 metadata_filename = "metadata.xlsx"
-experiment_class = "NortExperiment"
-trial_sequence = ["NortTrainingTrial", "NortNoveltyTrial"]
+experiment_class = "cheeseboard"
+trial_sequence = ["CheeseboardTrial"]
 
 [ingress]
-method = "animal"
+method = "animal_day"
 first_stage_is_habituation = false
-metadata_trial_ids_are_higher_level = false
+metadata_trial_ids_are_higher_level = true
 trial_sequence_loops = ""
 framewise_coordinates_file_suffix = ".parquet"
-dataset_directory = "/home/can/Downloads/Compressed/rosy_nort/dataset/"
+dataset_directory = "/Users/can/Downloads/dataset"
 profile_runtime = true
 
 [definition_strategies]
-meters_per_pixel = "global"
+meters_per_pixel = "metadata"
 perimeter = "metadata"
 radial = ""
 change_reference = ""
-frame = ""
-video = "trial-wise"
+frame = "trial-wise"
+video = ""
 timestamp = ""
 center = ""
 
 [manual_reader_kwargs]
-[manual_reader_kwargs.defined.midpoint_groups]
-center_eye = ["left_ear", "right_ear"]
-torso = ["center_eye", "tail_base"]
+[manual_reader_kwargs.defined]
+cache_meters_augmented = false
 
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"
@@ -54,25 +53,14 @@ y_axis_crop_end_point = "number -> 0.0"
 [trial]
 [trial.common]
 [trial.common.defined]
-gaze_start_point_label = "center_eye"
-gaze_travel_direction_point_label = "nose"
-object_tracking_label_for_kinematics = "torso"
-perimeter_border_normal_meters = 0.03
-meters_per_pixel_from_perimeter_source = ""
-outside_perimeter_point_label = "torso"
-frame = "/home/can/Projects/bikipy/examples/sequence/NORT/inspect.png"
-fps = 30
-physical_object_inspect = true
-maximum_radians_inter_gaze_perimeter = 0.7853981633974483
+object_tracking_label_for_kinematics = "nose"
+tolerate_boolean_index = false
+minimum_frame_length = 600
 
 [trial.common.required]
-gaze_start_point_label = "string"
-gaze_travel_direction_point_label = "string"
 object_tracking_label_for_kinematics = "string"
-perimeter_border_normal_meters = "number"
 
 [trial.common.optional]
-center_rectangle_dimensions_to_spatial_resolution_ratio = "number"
 coordinate_timestamp_set = "np.ndarray"
 crop_from_end = "boolean -> True"
 crop_time_seconds = "number -> 0.0"
@@ -83,32 +71,24 @@ inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}]"
 inspect_image_path = "string"
 length_meters_of_meters_per_pixel_source = "number"
 manual_center_pixels = "np.ndarray[name='manual_center_pixels_0' type=short required=True]"
-manual_center_rectangle_dimensions_meters = "np.ndarray[name='manual_center_rectangle_dimensions_meters_0' type=dobble required=True]"
 manual_enclosure = "None"
 manual_inspect_image = "np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]"
 manual_perimeter_to_derive_meters_per_pixel = "string"
 manual_video = "[{'$ref': '#/definitions/VideoMetadata'}]"
-maximum_radians_inter_gaze_perimeter = "number -> 0.7853981633974483"
-maximum_seconds_distraction = "number -> 0.6666666666666666"
 meters_per_pixel = "[{'type': 'number'}, {'type': 'dobble'}]"
 meters_per_pixel_from_perimeter = "boolean -> False"
 meters_per_pixel_from_perimeter_source = "string"
 minimum_frame_length = "integer -> 600"
-minimum_seconds_attention = "number -> 0.2"
-outside_perimeter_point_label = "string"
-physical_object_inspect = "boolean -> False"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
-rectangle_2d_bin = "array -> (2, 2)"
 rigid_nodes_freezing = "array"
+tolerate_boolean_index = "boolean -> True"
 trial_start_perimeter = "string"
 
-[trial.specific]
-[trial.specific.NortTrainingTrial.defined]
-
-[trial.specific.NortNoveltyTrial.defined]
+[trial.specific.CheeseboardTrial.defined]
 
 [experiment]
 [experiment.defined]
+fps = 15
 
 [experiment.optional]
 compute_first_two_feature_series_only = "boolean -> False"
@@ -131,3 +111,52 @@ trial_init_error_out_dir = "string"
 activate_debugging = false
 no_numba = false
 no_process_pooling = false
+
+[perimeter]
+label_prefix = ""
+label_suffix = ""
+perimeter_names_in_metadata = false
+radial_arm_rectangle_diagonal = ""
+
+[perimeter.trial_perimeters]
+[perimeter.trial_perimeters.reward_perimeter]
+[perimeter.trial_perimeters.reward_perimeter.defined]
+radius_meters = ""
+
+[perimeter.trial_perimeters.reward_perimeter.required]
+radius_meters = "number"
+
+[perimeter.trial_perimeters.reward_perimeter.optional]
+derive_meters_per_pixel = "boolean -> False"
+derived_meters_per_pixel_source = "string"
+derived_meters_per_pixel_source_metric_length = "number"
+fps = "number"
+frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'uint8'}]"
+impenetrable = "boolean -> False"
+inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}] -> False"
+inspect_image_path = "string"
+manual_inspect_image = "np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]"
+manual_video = "[{'$ref': '#/definitions/VideoMetadata'}]"
+meters_per_pixel = "[{'type': 'number'}, {'type': 'dobble'}]"
+minimum_frame_length = "integer -> 600"
+moving_field_name = "string"
+recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
+
+[perimeter.trial_perimeters.start_perimeter]
+[perimeter.trial_perimeters.start_perimeter.defined]
+
+[perimeter.trial_perimeters.start_perimeter.optional]
+derive_meters_per_pixel = "boolean -> False"
+derived_meters_per_pixel_source = "string"
+derived_meters_per_pixel_source_metric_length = "number"
+fps = "number"
+frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'uint8'}]"
+impenetrable = "boolean -> False"
+inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}] -> False"
+inspect_image_path = "string"
+manual_inspect_image = "np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]"
+manual_video = "[{'$ref': '#/definitions/VideoMetadata'}]"
+meters_per_pixel = "[{'type': 'number'}, {'type': 'dobble'}]"
+minimum_frame_length = "integer -> 600"
+moving_field_name = "string"
+recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"

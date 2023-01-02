@@ -1,10 +1,7 @@
 [immutable]
 metadata_filename = "metadata.xlsx"
 experiment_class = "nort"
-
-[immutable.trial_class_to_stage_index]
-NortTrainingTrial = 0
-NortNoveltyTrial = 1
+trial_sequence = ["NortTrainingTrial", "NortNoveltyTrial"]
 
 [ingress]
 method = "phase"
@@ -29,17 +26,6 @@ center = ""
 [manual_reader_kwargs.defined.midpoint_groups]
 center_eye = ["left_ear", "right_ear"]
 torso = ["center_eye", "tail"]
-
-
-
-
-
-
-
-
-
-
-
 
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"

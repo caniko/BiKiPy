@@ -702,6 +702,7 @@ def init_settings(
         "immutable": {
             "metadata_filename": "metadata.xlsx",
             "experiment_class": experiment_name,
+            "trial_sequence": experiment_class.trial_class_names,
         },
         "ingress": {
             "method": ingress_method,
@@ -730,11 +731,6 @@ def init_settings(
                 for label, perimeter_class in experiment_class.trial_perimeter_label_to_perimeter_class.items()
             },
         }
-
-    if experiment_class.has_stages:
-        generic_settings["immutable"]["trial_class_to_stage_index"] = experiment_class.trial_class_name_to_stage_index
-    else:
-        generic_settings["immutable"]["trial_sequence"] = experiment_class.trial_class_names
 
     if dry_run:
         if not silent:

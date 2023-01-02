@@ -1,11 +1,7 @@
 [immutable]
 metadata_filename = "metadata.xlsx"
 experiment_class = "ObjectsInUpdatingLocationsExperiment"
-
-[immutable.trial_class_to_stage_index]
-ObjectsInUpdatingLocationsTrainingTrial = 0
-ObjectsInUpdatingLocationsUpdateTrial = 1
-ObjectsInUpdatingLocationsTestTrial = 2
+trial_sequence = ["ObjectsInUpdatingLocationsTrainingTrial", "ObjectsInUpdatingLocationsUpdateTrial", "ObjectsInUpdatingLocationsTestTrial"]
 
 [ingress]
 method = "animal"
@@ -32,17 +28,6 @@ filter_method = "arima"
 
 [manual_reader_kwargs.defined.midpoint_groups]
 center_eye = ["left_ear", "right_ear"]
-
-
-
-
-
-
-
-
-
-
-
 
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"

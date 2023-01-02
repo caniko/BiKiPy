@@ -32,17 +32,6 @@ invert_y_axis = true
 center_eye = ["left_ear", "right_ear"]
 torso = ["center_eye", "base_tail"]
 
-
-
-
-
-
-
-
-
-
-
-
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"
 crop_from_end = "boolean -> False"

@@ -50,7 +50,7 @@ def extended_schema(model_class: BaseModel, with_optional: bool = True, with_req
     if with_optional:
         result["optional"] = optional
 
-    return {"defined": dict.fromkeys(defined), **result}
+    return {"defined": {field: "" for field in defined}, **result}
 
 
 def extended_group_schema(model_classes: Iterable, *args, **kwargs) -> dict:
