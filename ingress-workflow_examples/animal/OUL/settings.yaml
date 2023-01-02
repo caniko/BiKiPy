@@ -1,7 +1,7 @@
 ingress:
   method: animal
   first_stage_is_habituation: false
-  trial_sequence_loops: null
+  trial_sequence_loops: ""
   framewise_coordinates_file_suffix: .parquet
   minimum_frame_length: 500
   dataset_directory: /mnt/BigData/mextracted/oul_dataset_mextracted
@@ -9,16 +9,16 @@ ingress:
 definition_strategies:
   meters_per_pixel: metadata
   perimeter: trial-wise
-  radial: null
-  change_reference: null
+  radial: ""
+  change_reference: ""
   video: trial-wise
-  timestamp: null
+  timestamp: ""
   center: metadata
 perimeter:
   label_prefix: object
-  label_suffix: null
+  label_suffix: ""
   perimeter_names_in_metadata: false
-  radial_arm_rectangle_diagonal: null
+  radial_arm_rectangle_diagonal: ""
   fields:
     defined:
       impenetrable: true
@@ -142,7 +142,3 @@ debug:
 immutable:
   metadata_filename: metadata.xlsx
   experiment_class: ObjectsInUpdatingLocationsExperiment
-  stage_index_to_trial_class_name:
-    0: ObjectsInUpdatingLocationsTrainingTrial
-    1: ObjectsInUpdatingLocationsUpdateTrial
-    2: ObjectsInUpdatingLocationsTestTrial

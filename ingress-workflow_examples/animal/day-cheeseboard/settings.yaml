@@ -7,19 +7,19 @@ ingress:
   method: animal_day
   first_stage_is_habituation: false
   metadata_trial_ids_are_higher_level: true
-  trial_sequence_loops: null
+  trial_sequence_loops: ""
   framewise_coordinates_file_suffix: .parquet
   dataset_directory: /Users/can/Downloads/dataset
   profile_runtime: true
 definition_strategies:
   meters_per_pixel: metadata
   perimeter: metadata
-  radial: null
-  change_reference: null
+  radial: ""
+  change_reference: ""
   frame: trial-wise
-  video: null
-  timestamp: null
-  center: null
+  video: ""
+  timestamp: ""
+  center: ""
 manual_reader_kwargs:
   defined:
     cache_meters_augmented: false
@@ -54,8 +54,8 @@ trial:
         outdated:
           outdated:
             outdated:
-              reward_perimeter: null
-              start_perimeter: null
+              reward_perimeter: ""
+              start_perimeter: ""
       tolerate_boolean_index: false
       minimum_frame_length: 600
     required:
@@ -111,10 +111,10 @@ debug:
   no_numba: false
   no_process_pooling: false
 perimeter:
-  label_prefix: null
-  label_suffix: null
+  label_prefix: ""
+  label_suffix: ""
   perimeter_names_in_metadata: false
-  radial_arm_rectangle_diagonal: null
+  radial_arm_rectangle_diagonal: ""
   start_perimeter:
     defined: {}
     optional:

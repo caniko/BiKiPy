@@ -1,34 +1,37 @@
 [immutable]
 metadata_filename = "metadata.xlsx"
-experiment_class = "nort"
+experiment_class = "ObjectsInUpdatingLocationsExperiment"
 
 [immutable.trial_class_to_stage_index]
-NortTrainingTrial = 0
-NortNoveltyTrial = 1
+ObjectsInUpdatingLocationsTrainingTrial = 0
+ObjectsInUpdatingLocationsUpdateTrial = 1
+ObjectsInUpdatingLocationsTestTrial = 2
 
 [ingress]
-method = "phase"
-first_stage_is_habituation = true
+method = "animal"
+first_stage_is_habituation = false
 metadata_trial_ids_are_higher_level = false
-trial_sequence_loops = 1
+trial_sequence_loops = ""
 framewise_coordinates_file_suffix = ".parquet"
-dataset_directory = "/home/can/Downloads/Compressed/nort/"
+dataset_directory = "/mnt/BigData/mextracted/oul_dataset_mextracted"
 profile_runtime = true
 
 [definition_strategies]
-meters_per_pixel = "global"
-perimeter = "metadata"
+meters_per_pixel = "metadata"
+perimeter = "trial-wise"
 radial = ""
-change_reference = "metadata"
+change_reference = ""
 frame = ""
 video = "trial-wise"
 timestamp = ""
-center = ""
+center = "metadata"
 
 [manual_reader_kwargs]
+[manual_reader_kwargs.defined]
+filter_method = "arima"
+
 [manual_reader_kwargs.defined.midpoint_groups]
 center_eye = ["left_ear", "right_ear"]
-torso = ["center_eye", "tail"]
 
 
 
@@ -71,9 +74,8 @@ y_axis_crop_end_point = "number -> 0.0"
 gaze_start_point_label = "center_eye"
 gaze_travel_direction_point_label = "nose"
 object_tracking_label_for_kinematics = "center_eye"
-perimeter_border_normal_meters = 0.06
-outside_perimeter_point_label = "torso"
-maximum_radians_inter_gaze_perimeter = 1.5707963267948966
+perimeter_border_normal_meters = 0.05
+crop_from_end = false
 
 [trial.common.required]
 gaze_start_point_label = "string"
@@ -113,9 +115,15 @@ rigid_nodes_freezing = "array"
 trial_start_perimeter = "string"
 
 [trial.specific]
-[trial.specific.NortTrainingTrial.defined]
+[trial.specific.ObjectsInUpdatingLocationsTrainingTrial.defined]
+crop_time_seconds = 900
 
-[trial.specific.NortNoveltyTrial.defined]
+[trial.specific.ObjectsInUpdatingLocationsUpdateTrial.defined]
+crop_time_seconds = 300
+crop_from_end = false
+
+[trial.specific.ObjectsInUpdatingLocationsTestTrial.defined]
+crop_time_seconds = 300
 
 [experiment]
 [experiment.defined]

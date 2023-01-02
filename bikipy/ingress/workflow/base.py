@@ -732,9 +732,7 @@ def init_settings(
         }
 
     if experiment_class.has_stages:
-        generic_settings["immutable"][
-            "stage_index_to_trial_class_name"
-        ] = experiment_class.stage_index_to_trial_class_name
+        generic_settings["immutable"]["trial_class_to_stage_index"] = experiment_class.trial_class_name_to_stage_index
     else:
         generic_settings["immutable"]["trial_sequence"] = experiment_class.trial_class_names
 

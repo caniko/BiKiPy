@@ -12,7 +12,10 @@ from bikipy.ingress.workflow.base import init_settings
 
 @validate_arguments
 def update_settings(
-    manual_project_directory_path: Optional[DirectoryPath] = None, delete_outdated: bool = False, dry_run: bool = False
+    manual_project_directory_path: Optional[DirectoryPath] = None,
+    delete_outdated: bool = False,
+    dry_run: bool = False,
+    silent: bool = False,
 ) -> None:
     project_path = current_path_or_arg_path(manual_project_directory_path)
     ingress = auto_define_ingress_object(
@@ -69,4 +72,5 @@ def update_settings(
     if not dry_run:
         dump_settings(get_project_settings_path(project_path), new_settings)
 
-    print(json.dumps(new_settings, indent=2))
+    if not silent:
+        print(json.dumps(new_settings, indent=2))

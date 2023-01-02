@@ -11,7 +11,7 @@ from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.base import BaseSinglePerimeter
-from bikipy.perimeter.circle import CirclePerimeter
+from bikipy.perimeter.circle import CircleFixedRadiusPerimeter
 from bikipy.utils.collection_utils import (
     evenly_spaced_indices_from_sequence,
     project_mask_to_original,
@@ -106,7 +106,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
     @cached_property
     def circle(self):
-        return CirclePerimeter(
+        return CircleFixedRadiusPerimeter(
             center_pixels=self.pixel_graph.centroid,
             radius_pixels=np.mean(self.pixel_graph.vertex_midpoint_distances_to_centroid),
             manual_video=self.video,

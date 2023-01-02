@@ -1,34 +1,36 @@
 [immutable]
 metadata_filename = "metadata.xlsx"
-experiment_class = "nort"
-
-[immutable.trial_class_to_stage_index]
-NortTrainingTrial = 0
-NortNoveltyTrial = 1
+experiment_class = "y_maze"
+trial_sequence = ["YMazeTrial"]
 
 [ingress]
 method = "phase"
-first_stage_is_habituation = true
+first_stage_is_habituation = false
 metadata_trial_ids_are_higher_level = false
 trial_sequence_loops = 1
 framewise_coordinates_file_suffix = ".parquet"
-dataset_directory = "/home/can/Downloads/Compressed/nort/"
+dataset_directory = "/mnt/soma/Projects/Neuroscience/Imen/data/y_maze/"
 profile_runtime = true
 
 [definition_strategies]
-meters_per_pixel = "global"
-perimeter = "metadata"
+meters_per_pixel = ""
+perimeter = ""
 radial = ""
-change_reference = "metadata"
+change_reference = ""
 frame = ""
-video = "trial-wise"
+video = ""
 timestamp = ""
 center = ""
 
 [manual_reader_kwargs]
+[manual_reader_kwargs.defined]
+x_axis_crop_end_point = 95.0
+y_axis_crop_end_point = 75.0
+invert_y_axis = true
+
 [manual_reader_kwargs.defined.midpoint_groups]
 center_eye = ["left_ear", "right_ear"]
-torso = ["center_eye", "tail"]
+torso = ["center_eye", "base_tail"]
 
 
 
@@ -68,54 +70,37 @@ y_axis_crop_end_point = "number -> 0.0"
 [trial]
 [trial.common]
 [trial.common.defined]
-gaze_start_point_label = "center_eye"
-gaze_travel_direction_point_label = "nose"
-object_tracking_label_for_kinematics = "center_eye"
-perimeter_border_normal_meters = 0.06
-outside_perimeter_point_label = "torso"
-maximum_radians_inter_gaze_perimeter = 1.5707963267948966
+object_labels_for_y_maze_confinement_tracking = ["center_eye", "torso", "base_tail"]
+object_tracking_label_for_kinematics = "torso"
 
 [trial.common.required]
-gaze_start_point_label = "string"
-gaze_travel_direction_point_label = "string"
+object_labels_for_y_maze_confinement_tracking = "array"
 object_tracking_label_for_kinematics = "string"
-perimeter_border_normal_meters = "number"
 
 [trial.common.optional]
-center_rectangle_dimensions_to_spatial_resolution_ratio = "number"
 coordinate_timestamp_set = "np.ndarray"
 crop_from_end = "boolean -> True"
 crop_time_seconds = "number -> 0.0"
 data_format_label = "string -> deeplabcut"
 fps = "number"
 frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'uint8'}]"
-inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}]"
+inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}] -> False"
 inspect_image_path = "string"
 length_meters_of_meters_per_pixel_source = "number"
 manual_center_pixels = "np.ndarray[name='manual_center_pixels_0' type=short required=True]"
-manual_center_rectangle_dimensions_meters = "np.ndarray[name='manual_center_rectangle_dimensions_meters_0' type=dobble required=True]"
-manual_enclosure = "None"
 manual_inspect_image = "np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]"
 manual_perimeter_to_derive_meters_per_pixel = "string"
 manual_video = "[{'$ref': '#/definitions/VideoMetadata'}]"
-maximum_radians_inter_gaze_perimeter = "number -> 0.7853981633974483"
-maximum_seconds_distraction = "number -> 0.6666666666666666"
 meters_per_pixel = "[{'type': 'number'}, {'type': 'dobble'}]"
 meters_per_pixel_from_perimeter = "boolean -> False"
 meters_per_pixel_from_perimeter_source = "string"
 minimum_frame_length = "integer -> 600"
-minimum_seconds_attention = "number -> 0.2"
-outside_perimeter_point_label = "string"
-physical_object_inspect = "boolean -> False"
+minimum_seconds_for_entry = "number -> 0.5"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
-rectangle_2d_bin = "array -> (2, 2)"
 rigid_nodes_freezing = "array"
 trial_start_perimeter = "string"
 
-[trial.specific]
-[trial.specific.NortTrainingTrial.defined]
-
-[trial.specific.NortNoveltyTrial.defined]
+[trial.specific.YMazeTrial.defined]
 
 [experiment]
 [experiment.defined]

@@ -8,16 +8,16 @@ ingress:
 definition_strategies:
   meters_per_pixel: global
   perimeter: metadata
-  radial: null
+  radial: ""
   change_reference: metadata
   video: trial-wise
-  timestamp: null
-  center: null
+  timestamp: ""
+  center: ""
 perimeter:
-  label_prefix: null
-  label_suffix: null
+  label_prefix: ""
+  label_suffix: ""
   perimeter_names_in_metadata: false
-  radial_arm_rectangle_diagonal: null
+  radial_arm_rectangle_diagonal: ""
   fields:
     defined: {}
     optional:
@@ -146,6 +146,3 @@ debug:
 immutable:
   metadata_filename: metadata.xlsx
   experiment_class: nort
-  stage_index_to_trial_class_name:
-    0: NortTrainingTrial
-    1: NortNoveltyTrial

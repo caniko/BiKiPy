@@ -1,25 +1,25 @@
 [immutable]
 metadata_filename = "metadata.xlsx"
-experiment_class = "nort"
+experiment_class = "NortExperiment"
 
 [immutable.trial_class_to_stage_index]
 NortTrainingTrial = 0
 NortNoveltyTrial = 1
 
 [ingress]
-method = "phase"
-first_stage_is_habituation = true
+method = "animal"
+first_stage_is_habituation = false
 metadata_trial_ids_are_higher_level = false
-trial_sequence_loops = 1
+trial_sequence_loops = ""
 framewise_coordinates_file_suffix = ".parquet"
-dataset_directory = "/home/can/Downloads/Compressed/nort/"
+dataset_directory = "/home/can/Downloads/Compressed/rosy_nort/dataset/"
 profile_runtime = true
 
 [definition_strategies]
 meters_per_pixel = "global"
 perimeter = "metadata"
 radial = ""
-change_reference = "metadata"
+change_reference = ""
 frame = ""
 video = "trial-wise"
 timestamp = ""
@@ -28,7 +28,7 @@ center = ""
 [manual_reader_kwargs]
 [manual_reader_kwargs.defined.midpoint_groups]
 center_eye = ["left_ear", "right_ear"]
-torso = ["center_eye", "tail"]
+torso = ["center_eye", "tail_base"]
 
 
 
@@ -70,10 +70,14 @@ y_axis_crop_end_point = "number -> 0.0"
 [trial.common.defined]
 gaze_start_point_label = "center_eye"
 gaze_travel_direction_point_label = "nose"
-object_tracking_label_for_kinematics = "center_eye"
-perimeter_border_normal_meters = 0.06
+object_tracking_label_for_kinematics = "torso"
+perimeter_border_normal_meters = 0.03
+meters_per_pixel_from_perimeter_source = ""
 outside_perimeter_point_label = "torso"
-maximum_radians_inter_gaze_perimeter = 1.5707963267948966
+frame = "/home/can/Projects/bikipy/examples/sequence/NORT/inspect.png"
+fps = 30
+physical_object_inspect = true
+maximum_radians_inter_gaze_perimeter = 0.7853981633974483
 
 [trial.common.required]
 gaze_start_point_label = "string"

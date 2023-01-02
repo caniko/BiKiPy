@@ -4,11 +4,11 @@ from bikipy.behaviour.core.enclosure.circle import (
     CircleEnclosedTrial,
 )
 from bikipy.behaviour.reward_tracing import RewardTraceTrialMixin
-from bikipy.perimeter.circle import CirclePerimeter
+from bikipy.perimeter.circle import CircleVariableRadiusPerimeter
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 
 
-class CheeseboardTrial(RewardTraceTrialMixin[RectanglePerimeter, CirclePerimeter], CircleEnclosedTrial):
+class CheeseboardTrial(RewardTraceTrialMixin[RectanglePerimeter, CircleVariableRadiusPerimeter], CircleEnclosedTrial):
     trial_label = "cheeseboard_reward_trace"
 
 

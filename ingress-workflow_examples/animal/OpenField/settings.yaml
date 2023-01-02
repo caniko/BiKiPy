@@ -2,25 +2,25 @@ ingress:
   method: animal
   first_stage_is_habituation: true
   metadata_trial_ids_are_higher_level: false
-  trial_sequence_loops: null
+  trial_sequence_loops: ""
   framewise_coordinates_file_suffix: .h5
   minimum_frame_length: 500
   dataset_directory: /Users/can/Downloads/habituation_dataset
   profile_runtime: true
 definition_strategies:
   meters_per_pixel: metadata
-  perimeter: null
-  radial: null
-  change_reference: null
+  perimeter: ""
+  radial: ""
+  change_reference: ""
   frame: trial-wise
-  video: null
-  timestamp: null
+  video: ""
+  timestamp: ""
   center: metadata
 perimeter:
-  label_prefix: null
-  label_suffix: null
+  label_prefix: ""
+  label_suffix: ""
   perimeter_names_in_metadata: false
-  radial_arm_rectangle_diagonal: null
+  radial_arm_rectangle_diagonal: ""
   fields:
     defined: {}
     optional:

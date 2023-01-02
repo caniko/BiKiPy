@@ -421,7 +421,7 @@ class BaseExperiment(Behaviour):
     @classmethod
     @property
     def trial_class_name_to_stage_index(cls) -> dict[str, int]:
-        return {trial_class_name: i for trial_class_name, i in enumerate(cls.trial_sequence)}
+        return {trial_class.__name__: i for i, trial_class in enumerate(cls.trial_sequence)}
 
     @classmethod
     @property

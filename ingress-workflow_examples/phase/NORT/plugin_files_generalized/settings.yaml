@@ -4,16 +4,16 @@ dataset_directory: /home/can/Downloads/Compressed/nort/
 ingress:
   meters_per_pixel_definition_strategy: global
   perimeter_definition_strategy: metadata
-  radial_definition_strategy: null
-  change_reference_definition_strategy: null
+  radial_definition_strategy: ""
+  change_reference_definition_strategy: ""
   video_definition_strategy: trial-wise
-  center_definition_strategy: null
+  center_definition_strategy: ""
   profile_runtime: true
 perimeter:
-  label_prefix: null
-  label_suffix: null
+  label_prefix: ""
+  label_suffix: ""
   perimeter_names_in_metadata: false
-  radial_arm_rectangle_diagonal: null
+  radial_arm_rectangle_diagonal: ""
   fields:
     defined: {}
     optional:
@@ -59,7 +59,7 @@ manual_reader_kwargs:
 trial:
   common:
     defined:
-      familiar: null
+      familiar: ""
       gaze_start_point_label: center_eye
       gaze_travel_direction_point_label: nose
       outside_perimeter_point_label: torso
@@ -100,12 +100,12 @@ trial:
   specific:
     NortTrainingTrial:
       defined:
-        variable: null
+        variable: ""
       required:
         variable: None
     NortNoveltyTrial:
       defined:
-        novel: null
+        novel: ""
       required:
         novel: None
 experiment:
@@ -129,6 +129,3 @@ immutable:
   metadata_filename: metadata.xlsx
   framewise_coordinates_file_suffix: .parquet
   experiment_class: nort
-  stage_index_to_trial_class_name:
-    0: NortTrainingTrial
-    1: NortNoveltyTrial

@@ -157,7 +157,3 @@ class CircleFixedRadiusPerimeter(BaseCirclePerimeter):
         result = super()._to_hash
         result.append(self.radius_pixels)
         return result
-
-
-class CirclePerimeter(CircleFixedRadiusPerimeter):
-    pass
