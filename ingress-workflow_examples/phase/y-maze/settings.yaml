@@ -1,18 +1,19 @@
-ingress_method: phase
-first_stage_is_habituation: false
-dataset_directory: /mnt/soma/Projects/Neuroscience/Imen/data/y_maze/
 ingress:
   meters_per_pixel_definition_strategy: radial
-  perimeter_definition_strategy: null
+  perimeter_definition_strategy: ""
   radial_definition_strategy: metadata
   change_reference_definition_strategy: metadata
   video_definition_strategy: trial-wise
-  center_definition_strategy: null
+  center_definition_strategy: ""
   frame_upscale_multiplier: float
   profile_runtime: true
+  framewise_coordinates_file_suffix: .parquet
+  method: phase
+  first_stage_is_habituation: false
+  dataset_directory: /mnt/soma/Projects/Neuroscience/Imen/data/y_maze/
 perimeter:
-  label_prefix: null
-  label_suffix: null
+  label_prefix: ""
+  label_suffix: ""
   perimeter_names_in_metadata: false
   radial_arm_rectangle_diagonal: 0.359026
   fields:
@@ -117,7 +118,7 @@ experiment:
     video_path: string
 immutable:
   metadata_filename: metadata.xlsx
-  framewise_coordinates_file_suffix: .parquet
+
   experiment_class: y_maze
   trial_classes:
   - YMazeTrial

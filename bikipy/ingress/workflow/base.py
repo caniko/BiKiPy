@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 
 import numpy as np
 import pandas as pd
-import yaml
 from inflection import underscore
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
@@ -22,7 +21,6 @@ from bikipy.ingress.plugin.base import Plugin
 from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
 )
-from bikipy.ingress.utils import settings
 from bikipy.ingress.utils.io import (
     get_dataset_directory_path,
     get_inspect_directory_path,
@@ -31,11 +29,11 @@ from bikipy.ingress.utils.io import (
     infer_metadata_path,
     load_settings,
     result_directory_path,
+    dump_settings,
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
-from bikipy.ingress.utils.settings import get_definable_settings
-from bikipy.perimeter.base import BaseSinglePerimeter, Perimeter
-from bikipy.reader.data_with_likelihood import DeepLabCutReader
+from bikipy.perimeter.base import Perimeter
+from bikipy.reader.data_with_likelihood import DataWithLikelihoodReader
 from bikipy.utils.collection_utils import (
     copycat_assumes_levels_of_icon,
     get_first_value_in_dict,
@@ -74,6 +72,8 @@ class BaseIngress(BaseBikipy, ABC):
 
     ingress_defined_perimeters: dict[str, Perimeter] = {}
 
+    deprecated_project_settings_file_name: bool = False
+
     _experiment_data_defined: bool = False
     _trial_id_to_trial_class_name: dict[TrialId, str] = {}
     _common_trial_keyword_arguments: dict[str, Any] = {}
@@ -96,6 +96,7 @@ class BaseIngress(BaseBikipy, ABC):
 
     @classmethod
     def from_project_root_directory(cls, project_root_directory: DirectoryPath):
+        from bikipy.ingress.utils.settings import auto_define_ingress_object
         from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
 
         kwargs = {"project_root_directory": project_root_directory}
@@ -202,7 +203,7 @@ class BaseIngress(BaseBikipy, ABC):
 
     @property
     def settings(self) -> dict:
-        return load_settings(self.project_root_directory)
+        return load_settings(self.project_root_directory, self.deprecated_project_settings_file_name)
 
     @cached_property
     def ranged_metadata(self) -> pd.DataFrame | None:
@@ -355,7 +356,7 @@ class BaseIngress(BaseBikipy, ABC):
 
     @property
     def settings_path(self) -> FilePath:
-        return get_project_settings_path(self.project_root_directory)
+        return get_project_settings_path(self.project_root_directory, self.deprecated_project_settings_file_name)
 
     @property
     def metadata_path(self) -> FilePath:
@@ -583,62 +584,6 @@ class BaseIngress(BaseBikipy, ABC):
         for trial_label, df in self.trial_label_to_df.items():
             df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_name}.parquet")
 
-    def update_settings(self, delete_outdated: bool = False, dry_run: bool = False) -> dict:
-        new_settings = init_settings(
-            self.ingress_method,
-            self.experiment_name,
-            self.project_root_directory,
-            self.framewise_coordinates_file_suffix,
-            dry_run=True,
-            silent=True,
-        )
-
-        kwargs = {"delete_outdated": delete_outdated}
-
-        for key in ("ingress", "definition_strategies", "perimeter"):
-            if key in self.settings:
-                try:
-                    new_settings[key] = settings.update_dictionary(self.settings[key], new_settings[key], **kwargs)
-                except KeyError:
-                    pass
-
-        for key in ("manual_reader_kwargs", "experiment"):
-            if key in self.settings:
-                try:
-                    new_settings[key] = settings.update_defined_values(self.settings[key], new_settings[key], **kwargs)
-                except KeyError:
-                    pass
-
-        if "trial" in self.settings:
-            new_settings["trial"]["common"] = settings.update_defined_values(
-                self.settings["trial"]["common"], new_settings["trial"]["common"], **kwargs
-            )
-            common_settings_between_trials = get_definable_settings(new_settings["trial"]["common"])
-            for trial_class_name, trial_class_settings in new_settings["trial"]["specific"].items():
-                try:
-                    new_settings["trial"]["specific"][trial_class_name] = settings.update_defined_values(
-                        self.settings["trial"]["specific"][trial_class_name],
-                        trial_class_settings,
-                        common_settings=common_settings_between_trials,
-                        **kwargs,
-                    )
-                except KeyError:
-                    pass
-
-        for field, value in self.settings.items():
-            if isinstance(value, dict):
-                continue
-            if field in new_settings and value:
-                new_settings[field] = value
-
-        if dry_run:
-            print(json.dumps(new_settings, indent=2))
-        else:
-            with open(self.settings_path, "w") as out_file:
-                yaml.safe_dump(new_settings, out_file, sort_keys=False)
-
-        return new_settings
-
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
 
     @cached_property
@@ -767,8 +712,8 @@ def init_settings(
             "dataset_directory": ".",
             "profile_runtime": True,
         },
-        "definition_strategies": {plugin.ingress_key: None for plugin in ALL_PLUGINS},
-        "manual_reader_kwargs": extended_schema(DeepLabCutReader, with_required=False),
+        "definition_strategies": {plugin.ingress_key: "" for plugin in ALL_PLUGINS},
+        "manual_reader_kwargs": extended_schema(DataWithLikelihoodReader, with_required=False),
         "trial": extended_group_schema(experiment_class.trial_sequence),
         "experiment": extended_schema(experiment_class),
         "debug": {"activate_debugging": False, "no_numba": False, "no_process_pooling": False},  # TODO: Implement
@@ -780,7 +725,10 @@ def init_settings(
             "label_suffix": "",
             "perimeter_names_in_metadata": False,
             "radial_arm_rectangle_diagonal": -1,
-            "fields": extended_schema(BaseSinglePerimeter),
+            "trial_perimeters": {
+                label: extended_schema(perimeter_class)
+                for label, perimeter_class in experiment_class.trial_perimeter_label_to_perimeter_class.items()
+            },
         }
 
     if experiment_class.has_stages:
@@ -795,22 +743,9 @@ def init_settings(
             print(json.dumps(generic_settings, indent=2))
     else:
         settings_path = get_project_settings_path(project_root_directory)
-        with open(settings_path, "w") as out_file:
-            yaml.safe_dump(generic_settings, out_file, sort_keys=False)
+        dump_settings(settings_path, generic_settings)
 
     return generic_settings
-
-
-@validate_arguments
-def auto_define_ingress_object(project_root_directory: DirectoryPath) -> Ingress:
-    from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
-
-    with open(project_root_directory / "settings.yaml", "r") as in_file:
-        project_settings = yaml.safe_load(in_file)
-
-    return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[project_settings["ingress"]["method"]](
-        project_root_directory=project_root_directory
-    )
 
 
 def analyze_and_save(project_root_directory: DirectoryPath):

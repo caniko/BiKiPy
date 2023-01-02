@@ -162,7 +162,7 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
 
     @classmethod
     @property
-    def _perimeter_field_name_to_perimeter_class(cls) -> dict | None:
+    def perimeter_field_name_to_perimeter_class(cls) -> dict | None:
         if cls.has_perimeter:
             result = {}
             schema = cls.schema()["properties"]
@@ -373,11 +373,6 @@ class BaseExperiment(Behaviour):
         """All trials designed for the experiment class"""
         return set(cls.trial_sequence)
 
-    @classmethod
-    @property
-    def at_least_one_trial_has_perimeter(cls) -> bool:
-        return any(trial_class.has_perimeter for trial_class in cls.trial_classes)
-
     def save(self):
         self._trial_class_to_trial_series_set
         super().save()
@@ -401,6 +396,27 @@ class BaseExperiment(Behaviour):
         cls._first_trial_is_habituation = True
 
         return cls
+
+    @classmethod
+    @property
+    def at_least_one_trial_has_perimeter(cls) -> bool:
+        return any(trial_class.has_perimeter for trial_class in cls.trial_classes)
+
+    @classmethod
+    @property
+    def trial_perimeter_label_to_perimeter_class(cls) -> dict[str, "Perimeter"]:
+        result = {}
+        for trial_class in cls.trial_classes:
+            if not trial_class.perimeter_field_name_to_perimeter_class:
+                continue
+
+            for label, perimeter_class in trial_class.perimeter_field_name_to_perimeter_class.items():
+                if label in result:
+                    assert result[label] == perimeter_class
+                    continue
+                result[label] = perimeter_class
+
+        return result
 
     @classmethod
     @property

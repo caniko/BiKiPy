@@ -15,13 +15,14 @@ import matplotlib.pyplot as plt
 import mextractor
 import numpy as np
 from mextractor.extractors import extract_video
-from pydantic import BaseModel, DirectoryPath, Field, FilePath
+from pydantic import DirectoryPath, Field, FilePath
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
 
 from bikipy import runtime_settings
+from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import MetersPerPixel
-from bikipy.utils.plot import ax_imshow_gray
+from bikipy.utils.plot.io import ax_imshow_gray
 
 logger = getLogger(__name__)
 
@@ -30,7 +31,7 @@ _TICK_END_OFFSET_RATIO = 0.9
 _can_only_be_set_manually = {"meters_per_pixel", "image_resize_multiplier"}
 
 
-class _VideoMetadataBase(BaseModel):
+class _VideoMetadataBase(BaseBikipy):
     class Config:
         keep_untouched = (cached_property,)
 

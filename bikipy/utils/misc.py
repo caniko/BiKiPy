@@ -1,13 +1,14 @@
 import copy
+import os
 import subprocess
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import Union
+from typing import Union, Optional
 
 import openpyxl
 from odf import opendocument
 from odf.table import Table
-from pydantic import FilePath
+from pydantic import FilePath, DirectoryPath
 
 logger = getLogger(__name__)
 
@@ -75,6 +76,10 @@ def clear_console():
     :return:
     """
     print("\033c\033[3J", end="")
+
+
+def current_path_or_arg_path(project_root_directory: Optional[DirectoryPath]):
+    return Path(project_root_directory or os.curdir)
 
 
 def get_git_root():

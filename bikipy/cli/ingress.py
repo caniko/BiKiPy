@@ -1,5 +1,3 @@
-import os
-from pathlib import Path
 from typing import Optional
 
 import click
@@ -7,11 +5,12 @@ from pydantic import DirectoryPath, validate_arguments
 
 from bikipy.behaviour.mapping import experiment_name_to_class
 from bikipy.cli import cli_root
+from bikipy.ingress.utils.settings import auto_define_ingress_object
 from bikipy.ingress.workflow.base import (
     analyze_and_save,
-    auto_define_ingress_object,
     init_settings,
 )
+from bikipy.utils.misc import current_path_or_arg_path
 
 
 @cli_root.group
@@ -40,7 +39,7 @@ def init(
     framewise_coordinates_file_suffix: str = "h5",
     dry_run: bool = False,
 ) -> None:
-    project_root_directory = _define_project_root_directory(project_root_directory)
+    project_root_directory = current_path_or_arg_path(project_root_directory)
 
     if (project_root_directory / "settings.yaml").exists() and input(
         "Project has already been initialised, overwrite settings? y/N "
@@ -54,7 +53,7 @@ def init(
 @click.argument("project_root_directory")
 @validate_arguments
 def analyze(project_root_directory: Optional[DirectoryPath]) -> None:
-    analyze_and_save(_define_project_root_directory(project_root_directory))
+    analyze_and_save(current_path_or_arg_path(project_root_directory))
 
 
 @ingress.command()
@@ -65,10 +64,6 @@ def analyze(project_root_directory: Optional[DirectoryPath]) -> None:
 def update(
     project_root_directory: Optional[DirectoryPath], delete_outdated: bool = False, dry_run: bool = False
 ) -> None:
-    auto_define_ingress_object(_define_project_root_directory(project_root_directory)).update_settings(
+    auto_define_ingress_object(current_path_or_arg_path(project_root_directory)).update_settings(
         delete_outdated=delete_outdated, dry_run=dry_run
     )
-
-
-def _define_project_root_directory(project_root_directory: Optional[DirectoryPath]):
-    return project_root_directory or Path(os.curdir)

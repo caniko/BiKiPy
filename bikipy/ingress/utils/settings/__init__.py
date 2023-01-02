@@ -1,5 +1,10 @@
 from typing import Optional
 
+from pydantic import validate_arguments, DirectoryPath
+
+from bikipy.ingress.utils.io import load_settings
+from bikipy.ingress.workflow.base import Ingress
+
 
 def get_definable_settings(root_dict: dict) -> set:
     definable_fields = set()
@@ -39,6 +44,8 @@ def update_dictionary(old: dict, new: dict, delete_outdated: bool = False) -> di
         new["outdated"] = {}
 
     for field, value in old.items():
+        if value is None:
+            value = ""
         if field in new:
             if isinstance(value, dict):
                 if field == "defined":
@@ -66,3 +73,18 @@ def update_defined_dictionary(old: dict, new: dict, new_optional: dict, delete_o
             new["outdated"][field] = value
 
     return new
+
+
+@validate_arguments
+def auto_define_ingress_object(
+    project_root_directory: DirectoryPath, deprecated_file_name: bool = False, **ingress_kwargs
+) -> Ingress:
+    from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
+
+    project_settings = load_settings(project_root_directory, deprecated_file_name)
+
+    return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[project_settings["ingress"]["method"]](
+        project_root_directory=project_root_directory,
+        deprecated_project_settings_file_name=deprecated_file_name,
+        **ingress_kwargs
+    )

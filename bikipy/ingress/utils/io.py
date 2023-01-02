@@ -2,12 +2,16 @@ import shutil
 from functools import lru_cache
 from logging import getLogger
 
+import tomlkit
 import yaml
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from bikipy import runtime_settings
 
 logger = getLogger(__name__)
+
+BIKIPY_SETTINGS_FILE_NAME_OLD = "settings.yaml"
+BIKIPY_SETTINGS_FILE_NAME = "bikipy_project.toml"
 
 
 @lru_cache(1)
@@ -16,17 +20,28 @@ def infer_metadata_path(project_root_directory: DirectoryPath):
     return next(project_root_directory.glob("metadata.*"))
 
 
-@lru_cache(1)
+@lru_cache(2)
 @validate_arguments
-def load_settings(project_root_directory: DirectoryPath) -> dict:
-    with open(get_project_settings_path(project_root_directory), "r") as in_file:
-        return yaml.safe_load(in_file)
+def load_settings(project_root_directory: DirectoryPath, deprecated_file_name: bool = False) -> dict:
+    if deprecated_file_name:
+        with open(get_project_settings_path(project_root_directory, True), "r") as in_file:
+            return yaml.safe_load(in_file)
+    else:
+        with open(get_project_settings_path(project_root_directory), "r") as in_file:
+            return tomlkit.load(in_file)
 
 
-@lru_cache(1)
+def dump_settings(settings_path: FilePath, settings: dict) -> None:
+    with open(settings_path, "w") as out_file:
+        tomlkit.dump(settings, out_file, sort_keys=False)
+
+
+@lru_cache(2)
 @validate_arguments
-def get_project_settings_path(project_root_directory: DirectoryPath) -> FilePath:
-    return project_root_directory / "settings.yaml"
+def get_project_settings_path(project_root_directory: DirectoryPath, deprecated_file_name: bool = False) -> FilePath:
+    return project_root_directory / (
+        BIKIPY_SETTINGS_FILE_NAME_OLD if deprecated_file_name else BIKIPY_SETTINGS_FILE_NAME
+    )
 
 
 @lru_cache(1)

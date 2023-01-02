@@ -12,7 +12,7 @@ from bikipy.behaviour.core.abstract import AbstractTrial
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.feature.motion import EMPTY_MOTION, Motion, motion_multi_indexer
 from bikipy.feature.tolerance.single import single_node_tolerance_model
-from bikipy.perimeter.base import BaseSinglePerimeter, Perimeter
+from bikipy.perimeter.base import BaseSinglePerimeter
 
 logger = getLogger(__name__)
 

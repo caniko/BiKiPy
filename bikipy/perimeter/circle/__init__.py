@@ -10,7 +10,7 @@ from bikipy.feature.attention.gaze import gaze_direction_filter_circle_triangle
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.utils.math.inside.ellipse import point_inside_ellipse
 from bikipy.utils.math.vector import unit_vector
-from bikipy.utils.plot import plot_circle
+from bikipy.utils.plot.generic import plot_circle
 
 
 class BaseCirclePerimeter(BaseSinglePerimeter):

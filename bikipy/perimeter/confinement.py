@@ -14,10 +14,9 @@ from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import Perimeter, PerimeterSet
 from bikipy.utils.plot import (
     BOTTOM_LEGEND_KWARGS,
-    InspectArg,
-    generic_inspection_finalization,
-    plot_coordinates,
 )
+from bikipy.utils.plot.generic import plot_coordinates
+from bikipy.utils.plot.inspect import InspectArg, generic_inspection_finalization
 
 logger = getLogger(__file__)
 

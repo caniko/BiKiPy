@@ -30,10 +30,9 @@ from bikipy.utils.image import axis_frame_imshow
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
 from bikipy.utils.plot import (
     BOTTOM_LEGEND_KWARGS,
-    ax_plot_coordinate_with_boolean_index,
-    generic_inspection_finalization,
-    plot_coordinates,
 )
+from bikipy.utils.plot.generic import ax_plot_coordinate_with_boolean_index, plot_coordinates
+from bikipy.utils.plot.inspect import generic_inspection_finalization
 
 logger = getLogger(__name__)
 

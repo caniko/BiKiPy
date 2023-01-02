@@ -1,7 +1,10 @@
 from functools import reduce
-from typing import Any, Iterable
+from typing import Iterable
+
+from pydantic import BaseModel
 
 from bikipy.core.base_class import BaseBikipy
+from bikipy.perimeter.base import Perimeter
 
 
 def field_name_to_metadata(fields: Iterable, class_schema: dict, model_class: BaseBikipy) -> dict:
@@ -28,9 +31,10 @@ def field_name_to_metadata(fields: Iterable, class_schema: dict, model_class: Ba
     return result
 
 
-def extended_schema(model_class: Any, with_optional: bool = True, with_required: bool = True) -> dict:
+def extended_schema(model_class: BaseModel, with_optional: bool = True, with_required: bool = True) -> dict:
     assert with_optional or with_required
 
+    model_class.update_forward_refs(Perimeter=Perimeter)
     class_schema = model_class.schema()
     required = (
         field_name_to_metadata(class_schema["required"], class_schema, model_class)

@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
-from bikipy.utils.plot import cmap
+from bikipy.utils.plot.color import cmap
 
 if TYPE_CHECKING:
     from bikipy.core.video import VideoMetadata

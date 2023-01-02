@@ -105,7 +105,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         be recorded in this class-property to be excluded by the settings generator function in the ingress module
         :return:
         """
-        return super().exclude_from_settings_schema.union({"df_path", "timestamp_index", "_using_bikipy_ingress"})
+        return super().exclude_from_settings_schema.union({"df_path", "enclosure", "timestamp_index", "_using_bikipy_ingress"})
 
     @abstractmethod
     def _isolate_coordinates(self, key: Iterable[Hashable] | Hashable) -> pd.DataFrame:
