@@ -33,7 +33,7 @@ class PluginSinglePerimeter(BasePluginFile, HasReferenceMixin):
 
     ingress_key = "perimeter"
     code_key = "perimeter"
-    bikipy_trial_key = "label_to_perimeter"
+    default_trial_argument_key = "label_to_perimeter"
     human_readable_index = "Perimeter"
 
     @property
@@ -71,15 +71,14 @@ class PluginSinglePerimeter(BasePluginFile, HasReferenceMixin):
             meters_per_pixel=self.ingress.get_meter_per_pixel(trial_id),
             reference_point_array=self.reference_point,
             inspect_arg=self.ingress.inspect_directory_path,
+            **self._parse_plugin_settings(
+                self.perimeter_settings["trial_perimeters"][self.trial_argument_key]["defined"]
+            ),
         )
 
         result = {}
         for image_name, perimeter_set in image_name_to_perimeter_set.items():
             for label, perimeter in perimeter_set.label_to_perimeter.items():
-                for field, value in self.perimeter_settings["fields"]["defined"].items():
-                    if value is not None:
-                        perimeter.__setattr__(field, value)
-
                 result[label] = perimeter
 
         return result

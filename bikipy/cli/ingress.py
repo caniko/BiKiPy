@@ -57,7 +57,7 @@ def analyze(project_root_directory: Optional[DirectoryPath]) -> None:
 
 
 @ingress.command()
-@click.argument("project_root_directory")
+@click.option("-p", "project_root_directory")
 @click.option("-x", "--delete_outdated", help="Outdated field will be removed", is_flag=True)
 @click.option("-d", "--dry_run", is_flag=True)
 @validate_arguments
@@ -67,3 +67,10 @@ def update(
     auto_define_ingress_object(current_path_or_arg_path(project_root_directory)).update_settings(
         delete_outdated=delete_outdated, dry_run=dry_run
     )
+
+
+@ingress.command()
+@click.option("-p", "project_root_directory")
+@validate_arguments
+def purge_cache(project_root_directory: Optional[DirectoryPath]) -> None:
+    auto_define_ingress_object(current_path_or_arg_path(project_root_directory)).purge_cached_reads()

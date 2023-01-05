@@ -9,7 +9,7 @@ first_stage_is_habituation = false
 metadata_trial_ids_are_higher_level = true
 trial_sequence_loops = ""
 framewise_coordinates_file_suffix = ".parquet"
-dataset_directory = "/Users/can/Downloads/dataset"
+dataset_directory = "/data/behaviour_dataset/Chrys_Behavior_Analysis/cheeseboard/dataset"
 profile_runtime = true
 
 [definition_strategies]
@@ -121,7 +121,7 @@ radial_arm_rectangle_diagonal = ""
 [perimeter.trial_perimeters]
 [perimeter.trial_perimeters.reward_perimeter]
 [perimeter.trial_perimeters.reward_perimeter.defined]
-radius_meters = ""
+radius_meters = 15
 
 [perimeter.trial_perimeters.reward_perimeter.required]
 radius_meters = "number"

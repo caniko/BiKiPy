@@ -24,7 +24,7 @@ from bikipy.utils.math.geometry import (
 class PluginRadial(BasePluginDirectory, HasReferenceMixin):
     ingress_key = "radial"
     code_key = "radial"
-    bikipy_trial_key = "radial"
+    default_trial_argument_key = "radial"
     human_readable_index = "Radial"
 
     _center: SinglePerimeter | None = None

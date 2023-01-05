@@ -1,7 +1,7 @@
 import json
+import os
 import pstats
 from abc import ABC, abstractmethod
-from collections import defaultdict
 from cProfile import Profile
 from functools import cached_property
 from logging import getLogger
@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 import numpy as np
 import pandas as pd
 from inflection import underscore
-from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
+from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments, Field
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.base_class import BaseBikipy
@@ -33,12 +33,13 @@ from bikipy.ingress.utils.io import (
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
 from bikipy.perimeter.base import Perimeter
+from bikipy.reader.base import BaseReader
 from bikipy.reader.data_with_likelihood import DataWithLikelihoodReader
 from bikipy.utils.collection_utils import (
     copycat_assumes_levels_of_icon,
     get_first_value_in_dict,
 )
-from bikipy.utils.misc import sheet_names_from_path
+from bikipy.utils.misc import sheet_names_from_path, defaultdict_dict_factory
 
 if TYPE_CHECKING:
     from bikipy.behaviour.core import Experiment, Trial
@@ -77,11 +78,11 @@ class BaseIngress(BaseBikipy, ABC):
     _experiment_data_defined: bool = False
     _trial_id_to_trial_class_name: dict[TrialId, str] = {}
     _common_trial_keyword_arguments: dict[str, Any] = {}
-    _trial_id_to_keyword_arguments: dict[TrialId, dict[str, Any]] = defaultdict(dict)
-    _trial_class_name_to_keyword_arguments: dict[str, Any] = {}
+    _trial_id_to_keyword_arguments: dict[TrialId, dict[str, Any]] = defaultdict_dict_factory()
+    _trial_class_name_to_keyword_arguments: dict[str, dict] = {}
 
     _trial_id_to_designator_id: dict[str, str] = {}
-    _designator_id_to_kwargs: dict[str, dict] = defaultdict(dict)
+    _designator_id_to_kwargs: dict[str, dict] = defaultdict_dict_factory()
 
     ingress_method: ClassVar[str]
 
@@ -402,7 +403,7 @@ class BaseIngress(BaseBikipy, ABC):
     def _define_experiment_data(self) -> None:
         for plugin_model in self._global_plugins:
             first_file = next(self.plugin_directory_path.glob(f"{plugin_model.code_key}*"))
-            self._common_trial_keyword_arguments[plugin_model.bikipy_trial_key] = plugin_model(
+            self._common_trial_keyword_arguments[plugin_model.default_trial_argument_key] = plugin_model(
                 data_path=first_file, ingress=self
             ).globally_defined
 
@@ -423,7 +424,7 @@ class BaseIngress(BaseBikipy, ABC):
                     if isinstance(trial_id_plugin_label, float) and np.isnan(trial_id_plugin_label):
                         continue
 
-                    metadata_trial_target_dict[trial_id][plugin_model.bikipy_trial_key] = plugin_model(
+                    metadata_trial_target_dict[trial_id][plugin_model.default_trial_argument_key] = plugin_model(
                         data_path=label_to_file_path[str(trial_id_plugin_label)], ingress=self
                     ).trialwise_and_metadata(trial_id)
 
@@ -434,7 +435,9 @@ class BaseIngress(BaseBikipy, ABC):
 
                         if plugin_model.human_readable_index in key:
                             metadata_trial_target_dict[trial_id][underscore(key)] = plugin_model(
-                                data_path=label_to_file_path[str(trial_id_plugin_label)], ingress=self
+                                data_path=label_to_file_path[str(trial_id_plugin_label)],
+                                manual_trial_argument_key=underscore(key),
+                                ingress=self,
                             ).trialwise_and_metadata(trial_id, naive=True)
 
                 else:
@@ -584,6 +587,24 @@ class BaseIngress(BaseBikipy, ABC):
         for trial_label, df in self.trial_label_to_df.items():
             df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_name}.parquet")
 
+    def purge_cached_reads(self) -> None:
+        to_delete = (
+            f
+            for f in self.dataset_directory_path.glob(
+                f"**/**/*{BaseReader.augmented_coordinate_cached_file_label}.parquet"
+            )
+        )
+        readable_to_delete = ", ".join((f.name for f in to_delete))
+        if (
+            input(
+                f"{readable_to_delete}\n===================\nPURGING CACHED DATA\n===================\n"
+                f"Will be deleted, are you sure? y/N "
+            ).lower()
+            == "y"
+        ):
+            for f in to_delete:
+                os.remove(f)
+
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
 
     @cached_property
@@ -613,7 +634,7 @@ class BaseIngress(BaseBikipy, ABC):
     def get_meter_per_pixel(self, trial_id: Optional[str | PositiveInt] = None) -> NDArrayFp64:
         match self.settings["definition_strategies"]["meters_per_pixel"]:
             case "global":
-                return self._common_trial_keyword_arguments[PluginMeterPerPixel.bikipy_trial_key]
+                return self._common_trial_keyword_arguments[PluginMeterPerPixel.default_trial_argument_key]
             case "metadata":
                 file_label = self.metadata["MetersPerPixel"][trial_id]
                 return detect_meters_per_pixel_in_perimeter_directory(self.plugin_directory_path)[file_label]
@@ -639,7 +660,7 @@ class BaseIngress(BaseBikipy, ABC):
                 raise ValueError(msg)
 
             try:
-                result[plugin_model.bikipy_trial_key] = plugin_model(
+                result[plugin_model.default_trial_argument_key] = plugin_model(
                     data_path=plugin_data_files[0], ingress=self
                 ).trialwise_and_metadata(trial_id)
             except IndexError:

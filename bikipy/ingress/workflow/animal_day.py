@@ -50,7 +50,9 @@ class AnimalDayIngress(BaseIngress):
                         except IndexError:
                             continue
 
-                        plugin_data[plugin_model.bikipy_trial_key or data_object.bikipy_trial_key] = data_object
+                        plugin_data[
+                            plugin_model.default_trial_argument_key or data_object.default_trial_argument_key
+                        ] = data_object
 
                     #  TODO: Must implement a versatile way of determining when singular trial_class
                     #        and many trial_classes across all ingress

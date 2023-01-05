@@ -13,7 +13,7 @@ class PluginVideo(BasePlugin):
 
     ingress_key = "video"
     code_key = "video"
-    bikipy_trial_key = "manual_video"
+    default_trial_argument_key = "manual_video"
     human_readable_index = "Video"
 
     @cached_property

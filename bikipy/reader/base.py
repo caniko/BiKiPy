@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import abc
 from functools import cached_property
 from logging import getLogger
-from typing import Hashable, Iterable, Optional, Sequence, TypeVar, TYPE_CHECKING
+from typing import Hashable, Iterable, Optional, Sequence, TypeVar, TYPE_CHECKING, ClassVar
 
 import numpy as np
 import pandas as pd
@@ -97,6 +97,8 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
 
     _region_of_interest_to_fused_neighbouring_points: dict[str, NDArrayUint8] = Field(default_factory=dict)
 
+    augmented_coordinate_cached_file_label: ClassVar[str] = "augmented_coordinates"
+
     @classmethod
     @property
     def exclude_from_settings_schema(cls) -> set[str]:
@@ -105,7 +107,9 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         be recorded in this class-property to be excluded by the settings generator function in the ingress module
         :return:
         """
-        return super().exclude_from_settings_schema.union({"df_path", "enclosure", "timestamp_index", "_using_bikipy_ingress"})
+        return super().exclude_from_settings_schema.union(
+            {"df_path", "enclosure", "timestamp_index", "_using_bikipy_ingress"}
+        )
 
     @abstractmethod
     def _isolate_coordinates(self, key: Iterable[Hashable] | Hashable) -> pd.DataFrame:
@@ -140,8 +144,10 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
     @cached_property
     def cached_augmented_df_path(self) -> FilePath:
         if self._using_bikipy_ingress:
-            return self.df_path.with_name(f"{self.df_path.stem.replace('coordinate', 'augmented_coord')}.parquet")
-        return self.df_path.with_name(f"{self.df_path.stem}_augmented.parquet")
+            return self.df_path.with_name(
+                f"{self.df_path.stem.replace('coordinate', self.augmented_coordinate_cached_file_label)}.parquet"
+            )
+        return self.df_path.with_name(f"{self.df_path.stem}-{self.augmented_coordinate_cached_file_label}.parquet")
 
     @cached_property
     def augmented(self) -> pd.DataFrame:

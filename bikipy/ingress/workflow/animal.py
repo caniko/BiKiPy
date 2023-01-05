@@ -44,7 +44,9 @@ class AnimalIngress(BaseIngress):
                     except IndexError:
                         continue
 
-                    plugin_data[plugin_model.bikipy_trial_key or data_object.bikipy_trial_key] = data_object
+                    plugin_data[
+                        plugin_model.default_trial_argument_key or data_object.default_trial_argument_key
+                    ] = data_object
 
                 self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(stage_index)
                 self._trial_id_to_keyword_arguments[trial_id] = {

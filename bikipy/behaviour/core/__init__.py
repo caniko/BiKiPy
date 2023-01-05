@@ -536,12 +536,12 @@ class BaseExperiment(Behaviour):
             perimeter_set: PerimeterSet = result.pop("perimeter_set")
             result.update(perimeter_set.label_to_perimeter)
 
-        if PluginRadial.bikipy_trial_key in result:
-            perimeter_set_group: dict = result.pop(PluginRadial.bikipy_trial_key)
+        if PluginRadial.default_trial_argument_key in result:
+            perimeter_set_group: dict = result.pop(PluginRadial.default_trial_argument_key)
             result.update(perimeter_set_group)
 
-        if PluginChangeReference.bikipy_trial_key in result:
-            val = result.pop(PluginChangeReference.bikipy_trial_key)
+        if PluginChangeReference.default_trial_argument_key in result:
+            val = result.pop(PluginChangeReference.default_trial_argument_key)
             if isinstance(val, PerimeterSet):
                 result.update(val.label_to_perimeter)
             elif isinstance(val, BaseSinglePerimeter):

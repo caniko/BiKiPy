@@ -16,7 +16,7 @@ from bikipy.utils.makesense import (
 class PluginChangeReference(BasePluginFile):
     ingress_key = "change_reference"
     code_key = "change_reference"
-    bikipy_trial_key = "change_reference"
+    default_trial_argument_key = "change_reference"
 
     human_readable_index = "ChangeReference"
     _human_readable_index_image_name: ClassVar[str] = "ChangeReferenceImageName"

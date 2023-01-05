@@ -1,6 +1,8 @@
 import copy
 import os
 import subprocess
+from collections import defaultdict
+from functools import partial
 from logging import getLogger
 from pathlib import Path, PurePath
 from typing import Union, Optional
@@ -89,3 +91,6 @@ def get_git_root():
         .rstrip()
         .decode("utf-8")
     )
+
+
+defaultdict_dict_factory = partial(defaultdict, dict)

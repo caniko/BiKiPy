@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Any, ClassVar, Optional, TypeVar
+from typing import Any, ClassVar, Optional, TypeVar, TYPE_CHECKING
 
 import pandas as pd
 from pydantic import BaseModel, DirectoryPath, Field, FilePath
@@ -13,12 +13,13 @@ from bikipy.utils.makesense import get_only_point_from_makesense
 
 class BasePlugin(BaseBikipy, ABC):
     ingress: Any = Field(description="Bikipy ingress object to access project metadata relevant for defining perimeter")
+    manual_trial_argument_key: Optional[str]
 
     plural_entries: ClassVar[bool] = False
 
     ingress_key: ClassVar[str] = ...
     code_key: ClassVar[str] = ...
-    bikipy_trial_key: ClassVar[str] = ...
+    default_trial_argument_key: ClassVar[str] = ...
 
     human_readable_index: ClassVar[str] = ...
     additional_context_columns: ClassVar[Optional[tuple[str]]]
@@ -33,6 +34,14 @@ class BasePlugin(BaseBikipy, ABC):
     @cached_property
     def _plugin_identifier(self) -> list[str, ...]:
         return self._info[0].split(".")
+
+    @staticmethod
+    def _parse_plugin_settings(settings_dict: dict) -> dict[str, Any]:
+        return {field: value for field, value in settings_dict.items() if value != ""}
+
+    @property
+    def trial_argument_key(self) -> str:
+        return self.manual_trial_argument_key or self.default_trial_argument_key
 
     @property
     def plugin_name(self) -> str:
