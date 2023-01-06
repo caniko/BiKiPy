@@ -2,42 +2,44 @@ from abc import ABC, abstractmethod
 from collections import abc
 from functools import cached_property
 from logging import getLogger
-from typing import Hashable, Iterable, Optional, Sequence, TypeVar, TYPE_CHECKING, ClassVar
+from typing import Hashable, Iterable, Optional, Sequence, TypeVar, ClassVar, Generic, Type
 
 import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath
+from pydantic.generics import GenericModel
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayUint8
 from sklearn.neighbors import NearestNeighbors
 from typing_extensions import Literal
 
 from bikipy import runtime_settings
+from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.reader.filter import filter_data
 from bikipy.reader.utils import compute_midpoint_label
-
-if TYPE_CHECKING:
-    from bikipy.perimeter.base import Perimeter
+from bikipy.perimeter.base import BasePerimeter
 
 FILE_EXTENSION_TO_PANDAS_READER = {
     ".parquet": pd.read_parquet,
     ".hdf": pd.read_hdf,
     ".h5": pd.read_hdf,
 }
-BAD_COORDINATE = ((np.nan, np.nan, 0.0),)  # x, y, likelihood
+BAD_COORDINATE = (np.nan, np.nan, 0.0)  # x, y, likelihood
 
 
 logger = getLogger(__name__)
 
+Enclosure = TypeVar("Enclosure", bound=BasePerimeter)
 
-class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
+
+class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMetadataMixin, ABC):
     df_path: FilePath = Field(..., description="Path to kinematic data, that will be " "converted to pd.DataFrame")
     df_read_kwargs: Optional[dict] = Field(
         default_factory=dict, description="Keyword arguments to pass to the padnas dataframe reader"
     )
-    enclosure: Optional["Perimeter"] = Field(description="Perimeter defining the enclosure of the trial")
+    trial_enclosure: Optional[Enclosure] = enclosure_field
     midpoint_groups: Optional[dict[str, tuple]] = Field(
         description="labels that consist of groups that should have their midpoints computed in the DataFrame"
     )
@@ -58,9 +60,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
 
     cache_meters_augmented: bool = True
 
-    timestamp_index: Optional[Sequence] = Field(
-        description="Sequence of same length as df that stores the" "timestamp of each index i.e. frame."
-    )
+    timestamp_index: Optional[Sequence] = timestamp_index_field
     df_is_timestamped: bool = Field(
         False, description="When True, the reader will interpret the DataFrame index as timestamps in seconds"
     )
@@ -108,7 +108,7 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         :return:
         """
         return super().exclude_from_settings_schema.union(
-            {"df_path", "enclosure", "timestamp_index", "_using_bikipy_ingress"}
+            {"df_path", "trial_enclosure", "timestamp_index", "_using_bikipy_ingress"}
         )
 
     @abstractmethod
@@ -168,9 +168,17 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
         )
         result_df = result_df.iloc[start_idx:]
 
-        if self.enclosure:
-            logger.debug(f"Removing coordinates outside the defined enclosure for {self.label}")
-            result_df.loc[:, pd.IndexSlice[:, ("x", "y")]]
+        if self.trial_enclosure:
+            logger.debug(
+                f"Dataset {self.label}: "
+                f"Removing coordinates outside the defined trial_enclosure, {self.trial_enclosure.label}"
+            )
+            for ptl in self.physically_tracked_labels:
+                result_df.loc[:, ptl][
+                    ~self.trial_enclosure.compute_confined_coordinate_boolean_index(
+                        result_df.loc[:, pd.IndexSlice[ptl, ("x", "y")]].values
+                    )
+                ] = BAD_COORDINATE
 
         if self.filter_method:
             logger.debug(f"Filtering {self.df_path.stem} with the {self.filter_method} method")
@@ -341,4 +349,5 @@ class BaseReader(BaseBikipyHashable, VideoMetadataMixin, ABC):
             logger.error(str(e))
 
 
+ReaderCLS = Type[BaseReader]
 Reader = TypeVar("Reader", bound=BaseReader)

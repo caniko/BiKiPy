@@ -9,7 +9,7 @@ from bikipy.ingress.plugin.base import BasePluginFile, TrialWiseMetadataOnlyMixi
 class PluginBonsaiTimestamp(TrialWiseMetadataOnlyMixin, BasePluginFile):
     ingress_key = "timestamp"
     code_key = "timestamp"
-    default_trial_argument_key = "coordinate_timestamp_set"
+    default_trial_argument_key = "coordinate_timestamp_index"
     human_readable_index = "Timestamp"
 
     def trialwise_and_metadata(self, trial_id: TrialId, naive: bool = False) -> NDArray:

@@ -13,6 +13,7 @@ from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTri
 from bikipy.behaviour.core.enclosure.quadrant import Quadrant
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.motion import get_combined_features_from_merged_motion_island_data
+from bikipy.perimeter import RectanglePerimeter
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
@@ -36,6 +37,8 @@ class RectangleEnclosedExperiment(EnclosedExperiment):
 
 class RectangleEnclosedTrial(EnclosedTrial):
     rectangle_2d_bin: quadrant_grid_typing = (2, 2)
+
+    trial_perimeter_enclosure_class = RectanglePerimeter
 
     manual_center_rectangle_dimensions_meters: Optional[NDArrayFp64]
     center_rectangle_dimensions_to_spatial_resolution_ratio: Optional[float]

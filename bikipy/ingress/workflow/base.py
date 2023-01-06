@@ -11,9 +11,10 @@ from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 import numpy as np
 import pandas as pd
 from inflection import underscore
-from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments, Field
+from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
+from bikipy.behaviour.core.enclosure.base import EnclosedExperiment
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import TrialId
 from bikipy.ingress.plugin import ALL_PLUGINS, PluginMeterPerPixel, ingress_key_to_model
@@ -33,6 +34,7 @@ from bikipy.ingress.utils.io import (
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
 from bikipy.perimeter.base import Perimeter
+from bikipy.perimeter.constant import PERIMETER_CLASS_REQUIRE_INTERFACE_SETTINGS
 from bikipy.reader.base import BaseReader
 from bikipy.reader.data_with_likelihood import DataWithLikelihoodReader
 from bikipy.utils.collection_utils import (
@@ -42,7 +44,7 @@ from bikipy.utils.collection_utils import (
 from bikipy.utils.misc import sheet_names_from_path, defaultdict_dict_factory
 
 if TYPE_CHECKING:
-    from bikipy.behaviour.core import Experiment, Trial
+    from bikipy.behaviour.core import Experiment, ExperimentCLS, TrialCLS
 
 
 FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD = "first_stage_is_habituation"
@@ -117,7 +119,7 @@ class BaseIngress(BaseBikipy, ABC):
         return self.settings["immutable"]["experiment_class"]
 
     @cached_property
-    def experiment_class(self) -> "Experiment":
+    def experiment_class(self) -> "ExperimentCLS":
         from bikipy.behaviour.mapping import experiment_name_to_class
 
         try:
@@ -132,7 +134,6 @@ class BaseIngress(BaseBikipy, ABC):
 
         if self.settings["ingress"]["trial_sequence_loops"]:
             experiment = experiment.trial_sequence_repetition(self.settings["ingress"]["trial_sequence_loops"])
-
         if self.settings["ingress"][FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD]:
             experiment = experiment.set_first_trial_to_habituation()
 
@@ -643,7 +644,7 @@ class BaseIngress(BaseBikipy, ABC):
 
     # Private methods ===============================
 
-    def _trial_class_from_stage_index(self, stage_index: str | PositiveInt) -> "Trial":
+    def _trial_class_from_stage_index(self, stage_index: str | PositiveInt) -> "TrialCLS":
         return self.experiment_class.stage_index_to_trial_class_name[stage_index]
 
     def _trialwise_plugins_for_trial_id(
@@ -725,6 +726,7 @@ def init_settings(
             "experiment_class": experiment_name,
             "trial_sequence": experiment_class.trial_class_names,
         },
+        "debug": {"activate_debugging": False, "no_numba": False, "no_process_pooling": False},  # TODO: Implement
         "ingress": {
             "method": ingress_method,
             FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD: False,
@@ -738,7 +740,6 @@ def init_settings(
         "manual_reader_kwargs": extended_schema(DataWithLikelihoodReader, with_required=False),
         "trial": extended_group_schema(experiment_class.trial_sequence),
         "experiment": extended_schema(experiment_class),
-        "debug": {"activate_debugging": False, "no_numba": False, "no_process_pooling": False},  # TODO: Implement
     }
 
     if experiment_class.at_least_one_trial_has_perimeter:
@@ -752,6 +753,15 @@ def init_settings(
                 for label, perimeter_class in experiment_class.trial_perimeter_label_to_perimeter_class.items()
             },
         }
+
+    if issubclass(experiment_class, EnclosedExperiment):
+        enclosure_settings = {
+            experiment_class_label: extended_schema(enclosure_class, with_required=False)
+            for experiment_class_label, enclosure_class in experiment_class.trial_perimeter_enclosure_classes.items()
+            if enclosure_class in PERIMETER_CLASS_REQUIRE_INTERFACE_SETTINGS
+        }
+        if enclosure_settings:
+            generic_settings["enclosure"] = enclosure_settings
 
     if dry_run:
         if not silent:

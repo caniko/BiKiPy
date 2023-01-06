@@ -9,6 +9,7 @@ from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 
 from bikipy.core.typing import TrialId
 from bikipy.ingress.plugin.base import BasePluginFile, HasReferenceMixin
+from bikipy.ingress.plugin.perimeter.base import AbcPerimeterPlugin
 from bikipy.perimeter.base import (
     SinglePerimeter,
     StringPerimeterShapes,
@@ -25,7 +26,7 @@ logger = getLogger(__name__)
 
 
 # TODO: Manual radius readings from settings.yaml read.
-class PluginSinglePerimeter(BasePluginFile, HasReferenceMixin):
+class PluginSinglePerimeter(AbcPerimeterPlugin):
     manual_shape: Optional[StringPerimeterShapes] = None
     warn_missing_re_reference_file: bool = False
 
@@ -62,26 +63,6 @@ class PluginSinglePerimeter(BasePluginFile, HasReferenceMixin):
     def label_to_trial_label_df(self) -> pd.DataFrame:
         if self.perimeter_settings["perimeter_names_in_metadata"]:
             return _open_label_to_trial_label_df(self.ingress.metadata_path)
-
-    def perimeter_mapper(self, trial_id: Optional[str | PositiveInt] = None) -> dict[str, SinglePerimeter]:
-        image_name_to_perimeter_set = perimeter_set_from_makesense(
-            self.data_path,
-            self.manual_shape or self.shape,
-            init_args=self.init_args,
-            meters_per_pixel=self.ingress.get_meter_per_pixel(trial_id),
-            reference_point_array=self.reference_point,
-            inspect_arg=self.ingress.inspect_directory_path,
-            **self._parse_plugin_settings(
-                self.perimeter_settings["trial_perimeters"][self.trial_argument_key]["defined"]
-            ),
-        )
-
-        result = {}
-        for image_name, perimeter_set in image_name_to_perimeter_set.items():
-            for label, perimeter in perimeter_set.label_to_perimeter.items():
-                result[label] = perimeter
-
-        return result
 
     def trialwise_and_metadata(
         self, trial_id: TrialId, naive: bool = False

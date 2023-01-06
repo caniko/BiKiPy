@@ -3,6 +3,11 @@ metadata_filename = "metadata.xlsx"
 experiment_class = "y_maze"
 trial_sequence = ["YMazeTrial"]
 
+[debug]
+activate_debugging = false
+no_numba = false
+no_process_pooling = false
+
 [ingress]
 method = "phase"
 first_stage_is_habituation = false
@@ -67,10 +72,10 @@ object_labels_for_y_maze_confinement_tracking = "array"
 object_tracking_label_for_kinematics = "string"
 
 [trial.common.optional]
-coordinate_timestamp_set = "np.ndarray"
+coordinate_timestamp_index = "np.ndarray"
 crop_from_end = "boolean -> True"
 crop_time_seconds = "number -> 0.0"
-data_format_label = "string -> deeplabcut"
+enclosure = "[{'$ref': '#/definitions/BasePerimeter'}]"
 fps = "number"
 frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'uint8'}]"
 inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}] -> False"
@@ -85,6 +90,7 @@ meters_per_pixel_from_perimeter = "boolean -> False"
 meters_per_pixel_from_perimeter_source = "string"
 minimum_frame_length = "integer -> 600"
 minimum_seconds_for_entry = "number -> 0.5"
+reader_class_label = "string -> DataWithLikelihoodReader"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
 rigid_nodes_freezing = "array"
 trial_start_perimeter = "string"
@@ -96,7 +102,6 @@ trial_start_perimeter = "string"
 
 [experiment.optional]
 compute_first_two_feature_series_only = "boolean -> False"
-data_format_label = "string -> deeplabcut"
 fps = "number"
 frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'uint8'}]"
 inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}] -> False"
@@ -110,8 +115,3 @@ recording_resolution = "np.ndarray[name='recording_resolution_0' type=short requ
 skip_habituation = "boolean -> False"
 stage = "string"
 trial_init_error_out_dir = "string"
-
-[debug]
-activate_debugging = false
-no_numba = false
-no_process_pooling = false

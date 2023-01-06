@@ -3,6 +3,11 @@ metadata_filename = "metadata.xlsx"
 experiment_class = "NortExperiment"
 trial_sequence = ["NortTrainingTrial", "NortNoveltyTrial"]
 
+[debug]
+activate_debugging = false
+no_numba = false
+no_process_pooling = false
+
 [ingress]
 method = "animal"
 first_stage_is_habituation = false
@@ -73,10 +78,10 @@ perimeter_border_normal_meters = "number"
 
 [trial.common.optional]
 center_rectangle_dimensions_to_spatial_resolution_ratio = "number"
-coordinate_timestamp_set = "np.ndarray"
+coordinate_timestamp_index = "np.ndarray"
 crop_from_end = "boolean -> True"
 crop_time_seconds = "number -> 0.0"
-data_format_label = "string -> deeplabcut"
+enclosure = "[{'$ref': '#/definitions/BasePerimeter'}]"
 fps = "number"
 frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'uint8'}]"
 inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}]"
@@ -84,7 +89,7 @@ inspect_image_path = "string"
 length_meters_of_meters_per_pixel_source = "number"
 manual_center_pixels = "np.ndarray[name='manual_center_pixels_0' type=short required=True]"
 manual_center_rectangle_dimensions_meters = "np.ndarray[name='manual_center_rectangle_dimensions_meters_0' type=dobble required=True]"
-manual_enclosure = "None"
+manual_enclosure = "[{'$ref': '#/definitions/BasePerimeter'}]"
 manual_inspect_image = "np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]"
 manual_perimeter_to_derive_meters_per_pixel = "string"
 manual_video = "[{'$ref': '#/definitions/VideoMetadata'}]"
@@ -97,6 +102,7 @@ minimum_frame_length = "integer -> 600"
 minimum_seconds_attention = "number -> 0.2"
 outside_perimeter_point_label = "string"
 physical_object_inspect = "boolean -> False"
+reader_class_label = "string -> DataWithLikelihoodReader"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
 rectangle_2d_bin = "array -> (2, 2)"
 rigid_nodes_freezing = "array"
@@ -112,7 +118,6 @@ trial_start_perimeter = "string"
 
 [experiment.optional]
 compute_first_two_feature_series_only = "boolean -> False"
-data_format_label = "string -> deeplabcut"
 fps = "number"
 frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'uint8'}]"
 inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}] -> False"
@@ -126,8 +131,3 @@ recording_resolution = "np.ndarray[name='recording_resolution_0' type=short requ
 skip_habituation = "boolean -> False"
 stage = "string"
 trial_init_error_out_dir = "string"
-
-[debug]
-activate_debugging = false
-no_numba = false
-no_process_pooling = false

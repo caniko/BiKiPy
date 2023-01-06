@@ -76,7 +76,7 @@ trial:
     optional:
       category: string -> video_metadata
       center_rectangle_dimensions_to_spatial_resolution_ratio: number
-      coordinate_timestamp_set: np.ndarray
+      coordinate_timestamp_index: np.ndarray
       crop_from_end: boolean -> True
       crop_time_seconds: number -> 0.0
       data_format_label: string -> deeplabcut

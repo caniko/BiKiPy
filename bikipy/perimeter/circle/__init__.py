@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Any, Optional
+from typing import Any, Optional, Type, TypeVar
 
 import numpy as np
 from pydantic import validator
@@ -115,6 +115,10 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         result = super()._to_hash
         result.append(self.center_pixels.data.tobytes())
         return result
+
+
+CirclePerimeterCLS = Type[BaseCirclePerimeter]
+CirclePerimeter = TypeVar("CirclePerimeter", bound=BaseCirclePerimeter)
 
 
 class CircleVariableRadiusPerimeter(BaseCirclePerimeter):

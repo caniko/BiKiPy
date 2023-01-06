@@ -1,27 +1,75 @@
 from functools import cached_property, lru_cache
-from typing import ClassVar, Generic, Optional, TypeVar
+from typing import ClassVar, Optional
 
 import numpy as np
-from pydantic import validate_arguments
+from pydantic import validate_arguments, validator
 from pydantic_numpy import NDArrayInt16
 from skg import ngauss_fit
 
-from bikipy.behaviour.core import BaseExperiment, BaseTrial
-from bikipy.perimeter.base import Perimeter
+from bikipy._dev_utils.fields import enclosure_field
+from bikipy._dev_utils.message import report_to_github
+from bikipy.behaviour.core import BaseExperiment, BaseTrial, HabituationTrialMixin
+from bikipy.perimeter.base import Perimeter, PerimeterCLS, PerimeterSet
+from bikipy.reader.base import ReaderCLS
 
 
 class EnclosedTrial(BaseTrial):
-    manual_enclosure: Optional[Perimeter]
+    manual_enclosure: Optional[Perimeter] = enclosure_field
+
+    trial_perimeter_enclosure_class: ClassVar[PerimeterCLS] = ...
+    enclosure_perimeter_object_attribute_names: ClassVar[set[str]] = set()
 
     gaussian_dividend_multiplayer: ClassVar[int] = 1
+
+    @validator("manual_enclosure")
+    def manual_enclosure_is_instance_of_trial_perimeter_enclosure_class(cls, value: Perimeter):
+        """
+        This could be enforced through GenericModel, but GenericModel types are reserved for inter-trial perimeters,
+        and not trial enclosures
+        """
+        if not isinstance(value, cls.trial_perimeter_enclosure_class):
+            msg = f"manual_enclosure must be an instance of {cls.trial_perimeter_enclosure_class.__name__}"
+            raise AttributeError(msg)
+        return value
+
+    @property
+    def reader_class(self) -> ReaderCLS:
+        try:
+            return super().reader_class[self.trial_perimeter_enclosure_class]
+        except TypeError as e:
+            msg = (
+                f"When working with EnclosedTrials, class attribute trial_perimeter_enclosure_class must be defined. "
+                f"{report_to_github}"
+            )
+            raise AttributeError(msg) from e
 
     @property
     def _reader_kwargs(self) -> dict:
         return {**super()._reader_kwargs, "trial_enclosure": self.enclosure}
 
     @cached_property
-    def enclosure(self) -> Perimeter | None:
-        return self.manual_enclosure
+    def enclosure(self) -> Perimeter:
+        enclosures = []
+        for name in self.enclosure_perimeter_object_attribute_names:
+            try:
+                enclosures.append(self.__getattribute__(name))
+            except AttributeError as e:
+                msg = (
+                    f"{name} defined in enclosure_perimeter_object_attribute_names is not an attribute. "
+                    f"{report_to_github}"
+                )
+                raise AttributeError(msg) from e
+        if self.manual_enclosure:
+            enclosures.append(self.manual_enclosure)
+
+        if not enclosures:
+            msg = "No enclosure defined for EnclosureTrial"
+            AttributeError(msg)
+
+        if len(enclosures) == 1:
+            return enclosures[0]
+
+        return PerimeterSet(perimeters=enclosures)
 
     @cached_property
     def gaussian_center_to_periphery_score(self) -> float:
@@ -34,8 +82,19 @@ class EnclosedTrial(BaseTrial):
         return np.sum(scores) / (self.gaussian_dividend_multiplayer * self.number_of_frames)
 
 
-class EnclosedExperiment(BaseExperiment):
+class EnclosedHabituationTrial(HabituationTrialMixin, EnclosedTrial):
     pass
+
+
+class EnclosedExperiment(BaseExperiment):
+    @classmethod
+    @property
+    def trial_perimeter_enclosure_classes(cls) -> dict[str, PerimeterCLS]:
+        return {
+            enclosed_trial_class.trial_label: enclosed_trial_class.trial_perimeter_enclosure_class
+            for enclosed_trial_class in cls.trial_classes
+            if issubclass(enclosed_trial_class, EnclosedTrial)
+        }
 
 
 @validate_arguments

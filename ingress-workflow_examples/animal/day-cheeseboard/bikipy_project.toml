@@ -3,6 +3,11 @@ metadata_filename = "metadata.xlsx"
 experiment_class = "cheeseboard"
 trial_sequence = ["CheeseboardTrial"]
 
+[debug]
+activate_debugging = false
+no_numba = false
+no_process_pooling = false
+
 [ingress]
 method = "animal_day"
 first_stage_is_habituation = false
@@ -61,17 +66,17 @@ minimum_frame_length = 600
 object_tracking_label_for_kinematics = "string"
 
 [trial.common.optional]
-coordinate_timestamp_set = "np.ndarray"
+coordinate_timestamp_index = "np.ndarray"
 crop_from_end = "boolean -> True"
 crop_time_seconds = "number -> 0.0"
-data_format_label = "string -> deeplabcut"
+enclosure = "[{'$ref': '#/definitions/BasePerimeter'}]"
 fps = "number"
 frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'uint8'}]"
 inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}]"
 inspect_image_path = "string"
 length_meters_of_meters_per_pixel_source = "number"
 manual_center_pixels = "np.ndarray[name='manual_center_pixels_0' type=short required=True]"
-manual_enclosure = "None"
+manual_enclosure = "[{'$ref': '#/definitions/BasePerimeter'}]"
 manual_inspect_image = "np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]"
 manual_perimeter_to_derive_meters_per_pixel = "string"
 manual_video = "[{'$ref': '#/definitions/VideoMetadata'}]"
@@ -79,6 +84,7 @@ meters_per_pixel = "[{'type': 'number'}, {'type': 'dobble'}]"
 meters_per_pixel_from_perimeter = "boolean -> False"
 meters_per_pixel_from_perimeter_source = "string"
 minimum_frame_length = "integer -> 600"
+reader_class_label = "string -> DataWithLikelihoodReader"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
 rigid_nodes_freezing = "array"
 tolerate_boolean_index = "boolean -> True"
@@ -92,7 +98,6 @@ fps = 15
 
 [experiment.optional]
 compute_first_two_feature_series_only = "boolean -> False"
-data_format_label = "string -> deeplabcut"
 fps = "number"
 frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'uint8'}]"
 inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}] -> False"
@@ -107,11 +112,6 @@ skip_habituation = "boolean -> False"
 stage = "string"
 trial_init_error_out_dir = "string"
 
-[debug]
-activate_debugging = false
-no_numba = false
-no_process_pooling = false
-
 [perimeter]
 label_prefix = ""
 label_suffix = ""
@@ -119,14 +119,10 @@ perimeter_names_in_metadata = false
 radial_arm_rectangle_diagonal = ""
 
 [perimeter.trial_perimeters]
-[perimeter.trial_perimeters.reward_perimeter]
-[perimeter.trial_perimeters.reward_perimeter.defined]
-radius_meters = 15
+[perimeter.trial_perimeters.start_perimeter]
+[perimeter.trial_perimeters.start_perimeter.defined]
 
-[perimeter.trial_perimeters.reward_perimeter.required]
-radius_meters = "number"
-
-[perimeter.trial_perimeters.reward_perimeter.optional]
+[perimeter.trial_perimeters.start_perimeter.optional]
 derive_meters_per_pixel = "boolean -> False"
 derived_meters_per_pixel_source = "string"
 derived_meters_per_pixel_source_metric_length = "number"
@@ -142,10 +138,14 @@ minimum_frame_length = "integer -> 600"
 moving_field_name = "string"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
 
-[perimeter.trial_perimeters.start_perimeter]
-[perimeter.trial_perimeters.start_perimeter.defined]
+[perimeter.trial_perimeters.reward_perimeter]
+[perimeter.trial_perimeters.reward_perimeter.defined]
+radius_meters = ""
 
-[perimeter.trial_perimeters.start_perimeter.optional]
+[perimeter.trial_perimeters.reward_perimeter.required]
+radius_meters = "number"
+
+[perimeter.trial_perimeters.reward_perimeter.optional]
 derive_meters_per_pixel = "boolean -> False"
 derived_meters_per_pixel_source = "string"
 derived_meters_per_pixel_source_metric_length = "number"

@@ -1,4 +1,8 @@
-_polygon_shapes = {"rectangle", "polygon"}
+from bikipy.perimeter import CircleVariableRadiusPerimeter
+from bikipy.perimeter.base import PerimeterCLS
 
-BIKIPY_SHAPES = {"circle": "line", "polygon": _polygon_shapes, "rectangle": _polygon_shapes}
+_polygon_shapes: set[str] = {"rectangle", "polygon"}
+
 MAKESENSE_SHAPES = ("circle", "polygon", "rectangle")
+
+PERIMETER_CLASS_REQUIRE_INTERFACE_SETTINGS: set[PerimeterCLS] = {CircleVariableRadiusPerimeter}

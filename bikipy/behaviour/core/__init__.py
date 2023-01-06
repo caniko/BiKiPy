@@ -3,7 +3,7 @@ from concurrent.futures import ProcessPoolExecutor
 from functools import cached_property, lru_cache, reduce
 from logging import getLogger
 from operator import attrgetter
-from typing import ClassVar, Hashable, Iterable, Literal, Optional, Sequence, TypeVar
+from typing import ClassVar, Hashable, Iterable, Literal, Optional, Sequence, TypeVar, Type
 
 import numpy as np
 import pandas as pd
@@ -25,6 +25,7 @@ from yaspin import yaspin
 from yaspin.spinners import Spinners
 
 from bikipy import runtime_settings
+from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from bikipy.core.typing import TrialId
 from bikipy.core.video import (
@@ -34,7 +35,6 @@ from bikipy.core.video import (
 )
 from bikipy.feature.motion import Motion, motion_multi_indexer
 from bikipy.ingress.plugin import PluginChangeReference, PluginRadial
-from bikipy.ingress.workflow.base import FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
 from bikipy.perimeter.base import (
     BaseSinglePerimeter,
@@ -42,6 +42,8 @@ from bikipy.perimeter.base import (
     PerimeterSet,
     SinglePerimeter,
 )
+from bikipy.reader import READER_CLASS_LABEL_TO_CLASS
+from bikipy.reader.base import ReaderCLS, Reader
 from bikipy.reader.data_with_likelihood import DeepLabCutReader
 from bikipy.utils.collection_utils import max_len_in_iterable
 from bikipy.utils.ranged_dict import RangeDict
@@ -52,8 +54,6 @@ logger = getLogger(__name__)
 
 
 class Behaviour(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
-    data_format_label: Literal["deeplabcut"] = "deeplabcut"
-
     _live: ClassVar[bool] = False
 
     @staticmethod
@@ -77,15 +77,20 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
     object_tracking_label_for_kinematics: Optional[str] = Field(
         ..., description="Label of the node that will be used to track general animal movement"
     )
-    coordinate_timestamp_set: Optional[NDArray]
+    coordinate_timestamp_index: Optional[NDArray] = timestamp_index_field
     manual_center_pixels: Optional[NDArrayInt16]
     rigid_nodes_freezing: Optional[Sequence[str | PositiveInt]] = Field(
         description="Nodes that should remain during freeze/immobility, most often due to fear.",
     )
+    enclosure: Optional[Perimeter] = enclosure_field
     crop_time_seconds: float = 0.0
     crop_from_end: bool = Field(
         True,
         description="Only affective if crop_time_seconds is not 0.0. Will crop from start instead when set to False",
+    )
+
+    reader_class_label: str = Field(
+        "DataWithLikelihoodReader", description="Label of the reader class to use for reading coordinate data"
     )
 
     # Derive meters per pixel from perimeter
@@ -150,7 +155,7 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
 
     @classmethod
     @property
-    def experiment_class(cls) -> "Experiment":
+    def experiment_class(cls) -> "ExperimentCLS":
         from bikipy.behaviour.mapping import experiment_name_to_class
 
         return experiment_name_to_class[cls.experiment_class_name]
@@ -179,6 +184,17 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
             return result
 
     @property
+    def reader_class(self) -> ReaderCLS:
+        try:
+            return READER_CLASS_LABEL_TO_CLASS[self.reader_class_label]
+        except KeyError as e:
+            msg = (
+                f"Invalid reader_class_label defined in Trial class, "
+                f"{self.reader_class_label}. Pick from: {tuple(READER_CLASS_LABEL_TO_CLASS)}"
+            )
+            raise AttributeError(msg) from e
+
+    @property
     def perimeter_to_derive_meters_per_pixel(self) -> Perimeter:
         if self.manual_perimeter_to_derive_meters_per_pixel:
             try:
@@ -202,25 +218,17 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
     def _reader_kwargs(self) -> dict:
         return {
             "df_path": self.framewise_coordinates_path,
-            "timestamp_index": self.coordinate_timestamp_set,
+            "timestamp_index": self.coordinate_timestamp_index,
             "label": self.framewise_coordinates_path.stem,
             "manual_video": self.video,
             "crop_time_seconds": self.crop_time_seconds,
+            "enclosure": self.enclosure,
             **self.manual_reader_kwargs,
         }
 
     @cached_property
-    def reader(self):
-        try:
-            reader_init_func = LABEL_to_DATA_READER[self.data_format_label]
-        except KeyError as e:
-            msg = (
-                f"{self.data_format_label} as a format for data ingestion has "
-                f"no implementation. Choose from: {LABEL_to_DATA_READER.keys()}"
-            )
-            raise NotImplemented(msg) from e
-
-        return reader_init_func(**self._reader_kwargs)
+    def reader(self) -> Reader:
+        return self.reader_class(**self._reader_kwargs)
 
     @property
     def kinematic_coordinates(self) -> NDArrayFp64:
@@ -320,6 +328,7 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
         self.video.flush()
 
 
+TrialCLS = Type[BaseTrial]
 Trial = TypeVar("Trial", bound=BaseTrial)
 
 
@@ -378,12 +387,12 @@ class BaseExperiment(Behaviour):
         super().save()
 
     @classmethod
-    def trial_sequence_repetition(cls, repetitions: int) -> "Experiment":
+    def trial_sequence_repetition(cls, repetitions: int) -> "ExperimentCLS":
         cls.trial_sequence = tuple(cls.trial_classes) * repetitions
         return cls
 
     @classmethod
-    def set_first_trial_to_habituation(cls) -> "Experiment":
+    def set_first_trial_to_habituation(cls) -> "ExperimentCLS":
         if not cls.habituation_trial_class:
             msg = f"Habituation trial class for {cls.__name__} has not been defined, contact the maintainers"
             raise AttributeError(msg)
@@ -404,7 +413,7 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def trial_perimeter_label_to_perimeter_class(cls) -> dict[str, "Perimeter"]:
+    def trial_perimeter_label_to_perimeter_class(cls) -> dict[str, Perimeter]:
         result = {}
         for trial_class in cls.trial_classes:
             if not trial_class.perimeter_field_name_to_perimeter_class:
@@ -459,7 +468,7 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def stage_index_to_trial_class(cls) -> dict[int, Trial]:
+    def stage_index_to_trial_class(cls) -> dict[int, TrialCLS]:
         if not cls.has_stages:
             msg = f"{cls.__name__}: stage_index_to_trial_class is undefined in non-sequential experiment classes"
             raise AttributeError(msg)
@@ -472,7 +481,7 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def stage_index_to_trial_class_name(cls):
+    def stage_index_to_trial_class_name(cls) -> dict[int, TrialCLS]:
         if isinstance(tuple(cls.stage_index_to_trial_class.values())[-1], FieldInfo):
             msg = (
                 f"To the developers: Setting the trial_sequence class variable is required; "
@@ -483,7 +492,7 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def trial_class_name_to_trial_class(cls) -> dict[str, Trial]:
+    def trial_class_name_to_trial_class(cls) -> dict[str, TrialCLS]:
         if not cls.has_stages:
             msg = (
                 f"{cls.__name__}: trial_class_name_to_trial_class attribute can only be utilized when "
@@ -494,7 +503,10 @@ class BaseExperiment(Behaviour):
         try:
             return {trial_class.__name__: trial_class for trial_class in cls.trial_sequence}
         except AttributeError:
-            msg = "experiment_stage_index must be defined for each trial class when working with a sequence of trial classes"
+            msg = (
+                "experiment_stage_index must be defined for each trial class when "
+                "working with a sequence of trial classes"
+            )
             raise AttributeError(msg)
 
     def trial_keyword_arguments(self, trial_id: TrialId) -> dict:
@@ -768,6 +780,8 @@ class BaseExperiment(Behaviour):
 
         if self.skip_habituation:
             if not self._first_trial_is_habituation:
+                from bikipy.ingress.workflow.base import FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD
+
                 msg = (
                     f"skip_habituation is True, but the experiment has no habituation trial set. Possible mistakes:\n"
                     f"  - skip_habituation was set to True by mistake.\n"
@@ -818,6 +832,7 @@ class BaseExperiment(Behaviour):
         )
 
 
+ExperimentCLS = Type[BaseExperiment]
 Experiment = TypeVar("Experiment", bound=BaseExperiment)
 
 

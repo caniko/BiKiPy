@@ -1,4 +1,4 @@
-from bikipy.behaviour.core import Experiment
+from bikipy.behaviour.core import ExperimentCLS
 from bikipy.behaviour.core.enclosure.rectangle import GenericRectangleEnclosedExperiment
 from bikipy.behaviour.object_recognition.novel_object_recognition import NortExperiment
 from bikipy.behaviour.object_recognition.objects_in_updating_locations import (
@@ -7,18 +7,18 @@ from bikipy.behaviour.object_recognition.objects_in_updating_locations import (
 from bikipy.behaviour.radial_arm.y_maze import YMazeExperiment
 from bikipy.behaviour.reward_tracing.cheeseboard import CheeseboardExperiment
 
-IMPLEMENTED_EXPERIMENTS: set[Experiment] = {
+IMPLEMENTED_EXPERIMENTS: set[ExperimentCLS] = {
     NortExperiment,
     ObjectsInUpdatingLocationsExperiment,
     YMazeExperiment,
     CheeseboardExperiment,
 }
 
-GENERIC_EXPERIMENTS: set[Experiment] = {GenericRectangleEnclosedExperiment}
+GENERIC_EXPERIMENTS: set[ExperimentCLS] = {GenericRectangleEnclosedExperiment}
 
-EXPERIMENTS: set[Experiment] = {*IMPLEMENTED_EXPERIMENTS, *GENERIC_EXPERIMENTS}
+EXPERIMENTS: set[ExperimentCLS] = {*IMPLEMENTED_EXPERIMENTS, *GENERIC_EXPERIMENTS}
 
-experiment_name_to_class: dict[str, Experiment] = {}
+experiment_name_to_class: dict[str, ExperimentCLS] = {}
 for experiment in EXPERIMENTS:
     for label in experiment.experiment_labels:
         experiment_name_to_class[label] = experiment

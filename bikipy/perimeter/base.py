@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
-from typing import Any, Literal, Optional, TypeVar
+from typing import Any, Literal, Optional, TypeVar, Type, TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -24,7 +24,6 @@ from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_csv_rectangle,
 )
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
-from bikipy.reader.base import Reader
 from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence
 from bikipy.utils.image import axis_frame_imshow
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
@@ -33,6 +32,9 @@ from bikipy.utils.plot import (
 )
 from bikipy.utils.plot.generic import ax_plot_coordinate_with_boolean_index, plot_coordinates
 from bikipy.utils.plot.inspect import generic_inspection_finalization
+
+if TYPE_CHECKING:
+    from bikipy.reader.base import Reader
 
 logger = getLogger(__name__)
 
@@ -124,7 +126,14 @@ class BasePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, ABC):
         ...
 
 
+PerimeterCLS = Type[BasePerimeter]
 Perimeter = TypeVar("Perimeter", bound=BasePerimeter)
+
+
+from bikipy.reader.base import BaseReader
+
+
+BaseReader.update_forward_refs(Perimeter=Perimeter)
 
 
 class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
@@ -228,7 +237,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         return values
 
     def confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, reader: Optional[Reader] = None
+        self, coordinates: NDArrayFp64, reader: Optional["Reader"] = None
     ) -> NDArrayBool:
         """
         This function integrates moving perimeter routine into the static perimeter workflow
