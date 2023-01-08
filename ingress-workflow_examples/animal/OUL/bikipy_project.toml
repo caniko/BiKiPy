@@ -14,12 +14,13 @@ first_stage_is_habituation = false
 metadata_trial_ids_are_higher_level = false
 trial_sequence_loops = ""
 framewise_coordinates_file_suffix = ".parquet"
-dataset_directory = "/mnt/BigData/mextracted/oul_dataset_mextracted"
+dataset_directory = "/data/behaviour_dataset/mextracted/oul_dataset_mextracted"
 profile_runtime = true
 
 [definition_strategies]
 meters_per_pixel = "metadata"
 perimeter = "trial-wise"
+enclosure = ""
 radial = ""
 change_reference = ""
 frame = ""
@@ -33,6 +34,9 @@ filter_method = "arima"
 
 [manual_reader_kwargs.defined.midpoint_groups]
 center_eye = ["left_ear", "right_ear"]
+
+
+
 
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"
@@ -134,3 +138,30 @@ recording_resolution = "np.ndarray[name='recording_resolution_0' type=short requ
 skip_habituation = "boolean -> False"
 stage = "string"
 trial_init_error_out_dir = "string"
+
+[perimeter]
+label_prefix = ""
+label_suffix = ""
+perimeter_names_in_metadata = false
+radial_arm_rectangle_diagonal = -1
+
+[perimeter.common]
+[perimeter.common.defined]
+
+[perimeter.common.optional]
+derive_meters_per_pixel = "boolean -> False"
+derived_meters_per_pixel_source = "string"
+derived_meters_per_pixel_source_metric_length = "number"
+fps = "number"
+frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'uint8'}]"
+impenetrable = "boolean -> False"
+inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}] -> False"
+inspect_image_path = "string"
+manual_inspect_image = "np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]"
+manual_video = "[{'$ref': '#/definitions/VideoMetadata'}]"
+meters_per_pixel = "[{'type': 'number'}, {'type': 'dobble'}]"
+minimum_frame_length = "integer -> 600"
+moving_field_name = "string"
+recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
+
+[perimeter.trial_perimeters]

@@ -2,6 +2,8 @@ import os
 from functools import lru_cache
 from typing import Callable, Iterable, Optional
 
+import numpy as np
+import pandas as pd
 from pydantic import DirectoryPath, validate_arguments
 
 
@@ -10,14 +12,21 @@ def compute_midpoint_label(midpoint_group: Iterable[str], manual_midpoint_label:
     return manual_midpoint_label or f"{'_'.join(midpoint_group)}_midpoint"
 
 
+def read_bonsai_timestamps(file_path):
+    datetime_array = (
+        pd.read_csv(file_path, header=None, usecols=[16], parse_dates=[0]).values.T[0].astype(np.datetime64)
+    )
+    return (datetime_array - datetime_array[0]).astype(float) / 10**6
+
+
 @validate_arguments
 def merge_timestamps_with_dlc(
     dataset_dir: DirectoryPath,
-    file_to_timestamp_series: Callable,
+    timestamp_reader: Callable = read_bonsai_timestamps,
     timestamp_file_lookup_expression: str = "*timestamps-*.csv",
     coordinate_file_lookup_expression: str = "*.parquet",
     delimiter: str = ".",
-):
+) -> None:
     from bikipy.reader.data_with_likelihood import DataWithLikelihoodReader
 
     def get_first_delimited_value_from_str(string: str):
@@ -30,7 +39,7 @@ def merge_timestamps_with_dlc(
         label_to_timestamp, label_to_timestamp_path = {}, {}
         for timestamp_file in dataset_unit_dir.glob(timestamp_file_lookup_expression):
             label = get_first_delimited_value_from_str(timestamp_file.stem)
-            label_to_timestamp[label] = file_to_timestamp_series(timestamp_file)
+            label_to_timestamp[label] = timestamp_reader(timestamp_file)
             label_to_timestamp_path[label] = timestamp_file
 
         for coord_file in dataset_unit_dir.glob(coordinate_file_lookup_expression):

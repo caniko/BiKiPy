@@ -35,6 +35,14 @@ class AbcPerimeterPlugin(BasePluginFile, HasReferenceMixin, ABC):
     human_readable_index = "Perimeter"
 
     def perimeter_mapper(self, trial_id: Optional[str | PositiveInt] = None) -> dict[str, SinglePerimeter]:
+        additional_kwargs = {**self.perimeter_settings["common"]["defined"]}
+        if self.perimeter_settings["trial_perimeters"]:
+            additional_kwargs.update(
+                self._parse_plugin_settings(
+                    self.perimeter_settings["trial_perimeters"][self.trial_argument_key]["defined"]
+                )
+            )
+
         image_name_to_perimeter_set = perimeter_set_from_makesense(
             self.data_path,
             self.manual_shape or self.shape,
@@ -42,9 +50,7 @@ class AbcPerimeterPlugin(BasePluginFile, HasReferenceMixin, ABC):
             meters_per_pixel=self.ingress.get_meter_per_pixel(trial_id),
             reference_point_array=self.reference_point,
             inspect_arg=self.ingress.inspect_directory_path,
-            **self._parse_plugin_settings(
-                self.perimeter_settings["trial_perimeters"][self.trial_argument_key]["defined"]
-            ),
+            **additional_kwargs,
         )
 
         result = {}

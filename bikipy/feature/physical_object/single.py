@@ -39,10 +39,6 @@ class PhysicalObject(BaseBikipyInspectMixin):
     gaze_travel_direction_point_label: str = ...
     maximum_radians_inter_gaze_perimeter: float = ...
 
-    # Tolerance fields
-    minimum_seconds_attention: float = ...
-    maximum_seconds_distraction: float = ...
-
     # Inspection fields
     trial_obj_label: Optional[TrialId]
     _fig: Any = None
@@ -118,8 +114,6 @@ class PhysicalObject(BaseBikipyInspectMixin):
         result = single_node_tolerance_model(
             self.logical_location_and_gaze,
             self.video.fps,
-            self.minimum_seconds_attention,
-            self.maximum_seconds_distraction,
         )
 
         if self.inspect_arg and not self._exporting_figure:

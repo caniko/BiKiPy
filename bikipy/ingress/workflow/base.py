@@ -33,7 +33,7 @@ from bikipy.ingress.utils.io import (
     dump_settings,
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
-from bikipy.perimeter.base import Perimeter
+from bikipy.perimeter.base import Perimeter, BaseSinglePerimeter
 from bikipy.perimeter.constant import PERIMETER_CLASS_REQUIRE_INTERFACE_SETTINGS
 from bikipy.reader.base import BaseReader
 from bikipy.reader.data_with_likelihood import DataWithLikelihoodReader
@@ -588,14 +588,10 @@ class BaseIngress(BaseBikipy, ABC):
         for trial_label, df in self.trial_label_to_df.items():
             df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_name}.parquet")
 
-    def purge_cached_reads(self) -> None:
-        to_delete = (
-            f
-            for f in self.dataset_directory_path.glob(
-                f"**/**/*{BaseReader.augmented_coordinate_cached_file_label}.parquet"
-            )
-        )
-        readable_to_delete = ", ".join((f.name for f in to_delete))
+    def purge_cached_reads(self, override_pattern: Optional[str] = None) -> None:
+        pattern = override_pattern or BaseReader.augmented_coordinate_cached_file_label
+        to_delete = (f for f in self.dataset_directory_path.glob(f"**/**/*{pattern}.parquet"))
+        readable_to_delete = "\n".join((f.name for f in to_delete))
         if (
             input(
                 f"{readable_to_delete}\n===================\nPURGING CACHED DATA\n===================\n"
@@ -748,6 +744,7 @@ def init_settings(
             "label_suffix": "",
             "perimeter_names_in_metadata": False,
             "radial_arm_rectangle_diagonal": -1,
+            "common": extended_schema(BaseSinglePerimeter),
             "trial_perimeters": {
                 label: extended_schema(perimeter_class)
                 for label, perimeter_class in experiment_class.trial_perimeter_label_to_perimeter_class.items()

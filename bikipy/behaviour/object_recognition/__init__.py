@@ -28,8 +28,6 @@ class ObjectRecognitionTrialMixin(AbstractTrial, ABC):
     outside_perimeter_point_label: Optional[str] = Field(description="Label signifying the area where the gaze vector")
 
     maximum_radians_inter_gaze_perimeter: float = np.pi / 4.0
-    minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance
-    maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction
 
     physical_object_inspect: bool = False
 
@@ -65,8 +63,6 @@ class ObjectRecognitionTrialMixin(AbstractTrial, ABC):
             "gaze_start_point_label": self.gaze_start_point_label,
             "outside_perimeter_point_label": self.outside_perimeter_point_label,
             "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
-            "minimum_seconds_attention": self.minimum_seconds_attention,
-            "maximum_seconds_distraction": self.maximum_seconds_distraction,
             "perimeter_border_normal_pixels": self.perimeter_border_normal_pixels,
             "inspect_arg": self.inspect_arg,
         }

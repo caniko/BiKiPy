@@ -16,6 +16,7 @@ from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.feature.physical_object.single import PhysicalObject
+from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.reader.base import Reader
 
@@ -26,27 +27,42 @@ class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
     analysis_label: str
 
     physical_object_label_to_observation_boolean_index: dict[str, NDArrayBool]
-    seconds_observing: int
 
     overlapping_frame_to_total_frame_warning_ratio: ClassVar[float] = 0.05
+
+    @property
+    def observing_per_frame(self) -> NDArrayBool:
+        return np.logical_or.reduce(
+            [
+                observation_boolean_index
+                for observation_boolean_index in self.physical_object_label_to_observation_boolean_index.values()
+            ]
+        )
+
+    @property
+    def total_seconds_observing(self) -> float:
+        return np.sum(self.observing_per_frame) / self.video.fps
 
     @property
     def feature_summary(self) -> pd.Series:
         object_bias_score = pd.Series(
             self.object_bias_score.values(),
-            index=pd.MultiIndex.from_product([[self.analysis_label, "ObjectBiasScore"], self.labels]),
+            index=[["ObjectBiasScore", f"{self.analysis_label}_{label}"] for label in self.labels],
         )
-        seconds_observing = pd.Series(
+        total_seconds_observing = pd.Series(
             (
-                self.seconds_observing,
+                self.total_seconds_observing,
                 *(
                     observation_seconds
                     for observation_seconds in self.physical_object_label_to_observation_seconds.values()
                 ),
             ),
-            index=pd.MultiIndex.from_product([[self.analysis_label, "SecondsObserving"], ["All", *self.labels]]),
+            index=(
+                ("SecondsObserving", f"{self.analysis_label}_Total"),
+                *[["SecondsObserving", f"{self.analysis_label}_{label}"] for label in self.labels],
+            ),
         )
-        return pd.concat((object_bias_score, seconds_observing))
+        return pd.concat((object_bias_score, total_seconds_observing))
 
     @cached_property
     def labels(self) -> list[str, ...]:
@@ -102,10 +118,10 @@ class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
 
     @cached_property
     def relative_object_bias_score(self) -> dict[str, float]:
-        if not self.seconds_observing:
+        if not self.total_seconds_observing:
             return self._label_to_zero
         return {
-            label: 100.0 * observation_boolean_index / self.seconds_observing
+            label: 100.0 * np.sum(observation_boolean_index) / self.total_seconds_observing
             for label, observation_boolean_index in self.physical_object_label_to_observation_boolean_index.items()
         }
 
@@ -119,7 +135,7 @@ class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
 
     @cached_property
     def absolute_object_bias_score(self) -> dict[str, float]:
-        if not self.seconds_observing:
+        if not self.total_seconds_observing:
             return self._label_to_zero
         return {
             label: 100.0 * physical_object.tolerance_modeled_proximity_and_gaze_seconds / (self.frames * self.fps)
@@ -202,45 +218,31 @@ class PhysicalObjectSet(VideoMetadataMixin):
     def label_to_physical_object(self) -> dict:
         return {physical_object.label: physical_object for physical_object in self.physical_objects}
 
-    @cached_property
-    def observing_per_frame(self):
-        return np.logical_or.reduce(
-            [physical_object.attention_observance_boolean_index for physical_object in self.physical_objects]
+    @property
+    def analysis_objects(self) -> tuple[PhysicalObjectSetAnalysis, ...]:
+        return PhysicalObjectSetAnalysis(
+            analysis_label="TolGaze",
+            physical_object_label_to_observation_boolean_index={
+                physical_object.label: physical_object.attention_observance_boolean_index
+                for physical_object in self.physical_objects
+            },
+            manual_video=self.video,
+        ), PhysicalObjectSetAnalysis(
+            analysis_label="Proximity",
+            physical_object_label_to_observation_boolean_index={
+                physical_object.label: physical_object.attention_proximity_boolean_index
+                for physical_object in self.physical_objects
+            },
+            manual_video=self.video,
         )
-
-    @cached_property
-    def seconds_observing(self):
-        return np.sum(self.observing_per_frame) / self.video.fps
-
-    @cached_property
-    def filtration_levels_to_analysis(self) -> dict[str, PhysicalObjectSetAnalysis]:
-        return {
-            physical_object.label: physical_object.tolerance_modeled_proximity_and_gaze_seconds
-            for physical_object in self.physical_objects
-        }
 
     @property
     def feature_summary(self) -> pd.Series:
-        without_all = pd.Series(
-            self.object_bias_score.values(), index=pd.MultiIndex.from_product([["ObjectBiasScore"], list(self.labels)])
-        )
+        return pd.concat([analysis_object.feature_summary for analysis_object in self.analysis_objects])
 
-        # with_all_indexes = []
-        # base_indexes_with_all = ("All", *self.labels)
-        # for feature_label in ("SecondsObserving",):
-        #     for base_index in base_indexes_with_all:
-        #         with_all_indexes.append((feature_label, base_index))
-        with_all = pd.Series(
-            (
-                self.seconds_observing,
-                *(
-                    physical_object.tolerance_modeled_proximity_and_gaze_seconds
-                    for physical_object in self.physical_objects
-                ),
-            ),
-            index=pd.MultiIndex.from_product([["SecondsObserving"], ["All", *self.labels]]),
-        )
-        return pd.concat((without_all, with_all))
+    @property
+    def seconds_observing(self) -> float:
+        return self.analysis_objects[0].total_seconds_observing
 
     def plot(self, ax: Any = None):
         if not ax:

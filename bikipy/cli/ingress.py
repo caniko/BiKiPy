@@ -10,6 +10,7 @@ from bikipy.ingress.workflow.base import (
     analyze_and_save,
     init_settings,
 )
+from bikipy.reader.utils import merge_timestamps_with_dlc
 from bikipy.utils.misc import current_path_or_arg_path
 
 
@@ -71,6 +72,15 @@ def update(
 
 @ingress.command()
 @click.option("-p", "project_root_directory")
+@click.option("-o", "override_pattern")
 @validate_arguments
-def purge_cache(project_root_directory: Optional[DirectoryPath]) -> None:
+def purge_cache(project_root_directory: Optional[DirectoryPath], override_pattern: Optional[str] = None) -> None:
     auto_define_ingress_object(current_path_or_arg_path(project_root_directory)).purge_cached_reads()
+
+
+@ingress.command()
+@click.option("-p", "project_root_directory")
+@validate_arguments
+def merge_coords_bonsai_timestamps(project_root_directory: Optional[DirectoryPath]) -> None:
+    ingress = auto_define_ingress_object(current_path_or_arg_path(project_root_directory))
+    merge_timestamps_with_dlc(ingress.dataset_directory_path, coordinate_file_lookup_expression="*.h5")

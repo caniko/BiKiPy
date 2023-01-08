@@ -312,7 +312,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
         return upstream_list
 
 
-class RectangleEnclosedHabituationTrial(RectangleEnclosedTrial, HabituationTrialMixin):
+class RectangleEnclosedHabituationTrial(HabituationTrialMixin, RectangleEnclosedTrial):
     # TODO: Fix incorrect trial_label, when using this class
     trial_label = "Habituation"
 

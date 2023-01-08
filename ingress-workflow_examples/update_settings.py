@@ -5,9 +5,6 @@ from pathlib import Path
 from bikipy.ingress.utils.io import BIKIPY_SETTINGS_FILE_NAME
 from bikipy.ingress.utils.settings.update import update_settings
 
-for f in iglob("**/**/*.toml"):
-    os.remove(f)
-
 for category_dir in os.listdir():
     category_dir = Path(category_dir)
     if category_dir.name == "live" or category_dir.is_file():

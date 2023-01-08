@@ -26,6 +26,7 @@ from yaspin.spinners import Spinners
 
 from bikipy import runtime_settings
 from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
+from bikipy.behaviour.object_recognition import ObjectRecognitionTrialMixin
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from bikipy.core.typing import TrialId
 from bikipy.core.video import (
@@ -41,6 +42,7 @@ from bikipy.perimeter.base import (
     Perimeter,
     PerimeterSet,
     SinglePerimeter,
+    PerimeterCLS,
 )
 from bikipy.reader import READER_CLASS_LABEL_TO_CLASS
 from bikipy.reader.base import ReaderCLS, Reader
@@ -163,7 +165,7 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
     @classmethod
     @property
     def has_perimeter(cls) -> bool:
-        return is_generic_type(cls)
+        return is_generic_type(cls) or issubclass(cls, ObjectRecognitionTrialMixin)
 
     @classmethod
     @property
@@ -357,13 +359,13 @@ class BaseExperiment(Behaviour):
 
     experiment_labels: ClassVar[set[str]] = ...
 
-    habituation_trial_class: ClassVar[Optional[Trial]] = Field(
+    habituation_trial_class: ClassVar[Optional[TrialCLS]] = Field(
         description="The trial class that will be used in case set_first_trial_to_habituation is called"
     )
     _first_trial_is_habituation: ClassVar[bool] = False
 
     # "Sequence of trial classes designed for the experiment class"
-    trial_sequence: ClassVar[tuple[Trial, ...]] = ...
+    trial_sequence: ClassVar[tuple[TrialCLS, ...]] = ...
 
     @validator("trial_id_to_trial_class_name")
     def sort_trial_id_to_trial_class_name_ascending(cls, value):
@@ -378,7 +380,7 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def trial_classes(cls) -> set[Trial]:
+    def trial_classes(cls) -> set[TrialCLS]:
         """All trials designed for the experiment class"""
         return set(cls.trial_sequence)
 
@@ -401,7 +403,7 @@ class BaseExperiment(Behaviour):
             raise AttributeError(msg)
 
         cls.habituation_trial_class.experiment_class_name = cls.__name__
-        cls.trial_sequence = (cls.habituation_trial_class, *cls.trial_classes)
+        cls.trial_sequence = (cls.habituation_trial_class, *cls.trial_sequence)
         cls._first_trial_is_habituation = True
 
         return cls
@@ -413,7 +415,7 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def trial_perimeter_label_to_perimeter_class(cls) -> dict[str, Perimeter]:
+    def trial_perimeter_label_to_perimeter_class(cls) -> dict[str, PerimeterCLS]:
         result = {}
         for trial_class in cls.trial_classes:
             if not trial_class.perimeter_field_name_to_perimeter_class:
@@ -513,7 +515,7 @@ class BaseExperiment(Behaviour):
         """
         Function useful for customizing initiation parameters for trial objects
         """
-        result = {**self.video.dict(exclude_unset=True), "data_format_label": self.data_format_label}
+        result = self.video.dict(exclude_unset=True)
 
         if self.common_trial_keyword_arguments:
             result.update(self.common_trial_keyword_arguments)

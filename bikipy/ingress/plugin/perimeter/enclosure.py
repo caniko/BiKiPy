@@ -13,4 +13,4 @@ class PluginEnclosure(AbcPerimeterPlugin):
         return self.perimeter_mapper(self)
 
     def trialwise_and_metadata(self, trial_id: TrialId, naive: bool = False):
-        pass
+        return self.perimeter_mapper(self)

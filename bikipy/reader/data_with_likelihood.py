@@ -2,14 +2,14 @@ import os
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Hashable, Iterable, Optional
+from typing import Hashable, Iterable, Optional, Generic
 
 import numpy as np
 import pandas as pd
 from pydantic import Field
 from pydantic_numpy.dtype import NDArrayBool
 
-from bikipy.reader.base import BaseReader
+from bikipy.reader.base import BaseReader, Enclosure
 from bikipy.reader.utils import compute_midpoint_label
 
 DEEPLABCUT_DF_INIT_KWARGS = {
@@ -26,7 +26,7 @@ CROPPING_PARAMETERS_BASE = {"x1": None, "x2": None, "y1": None, "y2": None}
 logger = getLogger(__name__)
 
 
-class DataWithLikelihoodReader(BaseReader):
+class DataWithLikelihoodReader(BaseReader[Enclosure], Generic[Enclosure]):
     """
     Class that stores information about a given experiment conducted with DeepLabCut
     """
@@ -84,7 +84,7 @@ class DataWithLikelihoodReader(BaseReader):
         )
 
 
-class DeepLabCutReader(DataWithLikelihoodReader):
+class DeepLabCutReader(DataWithLikelihoodReader[Enclosure], Generic[Enclosure]):
     # DeepLabCut datasets come with likelihoods, hence the alias; for user-friendliness
     pass
 

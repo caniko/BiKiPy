@@ -56,7 +56,7 @@ class PluginSinglePerimeter(AbcPerimeterPlugin):
         return first_image_name_from_makesense(self.data_path, SHAPE_TO_MAKESENSE_TYPE[self.shape])
 
     @property
-    def perimeter_settings(self) -> dict[str, SinglePerimeter]:
+    def perimeter_settings(self) -> dict:
         return self.ingress.settings["perimeter"]
 
     @cached_property

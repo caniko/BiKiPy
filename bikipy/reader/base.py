@@ -60,7 +60,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
 
     cache_meters_augmented: bool = True
 
-    timestamp_index: Optional[Sequence] = timestamp_index_field
+    timestamp_index: Optional[NDArrayFp64] = timestamp_index_field
     df_is_timestamped: bool = Field(
         False, description="When True, the reader will interpret the DataFrame index as timestamps in seconds"
     )
@@ -97,7 +97,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
 
     _region_of_interest_to_fused_neighbouring_points: dict[str, NDArrayUint8] = Field(default_factory=dict)
 
-    augmented_coordinate_cached_file_label: ClassVar[str] = "augmented_coordinates"
+    augmented_coordinate_cached_file_label: ClassVar[str] = "augmented"
 
     @classmethod
     @property
@@ -302,7 +302,8 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
 
         if "timestamped" in self.df_path.stem:
             self.df_is_timestamped = True
-        if self.timestamp_index:
+
+        if self.timestamp_index is not None:
             df.set_index(self.timestamp_index, inplace=True)
             self.df_is_timestamped = True
 

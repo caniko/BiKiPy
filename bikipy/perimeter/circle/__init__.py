@@ -98,7 +98,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
             image_resize_multiplier = manual_resize_multiplier or self.video.image_resize_multiplier
             center, radius = center * image_resize_multiplier, radius * image_resize_multiplier
 
-        plot_circle(center, radius, ax)
+        return plot_circle(center, radius, ax)
 
     @classmethod
     @property

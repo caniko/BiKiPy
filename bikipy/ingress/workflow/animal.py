@@ -17,7 +17,7 @@ class AnimalIngress(BaseIngress):
             return f"{animal_id}_{stage_index}"
 
         for animal_dir in self.dataset_directory_path.iterdir():
-            if animal_dir.name.startswith("."):
+            if animal_dir.name.startswith(".") or animal_dir.is_file():
                 continue
 
             animal_id = self._get_id_from_path_stem(animal_dir)

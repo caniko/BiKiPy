@@ -34,14 +34,7 @@ class EnclosedTrial(BaseTrial):
 
     @property
     def reader_class(self) -> ReaderCLS:
-        try:
-            return super().reader_class[self.trial_perimeter_enclosure_class]
-        except TypeError as e:
-            msg = (
-                f"When working with EnclosedTrials, class attribute trial_perimeter_enclosure_class must be defined. "
-                f"{report_to_github}"
-            )
-            raise AttributeError(msg) from e
+        return super().reader_class[self.trial_perimeter_enclosure_class]
 
     @property
     def _reader_kwargs(self) -> dict:
