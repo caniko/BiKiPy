@@ -170,7 +170,7 @@ class VideoMetadata(_VideoMetadataBase):
 
     @cached_property
     def image_resize_multiplier(self) -> float:
-        if self.minimum_frame_length:
+        if self.minimum_frame_length and self.frame:
             shortest_side_size = min(self.frame.shape[:2])
             if shortest_side_size < self.minimum_frame_length:
                 return self.minimum_frame_length / shortest_side_size

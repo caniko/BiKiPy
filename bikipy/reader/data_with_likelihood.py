@@ -6,7 +6,7 @@ from typing import Hashable, Iterable, Optional, Generic
 
 import numpy as np
 import pandas as pd
-from pydantic import Field
+from pydantic import Field, FilePath
 from pydantic_numpy.dtype import NDArrayBool
 
 from bikipy.reader.base import BaseReader, Enclosure
@@ -47,13 +47,6 @@ class DataWithLikelihoodReader(BaseReader[Enclosure], Generic[Enclosure]):
         return np.delete(self.df[item].values, 2, 1)
 
     @cached_property
-    def raw_df(self) -> pd.DataFrame:
-        upstream_df = super().raw_df
-        if self.df_path.suffix == ".h5":
-            upstream_df = upstream_df.droplevel(0, axis=1)
-        return upstream_df
-
-    @cached_property
     def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:
         return {roi: self.df[(roi, "likelihood")].values >= self.min_likelihood for roi in self.all_tracked_labels}
 
@@ -85,8 +78,10 @@ class DataWithLikelihoodReader(BaseReader[Enclosure], Generic[Enclosure]):
 
 
 class DeepLabCutReader(DataWithLikelihoodReader[Enclosure], Generic[Enclosure]):
-    # DeepLabCut datasets come with likelihoods, hence the alias; for user-friendliness
-    pass
+    def _read_hdf(self, path: FilePath) -> pd.DataFrame:
+        df = pd.read_hdf(path)
+        df.columns = df.columns.droplevel()
+        return df
 
 
 def convert_hdf_to_parquet(data_path, delete_hdf: bool = False, ignore_pre_existing: bool = False) -> Path:

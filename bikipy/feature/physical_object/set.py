@@ -47,7 +47,9 @@ class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
     def feature_summary(self) -> pd.Series:
         object_bias_score = pd.Series(
             self.object_bias_score.values(),
-            index=[["ObjectBiasScore", f"{self.analysis_label}_{label}"] for label in self.labels],
+            index=pd.MultiIndex.from_tuples(
+                [["ObjectBiasScore", f"{self.analysis_label}_{label}"] for label in self.labels]
+            )
         )
         total_seconds_observing = pd.Series(
             (
@@ -57,10 +59,10 @@ class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
                     for observation_seconds in self.physical_object_label_to_observation_seconds.values()
                 ),
             ),
-            index=(
+            index=pd.MultiIndex.from_tuples((
                 ("SecondsObserving", f"{self.analysis_label}_Total"),
                 *[["SecondsObserving", f"{self.analysis_label}_{label}"] for label in self.labels],
-            ),
+            )),
         )
         return pd.concat((object_bias_score, total_seconds_observing))
 

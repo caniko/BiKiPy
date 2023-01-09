@@ -92,7 +92,7 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
     )
 
     reader_class_label: str = Field(
-        "DataWithLikelihoodReader", description="Label of the reader class to use for reading coordinate data"
+        "DeepLabCutReader", description="Label of the reader class to use for reading coordinate data"
     )
 
     # Derive meters per pixel from perimeter
@@ -230,7 +230,13 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
 
     @cached_property
     def reader(self) -> Reader:
-        return self.reader_class(**self._reader_kwargs)
+        result = self.reader_class(**self._reader_kwargs)
+
+        # In case the reader finds no time index, see fps property in reader
+        if result.fps:
+            self.fps = result.fps
+
+        return result
 
     @property
     def kinematic_coordinates(self) -> NDArrayFp64:
@@ -291,6 +297,7 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
     @property
     def _video(self) -> VideoMetadata:
         video = super()._video
+
         if self.perimeters:
             perimeter_video = reduce(
                 incongruity_permissive_video_join, (perimeter.video for perimeter in self.perimeters)
@@ -315,6 +322,7 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
             for perimeter in self.perimeters:
                 perimeter.manual_video = final_video
             return final_video
+
         return video
 
     @cached_property

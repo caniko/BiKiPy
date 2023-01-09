@@ -4,6 +4,7 @@ import pstats
 from abc import ABC, abstractmethod
 from cProfile import Profile
 from functools import cached_property
+from itertools import chain
 from logging import getLogger
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
@@ -590,16 +591,29 @@ class BaseIngress(BaseBikipy, ABC):
 
     def purge_cached_reads(self, override_pattern: Optional[str] = None) -> None:
         pattern = override_pattern or BaseReader.augmented_coordinate_cached_file_label
-        to_delete = (f for f in self.dataset_directory_path.glob(f"**/**/*{pattern}.parquet"))
+        to_delete = [
+            f
+            for f in chain(
+                self.dataset_directory_path.glob(f"**/**/*{pattern}*"),
+                self.dataset_directory_path.glob(f"**/*{pattern}*"),
+                self.dataset_directory_path.glob(f"*{pattern}*"),
+            )
+        ]
+        if not to_delete:
+            logger.info(f"No files found with pattern {pattern}")
+            return
+
         readable_to_delete = "\n".join((f.name for f in to_delete))
         if (
             input(
+                f"Pattern: {pattern}\n"
                 f"{readable_to_delete}\n===================\nPURGING CACHED DATA\n===================\n"
                 f"Will be deleted, are you sure? y/N "
             ).lower()
             == "y"
         ):
             for f in to_delete:
+                logger.debug(f"Deleting: {f}")
                 os.remove(f)
 
     # Plugin methods ============================== Read more about plugins in respective __init__.py file

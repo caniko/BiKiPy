@@ -21,11 +21,6 @@ from bikipy.reader.filter import filter_data
 from bikipy.reader.utils import compute_midpoint_label
 from bikipy.perimeter.base import BasePerimeter
 
-FILE_EXTENSION_TO_PANDAS_READER = {
-    ".parquet": pd.read_parquet,
-    ".hdf": pd.read_hdf,
-    ".h5": pd.read_hdf,
-}
 BAD_COORDINATE = (np.nan, np.nan, 0.0)  # x, y, likelihood
 
 
@@ -95,6 +90,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
         description="This is a flagg used by the developer to signal the use of bikipy ingress to the class. Currently, it only affects augmented df caching",
     )
 
+    _time_index_derived_fps: float | None
     _region_of_interest_to_fused_neighbouring_points: dict[str, NDArrayUint8] = Field(default_factory=dict)
 
     augmented_coordinate_cached_file_label: ClassVar[str] = "augmented"
@@ -141,13 +137,14 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
             base.add("fps")
         return base
 
-    @cached_property
+    @property
+    def augmented_file_name(self) -> str:
+        stem = self.df_path.stem.replace("coordinates-", f"coordinates-{self.augmented_coordinate_cached_file_label}")
+        return f"{stem}.parquet"
+
+    @property
     def cached_augmented_df_path(self) -> FilePath:
-        if self._using_bikipy_ingress:
-            return self.df_path.with_name(
-                f"{self.df_path.stem.replace('coordinate', self.augmented_coordinate_cached_file_label)}.parquet"
-            )
-        return self.df_path.with_name(f"{self.df_path.stem}-{self.augmented_coordinate_cached_file_label}.parquet")
+        return self.df_path.with_name(self.augmented_file_name)
 
     @cached_property
     def augmented(self) -> pd.DataFrame:
@@ -193,7 +190,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
                 self.crop_time_seconds = False
 
         if self.crop_time_seconds:
-            crop_frames = crop_frames or round(self.video.fps * self.crop_time_seconds)
+            crop_frames = crop_frames or round(self.fps * self.crop_time_seconds)
 
             if crop_frames > self.raw_frames:
                 logger.warning(
@@ -282,23 +279,36 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
         return len(self.df)
 
     @property
+    def duration_seconds(self) -> float:
+        return self.frames / self.fps if self.timestamp_index is None else self.timestamp_index[-1]
+
+    @property
     def info(self) -> pd.Series:
         return pd.Series(
-            [self.raw_frames, self.frames, self.frames / self.video.fps],
-            index=[("Reader", "RawFrames"), ("Reader", "AugmentedFrames"), ("Reader", "AugmentedDurationSeconds")],
+            [self.raw_frames, self.frames, self.duration_seconds],
+            index=[("Reader", "RawFrames"), ("Reader", "AugmentedFrames"), ("Reader", "DurationSeconds")],
         )
+
+    def _read_hdf(self, path: FilePath) -> pd.DataFrame:
+        return pd.read_hdf(path)
+
+    def _read_parquet(self, path: FilePath) -> pd.DataFrame:
+        return pd.read_parquet(path)
 
     @cached_property
     def raw_df(self) -> pd.DataFrame:
-        try:
-            df = FILE_EXTENSION_TO_PANDAS_READER[self.df_path.suffix](self.df_path, **self.df_read_kwargs)
-        except KeyError:
-            msg = (
-                f"{self.df_path.suffix}, is not natively supported by DeepLabCut, "
-                f"assuming user has manually cleaned and exported the data file"
-                f"to another format that is supported by BiKiPy.BaseReader. Fingers crossed"
-            )
-            raise ValueError(msg)
+        match self.df_path.suffix:
+            case ".h5" | ".hdf":
+                df = self._read_hdf(self.df_path, **self.df_read_kwargs)
+            case ".parquet":
+                df = self._read_parquet(self.df_path, **self.df_read_kwargs)
+            case _:
+                msg = (
+                    f"{self.df_path.suffix}, is not natively supported by DeepLabCut, "
+                    f"assuming user has manually cleaned and exported the data file"
+                    f"to another format that is supported by BiKiPy.BaseReader. Fingers crossed"
+                )
+                raise ValueError(msg)
 
         if "timestamped" in self.df_path.stem:
             self.df_is_timestamped = True
@@ -307,9 +317,9 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
             df.set_index(self.timestamp_index, inplace=True)
             self.df_is_timestamped = True
 
-        if isinstance(df.index, (np.timedelta64, pd.TimedeltaIndex)):
-            df.index = df.index.values.astype(float) / 10**9
-            self.df_is_timestamped = True
+        # if isinstance(df.index, (np.timedelta64, pd.TimedeltaIndex)):
+        #     df.index = df.index.values.astype(float) / 10**9
+        #     self.df_is_timestamped = True
 
         return df
 
@@ -321,7 +331,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
     def trial_length_seconds(self) -> float:
         if self.df_is_timestamped:
             return self.raw_df.index.values[-1]
-        return len(self.raw_df) * self.video.fps
+        return len(self.raw_df) * self.fps
 
     def fused_neighbouring_points(self, region_of_interest: str) -> pd.DataFrame:
         if region_of_interest in self._region_of_interest_to_fused_neighbouring_points:
