@@ -3,10 +3,13 @@ metadata_filename = "metadata.xlsx"
 experiment_class = "rectangle"
 trial_sequence = ["GenericRectangleEnclosedTrial"]
 
-[debug]
+[developer]
 activate_debugging = false
-no_numba = false
-no_process_pooling = false
+
+[developer.settings]
+disable_numba = false
+disable_process_pooling = false
+only_physical_cores = false
 
 [ingress]
 method = "animal"
@@ -20,6 +23,7 @@ profile_runtime = true
 [definition_strategies]
 meters_per_pixel = "metadata"
 perimeter = ""
+enclosure = ""
 radial = ""
 change_reference = ""
 frame = "trial-wise"
@@ -67,7 +71,7 @@ object_tracking_label_for_kinematics = "string"
 [trial.common.optional]
 center_rectangle_dimensions_to_spatial_resolution_ratio = "number"
 coordinate_timestamp_index = "np.ndarray"
-crop_from_end = "boolean -> True"
+crop_from_end = "boolean -> False"
 crop_time_seconds = "number -> 0.0"
 enclosure = "[{'$ref': '#/definitions/BasePerimeter'}]"
 fps = "number"
@@ -85,7 +89,7 @@ meters_per_pixel = "[{'type': 'number'}, {'type': 'dobble'}]"
 meters_per_pixel_from_perimeter = "boolean -> False"
 meters_per_pixel_from_perimeter_source = "string"
 minimum_frame_length = "integer -> 600"
-reader_class_label = "string -> DataWithLikelihoodReader"
+reader_class_label = "string -> DeepLabCutReader"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
 rectangle_2d_bin = "array -> (2, 2)"
 rigid_nodes_freezing = "array"

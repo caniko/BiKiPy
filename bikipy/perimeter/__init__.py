@@ -1,4 +1,7 @@
-from bikipy.perimeter.circle import CircleVariableRadiusPerimeter, CircleFixedRadiusPerimeter
+from bikipy.perimeter.circle import (
+    CircleFixedRadiusPerimeter,
+    CircleVariableRadiusPerimeter,
+)
 from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 

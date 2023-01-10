@@ -1,7 +1,7 @@
 import math
 from functools import lru_cache
 from math import sqrt
-from typing import Sequence, TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np

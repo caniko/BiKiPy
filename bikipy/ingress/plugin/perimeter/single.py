@@ -5,10 +5,9 @@ from typing import Optional
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
+from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from bikipy.core.typing import TrialId
-from bikipy.ingress.plugin.base import BasePluginFile, HasReferenceMixin
 from bikipy.ingress.plugin.perimeter.base import AbcPerimeterPlugin
 from bikipy.perimeter.base import (
     SinglePerimeter,

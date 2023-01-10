@@ -1,5 +1,8 @@
 from bikipy.reader.base import ReaderCLS
-from bikipy.reader.data_with_likelihood import DataWithLikelihoodReader, DeepLabCutReader
+from bikipy.reader.data_with_likelihood import (
+    DataWithLikelihoodReader,
+    DeepLabCutReader,
+)
 
 READERS: set[ReaderCLS] = {DataWithLikelihoodReader, DeepLabCutReader}
 

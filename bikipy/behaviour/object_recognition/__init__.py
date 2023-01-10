@@ -7,7 +7,6 @@ import pandas as pd
 from pydantic import DirectoryPath, Field
 from pydantic_numpy.dtype import NDArrayFp64
 
-from bikipy import runtime_settings
 from bikipy.behaviour.core.abstract import AbstractTrial
 from bikipy.feature.physical_object.set import PhysicalObjectSet
 from bikipy.perimeter.base import SinglePerimeter

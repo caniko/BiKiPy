@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Any, ClassVar, Optional, TypeVar, TYPE_CHECKING
+from typing import Any, ClassVar, Optional, TypeVar
 
 import pandas as pd
 from pydantic import BaseModel, DirectoryPath, Field, FilePath

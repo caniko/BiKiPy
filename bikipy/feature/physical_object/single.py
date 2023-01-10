@@ -3,7 +3,6 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, Optional
 
-import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import root_validator
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
@@ -15,7 +14,6 @@ from bikipy.feature.attention.proximity import proximity_filter
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.reader.base import Reader
-from bikipy.utils.image import axis_frame_imshow
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 
 logger = getLogger(__name__)

@@ -3,10 +3,13 @@ metadata_filename = "metadata.xlsx"
 experiment_class = "y_maze"
 trial_sequence = ["YMazeTrial"]
 
-[debug]
+[developer]
 activate_debugging = false
-no_numba = false
-no_process_pooling = false
+
+[developer.settings]
+disable_numba = false
+disable_process_pooling = false
+only_physical_cores = false
 
 [ingress]
 method = "phase"
@@ -20,6 +23,7 @@ profile_runtime = true
 [definition_strategies]
 meters_per_pixel = ""
 perimeter = ""
+enclosure = ""
 radial = ""
 change_reference = ""
 frame = ""
@@ -36,6 +40,7 @@ invert_y_axis = true
 [manual_reader_kwargs.defined.midpoint_groups]
 center_eye = ["left_ear", "right_ear"]
 torso = ["center_eye", "base_tail"]
+
 
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"
@@ -73,7 +78,7 @@ object_tracking_label_for_kinematics = "string"
 
 [trial.common.optional]
 coordinate_timestamp_index = "np.ndarray"
-crop_from_end = "boolean -> True"
+crop_from_end = "boolean -> False"
 crop_time_seconds = "number -> 0.0"
 enclosure = "[{'$ref': '#/definitions/BasePerimeter'}]"
 fps = "number"
@@ -90,7 +95,7 @@ meters_per_pixel_from_perimeter = "boolean -> False"
 meters_per_pixel_from_perimeter_source = "string"
 minimum_frame_length = "integer -> 600"
 minimum_seconds_for_entry = "number -> 0.5"
-reader_class_label = "string -> DataWithLikelihoodReader"
+reader_class_label = "string -> DeepLabCutReader"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
 rigid_nodes_freezing = "array"
 trial_start_perimeter = "string"

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import validate_arguments, DirectoryPath
+from pydantic import DirectoryPath, validate_arguments
 
 from bikipy.ingress.utils.io import load_settings
 from bikipy.ingress.workflow.base import Ingress
@@ -86,5 +86,5 @@ def auto_define_ingress_object(
     return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[project_settings["ingress"]["method"]](
         project_root_directory=project_root_directory,
         deprecated_project_settings_file_name=deprecated_file_name,
-        **ingress_kwargs
+        **ingress_kwargs,
     )

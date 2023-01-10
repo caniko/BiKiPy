@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
-from typing import Any, Literal, Optional, TypeVar, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal, Optional, Type, TypeVar
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,12 +25,12 @@ from bikipy.perimeter.polygon.makesense import (
 )
 from bikipy.perimeter.utils import get_coco_array_from_path_or_array
 from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence
-from bikipy.utils.image import axis_frame_imshow
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
-from bikipy.utils.plot import (
-    BOTTOM_LEGEND_KWARGS,
+from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
+from bikipy.utils.plot.generic import (
+    ax_plot_coordinate_with_boolean_index,
+    plot_coordinates,
 )
-from bikipy.utils.plot.generic import ax_plot_coordinate_with_boolean_index, plot_coordinates
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 
 if TYPE_CHECKING:
@@ -94,7 +94,7 @@ class BasePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, ABC):
     def plot_perimeter(
         self,
         manual_video: Optional[VideoMetadata] = None,
-        manual_ax = None,
+        manual_ax=None,
         **plot_kwargs,
     ):
         video = manual_video or self.video
@@ -134,7 +134,6 @@ Perimeter = TypeVar("Perimeter", bound=BasePerimeter)
 
 
 from bikipy.reader.base import BaseReader
-
 
 BaseReader.update_forward_refs(Perimeter=Perimeter)
 

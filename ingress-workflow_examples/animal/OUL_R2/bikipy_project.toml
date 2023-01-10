@@ -3,10 +3,13 @@ metadata_filename = "metadata.xlsx"
 experiment_class = "ObjectsInUpdatingLocationsExperiment"
 trial_sequence = ["ObjectsInUpdatingLocationsTrainingTrial", "ObjectsInUpdatingLocationsUpdateTrial", "ObjectsInUpdatingLocationsTestTrial"]
 
-[debug]
+[developer]
 activate_debugging = false
-no_numba = false
-no_process_pooling = false
+
+[developer.settings]
+disable_numba = false
+disable_process_pooling = false
+only_physical_cores = false
 
 [ingress]
 method = "animal"
@@ -20,13 +23,13 @@ profile_runtime = true
 [definition_strategies]
 meters_per_pixel = "metadata"
 perimeter = "trial-wise"
+enclosure = "metadata"
 radial = ""
 change_reference = ""
 frame = ""
 video = "trial-wise"
 timestamp = "trial-wise"
 center = "metadata"
-enclosure = "metadata"
 
 [manual_reader_kwargs]
 [manual_reader_kwargs.defined]
@@ -34,6 +37,7 @@ filter_method = "arima"
 
 [manual_reader_kwargs.defined.midpoint_groups]
 center_eye = ["left_ear", "right_ear"]
+
 
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"
@@ -77,7 +81,7 @@ perimeter_border_normal_meters = "number"
 [trial.common.optional]
 center_rectangle_dimensions_to_spatial_resolution_ratio = "number"
 coordinate_timestamp_index = "np.ndarray"
-crop_from_end = "boolean -> True"
+crop_from_end = "boolean -> False"
 crop_time_seconds = "number -> 0.0"
 enclosure = "[{'$ref': '#/definitions/BasePerimeter'}]"
 fps = "number"
@@ -92,15 +96,13 @@ manual_inspect_image = "np.ndarray[name='manual_inspect_image_0' type=uint8 requ
 manual_perimeter_to_derive_meters_per_pixel = "string"
 manual_video = "[{'$ref': '#/definitions/VideoMetadata'}]"
 maximum_radians_inter_gaze_perimeter = "number -> 0.7853981633974483"
-maximum_seconds_distraction = "number -> 0.6666666666666666"
 meters_per_pixel = "[{'type': 'number'}, {'type': 'dobble'}]"
 meters_per_pixel_from_perimeter = "boolean -> False"
 meters_per_pixel_from_perimeter_source = "string"
 minimum_frame_length = "integer -> 600"
-minimum_seconds_attention = "number -> 0.2"
 outside_perimeter_point_label = "string"
 physical_object_inspect = "boolean -> False"
-reader_class_label = "string -> DataWithLikelihoodReader"
+reader_class_label = "string -> DeepLabCutReader"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
 rectangle_2d_bin = "array -> (2, 2)"
 rigid_nodes_freezing = "array"

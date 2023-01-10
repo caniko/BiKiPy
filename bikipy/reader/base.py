@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import abc
 from functools import cached_property
 from logging import getLogger
-from typing import Hashable, Iterable, Optional, Sequence, TypeVar, ClassVar, Generic, Type
+from typing import ClassVar, Generic, Hashable, Iterable, Optional, Type, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -17,9 +17,9 @@ from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.midpoint import recursive_midpoint
+from bikipy.perimeter.base import BasePerimeter
 from bikipy.reader.filter import filter_data
 from bikipy.reader.utils import compute_midpoint_label
-from bikipy.perimeter.base import BasePerimeter
 
 BAD_COORDINATE = (np.nan, np.nan, 0.0)  # x, y, likelihood
 
@@ -139,7 +139,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
 
     @property
     def augmented_file_name(self) -> str:
-        stem = self.df_path.stem.replace("coordinates-", f"coordinates-{self.augmented_coordinate_cached_file_label}")
+        stem = self.df_path.stem.replace("coordinates-", f"coordinates-{self.augmented_coordinate_cached_file_label}-")
         return f"{stem}.parquet"
 
     @property

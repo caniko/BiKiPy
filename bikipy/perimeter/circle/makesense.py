@@ -3,8 +3,14 @@ from collections import defaultdict
 import numpy as np
 from pydantic import FilePath, validate_arguments
 
-from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters, PerimeterSet
-from bikipy.perimeter.circle import CircleFixedRadiusPerimeter, CircleVariableRadiusPerimeter
+from bikipy.perimeter.base import (
+    PerimeterSet,
+    perimeter_set_from_image_name_to_perimeters,
+)
+from bikipy.perimeter.circle import (
+    CircleFixedRadiusPerimeter,
+    CircleVariableRadiusPerimeter,
+)
 from bikipy.utils.makesense import (
     get_line_endpoints_from_makesense_row,
     read_makesense_line,

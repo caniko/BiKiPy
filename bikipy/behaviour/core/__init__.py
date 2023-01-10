@@ -3,7 +3,16 @@ from concurrent.futures import ProcessPoolExecutor
 from functools import cached_property, lru_cache, reduce
 from logging import getLogger
 from operator import attrgetter
-from typing import ClassVar, Hashable, Iterable, Literal, Optional, Sequence, TypeVar, Type
+from typing import (
+    ClassVar,
+    Hashable,
+    Iterable,
+    Literal,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+)
 
 import numpy as np
 import pandas as pd
@@ -40,12 +49,12 @@ from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
 from bikipy.perimeter.base import (
     BaseSinglePerimeter,
     Perimeter,
+    PerimeterCLS,
     PerimeterSet,
     SinglePerimeter,
-    PerimeterCLS,
 )
 from bikipy.reader import READER_CLASS_LABEL_TO_CLASS
-from bikipy.reader.base import ReaderCLS, Reader
+from bikipy.reader.base import Reader, ReaderCLS
 from bikipy.reader.data_with_likelihood import DeepLabCutReader
 from bikipy.utils.collection_utils import max_len_in_iterable
 from bikipy.utils.ranged_dict import RangeDict
@@ -285,8 +294,13 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
 
     @cached_property
     def trial_feature_series(self) -> pd.Series:
-        # Concatenate and reverse the order
-        result = pd.concat(self._trial_feature_series_list[::-1], axis=0)
+        try:
+            # Concatenate and reverse the order
+            result = pd.concat(self._trial_feature_series_list[::-1], axis=0)
+        except Exception as e:
+            msg = f"Trial, ID: {self.int_id}; label: {self.label}, raised an error"
+            raise AttributeError(msg) from e
+
         self._post_analysis_flush()
         return result
 
@@ -790,7 +804,9 @@ class BaseExperiment(Behaviour):
 
         if self.skip_habituation:
             if not self._first_trial_is_habituation:
-                from bikipy.ingress.workflow.base import FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD
+                from bikipy.ingress.workflow.base import (
+                    FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD,
+                )
 
                 msg = (
                     f"skip_habituation is True, but the experiment has no habituation trial set. Possible mistakes:\n"

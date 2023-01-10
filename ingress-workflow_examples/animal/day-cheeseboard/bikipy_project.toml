@@ -3,10 +3,13 @@ metadata_filename = "metadata.xlsx"
 experiment_class = "cheeseboard"
 trial_sequence = ["CheeseboardTrial"]
 
-[debug]
+[developer]
 activate_debugging = false
-no_numba = false
-no_process_pooling = false
+
+[developer.settings]
+disable_numba = false
+disable_process_pooling = false
+only_physical_cores = false
 
 [ingress]
 method = "animal_day"
@@ -20,6 +23,7 @@ profile_runtime = true
 [definition_strategies]
 meters_per_pixel = "metadata"
 perimeter = "metadata"
+enclosure = ""
 radial = ""
 change_reference = ""
 frame = "trial-wise"
@@ -67,7 +71,7 @@ object_tracking_label_for_kinematics = "string"
 
 [trial.common.optional]
 coordinate_timestamp_index = "np.ndarray"
-crop_from_end = "boolean -> True"
+crop_from_end = "boolean -> False"
 crop_time_seconds = "number -> 0.0"
 enclosure = "[{'$ref': '#/definitions/BasePerimeter'}]"
 fps = "number"
@@ -84,7 +88,7 @@ meters_per_pixel = "[{'type': 'number'}, {'type': 'dobble'}]"
 meters_per_pixel_from_perimeter = "boolean -> False"
 meters_per_pixel_from_perimeter_source = "string"
 minimum_frame_length = "integer -> 600"
-reader_class_label = "string -> DataWithLikelihoodReader"
+reader_class_label = "string -> DeepLabCutReader"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
 rigid_nodes_freezing = "array"
 tolerate_boolean_index = "boolean -> True"
@@ -118,11 +122,10 @@ label_suffix = ""
 perimeter_names_in_metadata = false
 radial_arm_rectangle_diagonal = ""
 
-[perimeter.trial_perimeters]
-[perimeter.trial_perimeters.start_perimeter]
-[perimeter.trial_perimeters.start_perimeter.defined]
+[perimeter.common]
+[perimeter.common.defined]
 
-[perimeter.trial_perimeters.start_perimeter.optional]
+[perimeter.common.optional]
 derive_meters_per_pixel = "boolean -> False"
 derived_meters_per_pixel_source = "string"
 derived_meters_per_pixel_source_metric_length = "number"
@@ -138,6 +141,7 @@ minimum_frame_length = "integer -> 600"
 moving_field_name = "string"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
 
+[perimeter.trial_perimeters]
 [perimeter.trial_perimeters.reward_perimeter]
 [perimeter.trial_perimeters.reward_perimeter.defined]
 radius_meters = ""
@@ -146,6 +150,25 @@ radius_meters = ""
 radius_meters = "number"
 
 [perimeter.trial_perimeters.reward_perimeter.optional]
+derive_meters_per_pixel = "boolean -> False"
+derived_meters_per_pixel_source = "string"
+derived_meters_per_pixel_source_metric_length = "number"
+fps = "number"
+frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'uint8'}]"
+impenetrable = "boolean -> False"
+inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}] -> False"
+inspect_image_path = "string"
+manual_inspect_image = "np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]"
+manual_video = "[{'$ref': '#/definitions/VideoMetadata'}]"
+meters_per_pixel = "[{'type': 'number'}, {'type': 'dobble'}]"
+minimum_frame_length = "integer -> 600"
+moving_field_name = "string"
+recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
+
+[perimeter.trial_perimeters.start_perimeter]
+[perimeter.trial_perimeters.start_perimeter.defined]
+
+[perimeter.trial_perimeters.start_perimeter.optional]
 derive_meters_per_pixel = "boolean -> False"
 derived_meters_per_pixel_source = "string"
 derived_meters_per_pixel_source_metric_length = "number"

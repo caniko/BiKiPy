@@ -16,7 +16,6 @@ from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.feature.physical_object.single import PhysicalObject
-from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.reader.base import Reader
 

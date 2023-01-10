@@ -1,25 +1,13 @@
 from abc import ABC
-from functools import cached_property, lru_cache
-from logging import getLogger
-from pathlib import Path
 from typing import Optional
 
-import matplotlib.pyplot as plt
-import pandas as pd
-from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
+from pydantic import PositiveInt
 
-from bikipy.core.typing import TrialId
 from bikipy.ingress.plugin.base import BasePluginFile, HasReferenceMixin
 from bikipy.perimeter.base import (
     SinglePerimeter,
     StringPerimeterShapes,
     perimeter_set_from_makesense,
-)
-from bikipy.utils.collection_utils import get_first_key_in_dict
-from bikipy.utils.image import axis_frame_imshow, read_image_from_path
-from bikipy.utils.makesense import (
-    SHAPE_TO_MAKESENSE_TYPE,
-    first_image_name_from_makesense,
 )
 
 

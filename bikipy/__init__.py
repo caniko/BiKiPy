@@ -1,8 +1,8 @@
 from math import floor
 
+import matplotlib
 from psutil import cpu_count
 from pydantic import BaseSettings, Field
-import matplotlib
 
 matplotlib.use("Agg")
 
@@ -10,7 +10,8 @@ matplotlib.use("Agg")
 class BikipyRuntimeSettings(BaseSettings):
     disable_process_pooling: bool = Field(
         False,
-        description="initialize each DeepLabCutReader object with multiprocessing. Useful when initialize approximately 20 or more dlc objects",
+        description="initialize each DeepLabCutReader object with multiprocessing. "
+        "Useful when initialize approximately 20 or more dlc objects",
     )
     only_physical_cores: bool = False
     disable_numba: bool = False
@@ -25,7 +26,14 @@ class BikipyRuntimeSettings(BaseSettings):
 
     @property
     def max_workers_in_process_pool(self) -> int:
-        return floor(cpu_count(logical=self.only_physical_cores) * 0.8)
+        if self.only_physical_cores:
+            return cpu_count(logical=True) - 1
+        return floor(cpu_count(logical=False) * 0.7)
 
 
-runtime_settings = BikipyRuntimeSettings()
+runtime_settings: BikipyRuntimeSettings = BikipyRuntimeSettings()
+
+
+def set_bikipy_settings_from_dict(value: dict) -> None:
+    global runtime_settings
+    runtime_settings = BikipyRuntimeSettings(**value)

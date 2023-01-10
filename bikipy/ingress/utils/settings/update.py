@@ -3,11 +3,14 @@ from typing import Optional
 
 from pydantic import DirectoryPath, validate_arguments
 
-from bikipy.ingress.utils.io import get_project_settings_path, dump_settings
-from bikipy.utils.misc import current_path_or_arg_path
 from bikipy.ingress.utils import settings
-from bikipy.ingress.utils.settings import get_definable_settings, auto_define_ingress_object
+from bikipy.ingress.utils.io import dump_settings, get_project_settings_path
+from bikipy.ingress.utils.settings import (
+    auto_define_ingress_object,
+    get_definable_settings,
+)
 from bikipy.ingress.workflow.base import init_settings
+from bikipy.utils.misc import current_path_or_arg_path
 
 
 @validate_arguments

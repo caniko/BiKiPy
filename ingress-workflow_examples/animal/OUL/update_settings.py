@@ -1,8 +1,6 @@
-import os
-from glob import iglob
-from pathlib import Path
+import pandas as pd
 
-from bikipy.ingress.utils.io import BIKIPY_SETTINGS_FILE_NAME
-from bikipy.ingress.utils.settings.update import update_settings
-
-update_settings(".", delete_outdated=True)
+old = pd.read_parquet(
+    "/data/behaviour_dataset/dejana/r1/oul_dataset_mextracted/118/0.coordinates118-timestamped.parquet"
+)
+1

@@ -1,7 +1,7 @@
 from abc import ABC
 from functools import cached_property
 from logging import getLogger
-from typing import TypeVar, Generic, ClassVar
+from typing import ClassVar, Generic, TypeVar
 
 import numpy as np
 import pandas as pd

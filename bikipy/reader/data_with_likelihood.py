@@ -2,7 +2,7 @@ import os
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Hashable, Iterable, Optional, Generic
+from typing import Generic, Hashable, Iterable, Optional
 
 import numpy as np
 import pandas as pd

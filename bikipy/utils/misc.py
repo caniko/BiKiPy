@@ -5,12 +5,12 @@ from collections import defaultdict
 from functools import partial
 from logging import getLogger
 from pathlib import Path, PurePath
-from typing import Union, Optional
+from typing import Optional, Union
 
 import openpyxl
 from odf import opendocument
 from odf.table import Table
-from pydantic import FilePath, DirectoryPath
+from pydantic import DirectoryPath, FilePath
 
 logger = getLogger(__name__)
 

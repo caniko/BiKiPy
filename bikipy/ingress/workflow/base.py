@@ -15,6 +15,7 @@ from inflection import underscore
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
+from bikipy import set_bikipy_settings_from_dict
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import TrialId
@@ -24,6 +25,7 @@ from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
 )
 from bikipy.ingress.utils.io import (
+    dump_settings,
     get_dataset_directory_path,
     get_inspect_directory_path,
     get_plugin_directory_path,
@@ -31,10 +33,9 @@ from bikipy.ingress.utils.io import (
     infer_metadata_path,
     load_settings,
     result_directory_path,
-    dump_settings,
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
-from bikipy.perimeter.base import Perimeter, BaseSinglePerimeter
+from bikipy.perimeter.base import BaseSinglePerimeter, Perimeter
 from bikipy.perimeter.constant import PERIMETER_CLASS_REQUIRE_INTERFACE_SETTINGS
 from bikipy.reader.base import BaseReader
 from bikipy.reader.data_with_likelihood import DataWithLikelihoodReader
@@ -42,7 +43,7 @@ from bikipy.utils.collection_utils import (
     copycat_assumes_levels_of_icon,
     get_first_value_in_dict,
 )
-from bikipy.utils.misc import sheet_names_from_path, defaultdict_dict_factory
+from bikipy.utils.misc import defaultdict_dict_factory, sheet_names_from_path
 
 if TYPE_CHECKING:
     from bikipy.behaviour.core import Experiment, ExperimentCLS, TrialCLS
@@ -500,6 +501,8 @@ class BaseIngress(BaseBikipy, ABC):
 
     @cached_property
     def experiment(self) -> "Experiment":
+        set_bikipy_settings_from_dict(self.settings["developer"]["settings"])
+
         settings_defined = set(self.settings["experiment"]["defined"])
 
         for kwarg_dict_name, fields in self.ingress_defined_fields.items():
@@ -736,7 +739,10 @@ def init_settings(
             "experiment_class": experiment_name,
             "trial_sequence": experiment_class.trial_class_names,
         },
-        "debug": {"activate_debugging": False, "no_numba": False, "no_process_pooling": False},  # TODO: Implement
+        "developer": {
+            "activate_debugging": False,
+            "settings": {"disable_numba": False, "disable_process_pooling": False, "only_physical_cores": False},
+        },
         "ingress": {
             "method": ingress_method,
             FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD: False,

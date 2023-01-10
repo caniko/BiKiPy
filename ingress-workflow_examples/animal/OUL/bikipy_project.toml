@@ -3,10 +3,13 @@ metadata_filename = "metadata.xlsx"
 experiment_class = "ObjectsInUpdatingLocationsExperiment"
 trial_sequence = ["ObjectsInUpdatingLocationsTrainingTrial", "ObjectsInUpdatingLocationsUpdateTrial", "ObjectsInUpdatingLocationsTestTrial"]
 
-[debug]
+[developer]
 activate_debugging = false
-no_numba = false
-no_process_pooling = false
+
+[developer.settings]
+disable_numba = false
+disable_process_pooling = false
+only_physical_cores = false
 
 [ingress]
 method = "animal"
