@@ -4,5 +4,12 @@
 ![GitHub](https://img.shields.io/github/license/caniko/bikipy)
 [![Build Status](https://travis-ci.org/caniko/BiKiPy.svg?branch=master)](https://travis-ci.org/caniko/BiKiPy)
 
-The purpose of this package is to function as a store for functions and workflows
-used for kinematic data-analysis.
+The purpose of this package is to function as a store for functions and workflows used for kinematic data-analysis. Tested and developed on Linux.
+
+## Requirements
+- [git](https://git-scm.com/download)
+- [AGG](https://github.com/ghaerr/agg-2.6) (Anti-Grain Geometry) library
+
+
+## TODO
+- Create a test suite

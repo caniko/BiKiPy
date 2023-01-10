@@ -87,7 +87,7 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
     enclosure: Optional[Perimeter] = enclosure_field
     crop_time_seconds: float = 0.0
     crop_from_end: bool = Field(
-        True,
+        False,
         description="Only affective if crop_time_seconds is not 0.0. Will crop from start instead when set to False",
     )
 
@@ -693,7 +693,7 @@ class BaseExperiment(Behaviour):
         result = defaultdict(dict)
         if not runtime_settings.disable_process_pooling:
             with yaspin(Spinners.pong, text="Computing experiment features..."):
-                with ProcessPoolExecutor(max_workers=runtime_settings.threads_to_use) as executor:
+                with ProcessPoolExecutor(max_workers=runtime_settings.max_workers_in_process_pool) as executor:
                     for trial_class_label, trial_objects in self._trial_class_label_to_trial_objects.items():
                         result[trial_class_label] = {
                             trial_object.label: features

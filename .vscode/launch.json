@@ -8,18 +8,18 @@
             "name": "OUL",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/examples/sequence/OUL/analy.py",
+            "program": "${workspaceFolder}/ingress-workflow_examples/animal/OUL/analy.py",
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}/examples/sequence/OUL",
+            "cwd": "${workspaceFolder}/ingress-workflow_examples/animal/OUL_R2",
             "justMyCode": true
         },
         {
             "name": "OUL_vanilla",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/examples/sequence/OUL/analy.py",
+            "program": "${workspaceFolder}/ingress-workflow_examples/animal/OUL/analy.py",
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}/examples/sequence/OUL",
+            "cwd": "${workspaceFolder}/ingress-workflow_examples/animal/OUL",
             "env": {"DISABLE_PROCESS_POOLING": "1", "DISABLE_NUMBA": "1"},
             "justMyCode": true
         },
@@ -27,9 +27,9 @@
             "name": "OUL_no_pooling",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/examples/sequence/OUL/analy.py",
+            "program": "${workspaceFolder}/ingress-workflow_examples/animal/OUL/analy.py",
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}/examples/sequence/OUL",
+            "cwd": "${workspaceFolder}/ingress-workflow_examples/animal/OUL",
             "env": {"DISABLE_PROCESS_POOLING": "1"},
             "justMyCode": true
         }

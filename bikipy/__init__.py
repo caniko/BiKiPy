@@ -1,7 +1,10 @@
-import os
 from math import floor
 
+from psutil import cpu_count
 from pydantic import BaseSettings, Field
+import matplotlib
+
+matplotlib.use("Agg")
 
 
 class BikipyRuntimeSettings(BaseSettings):
@@ -21,11 +24,8 @@ class BikipyRuntimeSettings(BaseSettings):
     maximum_seconds_distraction: float = 2.0 / 3.0
 
     @property
-    def threads_to_use(self) -> int:
-        count = os.cpu_count()
-        if not self.only_physical_cores:
-            count = floor(count * 1.8)
-        return count
+    def max_workers_in_process_pool(self) -> int:
+        return floor(cpu_count(logical=self.only_physical_cores) * 0.8)
 
 
 runtime_settings = BikipyRuntimeSettings()

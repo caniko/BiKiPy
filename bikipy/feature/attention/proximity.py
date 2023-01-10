@@ -79,14 +79,8 @@ def proximity_filter(
 
         ax.set_title("Proximity filter", fontsize=inspect_video.upscaled_video.plotting_title_font_size)
 
-        perimeter.plot(
-            ax=ax,
-            inspect_pixels=inspect_pixels,
-        )
-        perimeter_border.plot(
-            ax=ax,
-            inspect_pixels=inspect_pixels,
-        )
+        perimeter.plot(ax=ax, inspect_pixels=inspect_pixels)
+        perimeter_border.plot(ax=ax, inspect_pixels=inspect_pixels)
 
         color_map = make_color_map(2 if perimeter.impenetrable else 3)
 

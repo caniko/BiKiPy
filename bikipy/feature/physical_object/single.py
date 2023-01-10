@@ -167,25 +167,7 @@ class PhysicalObject(BaseBikipyInspectMixin):
         return self._axes
 
     def _init_matplotlib(self):
-        self._fig, self._axes = plt.subplots(
-            nrows=2,
-            ncols=2,
-            constrained_layout=True,
-            figsize=(
-                self.video.upscaled_video.horizontal_resolution * 0.1,
-                self.video.upscaled_video.vertical_resolution * 0.1,
-            ),
-        )
-
-        if self.video.frame is None:
-            for row_ax in self._axes:
-                for col_ax in row_ax:
-                    col_ax.set_aspect("equal", adjustable="box")
-        else:
-            # axes row 1 will be targeted by analysis inspect function, no need to do that here
-            for ax in (self.attention_axes[1][0], self.attention_axes[1][1]):
-                axis_frame_imshow(ax, self.video.upscaled_video.greyscale_frame)
-                self.video.upscaled_video.ax_ticks_metric_to_pixel(ax)
+        self._fig, self._axes = self.video.subplots(nrows=2, ncols=2)
 
         self.attention_axes[1][0].set_title(
             "proximity_filtered & gaze_filtered", fontsize=self.video.upscaled_video.plotting_title_font_size

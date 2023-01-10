@@ -94,10 +94,14 @@ class BasePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, ABC):
     def plot_perimeter(
         self,
         manual_video: Optional[VideoMetadata] = None,
+        manual_ax = None,
         **plot_kwargs,
     ):
         video = manual_video or self.video
-        fig, ax = video.subplots()
+        if manual_ax:
+            ax = manual_ax
+        else:
+            fig, ax = video.subplots()
 
         return self.plot_perimeter_on_ax(
             ax, inspect_pixels=video.coordinates_need_to_be_scaled_for_plot, manual_video=video
@@ -354,17 +358,12 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
             fig, ax = self.video.subplots()
             ax.set_title(self.label)
 
-        if self.video.frame is not None:
-            axis_frame_imshow(ax, self.video.upscaled_video.greyscale_frame)
-
         if coordinates is not None:
-            ax = plot_coordinates(coordinates, ax, inspect_pixels, self.video)
+            plot_coordinates(coordinates, ax, inspect_pixels, self.video)
 
         ax.set_title(self.label)
 
-        perimeter_plot_kwargs = {**perimeter_plot_kwargs, "manual_ax": ax, "inspect_pixels": inspect_pixels}
-
-        return self.plot_perimeter(**perimeter_plot_kwargs)
+        return self.plot_perimeter(manual_ax=ax, inspect_pixels=inspect_pixels, **perimeter_plot_kwargs)
 
 
 SinglePerimeter = TypeVar("SinglePerimeter", bound=BaseSinglePerimeter)

@@ -11,6 +11,7 @@ packages = [{include = "bikipy"}]
 [tool.poetry.dependencies]
 python = ">=3.10.0, <3.11"
 setuptools = "<60"
+inflection = "^0.5.1"
 
 click = "^8.1.3"
 pydantic = "^1.8.2"
@@ -37,13 +38,13 @@ numba = "*"
 
 matplotlib = "^3.2.2"
 seaborn = "*"
-PySide6 = "*"
 
 ffmpeg-python = "^0.2.0"
 opencv-python-headless = "^4.5"
 
 colorama = { version = "^0.4.4", platform = "win32" }
 tqdm = "^4.60.0"
+yaspin = "^2.1.0"
 
 compress-pickle = {extras = ["lz4"], version = "^2.0.1"}
 tomlkit = "^0.11.6"
@@ -52,8 +53,7 @@ PyYAML = "^6.0"
 pyzmq = {version = "^22.2.1", optional = true }
 jupyter = { version = "^1.0.0", optional = true }
 jupyterthemes = { version = "^0.20.0", optional = true }
-yaspin = "^2.1.0"
-inflection = "^0.5.1"
+psutil = "^5.9.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.2"

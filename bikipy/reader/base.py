@@ -190,7 +190,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
                 self.crop_time_seconds = False
 
         if self.crop_time_seconds:
-            crop_frames = crop_frames or round(self.fps * self.crop_time_seconds)
+            crop_frames = crop_frames or round(self.video.fps * self.crop_time_seconds)
 
             if crop_frames > self.raw_frames:
                 logger.warning(
@@ -280,7 +280,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
 
     @property
     def duration_seconds(self) -> float:
-        return self.frames / self.fps if self.timestamp_index is None else self.timestamp_index[-1]
+        return self.frames / self.video.fps if self.timestamp_index is None else self.timestamp_index[-1]
 
     @property
     def info(self) -> pd.Series:
@@ -317,9 +317,9 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
             df.set_index(self.timestamp_index, inplace=True)
             self.df_is_timestamped = True
 
-        # if isinstance(df.index, (np.timedelta64, pd.TimedeltaIndex)):
-        #     df.index = df.index.values.astype(float) / 10**9
-        #     self.df_is_timestamped = True
+        if isinstance(df.index, (np.timedelta64, pd.TimedeltaIndex)):
+            df.index = df.index.values.astype(float) / 10.0**9.0
+            self.df_is_timestamped = True
 
         return df
 

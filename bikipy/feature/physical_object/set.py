@@ -49,7 +49,7 @@ class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
             self.object_bias_score.values(),
             index=pd.MultiIndex.from_tuples(
                 [["ObjectBiasScore", f"{self.analysis_label}_{label}"] for label in self.labels]
-            )
+            ),
         )
         total_seconds_observing = pd.Series(
             (
@@ -59,10 +59,12 @@ class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
                     for observation_seconds in self.physical_object_label_to_observation_seconds.values()
                 ),
             ),
-            index=pd.MultiIndex.from_tuples((
-                ("SecondsObserving", f"{self.analysis_label}_Total"),
-                *[["SecondsObserving", f"{self.analysis_label}_{label}"] for label in self.labels],
-            )),
+            index=pd.MultiIndex.from_tuples(
+                (
+                    ("SecondsObserving", f"{self.analysis_label}_Total"),
+                    *[["SecondsObserving", f"{self.analysis_label}_{label}"] for label in self.labels],
+                )
+            ),
         )
         return pd.concat((object_bias_score, total_seconds_observing))
 
@@ -140,7 +142,7 @@ class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
         if not self.total_seconds_observing:
             return self._label_to_zero
         return {
-            label: 100.0 * physical_object.tolerance_modeled_proximity_and_gaze_seconds / (self.frames * self.fps)
+            label: 100.0 * physical_object.tolerance_modeled_proximity_and_gaze_seconds / (self.frames * self.video.fps)
             for label, physical_object in self.physical_object_label_to_observation_boolean_index.items()
         }
 
