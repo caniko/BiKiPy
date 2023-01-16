@@ -39,6 +39,7 @@ filter_method = "arima"
 center_eye = ["left_ear", "right_ear"]
 
 
+
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"
 crop_from_end = "boolean -> False"
@@ -70,6 +71,7 @@ gaze_start_point_label = "center_eye"
 gaze_travel_direction_point_label = "nose"
 object_tracking_label_for_kinematics = "center_eye"
 perimeter_border_normal_meters = 0.05
+maximum_radians_inter_gaze_perimeter = 2.094395
 crop_from_end = false
 
 [trial.common.required]

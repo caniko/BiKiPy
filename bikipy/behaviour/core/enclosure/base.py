@@ -70,7 +70,7 @@ class EnclosedTrial(BaseTrial):
             self.video.metric_resolution, gaussian_dividend_multiplayer=self.gaussian_dividend_multiplayer
         )
         scores = np.array(
-            [func(*coordinate) for coordinate in self.kinematic_coordinates if not np.any(np.isnan(coordinate))]
+            [func(*coordinate) for coordinate in self.reader.kinematic_coordinates if not np.any(np.isnan(coordinate))]
         )
         return np.sum(scores) / (self.gaussian_dividend_multiplayer * self.number_of_frames)
 

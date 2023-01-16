@@ -326,7 +326,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
             self._multi_node_coordinates,
             self.arms,
             inspect_arg=self.class_inspect_arg,
-            inspect_coords=self.kinematic_coordinates,
+            inspect_coords=self.reader.kinematic_coordinates,
         )
 
     @cached_property

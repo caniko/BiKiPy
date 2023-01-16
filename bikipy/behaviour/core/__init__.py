@@ -85,9 +85,6 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
         ..., description="Keyword arguments that will be passed on the reader objects on init"
     )
     animal_id: str | PositiveInt = Field(..., description="The ID of the animal in the trial")
-    object_tracking_label_for_kinematics: Optional[str] = Field(
-        ..., description="Label of the node that will be used to track general animal movement"
-    )
     coordinate_timestamp_index: Optional[NDArray] = timestamp_index_field
     manual_center_pixels: Optional[NDArrayInt16]
     rigid_nodes_freezing: Optional[Sequence[str | PositiveInt]] = Field(
@@ -248,21 +245,17 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
         return result
 
     @property
-    def kinematic_coordinates(self) -> NDArrayFp64:
-        return self.reader[self.object_tracking_label_for_kinematics]
-
-    @cached_property
     def number_of_frames(self) -> int:
-        return len(self.kinematic_coordinates)
+        return self.reader.frames
 
     @cached_property
     def experiment_seconds(self) -> int:
-        return self.kinematic_coordinates.shape[0] / self.video.fps
+        return self.reader.kinematic_coordinates.shape[0] / self.video.fps
 
     @cached_property
     def motion(self) -> Motion:
         return Motion(
-            coordinate_sequence=self.kinematic_coordinates,
+            coordinate_sequence=self.reader.kinematic_coordinates,
             fps=self.video.fps,
         )
 
@@ -294,12 +287,18 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
 
     @cached_property
     def trial_feature_series(self) -> pd.Series:
-        try:
-            # Concatenate and reverse the order
-            result = pd.concat(self._trial_feature_series_list[::-1], axis=0)
-        except Exception as e:
-            msg = f"Trial, ID: {self.int_id}; label: {self.label}, raised an error"
-            raise AttributeError(msg) from e
+        def work():
+            return pd.concat(self._trial_feature_series_list[::-1], axis=0)
+
+        if runtime_settings.debug:
+            result = work()
+        else:
+            try:
+                # Concatenate and reverse the order
+                result = work()
+            except Exception as e:
+                msg = f"Trial, ID: {self.int_id}; label: {self.label}, raised an error"
+                raise AttributeError(msg) from e
 
         self._post_analysis_flush()
         return result
@@ -349,7 +348,7 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
 
     def _post_analysis_flush(self) -> None:
         self.reader.flush_reads()
-        self.video.flush()
+        # self.video.flush()
 
 
 TrialCLS = Type[BaseTrial]

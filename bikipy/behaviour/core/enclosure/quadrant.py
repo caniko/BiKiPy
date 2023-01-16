@@ -21,7 +21,9 @@ class Quadrant(BaseBikipy):
 
     @cached_property
     def confinement_boolean_index(self) -> NDArrayBool:
-        return parallel_point_inside_polygon(self.kinematic_coordinates, clockwise_sort_points(self.vertices_in_meters))
+        return parallel_point_inside_polygon(
+            self.reader.kinematic_coordinates, clockwise_sort_points(self.vertices_in_meters)
+        )
 
     @cached_property
     def seconds_present(self) -> float:
@@ -31,6 +33,6 @@ class Quadrant(BaseBikipy):
     def motion(self) -> dict[str, float]:
         return get_combined_features_from_merged_motion_island_data(
             self.confinement_boolean_index,
-            self.kinematic_coordinates,
+            self.reader.kinematic_coordinates,
             self.fps,
         )

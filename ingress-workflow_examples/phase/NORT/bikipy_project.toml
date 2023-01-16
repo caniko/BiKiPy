@@ -37,6 +37,7 @@ center_eye = ["left_ear", "right_ear"]
 torso = ["center_eye", "tail"]
 
 
+
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"
 crop_from_end = "boolean -> False"

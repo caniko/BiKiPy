@@ -38,6 +38,7 @@ filter_method = "arima"
 [manual_reader_kwargs.defined.midpoint_groups]
 center_eye = ["left_ear", "right_ear"]
 
+
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"
 crop_from_end = "boolean -> False"
@@ -69,6 +70,7 @@ gaze_start_point_label = "center_eye"
 gaze_travel_direction_point_label = "nose"
 object_tracking_label_for_kinematics = "center_eye"
 perimeter_border_normal_meters = 0.05
+maximum_radians_inter_gaze_perimeter = 2.094395
 
 [trial.common.required]
 gaze_start_point_label = "string"
@@ -114,7 +116,7 @@ crop_time_seconds = 900
 crop_time_seconds = 300
 
 [trial.specific.ObjectsInUpdatingLocationsTestTrial.defined]
-crop_time_seconds = 300
+crop_time_seconds = 600
 
 [experiment]
 [experiment.defined]

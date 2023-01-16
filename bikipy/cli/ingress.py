@@ -6,6 +6,7 @@ from pydantic import DirectoryPath, validate_arguments
 from bikipy.behaviour.mapping import experiment_name_to_class
 from bikipy.cli import cli_root
 from bikipy.ingress.utils.settings import auto_define_ingress_object
+from bikipy.ingress.utils.settings.update import update_settings
 from bikipy.ingress.workflow.base import analyze_and_save, init_settings
 from bikipy.reader.utils import merge_timestamps_with_dlc
 from bikipy.utils.misc import current_path_or_arg_path
@@ -62,9 +63,7 @@ def analyze(project_root_directory: Optional[DirectoryPath]) -> None:
 def update(
     project_root_directory: Optional[DirectoryPath], delete_outdated: bool = False, dry_run: bool = False
 ) -> None:
-    auto_define_ingress_object(current_path_or_arg_path(project_root_directory)).update_settings(
-        delete_outdated=delete_outdated, dry_run=dry_run
-    )
+    update_settings(project_root_directory, delete_outdated=delete_outdated)
 
 
 @ingress.command()

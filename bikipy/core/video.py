@@ -8,6 +8,7 @@ bare metadata, and its purpose is to either initialize or relay an existing Vide
 from collections.abc import Iterable
 from functools import cached_property, partial
 from logging import getLogger
+from pathlib import Path
 from typing import ClassVar, Optional
 
 import cv2
@@ -15,14 +16,17 @@ import matplotlib.pyplot as plt
 import mextractor
 import numpy as np
 from mextractor.extractors import extract_video
-from pydantic import DirectoryPath, Field, FilePath
+from pydantic import DirectoryPath, Field, FilePath, validator
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
 
 from bikipy import runtime_settings
 from bikipy.core.base_class import BaseBikipy
 from bikipy.core.typing import MetersPerPixel
+from bikipy.utils.image import read_image_from_path
 from bikipy.utils.plot.io import ax_imshow_gray
+
+Frame = FilePath | NDArrayUint8
 
 logger = getLogger(__name__)
 
@@ -42,7 +46,7 @@ class _VideoMetadataBase(BaseBikipy):
         description="1D array defining the resolution of the recording"
     )
     fps: Optional[float] = Field(description="Frames per second of the recording")
-    frame: Optional[FilePath | NDArrayUint8] = Field(
+    frame: Optional[Frame] = Field(
         description="Frame from the video stored in numpy array, use read_image_from_path to read from file paths"
     )
     minimum_frame_length: Optional[int] = Field(
@@ -52,6 +56,10 @@ class _VideoMetadataBase(BaseBikipy):
     )
 
     category = "video_metadata"
+
+    @validator("frame")
+    def make_sure_frame_is_read(cls, value: Frame) -> NDArrayUint8:
+        return read_image_from_path(value) if isinstance(value, Path) else value
 
     @cached_property
     def resolution(self) -> NDArrayInt16 | None:
@@ -170,7 +178,7 @@ class VideoMetadata(_VideoMetadataBase):
 
     @cached_property
     def image_resize_multiplier(self) -> float:
-        if self.minimum_frame_length and self.frame:
+        if self.minimum_frame_length and self.frame is not None:
             shortest_side_size = min(self.frame.shape[:2])
             if shortest_side_size < self.minimum_frame_length:
                 return self.minimum_frame_length / shortest_side_size
@@ -242,7 +250,14 @@ class VideoMetadata(_VideoMetadataBase):
     def subplots(self, nrows: int = 1, ncols: int = 1, **kwargs) -> tuple:
         if self.frame is None:
             logger.debug("Video object was used to make subplot, but no frame was defined. Figure got no background.")
-            return plt.subplots(nrows, ncols)
+            return plt.subplots(
+                nrows,
+                ncols,
+                figsize=(
+                    self.horizontal_resolution * self.image_resize_multiplier * min(0.1, ncols / nrows),
+                    self.vertical_resolution * self.image_resize_multiplier * min(0.1, nrows / ncols),
+                ),
+            )
 
         fig, axes = plt.subplots(
             nrows,

@@ -31,7 +31,7 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
     @cached_property
     def _start_frame_idx(self) -> int:
         confined_bool = self.start_perimeter.compute_confined_coordinate_boolean_index(
-            self.kinematic_coordinates, potential_label=f"{self.label}_start", manual_video=self.video
+            self.reader.kinematic_coordinates, potential_label=f"{self.label}_start", manual_video=self.video
         )
         if not np.any(confined_bool):
             return np.nan
@@ -68,7 +68,7 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
     @cached_property
     def reward_boolean(self) -> NDArrayBool:
         confined_bool = self.reward_perimeter.compute_confined_coordinate_boolean_index(
-            self.kinematic_coordinates, potential_label=f"{self.label}_reward", manual_video=self.video
+            self.reader.kinematic_coordinates, potential_label=f"{self.label}_reward", manual_video=self.video
         )
         if self.tolerate_boolean_index:
             confined_bool = single_node_tolerance_model(confined_bool, self.video.fps)
@@ -81,7 +81,7 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
             EMPTY_MOTION
             if self.either_start_or_reward_undetected
             else Motion(
-                coordinate_sequence=self.kinematic_coordinates[self._start_frame_idx : self._reward_arrival_idx],
+                coordinate_sequence=self.reader.kinematic_coordinates[self._start_frame_idx : self._reward_arrival_idx],
                 fps=self.video.fps,
             ).as_tuple
         )

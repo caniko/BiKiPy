@@ -117,7 +117,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
         result = {
             quadrant_grid_coordinate: Quadrant(
                 vertices_in_meters=self.quadrant_grid_coordinate_to_vertices[quadrant_grid_coordinate],
-                kinematic_coordinates=self.kinematic_coordinates,
+                kinematic_coordinates=self.reader.kinematic_coordinates,
                 fps=self.video.fps,
                 quadrant_index=quadrant_index,
             )
@@ -127,7 +127,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             fig, ax = self.video.subplots()
             ax.set_title(f"Quadrants_Trial_#{self.label}")
 
-            coordinates = self.video.prepare_coordinates_for_plotting(self.kinematic_coordinates)
+            coordinates = self.video.prepare_coordinates_for_plotting(self.reader.kinematic_coordinates)
 
             confined = np.zeros(self.reader.frames, dtype=bool)
 
@@ -219,7 +219,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
     @cached_property
     def center_boolean_index(self) -> NDArrayBool:
         return parallel_point_inside_polygon(
-            self.kinematic_coordinates,
+            self.reader.kinematic_coordinates,
             self.center_rectangle_vertices,
             inspect_arg=self.class_inspect_arg / f"{self.label}.jpg",
             video=self.video,
@@ -233,7 +233,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
     def motion_center(self) -> dict:
         return get_combined_features_from_merged_motion_island_data(
             self.center_boolean_index,
-            self.kinematic_coordinates,
+            self.reader.kinematic_coordinates,
             self.video.fps,
         )
 
@@ -241,7 +241,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
     def motion_periphery(self) -> dict:
         return get_combined_features_from_merged_motion_island_data(
             self.periphery_boolean_index,
-            self.kinematic_coordinates,
+            self.reader.kinematic_coordinates,
             self.video.fps,
         )
 

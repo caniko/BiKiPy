@@ -36,7 +36,7 @@ def read_image(image: FilePath | NDArrayUint8, imread_flagg: Optional[list] = No
 @validate_arguments
 @lru_cache
 def read_image_from_path(image_path: FilePath, imread_flagg: Optional[list] = None) -> NDArrayUint8:
-    return cv2.imread(str(image_path), 0, imread_flagg)
+    return cv2.imread(str(image_path))
 
 
 def axis_frame_imshow(ax: Any, image: NDArray):

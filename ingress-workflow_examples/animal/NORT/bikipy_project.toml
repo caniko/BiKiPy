@@ -17,7 +17,7 @@ first_stage_is_habituation = false
 metadata_trial_ids_are_higher_level = false
 trial_sequence_loops = ""
 framewise_coordinates_file_suffix = ".parquet"
-dataset_directory = "/home/can/Downloads/Compressed/rosy_nort/dataset/"
+dataset_directory = "/data/behaviour_dataset/nori/dataset_mextracted"
 profile_runtime = true
 
 [definition_strategies]
@@ -32,10 +32,12 @@ timestamp = ""
 center = ""
 
 [manual_reader_kwargs]
+[manual_reader_kwargs.defined]
+model = false
+
 [manual_reader_kwargs.defined.midpoint_groups]
 center_eye = ["left_ear", "right_ear"]
 torso = ["center_eye", "tail_base"]
-
 
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"
@@ -44,9 +46,6 @@ crop_time_seconds = "number -> 0.0"
 df_is_timestamped = "boolean -> False"
 df_read_kwargs = "object"
 export_timestamp_data_as_parquet = "boolean -> False"
-filter_displacement_by_std = "number -> 2.0"
-filter_kwargs = "object"
-filter_method = "string -> arima"
 fps = "number"
 frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'uint8'}]"
 future_scaling = "boolean"
@@ -56,6 +55,10 @@ meters_per_pixel = "[{'type': 'number'}, {'type': 'dobble'}]"
 midpoint_groups = "object"
 min_likelihood = "number -> 0.8"
 minimum_frame_length = "integer -> 600"
+model = "boolean -> True"
+model_displacement_by_std = "number -> 2.0"
+model_kwargs = "object"
+model_method = "string -> arima"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
 required_tail_likelihood = "number -> 0.8"
 x_axis_crop_end_point = "number -> 0.0"
@@ -68,12 +71,11 @@ gaze_start_point_label = "center_eye"
 gaze_travel_direction_point_label = "nose"
 object_tracking_label_for_kinematics = "torso"
 perimeter_border_normal_meters = 0.03
-meters_per_pixel_from_perimeter_source = ""
 outside_perimeter_point_label = "torso"
-frame = "/home/can/Projects/bikipy/examples/sequence/NORT/inspect.png"
 fps = 30
+maximum_degrees_inter_gaze_perimeter = 120
 physical_object_inspect = true
-maximum_radians_inter_gaze_perimeter = 0.7853981633974483
+compute_first_two_feature_series_only = true
 
 [trial.common.required]
 gaze_start_point_label = "string"
@@ -98,7 +100,7 @@ manual_enclosure = "[{'$ref': '#/definitions/BasePerimeter'}]"
 manual_inspect_image = "np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]"
 manual_perimeter_to_derive_meters_per_pixel = "string"
 manual_video = "[{'$ref': '#/definitions/VideoMetadata'}]"
-maximum_radians_inter_gaze_perimeter = "number -> 0.7853981633974483"
+maximum_degrees_inter_gaze_perimeter = "number -> 45"
 meters_per_pixel = "[{'type': 'number'}, {'type': 'dobble'}]"
 meters_per_pixel_from_perimeter = "boolean -> False"
 meters_per_pixel_from_perimeter_source = "string"
@@ -118,6 +120,7 @@ trial_start_perimeter = "string"
 
 [experiment]
 [experiment.defined]
+recording_resolution = [920, 830]
 
 [experiment.optional]
 compute_first_two_feature_series_only = "boolean -> False"
@@ -138,7 +141,7 @@ trial_init_error_out_dir = "string"
 [perimeter]
 label_prefix = ""
 label_suffix = ""
-perimeter_names_in_metadata = false
+perimeter_names_in_metadata = true
 radial_arm_rectangle_diagonal = -1
 
 [perimeter.common]

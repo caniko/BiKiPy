@@ -24,6 +24,8 @@ class BikipyRuntimeSettings(BaseSettings):
     minimum_seconds_tolerance: float = 1.0 / 5.0
     maximum_seconds_distraction: float = 2.0 / 3.0
 
+    debug: bool = False
+
     @property
     def max_workers_in_process_pool(self) -> int:
         if self.only_physical_cores:

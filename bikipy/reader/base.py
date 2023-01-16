@@ -18,7 +18,7 @@ from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.perimeter.base import BasePerimeter
-from bikipy.reader.filter import filter_data
+from bikipy.reader.model import model_data
 from bikipy.reader.utils import compute_midpoint_label
 
 BAD_COORDINATE = (np.nan, np.nan, 0.0)  # x, y, likelihood
@@ -34,15 +34,19 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
     df_read_kwargs: Optional[dict] = Field(
         default_factory=dict, description="Keyword arguments to pass to the padnas dataframe reader"
     )
+    object_tracking_label_for_kinematics: str = Field(
+        ..., description="Label of the node that will be used to track general animal movement"
+    )
     trial_enclosure: Optional[Enclosure] = enclosure_field
     midpoint_groups: Optional[dict[str, tuple]] = Field(
         description="labels that consist of groups that should have their midpoints computed in the DataFrame"
     )
 
-    filter_method: Literal["arima", "median", "spline"] | None = Field(
+    model: bool = True
+    model_method: Literal["arima", "median", "spline"] = Field(
         "arima", description="Post-hoc filtration method label for improving data accuracy, adapted from DeepLabCut"
     )
-    filter_kwargs: dict = Field(default_factory=dict)
+    model_kwargs: dict = Field(default_factory=dict)
 
     required_tail_likelihood: float = Field(
         0.8, description="The pd.DataFrame will be cropped to this combined likelihood score"
@@ -76,7 +80,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
         False,
         description="Only affective if crop_frames is not 0. " "Will crop from start instead when set to False",
     )
-    filter_displacement_by_std: Optional[float] = Field(
+    model_displacement_by_std: Optional[float] = Field(
         2.0,
         description="When set the maximum displacement by frame will have an upper bound defined by the given scale of the STD",
     )
@@ -115,6 +119,14 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
     @abstractmethod
     def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:
         ...
+
+    @property
+    def kinematic_coordinates(self) -> pd.DataFrame:
+        return self[self.object_tracking_label_for_kinematics]
+
+    @cached_property
+    def plot_prepared_kinematic_coordinates(self) -> NDArrayFp64:
+        return self.video.prepare_coordinates_for_plotting(self.kinematic_coordinates.values)
 
     @cached_property
     def physically_tracked_labels(self) -> set[str]:
@@ -177,9 +189,9 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
                     )
                 ] = BAD_COORDINATE
 
-        if self.filter_method:
-            logger.debug(f"Filtering {self.df_path.stem} with the {self.filter_method} method")
-            result_df = filter_data(result_df, self.filter_method, **self.filter_kwargs)
+        if self.model:
+            logger.debug(f"Filtering {self.df_path.stem} with the {self.model_method} method")
+            result_df = model_data(result_df, self.model_method, **self.model_kwargs)
 
         crop_frames = None
         if self.df_is_timestamped:
@@ -194,8 +206,8 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
 
             if crop_frames > self.raw_frames:
                 logger.warning(
-                    f"(cropping frames: {self.crop_time_seconds} seconds -> {crop_frames} frames) "
-                    f"> total of {self.raw_frames} frames"
+                    f"(cropping number_of_frames: {self.crop_time_seconds} seconds -> {crop_frames} number_of_frames) "
+                    f"> total of {self.raw_frames} number_of_frames"
                 )
             else:
                 result_df = (
@@ -275,17 +287,17 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
         return len(self.raw_df)
 
     @property
-    def frames(self) -> int:
+    def number_of_frames(self) -> int:
         return len(self.df)
 
     @property
     def duration_seconds(self) -> float:
-        return self.frames / self.video.fps if self.timestamp_index is None else self.timestamp_index[-1]
+        return self.number_of_frames / self.video.fps if self.timestamp_index is None else self.timestamp_index[-1]
 
     @property
     def info(self) -> pd.Series:
         return pd.Series(
-            [self.raw_frames, self.frames, self.duration_seconds],
+            [self.raw_frames, self.number_of_frames, self.duration_seconds],
             index=[("Reader", "RawFrames"), ("Reader", "AugmentedFrames"), ("Reader", "DurationSeconds")],
         )
 
@@ -342,12 +354,11 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
     def _compute_midpoint(
         self, df: pd.DataFrame, midpoint_group: Iterable[str], manual_midpoint_label: Optional[Hashable] = None
     ) -> pd.DataFrame:
-        group_points = [
-            df.loc[:, pd.IndexSlice[component_name, ("x", "y")]].values for component_name in midpoint_group
-        ]
         midpoint_label = compute_midpoint_label(midpoint_group, manual_midpoint_label)
         return pd.DataFrame(
-            recursive_midpoint(group_points),
+            recursive_midpoint(
+                *(df.loc[:, pd.IndexSlice[component_name, ("x", "y")]].values for component_name in midpoint_group)
+            ),
             columns=[(midpoint_label, "x"), (midpoint_label, "y")],
             index=df.index,
         )

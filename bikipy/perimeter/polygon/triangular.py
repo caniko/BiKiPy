@@ -1,8 +1,9 @@
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
+from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 
 

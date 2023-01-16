@@ -26,7 +26,7 @@ class ObjectRecognitionTrialMixin(AbstractTrial, ABC):
 
     outside_perimeter_point_label: Optional[str] = Field(description="Label signifying the area where the gaze vector")
 
-    maximum_radians_inter_gaze_perimeter: float = np.pi / 4.0
+    maximum_degrees_inter_gaze_perimeter: float = 45
 
     physical_object_inspect: bool = False
 
@@ -54,6 +54,10 @@ class ObjectRecognitionTrialMixin(AbstractTrial, ABC):
         return upstream_list
 
     @cached_property
+    def maximum_radians_inter_gaze_perimeter(self) -> float:
+        return np.deg2rad(self.maximum_degrees_inter_gaze_perimeter)
+
+    @cached_property
     def physical_object_keyword_arguments(self) -> dict[str, Any]:
         return {
             "reader": self.reader,
@@ -64,6 +68,7 @@ class ObjectRecognitionTrialMixin(AbstractTrial, ABC):
             "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
             "perimeter_border_normal_pixels": self.perimeter_border_normal_pixels,
             "inspect_arg": self.inspect_arg,
+            "manual_video": self.video,
         }
 
     @cached_property
