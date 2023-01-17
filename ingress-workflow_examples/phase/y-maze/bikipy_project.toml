@@ -43,6 +43,7 @@ torso = ["center_eye", "base_tail"]
 
 
 
+
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"
 crop_from_end = "boolean -> False"
@@ -50,9 +51,6 @@ crop_time_seconds = "number -> 0.0"
 df_is_timestamped = "boolean -> False"
 df_read_kwargs = "object"
 export_timestamp_data_as_parquet = "boolean -> False"
-filter_displacement_by_std = "number -> 2.0"
-filter_kwargs = "object"
-filter_method = "string -> arima"
 fps = "number"
 frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'uint8'}]"
 future_scaling = "boolean"
@@ -62,6 +60,10 @@ meters_per_pixel = "[{'type': 'number'}, {'type': 'dobble'}]"
 midpoint_groups = "object"
 min_likelihood = "number -> 0.8"
 minimum_frame_length = "integer -> 600"
+model = "boolean -> True"
+model_displacement_by_std = "number -> 2.0"
+model_kwargs = "object"
+model_method = "string -> arima"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
 required_tail_likelihood = "number -> 0.8"
 x_axis_crop_end_point = "number -> 0.0"
@@ -71,11 +73,9 @@ y_axis_crop_end_point = "number -> 0.0"
 [trial.common]
 [trial.common.defined]
 object_labels_for_y_maze_confinement_tracking = ["center_eye", "torso", "base_tail"]
-object_tracking_label_for_kinematics = "torso"
 
 [trial.common.required]
 object_labels_for_y_maze_confinement_tracking = "array"
-object_tracking_label_for_kinematics = "string"
 
 [trial.common.optional]
 coordinate_timestamp_index = "np.ndarray"

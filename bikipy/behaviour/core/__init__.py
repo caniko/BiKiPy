@@ -35,7 +35,6 @@ from yaspin.spinners import Spinners
 
 from bikipy import runtime_settings
 from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
-from bikipy.behaviour.object_recognition import ObjectRecognitionTrialMixin
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from bikipy.core.typing import TrialId
 from bikipy.core.video import (
@@ -44,6 +43,7 @@ from bikipy.core.video import (
     incongruity_permissive_video_join,
 )
 from bikipy.feature.motion import Motion, motion_multi_indexer
+from bikipy.feature.physical_object.mixin import PhysicalObjectTrialMixin
 from bikipy.ingress.plugin import PluginChangeReference, PluginRadial
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
 from bikipy.perimeter.base import (
@@ -171,7 +171,7 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
     @classmethod
     @property
     def has_perimeter(cls) -> bool:
-        return is_generic_type(cls) or issubclass(cls, ObjectRecognitionTrialMixin)
+        return is_generic_type(cls) or issubclass(cls, PhysicalObjectTrialMixin)
 
     @classmethod
     @property
@@ -259,30 +259,6 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
             fps=self.video.fps,
         )
 
-    @property
-    def perimeters(self) -> list[SinglePerimeter]:
-        return []
-
-    @cached_property
-    def _int_id_to_perimeter(self) -> dict:
-        self._validate_perimeters_object()
-        return {perimeter.int_id: perimeter for perimeter in self.perimeters}
-
-    def _validate_perimeters_object(self) -> None:
-        if not self.perimeters:
-            msg = "perimeters is not defined as an object variable, " "which is required for _int_id_to_perimeter"
-            raise AttributeError(msg)
-
-    @cached_property
-    def _perimeter_label_to_int_id(self) -> dict:
-        self._validate_perimeters_object()
-        return {label: i for i, label in enumerate(self.perimeters, start=1)}
-
-    @cached_property
-    def _int_id_to_perimeter_label(self) -> dict:
-        self._validate_perimeters_object()
-        return {i: label for i, label in enumerate(self.perimeters, start=1)}
-
     # Miscellaneous
 
     @cached_property
@@ -306,37 +282,6 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
     @property
     def _trial_feature_series_list(self) -> list[pd.Series]:
         return [self.reader.info, pd.Series(self.motion.as_tuple, index=self.constant_feature_headers)]
-
-    @property
-    def _video(self) -> VideoMetadata:
-        video = super()._video
-
-        if self.perimeters:
-            perimeter_video = reduce(
-                incongruity_permissive_video_join, (perimeter.video for perimeter in self.perimeters)
-            )
-            # Manually passed video parameters should override any
-            new_video = VideoMetadata.join(video, perimeter_video, ignore_incongruity=True)
-
-            # The resolution on perimeters should be more correct than whatever
-            # provided by the user, hence it being master
-            final_video = VideoMetadata.join(new_video, video, ignore_incongruity=True)
-
-            if self.meters_per_pixel_from_perimeter:
-                logger.debug("meters_per_pixel_from_perimeter -> True: Deriving meters_per_pixel from perimeter")
-                if not self.perimeter_to_derive_meters_per_pixel:
-                    msg = f"perimeter_to_derive_meters_per_pixel is not defined for class, {self.__class__.__name__}"
-                    raise AttributeError(msg)
-
-                final_video.meters_per_pixel = (
-                    self.perimeter_to_derive_meters_per_pixel.derived_meters_per_pixel.derived_meters_per_pixel
-                )
-
-            for perimeter in self.perimeters:
-                perimeter.manual_video = final_video
-            return final_video
-
-        return video
 
     @cached_property
     def _uint_zeros_based_on_frame_length(self) -> NDArrayUint8:
@@ -672,8 +617,6 @@ class BaseExperiment(Behaviour):
         if not all(isinstance(trial_id, first_type) for trial_id in result):
             msg = "The Trial IDs must have the same type"
             raise AttributeError(msg)
-
-        # TODO: Infer dtype
 
         return result
 

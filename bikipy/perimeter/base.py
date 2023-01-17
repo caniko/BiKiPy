@@ -23,7 +23,7 @@ from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_coco_polygon,
     init_polygon_from_makesense_csv_rectangle,
 )
-from bikipy.perimeter.utils import get_coco_array_from_path_or_array
+from bikipy.perimeter.helper.utils import get_coco_array_from_path_or_array
 from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS

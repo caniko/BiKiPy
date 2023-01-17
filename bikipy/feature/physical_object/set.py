@@ -5,17 +5,19 @@ Some methods are designed specifically for sets with a specific number of object
 
 from functools import cached_property, reduce
 from logging import getLogger
-from typing import Any, ClassVar, Iterable
+from typing import Any, ClassVar, Iterable, Generic, Type, TypeVar
 
 import numpy as np
 import pandas as pd
 from pydantic import validator
+from pydantic.generics import GenericModel
 from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8
 
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
-from bikipy.feature.physical_object.single import PhysicalObject
+from bikipy.feature.physical_object.single.profile.abc import PhysicalObjectProfile, PhysicalObjectProfileCLS
+from bikipy.feature.physical_object.single.profile.rodent import RodentProfile
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.reader.base import Reader
 
@@ -158,8 +160,10 @@ class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
         return {label: 0.0 for label in self.physical_object_label_to_observation_boolean_index}
 
 
-class PhysicalObjectSet(VideoMetadataMixin):
-    physical_objects: tuple[PhysicalObject, ...] = ...
+class GenericPhysicalObjectSet(GenericModel, Generic[PhysicalObjectProfile], VideoMetadataMixin):
+    physical_objects: tuple[PhysicalObjectProfile, ...] = ...
+
+    physical_object_profile_class: ClassVar[PhysicalObjectProfileCLS] = ...
 
     @validator("physical_objects", pre=True)
     def more_than_one_object(cls, value):
@@ -257,7 +261,11 @@ class PhysicalObjectSet(VideoMetadataMixin):
 
     @classmethod
     def from_perimeter(cls, *perimeters, **kwargs):
-        return cls(physical_objects=tuple(PhysicalObject(perimeter=perimeter, **kwargs) for perimeter in perimeters))
+        return cls(
+            physical_objects=tuple(
+                cls.physical_object_profile_class(perimeter=perimeter, **kwargs) for perimeter in perimeters
+            )
+        )
 
     @classmethod
     def from_perimeter_set(cls, perimeter_set: PerimeterSet):
@@ -268,7 +276,15 @@ class PhysicalObjectSet(VideoMetadataMixin):
     def from_bikipy_trial(cls, perimeters: Iterable[SinglePerimeter], trial_class):
         return cls(
             physical_objects=tuple(
-                PhysicalObject(perimeter=perimeter, **trial_class.physical_object_keyword_arguments)
+                cls.physical_object_profile_class(perimeter=perimeter, **trial_class.physical_object_keyword_arguments)
                 for perimeter in perimeters
             )
         )
+
+
+PhysicalObjectSet = TypeVar("PhysicalObjectSet", bound=GenericPhysicalObjectSet)
+PhysicalObjectSetCLS = Type[GenericPhysicalObjectSet]
+
+
+class RodentPhysicalObjectSet(GenericPhysicalObjectSet[RodentProfile]):
+    physical_object_profile_class = RodentProfile

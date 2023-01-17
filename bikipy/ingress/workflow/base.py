@@ -36,7 +36,7 @@ from bikipy.ingress.utils.io import (
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
 from bikipy.perimeter.base import BaseSinglePerimeter, Perimeter
-from bikipy.perimeter.constant import PERIMETER_CLASS_REQUIRE_INTERFACE_SETTINGS
+from bikipy.perimeter.helper.constant import PERIMETER_CLASS_REQUIRE_INTERFACE_SETTINGS
 from bikipy.reader.base import BaseReader
 from bikipy.reader.data_with_likelihood import DataWithLikelihoodReader
 from bikipy.utils.collection_utils import (

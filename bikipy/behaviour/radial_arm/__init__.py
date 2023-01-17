@@ -17,7 +17,7 @@ from bikipy.behaviour.utils import (
 )
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
-from bikipy.perimeter.confinement import detect_multi_node_sequential_perimeter_presence
+from bikipy.perimeter.helper.confinement import detect_multi_node_sequential_perimeter_presence
 from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
 
 logger = getLogger(__name__)

@@ -1,0 +1,33 @@
+from logging import getLogger
+from typing import TYPE_CHECKING, Any, Optional, Sequence
+
+import numpy as np
+from matplotlib import pyplot as plt
+from pydantic import FilePath
+from pydantic_numpy.dtype import NDArrayFp64
+
+from bikipy.utils.collection_utils import generic_multi_indexer
+from bikipy.utils.image import axis_frame_imshow, read_image
+from bikipy.utils.makesense import read_makesense_point
+
+
+logger = getLogger(__file__)
+
+
+def get_coco_array_from_path_or_array(
+    metadata_path: Optional[FilePath],
+    coco_array: Optional[NDArrayFp64],
+):
+    msg = "metadata_path and coco_array are defined mutually exclusive"
+    if metadata_path and np.any(coco_array):
+        raise ValueError(msg)
+
+    if metadata_path:
+        result = read_makesense_point(metadata_path)
+    elif np.any(coco_array):
+        result = coco_array
+    else:
+        raise ValueError(msg)
+
+    assert np.any(result)
+    return result

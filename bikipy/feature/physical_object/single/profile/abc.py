@@ -1,21 +1,20 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod, ABC
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Optional, Generic, TypeVar, ClassVar
+from typing import Any, Optional, TypeVar, Type
 
 import numpy as np
-from pydantic import root_validator, validator
-from pydantic.generics import GenericModel
 from pydantic_numpy.dtype import NDArrayBool
 
 from bikipy.core.base_class import BaseBikipyInspectMixin
 from bikipy.core.typing import TrialId
-from bikipy.core.video import VideoMetadata, VideoMetadataMixin
+from bikipy.core.video import VideoMetadataMixin, VideoMetadata
 from bikipy.feature.attention.model import AttentionModelMixin
-from bikipy.feature.physical_object.single.component import AbcObservationComponent
+from bikipy.feature.physical_object.single.component.abc import AbcObservationComponent
+from bikipy.feature.physical_object.single.component.gaze import GazeComponent
+from bikipy.feature.physical_object.single.component.olfaction import OlfactionComponent
 from bikipy.feature.tolerance.single import single_node_tolerance_model
-from bikipy.perimeter.base import SinglePerimeter
 from bikipy.reader.base import Reader
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 
@@ -23,18 +22,20 @@ logger = getLogger(__name__)
 
 
 ObservationComponent = TypeVar("ObservationComponent", bound=AbcObservationComponent)
+# TODO: Waiting for numba support for 3.11 https://github.com/numba/numba/milestone/63
+# Variadic generics: https://peps.python.org/pep-0646/
+# NumberOfComponents = TypeVarTuple("NumberOfComponents")
 
 
-class PhysicalObject(
-    GenericModel, Generic[ObservationComponent], BaseBikipyInspectMixin, VideoMetadataMixin, AttentionModelMixin
+class AbcPhysicalObjectProfile(
+    # GenericModel, Generic[ObservationComponent],
+    BaseBikipyInspectMixin,
+    VideoMetadataMixin,
+    AttentionModelMixin,
+    ABC,
 ):
-    """
-    The physical object is a triadic abstraction of Reader, Perimeter and Trial. This abstraction allows
-    us to define methods that require the respective attributes, think of it as a union between the classes!
-    """
-
     label: str
-    observation_components: tuple[ObservationComponent, ...]
+    observation_components: tuple[GazeComponent, OlfactionComponent]
 
     # Inspection fields
     trial_obj_label: Optional[TrialId]
@@ -43,6 +44,13 @@ class PhysicalObject(
     _exporting_figure: bool = False
 
     category = "physical_object"
+
+    @classmethod
+    @abstractmethod
+    def with_components(
+        cls, label: str, trial_obj_label: TrialId, video: VideoMetadata, **component_fields
+    ) -> "PhysicalObjectProfile":
+        ...
 
     @cached_property
     def combined_observation_components(self) -> NDArrayBool:
@@ -121,3 +129,7 @@ class PhysicalObject(
         ax.scatter(
             *self._first_reader.plot_prepared_kinematic_coordinates[valid_boolean_index].T, marker="x", color="green"
         )
+
+
+PhysicalObjectProfile = TypeVar("PhysicalObjectProfile", bound=AbcPhysicalObjectProfile)
+PhysicalObjectProfileCLS = Type[AbcPhysicalObjectProfile]

@@ -39,6 +39,7 @@ model = false
 center_eye = ["left_ear", "right_ear"]
 torso = ["center_eye", "tail_base"]
 
+
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"
 crop_from_end = "boolean -> False"
@@ -67,21 +68,8 @@ y_axis_crop_end_point = "number -> 0.0"
 [trial]
 [trial.common]
 [trial.common.defined]
-ray_start_point_label = "center_eye"
-ray_travel_direction_point_label = "nose"
-object_tracking_label_for_kinematics = "torso"
-perimeter_border_normal_meters = 0.03
-outside_perimeter_point_label = "torso"
 fps = 30
-maximum_degrees_inter_ray_perimeter = 120
 physical_object_inspect = true
-compute_first_two_feature_series_only = true
-
-[trial.common.required]
-ray_start_point_label = "string"
-ray_travel_direction_point_label = "string"
-object_tracking_label_for_kinematics = "string"
-perimeter_border_normal_meters = "number"
 
 [trial.common.optional]
 center_rectangle_dimensions_to_spatial_resolution_ratio = "number"
@@ -100,12 +88,10 @@ manual_enclosure = "[{'$ref': '#/definitions/BasePerimeter'}]"
 manual_inspect_image = "np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]"
 manual_perimeter_to_derive_meters_per_pixel = "string"
 manual_video = "[{'$ref': '#/definitions/VideoMetadata'}]"
-maximum_degrees_inter_ray_perimeter = "number -> 45"
 meters_per_pixel = "[{'type': 'number'}, {'type': 'dobble'}]"
 meters_per_pixel_from_perimeter = "boolean -> False"
 meters_per_pixel_from_perimeter_source = "string"
 minimum_frame_length = "integer -> 600"
-outside_perimeter_point_label = "string"
 physical_object_inspect = "boolean -> False"
 reader_class_label = "string -> DeepLabCutReader"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
