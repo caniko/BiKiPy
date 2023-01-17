@@ -17,7 +17,7 @@ from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import set_bikipy_settings_from_dict
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment
-from bikipy.core.base_class import BaseBikipy
+from bikipy.core.base_class import BikipyModel
 from bikipy.core.typing import TrialId
 from bikipy.ingress.plugin import ALL_PLUGINS, PluginMeterPerPixel, ingress_key_to_model
 from bikipy.ingress.plugin.base import Plugin
@@ -56,7 +56,7 @@ METADATA_TRIAL_IDS_ARE_HIGHER_LEVEL_FIELD = "metadata_trial_ids_are_higher_level
 logger = getLogger(__name__)
 
 
-class BaseIngress(BaseBikipy, ABC):
+class BaseIngress(BikipyModel, ABC):
     """
     This model stores methods to ingest data for bikipy-based analysis. The workflow differs slightly between daughter
     classes. The commonality are the levels in which data is introduced, which is quite similar to the bikipy experiment

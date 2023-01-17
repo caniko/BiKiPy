@@ -3,8 +3,8 @@ from pathlib import Path
 path_to_this_directory = Path(__file__).parent
 
 EXPERIMENT_KWARGS = {
-    "gaze_start_point_label": "center_eye",
-    "gaze_travel_direction_point_label": "nose",
+    "ray_start_point_label": "center_eye",
+    "ray_travel_direction_point_label": "nose",
     "object_tracking_label_for_kinematics": "center_eye",
     "perimeter_border_normal_meters": 0.02,
     "manual_reader_kwargs": {"init_from": "parquet", "midpoint_groups": {"center_eye": ["left_ear", "right_ear"]}},

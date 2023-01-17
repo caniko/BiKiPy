@@ -3,11 +3,11 @@ from typing import Iterable
 
 from pydantic import BaseModel
 
-from bikipy.core.base_class import BaseBikipy
+from bikipy.core.base_class import BikipyModel
 from bikipy.perimeter.base import Perimeter
 
 
-def field_name_to_metadata(fields: Iterable, class_schema: dict, model_class: BaseBikipy) -> dict:
+def field_name_to_metadata(fields: Iterable, class_schema: dict, model_class: BikipyModel) -> dict:
     result = {}
     for name in sorted(fields):
         if name in model_class.exclude_from_settings_schema:

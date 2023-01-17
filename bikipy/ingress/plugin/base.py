@@ -6,12 +6,12 @@ import pandas as pd
 from pydantic import BaseModel, DirectoryPath, Field, FilePath
 from pydantic_numpy.dtype import NDArrayFp64
 
-from bikipy.core.base_class import BaseBikipy
+from bikipy.core.base_class import BikipyModel
 from bikipy.core.typing import TrialId
 from bikipy.utils.makesense import get_only_point_from_makesense
 
 
-class BasePlugin(BaseBikipy, ABC):
+class BasePlugin(BikipyModel, ABC):
     ingress: Any = Field(description="Bikipy ingress object to access project metadata relevant for defining perimeter")
     manual_trial_argument_key: Optional[str]
 
@@ -74,7 +74,7 @@ class BasePluginDirectory(BasePlugin, ABC):
     data_path: DirectoryPath
 
 
-class HasReferenceMixin(BaseBikipy):
+class HasReferenceMixin(BikipyModel):
     manual_reference: Optional[NDArrayFp64] = Field(
         description="Override the perimeter detection with values defined outside model"
     )

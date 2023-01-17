@@ -32,7 +32,7 @@ def generic_inspection_finalization(
             file_path = int_file_stem_incrementor(file_path)
 
         plt.savefig(file_path)
-        plt.close()
+
         if debug_save_message:
             logger.debug(debug_save_message)
 
@@ -40,3 +40,5 @@ def generic_inspection_finalization(
         # inspect_arg is most likely a boolean
         if inspect_arg:
             plt.show()
+    finally:
+        plt.close()

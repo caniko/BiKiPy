@@ -6,53 +6,53 @@ from matplotlib import pyplot as plt
 
 def attention_state_distribution(trials):
     attention_state_analysis = {
-        "proximity&gaze true observation false": [],
-        "observation&gaze true proximity false": [],
-        "observation&proximity true gaze false": [],
-        "proximity true gaze false": [],
-        "gaze true proximity false": [],
+        "proximity&ray true observation false": [],
+        "observation&ray true proximity false": [],
+        "observation&proximity true ray false": [],
+        "proximity true ray false": [],
+        "ray true proximity false": [],
         "all false": [],
     }
     for trial in trials:
-        attention_state_analysis["proximity&gaze true observation false"].extend(
+        attention_state_analysis["proximity&ray true observation false"].extend(
             (
-                trial.a_proximity_filtered & trial.a_gaze_filtered & ~trial.a_observance_per_frame,
+                trial.a_proximity_filtered & trial.a_ray_filtered & ~trial.a_observance_per_frame,
                 #
-                trial.b_proximity_filtered & trial.b_gaze_filtered & ~trial.b_observance_per_frame,
+                trial.b_proximity_filtered & trial.b_ray_filtered & ~trial.b_observance_per_frame,
             )
         )
-        attention_state_analysis["observation&gaze true proximity false"].extend(
+        attention_state_analysis["observation&ray true proximity false"].extend(
             (
                 trial.a_observance_per_frame
-                & trial.a_gaze_filtered
+                & trial.a_ray_filtered
                 & (not_a_proximity_filtered := ~trial.a_proximity_filtered),
                 #
                 trial.b_observance_per_frame
-                & trial.b_gaze_filtered
+                & trial.b_ray_filtered
                 & (not_b_proximity_filtered := ~trial.b_proximity_filtered),
             ),
         )
-        attention_state_analysis["observation&proximity true gaze false"].extend(
+        attention_state_analysis["observation&proximity true ray false"].extend(
             (
                 trial.a_observance_per_frame
                 & trial.a_proximity_filtered
-                & (not_a_gaze_filtered := ~trial.a_gaze_filtered),
+                & (not_a_ray_filtered := ~trial.a_ray_filtered),
                 #
                 trial.b_observance_per_frame
                 & trial.b_proximity_filtered
-                & (not_b_gaze_filtered := ~trial.b_gaze_filtered),
+                & (not_b_ray_filtered := ~trial.b_ray_filtered),
             )
         )
-        attention_state_analysis["proximity true gaze false"].extend(
+        attention_state_analysis["proximity true ray false"].extend(
             (
-                trial.a_proximity_filtered & not_a_gaze_filtered,
-                trial.b_proximity_filtered & not_b_gaze_filtered,
+                trial.a_proximity_filtered & not_a_ray_filtered,
+                trial.b_proximity_filtered & not_b_ray_filtered,
             )
         )
-        attention_state_analysis["gaze true proximity false"].extend(
+        attention_state_analysis["ray true proximity false"].extend(
             (
-                trial.a_gaze_filtered & not_a_proximity_filtered,
-                trial.b_gaze_filtered & not_b_proximity_filtered,
+                trial.a_ray_filtered & not_a_proximity_filtered,
+                trial.b_ray_filtered & not_b_proximity_filtered,
             ),
         )
 

@@ -7,13 +7,13 @@ from pydantic_numpy.dtype import NDArrayFp64
 
 
 @validate_arguments
-def compute_midpoint(point_1: NDArrayFp64, point_2: NDArrayFp64, midpoint_quotient: float = 2.0) -> NDArrayFp64:
+def compute_midpoint(point_1: NDArrayFp64, point_2: NDArrayFp64, midpoint_multiplier: float = 0.5) -> NDArrayFp64:
     """
     Computes the point(s) between two points, midpoint(s), with respect to the index.
 
     :param point_1: Set of points part of the pair used for computing the midpoint(s)
     :param point_2: Set of points part of the pair used for computing the midpoint(s)
-    :param midpoint_quotient:
+    :param midpoint_multiplier:
     :return: midpoint(s)
     :rtype: NDArrayFp64
     """
@@ -29,14 +29,17 @@ def compute_midpoint(point_1: NDArrayFp64, point_2: NDArrayFp64, midpoint_quotie
 
     compute = np.zeros((ii_greater_i.size, 2))
     compute[i_greater_equals_ii] = (
-        point_2[i_greater_equals_ii] + (point_1[i_greater_equals_ii] - point_2[i_greater_equals_ii]) / midpoint_quotient
+        point_2[i_greater_equals_ii]
+        + (point_1[i_greater_equals_ii] - point_2[i_greater_equals_ii]) * midpoint_multiplier
     )
-    compute[ii_greater_i] = point_1[ii_greater_i] + (point_2[ii_greater_i] - point_1[ii_greater_i]) / midpoint_quotient
+    compute[ii_greater_i] = (
+        point_1[ii_greater_i] + (point_2[ii_greater_i] - point_1[ii_greater_i]) * midpoint_multiplier
+    )
 
     return compute
 
 
-def recursive_midpoint(*point_sets: NDArrayFp64, midpoint_quotient: float = 2.0) -> NDArrayFp64:
+def recursive_midpoint(*point_sets: NDArrayFp64, midpoint_multiplier: float = 0.5) -> NDArrayFp64:
     """
     Compute midpoint(s) using last midpoint as first in the pair,
     and the upcoming point as the second in the pair in compute_midpoint.
@@ -46,7 +49,7 @@ def recursive_midpoint(*point_sets: NDArrayFp64, midpoint_quotient: float = 2.0)
     triangulating between three points when the length of the list is 3.
 
     :param point_sets: Iterable of points used for computing the midpoint(s) recursively.
-    :param midpoint_quotient:
+    :param midpoint_multiplier:
     :return: midpoint(s)
     :rtype: NDArrayFp64
     """
@@ -60,7 +63,7 @@ def recursive_midpoint(*point_sets: NDArrayFp64, midpoint_quotient: float = 2.0)
 
     try:
         for point_set in point_sets[2:]:
-            midpoint = compute_midpoint(midpoint, point_set, midpoint_quotient)
+            midpoint = compute_midpoint(midpoint, point_set, midpoint_multiplier)
     except IndexError:
         pass
 

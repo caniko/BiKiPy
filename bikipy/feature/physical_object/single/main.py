@@ -12,6 +12,7 @@ from pydantic_numpy.dtype import NDArrayBool
 from bikipy.core.base_class import BaseBikipyInspectMixin
 from bikipy.core.typing import TrialId
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
+from bikipy.feature.attention.model import AttentionModelMixin
 from bikipy.feature.physical_object.single.component import AbcObservationComponent
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import SinglePerimeter
@@ -24,7 +25,9 @@ logger = getLogger(__name__)
 ObservationComponent = TypeVar("ObservationComponent", bound=AbcObservationComponent)
 
 
-class PhysicalObject(GenericModel, Generic[ObservationComponent], BaseBikipyInspectMixin, VideoMetadataMixin):
+class PhysicalObject(
+    GenericModel, Generic[ObservationComponent], BaseBikipyInspectMixin, VideoMetadataMixin, AttentionModelMixin
+):
     """
     The physical object is a triadic abstraction of Reader, Perimeter and Trial. This abstraction allows
     us to define methods that require the respective attributes, think of it as a union between the classes!
@@ -108,14 +111,6 @@ class PhysicalObject(GenericModel, Generic[ObservationComponent], BaseBikipyInsp
             "Observation cumulative filtration analysis",
             fontsize=self.video.upscaled_video.plotting_title_font_size * 1.1,
         )
-
-    @cached_property
-    def _inspect_pixels(self) -> bool:
-        return self.video.frame is not None
-
-    @cached_property
-    def _global_attention_kwargs(self) -> dict[str, Any]:
-        return {"inspect_video": self.video, "inspect_pixels": self._inspect_pixels}
 
     @property
     def _first_reader(self) -> Reader:

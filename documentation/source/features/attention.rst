@@ -16,6 +16,6 @@ The filter has two rules (logical AND) that signify the specimen being close eno
 
 Gaze filter
 -----------
-The filter makes sure that the :ref:`features/angle:Inner angle` between the gaze vector and the vector of the closes side is less than or equal to a maximum value defined by the user (default: :code:`75`).
+The filter makes sure that the :ref:`features/angle:Inner angle` between the ray vector and the vector of the closes side is less than or equal to a maximum value defined by the user (default: :code:`75`).
 
 .. _qualia: https://en.wikipedia.org/wiki/Qualia

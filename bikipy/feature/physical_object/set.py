@@ -141,7 +141,7 @@ class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
         if not self.total_seconds_observing:
             return self._label_to_zero
         return {
-            label: 100.0 * physical_object.tolerance_modeled_proximity_and_gaze_seconds / (self.frames * self.video.fps)
+            label: 100.0 * physical_object.tolerance_modeled_proximity_and_ray_seconds / (self.frames * self.video.fps)
             for label, physical_object in self.physical_object_label_to_observation_boolean_index.items()
         }
 

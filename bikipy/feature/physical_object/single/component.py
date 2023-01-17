@@ -12,6 +12,7 @@ from pydantic_numpy.dtype import NDArrayBool
 from bikipy.core.base_class import BaseBikipyInspectMixin
 from bikipy.core.typing import TrialId
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
+from bikipy.feature.attention.model import AttentionModelMixin
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.reader.base import Reader
@@ -20,7 +21,7 @@ from bikipy.utils.plot.inspect import generic_inspection_finalization
 logger = getLogger(__name__)
 
 
-class AbcObservationComponent(BaseBikipyInspectMixin, VideoMetadataMixin, ABC):
+class AbcObservationComponent(BaseBikipyInspectMixin, VideoMetadataMixin, AttentionModelMixin, ABC):
     perimeter: SinglePerimeter = ...
     reader: Reader = ...
 
@@ -28,6 +29,7 @@ class AbcObservationComponent(BaseBikipyInspectMixin, VideoMetadataMixin, ABC):
     axes_row: tuple[Any] = ...
 
     native_inspection_row_length: ClassVar[int] = ...
+    center_eye_label: ClassVar[str] = "center_eye"
 
     @validator("axis_row")
     def axes_row_has_right_length(cls, value: tuple) -> tuple:

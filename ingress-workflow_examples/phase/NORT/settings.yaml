@@ -74,15 +74,15 @@ manual_reader_kwargs:
 trial:
   common:
     defined:
-      gaze_start_point_label: center_eye
-      gaze_travel_direction_point_label: nose
+      ray_start_point_label: center_eye
+      ray_travel_direction_point_label: nose
       object_tracking_label_for_kinematics: center_eye
       perimeter_border_normal_meters: 0.06
       outside_perimeter_point_label: torso
-      maximum_radians_inter_gaze_perimeter: 1.5707963267948966
+      maximum_radians_inter_ray_perimeter: 1.5707963267948966
     required:
-      gaze_start_point_label: string
-      gaze_travel_direction_point_label: string
+      ray_start_point_label: string
+      ray_travel_direction_point_label: string
       object_tracking_label_for_kinematics: string
       perimeter_border_normal_meters: number
     optional:
@@ -102,7 +102,7 @@ trial:
         type=dobble required=True]
       manual_inspect_image: np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]
       manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
-      maximum_radians_inter_gaze_perimeter: number -> 0.7853981633974483
+      maximum_radians_inter_ray_perimeter: number -> 0.7853981633974483
       maximum_seconds_distraction: number -> 0.6666666666666666
       meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
       minimum_frame_length: number

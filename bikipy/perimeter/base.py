@@ -221,10 +221,10 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         ...
 
     @abstractmethod
-    def gaze_direction_filter(
+    def ray_direction_filter(
         self,
-        gaze_travel_direction_point: NDArrayFp64,
-        gaze_start_point: NDArrayFp64,
+        ray_travel_direction_point: NDArrayFp64,
+        ray_start_point: NDArrayFp64,
         max_radians: float,
         manual_ax: Any = None,
         **kwargs,

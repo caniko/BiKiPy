@@ -67,16 +67,16 @@ y_axis_crop_end_point = "number -> 0.0"
 [trial]
 [trial.common]
 [trial.common.defined]
-gaze_start_point_label = "center_eye"
-gaze_travel_direction_point_label = "nose"
+ray_start_point_label = "center_eye"
+ray_travel_direction_point_label = "nose"
 object_tracking_label_for_kinematics = "center_eye"
 perimeter_border_normal_meters = 0.05
-maximum_radians_inter_gaze_perimeter = 2.094395
+maximum_radians_inter_ray_perimeter = 2.094395
 crop_from_end = false
 
 [trial.common.required]
-gaze_start_point_label = "string"
-gaze_travel_direction_point_label = "string"
+ray_start_point_label = "string"
+ray_travel_direction_point_label = "string"
 object_tracking_label_for_kinematics = "string"
 perimeter_border_normal_meters = "number"
 
@@ -97,7 +97,7 @@ manual_enclosure = "[{'$ref': '#/definitions/BasePerimeter'}]"
 manual_inspect_image = "np.ndarray[name='manual_inspect_image_0' type=uint8 required=True]"
 manual_perimeter_to_derive_meters_per_pixel = "string"
 manual_video = "[{'$ref': '#/definitions/VideoMetadata'}]"
-maximum_radians_inter_gaze_perimeter = "number -> 0.7853981633974483"
+maximum_radians_inter_ray_perimeter = "number -> 0.7853981633974483"
 meters_per_pixel = "[{'type': 'number'}, {'type': 'dobble'}]"
 meters_per_pixel_from_perimeter = "boolean -> False"
 meters_per_pixel_from_perimeter_source = "string"

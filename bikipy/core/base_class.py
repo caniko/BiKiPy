@@ -10,7 +10,7 @@ from bikipy.core.typing import TrialId
 from bikipy.utils.plot.inspect import InspectArg, inspect_arg_description
 
 
-class BaseBikipy(BaseModel):
+class BikipyModel(BaseModel):
     class Config:
         underscore_attrs_are_private = True
         keep_untouched = (cached_property,)
@@ -28,7 +28,7 @@ class BaseBikipy(BaseModel):
         return set()
 
 
-class BaseBikipyHashable(BaseBikipy):
+class BaseBikipyHashable(BikipyModel):
     label: Optional[TrialId]
     int_id: Optional[int]
 
@@ -44,20 +44,20 @@ class BaseBikipyHashable(BaseBikipy):
     def __hash__(self):
         return hash(tuple(self._to_hash))
 
-    def __eq__(self, other: "BikipyHashable"):
+    def __eq__(self, other: "BikipyHashableModel"):
         try:
             return self._to_hash == other._to_hash
         except AttributeError:
             return False
 
-    def __ne__(self, other: "BikipyHashable"):
+    def __ne__(self, other: "BikipyHashableModel"):
         return not self.__eq__(other)
 
 
-BikipyHashable = TypeVar("BikipyHashable", bound=BaseBikipyHashable)
+BikipyHashableModel = TypeVar("BikipyHashableModel", bound=BaseBikipyHashable)
 
 
-class BaseBikipyInspectMixin(BaseBikipy):
+class BaseBikipyInspectMixin(BikipyModel):
     inspect_arg: InspectArg = Field(False, description=inspect_arg_description)
     manual_inspect_image: Optional[NDArrayUint8] = Field(
         description="Image to use as background in the plots for visualising the analysis data",

@@ -4,11 +4,11 @@ import numpy as np
 from pydantic import validator
 from pydantic_numpy.dtype import NDArrayFp64
 
-from bikipy.core.base_class import BaseBikipy
+from bikipy.core.base_class import BikipyModel
 from bikipy.utils.math.geometry import clockwise_sort_points
 
 
-class Graph(BaseBikipy):
+class Graph(BikipyModel):
     vertices: NDArrayFp64 = ...
 
     @validator("vertices")

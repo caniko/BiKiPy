@@ -21,8 +21,8 @@ logger = getLogger(__name__)
 def proximity_filter(
     perimeter: SinglePerimeter,
     inside_perimeter_border: NDArrayFp64,
-    outside_perimeter: NDArrayFp64,
     perimeter_border_normal_pixels: float | NDArrayFp64,
+    outside_perimeter: NDArrayFp64,
     inspect_video: Optional[VideoMetadata] = None,
     inspect: bool = False,
     inspect_pixels: bool = False,
@@ -32,6 +32,8 @@ def proximity_filter(
     Filter with respect to proximity rules. (1) The inside_perimeter_border has to be in front of perimeter, but inside the perimeter;
     (2) the outside_perimeter is outside the perimeter.
 
+    :param inspect_pixels:
+    :param inspect_video:
     :param perimeter:
     :param inside_perimeter_border: Cartesian coordinates of the inside_perimeter_border
     :param outside_perimeter: Cartesian coordinates of the center of mass

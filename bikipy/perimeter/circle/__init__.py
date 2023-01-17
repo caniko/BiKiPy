@@ -6,7 +6,7 @@ from pydantic import validator
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
 from bikipy.core.video import VideoMetadata
-from bikipy.feature.attention.gaze import gaze_direction_filter_circle_triangle
+from bikipy.feature.attention.ray import ray_direction_filter_circle_triangle
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.utils.math.inside.ellipse import point_inside_ellipse
 from bikipy.utils.math.vector import unit_vector
@@ -80,12 +80,12 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         """
         return unit_vector(self.center_meters - coordinates)
 
-    def gaze_direction_filter(self, *args, **kwargs) -> NDArrayBool:
+    def ray_direction_filter(self, *args, **kwargs) -> NDArrayBool:
         try:
             kwargs["inspect"] = kwargs["inspect_pixels"]
         except KeyError:
             pass
-        return gaze_direction_filter_circle_triangle(self, *args, **kwargs)
+        return ray_direction_filter_circle_triangle(self, *args, **kwargs)
 
     def plot_perimeter_on_ax(
         self, ax, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs

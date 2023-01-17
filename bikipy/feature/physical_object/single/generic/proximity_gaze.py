@@ -39,18 +39,18 @@ class ProximityRayCast(AbcAnimalProfile):
     def proximity_boolean_index(self) -> NDArrayBool:
         return proximity_filter(
             self.physical_object.perimeter,
-            self._gaze_travel_direction_point,
-            self._outside_perimeter_point if self.outside_perimeter_point_label else self._gaze_start_point,
+            self._ray_travel_direction_point,
             self.perimeter_border_normal_pixels,
+            self._outside_perimeter_point if self.outside_perimeter_point_label else self._ray_start_point,
             manual_ax=self.proximity_ax,
             **self.physical_object._global_attention_kwargs,
         )
 
     @cached_property
     def ray_boolean_index(self) -> NDArrayBool:
-        return self.physical_object.perimeter.gaze_direction_filter(
-            self._gaze_travel_direction_point,
-            self._gaze_start_point,
+        return self.physical_object.perimeter.ray_direction_filter(
+            self._ray_travel_direction_point,
+            self._ray_start_point,
             self.ray_maximum_radians,
             manual_ax=self.ray_ax,
             **self.physical_object._global_attention_kwargs,
@@ -65,9 +65,9 @@ class ProximityRayCast(AbcAnimalProfile):
         return self.physical_object.reader[self.outside_perimeter_point_label].values
 
     @property
-    def _gaze_start_point(self) -> NDArrayFp64:
-        return self.physical_object.reader[self.gaze_start_point_label].values
+    def _ray_start_point(self) -> NDArrayFp64:
+        return self.physical_object.reader[self.ray_start_point_label].values
 
     @property
-    def _gaze_travel_direction_point(self) -> NDArrayFp64:
-        return self.physical_object.reader[self.gaze_travel_direction_point_label].values
+    def _ray_travel_direction_point(self) -> NDArrayFp64:
+        return self.physical_object.reader[self.ray_travel_direction_point_label].values

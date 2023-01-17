@@ -1,5 +1,5 @@
-from bikipy.core.base_class import BaseBikipy
+from bikipy.core.base_class import BikipyModel
 
 
-class SingleMovingPerimeterMixin(BaseBikipy):
+class SingleMovingPerimeterMixin(BikipyModel):
     pass

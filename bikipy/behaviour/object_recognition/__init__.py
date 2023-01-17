@@ -17,16 +17,14 @@ class ObjectRecognitionTrialMixin(AbstractTrial, ABC):
         ...,
         description="The magnitude of the normal between the perimeter and the perimeter given in meters",
     )
-    gaze_start_point_label: str = Field(
-        ..., description="Label of the eye center (or the origin of the gaze) in the df"
-    )
-    gaze_travel_direction_point_label: str = Field(
-        ..., description="Label signifying the area where the gaze vector will be cast"
+    ray_start_point_label: str = Field(..., description="Label of the eye center (or the origin of the ray) in the df")
+    ray_travel_direction_point_label: str = Field(
+        ..., description="Label signifying the area where the ray vector will be cast"
     )
 
-    outside_perimeter_point_label: Optional[str] = Field(description="Label signifying the area where the gaze vector")
+    outside_perimeter_point_label: Optional[str] = Field(description="Label signifying the area where the ray vector")
 
-    maximum_degrees_inter_gaze_perimeter: float = 45
+    maximum_degrees_inter_ray_perimeter: float = 45
 
     physical_object_inspect: bool = False
 
@@ -54,18 +52,18 @@ class ObjectRecognitionTrialMixin(AbstractTrial, ABC):
         return upstream_list
 
     @cached_property
-    def maximum_radians_inter_gaze_perimeter(self) -> float:
-        return np.deg2rad(self.maximum_degrees_inter_gaze_perimeter)
+    def maximum_radians_inter_ray_perimeter(self) -> float:
+        return np.deg2rad(self.maximum_degrees_inter_ray_perimeter)
 
     @cached_property
     def physical_object_keyword_arguments(self) -> dict[str, Any]:
         return {
             "reader": self.reader,
             "trial_obj_label": self.label,
-            "gaze_travel_direction_point_label": self.gaze_travel_direction_point_label,
-            "gaze_start_point_label": self.gaze_start_point_label,
+            "ray_travel_direction_point_label": self.ray_travel_direction_point_label,
+            "ray_start_point_label": self.ray_start_point_label,
             "outside_perimeter_point_label": self.outside_perimeter_point_label,
-            "maximum_radians_inter_gaze_perimeter": self.maximum_radians_inter_gaze_perimeter,
+            "maximum_radians_inter_ray_perimeter": self.maximum_radians_inter_ray_perimeter,
             "perimeter_border_normal_pixels": self.perimeter_border_normal_pixels,
             "inspect_arg": self.inspect_arg,
             "manual_video": self.video,

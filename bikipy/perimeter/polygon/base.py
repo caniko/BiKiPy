@@ -207,34 +207,34 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
         return ray_intersection_points_on_polygon[closest_boolean_index]
 
-    def gaze_direction_filter(
+    def ray_direction_filter(
         self,
-        gaze_travel_direction_point: NDArrayFp64,
-        gaze_start_point: NDArrayFp64,
+        ray_travel_direction_point: NDArrayFp64,
+        ray_start_point: NDArrayFp64,
         max_radians: float,
         angular_resolution: int = 400,
         manual_ax: Any = None,
         **inspect_kwargs,
     ) -> NDArrayBool:
         """
-        Determine if the object is within the gaze cone
+        Determine if the object is within the ray cone
 
         This problem is called the "in line of sight" (ilos) problem, and is non-trivial. This is not the best solution
         in terms of speed for our application; nevertheless, it is quite robust and had the lowest implementation time.
         The solution is to emit rays from
 
-        :param gaze_travel_direction_point:
-        :param gaze_start_point:
+        :param ray_travel_direction_point:
+        :param ray_start_point:
         :param max_radians:
         :param angular_resolution:
         :param inspect_kwargs:
         :return:
         """
-        gaze_vectors = gaze_travel_direction_point - gaze_start_point
+        ray_vectors = ray_travel_direction_point - ray_start_point
 
         in_direct_los = self.ray_intersects_on_polygon(
-            gaze_travel_direction_point,
-            gaze_vectors,
+            ray_travel_direction_point,
+            ray_vectors,
         )
         if np.all(in_direct_los):
             return in_direct_los
@@ -244,25 +244,25 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         angles = np.concatenate([negative_angles, positive_angles])
 
         not_in_direct_los = ~in_direct_los
-        rotated_gaze_vectors = rotate_vectors_with_angle(gaze_vectors[not_in_direct_los], angles)
+        rotated_ray_vectors = rotate_vectors_with_angle(ray_vectors[not_in_direct_los], angles)
 
-        in_tolerable_los = np.empty(rotated_gaze_vectors.shape[:2])
+        in_tolerable_los = np.empty(rotated_ray_vectors.shape[:2])
         for i in range(angular_resolution * 2):
             in_tolerable_los[i] = self.ray_intersects_on_polygon(
-                gaze_travel_direction_point[not_in_direct_los],
-                rotated_gaze_vectors[i],
+                ray_travel_direction_point[not_in_direct_los],
+                rotated_ray_vectors[i],
             )
         in_tolerable_los = np.any(in_tolerable_los, axis=0)
         result = project_mask_to_original(in_tolerable_los, in_direct_los) | in_direct_los
 
         if self.inspect_arg or manual_ax:
-            from bikipy.feature.attention.gaze import gaze_inspection_plot
+            from bikipy.feature.attention.ray import ray_inspection_plot
 
-            gaze_inspection_plot(
+            ray_inspection_plot(
                 self,
                 result,
-                gaze_vectors,
-                gaze_travel_direction_point,
+                ray_vectors,
+                ray_travel_direction_point,
                 manual_ax=manual_ax,
                 **inspect_kwargs,
             )

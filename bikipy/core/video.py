@@ -21,7 +21,7 @@ from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
 
 from bikipy import runtime_settings
-from bikipy.core.base_class import BaseBikipy
+from bikipy.core.base_class import BikipyModel
 from bikipy.core.typing import MetersPerPixel
 from bikipy.utils.image import read_image_from_path
 from bikipy.utils.plot.io import ax_imshow_gray
@@ -35,7 +35,7 @@ _TICK_END_OFFSET_RATIO = 0.9
 _can_only_be_set_manually = {"meters_per_pixel", "image_resize_multiplier"}
 
 
-class _VideoMetadataBase(BaseBikipy):
+class _VideoMetadataBase(BikipyModel):
     class Config:
         keep_untouched = (cached_property,)
 

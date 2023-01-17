@@ -57,10 +57,10 @@ class TriangularPerimeter(BasePolygonPerimeter):
             (c1 < 0.0) & (c2 < 0.0) & (c3 < 0.0),
         )
 
-    def gaze_direction_filter(
+    def ray_direction_filter(
         self,
-        gaze_travel_direction_point: NDArrayFp64,
-        gaze_start_point: NDArrayFp64,
+        ray_travel_direction_point: NDArrayFp64,
+        ray_start_point: NDArrayFp64,
         max_radians: float,
         manual_ax: Any = None,
         **kwargs,
@@ -70,16 +70,16 @@ class TriangularPerimeter(BasePolygonPerimeter):
                 kwargs["inspect"] = kwargs["inspect_pixels"]
             except KeyError:
                 pass
-            return self.circle.gaze_direction_filter_circle_triangle(
-                gaze_travel_direction_point=gaze_travel_direction_point,
-                gaze_start_point=gaze_start_point,
+            return self.circle.ray_direction_filter_circle_triangle(
+                ray_travel_direction_point=ray_travel_direction_point,
+                ray_start_point=ray_start_point,
                 max_radians=max_radians,
                 manual_ax=manual_ax,
                 **kwargs,
             )
-        return super().gaze_direction_filter(
-            gaze_travel_direction_point=gaze_travel_direction_point,
-            gaze_start_point=gaze_start_point,
+        return super().ray_direction_filter(
+            ray_travel_direction_point=ray_travel_direction_point,
+            ray_start_point=ray_start_point,
             max_radians=max_radians,
             manual_ax=manual_ax,
             **kwargs,
