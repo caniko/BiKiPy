@@ -94,7 +94,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
         description="This is a flagg used by the developer to signal the use of bikipy ingress to the class. Currently, it only affects augmented df caching",
     )
 
-    _post_read_midpoints: set = Field(default_factory=set)
+    _post_read_midpoints: set = set()
     _time_index_derived_fps: float | None
     _region_of_interest_to_fused_neighbouring_points: dict[str, NDArrayUint8] = Field(default_factory=dict)
     _cached_augmented_df: pd.DataFrame | None
@@ -170,20 +170,16 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
     def cached_augmented_df_path(self) -> FilePath:
         return self.df_path.with_name(self.augmented_file_name)
 
-    @property
+    @cached_property
     def augmented(self) -> pd.DataFrame:
         """
         :return: Tracking and augmented data stored in the same frame. The augmented data should
         include midpoints and inner interpolations.
         """
-        if self._cached_augmented_df:
-            return self._cached_augmented_df
+        if self.cached_augmented_df_path.exists():
+            return pd.read_parquet(self.cached_augmented_df_path)
 
-        if self.cache_meters_augmented and self.cached_augmented_df_path.exists():
-            self._cached_augmented_df = pd.read_parquet(self.cached_augmented_df_path)
-            return self._cached_augmented_df
-
-        self._cached_augmented_df = self.raw_df.copy()
+        result = self.raw_df.copy()
 
         # Remove warm up tail with low likelihoods
         tail_likelihood_capped_boolean_idx = np.where(self.combined_raw_likelihood >= self.required_tail_likelihood)[0]
@@ -191,7 +187,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
         logger.debug(
             f"Likelihood filtering (>={self.required_tail_likelihood}): " f"Slicing [{start_idx}:] from coordinates"
         )
-        self._cached_augmented_df = self._cached_augmented_df.iloc[start_idx:]
+        result = result.iloc[start_idx:]
 
         if self.trial_enclosure:
             logger.debug(
@@ -199,15 +195,15 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
                 f"Removing coordinates outside the defined trial_enclosure, {self.trial_enclosure.label}"
             )
             for ptl in self.physically_tracked_labels:
-                self._cached_augmented_df.loc[:, ptl][
+                result.loc[:, ptl][
                     ~self.trial_enclosure.compute_confined_coordinate_boolean_index(
-                        self._cached_augmented_df.loc[:, pd.IndexSlice[ptl, ("x", "y")]].values
+                        result.loc[:, pd.IndexSlice[ptl, ("x", "y")]].values
                     )
                 ] = BAD_COORDINATE
 
         if self.model:
             logger.debug(f"Filtering {self.df_path.stem} with the {self.model_method} method")
-            self._cached_augmented_df = model_data(self._cached_augmented_df, self.model_method, **self.model_kwargs)
+            result = model_data(result, self.model_method, **self.model_kwargs)
 
         crop_frames = None
         if self.df_is_timestamped:
@@ -226,38 +222,26 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
                     f"> total of {self.raw_frames} number_of_frames"
                 )
             else:
-                self._cached_augmented_df = (
-                    self._cached_augmented_df.iloc[self.raw_frames - crop_frames :]
-                    if self.crop_from_end
-                    else self._cached_augmented_df.iloc[:crop_frames]
+                result = (
+                    result.iloc[self.raw_frames - crop_frames :] if self.crop_from_end else result.iloc[:crop_frames]
                 )
 
         if self.invert_y_axis:
-            self._cached_augmented_df.loc[:, pd.IndexSlice[:, "y"]] = (
-                self.video.vertical_resolution - self._cached_augmented_df.loc[:, pd.IndexSlice[:, "y"]]
-            )
+            result.loc[:, pd.IndexSlice[:, "y"]] = self.video.vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
 
         if self.x_axis_crop_end_point:
-            self._cached_augmented_df.loc[:, pd.IndexSlice[:, "x"]] = (
-                self.x_axis_crop_end_point + self._cached_augmented_df.loc[:, pd.IndexSlice[:, "x"]]
-            )
+            result.loc[:, pd.IndexSlice[:, "x"]] = self.x_axis_crop_end_point + result.loc[:, pd.IndexSlice[:, "x"]]
         if self.y_axis_crop_end_point:
-            self._cached_augmented_df.loc[:, pd.IndexSlice[:, "y"]] = (
-                self._cached_augmented_df.loc[:, pd.IndexSlice[:, "y"]] - self.y_axis_crop_end_point
-            )
+            result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] - self.y_axis_crop_end_point
 
         # convert to meters
         if isinstance(self.video.meters_per_pixel, float):
-            self._cached_augmented_df.loc[:, pd.IndexSlice[:, ("x", "y")]] = (
-                self._cached_augmented_df.loc[:, pd.IndexSlice[:, ("x", "y")]] * self.video.meters_per_pixel
+            result.loc[:, pd.IndexSlice[:, ("x", "y")]] = (
+                result.loc[:, pd.IndexSlice[:, ("x", "y")]] * self.video.meters_per_pixel
             )
         elif isinstance(self.video.meters_per_pixel, np.ndarray):
-            self._cached_augmented_df.loc[:, pd.IndexSlice[:, "x"]] = (
-                self._cached_augmented_df.loc[:, pd.IndexSlice[:, "x"]] * self.video.meters_per_pixel[0]
-            )
-            self._cached_augmented_df.loc[:, pd.IndexSlice[:, "y"]] = (
-                self._cached_augmented_df.loc[:, pd.IndexSlice[:, "y"]] * self.video.meters_per_pixel[1]
-            )
+            result.loc[:, pd.IndexSlice[:, "x"]] = result.loc[:, pd.IndexSlice[:, "x"]] * self.video.meters_per_pixel[0]
+            result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] * self.video.meters_per_pixel[1]
         else:
             raise RuntimeError(f"Could not match video.meters_per_pixel type: {type(self.video.meters_per_pixel)}")
 
@@ -266,8 +250,8 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
             midpoint_loop_iterator = list(self.midpoint_groups.items())
             for name, group in midpoint_loop_iterator:
                 if (self.physically_tracked_labels | generated_midpoints).issuperset(group):
-                    self._cached_augmented_df = pd.concat(
-                        (self._cached_augmented_df, self._compute_midpoint(self._cached_augmented_df, group, name)),
+                    result = pd.concat(
+                        (result, self._compute_midpoint(result, group, name)),
                         axis=1,
                     )
                     generated_midpoints.add(name)
@@ -284,9 +268,9 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
                     raise ValueError(msg)
 
         if self.cache_meters_augmented:
-            self._cache_augmented(self._cached_augmented_df)
+            self._cache_augmented(result)
 
-        return self._cached_augmented_df
+        return result
 
     @property
     def df(self) -> pd.DataFrame:
@@ -360,22 +344,6 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
             return self._region_of_interest_to_fused_neighbouring_points[region_of_interest]
         coordinates = self.df.loc[:, pd.IndexSlice[region_of_interest, ("x", "y")]].values
         NearestNeighbors().fit(coordinates)
-
-    def add_midpoint(self, start_label: str, end_label: str, midpoint_label: str, **midpoint_kwargs) -> pd.DataFrame:
-        if midpoint_label in self.augmented:  # ensures that self._cached_augmented_df is defined
-            return self._cached_augmented_df
-
-        self._cached_augmented_df = pd.concat(
-            (
-                self._cached_augmented_df,
-                self._compute_midpoint(self.augmented, (start_label, end_label), midpoint_label, **midpoint_kwargs),
-            ),
-            axis=1,
-        )
-
-        if self.cache_meters_augmented:
-            self._cache_augmented(self._cached_augmented_df)
-        return self._cached_augmented_df
 
     def _compute_midpoint(
         self,

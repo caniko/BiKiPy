@@ -3,7 +3,7 @@ from typing import ClassVar
 
 from pydantic import DirectoryPath, PositiveInt
 
-from bikipy.core.typing import TrialId
+from bikipy.core.typing import Label
 from bikipy.ingress.workflow.base import BaseIngress
 
 logger = getLogger(__name__)
@@ -36,7 +36,7 @@ class PhaseIngress(BaseIngress):
                     stage_index = self.metadata.loc[trial_id, "Stage"]
                     self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(stage_index)
 
-    def trialwise_plugins_for_trial_id(self, trial_id: TrialId, trial_directory: DirectoryPath):
+    def trialwise_plugins_for_trial_id(self, trial_id: Label, trial_directory: DirectoryPath):
         return self._trialwise_plugins_for_trial_id(trial_id, trial_directory, "{trial_id}-{plugin_code_key}*")
 
 

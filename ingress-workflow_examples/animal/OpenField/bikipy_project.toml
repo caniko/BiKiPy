@@ -33,7 +33,11 @@ center = "metadata"
 
 [manual_reader_kwargs]
 [manual_reader_kwargs.defined]
+object_tracking_label_for_kinematics = ""
 cache_meters_augmented = false
+
+[manual_reader_kwargs.required]
+object_tracking_label_for_kinematics = "string"
 
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"

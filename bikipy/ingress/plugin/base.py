@@ -7,7 +7,7 @@ from pydantic import BaseModel, DirectoryPath, Field, FilePath
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.base_class import BikipyModel
-from bikipy.core.typing import TrialId
+from bikipy.core.typing import Label
 from bikipy.utils.makesense import get_only_point_from_makesense
 
 
@@ -54,7 +54,7 @@ class BasePlugin(BikipyModel, ABC):
             return int(self.plugin_name[0])
 
     @abstractmethod
-    def trialwise_and_metadata(self, trial_id: TrialId, naive: bool = False):
+    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False):
         ...
 
     @property

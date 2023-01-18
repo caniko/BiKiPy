@@ -33,12 +33,17 @@ center = ""
 
 [manual_reader_kwargs]
 [manual_reader_kwargs.defined]
+object_tracking_label_for_kinematics = ""
 model = false
 
 [manual_reader_kwargs.defined.midpoint_groups]
 center_eye = ["left_ear", "right_ear"]
 torso = ["center_eye", "tail_base"]
 
+
+
+[manual_reader_kwargs.required]
+object_tracking_label_for_kinematics = "string"
 
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"

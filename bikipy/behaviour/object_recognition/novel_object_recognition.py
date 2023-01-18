@@ -11,7 +11,7 @@ from bikipy.behaviour.core.enclosure.rectangle import (
 from bikipy.behaviour.object_recognition.generic import (
     RectangleEnclosedPhysicalObjectTrial,
 )
-from bikipy.core.typing import TrialId
+from bikipy.core.typing import Label
 from bikipy.perimeter.base import SinglePerimeter
 
 logger = getLogger(__name__)
@@ -27,7 +27,7 @@ class NortTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
     trial_label = "Training"
 
     @property
-    def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
+    def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.variable, self.familiar
 
 
@@ -60,7 +60,7 @@ class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
         return upstream_list
 
     @property
-    def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
+    def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.novel, self.familiar
 
     @cached_property
@@ -111,7 +111,7 @@ class NortExperiment(RectangleEnclosedExperiment):
         "novelty_observation": 2,
     }
 
-    def trial_keyword_arguments(self, trial_id: TrialId) -> dict:
+    def trial_keyword_arguments(self, trial_id: Label) -> dict:
         upstream = super().trial_keyword_arguments(trial_id)
 
         match self.trial_id_to_trial_class_name[trial_id]:

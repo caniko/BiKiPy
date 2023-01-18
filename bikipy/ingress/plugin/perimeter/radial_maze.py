@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from pydantic_numpy import NDArrayFp64
 
-from bikipy.core.typing import TrialId
+from bikipy.core.typing import Label
 from bikipy.ingress.plugin.base import BasePluginDirectory, HasReferenceMixin
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
@@ -114,7 +114,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
 
         return grouped
 
-    def trialwise_and_metadata(self, trial_id: TrialId, naive: bool = False) -> dict[str, tuple[SinglePerimeter, ...]]:
+    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> dict[str, tuple[SinglePerimeter, ...]]:
         return self.grouped_radial_maze_perimeters
 
     @property

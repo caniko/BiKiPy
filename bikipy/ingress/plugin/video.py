@@ -3,7 +3,7 @@ from functools import cached_property
 from mextractor import constants
 from pydantic import DirectoryPath, FilePath
 
-from bikipy.core.typing import TrialId
+from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadata
 from bikipy.ingress.plugin.base import BasePlugin
 
@@ -22,7 +22,7 @@ class PluginVideo(BasePlugin):
             return VideoMetadata.from_mextractor(self.data_path)
         return VideoMetadata.from_path(video_path=self.data_path)
 
-    def trialwise_and_metadata(self, trial_id: TrialId, naive: bool = False) -> VideoMetadata:
+    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> VideoMetadata:
         return self.video
 
     @property

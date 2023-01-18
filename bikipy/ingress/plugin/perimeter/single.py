@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
-from bikipy.core.typing import TrialId
+from bikipy.core.typing import Label
 from bikipy.ingress.plugin.perimeter.base import AbcPerimeterPlugin
 from bikipy.perimeter.base import (
     SinglePerimeter,
@@ -64,7 +64,7 @@ class PluginSinglePerimeter(AbcPerimeterPlugin):
             return _open_label_to_trial_label_df(self.ingress.metadata_path)
 
     def trialwise_and_metadata(
-        self, trial_id: TrialId, naive: bool = False
+        self, trial_id: Label, naive: bool = False
     ) -> dict[str, SinglePerimeter] | SinglePerimeter:
         result = {}
         for label, perimeter in self.perimeter_mapper(trial_id).items():

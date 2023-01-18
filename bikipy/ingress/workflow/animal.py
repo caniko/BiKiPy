@@ -3,7 +3,7 @@ from typing import ClassVar
 
 from pydantic import DirectoryPath
 
-from bikipy.core.typing import TrialId
+from bikipy.core.typing import Label
 from bikipy.ingress.workflow.base import BaseIngress
 
 logger = getLogger(__name__)
@@ -58,5 +58,5 @@ class AnimalIngress(BaseIngress):
                     **plugin_data,
                 }
 
-    def trialwise_plugins_for_trial_id(self, trial_id: TrialId, trial_directory: DirectoryPath):
+    def trialwise_plugins_for_trial_id(self, trial_id: Label, trial_directory: DirectoryPath):
         return self._trialwise_plugins_for_trial_id(trial_id, trial_directory, "{trial_id}.{plugin_code_key}*")

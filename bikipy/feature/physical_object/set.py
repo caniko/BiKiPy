@@ -13,6 +13,7 @@ from pydantic import validator
 from pydantic.generics import GenericModel
 from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8
 
+from bikipy.behaviour.core import Trial
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
@@ -161,7 +162,7 @@ class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
 
 
 class GenericPhysicalObjectSet(GenericModel, Generic[PhysicalObjectProfile], VideoMetadataMixin):
-    physical_objects: tuple[PhysicalObjectProfile, ...] = ...
+    trial: Trial
 
     physical_object_profile_class: ClassVar[PhysicalObjectProfileCLS] = ...
 
@@ -259,27 +260,12 @@ class GenericPhysicalObjectSet(GenericModel, Generic[PhysicalObjectProfile], Vid
 
         return ax
 
-    @classmethod
-    def from_perimeter(cls, *perimeters, **kwargs):
-        return cls(
-            physical_objects=tuple(
-                cls.physical_object_profile_class(perimeter=perimeter, **kwargs) for perimeter in perimeters
-            )
-        )
-
-    @classmethod
-    def from_perimeter_set(cls, perimeter_set: PerimeterSet):
-        assert not perimeter_set.restricted_perimeters
-        return cls.from_perimeter(*perimeter_set.perimeters)
-
-    @classmethod
-    def from_bikipy_trial(cls, perimeters: Iterable[SinglePerimeter], trial_class):
-        return cls(
-            physical_objects=tuple(
-                cls.physical_object_profile_class(perimeter=perimeter, **trial_class.physical_object_keyword_arguments)
-                for perimeter in perimeters
-            )
-        )
+    @cached_property
+    def physical_objects(self) -> list[PhysicalObjectProfile, ...]:
+        return [
+            self.physical_object_profile_class(perimeter=perimeter, manual_video=self.video)
+            for perimeter in self.trial.physical_object_perimeters
+        ]
 
 
 PhysicalObjectSet = TypeVar("PhysicalObjectSet", bound=GenericPhysicalObjectSet)

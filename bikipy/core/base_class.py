@@ -6,7 +6,7 @@ from compress_pickle import compress_pickle
 from pydantic import BaseModel, DirectoryPath, Field, FilePath
 from pydantic_numpy.dtype import NDArrayUint8
 
-from bikipy.core.typing import TrialId
+from bikipy.core.typing import Label
 from bikipy.utils.plot.inspect import InspectArg, inspect_arg_description
 
 
@@ -27,9 +27,19 @@ class BikipyModel(BaseModel):
         """
         return set()
 
+    @classmethod
+    @property
+    def include_from_settings_schema(cls) -> set[str]:
+        """
+        Some required fields for a class are sometimes highly specific to its respective object. These fields should
+        be recorded in this class-property to be excluded by the settings generator function in the ingress module
+        :return:
+        """
+        return set()
+
 
 class BaseBikipyHashable(BikipyModel):
-    label: Optional[TrialId]
+    label: Optional[Label]
     int_id: Optional[int]
 
     @classmethod

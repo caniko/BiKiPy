@@ -1,4 +1,4 @@
-from bikipy.core.typing import TrialId
+from bikipy.core.typing import Label
 from bikipy.ingress.plugin.perimeter.base import AbcPerimeterPlugin
 
 
@@ -12,5 +12,5 @@ class PluginEnclosure(AbcPerimeterPlugin):
     def globally_defined(self):
         return self.perimeter_mapper(self)
 
-    def trialwise_and_metadata(self, trial_id: TrialId, naive: bool = False):
+    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False):
         return self.perimeter_mapper(self)

@@ -33,7 +33,11 @@ center = ""
 
 [manual_reader_kwargs]
 [manual_reader_kwargs.defined]
+object_tracking_label_for_kinematics = ""
 cache_meters_augmented = false
+
+[manual_reader_kwargs.required]
+object_tracking_label_for_kinematics = "string"
 
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"
@@ -139,10 +143,14 @@ moving_field_name = "string"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
 
 [perimeter.trial_perimeters]
-[perimeter.trial_perimeters.start_perimeter]
-[perimeter.trial_perimeters.start_perimeter.defined]
+[perimeter.trial_perimeters.reward_perimeter]
+[perimeter.trial_perimeters.reward_perimeter.defined]
+radius_meters = ""
 
-[perimeter.trial_perimeters.start_perimeter.optional]
+[perimeter.trial_perimeters.reward_perimeter.required]
+radius_meters = "number"
+
+[perimeter.trial_perimeters.reward_perimeter.optional]
 derive_meters_per_pixel = "boolean -> False"
 derived_meters_per_pixel_source = "string"
 derived_meters_per_pixel_source_metric_length = "number"
@@ -158,14 +166,10 @@ minimum_frame_length = "integer -> 600"
 moving_field_name = "string"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
 
-[perimeter.trial_perimeters.reward_perimeter]
-[perimeter.trial_perimeters.reward_perimeter.defined]
-radius_meters = ""
+[perimeter.trial_perimeters.start_perimeter]
+[perimeter.trial_perimeters.start_perimeter.defined]
 
-[perimeter.trial_perimeters.reward_perimeter.required]
-radius_meters = "number"
-
-[perimeter.trial_perimeters.reward_perimeter.optional]
+[perimeter.trial_perimeters.start_perimeter.optional]
 derive_meters_per_pixel = "boolean -> False"
 derived_meters_per_pixel_source = "string"
 derived_meters_per_pixel_source_metric_length = "number"

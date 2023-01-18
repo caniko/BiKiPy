@@ -35,7 +35,7 @@ class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTri
     trial_label = "Training"
 
     @property
-    def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
+    def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.object_1, self.object_2
 
 
@@ -49,7 +49,7 @@ class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial
     trial_label = "Update"
 
     @property
-    def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
+    def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.object_1, self.object_3
 
 
@@ -65,7 +65,7 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
     trial_label = "Test"
 
     @property
-    def all_physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
+    def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.object_1, self.object_2, self.object_3, self.object_4
 
     # @cached_property

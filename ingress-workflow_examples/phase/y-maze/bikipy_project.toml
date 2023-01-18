@@ -33,6 +33,7 @@ center = ""
 
 [manual_reader_kwargs]
 [manual_reader_kwargs.defined]
+object_tracking_label_for_kinematics = ""
 x_axis_crop_end_point = 95.0
 y_axis_crop_end_point = 75.0
 invert_y_axis = true
@@ -43,6 +44,10 @@ torso = ["center_eye", "base_tail"]
 
 
 
+
+
+[manual_reader_kwargs.required]
+object_tracking_label_for_kinematics = "string"
 
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"

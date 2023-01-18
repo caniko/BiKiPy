@@ -18,7 +18,7 @@ from pydantic_numpy.dtype import NDArrayFp64
 from bikipy import set_bikipy_settings_from_dict
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment
 from bikipy.core.base_class import BikipyModel
-from bikipy.core.typing import TrialId
+from bikipy.core.typing import Label
 from bikipy.ingress.plugin import ALL_PLUGINS, PluginMeterPerPixel, ingress_key_to_model
 from bikipy.ingress.plugin.base import Plugin
 from bikipy.ingress.plugin.meters_per_pixel import (
@@ -80,9 +80,9 @@ class BaseIngress(BikipyModel, ABC):
     deprecated_project_settings_file_name: bool = False
 
     _experiment_data_defined: bool = False
-    _trial_id_to_trial_class_name: dict[TrialId, str] = {}
+    _trial_id_to_trial_class_name: dict[Label, str] = {}
     _common_trial_keyword_arguments: dict[str, Any] = {}
-    _trial_id_to_keyword_arguments: dict[TrialId, dict[str, Any]] = defaultdict_dict_factory()
+    _trial_id_to_keyword_arguments: dict[Label, dict[str, Any]] = defaultdict_dict_factory()
     _trial_class_name_to_keyword_arguments: dict[str, dict] = {}
 
     _trial_id_to_designator_id: dict[str, str] = {}
@@ -138,6 +138,9 @@ class BaseIngress(BikipyModel, ABC):
             experiment = experiment.trial_sequence_repetition(self.settings["ingress"]["trial_sequence_loops"])
         if self.settings["ingress"][FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD]:
             experiment = experiment.set_first_trial_to_habituation()
+
+        for trial_class in experiment.trial_classes:
+            trial_class.animal_profile = self.settings["ingress"]["animal_profile"]
 
         return experiment
 
@@ -488,7 +491,7 @@ class BaseIngress(BikipyModel, ABC):
 
         self._experiment_data_defined = True
 
-    def trial_id_exists(self, trial_id: TrialId) -> bool:
+    def trial_id_exists(self, trial_id: Label) -> bool:
         if trial_id in self.metadata.index:
             return True
         if self.settings["ingress"][METADATA_TRIAL_IDS_ARE_HIGHER_LEVEL_FIELD] and isinstance(trial_id, str):
@@ -661,7 +664,7 @@ class BaseIngress(BikipyModel, ABC):
         return self.experiment_class.stage_index_to_trial_class_name[stage_index]
 
     def _trialwise_plugins_for_trial_id(
-        self, trial_id: TrialId, trial_directory: DirectoryPath, trial_id_plugin_glob_format_string: str
+        self, trial_id: Label, trial_directory: DirectoryPath, trial_id_plugin_glob_format_string: str
     ) -> dict:
         result = {}
         for plugin_model in self._trial_wise_plugins:
@@ -745,6 +748,7 @@ def init_settings(
         },
         "ingress": {
             "method": ingress_method,
+            "animal_profile": "rodent",
             FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD: False,
             METADATA_TRIAL_IDS_ARE_HIGHER_LEVEL_FIELD: False,
             "trial_sequence_loops": 1,
@@ -753,7 +757,7 @@ def init_settings(
             "profile_runtime": True,
         },
         "definition_strategies": {plugin.ingress_key: "" for plugin in ALL_PLUGINS},
-        "manual_reader_kwargs": extended_schema(DataWithLikelihoodReader, with_required=False),
+        "manual_reader_kwargs": extended_schema(DataWithLikelihoodReader, with_required=True),
         "trial": extended_group_schema(experiment_class.trial_sequence),
         "experiment": extended_schema(experiment_class),
     }

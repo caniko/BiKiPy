@@ -4,12 +4,12 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from bikipy.core.typing import TrialId
+from bikipy.core.typing import Label
 from bikipy.utils.plot.inspect import InspectArg
 
 
 class AbstractTrial(BaseModel, ABC):
-    label: Optional[TrialId]
+    label: Optional[Label]
     inspect_arg: Optional[InspectArg]
 
     class Config:

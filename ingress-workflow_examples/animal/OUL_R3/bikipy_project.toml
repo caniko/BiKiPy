@@ -13,11 +13,12 @@ only_physical_cores = false
 
 [ingress]
 method = "animal"
+animal_profile = "rodent"
 first_stage_is_habituation = true
 metadata_trial_ids_are_higher_level = false
 trial_sequence_loops = ""
 framewise_coordinates_file_suffix = ".h5"
-dataset_directory = "/run/media/can/E8D4-4CC5/data/OUL/OUL_120123_organized_mextracted/"
+dataset_directory = "/data/behaviour_dataset/dejana/OUL_120123_organized_mextracted"
 profile_runtime = true
 
 [definition_strategies]
@@ -32,8 +33,14 @@ timestamp = "trial-wise"
 center = "metadata"
 
 [manual_reader_kwargs]
+[manual_reader_kwargs.defined]
+object_tracking_label_for_kinematics = "center_eye"
+
 [manual_reader_kwargs.defined.midpoint_groups]
 center_eye = ["left_ear", "right_ear"]
+
+[manual_reader_kwargs.required]
+object_tracking_label_for_kinematics = "string"
 
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"

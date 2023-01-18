@@ -36,7 +36,7 @@ from yaspin.spinners import Spinners
 from bikipy import runtime_settings
 from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
-from bikipy.core.typing import TrialId
+from bikipy.core.typing import Label
 from bikipy.core.video import (
     VideoMetadata,
     VideoMetadataMixin,
@@ -65,21 +65,10 @@ logger = getLogger(__name__)
 
 
 class Behaviour(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
-    _live: ClassVar[bool] = False
-
-    @staticmethod
-    def multi_index_names(index_content: Iterable):
-        match max_level := max_len_in_iterable(index_content):
-            case 2:
-                return ["Feature", "Location/Category"]
-            case 3:
-                return ["Stage", "Feature", "Location/Category"]
-            case _:
-                msg = f"The highest level in the feature_column_index is too high, {max_level}:\n{', '.join(index_content)}"
-                raise AttributeError(msg)
+    animal_profile: ClassVar[Literal["rodent"]] = ...
 
 
-class BaseTrial(Behaviour, VideoMetadataMixin):
+class BaseTrial(Behaviour):
     framewise_coordinates_path: FilePath = Field(..., description="Path to file storing coordinate data")
     manual_reader_kwargs: dict = Field(
         ..., description="Keyword arguments that will be passed on the reader objects on init"
@@ -132,6 +121,7 @@ class BaseTrial(Behaviour, VideoMetadataMixin):
 
     experiment_class_name: ClassVar[str] = ...
     trial_label: ClassVar[str] = ...
+
     constant_feature_headers: ClassVar[tuple[tuple[str, ...]] | None] = motion_multi_indexer("All", 2)
 
     second_tolerance: ClassVar[float] = 0.15
@@ -477,7 +467,7 @@ class BaseExperiment(Behaviour):
             )
             raise AttributeError(msg)
 
-    def trial_keyword_arguments(self, trial_id: TrialId) -> dict:
+    def trial_keyword_arguments(self, trial_id: Label) -> dict:
         """
         Function useful for customizing initiation parameters for trial objects
         """
