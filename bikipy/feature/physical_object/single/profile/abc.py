@@ -2,16 +2,16 @@ from abc import abstractmethod, ABC
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Optional, TypeVar, Type, ClassVar
+from typing import Any, Optional, TypeVar, Type, ClassVar, TYPE_CHECKING
 
 import numpy as np
+import pandas as pd
 from pydantic_numpy.dtype import NDArrayBool
 
 from bikipy.core.base_class import BaseBikipyInspectMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadataMixin, VideoMetadata
 from bikipy.feature.attention.model import AttentionModelMixin
-from bikipy.feature.physical_object.set import PhysicalObjectSet
 from bikipy.feature.physical_object.single.component.abc import AbcObservationComponent
 from bikipy.feature.physical_object.single.component.gaze import GazeComponent
 from bikipy.feature.physical_object.single.component.olfaction import OlfactionComponent
@@ -19,6 +19,9 @@ from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.reader.base import Reader
 from bikipy.utils.plot.inspect import generic_inspection_finalization
+
+if TYPE_CHECKING:
+    from bikipy.feature.physical_object.set import PhysicalObjectSet
 
 logger = getLogger(__name__)
 
@@ -36,7 +39,7 @@ class AbcPhysicalObjectProfile(
     AttentionModelMixin,
     ABC,
 ):
-    physical_object_set: PhysicalObjectSet
+    physical_object_set: "PhysicalObjectSet"
     perimeter: SinglePerimeter
 
     # Inspection fields
@@ -60,20 +63,20 @@ class AbcPhysicalObjectProfile(
 
         return [
             observation_component_class(
-                perimeter=self.perimeter, **self.physical_object_set.trial.physical_object_component_kwargs
+                perimeter=self.perimeter,
+                axes_row=self._axes[i],
+                **self.physical_object_set.trial.physical_object_component_kwargs,
             )
-            for observation_component_class in self.observation_component_classes
+            for i, observation_component_class in enumerate(self.observation_component_classes)
         ]
 
     @cached_property
     def label(self) -> Label:
-        first_label = self.observation_components[0].perimeter.label
-        assert all(first_label == observation_component for observation_component in self.observation_components[1:])
-        return first_label
+        return self.perimeter.label
 
     @cached_property
     def combined_observation_components(self) -> NDArrayBool:
-        result = np.logical_or.reduce((component.combined_sensation for component in self.observation_components))
+        result = np.logical_or.reduce([component.combined_sensation for component in self.observation_components])
         self.generic_result_plotter(result, self.summary_axes_row[0], "CombinedComponents")
         return result
 
@@ -84,18 +87,44 @@ class AbcPhysicalObjectProfile(
         return result
 
     @cached_property
-    def tolerance_modeled_combined_observation_components(self) -> NDArrayBool:
+    def pre_tolerance_modeled_combined_observation_components(self) -> NDArrayBool:
         result = np.logical_or.reduce(
-            (component.tolerance_modeled_combined_sensation for component in self.observation_components)
+            [component.tolerance_modeled_combined_sensation for component in self.observation_components]
         )
         self.generic_result_plotter(result, self.summary_axes_row[2], "ToleranceModeledCombinedComponents")
         return result
 
     @cached_property
-    def double_tolerance_modeled_combined_observation_components(self) -> NDArrayBool:
-        result = single_node_tolerance_model(self.tolerance_modeled_combined_observation_components, self.video.fps)
+    def pre_post_tolerance_modeled_combined_observation_components(self) -> NDArrayBool:
+        result = single_node_tolerance_model(self.pre_tolerance_modeled_combined_observation_components, self.video.fps)
         self.generic_result_plotter(result, self.summary_axes_row[3], "DoubleToleranceModeledCombinedComponents")
         return result
+
+    def _summary_indexer(self, data_labels: list[str], with_component_label: bool = True) -> pd.MultiIndex:
+        if with_component_label:
+            additive = self.component_label.capitalize()
+            data_labels = [f"{additive}{label}" for label in data_labels]
+        return pd.MultiIndex.from_product([[self.perimeter.label], data_labels])
+
+    @property
+    def summary(self) -> pd.Series:
+        or_summary = pd.Series(
+            [
+                self.boolean_array_to_seconds(self.combined_observation_components),
+                self.boolean_array_to_seconds(self.post_tolerance_modeled_combined_observation_components),
+                self.boolean_array_to_seconds(self.pre_tolerance_modeled_combined_observation_components),
+                self.boolean_array_to_seconds(self.pre_post_tolerance_modeled_combined_observation_components),
+            ],
+            index=pd.MultiIndex.from_product(
+                [
+                    [self.perimeter.label],
+                    ["OR_Observe", "OR_PostTolObserve", "OR_PreTolObserve", "OR_PrePostTolObserve"],
+                ]
+            ),
+        )
+        component_summaries = [component.component_summary for component in self.observation_components]
+        self.inspect_attention()
+        return pd.concat([or_summary, *component_summaries])
 
     def inspect_attention(self) -> None:
         if isinstance(self.inspect_arg, Path):
@@ -108,17 +137,17 @@ class AbcPhysicalObjectProfile(
 
     @property
     def fig(self):
-        if self.fig is not None:
-            return self.fig
-        self._init_matplotlib()
-        return self.fig
+        if self._fig is not None:
+            return self._fig
+        self.observation_components
+        return self._fig
 
     @property
     def axes(self):
-        if self.axes is not None:
-            return self.axes
-        self._init_matplotlib()
-        return self.axes
+        if self._axes is not None:
+            return self._axes
+        self.observation_components
+        return self._axes
 
     @property
     def summary_axes_row(self):
@@ -126,11 +155,11 @@ class AbcPhysicalObjectProfile(
 
     @property
     def number_of_components(self) -> int:
-        return len(self.observation_components)
+        return len(self.observation_component_classes)
 
     @property
     def max_component_row_length(self) -> int:
-        return max(obs_profile.inspection_row_length for obs_profile in self.observation_components)
+        return max(obs_profile.inspection_row_length for obs_profile in self.observation_component_classes)
 
     @property
     def _first_reader(self) -> Reader:

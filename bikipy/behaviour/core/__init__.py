@@ -44,6 +44,7 @@ from bikipy.core.video import (
 )
 from bikipy.feature.motion import Motion, motion_multi_indexer
 from bikipy.feature.physical_object.mixin import PhysicalObjectTrialMixin
+from bikipy.feature.physical_object.set import GenericPhysicalObjectSet
 from bikipy.ingress.plugin import PluginChangeReference, PluginRadial
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
 from bikipy.perimeter.base import (

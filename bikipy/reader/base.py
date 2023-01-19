@@ -137,7 +137,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
 
     @cached_property
     def plot_prepared_kinematic_coordinates(self) -> NDArrayFp64:
-        return self.video.prepare_coordinates_for_plotting(self.kinematic_coordinates.values)
+        return self.video.prepare_coordinates_for_plotting(self.kinematic_coordinates)
 
     @cached_property
     def physically_tracked_labels(self) -> set[str]:

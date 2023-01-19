@@ -5,7 +5,7 @@ Some methods are designed specifically for sets with a specific number of object
 
 from functools import cached_property, reduce
 from logging import getLogger
-from typing import Any, ClassVar, Iterable, Generic, Type, TypeVar
+from typing import Any, ClassVar, Iterable, Generic, Type, TypeVar, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -13,14 +13,20 @@ from pydantic import validator
 from pydantic.generics import GenericModel
 from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8
 
-from bikipy.behaviour.core import Trial
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
-from bikipy.feature.physical_object.single.profile.abc import PhysicalObjectProfile, PhysicalObjectProfileCLS
+from bikipy.feature.physical_object.single.profile.abc import (
+    PhysicalObjectProfile,
+    PhysicalObjectProfileCLS,
+    AbcPhysicalObjectProfile,
+)
 from bikipy.feature.physical_object.single.profile.rodent import RodentProfile
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.reader.base import Reader
+
+if TYPE_CHECKING:
+    from bikipy.behaviour.core import Trial
 
 logger = getLogger(__name__)
 
@@ -162,46 +168,9 @@ class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
 
 
 class GenericPhysicalObjectSet(GenericModel, Generic[PhysicalObjectProfile], VideoMetadataMixin):
-    trial: Trial
+    trial: Any
 
     physical_object_profile_class: ClassVar[PhysicalObjectProfileCLS] = ...
-
-    @validator("physical_objects", pre=True)
-    def more_than_one_object(cls, value):
-        if len(value) <= 1:
-            msg = "Number of physical_objects in a set needs to be more than one"
-            raise ValueError(msg)
-        return value
-
-    @validator("physical_objects", pre=True)
-    def identical_frames(cls, value):
-        if any(len(value[0]) != len(physical_object) for physical_object in value[1:]):
-            msg = (
-                f"The number of frames differ across physical objects:\n"
-                f"{', '.join(str(len(physical_object)) for physical_object in value)}"
-            )
-            raise AttributeError(msg)
-        return value
-
-    @validator("physical_objects", pre=True)
-    def identical_fps(cls, value):
-        if any(value[0].video.fps != physical_object.video.fps for physical_object in value[1:]):
-            msg = (
-                f"Frames per second differ across physical objects:\n"
-                f"{', '.join((physical_object.video.fps for physical_object in value))}"
-            )
-            raise AttributeError(msg)
-        return value
-
-    # @validator("physical_objects")
-    # def readers_must_be_identical(cls, value) -> tuple[PhysicalObject, ...]:
-    #     if len(value) == 1:
-    #         return value
-    #     first_reader = value[0].reader
-    #     if any(first_reader != other_reader for other_reader in value[1:]):
-    #         msg = "Readers of the physical objects are not identical"
-    #         raise AttributeError(msg)
-    #     return value
 
     @cached_property
     def __len__(self) -> int:
@@ -209,10 +178,6 @@ class GenericPhysicalObjectSet(GenericModel, Generic[PhysicalObjectProfile], Vid
 
     def __getitem__(self, item):
         return self.label_to_physical_object[item]
-
-    @cached_property
-    def _video(self):
-        return reduce(VideoMetadata.join, (physical_object.video for physical_object in self.physical_objects))
 
     @property
     def reader(self) -> Reader:
@@ -246,7 +211,12 @@ class GenericPhysicalObjectSet(GenericModel, Generic[PhysicalObjectProfile], Vid
 
     @property
     def feature_summary(self) -> pd.Series:
-        return pd.concat([analysis_object.feature_summary for analysis_object in self.analysis_objects])
+        return pd.concat(
+            (
+                # *(analysis_object.feature_summary for analysis_object in self.analysis_objects),
+                *(physical_object.summary for physical_object in self.physical_objects),
+            )
+        )
 
     @property
     def seconds_observing(self) -> float:
@@ -263,7 +233,12 @@ class GenericPhysicalObjectSet(GenericModel, Generic[PhysicalObjectProfile], Vid
     @cached_property
     def physical_objects(self) -> list[PhysicalObjectProfile, ...]:
         return [
-            self.physical_object_profile_class(perimeter=perimeter, manual_video=self.video)
+            self.physical_object_profile_class(
+                physical_object_set=self,
+                perimeter=perimeter,
+                manual_video=self.video,
+                inspect_arg=self.trial.inspect_arg,
+            )
             for perimeter in self.trial.physical_object_perimeters
         ]
 
@@ -271,6 +246,4 @@ class GenericPhysicalObjectSet(GenericModel, Generic[PhysicalObjectProfile], Vid
 PhysicalObjectSet = TypeVar("PhysicalObjectSet", bound=GenericPhysicalObjectSet)
 PhysicalObjectSetCLS = Type[GenericPhysicalObjectSet]
 
-
-class RodentPhysicalObjectSet(GenericPhysicalObjectSet[RodentProfile]):
-    physical_object_profile_class = RodentProfile
+RodentProfile.update_forward_refs(PhysicalObjectSet=PhysicalObjectSet)

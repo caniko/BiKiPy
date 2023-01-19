@@ -12,6 +12,9 @@ class OlfactionComponent(AbcObservationComponent):
     nose_label: str = "nose"
     maximum_olfaction_distance_meters: float = 0.03
 
+    native_inspection_row_length = 0
+    component_label = "Olfaction"
+
     @property
     def maximum_olfaction_distance_pixels(self) -> float:
         return self.maximum_olfaction_distance_meters * self.video.pixels_per_meter
@@ -20,9 +23,8 @@ class OlfactionComponent(AbcObservationComponent):
     def combined_sensation(self) -> NDArrayBool:
         return proximity_filter(
             self.perimeter,
-            self.reader[self.nose_label].values,
-            self.gaze_length_pixels,
-            self.reader[self.center_eye_label].values,
+            self.reader[self.nose_label],
+            self.maximum_olfaction_distance_pixels,
             manual_ax=self.axes_row[0],
             **self._global_attention_kwargs,
         )

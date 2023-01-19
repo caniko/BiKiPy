@@ -18,7 +18,7 @@ import numpy as np
 from mextractor.extractors import extract_video
 from pydantic import DirectoryPath, Field, FilePath, validator
 from pydantic_numpy import NDArray
-from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
+from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8, NDArrayBool
 
 from bikipy import runtime_settings
 from bikipy.core.base_class import BikipyModel
@@ -67,6 +67,9 @@ class _VideoMetadataBase(BikipyModel):
             return self.recording_resolution
         if self.frame is not None:
             return np.array([self.frame.shape[1], self.frame.shape[0]], dtype=np.int16)
+
+    def boolean_array_to_seconds(self, boolean_array: NDArrayBool) -> float:
+        return np.sum(boolean_array) / self.video.fps
 
 
 class VideoMetadata(_VideoMetadataBase):

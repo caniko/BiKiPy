@@ -22,7 +22,7 @@ def proximity_filter(
     perimeter: SinglePerimeter,
     inside_perimeter_border: NDArrayFp64,
     perimeter_border_normal_pixels: float | NDArrayFp64,
-    outside_perimeter: NDArrayFp64,
+    outside_perimeter: Optional[NDArrayFp64] = None,
     inspect_video: Optional[VideoMetadata] = None,
     inspect: bool = False,
     inspect_pixels: bool = False,
@@ -55,7 +55,7 @@ def proximity_filter(
         coordinates=inside_perimeter_border
     )
 
-    if perimeter.impenetrable:
+    if perimeter.impenetrable or outside_perimeter is None:
         result = inside_perimeter_border_boolean_index
     else:
         outside_perimeter_boolean_index = ~perimeter.confined_coordinate_boolean_index(outside_perimeter)
@@ -95,7 +95,7 @@ def proximity_filter(
         )
 
         not_result = ~result
-        if perimeter.impenetrable:
+        if perimeter.impenetrable or outside_perimeter is None:
             ax.scatter(
                 *inside_perimeter_border_plot_scaled[not_result].T,
                 marker="x",

@@ -4,6 +4,7 @@ from logging import getLogger
 from typing import Any, ClassVar
 
 import numpy as np
+import pandas as pd
 from pydantic import validator
 from pydantic_numpy.dtype import NDArrayBool
 
@@ -21,16 +22,10 @@ class AbcObservationComponent(BaseBikipyInspectMixin, VideoMetadataMixin, Attent
     perimeter: SinglePerimeter = ...
     reader: Reader = ...
 
-    axes_row: tuple[Any] = ...
+    axes_row: Any = ...
 
     native_inspection_row_length: ClassVar[int] = ...
-
-    @validator("axes_row")
-    def axes_row_has_right_length(cls, value: tuple) -> tuple:
-        if length := len(value) != cls.inspection_row_length:
-            msg = f"axes_row has length {length}, but {cls.inspection_row_length} was expected"
-            raise AttributeError(msg)
-        return value
+    component_label: ClassVar[str] = ...
 
     @classmethod
     @property
@@ -48,7 +43,7 @@ class AbcObservationComponent(BaseBikipyInspectMixin, VideoMetadataMixin, Attent
 
     @cached_property
     def combined_sensation_seconds(self) -> float:
-        return np.sum(self.combined_sensation) / self.video.fps
+        return self.boolean_array_to_seconds(self.combined_sensation)
 
     @cached_property
     def tolerance_modeled_combined_sensation(self) -> NDArrayBool:
@@ -58,11 +53,28 @@ class AbcObservationComponent(BaseBikipyInspectMixin, VideoMetadataMixin, Attent
 
     @cached_property
     def tolerance_modeled_combined_sensation_seconds(self) -> float:
-        return np.sum(self.tolerance_modeled_combined_sensation) / self.video.fps
+        return self.boolean_array_to_seconds(self.tolerance_modeled_combined_sensation)
 
     @cached_property
     def tolerance_vs_unfiltered_ratio(self) -> float:
         return self.tolerance_modeled_combined_sensation_seconds / self.combined_sensation_seconds
+
+    def _summary_indexer(self, data_labels: list[str], with_component_label: bool = True) -> pd.MultiIndex:
+        if with_component_label:
+            additive = self.component_label.capitalize()
+            data_labels = [f"{additive}{label}" for label in data_labels]
+        return pd.MultiIndex.from_product([[self.perimeter.label], data_labels])
+
+    @property
+    def component_summary(self) -> pd.Series:
+        return pd.Series(
+            [
+                self.combined_sensation_seconds,
+                self.tolerance_modeled_combined_sensation_seconds,
+                self.tolerance_vs_unfiltered_ratio,
+            ],
+            index=self._summary_indexer(["CombinedSeconds", "TolCombinedSeconds", "TolUnfilteredRatio"]),
+        )
 
     @cached_property
     def video(self) -> VideoMetadata:
@@ -74,7 +86,7 @@ class AbcObservationComponent(BaseBikipyInspectMixin, VideoMetadataMixin, Attent
 
     def generic_result_plotter(self, valid_boolean_index: NDArrayBool, ax: Any, label: str) -> None:
         ax.set_title(label, fontsize=self.video.upscaled_video.plotting_title_font_size)
-        ax.scatter(*self.reader[self.label][valid_boolean_index].T, marker="x", color="green")
+        ax.scatter(*self.reader.kinematic_coordinates[valid_boolean_index].T, marker="x", color="green")
 
     def __len__(self) -> int:
         return self.reader.frames

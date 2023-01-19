@@ -7,9 +7,7 @@ import pandas as pd
 from pydantic import Field
 from pydantic_numpy.dtype import NDArrayFp64
 
-from bikipy.behaviour.core.abstract import AbstractTrial
-from bikipy.feature.physical_object import ANIMAL_LABEL_TO_PHYSICAL_OBJECT_SET_CLASS
-from bikipy.feature.physical_object.set import PhysicalObjectSetCLS, PhysicalObjectSet
+from bikipy.feature.physical_object.set import PhysicalObjectSetCLS, PhysicalObjectSet, GenericPhysicalObjectSet
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.perimeter.mixin import TrialWithPerimeterMixin
 
@@ -28,11 +26,17 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     @classmethod
     @property
     def physical_object_set_class(cls) -> PhysicalObjectSetCLS:
-        if cls.animal_profile is ...:
-            msg = "animal_profile when working with PhysicalObjectTrialMixin Trials"
-            raise ValueError(msg)
+        match cls.animal_profile:
+            case "rodent":
+                from bikipy.feature.physical_object.single.profile.rodent import RodentProfile
+                from bikipy.behaviour.core import Trial
 
-        return ANIMAL_LABEL_TO_PHYSICAL_OBJECT_SET_CLASS[cls.animal_profile]
+                GenericPhysicalObjectSet.update_forward_refs(Trial=Trial)
+
+                class RodentPhysicalObjectSet(GenericPhysicalObjectSet[RodentProfile]):
+                    physical_object_profile_class = RodentProfile
+
+                return RodentPhysicalObjectSet
 
     @cached_property
     def perimeters(self):
