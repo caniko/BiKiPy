@@ -35,6 +35,7 @@ def extended_schema(model_class: BaseModel, with_optional: bool = True, with_req
     assert with_optional or with_required
 
     model_class.update_forward_refs(Perimeter=Perimeter)
+
     class_schema = model_class.schema()
     required = (
         field_name_to_metadata(class_schema["required"], class_schema, model_class)

@@ -13,6 +13,7 @@ only_physical_cores = false
 
 [ingress]
 method = "animal"
+animal_profile = "rodent"
 first_stage_is_habituation = true
 metadata_trial_ids_are_higher_level = false
 trial_sequence_loops = ""

@@ -13,6 +13,7 @@ only_physical_cores = false
 
 [ingress]
 method = "animal"
+animal_profile = "rodent"
 first_stage_is_habituation = false
 metadata_trial_ids_are_higher_level = false
 trial_sequence_loops = ""
@@ -39,6 +40,7 @@ model = false
 [manual_reader_kwargs.defined.midpoint_groups]
 center_eye = ["left_ear", "right_ear"]
 torso = ["center_eye", "tail_base"]
+
 
 
 

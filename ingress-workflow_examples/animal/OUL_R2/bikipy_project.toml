@@ -13,6 +13,7 @@ only_physical_cores = false
 
 [ingress]
 method = "animal"
+animal_profile = "rodent"
 first_stage_is_habituation = true
 metadata_trial_ids_are_higher_level = false
 trial_sequence_loops = ""
@@ -33,13 +34,10 @@ center = "metadata"
 
 [manual_reader_kwargs]
 [manual_reader_kwargs.defined]
-object_tracking_label_for_kinematics = ""
+object_tracking_label_for_kinematics = "nose"
 
 [manual_reader_kwargs.defined.midpoint_groups]
 center_eye = ["left_ear", "right_ear"]
-
-
-
 
 
 [manual_reader_kwargs.required]

@@ -13,6 +13,7 @@ only_physical_cores = false
 
 [ingress]
 method = "phase"
+animal_profile = "rodent"
 first_stage_is_habituation = false
 metadata_trial_ids_are_higher_level = false
 trial_sequence_loops = 1
@@ -41,6 +42,7 @@ invert_y_axis = true
 [manual_reader_kwargs.defined.midpoint_groups]
 center_eye = ["left_ear", "right_ear"]
 torso = ["center_eye", "base_tail"]
+
 
 
 
