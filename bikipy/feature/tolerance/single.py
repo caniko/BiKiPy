@@ -31,7 +31,8 @@ def _filter(
     """
     MinFA and MaxFD are used to tolerance model the provided binary sequence as follows:
 
-    #. :code:`True` must persist for MinFA elements for a tolerated sequence to *start*, and we set the beginning of the sequence to the index of the first :code:`True` value in the sequence.
+    #. :code:`True` must persist for MinFA elements for a tolerated sequence to *start*, and we set the
+                beginning of the sequence to the index of the first :code:`True` value in the sequence.
 
     .. note::
        The entirety of the tolerated sequence will be set to :code:`True`
@@ -131,7 +132,6 @@ def arg_single_node_tolerance_model(
 
         else:
             if start:
-
                 distraction_counter += 1
                 if distraction_counter == distraction_tolerance:
                     end = i - distraction_counter

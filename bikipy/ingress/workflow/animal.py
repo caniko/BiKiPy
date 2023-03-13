@@ -34,7 +34,10 @@ class AnimalIngress(BaseIngress):
                 for plugin_model in self._trial_wise_plugins:
                     plugin_data_files = tuple(animal_dir.glob(f"{stage_index}.{plugin_model.code_key}*"))
                     if len(plugin_data_files) > 1:
-                        msg = f"Only one file per trial: Animal {animal_id} -> Stage {stage_index} -> Plugin {plugin_model.human_readable_index}"
+                        msg = (
+                            f"Only one file per trial: Animal {animal_id} -> Stage {stage_index} "
+                            f"-> Plugin {plugin_model.human_readable_index}"
+                        )
                         raise ValueError(msg)
 
                     try:

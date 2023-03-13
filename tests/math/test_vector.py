@@ -1,5 +1,7 @@
 import numpy as np
 
+from bikipy.utils.math.vector import intersection_between_two_lines, dot_axis_1_1d, orthogonal_unit_vector, unit_vector
+
 
 def test_unit_vector():
     single_vector = np.array((0, 10))

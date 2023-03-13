@@ -1,11 +1,8 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Any, ClassVar, Optional, Literal
+from typing import Any, ClassVar
 
-import numpy as np
 import pandas as pd
-from pydantic import Field
-from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.feature.physical_object.set import PhysicalObjectSetCLS, PhysicalObjectSet, GenericPhysicalObjectSet
 from bikipy.perimeter.base import SinglePerimeter
@@ -28,13 +25,13 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     def physical_object_set_class(cls) -> PhysicalObjectSetCLS:
         match cls.animal_profile:
             case "rodent":
-                from bikipy.feature.physical_object.single.profile.rodent import RodentProfile
+                from bikipy.feature.physical_object.single.observation_qualia.rodent import RodentObservationQualia
                 from bikipy.behaviour.core import Trial
 
                 GenericPhysicalObjectSet.update_forward_refs(Trial=Trial)
 
-                class RodentPhysicalObjectSet(GenericPhysicalObjectSet[RodentProfile]):
-                    physical_object_profile_class = RodentProfile
+                class RodentPhysicalObjectSet(GenericPhysicalObjectSet[RodentObservationQualia]):
+                    physical_object_profile_class = RodentObservationQualia
 
                 return RodentPhysicalObjectSet
 

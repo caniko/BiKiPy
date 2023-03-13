@@ -3,30 +3,27 @@ The physical object set provides useful methods that compute relational features
 Some methods are designed specifically for sets with a specific number of objects, while others are general.
 """
 
-from functools import cached_property, reduce
+from functools import cached_property
 from logging import getLogger
-from typing import Any, ClassVar, Iterable, Generic, Type, TypeVar, TYPE_CHECKING
+from typing import Any, ClassVar, Generic, Type, TypeVar, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-from pydantic import validator
 from pydantic.generics import GenericModel
 from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8
 
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipyHashable
-from bikipy.core.video import VideoMetadata, VideoMetadataMixin
-from bikipy.feature.physical_object.single.profile.abc import (
-    PhysicalObjectProfile,
-    PhysicalObjectProfileCLS,
-    AbcPhysicalObjectProfile,
+from bikipy.core.video import VideoMetadataMixin
+from bikipy.feature.physical_object.single.observation_qualia.abc import (
+    PhysicalObjectObservationQualia,
+    PhysicalObjectObservationQualiaCLS,
 )
-from bikipy.feature.physical_object.single.profile.rodent import RodentProfile
-from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
+from bikipy.feature.physical_object.single.observation_qualia.rodent import RodentObservationQualia
 from bikipy.reader.base import Reader
 
 if TYPE_CHECKING:
-    from bikipy.behaviour.core import Trial
+    pass
 
 logger = getLogger(__name__)
 
@@ -167,10 +164,10 @@ class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
         return {label: 0.0 for label in self.physical_object_label_to_observation_boolean_index}
 
 
-class GenericPhysicalObjectSet(GenericModel, Generic[PhysicalObjectProfile], VideoMetadataMixin):
+class GenericPhysicalObjectSet(GenericModel, Generic[PhysicalObjectObservationQualia], VideoMetadataMixin):
     trial: Any
 
-    physical_object_profile_class: ClassVar[PhysicalObjectProfileCLS] = ...
+    physical_object_profile_class: ClassVar[PhysicalObjectObservationQualiaCLS] = ...
 
     @cached_property
     def __len__(self) -> int:
@@ -231,7 +228,7 @@ class GenericPhysicalObjectSet(GenericModel, Generic[PhysicalObjectProfile], Vid
         return ax
 
     @cached_property
-    def physical_objects(self) -> list[PhysicalObjectProfile, ...]:
+    def physical_objects(self) -> list[PhysicalObjectObservationQualia, ...]:
         return [
             self.physical_object_profile_class(
                 physical_object_set=self,
@@ -246,4 +243,4 @@ class GenericPhysicalObjectSet(GenericModel, Generic[PhysicalObjectProfile], Vid
 PhysicalObjectSet = TypeVar("PhysicalObjectSet", bound=GenericPhysicalObjectSet)
 PhysicalObjectSetCLS = Type[GenericPhysicalObjectSet]
 
-RodentProfile.update_forward_refs(PhysicalObjectSet=PhysicalObjectSet)
+RodentObservationQualia.update_forward_refs(PhysicalObjectSet=PhysicalObjectSet)

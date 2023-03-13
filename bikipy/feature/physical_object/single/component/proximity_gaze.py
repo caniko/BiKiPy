@@ -5,7 +5,6 @@ from pydantic import root_validator
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy.feature.attention.proximity import proximity_filter
-from bikipy.feature.physical_object.single.main import PhysicalObject
 
 PROXIMITY_FIELDS = ("perimeter_border_normal_pixels", "proximity_ax")  # impenatrable: outside_perimeter_point_label
 RAY_CAST_FIELDS = ("ray_start_point_label", "ray_travel_direction_point_label", "ray_maximum_radians", "ray_ax")

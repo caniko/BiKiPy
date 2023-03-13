@@ -20,7 +20,7 @@ class OlfactionComponent(AbcObservationComponent):
         return self.maximum_olfaction_distance_meters * self.video.pixels_per_meter
 
     @cached_property
-    def combined_sensation(self) -> NDArrayBool:
+    def nose_proximity(self):
         return proximity_filter(
             self.perimeter,
             self.reader[self.nose_label],
@@ -28,3 +28,7 @@ class OlfactionComponent(AbcObservationComponent):
             manual_ax=self.axes_row[0],
             **self._global_attention_kwargs,
         )
+
+    @property
+    def combined_sensation(self) -> NDArrayBool:
+        return self.nose_proximity

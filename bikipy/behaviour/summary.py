@@ -76,7 +76,7 @@ class StatisticalAnalysis(BikipyModel):
 
     @cached_property
     def merged_df(self):
-        concatenated = pd.concat((self.analysis_df.sort_index(), self.metadata_df.sort_index()), axis=1)
+        pd.concat((self.analysis_df.sort_index(), self.metadata_df.sort_index()), axis=1)
 
     @cached_property
     def unique_category_values(self):

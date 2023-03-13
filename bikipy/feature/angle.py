@@ -126,7 +126,8 @@ def compute_angles_from_points_abc(
     :param row_vectors_point_a: Array of row vectors
     :param row_vectors_point_b: Array of row vectors that is the joint between the two other groups of vectors
     :param row_vectors_point_c: Array of row vectors
-    :param median_points: Anchor one or several points to their respective median. Information about median computation in _find_median_vector()
+    :param median_points: Anchor one or several points to their respective median. Information about median
+                            computation in _find_median_vector()
     :param method: The method for computing angle, supported methods are inner; counterclockwise.
     :param degrees: If True, convert resulting angle data to degrees
     :type row_vectors_point_a: NDArrayFp64

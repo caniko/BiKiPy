@@ -76,7 +76,9 @@ class GazeComponent(AbcObservationComponent):
 
     @cached_property
     def combined_sensation(self) -> NDArrayBool:
-        return self.leftward_observation | self.rightward_observation
+        result = self.leftward_observation | self.rightward_observation
+        self._combined_sensation_plot(result)
+        return result
 
     @property
     def component_summary(self) -> pd.Series:

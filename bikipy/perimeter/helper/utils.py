@@ -1,13 +1,10 @@
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Optional, Sequence
+from typing import Optional
 
 import numpy as np
-from matplotlib import pyplot as plt
 from pydantic import FilePath
 from pydantic_numpy.dtype import NDArrayFp64
 
-from bikipy.utils.collection_utils import generic_multi_indexer
-from bikipy.utils.image import axis_frame_imshow, read_image
 from bikipy.utils.makesense import read_makesense_point
 
 

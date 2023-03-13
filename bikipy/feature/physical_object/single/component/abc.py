@@ -3,9 +3,7 @@ from functools import cached_property
 from logging import getLogger
 from typing import Any, ClassVar
 
-import numpy as np
 import pandas as pd
-from pydantic import validator
 from pydantic_numpy.dtype import NDArrayBool
 
 from bikipy.core.base_class import BaseBikipyInspectMixin
@@ -41,6 +39,11 @@ class AbcObservationComponent(BaseBikipyInspectMixin, VideoMetadataMixin, Attent
         # _combined_sensation_plot(result)
         ...
 
+    @property
+    @abstractmethod
+    def component_summary_dict(self) -> dict:
+        ...
+
     @cached_property
     def combined_sensation_seconds(self) -> float:
         return self.boolean_array_to_seconds(self.combined_sensation)
@@ -67,7 +70,7 @@ class AbcObservationComponent(BaseBikipyInspectMixin, VideoMetadataMixin, Attent
 
     @property
     def component_summary(self) -> pd.Series:
-        return pd.Series(
+        base = pd.Series(
             [
                 self.combined_sensation_seconds,
                 self.tolerance_modeled_combined_sensation_seconds,
@@ -75,6 +78,7 @@ class AbcObservationComponent(BaseBikipyInspectMixin, VideoMetadataMixin, Attent
             ],
             index=self._summary_indexer(["CombinedSeconds", "TolCombinedSeconds", "TolUnfilteredRatio"]),
         )
+        return pd.concat([pd.Series(self.component_summary_dict), base])
 
     @cached_property
     def video(self) -> VideoMetadata:

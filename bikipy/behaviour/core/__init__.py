@@ -1,12 +1,11 @@
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
-from functools import cached_property, lru_cache, reduce
+from functools import cached_property, lru_cache
 from logging import getLogger
 from operator import attrgetter
 from typing import (
     ClassVar,
     Hashable,
-    Iterable,
     Literal,
     Optional,
     Sequence,
@@ -38,13 +37,10 @@ from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import (
-    VideoMetadata,
     VideoMetadataMixin,
-    incongruity_permissive_video_join,
 )
 from bikipy.feature.motion import Motion, motion_multi_indexer
 from bikipy.feature.physical_object.mixin import PhysicalObjectTrialMixin
-from bikipy.feature.physical_object.set import GenericPhysicalObjectSet
 from bikipy.ingress.plugin import PluginChangeReference, PluginRadial
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
 from bikipy.perimeter.base import (
@@ -57,7 +53,6 @@ from bikipy.perimeter.base import (
 from bikipy.reader import READER_CLASS_LABEL_TO_CLASS
 from bikipy.reader.base import Reader, ReaderCLS
 from bikipy.reader.data_with_likelihood import DeepLabCutReader
-from bikipy.utils.collection_utils import max_len_in_iterable
 from bikipy.utils.ranged_dict import RangeDict
 
 LABEL_to_DATA_READER = {"deeplabcut": DeepLabCutReader}
@@ -174,7 +169,10 @@ class BaseTrial(Behaviour):
                 try:
                     field_schema = schema[perimeter_label]
                 except KeyError as e:
-                    msg = f"{perimeter_label} is defined as a perimeter label yet it is not a field in the class {cls.__name__}"
+                    msg = (
+                        f"{perimeter_label} is defined as a perimeter label "
+                        f"yet it is not a field in the class {cls.__name__}"
+                    )
                     raise AttributeError(msg) from e
 
                 perimeter_class_name = field_schema["$ref"].split("/")[-1]  # hacky pydantic-oriented solution
@@ -200,7 +198,11 @@ class BaseTrial(Behaviour):
                 return self._label_to_perimeter[self.manual_perimeter_to_derive_meters_per_pixel]
             except TypeError:
                 # self._label_to_perimeter is None -> TypeError
-                msg = f"The class, {self.__class__.__name__}, does not define _label_to_perimeter, which makes the mapping of manual_perimeter_to_derive_meters_per_pixel to a Perimeter object impossible"
+                msg = (
+                    f"The class, {self.__class__.__name__}, does not define _label_to_perimeter, "
+                    f"which makes the mapping of manual_perimeter_to_derive_meters_per_pixel "
+                    f"to a Perimeter object impossible"
+                )
                 raise AttributeError(msg)
 
     @cached_property
@@ -435,7 +437,10 @@ class BaseExperiment(Behaviour):
         try:
             return {i: trial_class for i, trial_class in enumerate(cls.trial_sequence)}
         except AttributeError:
-            msg = "experiment_stage_index must be defined for each trial class when working with a sequence of trial classes"
+            msg = (
+                "experiment_stage_index must be defined for each trial "
+                "class when working with a sequence of trial classes"
+            )
             raise AttributeError(msg)
 
     @classmethod
@@ -540,7 +545,7 @@ class BaseExperiment(Behaviour):
                 bad_trial_ids_to_error_msg[trial_id] = str(e)
                 continue
         if bad_trial_ids_to_error_msg:
-            msg = f"Some trial IDs yielded pydantic validation errors:"
+            msg = "Some trial IDs yielded pydantic validation errors:"
             for trial_id, trial_msg in bad_trial_ids_to_error_msg.items():
                 msg += f"\n{trial_id}:\n{trial_msg}\n"
             if self.trial_init_error_out_dir:

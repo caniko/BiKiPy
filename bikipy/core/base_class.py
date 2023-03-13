@@ -87,7 +87,7 @@ class BaseBikipyInspectMixin(BikipyModel):
             msg = "No path provided to save method"
             raise ValueError(msg)
 
-        compress_pickle.dump(self, save_directory_path / f"experiment.pickle.lzma")
+        compress_pickle.dump(self, save_directory_path / "experiment.pickle.lzma")
 
     @cached_property
     def class_inspect_arg(self) -> InspectArg:

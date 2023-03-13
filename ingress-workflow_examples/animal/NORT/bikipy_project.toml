@@ -41,9 +41,6 @@ model = false
 center_eye = ["left_ear", "right_ear"]
 torso = ["center_eye", "tail_base"]
 
-
-
-
 [manual_reader_kwargs.required]
 object_tracking_label_for_kinematics = "string"
 
