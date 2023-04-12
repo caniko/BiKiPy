@@ -39,13 +39,10 @@ class LinePerimeter(BaseBikipyHashable, VideoMetadataMixin):
 
     @classmethod
     @property
-    def exclude_from_settings_schema(cls) -> set[str]:
-        """
-        Some required fields for a class are sometimes highly specific to its respective object. These fields should
-        be recorded in this class-property to be excluded by the settings generator function in the ingress module
-        :return:
-        """
-        return super().exclude_from_settings_schema.union({"location", "orientation", "logic"})
+    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().project_kit_fields_to_exclude_from_config_schema
+        upstream.update({"location", "orientation", "logic"})
+        return upstream
 
     @property
     def feat_border(self):

@@ -88,13 +88,10 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
     @classmethod
     @property
-    def exclude_from_settings_schema(cls) -> set[str]:
-        """
-        Some required fields for a class are sometimes highly specific to its respective object. These fields should
-        be recorded in this class-property to be excluded by the settings generator function in the ingress module
-        :return:
-        """
-        return super().exclude_from_settings_schema.union({"center", "arms"})
+    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().project_kit_fields_to_exclude_from_config_schema
+        upstream.update({"center", "arms"})
+        return upstream
 
     @validator("center")
     def center_has_1_as_int_id(cls, value):

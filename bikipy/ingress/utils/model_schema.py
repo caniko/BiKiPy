@@ -10,7 +10,7 @@ from bikipy.perimeter.base import Perimeter
 def field_name_to_metadata(fields: Iterable, class_schema: dict, model_class: BikipyModel) -> dict:
     result = {}
     for name in sorted(fields):
-        if name in model_class.exclude_from_settings_schema:
+        if name in model_class.project_kit_fields_to_exclude_from_config_schema:
             continue
 
         field_property = class_schema["properties"][name]

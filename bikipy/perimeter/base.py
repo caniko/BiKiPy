@@ -171,15 +171,18 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
     @classmethod
     @property
-    def exclude_from_settings_schema(cls) -> set[str]:
-        """
-        Some required fields for a class are sometimes highly specific to its respective object. These fields should
-        be recorded in this class-property to be excluded by the settings generator function in the ingress module
-        :return:
-        """
-        return super().exclude_from_settings_schema.union(
-            {"int_id", "group_label", "makesense_image_name", "reference_point_coco_path", "reference_point_array"}
+    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().project_kit_fields_to_exclude_from_config_schema
+        upstream.update(
+            {
+                "int_id",
+                "group_label",
+                "makesense_image_name",
+                "reference_point_coco_path",
+                "reference_point_array",
+            }
         )
+        return upstream
 
     @property
     def _to_hash(self) -> list:
@@ -368,7 +371,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 SinglePerimeter = TypeVar("SinglePerimeter", bound=BaseSinglePerimeter)
 
 
-class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
+class PerimeterSet(BasePerimeter):
     perimeters: list[SinglePerimeter]
     restricted_perimeters: Optional[list[SinglePerimeter]]
 
@@ -376,13 +379,10 @@ class PerimeterSet(BasePerimeter, BaseBikipyInspectMixin):
 
     @classmethod
     @property
-    def exclude_from_settings_schema(cls) -> set[str]:
-        """
-        Some required fields for a class are sometimes highly specific to its respective object. These fields should
-        be recorded in this class-property to be excluded by the settings generator function in the ingress module
-        :return:
-        """
-        return super().exclude_from_settings_schema.union({"perimeters", "restricted_perimeters"})
+    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().project_kit_fields_to_exclude_from_config_schema
+        upstream.update({"perimeters", "restricted_perimeters"})
+        return upstream
 
     @property
     def _to_hash(self) -> list:

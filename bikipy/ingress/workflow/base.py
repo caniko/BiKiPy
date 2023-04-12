@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 import numpy as np
 import pandas as pd
 from inflection import underscore
+from projectkit.model import BaseProjectKitModel
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
@@ -56,7 +57,7 @@ METADATA_TRIAL_IDS_ARE_HIGHER_LEVEL_FIELD = "metadata_trial_ids_are_higher_level
 logger = getLogger(__name__)
 
 
-class BaseIngress(BikipyModel, ABC):
+class BaseIngress(BaseProjectKitModel, ABC):
     """
     This model stores methods to ingest data for bikipy-based analysis. The workflow differs slightly between daughter
     classes. The commonality are the levels in which data is introduced, which is quite similar to the bikipy experiment

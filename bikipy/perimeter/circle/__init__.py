@@ -102,13 +102,10 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
 
     @classmethod
     @property
-    def exclude_from_settings_schema(cls) -> set[str]:
-        """
-        Some required fields for a class are sometimes highly specific to its respective object. These fields should
-        be recorded in this class-property to be excluded by the settings generator function in the ingress module
-        :return:
-        """
-        return super().exclude_from_settings_schema.union({"center_pixels"})
+    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().project_kit_fields_to_exclude_from_config_schema
+        upstream.add("center_pixels")
+        return upstream
 
     @property
     def _to_hash(self) -> list:
@@ -148,13 +145,10 @@ class CircleFixedRadiusPerimeter(BaseCirclePerimeter):
 
     @classmethod
     @property
-    def exclude_from_settings_schema(cls) -> set[str]:
-        """
-        Some required fields for a class are sometimes highly specific to its respective object. These fields should
-        be recorded in this class-property to be excluded by the settings generator function in the ingress module
-        :return:
-        """
-        return super().exclude_from_settings_schema.union({"radius_pixels"})
+    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().project_kit_fields_to_exclude_from_config_schema
+        upstream.add("radius_pixels")
+        return upstream
 
     @property
     def _to_hash(self) -> list:

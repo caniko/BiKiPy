@@ -3,7 +3,8 @@ from pathlib import Path
 from typing import ClassVar, Optional, TypeVar
 
 from compress_pickle import compress_pickle
-from pydantic import BaseModel, DirectoryPath, Field, FilePath
+from projectkit.model import BaseProjectKitModel
+from pydantic import DirectoryPath, Field, FilePath, BaseModel
 from pydantic_numpy.dtype import NDArrayUint8
 
 from bikipy.core.typing import Label
@@ -17,35 +18,17 @@ class BikipyModel(BaseModel):
 
     category: ClassVar[str] = ...
 
-    @classmethod
-    @property
-    def exclude_from_settings_schema(cls) -> set[str]:
-        """
-        Some required fields for a class are sometimes highly specific to its respective object. These fields should
-        be recorded in this class-property to be excluded by the settings generator function in the ingress module
-        :return:
-        """
-        return set()
 
-    @classmethod
-    @property
-    def include_from_settings_schema(cls) -> set[str]:
-        """
-        Some required fields for a class are sometimes highly specific to its respective object. These fields should
-        be recorded in this class-property to be excluded by the settings generator function in the ingress module
-        :return:
-        """
-        return set()
-
-
-class BaseBikipyHashable(BikipyModel):
+class BaseBikipyHashable(BikipyModel, BaseProjectKitModel):
     label: Optional[Label]
     int_id: Optional[int]
 
     @classmethod
     @property
-    def exclude_from_settings_schema(cls) -> set[str]:
-        return super().exclude_from_settings_schema.union({"label", "int_id"})
+    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().project_kit_fields_to_exclude_from_config_schema
+        upstream.update({"label", "int_id"})
+        return upstream
 
     @property
     def _to_hash(self) -> list:

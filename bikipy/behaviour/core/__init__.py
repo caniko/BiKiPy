@@ -124,20 +124,14 @@ class BaseTrial(Behaviour):
 
     @classmethod
     @property
-    def exclude_from_settings_schema(cls) -> set[str]:
-        """
-        Some required fields for a class are sometimes highly specific to its respective object. These fields should
-        be recorded in this class-property to be excluded by the settings generator function in the ingress module
-        :return:
-        """
-        return {
-            "framewise_coordinates_path",
+    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().project_kit_fields_to_exclude_from_config_schema
+        upstream.update({"framewise_coordinates_path",
             "coordinate_timestamp_set_path",
             "manual_reader_kwargs",
-            "animal_id",
-            *cls.perimeter_physical_object_labels,
-            *super().exclude_from_settings_schema,
-        }
+            "animal_id"})
+        upstream.update(cls.perimeter_physical_object_labels)
+        return upstream
 
     @classmethod
     @property
@@ -779,21 +773,16 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def exclude_from_settings_schema(cls) -> set[str]:
-        """
-        Some required fields for a class are sometimes highly specific to its respective object. These fields should
-        be recorded in this class-property to be excluded by the settings generator function in the ingress module
-        :return:
-        """
-        return super().exclude_from_settings_schema.union(
-            {
+    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().project_kit_fields_to_exclude_from_config_schema
+        upstream.update({
                 "trial_id_to_trial_class_name",
                 "trial_id_to_keyword_arguments",
                 "trial_class_name_to_keyword_arguments",
                 "trial_id_range_to_keyword_arguments",
                 "common_trial_keyword_arguments",
-            }
-        )
+            })
+        return upstream
 
 
 ExperimentCLS = Type[BaseExperiment]
