@@ -13,18 +13,19 @@ import numpy as np
 import pandas as pd
 from inflection import underscore
 from projectkit.model import BaseProjectKitModel
+from projectkit.model.config import JITProjectKitConfiguration
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import set_bikipy_settings_from_dict
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment
-from bikipy.core.base_class import BikipyModel
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin import ALL_PLUGINS, PluginMeterPerPixel, ingress_key_to_model
 from bikipy.ingress.plugin.base import Plugin
 from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
 )
+from bikipy.ingress.plugin.perimeter import PerimeterPlugins
 from bikipy.ingress.utils.io import (
     dump_settings,
     get_dataset_directory_path,
@@ -36,6 +37,7 @@ from bikipy.ingress.utils.io import (
     result_directory_path,
 )
 from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
+from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
 from bikipy.perimeter.base import BaseSinglePerimeter, Perimeter
 from bikipy.perimeter.helper.constant import PERIMETER_CLASS_REQUIRE_INTERFACE_SETTINGS
 from bikipy.reader.base import BaseReader
@@ -720,6 +722,9 @@ class BaseIngress(BaseProjectKitModel, ABC):
 Ingress = TypeVar("Ingress", bound=BaseIngress)
 
 
+bikipy_jit_project_kit = JITProjectKitConfiguration(project_name="bikipy-cli")
+
+
 def init_settings(
     ingress_method: str,
     experiment_name: str,
@@ -731,6 +736,19 @@ def init_settings(
     from bikipy.behaviour.mapping import experiment_name_to_class
 
     logger.info(f"Generating experiment configuration at {project_root_directory}")
+
+    experiment_class = experiment_name_to_class[experiment_name]
+    config_kwargs = {
+        "cds_single_instance_interface": frozenset(
+            (INGRESS_METHOD_NAME_TO_INGRESS_CLASS[ingress_method], experiment_class)
+        ),
+        "cds_hierarchical_interface": {"trials": experiment_class.trial_classes},
+    }
+
+    if experiment_class.at_least_one_trial_has_perimeter:
+        config_kwargs["cds_hierarchical_interface"]["perimeter"] = (frozenset(PerimeterPlugins), None, None)
+
+    bikipy_jit_project_kit.initialize(config_kwargs=config_kwargs)
 
     experiment_class = experiment_name_to_class[experiment_name]
 

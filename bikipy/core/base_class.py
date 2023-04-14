@@ -27,7 +27,7 @@ class BaseBikipyHashable(BikipyModel, BaseProjectKitModel):
     @property
     def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
         upstream = super().project_kit_fields_to_exclude_from_config_schema
-        upstream.update({"label", "int_id"})
+        upstream.update(("label", "int_id"))
         return upstream
 
     @property

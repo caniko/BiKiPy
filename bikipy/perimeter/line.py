@@ -41,7 +41,7 @@ class LinePerimeter(BaseBikipyHashable, VideoMetadataMixin):
     @property
     def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
         upstream = super().project_kit_fields_to_exclude_from_config_schema
-        upstream.update({"location", "orientation", "logic"})
+        upstream.update(("location", "orientation", "logic"))
         return upstream
 
     @property

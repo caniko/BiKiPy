@@ -126,10 +126,9 @@ class BaseTrial(Behaviour):
     @property
     def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
         upstream = super().project_kit_fields_to_exclude_from_config_schema
-        upstream.update({"framewise_coordinates_path",
-            "coordinate_timestamp_set_path",
-            "manual_reader_kwargs",
-            "animal_id"})
+        upstream.update(
+            ("framewise_coordinates_path", "coordinate_timestamp_set_path", "manual_reader_kwargs", "animal_id")
+        )
         upstream.update(cls.perimeter_physical_object_labels)
         return upstream
 
@@ -775,13 +774,15 @@ class BaseExperiment(Behaviour):
     @property
     def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
         upstream = super().project_kit_fields_to_exclude_from_config_schema
-        upstream.update({
+        upstream.update(
+            {
                 "trial_id_to_trial_class_name",
                 "trial_id_to_keyword_arguments",
                 "trial_class_name_to_keyword_arguments",
                 "trial_id_range_to_keyword_arguments",
                 "common_trial_keyword_arguments",
-            })
+            }
+        )
         return upstream
 
 

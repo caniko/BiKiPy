@@ -12,7 +12,7 @@ from bikipy.perimeter.base import (
 
 
 class AbcPerimeterPlugin(BasePluginFile, HasReferenceMixin, ABC):
-    manual_shape: Optional[StringPerimeterShapes] = None
+    manual_shape: Optional[StringPerimeterShapes]
     warn_missing_re_reference_file: bool = False
 
     plural_entries = True

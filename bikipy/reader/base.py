@@ -105,7 +105,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
     @property
     def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
         upstream = super().project_kit_fields_to_exclude_from_config_schema
-        upstream.update({"df_path", "trial_enclosure", "timestamp_index", "_using_bikipy_ingress"})
+        upstream.update(("df_path", "trial_enclosure", "timestamp_index", "_using_bikipy_ingress"))
         return upstream
 
     @abstractmethod

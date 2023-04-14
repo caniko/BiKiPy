@@ -381,7 +381,7 @@ class PerimeterSet(BasePerimeter):
     @property
     def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
         upstream = super().project_kit_fields_to_exclude_from_config_schema
-        upstream.update({"perimeters", "restricted_perimeters"})
+        upstream.update(("perimeters", "restricted_perimeters"))
         return upstream
 
     @property

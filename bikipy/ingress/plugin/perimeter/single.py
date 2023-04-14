@@ -26,7 +26,6 @@ logger = getLogger(__name__)
 
 # TODO: Manual radius readings from settings.yaml read.
 class PluginSinglePerimeter(AbcPerimeterPlugin):
-    manual_shape: Optional[StringPerimeterShapes] = None
     warn_missing_re_reference_file: bool = False
 
     plural_entries = True
