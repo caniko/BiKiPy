@@ -77,14 +77,14 @@ def update_defined_dictionary(old: dict, new: dict, new_optional: dict, delete_o
 
 @validate_arguments
 def auto_define_ingress_object(
-    project_root_directory: DirectoryPath, deprecated_file_name: bool = False, **ingress_kwargs
+    project_directory: DirectoryPath, deprecated_file_name: bool = False, **ingress_kwargs
 ) -> Ingress:
     from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
 
-    project_settings = load_settings(project_root_directory, deprecated_file_name)
+    project_settings = load_settings(project_directory, deprecated_file_name)
 
     return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[project_settings["ingress"]["method"]](
-        project_root_directory=project_root_directory,
+        project_directory=project_directory,
         deprecated_project_settings_file_name=deprecated_file_name,
         **ingress_kwargs,
     )

@@ -12,9 +12,10 @@ from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 import numpy as np
 import pandas as pd
 from inflection import underscore
-from projectkit.model import BaseProjectKitModel
+from projectkit.model.cds import CdsHierarchy
+from projectkit.model.kit_model import BaseProjectKitModel
 from projectkit.model.config import JITProjectKitConfiguration
-from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
+from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments, Field
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import set_bikipy_settings_from_dict
@@ -75,8 +76,19 @@ class BaseIngress(BaseProjectKitModel, ABC):
     This data is passed onto the experiment class, which is the runner of the analysis. The best method to initiate
     analysis is to run analyze_and_save(), a function at the bottom of this file, through the BiKiPy CLI.
     """
+    project_directory: DirectoryPath
+    dataset_directory: DirectoryPath
+    framewise_coordinates_file_suffix: str = ...
 
-    project_root_directory: DirectoryPath
+    first_stage_is_habituation: bool = False
+    metadata_trial_ids_are_higher_level: bool = False
+    trial_sequence_loops: int = 1
+
+    plugins_global: Optional[list[Plugin, ...]] = Field(default_factory=list)
+    plugins_metadata: Optional[list[Plugin, ...]] = Field(default_factory=list)
+    plugins_trialwise: Optional[list[Plugin, ...]] = Field(default_factory=list)
+
+    profile_runtime: bool = True
 
     ingress_defined_perimeters: dict[str, Perimeter] = {}
 
@@ -103,18 +115,18 @@ class BaseIngress(BaseProjectKitModel, ABC):
         ...
 
     @classmethod
-    def from_project_root_directory(cls, project_root_directory: DirectoryPath):
+    def from_project_directory(cls, project_directory: DirectoryPath):
         from bikipy.ingress.utils.settings import auto_define_ingress_object
         from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
 
-        kwargs = {"project_root_directory": project_root_directory}
+        kwargs = {"project_directory": project_directory}
         try:
             return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[
-                auto_define_ingress_object(project_root_directory).ingress_method
+                auto_define_ingress_object(project_directory).ingress_method
             ](**kwargs)
         except KeyError:
             msg = (
-                f"Defined ingress method, {auto_define_ingress_object(project_root_directory).ingress_method}, "
+                f"Defined ingress method, {auto_define_ingress_object(project_directory).ingress_method}, "
                 f"is not supported"
             )
             raise AttributeError(msg)
@@ -137,9 +149,9 @@ class BaseIngress(BaseProjectKitModel, ABC):
             )
             raise ValueError(msg)
 
-        if self.settings["ingress"]["trial_sequence_loops"]:
-            experiment = experiment.trial_sequence_repetition(self.settings["ingress"]["trial_sequence_loops"])
-        if self.settings["ingress"][FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD]:
+        if self.trial_sequence_loops:
+            experiment = experiment.trial_sequence_repetition(self.trial_sequence_loops)
+        if self.first_stage_is_habituation:
             experiment = experiment.set_first_trial_to_habituation()
 
         for trial_class in experiment.trial_classes:
@@ -213,7 +225,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
 
     @property
     def settings(self) -> dict:
-        return load_settings(self.project_root_directory, self.deprecated_project_settings_file_name)
+        return load_settings(self.project_directory, self.deprecated_project_settings_file_name)
 
     @cached_property
     def ranged_metadata(self) -> pd.DataFrame | None:
@@ -356,7 +368,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
                 f"Either trial_id or animal_sequence sheet must be defined in metadata "
                 f"when using metadata plugins that are stageful. This allows BiKiPy ingress "
                 f"to define a trial id for each trial object. Following plugins are set "
-                f"to metadata:\n{self._metadata_plugins}"
+                f"to metadata:\n{self.plugins_metadata}"
             )
             raise ValueError(msg)
 
@@ -366,11 +378,11 @@ class BaseIngress(BaseProjectKitModel, ABC):
 
     @property
     def settings_path(self) -> FilePath:
-        return get_project_settings_path(self.project_root_directory, self.deprecated_project_settings_file_name)
+        return get_project_settings_path(self.project_directory, self.deprecated_project_settings_file_name)
 
     @property
     def metadata_path(self) -> FilePath:
-        return infer_metadata_path(self.project_root_directory)
+        return infer_metadata_path(self.project_directory)
 
     @property
     def dataset_directory_path(self) -> DirectoryPath:
@@ -379,29 +391,19 @@ class BaseIngress(BaseProjectKitModel, ABC):
                 msg = f"dataset_directory must exist: {path}"
                 raise AttributeError(msg)
             return path
-        return get_dataset_directory_path(self.project_root_directory)
+        return get_dataset_directory_path(self.project_directory)
 
     @property
     def plugin_directory_path(self) -> DirectoryPath:
-        return get_plugin_directory_path(self.project_root_directory)
+        return get_plugin_directory_path(self.project_directory)
 
     @property
     def inspect_directory_path(self) -> DirectoryPath:
-        return get_inspect_directory_path(self.project_root_directory)
+        return get_inspect_directory_path(self.project_directory)
 
     @property
     def result_directory_path(self) -> DirectoryPath:
-        return result_directory_path(self.project_root_directory)
-
-    # Constants =============================
-
-    @property
-    def framewise_coordinates_file_suffix(self):
-        return self.settings["ingress"]["framewise_coordinates_file_suffix"]
-
-    @property
-    def metadata_trial_ids_are_higher_level(self):
-        return self.settings["ingress"][METADATA_TRIAL_IDS_ARE_HIGHER_LEVEL_FIELD]
+        return result_directory_path(self.project_directory)
 
     # Backend functions =================================
 
@@ -410,7 +412,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
             self._define_experiment_data()
 
     def _define_experiment_data(self) -> None:
-        for plugin_model in self._global_plugins:
+        for plugin_model in self.plugins_global:
             first_file = next(self.plugin_directory_path.glob(f"{plugin_model.code_key}*"))
             self._common_trial_keyword_arguments[plugin_model.default_trial_argument_key] = plugin_model(
                 data_path=first_file, ingress=self
@@ -422,7 +424,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
             else self._trial_id_to_keyword_arguments
         )
 
-        for plugin_model in self._metadata_plugins:
+        for plugin_model in self.plugins_metadata:
             label_to_file_path = {
                 file_path.stem.split("-")[-1]: file_path
                 for file_path in self.plugin_directory_path.glob(f"{plugin_model.code_key}*")
@@ -497,7 +499,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
     def trial_id_exists(self, trial_id: Label) -> bool:
         if trial_id in self.metadata.index:
             return True
-        if self.settings["ingress"][METADATA_TRIAL_IDS_ARE_HIGHER_LEVEL_FIELD] and isinstance(trial_id, str):
+        if self.metadata_trial_ids_are_higher_level and isinstance(trial_id, str):
             for designator_id in self.metadata.index:
                 if f"{designator_id}_" in trial_id:
                     self._trial_id_to_designator_id[trial_id] = designator_id
@@ -577,7 +579,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
         return df
 
     def save_analysis_data(self):
-        if self.settings["ingress"]["profile_runtime"]:
+        if self.profile_runtime:
             with Profile() as pr:
                 self.experiment.trial_label_to_df
             stats = pstats.Stats(pr)
@@ -627,30 +629,6 @@ class BaseIngress(BaseProjectKitModel, ABC):
 
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
 
-    @cached_property
-    def _global_plugins(self) -> list[Plugin, ...]:
-        return [
-            ingress_key_to_model[ingress_key]
-            for ingress_key, strategy in self.settings["definition_strategies"].items()
-            if strategy == "global"
-        ]
-
-    @cached_property
-    def _metadata_plugins(self) -> list[Plugin, ...]:
-        return [
-            ingress_key_to_model[ingress_key]
-            for ingress_key, strategy in self.settings["definition_strategies"].items()
-            if strategy == "metadata"
-        ]
-
-    @cached_property
-    def _trial_wise_plugins(self) -> list[Plugin]:
-        return [
-            ingress_key_to_model[ingress_key]
-            for ingress_key, strategy in self.settings["definition_strategies"].items()
-            if strategy == "trial-wise"
-        ]
-
     def get_meter_per_pixel(self, trial_id: Optional[str | PositiveInt] = None) -> NDArrayFp64:
         match self.settings["definition_strategies"]["meters_per_pixel"]:
             case "global":
@@ -670,7 +648,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
         self, trial_id: Label, trial_directory: DirectoryPath, trial_id_plugin_glob_format_string: str
     ) -> dict:
         result = {}
-        for plugin_model in self._trial_wise_plugins:
+        for plugin_model in self.plugins_trialwise:
             glob_str = trial_id_plugin_glob_format_string.format(
                 trial_id=trial_id, plugin_code_key=plugin_model.code_key
             )
@@ -728,25 +706,26 @@ bikipy_jit_project_kit = JITProjectKitConfiguration(project_name="bikipy-cli")
 def init_settings(
     ingress_method: str,
     experiment_name: str,
-    project_root_directory: DirectoryPath,
+    project_directory: DirectoryPath,
     framewise_coordinates_file_suffix: str,
     dry_run: bool = False,
     silent: bool = False,
 ) -> dict[str, str | dict]:
     from bikipy.behaviour.mapping import experiment_name_to_class
 
-    logger.info(f"Generating experiment configuration at {project_root_directory}")
+    logger.info(f"Generating experiment configuration at {project_directory}")
 
     experiment_class = experiment_name_to_class[experiment_name]
-    config_kwargs = {
-        "cds_single_instance_interface": frozenset(
-            (INGRESS_METHOD_NAME_TO_INGRESS_CLASS[ingress_method], experiment_class)
-        ),
-        "cds_hierarchical_interface": {"trials": experiment_class.trial_classes},
-    }
-
+    cds_hierarchical = [CdsHierarchy(group_name="trials", cds_classes=frozenset(experiment_class.trial_classes))]
     if experiment_class.at_least_one_trial_has_perimeter:
-        config_kwargs["cds_hierarchical_interface"]["perimeter"] = (frozenset(PerimeterPlugins), None, None)
+        cds_hierarchical.append(CdsHierarchy(group_name="perimeters", cds_classes=frozenset(experiment_class.trial_perimeter_label_to_perimeter_class)))
+        cds_hierarchical.append(CdsHierarchy(group_name="perimeters", cds_classes=frozenset(PerimeterPlugins)))
+
+    config_kwargs = {
+        "project_directory": project_directory,
+        "cds_single_instance_interface": frozenset((INGRESS_METHOD_NAME_TO_INGRESS_CLASS[ingress_method], experiment_class)),
+        "cds_hierarchical_interface": frozenset(cds_hierarchical),
+    }
 
     bikipy_jit_project_kit.initialize(config_kwargs=config_kwargs)
 
@@ -807,11 +786,11 @@ def init_settings(
         if not silent:
             print(json.dumps(generic_settings, indent=2))
     else:
-        settings_path = get_project_settings_path(project_root_directory)
+        settings_path = get_project_settings_path(project_directory)
         dump_settings(settings_path, generic_settings)
 
     return generic_settings
 
 
-def analyze_and_save(project_root_directory: DirectoryPath):
-    BaseIngress.from_project_root_directory(project_root_directory).save_analysis_data()
+def analyze_and_save(project_directory: DirectoryPath):
+    BaseIngress.from_project_directory(project_directory).save_analysis_data()

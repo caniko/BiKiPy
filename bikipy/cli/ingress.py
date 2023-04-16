@@ -25,7 +25,7 @@ def ingress():
 @click.option(
     "-p",
     "--path",
-    "project_root_directory",
+    "project_directory",
     help="Path to the sequence formatted project directory, uses current directory on omition",
 )
 @click.option("-s", "--data_file_suffi  x", "framewise_coordinates_file_suffix", default=".h5")
@@ -34,49 +34,49 @@ def ingress():
 def init(
     ingress_method: str,
     experiment_name: str,
-    project_root_directory: Optional[DirectoryPath] = None,
+    project_directory: Optional[DirectoryPath] = None,
     framewise_coordinates_file_suffix: str = "h5",
     dry_run: bool = False,
 ) -> None:
-    project_root_directory = current_path_or_arg_path(project_root_directory)
+    project_directory = current_path_or_arg_path(project_directory)
 
-    if (project_root_directory / "settings.yaml").exists() and input(
+    if (project_directory / "settings.yaml").exists() and input(
         "Project has already been initialised, overwrite settings? y/N "
     ).strip().lower() != "y":
         return print("User aborted re-initialisation")
 
-    init_settings(ingress_method, experiment_name, project_root_directory, framewise_coordinates_file_suffix, dry_run)
+    init_settings(ingress_method, experiment_name, project_directory, framewise_coordinates_file_suffix, dry_run)
 
 
 @ingress.command()
-@click.argument("project_root_directory")
+@click.argument("project_directory")
 @validate_arguments
-def analyze(project_root_directory: Optional[DirectoryPath]) -> None:
-    analyze_and_save(current_path_or_arg_path(project_root_directory))
+def analyze(project_directory: Optional[DirectoryPath]) -> None:
+    analyze_and_save(current_path_or_arg_path(project_directory))
 
 
 @ingress.command()
-@click.option("-p", "project_root_directory")
+@click.option("-p", "project_directory")
 @click.option("-x", "--delete_outdated", help="Outdated field will be removed", is_flag=True)
 @click.option("-d", "--dry_run", is_flag=True)
 @validate_arguments
 def update(
-    project_root_directory: Optional[DirectoryPath], delete_outdated: bool = False, dry_run: bool = False
+    project_directory: Optional[DirectoryPath], delete_outdated: bool = False, dry_run: bool = False
 ) -> None:
-    update_settings(project_root_directory, delete_outdated=delete_outdated)
+    update_settings(project_directory, delete_outdated=delete_outdated)
 
 
 @ingress.command()
-@click.option("-p", "project_root_directory")
+@click.option("-p", "project_directory")
 @click.option("-o", "override_pattern")
 @validate_arguments
-def purge_cache(project_root_directory: Optional[DirectoryPath], override_pattern: Optional[str] = None) -> None:
-    auto_define_ingress_object(current_path_or_arg_path(project_root_directory)).purge_cached_reads()
+def purge_cache(project_directory: Optional[DirectoryPath], override_pattern: Optional[str] = None) -> None:
+    auto_define_ingress_object(current_path_or_arg_path(project_directory)).purge_cached_reads()
 
 
 @ingress.command()
-@click.option("-p", "project_root_directory")
+@click.option("-p", "project_directory")
 @validate_arguments
-def merge_coords_bonsai_timestamps(project_root_directory: Optional[DirectoryPath]) -> None:
-    ingress = auto_define_ingress_object(current_path_or_arg_path(project_root_directory))
+def merge_coords_bonsai_timestamps(project_directory: Optional[DirectoryPath]) -> None:
+    ingress = auto_define_ingress_object(current_path_or_arg_path(project_directory))
     merge_timestamps_with_dlc(ingress.dataset_directory_path, coordinate_file_lookup_expression="*.h5")

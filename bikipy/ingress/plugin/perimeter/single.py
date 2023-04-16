@@ -11,7 +11,6 @@ from bikipy.core.typing import Label
 from bikipy.ingress.plugin.perimeter.base import AbcPerimeterPlugin
 from bikipy.perimeter.base import (
     SinglePerimeter,
-    StringPerimeterShapes,
     perimeter_set_from_makesense,
 )
 from bikipy.utils.collection_utils import get_first_key_in_dict

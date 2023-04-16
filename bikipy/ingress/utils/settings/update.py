@@ -28,7 +28,7 @@ def update_settings(
     new_settings = init_settings(
         ingress.ingress_method,
         ingress.experiment_name,
-        ingress.project_root_directory,
+        ingress.project_directory,
         ingress.framewise_coordinates_file_suffix,
         dry_run=True,
         silent=True,

@@ -131,7 +131,6 @@ def _is_inside_sm(point: NDArrayFp64, polygon: NDArrayFp64):
 
         # consider only lines which are not completely above/bellow/right from the point
         if dy * dy2 <= 0.0 and (point[0] >= polygon[ii][0] or point[0] >= polygon[jj][0]):
-
             # non-horizontal line
             if dy < 0 or dy2 < 0:
                 F = dy * (polygon[jj][0] - polygon[ii][0]) / (dy - dy2) + polygon[ii][0]

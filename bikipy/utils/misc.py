@@ -80,8 +80,8 @@ def clear_console():
     print("\033c\033[3J", end="")
 
 
-def current_path_or_arg_path(project_root_directory: Optional[DirectoryPath]):
-    return Path(project_root_directory or os.curdir)
+def current_path_or_arg_path(project_directory: Optional[DirectoryPath]):
+    return Path(project_directory or os.curdir)
 
 
 def get_git_root():

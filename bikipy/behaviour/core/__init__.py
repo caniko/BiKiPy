@@ -50,6 +50,7 @@ from bikipy.perimeter.base import (
     PerimeterSet,
     SinglePerimeter,
 )
+from bikipy.perimeter.mixin import TrialWithPerimeterMixin
 from bikipy.reader import READER_CLASS_LABEL_TO_CLASS
 from bikipy.reader.base import Reader, ReaderCLS
 from bikipy.reader.data_with_likelihood import DeepLabCutReader
@@ -150,7 +151,7 @@ class BaseTrial(Behaviour):
     @classmethod
     @property
     def has_perimeter(cls) -> bool:
-        return is_generic_type(cls) or issubclass(cls, PhysicalObjectTrialMixin)
+        return is_generic_type(cls) or issubclass(cls, TrialWithPerimeterMixin)
 
     @classmethod
     @property
@@ -742,7 +743,7 @@ class BaseExperiment(Behaviour):
                 msg = (
                     f"skip_habituation is True, but the experiment has no habituation trial set. Possible mistakes:\n"
                     f"  - skip_habituation was set to True by mistake.\n"
-                    f'  - users of ingress forgot to set {FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD} to "true" '
+                    f'  - Forgot to set ingress.first_stage_is_habituation to "True" '
                     f"in the project settings.yaml file.\n"
                     f"  - advanced users did not run set_first_trial_to_habituation, "
                     f"an Experiment classmethod that is required for habituation inclusive workflows."
