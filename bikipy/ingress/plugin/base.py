@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from enum import Enum, auto
 from functools import cached_property
 from typing import Any, ClassVar, Optional, TypeVar
 
@@ -11,11 +12,16 @@ from bikipy.core.typing import Label
 from bikipy.utils.makesense import get_only_point_from_makesense
 
 
+class PluginScope(Enum):
+    GLOBAL = "global"
+    METADATA = "metadata"
+    TRIAL_WISE = "trial_wise"
+
+
 class BasePlugin(BikipyModel, ABC):
     ingress: Any = Field(description="Bikipy ingress object to access project metadata relevant for defining perimeter")
+    plugin_scope: set[PluginScope] = ...
     manual_trial_argument_key: Optional[str]
-
-    plural_entries: ClassVar[bool] = False
 
     ingress_key: ClassVar[str] = ...
     code_key: ClassVar[str] = ...

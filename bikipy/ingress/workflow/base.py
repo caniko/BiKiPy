@@ -20,6 +20,7 @@ from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import set_bikipy_settings_from_dict
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment
+from bikipy.behaviour.radial_arm import BaseRadialMazeExperiment
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin import ALL_PLUGINS, PluginMeterPerPixel, ingress_key_to_model
 from bikipy.ingress.plugin.base import Plugin
@@ -88,6 +89,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
     plugins_metadata: Optional[list[Plugin, ...]] = Field(default_factory=list)
     plugins_trialwise: Optional[list[Plugin, ...]] = Field(default_factory=list)
 
+    runtime_settings: Optional[dict]
     profile_runtime: bool = True
 
     ingress_defined_perimeters: dict[str, Perimeter] = {}
@@ -385,15 +387,6 @@ class BaseIngress(BaseProjectKitModel, ABC):
         return infer_metadata_path(self.project_directory)
 
     @property
-    def dataset_directory_path(self) -> DirectoryPath:
-        if self.settings["ingress"]["dataset_directory"] != ".":
-            if not (path := Path(self.settings["ingress"]["dataset_directory"])).exists():
-                msg = f"dataset_directory must exist: {path}"
-                raise AttributeError(msg)
-            return path
-        return get_dataset_directory_path(self.project_directory)
-
-    @property
     def plugin_directory_path(self) -> DirectoryPath:
         return get_plugin_directory_path(self.project_directory)
 
@@ -509,7 +502,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
 
     @cached_property
     def experiment(self) -> "Experiment":
-        set_bikipy_settings_from_dict(self.settings["developer"]["settings"])
+        set_bikipy_settings_from_dict(self.runtime_settings)
 
         settings_defined = set(self.settings["experiment"]["defined"])
 
@@ -605,9 +598,9 @@ class BaseIngress(BaseProjectKitModel, ABC):
         to_delete = [
             f
             for f in chain(
-                self.dataset_directory_path.glob(f"**/**/*{pattern}*"),
-                self.dataset_directory_path.glob(f"**/*{pattern}*"),
-                self.dataset_directory_path.glob(f"*{pattern}*"),
+                self.dataset_directory.glob(f"**/**/*{pattern}*"),
+                self.dataset_directory.glob(f"**/*{pattern}*"),
+                self.dataset_directory.glob(f"*{pattern}*"),
             )
         ]
         if not to_delete:
@@ -700,7 +693,9 @@ class BaseIngress(BaseProjectKitModel, ABC):
 Ingress = TypeVar("Ingress", bound=BaseIngress)
 
 
-bikipy_jit_project_kit = JITProjectKitConfiguration(project_name="bikipy-cli")
+bikipy_jit_project_kit = JITProjectKitConfiguration(
+    project_name="bikipy-cli"
+)
 
 
 def init_settings(
@@ -719,10 +714,16 @@ def init_settings(
     cds_hierarchical = [CdsHierarchy(group_name="trials", cds_classes=frozenset(experiment_class.trial_classes))]
     if experiment_class.at_least_one_trial_has_perimeter:
         cds_hierarchical.append(CdsHierarchy(group_name="perimeters", cds_classes=frozenset(experiment_class.trial_perimeter_label_to_perimeter_class)))
+    if issubclass(experiment_class, BaseRadialMazeExperiment):
         cds_hierarchical.append(CdsHierarchy(group_name="perimeters", cds_classes=frozenset(PerimeterPlugins)))
 
     config_kwargs = {
         "project_directory": project_directory,
+        "manual_settings_to_default": {
+            "developer": {
+                "settings": {"disable_numba": False, "disable_process_pooling": False, "only_physical_cores": False},
+            }
+        },
         "cds_single_instance_interface": frozenset((INGRESS_METHOD_NAME_TO_INGRESS_CLASS[ingress_method], experiment_class)),
         "cds_hierarchical_interface": frozenset(cds_hierarchical),
     }
@@ -739,10 +740,6 @@ def init_settings(
             "metadata_filename": "metadata.xlsx",
             "experiment_class": experiment_name,
             "trial_sequence": experiment_class.trial_class_names,
-        },
-        "developer": {
-            "activate_debugging": False,
-            "settings": {"disable_numba": False, "disable_process_pooling": False, "only_physical_cores": False},
         },
         "ingress": {
             "method": ingress_method,

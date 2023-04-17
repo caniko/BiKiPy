@@ -22,6 +22,8 @@ from bikipy.utils.math.geometry import (
 
 
 class PluginRadial(BasePluginDirectory, HasReferenceMixin):
+    radial_arm_rectangle_diagonal: int
+
     ingress_key = "radial"
     code_key = "radial"
     default_trial_argument_key = "radial"
@@ -88,7 +90,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
             arm_perimeter.meters_per_pixel = meter_per_pixel_from_diagonal(
                 arm_perimeter.vertices_in_pixels[0],
                 arm_perimeter.vertices_in_pixels[2],
-                self.ingress.settings["perimeter"]["radial_arm_rectangle_diagonal"],
+                self.ingress.settings["perimeter"][""],
             )
             arm_perimeters.append(arm_perimeter)
 
