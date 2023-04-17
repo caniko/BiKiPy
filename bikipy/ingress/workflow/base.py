@@ -18,7 +18,7 @@ from projectkit.model.kit_model import BaseProjectKitModel
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments, Field
 from pydantic_numpy.dtype import NDArrayFp64
 
-from bikipy import set_bikipy_settings_from_dict
+from bikipy import set_bikipy_settings_from_dict, BikipyRuntimeSettings
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.radial_arm import BaseRadialMazeExperiment
 from bikipy.core.typing import Label
@@ -725,15 +725,14 @@ def init_settings(
     ingress_method: str,
     experiment_name: str,
     project_directory: DirectoryPath,
-    dry_run: bool = False,
-    silent: bool = False,
-) -> dict[str, str | dict]:
+) -> None:
     from bikipy.behaviour.mapping import experiment_name_to_class
 
     logger.info(f"Generating experiment configuration at {project_directory}")
 
     experiment_class = experiment_name_to_class[experiment_name]
     cds_single = [
+        CdsSingle(manual_group_name="runtime_settings", cds_class=BikipyRuntimeSettings),
         CdsSingle(manual_group_name="ingress", cds_class=INGRESS_METHOD_NAME_TO_INGRESS_CLASS[ingress_method]),
         CdsSingle(manual_group_name="experiment", cds_class=experiment_class),
     ]
@@ -746,6 +745,9 @@ def init_settings(
             for trial_class in experiment_class.trial_classes
             if issubclass(trial_class, EnclosedTrial)
         }
+        assert (
+            trial_class_to_perimeter_enclosure
+        ), f"{experiment_class.__name__}, is an enclosed experiment, but has no class"
         if len(trial_class_to_perimeter_enclosure) == 1:
             cds_homologs.append(
                 CdsHomologs(
@@ -780,41 +782,14 @@ def init_settings(
             )
         )
 
-    config_kwargs = {
-        "project_directory": project_directory,
-        "manual_settings_to_default": {
-            "developer": {
-                "settings": {"disable_numba": False, "disable_process_pooling": False, "only_physical_cores": False},
-            }
-        },
-        cds_single
-        "cds_hierarchical_interface": frozenset(cds_hierarchical),
-    }
-
-    bikipy_jit_project_kit.initialize(config_kwargs=config_kwargs)
-
-    experiment_class = experiment_name_to_class[experiment_name]
-
-    generic_settings = {
-        "immutable": {
-            "metadata_filename": "metadata.xlsx",
-            "experiment_class": experiment_name,
-            "trial_sequence": experiment_class.trial_class_names,
-        },
-        "definition_strategies": {plugin.ingress_key: "" for plugin in ALL_PLUGINS},
-        "manual_reader_kwargs": extended_schema(DataWithLikelihoodReader, with_required=True),
-        "trial": extended_group_schema(experiment_class.trial_sequence),
-        "experiment": extended_schema(experiment_class),
-    }
-
-    if dry_run:
-        if not silent:
-            print(json.dumps(generic_settings, indent=2))
-    else:
-        settings_path = get_project_settings_path(project_directory)
-        dump_settings(settings_path, generic_settings)
-
-    return generic_settings
+    bikipy_jit_project_kit.initialize(
+        config_kwargs={
+            "project_directory": project_directory,
+            "cds_single_instance_interface": frozenset(cds_single),
+            "cds_homolog_interface": frozenset(cds_homologs),
+            "cds_hierarchical_interface": frozenset(cds_hierarchical),
+        }
+    )
 
 
 def analyze_and_save(project_directory: DirectoryPath):

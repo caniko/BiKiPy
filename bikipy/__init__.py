@@ -1,13 +1,14 @@
 from math import floor
 
 import matplotlib
+from projectkit.model.kit_model import BaseProjectKitModel
 from psutil import cpu_count
 from pydantic import BaseSettings, Field
 
 matplotlib.use("Agg")
 
 
-class BikipyRuntimeSettings(BaseSettings):
+class BikipyRuntimeSettings(BaseSettings, BaseProjectKitModel):
     disable_process_pooling: bool = Field(
         False,
         description="initialize each DeepLabCutReader object with multiprocessing. "
