@@ -62,7 +62,7 @@ logger = getLogger(__name__)
 
 
 class Behaviour(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
-    animal_profile: ClassVar[Literal["rodent"]] = ...
+    pass
 
 
 class BaseTrial(Behaviour):
@@ -71,6 +71,7 @@ class BaseTrial(Behaviour):
         ..., description="Keyword arguments that will be passed on the reader objects on init"
     )
     animal_id: str | PositiveInt = Field(..., description="The ID of the animal in the trial")
+    animal_profile: Literal["rodent"] = "rodent"
     coordinate_timestamp_index: Optional[NDArray] = timestamp_index_field
     manual_center_pixels: Optional[NDArrayInt16]
     rigid_nodes_freezing: Optional[Sequence[str | PositiveInt]] = Field(
@@ -333,13 +334,24 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
+    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().project_kit_fields_to_exclude_from_config_schema
+        upstream.update(
+            (
+                "trial_id_to_trial_class_name",
+                "trial_id_to_keyword_arguments",
+                "trial_class_name_to_keyword_arguments",
+                "trial_id_range_to_keyword_arguments",
+                "common_trial_keyword_arguments",
+            )
+        )
+        return upstream
+
+    @classmethod
+    @property
     def trial_classes(cls) -> set[TrialCLS]:
         """All trials designed for the experiment class"""
         return set(cls.trial_sequence)
-
-    def save(self):
-        self._trial_class_to_trial_series_set
-        super().save()
 
     @classmethod
     def trial_sequence_repetition(cls, repetitions: int) -> "ExperimentCLS":
@@ -771,20 +783,9 @@ class BaseExperiment(Behaviour):
         )
         raise AttributeError(msg)
 
-    @classmethod
-    @property
-    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().project_kit_fields_to_exclude_from_config_schema
-        upstream.update(
-            {
-                "trial_id_to_trial_class_name",
-                "trial_id_to_keyword_arguments",
-                "trial_class_name_to_keyword_arguments",
-                "trial_id_range_to_keyword_arguments",
-                "common_trial_keyword_arguments",
-            }
-        )
-        return upstream
+    def save(self):
+        self._trial_class_to_trial_series_set
+        super().save()
 
 
 ExperimentCLS = Type[BaseExperiment]

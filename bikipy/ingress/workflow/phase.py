@@ -16,7 +16,7 @@ class PhaseIngress(BaseIngress):
         for phase_dir in self.dataset_directory_path.iterdir():
             phase_id = self._get_id_from_path_stem(phase_dir)
 
-            for framewise_coordinates_path in self._glob_coordinate_files_in_directory(phase_dir):
+            for framewise_coordinates_path in self.coordinate_files_in_directory(phase_dir):
                 phase_designated_trial_id = self._get_id_from_path_stem(framewise_coordinates_path)
                 trial_id = _define_trial_id(phase_id, phase_designated_trial_id)
                 trial_number = int(trial_id.split("_")[1])

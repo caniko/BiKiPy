@@ -17,7 +17,6 @@ animal_profile = "rodent"
 first_stage_is_habituation = false
 metadata_trial_ids_are_higher_level = false
 trial_sequence_loops = ""
-framewise_coordinates_file_suffix = ".h5"
 dataset_directory = "/data/behaviour_dataset/dejana/oul/r4"
 profile_runtime = true
 

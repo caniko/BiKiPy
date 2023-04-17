@@ -17,7 +17,7 @@ animal_profile = "rodent"
 first_stage_is_habituation = true
 metadata_trial_ids_are_higher_level = false
 trial_sequence_loops = 1
-framewise_coordinates_file_suffix = ".parquet"
+
 dataset_directory = "/home/can/Downloads/Compressed/nort/"
 profile_runtime = true
 

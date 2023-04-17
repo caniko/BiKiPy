@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Optional
+from typing import Optional, ClassVar
 
 from pydantic import PositiveInt
 
@@ -13,9 +13,9 @@ from bikipy.perimeter.base import (
 
 class AbcPerimeterPlugin(BasePluginFile, HasReferenceMixin, ABC):
     manual_shape: Optional[StringPerimeterShapes]
-    warn_missing_re_reference_file: bool = False
-
     plural_entries = True
+
+    warn_missing_re_reference_file: ClassVar[bool] = False
 
     ingress_key = "perimeter"
     code_key = "perimeter"

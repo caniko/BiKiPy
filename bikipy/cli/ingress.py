@@ -28,14 +28,12 @@ def ingress():
     "project_directory",
     help="Path to the sequence formatted project directory, uses current directory on omition",
 )
-@click.option("-s", "--data_file_suffi  x", "framewise_coordinates_file_suffix", default=".h5")
 @click.option("-d", "--dry_run", is_flag=True)
 @validate_arguments
 def init(
     ingress_method: str,
     experiment_name: str,
     project_directory: Optional[DirectoryPath] = None,
-    framewise_coordinates_file_suffix: str = "h5",
     dry_run: bool = False,
 ) -> None:
     project_directory = current_path_or_arg_path(project_directory)
@@ -45,7 +43,7 @@ def init(
     ).strip().lower() != "y":
         return print("User aborted re-initialisation")
 
-    init_settings(ingress_method, experiment_name, project_directory, framewise_coordinates_file_suffix, dry_run)
+    init_settings(ingress_method, experiment_name, project_directory, dry_run)
 
 
 @ingress.command()
@@ -60,9 +58,7 @@ def analyze(project_directory: Optional[DirectoryPath]) -> None:
 @click.option("-x", "--delete_outdated", help="Outdated field will be removed", is_flag=True)
 @click.option("-d", "--dry_run", is_flag=True)
 @validate_arguments
-def update(
-    project_directory: Optional[DirectoryPath], delete_outdated: bool = False, dry_run: bool = False
-) -> None:
+def update(project_directory: Optional[DirectoryPath], delete_outdated: bool = False, dry_run: bool = False) -> None:
     update_settings(project_directory, delete_outdated=delete_outdated)
 
 

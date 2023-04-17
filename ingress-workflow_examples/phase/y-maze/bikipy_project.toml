@@ -17,7 +17,7 @@ animal_profile = "rodent"
 first_stage_is_habituation = false
 metadata_trial_ids_are_higher_level = false
 trial_sequence_loops = 1
-framewise_coordinates_file_suffix = ".parquet"
+
 dataset_directory = "/mnt/soma/Projects/Neuroscience/Imen/data/y_maze/"
 profile_runtime = true
 

@@ -12,18 +12,25 @@ from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 import numpy as np
 import pandas as pd
 from inflection import underscore
-from projectkit.model.cds import CdsHierarchy
+from projectkit.model.cds import CdsHierarchy, CdsHomologs, CdsSingle
+from projectkit.model.config.jit import JITProjectKitConfiguration
 from projectkit.model.kit_model import BaseProjectKitModel
-from projectkit.model.config import JITProjectKitConfiguration
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments, Field
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import set_bikipy_settings_from_dict
-from bikipy.behaviour.core.enclosure.base import EnclosedExperiment
+from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.radial_arm import BaseRadialMazeExperiment
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin import ALL_PLUGINS, PluginMeterPerPixel, ingress_key_to_model
-from bikipy.ingress.plugin.base import Plugin
+from bikipy.ingress.plugin import (
+    ALL_PLUGINS,
+    PluginMeterPerPixel,
+    ingress_key_to_model,
+    PluginRadial,
+    PluginEnclosure,
+    PluginSinglePerimeter,
+)
+from bikipy.ingress.plugin.base import Plugin, PluginScope
 from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
 )
@@ -53,11 +60,6 @@ from bikipy.utils.misc import defaultdict_dict_factory, sheet_names_from_path
 if TYPE_CHECKING:
     from bikipy.behaviour.core import Experiment, ExperimentCLS, TrialCLS
 
-
-FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD = "first_stage_is_habituation"
-METADATA_TRIAL_IDS_ARE_HIGHER_LEVEL_FIELD = "metadata_trial_ids_are_higher_level"
-
-
 logger = getLogger(__name__)
 
 
@@ -77,17 +79,23 @@ class BaseIngress(BaseProjectKitModel, ABC):
     This data is passed onto the experiment class, which is the runner of the analysis. The best method to initiate
     analysis is to run analyze_and_save(), a function at the bottom of this file, through the BiKiPy CLI.
     """
+
     project_directory: DirectoryPath
     dataset_directory: DirectoryPath
-    framewise_coordinates_file_suffix: str = ...
 
     first_stage_is_habituation: bool = False
     metadata_trial_ids_are_higher_level: bool = False
     trial_sequence_loops: int = 1
 
-    plugins_global: Optional[list[Plugin, ...]] = Field(default_factory=list)
-    plugins_metadata: Optional[list[Plugin, ...]] = Field(default_factory=list)
-    plugins_trialwise: Optional[list[Plugin, ...]] = Field(default_factory=list)
+    definition_meters_per_pixel: PluginScope
+    definition_perimeter: Optional[frozenset[PluginScope]]
+    definition_enclosure: Optional[frozenset[PluginScope]]
+    definition_radial: Optional[frozenset[PluginScope]]
+    definition_change_reference: Optional[frozenset[PluginScope]]
+    definition_frame: Optional[frozenset[PluginScope]]
+    definition_video: Optional[frozenset[PluginScope]]
+    definition_timestamp: Optional[frozenset[PluginScope]]
+    definition_center: Optional[frozenset[PluginScope]]
 
     runtime_settings: Optional[dict]
     profile_runtime: bool = True
@@ -123,9 +131,9 @@ class BaseIngress(BaseProjectKitModel, ABC):
 
         kwargs = {"project_directory": project_directory}
         try:
-            return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[
-                auto_define_ingress_object(project_directory).ingress_method
-            ](**kwargs)
+            return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[auto_define_ingress_object(project_directory).ingress_method](
+                **kwargs
+            )
         except KeyError:
             msg = (
                 f"Defined ingress method, {auto_define_ingress_object(project_directory).ingress_method}, "
@@ -155,9 +163,6 @@ class BaseIngress(BaseProjectKitModel, ABC):
             experiment = experiment.trial_sequence_repetition(self.trial_sequence_loops)
         if self.first_stage_is_habituation:
             experiment = experiment.set_first_trial_to_habituation()
-
-        for trial_class in experiment.trial_classes:
-            trial_class.animal_profile = self.settings["ingress"]["animal_profile"]
 
         return experiment
 
@@ -623,13 +628,13 @@ class BaseIngress(BaseProjectKitModel, ABC):
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
 
     def get_meter_per_pixel(self, trial_id: Optional[str | PositiveInt] = None) -> NDArrayFp64:
-        match self.settings["definition_strategies"]["meters_per_pixel"]:
-            case "global":
+        match self.definition_meters_per_pixel:
+            case PluginScope.GLOBAL:
                 return self._common_trial_keyword_arguments[PluginMeterPerPixel.default_trial_argument_key]
-            case "metadata":
+            case PluginScope.METADATA:
                 file_label = self.metadata["MetersPerPixel"][trial_id]
                 return detect_meters_per_pixel_in_perimeter_directory(self.plugin_directory_path)[file_label]
-            case "trial-wise":
+            case PluginScope.TRIAL_WISE:
                 return self.trial_id_to_keyword_arguments[trial_id]["meters_per_pixel"]
 
     # Private methods ===============================
@@ -660,8 +665,28 @@ class BaseIngress(BaseProjectKitModel, ABC):
         return result
 
     @validate_arguments
-    def _glob_coordinate_files_in_directory(self, directory_path: DirectoryPath) -> Iterable:
-        return directory_path.glob(f"*{self.framewise_coordinates_file_suffix}")
+    def coordinate_files_in_directory(self, directory_path: DirectoryPath) -> list[FilePath, ...]:
+        available_indices = {int(file.stem.split(".")[0]) for file in directory_path.iterdir() if file.is_file()}
+
+        result = []
+        for index in available_indices:
+            index_files = [f for f in directory_path.glob(f"{index}.*") if f.is_file()]
+            if any((current_file := file).stem.endswith("timestamped") for file in index_files):
+                result.append(current_file)
+                continue
+            if any((current_file := file).suffix == ".parquet" for file in index_files if "augmented" not in file.stem):
+                result.append(current_file)
+                continue
+            if any((current_file := file).suffix == ".h5" for file in index_files):
+                result.append(current_file)
+                continue
+            if any((current_file := file).suffix == ".csv" for file in index_files):
+                result.append(current_file)
+                continue
+
+            raise ValueError(f"Could not find a supported coordinate file for index {index} in {directory_path}")
+
+        return result
 
     @validate_arguments
     def _gather_coordinates_and_potential_timestamp_data(self, coordinate_path: FilePath) -> dict[str, FilePath]:
@@ -693,16 +718,13 @@ class BaseIngress(BaseProjectKitModel, ABC):
 Ingress = TypeVar("Ingress", bound=BaseIngress)
 
 
-bikipy_jit_project_kit = JITProjectKitConfiguration(
-    project_name="bikipy-cli"
-)
+bikipy_jit_project_kit = JITProjectKitConfiguration(project_name="bikipy-cli")
 
 
 def init_settings(
     ingress_method: str,
     experiment_name: str,
     project_directory: DirectoryPath,
-    framewise_coordinates_file_suffix: str,
     dry_run: bool = False,
     silent: bool = False,
 ) -> dict[str, str | dict]:
@@ -711,11 +733,52 @@ def init_settings(
     logger.info(f"Generating experiment configuration at {project_directory}")
 
     experiment_class = experiment_name_to_class[experiment_name]
+    cds_single = [
+        CdsSingle(manual_group_name="ingress", cds_class=INGRESS_METHOD_NAME_TO_INGRESS_CLASS[ingress_method]),
+        CdsSingle(manual_group_name="experiment", cds_class=experiment_class),
+    ]
+    cds_homologs = []
     cds_hierarchical = [CdsHierarchy(group_name="trials", cds_classes=frozenset(experiment_class.trial_classes))]
+
+    if issubclass(experiment_class, EnclosedExperiment):
+        trial_class_to_perimeter_enclosure = {
+            trial_class: trial_class.trial_perimeter_enclosure_class
+            for trial_class in experiment_class.trial_classes
+            if issubclass(trial_class, EnclosedTrial)
+        }
+        if len(trial_class_to_perimeter_enclosure) == 1:
+            cds_homologs.append(
+                CdsHomologs(
+                    instance_names=frozenset(experiment_class.trial_class_names),
+                    manual_group_name="enclosure",
+                    cds_class=trial_class_to_perimeter_enclosure.pop(tuple(trial_class_to_perimeter_enclosure)[0]),
+                )
+            )
+        else:
+            cds_hierarchical.append(
+                CdsHierarchy(
+                    instance_names=frozenset(trial_class_to_perimeter_enclosure),
+                    group_name="enclosure",
+                    cds_classes=frozenset(trial_class_to_perimeter_enclosure.values()),
+                )
+            )
+
     if experiment_class.at_least_one_trial_has_perimeter:
-        cds_hierarchical.append(CdsHierarchy(group_name="perimeters", cds_classes=frozenset(experiment_class.trial_perimeter_label_to_perimeter_class)))
-    if issubclass(experiment_class, BaseRadialMazeExperiment):
-        cds_hierarchical.append(CdsHierarchy(group_name="perimeters", cds_classes=frozenset(PerimeterPlugins)))
+        cds_hierarchical.append(
+            CdsHierarchy(
+                group_name="perimeters",
+                cds_classes=experiment_class.trial_perimeter_label_to_perimeter_class,
+            )
+        )
+        perimeter_plugin_classes = {PluginSinglePerimeter}
+        if issubclass(experiment_class, BaseRadialMazeExperiment):
+            perimeter_plugin_classes.add(PluginRadial)
+        cds_hierarchical.append(
+            CdsHierarchy(
+                group_name="perimeter_plugin",
+                cds_classes=frozenset(perimeter_plugin_classes),
+            )
+        )
 
     config_kwargs = {
         "project_directory": project_directory,
@@ -724,7 +787,7 @@ def init_settings(
                 "settings": {"disable_numba": False, "disable_process_pooling": False, "only_physical_cores": False},
             }
         },
-        "cds_single_instance_interface": frozenset((INGRESS_METHOD_NAME_TO_INGRESS_CLASS[ingress_method], experiment_class)),
+        cds_single
         "cds_hierarchical_interface": frozenset(cds_hierarchical),
     }
 
@@ -732,52 +795,17 @@ def init_settings(
 
     experiment_class = experiment_name_to_class[experiment_name]
 
-    if framewise_coordinates_file_suffix[0] != ".":
-        framewise_coordinates_file_suffix = f".{framewise_coordinates_file_suffix}"
-
     generic_settings = {
         "immutable": {
             "metadata_filename": "metadata.xlsx",
             "experiment_class": experiment_name,
             "trial_sequence": experiment_class.trial_class_names,
         },
-        "ingress": {
-            "method": ingress_method,
-            "animal_profile": "rodent",
-            FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD: False,
-            METADATA_TRIAL_IDS_ARE_HIGHER_LEVEL_FIELD: False,
-            "trial_sequence_loops": 1,
-            "framewise_coordinates_file_suffix": framewise_coordinates_file_suffix,
-            "dataset_directory": ".",
-            "profile_runtime": True,
-        },
         "definition_strategies": {plugin.ingress_key: "" for plugin in ALL_PLUGINS},
         "manual_reader_kwargs": extended_schema(DataWithLikelihoodReader, with_required=True),
         "trial": extended_group_schema(experiment_class.trial_sequence),
         "experiment": extended_schema(experiment_class),
     }
-
-    if experiment_class.at_least_one_trial_has_perimeter:
-        generic_settings["perimeter"] = {
-            "label_prefix": "",
-            "label_suffix": "",
-            "perimeter_names_in_metadata": False,
-            "radial_arm_rectangle_diagonal": -1,
-            "common": extended_schema(BaseSinglePerimeter),
-            "trial_perimeters": {
-                label: extended_schema(perimeter_class)
-                for label, perimeter_class in experiment_class.trial_perimeter_label_to_perimeter_class.items()
-            },
-        }
-
-    if issubclass(experiment_class, EnclosedExperiment):
-        enclosure_settings = {
-            experiment_class_label: extended_schema(enclosure_class, with_required=False)
-            for experiment_class_label, enclosure_class in experiment_class.trial_perimeter_enclosure_classes.items()
-            if enclosure_class in PERIMETER_CLASS_REQUIRE_INTERFACE_SETTINGS
-        }
-        if enclosure_settings:
-            generic_settings["enclosure"] = enclosure_settings
 
     if dry_run:
         if not silent:

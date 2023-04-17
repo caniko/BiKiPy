@@ -15,7 +15,7 @@ from bikipy.utils.makesense import get_only_point_from_makesense
 class PluginScope(Enum):
     GLOBAL = "global"
     METADATA = "metadata"
-    TRIAL_WISE = "trial_wise"
+    TRIAL_WISE = "trialwise"
 
 
 class BasePlugin(BikipyModel, ABC):

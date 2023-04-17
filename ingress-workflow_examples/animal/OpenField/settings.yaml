@@ -3,7 +3,6 @@ ingress:
   first_stage_is_habituation: true
   metadata_trial_ids_are_higher_level: false
   trial_sequence_loops: ""
-  framewise_coordinates_file_suffix: .h5
   minimum_frame_length: 500
   dataset_directory: /Users/can/Downloads/habituation_dataset
   profile_runtime: true

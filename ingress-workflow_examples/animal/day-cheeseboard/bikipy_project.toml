@@ -17,7 +17,7 @@ animal_profile = "rodent"
 first_stage_is_habituation = false
 metadata_trial_ids_are_higher_level = true
 trial_sequence_loops = ""
-framewise_coordinates_file_suffix = ".parquet"
+
 dataset_directory = "/data/behaviour_dataset/Chrys_Behavior_Analysis/cheeseboard/dataset"
 profile_runtime = true
 

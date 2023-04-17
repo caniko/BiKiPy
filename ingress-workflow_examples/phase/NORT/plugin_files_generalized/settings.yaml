@@ -127,5 +127,4 @@ experiment:
     video_path: string
 immutable:
   metadata_filename: metadata.xlsx
-  framewise_coordinates_file_suffix: .parquet
   experiment_class: nort

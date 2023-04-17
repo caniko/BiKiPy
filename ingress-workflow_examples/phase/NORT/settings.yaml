@@ -1,7 +1,6 @@
 ingress:
   method: phase
   first_stage_is_habituation: true
-  framewise_coordinates_file_suffix: .parquet
   minimum_frame_length: 500
   dataset_directory: /home/can/Downloads/Compressed/nort/
   profile_runtime: true

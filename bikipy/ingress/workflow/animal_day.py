@@ -28,7 +28,7 @@ class AnimalDayIngress(BaseIngress):
 
                 day = day_dir.stem.lower().replace("D", "").strip()
 
-                for framewise_coordinates_path in self._glob_coordinate_files_in_directory(day_dir):
+                for framewise_coordinates_path in self.coordinate_files_in_directory(day_dir):
                     daily_trial_number = int(self._get_id_from_path_stem(framewise_coordinates_path).split(".")[0])
 
                     trial_id = define_trial_id()
@@ -37,7 +37,7 @@ class AnimalDayIngress(BaseIngress):
                         continue
 
                     plugin_data = {}
-                    for plugin_model in self._trial_wise_plugins:
+                    for plugin_model in self._trialwise_plugins:
                         plugin_data_files = tuple(day_dir.glob(f"{daily_trial_number}.{plugin_model.code_key}*"))
                         if len(plugin_data_files) > 1:
                             msg = f"Only one file per trial: Animal {animal_id} -> Stage {daily_trial_number} -> Plugin {plugin_model.human_readable_index}"

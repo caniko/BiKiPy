@@ -8,7 +8,6 @@ ingress:
   first_stage_is_habituation: false
   metadata_trial_ids_are_higher_level: true
   trial_sequence_loops: ""
-  framewise_coordinates_file_suffix: .parquet
   dataset_directory: /Users/can/Downloads/dataset
   profile_runtime: true
 definition_strategies:

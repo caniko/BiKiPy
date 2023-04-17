@@ -17,7 +17,7 @@ animal_profile = "rodent"
 first_stage_is_habituation = false
 metadata_trial_ids_are_higher_level = false
 trial_sequence_loops = ""
-framewise_coordinates_file_suffix = ".parquet"
+
 dataset_directory = "/data/behaviour_dataset/nori/dataset_mextracted"
 profile_runtime = true
 

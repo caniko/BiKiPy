@@ -1,7 +1,7 @@
 from functools import cached_property, lru_cache
 from logging import getLogger
 from pathlib import Path
-from typing import Optional
+from typing import Optional, ClassVar
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -25,9 +25,8 @@ logger = getLogger(__name__)
 
 # TODO: Manual radius readings from settings.yaml read.
 class PluginSinglePerimeter(AbcPerimeterPlugin):
-    warn_missing_re_reference_file: bool = False
-
-    plural_entries = True
+    label_prefix: Optional[str]
+    label_suffix: Optional[str]
 
     ingress_key = "perimeter"
     code_key = "perimeter"
@@ -68,10 +67,10 @@ class PluginSinglePerimeter(AbcPerimeterPlugin):
         for label, perimeter in self.perimeter_mapper(trial_id).items():
             if self.label_to_trial_label_df is not None:
                 label = self.label_to_trial_label_df.loc[trial_id, label]
-            if p := self.perimeter_settings["label_prefix"]:
-                label = f"{p}_{label}"
-            if s := self.perimeter_settings["label_suffix"]:
-                label = f"{label}_{s}"
+            if self.label_prefix:
+                label = f"{self.label_prefix}_{label}"
+            if self.label_suffix:
+                label = f"{label}_{self.label_suffix}"
 
             result[label] = _perimeter_with_label(perimeter, label)
 
@@ -87,10 +86,10 @@ class PluginSinglePerimeter(AbcPerimeterPlugin):
     def globally_defined(self) -> dict[str, SinglePerimeter]:
         result = {}
         for label, perimeter in self.perimeter_mapper().items():
-            if p := self.perimeter_settings["label_prefix"]:
-                label = f"{p}_{label}"
-            if s := self.perimeter_settings["label_suffix"]:
-                label = f"{label}_{s}"
+            if self.label_prefix:
+                label = f"{self.label_prefix}_{label}"
+            if self.label_suffix:
+                label = f"{label}_{self.label_suffix}"
 
             perimeter = _perimeter_with_label(perimeter, label)
 

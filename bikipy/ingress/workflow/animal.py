@@ -22,7 +22,7 @@ class AnimalIngress(BaseIngress):
 
             animal_id = self._get_id_from_path_stem(animal_dir)
 
-            for framewise_coordinates_path in self._glob_coordinate_files_in_directory(animal_dir):
+            for framewise_coordinates_path in self.coordinate_files_in_directory(animal_dir):
                 stage_index = int(self._get_id_from_path_stem(framewise_coordinates_path).split(".")[0])
 
                 trial_id = define_trial_id()
@@ -31,7 +31,7 @@ class AnimalIngress(BaseIngress):
                     continue
 
                 plugin_data = {}
-                for plugin_model in self._trial_wise_plugins:
+                for plugin_model in self._trialwise_plugins:
                     plugin_data_files = tuple(animal_dir.glob(f"{stage_index}.{plugin_model.code_key}*"))
                     if len(plugin_data_files) > 1:
                         msg = (

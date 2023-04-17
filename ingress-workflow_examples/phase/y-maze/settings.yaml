@@ -7,7 +7,6 @@ ingress:
   center_definition_strategy: ""
   frame_upscale_multiplier: float
   profile_runtime: true
-  framewise_coordinates_file_suffix: .parquet
   method: phase
   first_stage_is_habituation: false
   dataset_directory: /mnt/soma/Projects/Neuroscience/Imen/data/y_maze/
