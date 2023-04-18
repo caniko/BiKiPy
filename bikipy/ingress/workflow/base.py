@@ -403,6 +403,49 @@ class BaseIngress(BaseProjectKitModel, ABC):
     def result_directory_path(self) -> DirectoryPath:
         return result_directory_path(self.project_directory)
 
+    # Plugin methods ============================== Read more about plugins in respective __init__.py file
+
+    @cached_property
+    def _plugin_definitions(self) -> dict[str, frozenset[PluginScope]]:
+        result = {
+            "perimeter": self.definition_perimeter,
+            "enclosure": self.definition_enclosure,
+            "radial": self.definition_radial,
+            "change_reference": self.definition_change_reference,
+            "frame": self.definition_frame,
+            "video": self.definition_video,
+            "timestamp": self.definition_timestamp,
+            "center": self.definition_center,
+        }
+        for k, v in result.items():
+            if not v:
+                del result[k]
+        return result
+
+    @cached_property
+    def _global_plugins(self) -> list[Plugin, ...]:
+        return [
+            ingress_key_to_model[ingress_key]
+            for ingress_key, strategy in self._plugin_definitions.items()
+            if strategy == PluginScope.GLOBAL
+        ]
+
+    @cached_property
+    def _metadata_plugins(self) -> list[Plugin, ...]:
+        return [
+            ingress_key_to_model[ingress_key]
+            for ingress_key, strategy in self._plugin_definitions.items()
+            if strategy == PluginScope.METADATA
+        ]
+
+    @cached_property
+    def _trial_wise_plugins(self) -> list[Plugin]:
+        return [
+            ingress_key_to_model[ingress_key]
+            for ingress_key, strategy in self._plugin_definitions.items()
+            if strategy == PluginScope.TRIAL_WISE
+        ]
+
     # Backend functions =================================
 
     def _define_experiment_data_if_not_defined(self):
