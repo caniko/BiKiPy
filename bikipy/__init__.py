@@ -1,7 +1,7 @@
 from math import floor
 
 import matplotlib
-from projectkit.model.kit_model import BaseProjectKitModel
+from projectkit.model.project import BaseProjectKitModel
 from psutil import cpu_count
 from pydantic import BaseSettings, Field
 

@@ -1,7 +1,7 @@
 from functools import cached_property, lru_cache
 from logging import getLogger
 from pathlib import Path
-from typing import Optional, ClassVar
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import pandas as pd

@@ -12,7 +12,6 @@ from bikipy.perimeter.mixin import TrialWithPerimeterMixin
 class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     physical_object_inspect: bool = False
 
-    physical_object_labels: ClassVar[set[str]] = set()
     all_perimeters_are_physical_objects: ClassVar[bool] = True
 
     @property

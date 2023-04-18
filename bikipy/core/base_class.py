@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import ClassVar, Optional, TypeVar
 
 from compress_pickle import compress_pickle
-from projectkit.model import BaseProjectKitModel
+from projectkit.model.project import BaseProjectKitModel
 from pydantic import DirectoryPath, Field, FilePath, BaseModel
 from pydantic_numpy.dtype import NDArrayUint8
 

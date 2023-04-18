@@ -21,10 +21,17 @@ class NortTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
     variable: SinglePerimeter = ...
     familiar: SinglePerimeter = ...
 
-    physical_object_labels = {"variable", "familiar"}
+    perimeter_labels = {"variable", "familiar"}
 
     experiment_class_name = "NortExperiment"
     trial_label = "Training"
+
+    @classmethod
+    @property
+    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().project_kit_fields_to_exclude_from_config_schema
+        upstream.update(("variable", "familiar"))
+        return upstream
 
     @property
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
@@ -35,10 +42,17 @@ class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
     novel: SinglePerimeter = ...
     familiar: SinglePerimeter = ...
 
-    physical_object_labels = {"novel", "familiar"}
+    perimeter_labels = {"novel", "familiar"}
 
     experiment_class_name = "NortExperiment"
     trial_label = "Novelty"
+
+    @classmethod
+    @property
+    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().project_kit_fields_to_exclude_from_config_schema
+        upstream.update(("novel", "familiar"))
+        return upstream
 
     @cached_property
     def _trial_physical_object_feature_series_list(self) -> list[pd.Series]:

@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from enum import Enum, auto
+from enum import Enum
 from functools import cached_property
 from typing import Any, ClassVar, Optional, TypeVar
 
 import pandas as pd
+from projectkit.model.project import BaseProjectKitModel
 from pydantic import BaseModel, DirectoryPath, Field, FilePath
 from pydantic_numpy.dtype import NDArrayFp64
 
@@ -12,13 +13,13 @@ from bikipy.core.typing import Label
 from bikipy.utils.makesense import get_only_point_from_makesense
 
 
-class PluginScope(Enum):
+class PluginScope(str, Enum):
     GLOBAL = "global"
     METADATA = "metadata"
-    TRIAL_WISE = "trialwise"
+    TRIALWISE = "trialwise"
 
 
-class BasePlugin(BikipyModel, ABC):
+class BasePlugin(BikipyModel, BaseProjectKitModel, ABC):
     ingress: Any = Field(description="Bikipy ingress object to access project metadata relevant for defining perimeter")
     plugin_scope: set[PluginScope] = ...
     manual_trial_argument_key: Optional[str]

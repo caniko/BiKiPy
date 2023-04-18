@@ -40,7 +40,6 @@ from bikipy.core.video import (
     VideoMetadataMixin,
 )
 from bikipy.feature.motion import Motion, motion_multi_indexer
-from bikipy.feature.physical_object.mixin import PhysicalObjectTrialMixin
 from bikipy.ingress.plugin import PluginChangeReference, PluginRadial
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
 from bikipy.perimeter.base import (
@@ -131,16 +130,7 @@ class BaseTrial(Behaviour):
         upstream.update(
             ("framewise_coordinates_path", "coordinate_timestamp_set_path", "manual_reader_kwargs", "animal_id")
         )
-        upstream.update(cls.perimeter_physical_object_labels)
         return upstream
-
-    @classmethod
-    @property
-    def perimeter_physical_object_labels(cls) -> set[str]:
-        result = cls.perimeter_labels
-        if hasattr(cls, "physical_object_labels"):
-            result = result.union(cls.physical_object_labels)
-        return result
 
     @classmethod
     @property
@@ -748,17 +738,13 @@ class BaseExperiment(Behaviour):
 
         if self.skip_habituation:
             if not self._first_trial_is_habituation:
-                from bikipy.ingress.workflow.base import (
-                    FIRST_TRIAL_IS_HABITUATION_INGRESS_FIELD,
-                )
-
                 msg = (
-                    f"skip_habituation is True, but the experiment has no habituation trial set. Possible mistakes:\n"
-                    f"  - skip_habituation was set to True by mistake.\n"
-                    f'  - Forgot to set ingress.first_stage_is_habituation to "True" '
-                    f"in the project settings.yaml file.\n"
-                    f"  - advanced users did not run set_first_trial_to_habituation, "
-                    f"an Experiment classmethod that is required for habituation inclusive workflows."
+                    "skip_habituation is True, but the experiment has no habituation trial set. Possible mistakes:\n"
+                    "  - skip_habituation was set to True by mistake.\n"
+                    '  - Forgot to set ingress.first_stage_is_habituation to "True" '
+                    "in the project settings.yaml file.\n"
+                    "  - advanced users did not run set_first_trial_to_habituation, "
+                    "an Experiment classmethod that is required for habituation inclusive workflows."
                 )
                 raise AttributeError(msg)
             logger.warning(

@@ -1,4 +1,3 @@
-import json
 import os
 import pstats
 from abc import ABC, abstractmethod
@@ -14,8 +13,8 @@ import pandas as pd
 from inflection import underscore
 from projectkit.model.cds import CdsHierarchy, CdsHomologs, CdsSingle
 from projectkit.model.config.jit import JITProjectKitConfiguration
-from projectkit.model.kit_model import BaseProjectKitModel
-from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments, Field
+from projectkit.model.project import BaseProjectKitModel
+from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import set_bikipy_settings_from_dict, BikipyRuntimeSettings
@@ -23,21 +22,17 @@ from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTri
 from bikipy.behaviour.radial_arm import BaseRadialMazeExperiment
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin import (
-    ALL_PLUGINS,
     PluginMeterPerPixel,
     ingress_key_to_model,
     PluginRadial,
-    PluginEnclosure,
     PluginSinglePerimeter,
 )
 from bikipy.ingress.plugin.base import Plugin, PluginScope
 from bikipy.ingress.plugin.meters_per_pixel import (
     detect_meters_per_pixel_in_perimeter_directory,
 )
-from bikipy.ingress.plugin.perimeter import PerimeterPlugins
+
 from bikipy.ingress.utils.io import (
-    dump_settings,
-    get_dataset_directory_path,
     get_inspect_directory_path,
     get_plugin_directory_path,
     get_project_settings_path,
@@ -45,12 +40,8 @@ from bikipy.ingress.utils.io import (
     load_settings,
     result_directory_path,
 )
-from bikipy.ingress.utils.model_schema import extended_group_schema, extended_schema
-from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
-from bikipy.perimeter.base import BaseSinglePerimeter, Perimeter
-from bikipy.perimeter.helper.constant import PERIMETER_CLASS_REQUIRE_INTERFACE_SETTINGS
+from bikipy.perimeter.base import Perimeter
 from bikipy.reader.base import BaseReader
-from bikipy.reader.data_with_likelihood import DataWithLikelihoodReader
 from bikipy.utils.collection_utils import (
     copycat_assumes_levels_of_icon,
     get_first_value_in_dict,
@@ -87,7 +78,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
     metadata_trial_ids_are_higher_level: bool = False
     trial_sequence_loops: int = 1
 
-    definition_meters_per_pixel: PluginScope
+    definition_meters_per_pixel: frozenset[PluginScope]
     definition_perimeter: Optional[frozenset[PluginScope]]
     definition_enclosure: Optional[frozenset[PluginScope]]
     definition_radial: Optional[frozenset[PluginScope]]
@@ -114,6 +105,9 @@ class BaseIngress(BaseProjectKitModel, ABC):
     _designator_id_to_kwargs: dict[str, dict] = defaultdict_dict_factory()
 
     ingress_method: ClassVar[str]
+
+    class Config:
+        keep_untouched = (cached_property,)
 
     @abstractmethod
     def _dataset_reader(self) -> None:
@@ -427,23 +421,23 @@ class BaseIngress(BaseProjectKitModel, ABC):
         return [
             ingress_key_to_model[ingress_key]
             for ingress_key, strategy in self._plugin_definitions.items()
-            if strategy == PluginScope.GLOBAL
+            if PluginScope.GLOBAL in strategy
         ]
 
     @cached_property
-    def _metadata_plugins(self) -> list[Plugin, ...]:
+    def plugins_metadata(self) -> list[Plugin, ...]:
         return [
             ingress_key_to_model[ingress_key]
             for ingress_key, strategy in self._plugin_definitions.items()
-            if strategy == PluginScope.METADATA
+            if PluginScope.METADATA in strategy
         ]
 
     @cached_property
-    def _trial_wise_plugins(self) -> list[Plugin]:
+    def _trialwise_plugins(self) -> list[Plugin, ...]:
         return [
             ingress_key_to_model[ingress_key]
             for ingress_key, strategy in self._plugin_definitions.items()
-            if strategy == PluginScope.TRIAL_WISE
+            if PluginScope.TRIALWISE in strategy
         ]
 
     # Backend functions =================================
@@ -671,14 +665,21 @@ class BaseIngress(BaseProjectKitModel, ABC):
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
 
     def get_meter_per_pixel(self, trial_id: Optional[str | PositiveInt] = None) -> NDArrayFp64:
-        match self.definition_meters_per_pixel:
-            case PluginScope.GLOBAL:
-                return self._common_trial_keyword_arguments[PluginMeterPerPixel.default_trial_argument_key]
-            case PluginScope.METADATA:
+        if PluginScope.TRIALWISE in self.definition_meters_per_pixel:
+            try:
+                return self.trial_id_to_keyword_arguments[trial_id]["meters_per_pixel"]
+            except KeyError:
+                pass
+        if PluginScope.METADATA in self.definition_meters_per_pixel:
+            try:
                 file_label = self.metadata["MetersPerPixel"][trial_id]
                 return detect_meters_per_pixel_in_perimeter_directory(self.plugin_directory_path)[file_label]
-            case PluginScope.TRIAL_WISE:
-                return self.trial_id_to_keyword_arguments[trial_id]["meters_per_pixel"]
+            except KeyError:
+                pass
+        if PluginScope.GLOBAL in self.definition_meters_per_pixel:
+            return self._common_trial_keyword_arguments[PluginMeterPerPixel.default_trial_argument_key]
+
+        raise AttributeError(f"Could not find meters_per_pixel for trial {trial_id}")
 
     # Private methods ===============================
 
@@ -769,18 +770,19 @@ def init_settings(
     experiment_name: str,
     project_directory: DirectoryPath,
 ) -> None:
+    from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
     from bikipy.behaviour.mapping import experiment_name_to_class
 
     logger.info(f"Generating experiment configuration at {project_directory}")
 
-    experiment_class = experiment_name_to_class[experiment_name]
+    experiment_class = experiment_name_to_class[experiment_name.lower()]
     cds_single = [
-        CdsSingle(manual_group_name="runtime_settings", cds_class=BikipyRuntimeSettings),
-        CdsSingle(manual_group_name="ingress", cds_class=INGRESS_METHOD_NAME_TO_INGRESS_CLASS[ingress_method]),
-        CdsSingle(manual_group_name="experiment", cds_class=experiment_class),
+        CdsSingle(mapping_name="runtime_settings", cds_class=BikipyRuntimeSettings),
+        CdsSingle(mapping_name="ingress", cds_class=INGRESS_METHOD_NAME_TO_INGRESS_CLASS[ingress_method]),
+        CdsSingle(mapping_name="experiment", cds_class=experiment_class),
     ]
     cds_homologs = []
-    cds_hierarchical = [CdsHierarchy(group_name="trials", cds_classes=frozenset(experiment_class.trial_classes))]
+    cds_hierarchical = [CdsHierarchy(mapping_name="trials", cds_classes=frozenset(experiment_class.trial_classes))]
 
     if issubclass(experiment_class, EnclosedExperiment):
         trial_class_to_perimeter_enclosure = {
@@ -794,16 +796,16 @@ def init_settings(
         if len(trial_class_to_perimeter_enclosure) == 1:
             cds_homologs.append(
                 CdsHomologs(
-                    instance_names=frozenset(experiment_class.trial_class_names),
-                    manual_group_name="enclosure",
+                    manual_mapping_name="enclosure",
+                    instance_names=frozenset({c.__name__ for c in experiment_class.trial_class_names}),
                     cds_class=trial_class_to_perimeter_enclosure.pop(tuple(trial_class_to_perimeter_enclosure)[0]),
                 )
             )
         else:
             cds_hierarchical.append(
                 CdsHierarchy(
-                    instance_names=frozenset(trial_class_to_perimeter_enclosure),
-                    group_name="enclosure",
+                    mapping_name="enclosure",
+                    instance_names=frozenset({c.__name__ for c in trial_class_to_perimeter_enclosure}),
                     cds_classes=frozenset(trial_class_to_perimeter_enclosure.values()),
                 )
             )
@@ -811,7 +813,7 @@ def init_settings(
     if experiment_class.at_least_one_trial_has_perimeter:
         cds_hierarchical.append(
             CdsHierarchy(
-                group_name="perimeters",
+                mapping_name="perimeters",
                 cds_classes=experiment_class.trial_perimeter_label_to_perimeter_class,
             )
         )
@@ -820,7 +822,7 @@ def init_settings(
             perimeter_plugin_classes.add(PluginRadial)
         cds_hierarchical.append(
             CdsHierarchy(
-                group_name="perimeter_plugin",
+                mapping_name="perimeter_plugin",
                 cds_classes=frozenset(perimeter_plugin_classes),
             )
         )
@@ -828,7 +830,7 @@ def init_settings(
     bikipy_jit_project_kit.initialize(
         config_kwargs={
             "project_directory": project_directory,
-            "cds_single_instance_interface": frozenset(cds_single),
+            "cds_single_interface": frozenset(cds_single),
             "cds_homolog_interface": frozenset(cds_homologs),
             "cds_hierarchical_interface": frozenset(cds_hierarchical),
         }
