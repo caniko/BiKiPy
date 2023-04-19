@@ -4,7 +4,7 @@ from bikipy.ingress.utils.settings import auto_define_ingress_object
 from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
 
 
-def from_project_directory(project_directory: DirectoryPath):
+def from_config(project_directory: DirectoryPath):
     kwargs = {"project_directory": project_directory}
     try:
         return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[auto_define_ingress_object(project_directory).ingress_method](
@@ -19,4 +19,4 @@ def from_project_directory(project_directory: DirectoryPath):
 
 
 def analyze_and_save(project_directory: DirectoryPath):
-    from_project_directory(project_directory).save_analysis_data()
+    from_config(project_directory).save_analysis_data()

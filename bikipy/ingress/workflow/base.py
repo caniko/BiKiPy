@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 import numpy as np
 import pandas as pd
 from inflection import underscore
-from projectkit.model.project import BaseProjectKitModel
+from projectkit.model.project import BaseProjectKitModel, ProjectKitRootMixin
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
@@ -48,7 +48,7 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 
 
-class BaseIngress(BaseProjectKitModel, ABC):
+class BaseIngress(BaseProjectKitModel, ProjectKitRootMixin, ABC):
     """
     This model stores methods to ingest data for bikipy-based analysis. The workflow differs slightly between daughter
     classes. The commonality are the levels in which data is introduced, which is quite similar to the bikipy experiment
@@ -74,7 +74,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
     trial_sequence_loops: int = 1
 
     definition_meters_per_pixel: frozenset[PluginScope]
-    definition_perimeter: Optional[frozenset[PluginScope]]
+    definition_single_perimeter: Optional[frozenset[PluginScope]]
     definition_enclosure: Optional[frozenset[PluginScope]]
     definition_radial: Optional[frozenset[PluginScope]]
     definition_change_reference: Optional[frozenset[PluginScope]]
@@ -82,9 +82,6 @@ class BaseIngress(BaseProjectKitModel, ABC):
     definition_video: Optional[frozenset[PluginScope]]
     definition_timestamp: Optional[frozenset[PluginScope]]
     definition_center: Optional[frozenset[PluginScope]]
-
-    runtime_settings: Optional[dict]
-    profile_runtime: bool = True
 
     ingress_defined_perimeters: dict[str, Perimeter] = {}
 
@@ -100,6 +97,8 @@ class BaseIngress(BaseProjectKitModel, ABC):
     _designator_id_to_kwargs: dict[str, dict] = defaultdict_dict_factory()
 
     ingress_method: ClassVar[str]
+
+    _project_kit_jit = True
 
     class Config:
         keep_untouched = (cached_property,)
@@ -548,6 +547,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
         if self.profile_runtime:
             with Profile() as pr:
                 self.experiment.trial_label_to_df
+
             stats = pstats.Stats(pr)
             stats.sort_stats(pstats.SortKey.TIME)
             stats.dump_stats(self.inspect_directory_path / "performance_analysis.prof")
@@ -649,12 +649,19 @@ class BaseIngress(BaseProjectKitModel, ABC):
             if any((current_file := file).stem.endswith("timestamped") for file in index_files):
                 result.append(current_file)
                 continue
-            if any((current_file := file).suffix == ".parquet" for file in index_files if "augmented" not in file.stem):
+
+            if any(
+                (current_file := file).suffix == ".parquet"
+                and BaseReader.augmented_coordinate_cached_file_label not in file.stem
+                for file in index_files
+            ):
                 result.append(current_file)
                 continue
+
             if any((current_file := file).suffix == ".h5" for file in index_files):
                 result.append(current_file)
                 continue
+
             if any((current_file := file).suffix == ".csv" for file in index_files):
                 result.append(current_file)
                 continue

@@ -39,9 +39,7 @@ def dump_settings(settings_path: FilePath, settings: dict) -> None:
 @lru_cache(2)
 @validate_arguments
 def get_project_settings_path(project_directory: DirectoryPath, deprecated_file_name: bool = False) -> FilePath:
-    return project_directory / (
-        BIKIPY_SETTINGS_FILE_NAME_OLD if deprecated_file_name else BIKIPY_SETTINGS_FILE_NAME
-    )
+    return project_directory / BIKIPY_SETTINGS_FILE_NAME
 
 
 @lru_cache(1)

@@ -8,6 +8,7 @@ import pandas as pd
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from bikipy.core.typing import Label
+from bikipy.ingress.plugin.base import PluginScope
 from bikipy.ingress.plugin.perimeter.base import AbcPerimeterPlugin
 from bikipy.perimeter.base import (
     SinglePerimeter,
@@ -51,21 +52,16 @@ class PluginSinglePerimeter(AbcPerimeterPlugin):
     def image_name(self):
         return first_image_name_from_makesense(self.data_path, SHAPE_TO_MAKESENSE_TYPE[self.shape])
 
-    @property
-    def perimeter_settings(self) -> dict:
-        return self.ingress.settings["perimeter"]
-
     @cached_property
     def label_to_trial_label_df(self) -> pd.DataFrame:
-        if self.perimeter_settings["perimeter_names_in_metadata"]:
-            return _open_label_to_trial_label_df(self.ingress.metadata_path)
+        return _open_label_to_trial_label_df(self.ingress.metadata_path)
 
     def trialwise_and_metadata(
         self, trial_id: Label, naive: bool = False
     ) -> dict[str, SinglePerimeter] | SinglePerimeter:
         result = {}
         for label, perimeter in self.perimeter_mapper(trial_id).items():
-            if self.label_to_trial_label_df is not None:
+            if PluginScope.METADATA in self.ingress.definition_single_perimeter:
                 label = self.label_to_trial_label_df.loc[trial_id, label]
             if self.label_prefix:
                 label = f"{self.label_prefix}_{label}"
@@ -133,4 +129,12 @@ def _perimeter_with_label(perimeter: SinglePerimeter, new_label: str) -> SingleP
 
 @lru_cache
 def _open_label_to_trial_label_df(metadata_path: FilePath):
+    """
+    Opens a sheet in an excel file. The sheet has Trial IDs as row indices; trial perimeter attributes
+    as column indices; the value is the label of the perimeter belonging to
+    the respective trial in the given column index
+
+    :param metadata_path:
+    :return:
+    """
     return pd.read_excel(metadata_path, sheet_name="perimeter_label", index_col=0)

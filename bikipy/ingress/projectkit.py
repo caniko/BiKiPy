@@ -1,35 +1,49 @@
 from logging import getLogger
+from typing import Optional
 
+from ordered_set import OrderedSet
 from projectkit.model.cds import CdsHierarchy, CdsHomologs, CdsSingle
 from projectkit.model.config.jit import ProjectKitJITConfiguration
+from projectkit.utils.misc import here_or_there
 from pydantic import DirectoryPath
 
 from bikipy import BikipyRuntimeSettings
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
+from bikipy.behaviour.mapping import experiment_name_to_class
 from bikipy.behaviour.radial_arm import BaseRadialMazeExperiment
 from bikipy.ingress.plugin import (
     PluginRadial,
     PluginSinglePerimeter,
 )
-
+from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
 
 logger = getLogger(__name__)
 
 
 class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
+    ingress_method: str = ...
+    experiment_name: str = ...
+
+    config_key_order = OrderedSet(
+        ("manual", "ingress", "experiment", "trial", "enclosure", "perimeter", "perimeter_plugin", "runtime_settings")
+    )
+
     project_name = "bikipy"
 
-    @staticmethod
-    def jit_init(*, ingress_method: str, experiment_name: str, project_directory: DirectoryPath) -> dict:
-        from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
-        from bikipy.behaviour.mapping import experiment_name_to_class
+    root_class_config_key = "ingress"
+    root_class_name_to_class = INGRESS_METHOD_NAME_TO_INGRESS_CLASS
+
+    def jit_init(self, project_directory: Optional[DirectoryPath] = None) -> dict:
+        project_directory = here_or_there(project_directory)
 
         logger.info(f"Generating experiment configuration at {project_directory}")
 
-        experiment_class = experiment_name_to_class[experiment_name.lower()]
+        experiment_class = experiment_name_to_class[self.experiment_name.lower()]
         cds_single = [
+            CdsSingle(
+                mapping_name=self.root_class_config_key, cds_class=self.root_class_name_to_class[self.ingress_method]
+            ),
             CdsSingle(mapping_name="runtime_settings", cds_class=BikipyRuntimeSettings),
-            CdsSingle(mapping_name="ingress", cds_class=INGRESS_METHOD_NAME_TO_INGRESS_CLASS[ingress_method]),
             CdsSingle(mapping_name="experiment", cds_class=experiment_class),
         ]
         cds_homologs = []
@@ -64,7 +78,7 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
         if experiment_class.at_least_one_trial_has_perimeter:
             cds_hierarchical.append(
                 CdsHierarchy(
-                    mapping_name="perimeters",
+                    mapping_name="perimeter",
                     cds_classes=experiment_class.trial_perimeter_label_to_perimeter_class,
                 )
             )

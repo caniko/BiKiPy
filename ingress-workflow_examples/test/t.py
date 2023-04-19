@@ -1,3 +1,5 @@
-from bikipy.ingress.workflow.base import init_settings
+from bikipy.ingress.projectkit import ProjectKitJITBikipyConfiguration
 
-init_settings("animal", "NORT", ".")
+projectkit_jit = ProjectKitJITBikipyConfiguration(ingress_method="animal", experiment_name="oul")
+
+projectkit_jit.init_config()

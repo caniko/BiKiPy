@@ -90,7 +90,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
             arm_perimeter.meters_per_pixel = meter_per_pixel_from_diagonal(
                 arm_perimeter.vertices_in_pixels[0],
                 arm_perimeter.vertices_in_pixels[2],
-                self.ingress.settings["perimeter"][""],
+                self.radial_arm_rectangle_diagonal,
             )
             arm_perimeters.append(arm_perimeter)
 
