@@ -1,60 +1,26 @@
-import os
-import pstats
-from abc import ABC, abstractmethod
-from cProfile import Profile
-from functools import cached_property
-from itertools import chain
 from logging import getLogger
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 
-import numpy as np
-import pandas as pd
-from inflection import underscore
 from projectkit.model.cds import CdsHierarchy, CdsHomologs, CdsSingle
-from projectkit.model.config.jit import JITProjectKitConfiguration
-from projectkit.model.project import BaseProjectKitModel
-from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
-from pydantic_numpy.dtype import NDArrayFp64
+from projectkit.model.config.jit import ProjectKitJITConfiguration
+from pydantic import DirectoryPath
 
-from bikipy import set_bikipy_settings_from_dict, BikipyRuntimeSettings
+from bikipy import BikipyRuntimeSettings
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.radial_arm import BaseRadialMazeExperiment
-from bikipy.core.typing import Label
 from bikipy.ingress.plugin import (
-    PluginMeterPerPixel,
-    ingress_key_to_model,
     PluginRadial,
     PluginSinglePerimeter,
 )
-from bikipy.ingress.plugin.base import Plugin, PluginScope
-from bikipy.ingress.plugin.meters_per_pixel import (
-    detect_meters_per_pixel_in_perimeter_directory,
-)
 
-from bikipy.ingress.utils.io import (
-    get_inspect_directory_path,
-    get_plugin_directory_path,
-    get_project_settings_path,
-    infer_metadata_path,
-    load_settings,
-    result_directory_path,
-)
-from bikipy.perimeter.base import Perimeter
-from bikipy.reader.base import BaseReader
-from bikipy.utils.collection_utils import (
-    copycat_assumes_levels_of_icon,
-    get_first_value_in_dict,
-)
-from bikipy.utils.misc import defaultdict_dict_factory, sheet_names_from_path
 
 logger = getLogger(__name__)
 
 
-class ProjectKitJITBikipyConfiguration(JITProjectKitConfiguration):
+class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
     project_name = "bikipy"
 
-    def jit_init(self, ingress_method: str, experiment_name: str, project_directory: DirectoryPath) -> dict:
+    @staticmethod
+    def jit_init(*, ingress_method: str, experiment_name: str, project_directory: DirectoryPath) -> dict:
         from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
         from bikipy.behaviour.mapping import experiment_name_to_class
 

@@ -11,21 +11,15 @@ from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 import numpy as np
 import pandas as pd
 from inflection import underscore
-from projectkit.model.cds import CdsHierarchy, CdsHomologs, CdsSingle
-from projectkit.model.config.jit import JITProjectKitConfiguration
 from projectkit.model.project import BaseProjectKitModel
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
-from bikipy import set_bikipy_settings_from_dict, BikipyRuntimeSettings
-from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
-from bikipy.behaviour.radial_arm import BaseRadialMazeExperiment
+from bikipy import set_bikipy_settings_from_dict
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin import (
     PluginMeterPerPixel,
     ingress_key_to_model,
-    PluginRadial,
-    PluginSinglePerimeter,
 )
 from bikipy.ingress.plugin.base import Plugin, PluginScope
 from bikipy.ingress.plugin.meters_per_pixel import (
@@ -71,8 +65,9 @@ class BaseIngress(BaseProjectKitModel, ABC):
     analysis is to run analyze_and_save(), a function at the bottom of this file, through the BiKiPy CLI.
     """
 
-    project_directory: DirectoryPath
-    dataset_directory: DirectoryPath
+    project_directory: DirectoryPath = ...
+    dataset_directory: DirectoryPath = ...
+    experiment_class_name: str = ...
 
     first_stage_is_habituation: bool = False
     metadata_trial_ids_are_higher_level: bool = False
@@ -118,37 +113,15 @@ class BaseIngress(BaseProjectKitModel, ABC):
         """
         ...
 
-    @classmethod
-    def from_project_directory(cls, project_directory: DirectoryPath):
-        from bikipy.ingress.utils.settings import auto_define_ingress_object
-        from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
-
-        kwargs = {"project_directory": project_directory}
-        try:
-            return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[auto_define_ingress_object(project_directory).ingress_method](
-                **kwargs
-            )
-        except KeyError:
-            msg = (
-                f"Defined ingress method, {auto_define_ingress_object(project_directory).ingress_method}, "
-                f"is not supported"
-            )
-            raise AttributeError(msg)
-
-    @property
-    def experiment_name(self) -> str:
-        return self.settings["immutable"]["experiment_class"]
-
     @cached_property
     def experiment_class(self) -> "ExperimentCLS":
         from bikipy.behaviour.mapping import experiment_name_to_class
 
         try:
-            experiment = experiment_name_to_class[self.experiment_name]
+            experiment = experiment_name_to_class[self.experiment_class_name]
         except KeyError:
             msg = (
-                f"experiment_class in settings is set to an invalid value: "
-                f"{self.settings['immutable']['experiment_class']}; "
+                f"experiment_class in settings is set to an invalid value: {self.experiment_class_name}; "
                 f"this value should not be changed after initialization of the project."
             )
             raise ValueError(msg)
@@ -223,10 +196,6 @@ class BaseIngress(BaseProjectKitModel, ABC):
     @cached_property
     def _metadata_sheet_names(self) -> list[str]:
         return sheet_names_from_path(self.metadata_path)
-
-    @property
-    def settings(self) -> dict:
-        return load_settings(self.project_directory, self.deprecated_project_settings_file_name)
 
     @cached_property
     def ranged_metadata(self) -> pd.DataFrame | None:
@@ -369,7 +338,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
                 f"Either trial_id or animal_sequence sheet must be defined in metadata "
                 f"when using metadata plugins that are stageful. This allows BiKiPy ingress "
                 f"to define a trial id for each trial object. Following plugins are set "
-                f"to metadata:\n{self.plugins_metadata}"
+                f"to metadata:\n{self._plugins_metadata}"
             )
             raise ValueError(msg)
 
@@ -425,7 +394,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
         ]
 
     @cached_property
-    def plugins_metadata(self) -> list[Plugin, ...]:
+    def _plugins_metadata(self) -> list[Plugin, ...]:
         return [
             ingress_key_to_model[ingress_key]
             for ingress_key, strategy in self._plugin_definitions.items()
@@ -459,7 +428,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
             else self._trial_id_to_keyword_arguments
         )
 
-        for plugin_model in self.plugins_metadata:
+        for plugin_model in self._plugins_metadata:
             label_to_file_path = {
                 file_path.stem.split("-")[-1]: file_path
                 for file_path in self.plugin_directory_path.glob(f"{plugin_model.code_key}*")
@@ -492,42 +461,11 @@ class BaseIngress(BaseProjectKitModel, ABC):
                     )
                     raise ValueError(msg)
 
+        for trial_class_name, kwargs in self._config_store["trial"].items():
+            assert trial_class_name in self.experiment_class.trial_class_names
+            self._trial_class_name_to_keyword_arguments[trial_class_name] = kwargs
+
         self._dataset_reader()
-
-        for field, value in self.settings["trial"]["common"]["defined"].items():
-            if value is not None:
-                if any(
-                    field in keyword_arguments and np.any(keyword_arguments[field])
-                    for keyword_arguments in self._trial_id_to_keyword_arguments.values()
-                ):
-                    msg = f"Field, {field}, has been defined in settings, yet is also defined by the ingress method"
-                    raise ValueError(msg)
-                self._common_trial_keyword_arguments[field] = value
-
-        global_reader_kwargs = {"_using_bikipy_ingress": True}
-        # Data source priority in ascending order
-        if "defined" in self.settings["trial"]["common"] and self.settings["trial"]["common"]["defined"]:
-            for key, value in self.settings["trial"]["common"]["defined"].items():
-                if value is None:
-                    continue
-                global_reader_kwargs[key] = value
-        if "defined" in self.settings["manual_reader_kwargs"] and self.settings["manual_reader_kwargs"]["defined"]:
-            global_reader_kwargs.update(self.settings["manual_reader_kwargs"]["defined"])
-        # assert global_reader_kwargs, "manual_reader_kwargs must be defined"
-        self._common_trial_keyword_arguments["manual_reader_kwargs"] = global_reader_kwargs
-
-        if self.experiment_class.has_stages:
-            for trial_class_name, dataset in self.settings["trial"]["specific"].items():
-                if not dataset["defined"]:
-                    continue
-                if trial_class_name not in self._trial_class_name_to_keyword_arguments:
-                    self._trial_class_name_to_keyword_arguments[trial_class_name] = {}
-                for field, value in dataset["defined"].items():
-                    if not value:
-                        continue
-                    trial_class_dict = self._trial_class_name_to_keyword_arguments[trial_class_name]
-                    if field not in trial_class_dict or not trial_class_dict[field]:
-                        self._trial_class_name_to_keyword_arguments[trial_class_name][field] = value
 
         self._experiment_data_defined = True
 
@@ -546,15 +484,8 @@ class BaseIngress(BaseProjectKitModel, ABC):
     def experiment(self) -> "Experiment":
         set_bikipy_settings_from_dict(self.runtime_settings)
 
-        settings_defined = set(self.settings["experiment"]["defined"])
-
-        for kwarg_dict_name, fields in self.ingress_defined_fields.items():
-            if intersection := settings_defined.intersection(fields):
-                msg = f"{kwarg_dict_name}: Setting defines fields also defined by the ingress: {intersection}"
-                raise ValueError(msg)
-
         return self.experiment_class(
-            **self.settings["experiment"]["defined"],
+            **self._config_store["experiment"],
             **self.experiment_class_kwargs,
             inspect_arg=self.inspect_directory_path,
             trial_init_error_out_dir=self.result_directory_path,
@@ -623,7 +554,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
         else:
             self.experiment.trial_label_to_df
 
-        with pd.ExcelWriter(self.result_directory_path / f"{self.experiment_name}.xlsx") as writer:
+        with pd.ExcelWriter(self.result_directory_path / f"{self.experiment_class_name}.xlsx") as writer:
             for trial_label, df in self.trial_label_to_df.items():
                 df.to_excel(writer, sheet_name=str(trial_label))
 
@@ -633,7 +564,7 @@ class BaseIngress(BaseProjectKitModel, ABC):
         else:
             parquet_dir = self.result_directory_path
         for trial_label, df in self.trial_label_to_df.items():
-            df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_name}.parquet")
+            df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_class_name}.parquet")
 
     def purge_cached_reads(self, override_pattern: Optional[str] = None) -> None:
         pattern = override_pattern or BaseReader.augmented_coordinate_cached_file_label
@@ -760,7 +691,3 @@ class BaseIngress(BaseProjectKitModel, ABC):
 
 
 Ingress = TypeVar("Ingress", bound=BaseIngress)
-
-
-def analyze_and_save(project_directory: DirectoryPath):
-    BaseIngress.from_project_directory(project_directory).save_analysis_data()
