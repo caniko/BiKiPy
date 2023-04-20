@@ -47,7 +47,7 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
             CdsSingle(mapping_name="experiment", cds_class=experiment_class),
         ]
         cds_homologs = []
-        cds_hierarchical = [CdsHierarchy(mapping_name="trials", cds_classes=frozenset(experiment_class.trial_classes))]
+        cds_hierarchical = [CdsHierarchy(mapping_name="trial", cds_classes=frozenset(experiment_class.trial_classes))]
 
         if issubclass(experiment_class, EnclosedExperiment):
             trial_class_to_perimeter_enclosure = {

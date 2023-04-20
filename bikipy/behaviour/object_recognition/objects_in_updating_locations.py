@@ -34,6 +34,13 @@ class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTri
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     trial_label = "Training"
 
+    @classmethod
+    @property
+    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().project_kit_fields_to_exclude_from_config_schema
+        upstream.update(("object_1", "object_2"))
+        return upstream
+
     @property
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.object_1, self.object_2
@@ -47,6 +54,13 @@ class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     trial_label = "Update"
+
+    @classmethod
+    @property
+    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().project_kit_fields_to_exclude_from_config_schema
+        upstream.update(("object_1", "object_3"))
+        return upstream
 
     @property
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
@@ -63,6 +77,13 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     trial_label = "Test"
+
+    @classmethod
+    @property
+    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().project_kit_fields_to_exclude_from_config_schema
+        upstream.update(("object_1", "object_2", "object_3", "object_4"))
+        return upstream
 
     @property
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:

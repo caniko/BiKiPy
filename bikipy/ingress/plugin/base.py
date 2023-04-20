@@ -21,18 +21,22 @@ class PluginScope(str, Enum):
 
 class BasePlugin(BikipyModel, BaseProjectKitModel, ABC):
     ingress: Any = Field(description="Bikipy ingress object to access project metadata relevant for defining perimeter")
-    plugin_scope: set[PluginScope] = ...
+    plugin_scope: PluginScope = ...
     manual_trial_argument_key: Optional[str]
+
+    required: ClassVar[bool] = False
 
     ingress_key: ClassVar[str] = ...
     code_key: ClassVar[str] = ...
     default_trial_argument_key: ClassVar[str] = ...
-
     human_readable_index: ClassVar[str] = ...
-    additional_context_columns: ClassVar[Optional[tuple[str]]]
 
-    required: ClassVar[bool] = False
-    _inspect: ClassVar[bool] = False
+    @classmethod
+    @property
+    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().project_kit_fields_to_exclude_from_config_schema
+        upstream.update(("ingress", "plugin_scope"))
+        return upstream
 
     @cached_property
     def _info(self):

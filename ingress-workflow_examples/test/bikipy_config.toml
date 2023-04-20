@@ -1,0 +1,177 @@
+[manual.jit_init]
+config_format = ".toml"
+setting_file_stem_suffix = "_config"
+ingress_method = "animal"
+experiment_name = "oul"
+
+[ingress]
+class_name = "AnimalIngress"
+
+[ingress.defined]
+project_directory = ""
+dataset_directory = ""
+experiment_class_name = ""
+definition_meters_per_pixel = ""
+
+[ingress.required]
+project_directory = "string"
+dataset_directory = "string"
+experiment_class_name = "string"
+definition_meters_per_pixel = "array"
+
+[ingress.optional]
+projectkit_configuration = "object"
+definition_center = "array"
+definition_single_perimeter = "array"
+definition_enclosure = "array"
+definition_video = "array"
+ingress_defined_perimeters = "object -> {}"
+definition_frame = "array"
+deprecated_project_settings_file_name = "boolean -> False"
+first_stage_is_habituation = "boolean -> False"
+definition_change_reference = "array"
+metadata_trial_ids_are_higher_level = "boolean -> False"
+trial_sequence_loops = "integer -> 1"
+definition_radial = "array"
+definition_timestamp = "array"
+
+[experiment]
+class_name = "ObjectsInUpdatingLocationsExperiment"
+
+[experiment.defined]
+
+[experiment.optional]
+minimum_frame_length = "integer -> 600"
+manual_trial_ids = "array"
+inspect_image_path = "string"
+recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
+stage = "string"
+skip_habituation = "boolean -> False"
+manual_inspect_image = "np.ndarray[name='manual_inspect_image_0' type=ubyte required=True]"
+compute_first_two_feature_series_only = "boolean -> False"
+trial_init_error_out_dir = "string"
+fps = "number"
+frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'ubyte'}]"
+manual_video = "[{'$ref': '#/definitions/VideoMetadata'}]"
+meters_per_pixel = "[{'type': 'number'}, {'type': 'double'}]"
+projectkit_configuration = "object"
+inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}] -> False"
+
+[trial]
+[trial.common]
+[trial.common.defined]
+
+[trial.common.optional]
+minimum_frame_length = "integer -> 600"
+meters_per_pixel_from_perimeter_source = "string"
+enclosure = "[{'$ref': '#/definitions/BasePerimeter'}]"
+inspect_image_path = "string"
+recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
+animal_profile = "string -> rodent"
+rigid_nodes_freezing = "array"
+center_rectangle_dimensions_to_spatial_resolution_ratio = "number"
+fps = "number"
+frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'ubyte'}]"
+manual_enclosure = "[{'$ref': '#/definitions/BasePerimeter'}]"
+manual_center_rectangle_dimensions_meters = "np.ndarray[name='manual_center_rectangle_dimensions_meters_0' type=double required=True]"
+meters_per_pixel = "[{'type': 'number'}, {'type': 'double'}]"
+coordinate_timestamp_index = "np.ndarray"
+reader_class_label = "string -> DeepLabCutReader"
+meters_per_pixel_from_perimeter = "boolean -> False"
+trial_start_perimeter = "string"
+crop_time_seconds = "number -> 0.0"
+physical_object_inspect = "boolean -> False"
+manual_inspect_image = "np.ndarray[name='manual_inspect_image_0' type=ubyte required=True]"
+rectangle_2d_bin = "array -> (2, 2)"
+manual_video = "[{'$ref': '#/definitions/VideoMetadata'}]"
+length_meters_of_meters_per_pixel_source = "number"
+manual_perimeter_to_derive_meters_per_pixel = "string"
+crop_from_end = "boolean -> False"
+manual_center_pixels = "np.ndarray[name='manual_center_pixels_0' type=short required=True]"
+projectkit_configuration = "object"
+inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}]"
+
+[trial.specific]
+
+[enclosure]
+[enclosure.common]
+[enclosure.common.defined]
+
+[enclosure.common.optional]
+minimum_frame_length = "integer -> 600"
+impenetrable = "boolean -> False"
+inspect_image_path = "string"
+recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
+manual_inspect_image = "np.ndarray[name='manual_inspect_image_0' type=ubyte required=True]"
+fps = "number"
+frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'ubyte'}]"
+manual_video = "[{'$ref': '#/definitions/VideoMetadata'}]"
+derived_meters_per_pixel_source = "string"
+meters_per_pixel = "[{'type': 'number'}, {'type': 'double'}]"
+derive_meters_per_pixel = "boolean -> False"
+derived_meters_per_pixel_source_metric_length = "number"
+moving_field_name = "string"
+projectkit_configuration = "object"
+inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}] -> False"
+
+[enclosure.specific]
+
+[perimeter]
+[perimeter.common]
+[perimeter.common.defined]
+
+[perimeter.common.optional]
+minimum_frame_length = "integer -> 600"
+impenetrable = "boolean -> False"
+inspect_image_path = "string"
+recording_resolution = "np.ndarray[name='recording_resolution_0' type=short required=True]"
+manual_inspect_image = "np.ndarray[name='manual_inspect_image_0' type=ubyte required=True]"
+fps = "number"
+frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'ubyte'}]"
+manual_video = "[{'$ref': '#/definitions/VideoMetadata'}]"
+derived_meters_per_pixel_source = "string"
+meters_per_pixel = "[{'type': 'number'}, {'type': 'double'}]"
+derive_meters_per_pixel = "boolean -> False"
+derived_meters_per_pixel_source_metric_length = "number"
+moving_field_name = "string"
+projectkit_configuration = "object"
+inspect_arg = "[{'type': 'string', 'format': 'path'}, {'type': 'boolean'}] -> False"
+
+[perimeter.specific]
+
+[perimeter_plugin]
+[perimeter_plugin.common]
+[perimeter_plugin.common.defined]
+
+[perimeter_plugin.common.required]
+plugin_scope = "array"
+data_path = "string"
+
+[perimeter_plugin.common.optional]
+manual_reference = "np.ndarray[name='manual_reference_0' type=double required=True]"
+manual_shape = "string"
+label_suffix = "string"
+label_prefix = "string"
+manual_trial_argument_key = "string"
+plural_entries = "boolean -> True"
+projectkit_configuration = "object"
+ingress = "None"
+
+[perimeter_plugin.specific]
+
+[runtime_settings]
+class_name = "BikipyRuntimeSettings"
+
+[runtime_settings.defined]
+
+[runtime_settings.optional]
+minimum_seconds_tolerance = "number -> 0.2"
+disable_numba = "boolean -> False"
+matplotlib_invert_y_axis = "boolean -> False"
+only_physical_cores = "boolean -> False"
+debug = "boolean -> False"
+maximum_seconds_distraction = "number -> 0.6666666666666666"
+matplotlib_scatter_alpha = "number -> 0.6"
+disable_process_pooling = "boolean -> False"
+projectkit_configuration = "object"
+ignore_pre_existing_inspection_directory = "boolean -> False"

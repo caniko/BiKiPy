@@ -415,7 +415,7 @@ class BaseIngress(BaseProjectKitModel, ProjectKitRootMixin, ABC):
             self._define_experiment_data()
 
     def _define_experiment_data(self) -> None:
-        for plugin_model in self.plugins_global:
+        for plugin_model in self._global_plugins:
             first_file = next(self.plugin_directory_path.glob(f"{plugin_model.code_key}*"))
             self._common_trial_keyword_arguments[plugin_model.default_trial_argument_key] = plugin_model(
                 data_path=first_file, ingress=self
@@ -460,7 +460,7 @@ class BaseIngress(BaseProjectKitModel, ProjectKitRootMixin, ABC):
                     )
                     raise ValueError(msg)
 
-        for trial_class_name, kwargs in self._config_store["trial"].items():
+        for trial_class_name, kwargs in self._project_kit_config["trial"].items():
             assert trial_class_name in self.experiment_class.trial_class_names
             self._trial_class_name_to_keyword_arguments[trial_class_name] = kwargs
 
@@ -484,7 +484,7 @@ class BaseIngress(BaseProjectKitModel, ProjectKitRootMixin, ABC):
         set_bikipy_settings_from_dict(self.runtime_settings)
 
         return self.experiment_class(
-            **self._config_store["experiment"],
+            **self._project_kit_config["experiment"],
             **self.experiment_class_kwargs,
             inspect_arg=self.inspect_directory_path,
             trial_init_error_out_dir=self.result_directory_path,
