@@ -39,8 +39,8 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
     @classmethod
     @property
-    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().project_kit_fields_to_exclude_from_config_schema
+    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().schemantic_fields_to_exclude_from_config_schema
         upstream.add("vertices_in_pixels")
         return upstream
 

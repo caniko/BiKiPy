@@ -40,7 +40,6 @@ from bikipy.core.video import (
     VideoMetadataMixin,
 )
 from bikipy.feature.motion import Motion, motion_multi_indexer
-from bikipy.ingress.plugin import PluginChangeReference, PluginRadial
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
 from bikipy.perimeter.base import (
     BaseSinglePerimeter,
@@ -66,16 +65,13 @@ class Behaviour(BaseBikipyHashable, BaseBikipyInspectMixin, VideoMetadataMixin):
 
 class BaseTrial(Behaviour):
     framewise_coordinates_path: FilePath = Field(..., description="Path to file storing coordinate data")
-    manual_reader_kwargs: dict = Field(
-        ..., description="Keyword arguments that will be passed on the reader objects on init"
+    manual_reader_kwargs: Optional[dict] = Field(
+        default_factory=dict, description="Keyword arguments that will be passed on the reader objects on init"
     )
     animal_id: str | PositiveInt = Field(..., description="The ID of the animal in the trial")
     animal_profile: Literal["rodent"] = "rodent"
     coordinate_timestamp_index: Optional[NDArray] = timestamp_index_field
     manual_center_pixels: Optional[NDArrayInt16]
-    rigid_nodes_freezing: Optional[Sequence[str | PositiveInt]] = Field(
-        description="Nodes that should remain during freeze/immobility, most often due to fear.",
-    )
     enclosure: Optional[Perimeter] = enclosure_field
     crop_time_seconds: float = 0.0
     crop_from_end: bool = Field(
@@ -125,10 +121,15 @@ class BaseTrial(Behaviour):
 
     @classmethod
     @property
-    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().project_kit_fields_to_exclude_from_config_schema
+    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().schemantic_fields_to_exclude_from_config_schema
         upstream.update(
-            ("framewise_coordinates_path", "coordinate_timestamp_set_path", "manual_reader_kwargs", "animal_id")
+            (
+                "framewise_coordinates_path",
+                "enclosure",
+                "coordinate_timestamp_set_path",
+                "animal_id",
+            )
         )
         return upstream
 
@@ -324,8 +325,8 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().project_kit_fields_to_exclude_from_config_schema
+    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().schemantic_fields_to_exclude_from_config_schema
         upstream.update(
             (
                 "trial_id_to_trial_class_name",
@@ -473,6 +474,9 @@ class BaseExperiment(Behaviour):
         """
         Function useful for customizing initiation parameters for trial objects
         """
+        from bikipy.ingress.plugin.perimeter.change_reference import PluginChangeReference
+        from bikipy.ingress.plugin.perimeter.radial_maze import PluginRadial
+
         result = self.video.dict(exclude_unset=True)
 
         if self.common_trial_keyword_arguments:

@@ -36,9 +36,6 @@ _can_only_be_set_manually = {"meters_per_pixel", "image_resize_multiplier"}
 
 
 class _VideoMetadataBase(BikipyModel):
-    class Config:
-        keep_untouched = (cached_property,)
-
     meters_per_pixel: Optional[MetersPerPixel] = Field(
         description="Float or 1D array defining the meter to pixel ratio"
     )
@@ -56,6 +53,9 @@ class _VideoMetadataBase(BikipyModel):
     )
 
     category = "video_metadata"
+
+    class Config:
+        keep_untouched = (cached_property,)
 
     @validator("frame")
     def make_sure_frame_is_read(cls, value: Frame) -> NDArrayUint8:

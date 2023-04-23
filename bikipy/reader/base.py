@@ -20,6 +20,7 @@ from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.perimeter.base import BasePerimeter
 from bikipy.reader.model import model_data
 from bikipy.reader.utils import compute_midpoint_label
+from bikipy.utils.constants import TO_PARQUET_KWARGS
 
 BAD_COORDINATE = (np.nan, np.nan, 0.0)  # x, y, likelihood
 
@@ -103,8 +104,8 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
 
     @classmethod
     @property
-    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().project_kit_fields_to_exclude_from_config_schema
+    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().schemantic_fields_to_exclude_from_config_schema
         upstream.update(("df_path", "trial_enclosure", "timestamp_index", "_using_bikipy_ingress"))
         return upstream
 
@@ -304,11 +305,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
             case ".parquet":
                 df = self._read_parquet(self.df_path, **self.df_read_kwargs)
             case _:
-                msg = (
-                    f"{self.df_path.suffix}, is not natively supported by DeepLabCut, "
-                    f"assuming user has manually cleaned and exported the data file"
-                    f"to another format that is supported by BiKiPy.BaseReader. Fingers crossed"
-                )
+                msg = f"{self.df_path.suffix}, is not natively supported by DeepLabCut."
                 raise ValueError(msg)
 
         if "timestamped" in self.df_path.stem:
@@ -357,7 +354,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMeta
         )
 
     def _cache_augmented(self, df: pd.DataFrame) -> None:
-        df.to_parquet(self.cached_augmented_df_path)
+        df.to_parquet(self.cached_augmented_df_path, **TO_PARQUET_KWARGS)
 
     def flush_reads(self) -> None:
         try:

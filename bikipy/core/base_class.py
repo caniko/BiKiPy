@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import ClassVar, Optional, TypeVar
 
 from compress_pickle import compress_pickle
-from projectkit.model.project import BaseProjectKitModel
+from schemantic.model.project import SchemanticMixin
 from pydantic import DirectoryPath, Field, FilePath, BaseModel
 from pydantic_numpy.dtype import NDArrayUint8
 
@@ -19,14 +19,14 @@ class BikipyModel(BaseModel):
     category: ClassVar[str] = ...
 
 
-class BaseBikipyHashable(BikipyModel, BaseProjectKitModel):
+class BaseBikipyHashable(BikipyModel, SchemanticMixin):
     label: Optional[Label]
     int_id: Optional[int]
 
     @classmethod
     @property
-    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().project_kit_fields_to_exclude_from_config_schema
+    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().schemantic_fields_to_exclude_from_config_schema
         upstream.update(("label", "int_id"))
         return upstream
 

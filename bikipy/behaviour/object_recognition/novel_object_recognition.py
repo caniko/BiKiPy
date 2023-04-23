@@ -28,8 +28,8 @@ class NortTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
 
     @classmethod
     @property
-    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().project_kit_fields_to_exclude_from_config_schema
+    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().schemantic_fields_to_exclude_from_config_schema
         upstream.update(("variable", "familiar"))
         return upstream
 
@@ -49,8 +49,8 @@ class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
 
     @classmethod
     @property
-    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().project_kit_fields_to_exclude_from_config_schema
+    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().schemantic_fields_to_exclude_from_config_schema
         upstream.update(("novel", "familiar"))
         return upstream
 

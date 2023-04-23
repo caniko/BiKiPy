@@ -11,27 +11,21 @@ from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 import numpy as np
 import pandas as pd
 from inflection import underscore
-from projectkit.model.project import BaseProjectKitModel, ProjectKitRootMixin
+from projectkit.model.project import ProjectKitRootModelMixin
+from schemantic.model.project import SchemanticMixin
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import set_bikipy_settings_from_dict
+from bikipy.core.base_class import BikipyModel
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin import (
-    PluginMeterPerPixel,
-    ingress_key_to_model,
-)
-from bikipy.ingress.plugin.base import Plugin, PluginScope
-from bikipy.ingress.plugin.meters_per_pixel import (
-    detect_meters_per_pixel_in_perimeter_directory,
-)
+from bikipy.ingress.plugin_scope import PluginScope
 
 from bikipy.ingress.utils.io import (
     get_inspect_directory_path,
     get_plugin_directory_path,
     get_project_settings_path,
     infer_metadata_path,
-    load_settings,
     result_directory_path,
 )
 from bikipy.perimeter.base import Perimeter
@@ -40,15 +34,17 @@ from bikipy.utils.collection_utils import (
     copycat_assumes_levels_of_icon,
     get_first_value_in_dict,
 )
+from bikipy.utils.constants import TO_PARQUET_KWARGS
 from bikipy.utils.misc import defaultdict_dict_factory, sheet_names_from_path
 
 if TYPE_CHECKING:
     from bikipy.behaviour.core import Experiment, ExperimentCLS, TrialCLS
+    from bikipy.ingress.plugin.base import Plugin
 
 logger = getLogger(__name__)
 
 
-class BaseIngress(BaseProjectKitModel, ProjectKitRootMixin, ABC):
+class BaseIngress(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin, ABC):
     """
     This model stores methods to ingest data for bikipy-based analysis. The workflow differs slightly between daughter
     classes. The commonality are the levels in which data is introduced, which is quite similar to the bikipy experiment
@@ -385,7 +381,9 @@ class BaseIngress(BaseProjectKitModel, ProjectKitRootMixin, ABC):
         return result
 
     @cached_property
-    def _global_plugins(self) -> list[Plugin, ...]:
+    def _global_plugins(self) -> list["Plugin", ...]:
+        from bikipy.ingress.plugin.map import ingress_key_to_model
+
         return [
             ingress_key_to_model[ingress_key]
             for ingress_key, strategy in self._plugin_definitions.items()
@@ -393,7 +391,9 @@ class BaseIngress(BaseProjectKitModel, ProjectKitRootMixin, ABC):
         ]
 
     @cached_property
-    def _plugins_metadata(self) -> list[Plugin, ...]:
+    def _plugins_metadata(self) -> list["Plugin", ...]:
+        from bikipy.ingress.plugin.map import ingress_key_to_model
+
         return [
             ingress_key_to_model[ingress_key]
             for ingress_key, strategy in self._plugin_definitions.items()
@@ -401,7 +401,9 @@ class BaseIngress(BaseProjectKitModel, ProjectKitRootMixin, ABC):
         ]
 
     @cached_property
-    def _trialwise_plugins(self) -> list[Plugin, ...]:
+    def _trialwise_plugins(self) -> list["Plugin", ...]:
+        from bikipy.ingress.plugin.map import ingress_key_to_model
+
         return [
             ingress_key_to_model[ingress_key]
             for ingress_key, strategy in self._plugin_definitions.items()
@@ -564,7 +566,7 @@ class BaseIngress(BaseProjectKitModel, ProjectKitRootMixin, ABC):
         else:
             parquet_dir = self.result_directory_path
         for trial_label, df in self.trial_label_to_df.items():
-            df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_class_name}.parquet")
+            df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_class_name}.parquet", **TO_PARQUET_KWARGS)
 
     def purge_cached_reads(self, override_pattern: Optional[str] = None) -> None:
         pattern = override_pattern or BaseReader.augmented_coordinate_cached_file_label
@@ -596,6 +598,9 @@ class BaseIngress(BaseProjectKitModel, ProjectKitRootMixin, ABC):
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
 
     def get_meter_per_pixel(self, trial_id: Optional[str | PositiveInt] = None) -> NDArrayFp64:
+        from bikipy.ingress.plugin.map import PluginMeterPerPixel
+        from bikipy.ingress.plugin.meters_per_pixel import detect_meters_per_pixel_in_perimeter_directory
+
         if PluginScope.TRIALWISE in self.definition_meters_per_pixel:
             try:
                 return self.trial_id_to_keyword_arguments[trial_id]["meters_per_pixel"]

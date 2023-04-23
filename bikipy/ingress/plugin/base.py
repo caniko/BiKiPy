@@ -4,23 +4,21 @@ from functools import cached_property
 from typing import Any, ClassVar, Optional, TypeVar
 
 import pandas as pd
-from projectkit.model.project import BaseProjectKitModel
+from schemantic.model.project import SchemanticMixin
 from pydantic import BaseModel, DirectoryPath, Field, FilePath
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.base_class import BikipyModel
 from bikipy.core.typing import Label
+from bikipy.ingress.plugin_scope import PluginScope
+from bikipy.ingress.workflow.base import BaseIngress
 from bikipy.utils.makesense import get_only_point_from_makesense
 
 
-class PluginScope(str, Enum):
-    GLOBAL = "global"
-    METADATA = "metadata"
-    TRIALWISE = "trialwise"
-
-
-class BasePlugin(BikipyModel, BaseProjectKitModel, ABC):
-    ingress: Any = Field(description="Bikipy ingress object to access project metadata relevant for defining perimeter")
+class BasePlugin(BikipyModel, SchemanticMixin, ABC):
+    ingress: BaseIngress = Field(
+        description="Bikipy ingress object to access project metadata relevant for defining perimeter"
+    )
     plugin_scope: PluginScope = ...
     manual_trial_argument_key: Optional[str]
 
@@ -33,8 +31,8 @@ class BasePlugin(BikipyModel, BaseProjectKitModel, ABC):
 
     @classmethod
     @property
-    def project_kit_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().project_kit_fields_to_exclude_from_config_schema
+    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().schemantic_fields_to_exclude_from_config_schema
         upstream.update(("ingress", "plugin_scope"))
         return upstream
 

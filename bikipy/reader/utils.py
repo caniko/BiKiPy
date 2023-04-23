@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, validate_arguments
 
+from bikipy.utils.constants import TO_PARQUET_KWARGS
+
 
 @lru_cache
 def compute_midpoint_label(midpoint_group: Iterable[str], manual_midpoint_label: Optional[str] = None) -> str:
@@ -58,7 +60,7 @@ def merge_timestamps_with_dlc(
                 continue
 
             df.set_index(label_to_timestamp[timestamp_label], inplace=True)
-            df.to_parquet(timestamped_df_path)
+            df.to_parquet(timestamped_df_path, **TO_PARQUET_KWARGS)
 
             os.remove(label_to_timestamp_path[timestamp_label])
             os.remove(coord_file)

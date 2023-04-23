@@ -11,6 +11,7 @@ from pydantic_numpy.dtype import NDArrayBool
 
 from bikipy.reader.base import BaseReader, Enclosure
 from bikipy.reader.utils import compute_midpoint_label
+from bikipy.utils.constants import TO_PARQUET_KWARGS
 
 DEEPLABCUT_DF_INIT_KWARGS = {
     "index_col": 0,
@@ -99,7 +100,7 @@ def convert_hdf_to_parquet(data_path, delete_hdf: bool = False, ignore_pre_exist
     df = pd.read_hdf(data_path, **DEEPLABCUT_DF_INIT_KWARGS).droplevel(0, axis=1)
 
     if ignore_pre_existing or not parquet_path.exists():
-        df.to_parquet(parquet_path)
+        df.to_parquet(parquet_path, **TO_PARQUET_KWARGS)
 
     if delete_hdf:
         os.remove(data_path)
