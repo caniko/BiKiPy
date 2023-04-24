@@ -1,26 +1,32 @@
 from logging import getLogger
-from typing import Optional
+from typing import Optional, Literal
 
 from ordered_set import OrderedSet
+from projectkit.model.jit import ProjectKitJITConfiguration
 from schemantic.model.schema import GroupSchema, HomologSchema, SingleSchema
-from projectkit.model.config.jit import ProjectKitJITConfiguration
 from projectkit.utils.misc import here_or_there
-from pydantic import DirectoryPath
+from pydantic import DirectoryPath, validator
 
 from bikipy import BikipyRuntimeSettings
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.mapping import experiment_name_to_class
 from bikipy.behaviour.radial_arm import BaseRadialMazeExperiment
-from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
+from bikipy.ingress.workflow.base import IngressWorkflow
 from bikipy.reader import DeepLabCutReader
+from bikipy.ingress.workflow.animal import AnimalIngressWorkflow
+from bikipy.ingress.workflow.animal_day import AnimalDayIngressWorkflow
+from bikipy.ingress.workflow.phase import PhaseIngressWorkflow
 
 logger = getLogger(__name__)
 
+INGRESS_METHOD_NAME_TO_INGRESS_CLASS = {
+    "animal": AnimalIngressWorkflow.__name__,
+    "animal_day": AnimalDayIngressWorkflow.__name__,
+    "phase": PhaseIngressWorkflow.__name__,
+}
 
-class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
-    ingress_method: str = ...
-    experiment_name: str = ...
 
+class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflow]):
     config_key_order = OrderedSet(
         ("manual", "ingress", "experiment", "trial", "enclosure", "perimeter", "perimeter_plugin", "runtime_settings")
     )
@@ -28,20 +34,30 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
     project_name = "bikipy"
 
     root_class_config_key = "ingress"
-    root_class_name_to_class = INGRESS_METHOD_NAME_TO_INGRESS_CLASS
+    root_class_name_to_class = {
+        cls.__name__: cls for cls in (AnimalIngressWorkflow, AnimalDayIngressWorkflow, PhaseIngressWorkflow)
+    }
 
-    def jit_init(self, project_directory: Optional[DirectoryPath] = None) -> dict:
+    def jit_init(
+        self, ingress_method: str, experiment_name: str, project_directory: Optional[DirectoryPath] = None
+    ) -> dict:
         from bikipy.ingress.plugin.perimeter.radial_maze import PluginRadial
         from bikipy.ingress.plugin.perimeter.single import PluginSinglePerimeter
+
+        try:
+            ingress_method = INGRESS_METHOD_NAME_TO_INGRESS_CLASS[ingress_method]
+        except KeyError:
+            pass
 
         project_directory = here_or_there(project_directory)
 
         logger.info(f"Generating experiment configuration at {project_directory}")
 
-        experiment_class = experiment_name_to_class[self.experiment_name.lower()]
+        experiment_class = experiment_name_to_class[experiment_name.lower()]
         cds_single = [
             SingleSchema(
-                manual_mapping_name=self.root_class_config_key, model=self.root_class_name_to_class[self.ingress_method]
+                manual_mapping_name=self.root_class_config_key,
+                model=self.root_class_name_to_class[ingress_method],
             ),
             SingleSchema(manual_mapping_name="runtime_settings", model=BikipyRuntimeSettings),
             SingleSchema(manual_mapping_name="reader", model=DeepLabCutReader),  # TODO: Cleo option to change reader
@@ -61,12 +77,10 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
             ), f"{experiment_class.__name__}, is an enclosed experiment, but has no class"
             if len(trial_class_to_perimeter_enclosure) == 1:
                 cds_homologs.append(
-                    HomologSchema(
+                    HomologSchema.from_model(
                         manual_mapping_name="enclosure",
-                        instance_names=set({c.__name__ for c in experiment_class.trial_class_names}),
-                        model_schema=trial_class_to_perimeter_enclosure.pop(
-                            tuple(trial_class_to_perimeter_enclosure)[0]
-                        ),
+                        instance_names=set(experiment_class.trial_class_names),
+                        model=trial_class_to_perimeter_enclosure.pop(tuple(trial_class_to_perimeter_enclosure)[0]),
                     )
                 )
             else:

@@ -11,7 +11,7 @@ from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from bikipy.behaviour.core import HabituationTrialMixin
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.core.enclosure.quadrant import Quadrant
-from bikipy.behaviour.utils import reduce_repeating_sequences
+from bikipy.behaviour.utils import reduce_repeating_sequences, blanket_enclosed_experiment_label_generator
 from bikipy.feature.motion import get_combined_features_from_merged_motion_island_data
 from bikipy.perimeter import RectanglePerimeter
 from bikipy.utils.collection_utils import generic_multi_indexer
@@ -317,17 +317,17 @@ class RectangleEnclosedHabituationTrial(HabituationTrialMixin, RectangleEnclosed
     trial_label = "Habituation"
 
 
-class GenericRectangleEnclosedTrial(RectangleEnclosedTrial):
-    trial_label = "generic_rectangle_enclosed_trial"
+class BlanketRectangleEnclosedTrial(RectangleEnclosedTrial):
+    trial_label = "blanket_rectangle_enclosed_trial"
 
-    experiment_class_name = "GenericRectangleEnclosedExperiment"
+    experiment_class_name = "BlanketRectangleEnclosedExperiment"
 
 
-class GenericRectangleEnclosedExperiment(RectangleEnclosedExperiment):
-    experiment_labels = {"rectangle", "rectangle_enclosed", "RectangleEnclosed"}
+class BlanketRectangleEnclosedExperiment(RectangleEnclosedExperiment):
+    experiment_labels = blanket_enclosed_experiment_label_generator("rectangle")
 
     habituation_trial_class = RectangleEnclosedHabituationTrial
-    trial_sequence = (GenericRectangleEnclosedTrial,)
+    trial_sequence = (BlanketRectangleEnclosedTrial,)
 
 
 @lru_cache

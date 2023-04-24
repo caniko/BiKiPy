@@ -4,12 +4,12 @@ from typing import ClassVar
 from pydantic import DirectoryPath, PositiveInt
 
 from bikipy.core.typing import Label
-from bikipy.ingress.workflow.base import BaseIngress
+from bikipy.ingress.workflow.base import BaseIngressWorkflow
 
 logger = getLogger(__name__)
 
 
-class PhaseIngress(BaseIngress):
+class PhaseIngressWorkflow(BaseIngressWorkflow):
     ingress_method: ClassVar[str] = "phase"
 
     def _dataset_reader(self) -> None:

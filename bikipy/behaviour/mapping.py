@@ -1,5 +1,6 @@
 from bikipy.behaviour.core import ExperimentCLS
-from bikipy.behaviour.core.enclosure.rectangle import GenericRectangleEnclosedExperiment
+from bikipy.behaviour.core.enclosure.circle import BlanketCircleEnclosedExperiment
+from bikipy.behaviour.core.enclosure.rectangle import BlanketRectangleEnclosedExperiment
 from bikipy.behaviour.object_recognition.novel_object_recognition import NortExperiment
 from bikipy.behaviour.object_recognition.objects_in_updating_locations import (
     ObjectsInUpdatingLocationsExperiment,
@@ -14,7 +15,7 @@ IMPLEMENTED_EXPERIMENTS: set[ExperimentCLS] = {
     CheeseboardExperiment,
 }
 
-GENERIC_EXPERIMENTS: set[ExperimentCLS] = {GenericRectangleEnclosedExperiment}
+GENERIC_EXPERIMENTS: set[ExperimentCLS] = {BlanketCircleEnclosedExperiment, BlanketRectangleEnclosedExperiment}
 
 EXPERIMENTS: set[ExperimentCLS] = {*IMPLEMENTED_EXPERIMENTS, *GENERIC_EXPERIMENTS}
 

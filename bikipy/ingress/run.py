@@ -1,22 +1,17 @@
+from typing import Optional
+
+from projectkit.utils.misc import here_or_there
 from pydantic import DirectoryPath
 
-from bikipy.ingress.utils.settings import auto_define_ingress_object
-from bikipy.ingress.workflow import INGRESS_METHOD_NAME_TO_INGRESS_CLASS
+from bikipy.ingress.projectkit import ProjectKitJITBikipyConfiguration
 
 
-def from_config(project_directory: DirectoryPath):
-    kwargs = {"project_directory": project_directory}
-    try:
-        return INGRESS_METHOD_NAME_TO_INGRESS_CLASS[auto_define_ingress_object(project_directory).ingress_method](
-            **kwargs
-        )
-    except KeyError:
-        msg = (
-            f"Defined ingress method, {auto_define_ingress_object(project_directory).ingress_method}, "
-            f"is not supported"
-        )
-        raise AttributeError(msg)
+def get_ingress(project_directory: Optional[DirectoryPath] = None):
+    project_directory = here_or_there(project_directory)
+    return ProjectKitJITBikipyConfiguration.from_config(project_directory).root_class_from_config(
+        project_directory=project_directory
+    )
 
 
 def analyze_and_save(project_directory: DirectoryPath):
-    from_config(project_directory).save_analysis_data()
+    get_ingress(project_directory).save_analysis_data()

@@ -11,9 +11,8 @@ from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 import numpy as np
 import pandas as pd
 from inflection import underscore
-from projectkit.model.project import ProjectKitRootModelMixin
 from schemantic.model.project import SchemanticMixin
-from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
+from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments, Field
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import set_bikipy_settings_from_dict
@@ -44,7 +43,7 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 
 
-class BaseIngress(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin, ABC):
+class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
     """
     This model stores methods to ingest data for bikipy-based analysis. The workflow differs slightly between daughter
     classes. The commonality are the levels in which data is introduced, which is quite similar to the bikipy experiment
@@ -86,12 +85,13 @@ class BaseIngress(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin, ABC):
     _experiment_data_defined: bool = False
     _trial_id_to_trial_class_name: dict[Label, str] = {}
     _common_trial_keyword_arguments: dict[str, Any] = {}
-    _trial_id_to_keyword_arguments: dict[Label, dict[str, Any]] = defaultdict_dict_factory()
+    _trial_id_to_keyword_arguments: dict[Label, dict[str, Any]] = Field(default_factory=defaultdict_dict_factory)
     _trial_class_name_to_keyword_arguments: dict[str, dict] = {}
 
     _trial_id_to_designator_id: dict[str, str] = {}
-    _designator_id_to_kwargs: dict[str, dict] = defaultdict_dict_factory()
+    _designator_id_to_kwargs: dict[str, dict] = Field(default_factory=defaultdict_dict_factory)
 
+    profile_runtime: ClassVar[bool] = True
     ingress_method: ClassVar[str]
 
     _project_kit_jit = True
@@ -107,6 +107,13 @@ class BaseIngress(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin, ABC):
         to explore the different implementations
         """
         ...
+
+    @classmethod
+    @property
+    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().schemantic_fields_to_exclude_from_config_schema
+        upstream.update(("project_directory", "experiment_class_name"))
+        return upstream
 
     @cached_property
     def experiment_class(self) -> "ExperimentCLS":
@@ -548,23 +555,21 @@ class BaseIngress(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin, ABC):
     def save_analysis_data(self):
         if self.profile_runtime:
             with Profile() as pr:
-                self.experiment.trial_label_to_df
+                assert self.experiment.trial_label_to_df
 
             stats = pstats.Stats(pr)
             stats.sort_stats(pstats.SortKey.TIME)
             stats.dump_stats(self.inspect_directory_path / "performance_analysis.prof")
-        else:
-            self.experiment.trial_label_to_df
 
         with pd.ExcelWriter(self.result_directory_path / f"{self.experiment_class_name}.xlsx") as writer:
             for trial_label, df in self.trial_label_to_df.items():
                 df.to_excel(writer, sheet_name=str(trial_label))
 
-        if len(self.trial_label_to_df) != 1:
-            parquet_dir = self.result_directory_path / "parquet"
-            parquet_dir.mkdir(exist_ok=True)
-        else:
-            parquet_dir = self.result_directory_path
+        parquet_dir = (
+            self.result_directory_path / "parquet" if len(self.trial_label_to_df) == 1 else self.result_directory_path
+        )
+        parquet_dir.mkdir(exist_ok=True)
+
         for trial_label, df in self.trial_label_to_df.items():
             df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_class_name}.parquet", **TO_PARQUET_KWARGS)
 
@@ -702,4 +707,4 @@ class BaseIngress(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin, ABC):
         raise ValueError(msg)
 
 
-Ingress = TypeVar("Ingress", bound=BaseIngress)
+IngressWorkflow = TypeVar("IngressWorkflow", bound=BaseIngressWorkflow)

@@ -11,12 +11,12 @@ from pydantic_numpy.dtype import NDArrayFp64
 from bikipy.core.base_class import BikipyModel
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin_scope import PluginScope
-from bikipy.ingress.workflow.base import BaseIngress
+from bikipy.ingress.workflow.base import BaseIngressWorkflow
 from bikipy.utils.makesense import get_only_point_from_makesense
 
 
 class BasePlugin(BikipyModel, SchemanticMixin, ABC):
-    ingress: BaseIngress = Field(
+    ingress: BaseIngressWorkflow = Field(
         description="Bikipy ingress object to access project metadata relevant for defining perimeter"
     )
     plugin_scope: PluginScope = ...

@@ -83,3 +83,18 @@ def reduce_repeating_sequences_absolute(
             reduced_sequence.append(last_element)
 
     return reduced_sequence
+
+
+def blanket_experiment_label_generator(experiment_label: str) -> set[str]:
+    return {
+        experiment_label,
+        f"{experiment_label}-enclosed",
+        f"blanket-{experiment_label}",
+        f"generic-{experiment_label}",
+    }
+
+
+def blanket_enclosed_experiment_label_generator(experiment_label: str) -> set[str]:
+    upstream = blanket_experiment_label_generator(experiment_label)
+    upstream.add(f"{experiment_label.capitalize()}Enclosed")
+    return upstream
