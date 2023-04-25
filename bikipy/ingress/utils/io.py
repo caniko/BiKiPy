@@ -44,7 +44,7 @@ def get_project_settings_path(project_directory: DirectoryPath, deprecated_file_
 
 @lru_cache(1)
 @validate_arguments
-def get_dataset_directory_path(project_directory: DirectoryPath) -> DirectoryPath:
+def get_dataset_directory(project_directory: DirectoryPath) -> DirectoryPath:
     result = project_directory / "dataset"
     result.mkdir(exist_ok=True)
     return result

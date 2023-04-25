@@ -32,5 +32,5 @@ class AbstractTrial(BaseModel, ABC):
     #
     # @property
     # @abstractmethod
-    # def _trial_feature_series_list(self) -> list[pd.Series]:
+    # def _trial_analysis_series_list(self) -> list[pd.Series]:
     #     ...

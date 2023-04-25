@@ -120,8 +120,8 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         ]
 
     @property
-    def _trial_feature_series_list(self) -> list[pd.Series]:
-        upstream_list = super()._trial_feature_series_list
+    def _trial_analysis_series_list(self) -> list[pd.Series]:
+        upstream_list = super()._trial_analysis_series_list
 
         upstream_list.append(
             pd.Series(

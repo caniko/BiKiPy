@@ -39,8 +39,8 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         return self.physical_object_perimeters
 
     @property
-    def _trial_feature_series_list(self) -> list[pd.Series]:
-        upstream_list = super()._trial_feature_series_list
+    def _trial_analysis_series_list(self) -> list[pd.Series]:
+        upstream_list = super()._trial_analysis_series_list
         upstream_list.append(self.physical_object_set.feature_summary)
         return upstream_list
 

@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Optional, Literal
+from typing import Optional, Literal, ClassVar
 
 from ordered_set import OrderedSet
 from projectkit.model.jit import ProjectKitJITConfiguration
@@ -49,11 +49,16 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflo
         except KeyError:
             pass
 
+        experiment_name = experiment_name.lower()
+
+        self.root_class_name = ingress_method
+        self.root_class_init_kwargs["experiment_class_name"] = experiment_name
+
         project_directory = here_or_there(project_directory)
 
         logger.info(f"Generating experiment configuration at {project_directory}")
 
-        experiment_class = experiment_name_to_class[experiment_name.lower()]
+        experiment_class = experiment_name_to_class[experiment_name]
         cds_single = [
             SingleSchema(
                 manual_mapping_name=self.root_class_config_key,
@@ -64,7 +69,15 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflo
             SingleSchema(manual_mapping_name="experiment", model=experiment_class),
         ]
         cds_homologs = []
-        cds_hierarchical = [GroupSchema.from_models(mapping_name="trial", models=set(experiment_class.trial_classes))]
+        cds_hierarchical = []
+
+        assert experiment_class.trial_classes
+        if len(experiment_class.trial_classes) == 1:
+            cds_single.append(SingleSchema(manual_mapping_name="trial", model=experiment_class.trial_classes.pop()))
+        else:
+            cds_hierarchical.append(
+                GroupSchema.from_models(mapping_name="trial", models=experiment_class.trial_classes)
+            )
 
         if issubclass(experiment_class, EnclosedExperiment):
             trial_class_to_perimeter_enclosure = {
@@ -76,10 +89,9 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflo
                 trial_class_to_perimeter_enclosure
             ), f"{experiment_class.__name__}, is an enclosed experiment, but has no class"
             if len(trial_class_to_perimeter_enclosure) == 1:
-                cds_homologs.append(
-                    HomologSchema.from_model(
+                cds_single.append(
+                    SingleSchema(
                         manual_mapping_name="enclosure",
-                        instance_names=set(experiment_class.trial_class_names),
                         model=trial_class_to_perimeter_enclosure.pop(tuple(trial_class_to_perimeter_enclosure)[0]),
                     )
                 )

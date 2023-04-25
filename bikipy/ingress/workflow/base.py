@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 import numpy as np
 import pandas as pd
 from inflection import underscore
+from projectkit.model.project import ProjectKitRootModelMixin
 from schemantic.model.project import SchemanticMixin
 from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments, Field
 from pydantic_numpy.dtype import NDArrayFp64
@@ -38,12 +39,12 @@ from bikipy.utils.misc import defaultdict_dict_factory, sheet_names_from_path
 
 if TYPE_CHECKING:
     from bikipy.behaviour.core import Experiment, ExperimentCLS, TrialCLS
-    from bikipy.ingress.plugin.base import Plugin
+    from bikipy.ingress.plugin.base import Plugin, PluginType
 
 logger = getLogger(__name__)
 
 
-class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
+class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin, ABC):
     """
     This model stores methods to ingest data for bikipy-based analysis. The workflow differs slightly between daughter
     classes. The commonality are the levels in which data is introduced, which is quite similar to the bikipy experiment
@@ -85,16 +86,14 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
     _experiment_data_defined: bool = False
     _trial_id_to_trial_class_name: dict[Label, str] = {}
     _common_trial_keyword_arguments: dict[str, Any] = {}
-    _trial_id_to_keyword_arguments: dict[Label, dict[str, Any]] = Field(default_factory=defaultdict_dict_factory)
+    _trial_id_to_keyword_arguments: dict[Label, dict[str, Any]] = defaultdict_dict_factory()
     _trial_class_name_to_keyword_arguments: dict[str, dict] = {}
 
     _trial_id_to_designator_id: dict[str, str] = {}
-    _designator_id_to_kwargs: dict[str, dict] = Field(default_factory=defaultdict_dict_factory)
+    _designator_id_to_kwargs: dict[str, dict] = defaultdict_dict_factory()
 
     profile_runtime: ClassVar[bool] = True
     ingress_method: ClassVar[str]
-
-    _project_kit_jit = True
 
     class Config:
         keep_untouched = (cached_property,)
@@ -136,18 +135,6 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
         return experiment
 
     @property
-    def experiment_class_kwargs(self) -> dict[str, dict]:
-        result = {
-            "common_trial_keyword_arguments": self.common_trial_keyword_arguments,
-            "trial_id_to_keyword_arguments": self.trial_id_to_keyword_arguments,
-        }
-        if self.experiment_class.has_stages:
-            result["trial_id_to_trial_class_name"] = self.trial_id_to_trial_class_name
-            result["trial_class_name_to_keyword_arguments"] = self.trial_class_name_to_keyword_arguments
-
-        return result
-
-    @property
     def ingress_defined_fields(self) -> dict[str, set]:
         result = {
             "common_trial_keyword_arguments": set(self.common_trial_keyword_arguments),
@@ -167,14 +154,14 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
     @property
     def trial_id_to_trial_class_name(self):
         if not self._experiment_data_defined:
-            self._define_experiment_data()
+            self.__post_init__()
         assert self._trial_id_to_trial_class_name
         return self._trial_id_to_trial_class_name
 
     @property
     def common_trial_keyword_arguments(self):
         if not self._experiment_data_defined:
-            self._define_experiment_data()
+            self.__post_init__()
         return self._common_trial_keyword_arguments
 
     @property
@@ -190,7 +177,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
     @property
     def metadata_index_to_trial_id(self):
         if not self._experiment_data_defined:
-            self._define_experiment_data()
+            self.__post_init__()
         return self._metadata_index_to_trial_id
 
     # I/O ============================
@@ -373,7 +360,8 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
     @cached_property
     def _plugin_definitions(self) -> dict[str, frozenset[PluginScope]]:
         result = {
-            "perimeter": self.definition_perimeter,
+            "meters_per_pixel": self.definition_meters_per_pixel,
+            "perimeter": self.definition_single_perimeter,
             "enclosure": self.definition_enclosure,
             "radial": self.definition_radial,
             "change_reference": self.definition_change_reference,
@@ -382,13 +370,18 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
             "timestamp": self.definition_timestamp,
             "center": self.definition_center,
         }
-        for k, v in result.items():
-            if not v:
-                del result[k]
+
+        to_delete = []
+        for k in result:
+            if not result[k]:
+                to_delete.append(k)
+        for k in to_delete:
+            del result[k]
+
         return result
 
     @cached_property
-    def _global_plugins(self) -> list["Plugin", ...]:
+    def _global_plugins(self) -> list["PluginType", ...]:
         from bikipy.ingress.plugin.map import ingress_key_to_model
 
         return [
@@ -398,7 +391,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
         ]
 
     @cached_property
-    def _plugins_metadata(self) -> list["Plugin", ...]:
+    def _plugins_metadata(self) -> list["PluginType", ...]:
         from bikipy.ingress.plugin.map import ingress_key_to_model
 
         return [
@@ -408,7 +401,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
         ]
 
     @cached_property
-    def _trialwise_plugins(self) -> list["Plugin", ...]:
+    def _trialwise_plugins(self) -> list["PluginType", ...]:
         from bikipy.ingress.plugin.map import ingress_key_to_model
 
         return [
@@ -421,9 +414,11 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
 
     def _define_experiment_data_if_not_defined(self):
         if not self._experiment_data_defined:
-            self._define_experiment_data()
+            self.__post_init__()
 
-    def _define_experiment_data(self) -> None:
+    def __post_init__(self) -> None:
+        # Alias: define_experiment_data
+
         for plugin_model in self._global_plugins:
             first_file = next(self.plugin_directory_path.glob(f"{plugin_model.code_key}*"))
             self._common_trial_keyword_arguments[plugin_model.default_trial_argument_key] = plugin_model(
@@ -469,9 +464,15 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
                     )
                     raise ValueError(msg)
 
-        for trial_class_name, kwargs in self._project_kit_config["trial"].items():
-            assert trial_class_name in self.experiment_class.trial_class_names
-            self._trial_class_name_to_keyword_arguments[trial_class_name] = kwargs
+        if self.experiment_class.has_stages:
+            for trial_class_name, kwargs in self.project_kit_config["trial"].items():
+                assert trial_class_name in self.experiment_class.trial_class_names
+                self._trial_class_name_to_keyword_arguments[trial_class_name] = kwargs
+        else:
+            self._common_trial_keyword_arguments.update(self.project_kit_config["trial"])
+
+        if "reader" in self.project_kit_config:
+            self._common_trial_keyword_arguments["manual_reader_kwargs"] = self.project_kit_config["reader"]
 
         self._dataset_reader()
 
@@ -490,11 +491,17 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
 
     @cached_property
     def experiment(self) -> "Experiment":
-        set_bikipy_settings_from_dict(self.runtime_settings)
+        additional_kwargs = {}
+
+        if self.experiment_class.has_stages:
+            additional_kwargs["trial_id_to_trial_class_name"] = self.trial_id_to_trial_class_name
+            additional_kwargs["trial_class_name_to_keyword_arguments"] = self.trial_class_name_to_keyword_arguments
 
         return self.experiment_class(
-            **self._project_kit_config["experiment"],
-            **self.experiment_class_kwargs,
+            **self.project_kit_config["experiment"],
+            **additional_kwargs,
+            common_trial_keyword_arguments=self.common_trial_keyword_arguments,
+            trial_id_to_keyword_arguments=self.trial_id_to_keyword_arguments,
             inspect_arg=self.inspect_directory_path,
             trial_init_error_out_dir=self.result_directory_path,
         )
@@ -555,23 +562,21 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
     def save_analysis_data(self):
         if self.profile_runtime:
             with Profile() as pr:
-                assert self.experiment.trial_label_to_df
+                self.experiment.analyze_trials()
 
             stats = pstats.Stats(pr)
             stats.sort_stats(pstats.SortKey.TIME)
             stats.dump_stats(self.inspect_directory_path / "performance_analysis.prof")
-
-        with pd.ExcelWriter(self.result_directory_path / f"{self.experiment_class_name}.xlsx") as writer:
-            for trial_label, df in self.trial_label_to_df.items():
-                df.to_excel(writer, sheet_name=str(trial_label))
 
         parquet_dir = (
             self.result_directory_path / "parquet" if len(self.trial_label_to_df) == 1 else self.result_directory_path
         )
         parquet_dir.mkdir(exist_ok=True)
 
-        for trial_label, df in self.trial_label_to_df.items():
-            df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_class_name}.parquet", **TO_PARQUET_KWARGS)
+        with pd.ExcelWriter(self.result_directory_path / f"{self.experiment_class_name}.xlsx") as writer:
+            for trial_label, df in self.trial_label_to_df.items():
+                df.to_excel(writer, sheet_name=str(trial_label))
+                df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_class_name}.parquet", **TO_PARQUET_KWARGS)
 
     def purge_cached_reads(self, override_pattern: Optional[str] = None) -> None:
         pattern = override_pattern or BaseReader.augmented_coordinate_cached_file_label
@@ -603,20 +608,24 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
 
     def get_meter_per_pixel(self, trial_id: Optional[str | PositiveInt] = None) -> NDArrayFp64:
-        from bikipy.ingress.plugin.map import PluginMeterPerPixel
-        from bikipy.ingress.plugin.meters_per_pixel import detect_meters_per_pixel_in_perimeter_directory
+        from bikipy.ingress.plugin.meters_per_pixel import (
+            detect_meters_per_pixel_in_perimeter_directory,
+            PluginMeterPerPixel,
+        )
 
         if PluginScope.TRIALWISE in self.definition_meters_per_pixel:
             try:
-                return self.trial_id_to_keyword_arguments[trial_id]["meters_per_pixel"]
+                return self.trial_id_to_keyword_arguments[trial_id][PluginMeterPerPixel.default_trial_argument_key]
             except KeyError:
                 pass
+
         if PluginScope.METADATA in self.definition_meters_per_pixel:
             try:
-                file_label = self.metadata["MetersPerPixel"][trial_id]
+                file_label = self.metadata[PluginMeterPerPixel.human_readable_index][trial_id]
                 return detect_meters_per_pixel_in_perimeter_directory(self.plugin_directory_path)[file_label]
             except KeyError:
                 pass
+
         if PluginScope.GLOBAL in self.definition_meters_per_pixel:
             return self._common_trial_keyword_arguments[PluginMeterPerPixel.default_trial_argument_key]
 
@@ -631,7 +640,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
         self, trial_id: Label, trial_directory: DirectoryPath, trial_id_plugin_glob_format_string: str
     ) -> dict:
         result = {}
-        for plugin_model in self.plugins_trialwise:
+        for plugin_model in self._trialwise_plugins:
             glob_str = trial_id_plugin_glob_format_string.format(
                 trial_id=trial_id, plugin_code_key=plugin_model.code_key
             )
@@ -650,7 +659,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ABC):
         return result
 
     @validate_arguments
-    def coordinate_files_in_directory(self, directory_path: DirectoryPath) -> list[FilePath, ...]:
+    def _coordinate_files_in_directory(self, directory_path: DirectoryPath) -> list[FilePath, ...]:
         available_indices = {int(file.stem.split(".")[0]) for file in directory_path.iterdir() if file.is_file()}
 
         result = []

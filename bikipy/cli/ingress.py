@@ -75,4 +75,4 @@ def purge_cache(project_directory: Optional[DirectoryPath], override_pattern: Op
 @validate_arguments
 def merge_coords_bonsai_timestamps(project_directory: Optional[DirectoryPath]) -> None:
     ingress = auto_define_ingress_object(current_path_or_arg_path(project_directory))
-    merge_timestamps_with_dlc(ingress.dataset_directory_path, coordinate_file_lookup_expression="*.h5")
+    merge_timestamps_with_dlc(ingress.dataset_directory, coordinate_file_lookup_expression="*.h5")

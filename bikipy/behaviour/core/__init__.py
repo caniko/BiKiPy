@@ -114,6 +114,7 @@ class BaseTrial(Behaviour):
 
     experiment_class_name: ClassVar[str] = ...
     trial_label: ClassVar[str] = ...
+    excel_sheet_name: ClassVar[str] = ...
 
     constant_feature_headers: ClassVar[tuple[tuple[str, ...]] | None] = motion_multi_indexer("All", 2)
 
@@ -241,16 +242,16 @@ class BaseTrial(Behaviour):
     # Miscellaneous
 
     @cached_property
-    def trial_feature_series(self) -> pd.Series:
-        def work():
-            return pd.concat(self._trial_feature_series_list[::-1], axis=0)
+    def trial_analysis_series(self) -> pd.Series:
+        def compute():
+            return pd.concat(self._trial_analysis_series_list[::-1], axis=0)
 
         if runtime_settings.debug:
-            result = work()
+            result = compute()
         else:
             try:
                 # Concatenate and reverse the order
-                result = work()
+                result = compute()
             except Exception as e:
                 msg = f"Trial, ID: {self.int_id}; label: {self.label}, raised an error"
                 raise AttributeError(msg) from e
@@ -259,7 +260,7 @@ class BaseTrial(Behaviour):
         return result
 
     @property
-    def _trial_feature_series_list(self) -> list[pd.Series]:
+    def _trial_analysis_series_list(self) -> list[pd.Series]:
         return [self.reader.info, pd.Series(self.motion.as_tuple, index=self.constant_feature_headers)]
 
     @cached_property
@@ -567,11 +568,17 @@ class BaseExperiment(Behaviour):
         return {trial.label: trial for trial in self.trial_objects}
 
     @cached_property
-    def trial_class_name_to_trial_objects(self) -> dict[str, Trial]:
-        return {
-            trial_class_name: [self.trial_id_to_trial_object[trial_id] for trial_id in trial_ids]
-            for trial_class_name, trial_ids in self._trial_class_name_to_trial_ids.items()
-        }
+    def trial_class_to_trial_objects(self) -> dict[str, Trial]:
+        return (
+            {
+                self.trial_class_name_to_trial_class[trial_class_name]: [
+                    self.trial_id_to_trial_object[trial_id] for trial_id in trial_ids
+                ]
+                for trial_class_name, trial_ids in self._trial_class_name_to_trial_ids.items()
+            }
+            if self.has_stages
+            else {self.trial_class: self.trial_objects}
+        )
 
     @cached_property
     def animal_id_to_trial_objects(self) -> dict[Hashable, Trial]:
@@ -641,30 +648,30 @@ class BaseExperiment(Behaviour):
 
     # DataFrame methods =========================================
 
-    def analyze_trials(self):
+    @cached_property
+    def trial_class_to_trial_analysis_series(self):
         result = defaultdict(dict)
         if not runtime_settings.disable_process_pooling:
             with yaspin(Spinners.pong, text="Computing experiment features..."):
                 with ProcessPoolExecutor(max_workers=runtime_settings.max_workers_in_process_pool) as executor:
-                    for trial_class_label, trial_objects in self._trial_class_label_to_trial_objects.items():
-                        result[trial_class_label] = {
+                    for trial_class, trial_objects in self.trial_class_to_trial_objects.items():
+                        result[trial_class] = {
                             trial_object.label: features
                             for trial_object, features in zip(
-                                trial_objects, executor.map(attrgetter("trial_feature_series"), trial_objects)
+                                trial_objects, executor.map(attrgetter("trial_analysis_series"), trial_objects)
                             )
                         }
         else:
-            for trial_class_label, trial_objects in tqdm(
-                self._trial_class_label_to_trial_objects.items(), desc="Computing experiment features"
+            for trial_class, trial_objects in tqdm(
+                self.trial_class_to_trial_objects.items(), desc="Computing experiment features"
             ):
-                result[trial_class_label] = {
-                    trial_object.label: trial_object.trial_feature_series for trial_object in trial_objects
+                result[trial_class] = {
+                    trial_object.label: trial_object.trial_analysis_series for trial_object in trial_objects
                 }
         return result
 
-    @cached_property
-    def _trial_class_to_trial_series_set(self):
-        return self.analyze_trials()
+    def analyze_trials(self):
+        assert self.trial_class_to_trial_analysis_series
 
     @cached_property
     def _animal_id_to_sequential_features(self) -> pd.DataFrame | None:
@@ -675,9 +682,9 @@ class BaseExperiment(Behaviour):
     @cached_property
     def trial_label_to_df(self) -> dict[str | PositiveInt, pd.DataFrame]:
         result = {}
-        for trial_class_label, data_dict in self._trial_class_to_trial_series_set.items():
-            result[trial_class_label] = pd.DataFrame.from_dict(data_dict, orient="index")
-            result[trial_class_label].index.name = "Trial ID"
+        for trial_class, data_dict in self.trial_class_to_trial_analysis_series.items():
+            result[trial_class.excel_sheet_name] = pd.DataFrame.from_dict(data_dict, orient="index")
+            result[trial_class.excel_sheet_name].index.name = "Trial ID"
 
         if self._animal_id_to_sequential_features:
             result["AnimalToSequential"] = self._animal_id_to_sequential_features
@@ -694,7 +701,7 @@ class BaseExperiment(Behaviour):
         for animal_id, trial_ids in self.animal_id_to_trial_ids.items():
             animal_series = []
             for trial_class_name in self.trial_class_names:
-                trial_class_related_feature_series_data = self._trial_class_to_trial_series_set[trial_class_name]
+                trial_class_related_feature_series_data = self.trial_class_to_trial_analysis_series[trial_class_name]
                 for trial_id in trial_ids:
                     try:
                         series = trial_class_related_feature_series_data[trial_id]
@@ -731,14 +738,14 @@ class BaseExperiment(Behaviour):
         return result
 
     @cached_property
-    def _trial_class_label_to_trial_objects(self) -> dict:
+    def _trial_class_to_trial_objects(self) -> dict:
         def filter_trial_objects(trial_objects):
             if self.compute_first_two_feature_series_only:
                 return trial_objects[:2]
             return trial_objects
 
         if not self.has_stages:
-            return {self.trial_class.trial_label: filter_trial_objects(self.trial_objects)}
+            return {self.trial_class: filter_trial_objects(self.trial_objects)}
 
         if self.skip_habituation:
             if not self._first_trial_is_habituation:
@@ -774,7 +781,7 @@ class BaseExperiment(Behaviour):
         raise AttributeError(msg)
 
     def save(self):
-        self._trial_class_to_trial_series_set
+        self.trial_class_to_trial_analysis_series
         super().save()
 
 
@@ -783,6 +790,6 @@ Experiment = TypeVar("Experiment", bound=BaseExperiment)
 
 
 def compute_trial_series_and_destroy_trial(trial_obj: Trial) -> pd.Series:
-    result = trial_obj.trial_feature_series
+    result = trial_obj.trial_analysis_series
     del globals()[trial_obj]
     return result

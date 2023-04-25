@@ -39,5 +39,8 @@ runtime_settings: BikipyRuntimeSettings = BikipyRuntimeSettings()
 
 
 def set_bikipy_settings_from_dict(value: dict) -> None:
+    if not value:
+        return
+
     global runtime_settings
     runtime_settings = BikipyRuntimeSettings(**value)

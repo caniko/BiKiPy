@@ -4,6 +4,7 @@ from typing import ClassVar
 from pydantic import DirectoryPath
 
 from bikipy.core.typing import Label
+from bikipy.ingress.plugin_scope import PluginScope
 from bikipy.ingress.workflow.base import BaseIngressWorkflow
 
 logger = getLogger(__name__)
@@ -16,13 +17,13 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
         def define_trial_id():
             return f"{animal_id}_{stage_index}"
 
-        for animal_dir in self.dataset_directory_path.iterdir():
+        for animal_dir in self.dataset_directory.iterdir():
             if animal_dir.name.startswith(".") or animal_dir.is_file():
                 continue
 
             animal_id = self._get_id_from_path_stem(animal_dir)
 
-            for framewise_coordinates_path in self.coordinate_files_in_directory(animal_dir):
+            for framewise_coordinates_path in self._coordinate_files_in_directory(animal_dir):
                 stage_index = int(self._get_id_from_path_stem(framewise_coordinates_path).split(".")[0])
 
                 trial_id = define_trial_id()
@@ -51,7 +52,9 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
                         plugin_model.default_trial_argument_key or data_object.default_trial_argument_key
                     ] = data_object
 
-                self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(stage_index)
+                if self.experiment_class.has_stages:
+                    self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(stage_index)
+
                 self._trial_id_to_keyword_arguments[trial_id] = {
                     "label": trial_id,
                     "animal_id": animal_id,

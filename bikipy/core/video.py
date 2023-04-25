@@ -15,6 +15,7 @@ import cv2
 import matplotlib.pyplot as plt
 import mextractor
 import numpy as np
+from mextractor.base import load
 from mextractor.extractors import extract_video
 from pydantic import DirectoryPath, Field, FilePath, validator
 from pydantic_numpy import NDArray
@@ -107,25 +108,25 @@ class VideoMetadata(_VideoMetadataBase):
         return cls(**new_metadata)
 
     @classmethod
-    def from_path(cls, video_path: FilePath, minimum_frame_length: Optional[float] = None) -> "VideoMetadata":
+    def from_path(cls, video_path: FilePath, **kwargs) -> "VideoMetadata":
         info = extract_video(path_to_video=video_path)
         return cls(
             recording_resolution=info.resolution,
             fps=info.fps,
             frame=info.image,
-            minimum_frame_length=minimum_frame_length,
+            **kwargs
         )
 
     @classmethod
     def from_mextractor(
-        cls, mextractor_dir: DirectoryPath, minimum_frame_length: Optional[float] = None
+        cls, mextractor_dir: DirectoryPath, **kwargs
     ) -> "VideoMetadata":
-        info = mextractor.load(mextractor_dir)
+        info = load(mextractor_dir)
         return cls(
             recording_resolution=info.resolution,
             fps=info.fps,
             frame=info.image,
-            minimum_frame_length=minimum_frame_length,
+            **kwargs
         )
 
     @cached_property

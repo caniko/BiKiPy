@@ -13,10 +13,10 @@ class PhaseIngressWorkflow(BaseIngressWorkflow):
     ingress_method: ClassVar[str] = "phase"
 
     def _dataset_reader(self) -> None:
-        for phase_dir in self.dataset_directory_path.iterdir():
+        for phase_dir in self.dataset_directory.iterdir():
             phase_id = self._get_id_from_path_stem(phase_dir)
 
-            for framewise_coordinates_path in self.coordinate_files_in_directory(phase_dir):
+            for framewise_coordinates_path in self._coordinate_files_in_directory(phase_dir):
                 phase_designated_trial_id = self._get_id_from_path_stem(framewise_coordinates_path)
                 trial_id = _define_trial_id(phase_id, phase_designated_trial_id)
                 trial_number = int(trial_id.split("_")[1])

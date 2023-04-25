@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import Enum
 from functools import cached_property
-from typing import Any, ClassVar, Optional, TypeVar
+from typing import Any, ClassVar, Optional, TypeVar, Type
 
 import pandas as pd
 from schemantic.model.project import SchemanticMixin
@@ -19,7 +19,6 @@ class BasePlugin(BikipyModel, SchemanticMixin, ABC):
     ingress: BaseIngressWorkflow = Field(
         description="Bikipy ingress object to access project metadata relevant for defining perimeter"
     )
-    plugin_scope: PluginScope = ...
     manual_trial_argument_key: Optional[str]
 
     required: ClassVar[bool] = False
@@ -33,7 +32,7 @@ class BasePlugin(BikipyModel, SchemanticMixin, ABC):
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
         upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("ingress", "plugin_scope"))
+        upstream.add("ingress")
         return upstream
 
     @cached_property
@@ -72,6 +71,7 @@ class BasePlugin(BikipyModel, SchemanticMixin, ABC):
         ...
 
 
+PluginType = Type[BasePlugin]
 Plugin = TypeVar("Plugin", bound=BasePlugin)
 
 

@@ -16,7 +16,7 @@ class AnimalDayIngressWorkflow(BaseIngressWorkflow):
         def define_trial_id():
             return f"{animal_id}_{day}_{daily_trial_number}"
 
-        for animal_dir in self.dataset_directory_path.iterdir():
+        for animal_dir in self.dataset_directory.iterdir():
             if animal_dir.is_file():
                 continue
 
@@ -28,7 +28,7 @@ class AnimalDayIngressWorkflow(BaseIngressWorkflow):
 
                 day = day_dir.stem.lower().replace("D", "").strip()
 
-                for framewise_coordinates_path in self.coordinate_files_in_directory(day_dir):
+                for framewise_coordinates_path in self._coordinate_files_in_directory(day_dir):
                     daily_trial_number = int(self._get_id_from_path_stem(framewise_coordinates_path).split(".")[0])
 
                     trial_id = define_trial_id()
