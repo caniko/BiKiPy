@@ -3,7 +3,8 @@ import pandas as pd
 from pydantic_numpy import NDArray
 
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin.base import BasePluginFile, TrialWiseMetadataOnlyMixin
+from bikipy.ingress.plugin.core.base import BasePluginFile
+from bikipy.ingress.plugin.core.mixins import TrialWiseMetadataOnlyMixin
 
 
 class PluginBonsaiTimestamp(TrialWiseMetadataOnlyMixin, BasePluginFile):

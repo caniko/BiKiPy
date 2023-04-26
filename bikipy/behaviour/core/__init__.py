@@ -20,7 +20,6 @@ from pydantic import (
     DirectoryPath,
     Field,
     FilePath,
-    PositiveInt,
     ValidationError,
     validator,
 )

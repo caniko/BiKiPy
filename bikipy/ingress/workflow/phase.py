@@ -1,7 +1,7 @@
 from logging import getLogger
 from typing import ClassVar
 
-from pydantic import DirectoryPath, PositiveInt
+from pydantic import DirectoryPath
 
 from bikipy.core.typing import Label
 from bikipy.ingress.workflow.base import BaseIngressWorkflow

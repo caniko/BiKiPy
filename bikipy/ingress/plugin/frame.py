@@ -5,7 +5,7 @@ from pydantic import DirectoryPath, FilePath
 
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadata
-from bikipy.ingress.plugin.base import BasePlugin
+from bikipy.ingress.plugin.core.base import BasePlugin
 
 
 class PluginFrame(BasePlugin):

@@ -11,7 +11,6 @@ from pydantic import (
     DirectoryPath,
     Field,
     FilePath,
-    PositiveInt,
     root_validator,
     validate_arguments,
 )

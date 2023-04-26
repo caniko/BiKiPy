@@ -11,7 +11,7 @@ from bikipy.ingress.plugin.video import PluginVideo
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from bikipy.ingress.plugin.base import Plugin
+    from bikipy.ingress.plugin.core.base import Plugin
 
 ALL_PLUGINS = (
     PluginMeterPerPixel,

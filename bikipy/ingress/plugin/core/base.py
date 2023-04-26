@@ -2,21 +2,20 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import Any, ClassVar, Optional, TypeVar, Type
 
-import pandas as pd
 from schemantic.model.project import SchemanticMixin
-from pydantic import BaseModel, DirectoryPath, Field, FilePath
-from pydantic_numpy.dtype import NDArrayFp64
+from pydantic import DirectoryPath, FilePath
 
 from bikipy.core.base_class import BikipyModel
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin_scope import ShallowPluginScope
-from bikipy.ingress.workflow.base import BaseIngressWorkflow
-from bikipy.utils.makesense import get_only_point_from_makesense
+from bikipy.ingress.plugin.core.name_parser import PluginFileStemParse
+from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 
 
 class BasePlugin(BikipyModel, SchemanticMixin, ABC):
+    plugin_scope: Optional[PluginScope]
     manual_trial_argument_key: Optional[str]
-    _shallow_plugin_scope: ShallowPluginScope
+
+    plugin_file_stem_parser: ClassVar[Type[PluginFileStemParse]] = PluginFileStemParse
 
     required: ClassVar[bool] = False
     plural_entries: ClassVar[bool] = False
@@ -36,10 +35,10 @@ class BasePlugin(BikipyModel, SchemanticMixin, ABC):
         ...
 
     def _assert_correct_scope_trialwise_metadata(self) -> None:
-        assert self._shallow_plugin_scope == ShallowPluginScope.METADATA_TRIALWISE
+        assert self.plugin_scope == PluginScope.TRIALWISE or self.plugin_scope == PluginScope.METADATA
 
     def _assert_correct_scope_global(self) -> None:
-        assert self._shallow_plugin_scope == ShallowPluginScope.GLOBAL
+        assert self.plugin_scope == PluginScope.GLOBAL
 
     @classmethod
     @property
@@ -49,12 +48,12 @@ class BasePlugin(BikipyModel, SchemanticMixin, ABC):
         return upstream
 
     @cached_property
-    def _info(self):
-        return self.data_path.stem.split("-")
-
-    @cached_property
-    def _plugin_identifier(self) -> list[str, ...]:
-        return self._info[0].split(".")
+    def stem_info(self):
+        try:
+            return self.plugin_file_stem_parser(self.data_path.stem, self.plugin_scope)
+        except Exception as e:
+            msg = f"There are issues with plugin on {self.data_path}"
+            raise ValueError(msg) from e
 
     @staticmethod
     def _parse_plugin_settings(settings_dict: dict) -> dict[str, Any]:
@@ -85,28 +84,3 @@ class BasePluginFile(BasePlugin, ABC):
 
 class BasePluginDirectory(BasePlugin, ABC):
     data_path: DirectoryPath
-
-
-class HasReferenceMixin(BikipyModel):
-    manual_reference: Optional[NDArrayFp64] = Field(
-        description="Override the perimeter detection with values defined outside model"
-    )
-
-    @cached_property
-    def reference_point(self) -> pd.DataFrame | None:
-        if self.manual_reference is not None:
-            return self.manual_reference
-        if (path_to_reference_file := self.data_path.parent / f"reference-{self.label}.csv").exists():
-            return get_only_point_from_makesense(path_to_reference_file)
-
-
-class TrialWiseMetadataOnlyMixin(BaseModel):
-    def globally_defined(self) -> None:
-        msg = f"{self.__class__.__name__} does not support globally defined"
-        raise AttributeError(msg)
-
-
-class IngressRequiredMixin(BaseModel):
-    ingress: BaseIngressWorkflow = Field(
-        description="Bikipy ingress object to access project metadata relevant for defining perimeter"
-    )

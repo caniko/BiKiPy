@@ -4,7 +4,7 @@ from pydantic import DirectoryPath, FilePath, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin.base import BasePluginFile
+from bikipy.ingress.plugin.core.base import BasePluginFile
 from bikipy.utils.makesense import get_only_point_from_makesense
 
 

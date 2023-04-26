@@ -8,8 +8,9 @@ import pandas as pd
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from bikipy.core.typing import Label
+from bikipy.ingress.plugin.core.name_parser import PluginFileStemParseLastIsLabel
 from bikipy.ingress.plugin.perimeter.base import AbcPerimeterPlugin
-from bikipy.ingress.plugin_scope import PluginScope
+from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 from bikipy.perimeter.base import (
     SinglePerimeter,
     perimeter_set_from_makesense,
@@ -24,27 +25,27 @@ from bikipy.utils.makesense import (
 logger = getLogger(__name__)
 
 
+class SinglePerimeterPluginFileStemParse(PluginFileStemParseLastIsLabel):
+    def __pop_split_till_empty__(self) -> None:
+        super().__pop_split_till_empty__()
+        self.shape = self.split.pop()
+
+
 # TODO: Manual radius readings from settings.yaml read.
 class PluginSinglePerimeter(AbcPerimeterPlugin):
     label_prefix: Optional[str]
     label_suffix: Optional[str]
+
+    plugin_file_stem_parser = SinglePerimeterPluginFileStemParse
 
     ingress_key = "perimeter"
     code_key = "perimeter"
     default_trial_argument_key = "label_to_perimeter"
     human_readable_index = "Perimeter"
 
-    @property
-    def shape(self) -> str:
-        return self._info[1]
-
-    @property
-    def label(self) -> str:
-        return self._info[-1]
-
     @cached_property
     def image_name(self):
-        return first_image_name_from_makesense(self.data_path, SHAPE_TO_MAKESENSE_TYPE[self.shape])
+        return first_image_name_from_makesense(self.data_path, SHAPE_TO_MAKESENSE_TYPE[self.stem_info.shape])
 
     @cached_property
     def label_to_trial_label_df(self) -> pd.DataFrame:
@@ -66,9 +67,9 @@ class PluginSinglePerimeter(AbcPerimeterPlugin):
 
             result[label] = _perimeter_with_label(perimeter, label)
 
-            if self.label not in self.ingress.ingress_defined_perimeters:
-                self.ingress.ingress_defined_perimeters[self.label] = {}
-            self.ingress.ingress_defined_perimeters[self.label][label] = perimeter
+            if self.stem_info.label not in self.ingress.ingress_defined_perimeters:
+                self.ingress.ingress_defined_perimeters[self.stem_info.label] = {}
+            self.ingress.ingress_defined_perimeters[self.stem_info.label][label] = perimeter
 
         if naive:
             return next(iter(result.values()))

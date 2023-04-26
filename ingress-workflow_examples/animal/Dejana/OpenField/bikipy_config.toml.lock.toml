@@ -1,0 +1,8 @@
+Python_version = "3.10.10"
+schema_snapshot = ["manual", "trial", "experiment", "ingress", "enclosure", "runtime_settings", "reader", "field"]
+
+[ProjectKit]
+format = ".toml"
+version = "0.2.2"
+
+[new_kwargs]

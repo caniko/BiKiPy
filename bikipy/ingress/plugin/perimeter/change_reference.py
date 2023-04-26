@@ -4,7 +4,9 @@ from typing import ClassVar
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin.base import BasePluginFile, IngressRequiredMixin
+from bikipy.ingress.plugin.core.base import BasePluginFile
+from bikipy.ingress.plugin.core.mixins import IngressRequiredMixin
+from bikipy.ingress.plugin.core.name_parser import PluginFileStemParse
 from bikipy.perimeter.base import BasePerimeter, Perimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.makesense import (
@@ -13,29 +15,25 @@ from bikipy.utils.makesense import (
 )
 
 
+class ChangeReferencePluginFileStemParse(PluginFileStemParse):
+    def __pop_split_till_empty__(self) -> None:
+        self.stem_info.label = self.split.popleft()
+        try:
+            self.new_label = self.split.popleft()
+        except IndexError as e:
+            msg = f"The reference file has no new_label defined, hence it cannot be used globally: {self.data_path}"
+            raise AttributeError(msg) from e
+
+
 class PluginChangeReference(BasePluginFile, IngressRequiredMixin):
     ingress_key = "change_reference"
     code_key = "change_reference"
     default_trial_argument_key = "change_reference"
 
+    plugin_file_stem_parser = ChangeReferencePluginFileStemParse
+
     human_readable_index = "ChangeReference"
     _human_readable_index_image_name: ClassVar[str] = "ChangeReferenceImageName"
-
-    @property
-    def label(self) -> str:
-        return self._info[1]
-
-    @property
-    def original_label(self) -> str:
-        return self.label
-
-    @property
-    def new_label(self) -> str:
-        try:
-            return self._info[2]
-        except IndexError as e:
-            msg = f"The reference file has no new_label defined, hence it cannot be used globally: {self.data_path}"
-            raise AttributeError(msg) from e
 
     @cached_property
     def image_name_to_re_referencing_point(self) -> dict[str, NDArrayFp64]:
@@ -47,7 +45,7 @@ class PluginChangeReference(BasePluginFile, IngressRequiredMixin):
         trial_id_image_name = self.ingress.metadata.loc[trial_id, self._human_readable_index_image_name]
         reference_data = self.image_name_to_re_referencing_point[trial_id_image_name]
 
-        original_perimeter = self.ingress.ingress_defined_perimeters[self.original_label]
+        original_perimeter = self.ingress.ingress_defined_perimeters[self.stem_info.label]
 
         if isinstance(original_perimeter, dict):
             # Grouped with PerimeterSet.group()

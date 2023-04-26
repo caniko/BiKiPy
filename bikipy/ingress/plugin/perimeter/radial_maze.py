@@ -6,7 +6,9 @@ import pandas as pd
 from pydantic_numpy import NDArrayFp64
 
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin.base import BasePluginDirectory, HasReferenceMixin
+from bikipy.ingress.plugin.core.base import BasePluginDirectory
+from bikipy.ingress.plugin.core.mixins import HasReferenceMixin, IngressRequiredMixin
+from bikipy.ingress.plugin.core.name_parser import PluginFileStemParseLastIsLabel
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
@@ -21,8 +23,10 @@ from bikipy.utils.math.geometry import (
 )
 
 
-class PluginRadial(BasePluginDirectory, HasReferenceMixin):
+class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin):
     radial_arm_rectangle_diagonal: int
+
+    plugin_file_stem_parser = PluginFileStemParseLastIsLabel
 
     ingress_key = "radial"
     code_key = "radial"
@@ -30,10 +34,6 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
     human_readable_index = "Radial"
 
     _center: SinglePerimeter | None = None
-
-    @property
-    def label(self):
-        return self._info[1]
 
     @cached_property
     def line_data(self) -> pd.DataFrame:
@@ -112,7 +112,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
         # perimeter_set.plot(with_midpoints=True)
 
         grouped = perimeter_set.group()
-        self.ingress.ingress_defined_perimeters[self.label] = grouped
+        self.ingress.ingress_defined_perimeters[self.stem_info.label] = grouped
 
         return grouped
 

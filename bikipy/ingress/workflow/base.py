@@ -13,12 +13,12 @@ import pandas as pd
 from inflection import underscore
 from projectkit.model.project import ProjectKitRootModelMixin
 from schemantic.model.project import SchemanticMixin
-from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
+from pydantic import DirectoryPath, FilePath, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.base_class import BikipyModel
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin_scope import PluginScope
+from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 
 from bikipy.ingress.utils.io import (
     get_inspect_directory_path,
@@ -38,7 +38,7 @@ from bikipy.utils.misc import defaultdict_dict_factory, sheet_names_from_path
 
 if TYPE_CHECKING:
     from bikipy.behaviour.core import Experiment, ExperimentCLS, TrialCLS
-    from bikipy.ingress.plugin.base import PluginType
+    from bikipy.ingress.plugin.core.base import PluginType
 
 logger = getLogger(__name__)
 
@@ -421,7 +421,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin
         for plugin_model in self._global_plugins:
             first_file = next(self.plugin_directory_path.glob(f"{plugin_model.code_key}*"))
             self._common_trial_keyword_arguments[plugin_model.default_trial_argument_key] = plugin_model(
-                data_path=first_file, ingress=self
+                plugin_scope=PluginScope.GLOBAL, data_path=first_file, ingress=self
             ).globally_defined
 
         metadata_trial_target_dict = (
@@ -442,7 +442,9 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin
                         continue
 
                     metadata_trial_target_dict[trial_id][plugin_model.default_trial_argument_key] = plugin_model(
-                        data_path=label_to_file_path[str(trial_id_plugin_label)], ingress=self
+                        plugin_scope=PluginScope.METADATA,
+                        data_path=label_to_file_path[str(trial_id_plugin_label)],
+                        ingress=self,
                     ).trialwise_and_metadata(trial_id)
 
                 elif plugin_model.plural_entries:
@@ -452,6 +454,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin
 
                         if plugin_model.human_readable_index in key:
                             metadata_trial_target_dict[trial_id][underscore(key)] = plugin_model(
+                                plugin_scope=PluginScope.METADATA,
                                 data_path=label_to_file_path[str(trial_id_plugin_label)],
                                 manual_trial_argument_key=underscore(key),
                                 ingress=self,
@@ -650,7 +653,9 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin
 
             try:
                 result[plugin_model.default_trial_argument_key] = plugin_model(
-                    data_path=plugin_data_files[0], ingress=self
+                    plugin_scope=PluginScope.TRIALWISE,
+                    data_path=plugin_data_files[0],
+                    ingress=self,
                 ).trialwise_and_metadata(trial_id)
             except IndexError:
                 pass

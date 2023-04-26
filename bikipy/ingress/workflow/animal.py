@@ -4,6 +4,7 @@ from typing import ClassVar
 from pydantic import DirectoryPath
 
 from bikipy.core.typing import Label
+from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 from bikipy.ingress.workflow.base import BaseIngressWorkflow
 
 logger = getLogger(__name__)
@@ -41,9 +42,11 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
                         raise ValueError(msg)
 
                     try:
-                        data_object = plugin_model(data_path=plugin_data_files[0], ingress=self).trialwise_and_metadata(
-                            trial_id=trial_id
-                        )
+                        data_object = plugin_model(
+                            plugin_scope=PluginScope.TRIALWISE,
+                            data_path=plugin_data_files[0],
+                            ingress=self,
+                        ).trialwise_and_metadata(trial_id=trial_id)
                     except IndexError:
                         continue
 

@@ -1,10 +1,9 @@
 from abc import ABC
 from typing import Optional, ClassVar
 
-from pydantic import PositiveInt
-
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin.base import BasePluginFile, HasReferenceMixin, IngressRequiredMixin
+from bikipy.ingress.plugin.core.base import BasePluginFile
+from bikipy.ingress.plugin.core.mixins import HasReferenceMixin, IngressRequiredMixin
 from bikipy.perimeter.base import (
     SinglePerimeter,
     StringPerimeterShapes,
@@ -28,7 +27,7 @@ class AbcPerimeterPlugin(BasePluginFile, HasReferenceMixin, IngressRequiredMixin
     ) -> dict[str, SinglePerimeter]:
         image_name_to_perimeter_set = perimeter_set_from_makesense(
             self.data_path,
-            self.manual_shape or self.shape,
+            self.manual_shape or self.stem_info.shape,  # single -> stem_info.shape
             meters_per_pixel=self.ingress.get_meter_per_pixel(trial_id),
             reference_point_array=self.reference_point,
             inspect_arg=self.ingress.inspect_directory_path,

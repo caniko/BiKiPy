@@ -6,7 +6,8 @@ from pydantic import DirectoryPath, FilePath, validator
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin.base import BasePluginFile
+from bikipy.ingress.plugin.core.base import BasePluginFile
+from bikipy.ingress.plugin.core.name_parser import PluginFileStemParse
 from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.makesense import read_first_makesense_line
 from bikipy.utils.math.geometry import meter_per_pixel_from_diagonal
@@ -14,8 +15,17 @@ from bikipy.utils.math.geometry import meter_per_pixel_from_diagonal
 logger = getLogger(__file__)
 
 
+class MeterPerPixelPluginFileStemParse(PluginFileStemParse):
+    def __pop_split_till_empty__(self) -> None:
+        self.annotation_method = self.split.popleft()
+        self.length_meters = float(self.split.popleft())
+        self.label = self.split.popleft() if self.split else None
+
+
 class PluginMeterPerPixel(BasePluginFile):
     required = True
+
+    plugin_file_stem_parser = MeterPerPixelPluginFileStemParse
 
     ingress_key = "meters_per_pixel"
     code_key = "meters_per_pixel"
@@ -37,41 +47,16 @@ class PluginMeterPerPixel(BasePluginFile):
         return value
 
     @cached_property
-    def _info(self):
-        result = super()._info
-
-        # TODO: Onion validation pydantic v2
-        assert len(result) == 4 or len(result) == 3, (
-            f"The file name for {self.code_key} files consist of name, "
-            f"method, and meter length delimited by a dash this file: {self.data_path.stem}"
-        )
-
-        return result
-
-    @property
-    def annotation_method(self) -> str:
-        return self._info[1]
-
-    @cached_property
-    def length_meters(self) -> float:
-        return float(self._info[2])
-
-    @property
-    def file_label(self) -> str | None:
-        try:
-            return self._info[3]
-        except IndexError:
-            return None
-
-    @cached_property
     def ratio(self) -> float:
-        match self.annotation_method:
+        match self.stem_info.annotation_method:
             case "diagonal":
-                return meter_per_pixel_from_diagonal(*read_first_makesense_line(self.data_path), self.length_meters)
+                return meter_per_pixel_from_diagonal(
+                    *read_first_makesense_line(self.data_path), self.stem_info.length_meters
+                )
             case "line":
-                return self.length_meters / np.array(read_first_makesense_line(self.data_path), dtype=float)
+                return self.stem_info.length_meters / np.array(read_first_makesense_line(self.data_path), dtype=float)
             case _:
-                msg = f"Method {self.annotation_method} is not supported"
+                msg = f"Method {self.stem_info.annotation_method} is not supported"
                 raise NotImplementedError(msg)
 
     def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> float:
@@ -84,17 +69,14 @@ class PluginMeterPerPixel(BasePluginFile):
         return self.ratio
 
 
-def meters_per_pixel_file_name_to_value(file_path: FilePath, *args, **kwargs):
-    return PluginMeterPerPixel(data_path=file_path).ratio
-
-
 @lru_cache
 def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath) -> dict[str, NDArrayFp64]:
     return {
-        (mpp := PluginMeterPerPixel(data_path=meters_per_pixel_file_path)).file_label or i: mpp.ratio
+        (mpp := PluginMeterPerPixel(data_path=meters_per_pixel_file_path)).stem_info.label or i: mpp.ratio
         for i, meters_per_pixel_file_path in enumerate(perimeter_dir.glob("meters_per_pixel-*.csv"))
     }
 
 
+@lru_cache
 def first_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath):
     return get_first_value_in_dict(detect_meters_per_pixel_in_perimeter_directory(perimeter_dir))
