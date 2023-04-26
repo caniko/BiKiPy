@@ -4,7 +4,6 @@ from typing import ClassVar
 from pydantic import DirectoryPath
 
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin_scope import PluginScope
 from bikipy.ingress.workflow.base import BaseIngressWorkflow
 
 logger = getLogger(__name__)

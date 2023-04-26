@@ -4,7 +4,7 @@ from typing import ClassVar
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin.base import BasePluginFile
+from bikipy.ingress.plugin.base import BasePluginFile, IngressRequiredMixin
 from bikipy.perimeter.base import BasePerimeter, Perimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.makesense import (
@@ -13,7 +13,7 @@ from bikipy.utils.makesense import (
 )
 
 
-class PluginChangeReference(BasePluginFile):
+class PluginChangeReference(BasePluginFile, IngressRequiredMixin):
     ingress_key = "change_reference"
     code_key = "change_reference"
     default_trial_argument_key = "change_reference"
@@ -42,6 +42,8 @@ class PluginChangeReference(BasePluginFile):
         return image_name_to_point_from_makesense(self.data_path, only_point=False)
 
     def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> Perimeter | dict:
+        self._assert_correct_scope_trialwise_metadata()
+
         trial_id_image_name = self.ingress.metadata.loc[trial_id, self._human_readable_index_image_name]
         reference_data = self.image_name_to_re_referencing_point[trial_id_image_name]
 
@@ -75,6 +77,7 @@ class PluginChangeReference(BasePluginFile):
 
     @property
     def globally_defined(self) -> Perimeter:
+        self._assert_correct_scope_global()
         assert (
             len(self.image_name_to_re_referencing_point) == 1
         ), "There can only be one re-reference point in a globally_defined reference"

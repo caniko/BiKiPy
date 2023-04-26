@@ -8,8 +8,8 @@ import pandas as pd
 from pydantic.generics import GenericModel
 from pydantic_numpy import NDArrayBool
 
-from bikipy.behaviour.core.abstract import AbstractTrial
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
+from bikipy.core.base_class import BikipyModel
 from bikipy.feature.motion import EMPTY_MOTION, Motion, motion_multi_indexer
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import BaseSinglePerimeter
@@ -20,7 +20,7 @@ StartPerimeter = TypeVar("StartPerimeter", bound=BaseSinglePerimeter)
 RewardPerimeter = TypeVar("RewardPerimeter", bound=BaseSinglePerimeter)
 
 
-class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimeter], AbstractTrial, ABC):
+class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimeter], BikipyModel, ABC):
     start_perimeter: StartPerimeter
     reward_perimeter: RewardPerimeter
 

@@ -13,7 +13,6 @@ from typing import ClassVar, Optional
 
 import cv2
 import matplotlib.pyplot as plt
-import mextractor
 import numpy as np
 from mextractor.base import load
 from mextractor.extractors import extract_video

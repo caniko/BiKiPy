@@ -75,10 +75,12 @@ class PluginMeterPerPixel(BasePluginFile):
                 raise NotImplementedError(msg)
 
     def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> float:
+        self._assert_correct_scope_trialwise_metadata()
         return self.ratio
 
     @property
     def globally_defined(self) -> float:
+        self._assert_correct_scope_global()
         return self.ratio
 
 

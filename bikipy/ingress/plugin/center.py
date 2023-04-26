@@ -19,10 +19,12 @@ class PluginCenter(BasePluginFile):
         return get_only_point_from_makesense(self.data_path)
 
     def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> NDArrayFp64:
+        self._assert_correct_scope_trialwise_metadata()
         return self.only_center
 
     @property
     def globally_defined(self) -> NDArrayFp64:
+        self._assert_correct_scope_global()
         return self.only_center
 
 

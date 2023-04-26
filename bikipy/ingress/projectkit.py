@@ -1,11 +1,11 @@
 from logging import getLogger
-from typing import Optional, Literal, ClassVar
+from typing import Optional
 
 from ordered_set import OrderedSet
 from projectkit.model.jit import ProjectKitJITConfiguration
-from schemantic.model.schema import GroupSchema, HomologSchema, SingleSchema
+from schemantic.model.schema import GroupSchema, SingleSchema
 from projectkit.utils.misc import here_or_there
-from pydantic import DirectoryPath, validator
+from pydantic import DirectoryPath
 
 from bikipy import BikipyRuntimeSettings
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial

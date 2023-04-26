@@ -117,8 +117,10 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin):
         return grouped
 
     def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> dict[str, tuple[SinglePerimeter, ...]]:
+        self._assert_correct_scope_trialwise_metadata()
         return self.grouped_radial_maze_perimeters
 
     @property
     def globally_defined(self) -> dict[str, tuple[SinglePerimeter, ...]]:
+        self._assert_correct_scope_global()
         return self.grouped_radial_maze_perimeters

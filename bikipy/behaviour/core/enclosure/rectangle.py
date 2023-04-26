@@ -209,10 +209,11 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
         center_point_to_center_rectangle_side_normal_lengths = self.center_rectangle_dimensions_meters / 2.0
 
-        x_short = self.video.center_meters[0] - center_point_to_center_rectangle_side_normal_lengths[0]
-        x_long = self.video.center_meters[0] + center_point_to_center_rectangle_side_normal_lengths[0]
-        y_short = self.video.center_meters[1] + center_point_to_center_rectangle_side_normal_lengths[1]
-        y_long = self.video.center_meters[1] - center_point_to_center_rectangle_side_normal_lengths[1]
+        center = self.video.center_meters if self.manual_center_meters is None else self.manual_center_meters
+
+        # The Y-axis is max at the image origin, hence the inversion WRT the X-axis:
+        x_long, y_short = center + center_point_to_center_rectangle_side_normal_lengths
+        x_short, y_long = center - center_point_to_center_rectangle_side_normal_lengths
 
         return np.array(((x_short, y_short), (x_short, y_long), (x_long, y_long), (x_long, y_short)))
 

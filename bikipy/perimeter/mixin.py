@@ -2,14 +2,14 @@ from abc import ABC, abstractmethod
 from functools import cached_property, reduce
 from logging import getLogger
 
-from bikipy.behaviour.core.abstract import AbstractTrial
+from bikipy.core.base_class import BikipyModel
 from bikipy.core.video import VideoMetadata, incongruity_permissive_video_join
 from bikipy.perimeter.base import SinglePerimeter
 
 logger = getLogger(__name__)
 
 
-class TrialWithPerimeterMixin(AbstractTrial, ABC):
+class TrialWithPerimeterMixin(BikipyModel, ABC):
     @property
     @abstractmethod
     def perimeters(self) -> list[SinglePerimeter]:

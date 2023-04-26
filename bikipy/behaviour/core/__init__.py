@@ -8,9 +8,9 @@ from typing import (
     Hashable,
     Literal,
     Optional,
-    Sequence,
     Type,
     TypeVar,
+    Any,
 )
 
 import numpy as np
@@ -68,7 +68,7 @@ class BaseTrial(Behaviour):
     manual_reader_kwargs: Optional[dict] = Field(
         default_factory=dict, description="Keyword arguments that will be passed on the reader objects on init"
     )
-    animal_id: str | PositiveInt = Field(..., description="The ID of the animal in the trial")
+    animal_id: Label = Field(..., description="The ID of the animal in the trial")
     animal_profile: Literal["rodent"] = "rodent"
     coordinate_timestamp_index: Optional[NDArray] = timestamp_index_field
     manual_center_pixels: Optional[NDArrayInt16]
@@ -471,66 +471,6 @@ class BaseExperiment(Behaviour):
             )
             raise AttributeError(msg)
 
-    def trial_keyword_arguments(self, trial_id: Label) -> dict:
-        """
-        Function useful for customizing initiation parameters for trial objects
-        """
-        from bikipy.ingress.plugin.perimeter.change_reference import PluginChangeReference
-        from bikipy.ingress.plugin.perimeter.radial_maze import PluginRadial
-
-        result = self.video.dict(exclude_unset=True)
-
-        if self.common_trial_keyword_arguments:
-            result.update(self.common_trial_keyword_arguments)
-
-        if (
-            self.has_stages
-            and (trial_class_name := self.trial_id_to_trial_class_name[trial_id])
-            in self.trial_class_name_to_keyword_arguments
-        ):
-            result.update(self.trial_class_name_to_keyword_arguments[trial_class_name])
-
-        if self.trial_id_to_keyword_arguments:
-            result.update(self.trial_id_to_keyword_arguments[trial_id])
-
-        if self.trial_id_range_to_keyword_arguments:
-            if not isinstance(trial_id, int):
-                msg = "Trial IDs must be integers when trial_id_range_to_keyword_arguments is used"
-                raise AttributeError(msg)
-            result.update(self.trial_id_range_to_keyword_arguments[trial_id])
-
-        assert result["framewise_coordinates_path"]
-
-        if "animal_id" not in result:
-            result["animal_id"] = trial_id
-
-        result["inspect_arg"] = self.inspect_arg
-
-        if "label_to_perimeter" in result:
-            result.update(result.pop("label_to_perimeter"))
-
-        if "perimeter_set" in result:
-            perimeter_set: PerimeterSet = result.pop("perimeter_set")
-            result.update(perimeter_set.label_to_perimeter)
-
-        if PluginRadial.default_trial_argument_key in result:
-            perimeter_set_group: dict = result.pop(PluginRadial.default_trial_argument_key)
-            result.update(perimeter_set_group)
-
-        if PluginChangeReference.default_trial_argument_key in result:
-            val = result.pop(PluginChangeReference.default_trial_argument_key)
-            if isinstance(val, PerimeterSet):
-                result.update(val.label_to_perimeter)
-            elif isinstance(val, BaseSinglePerimeter):
-                result[val.label] = val
-            elif isinstance(val, dict):
-                result.update(val)
-            else:
-                msg = f"Unsupported type for PluginChangeReference: {type(val)}"
-                raise AttributeError(msg)
-
-        return result
-
     @cached_property
     def trial_objects(self) -> list[Trial]:
         result, bad_trial_ids_to_error_msg = [], {}
@@ -651,7 +591,15 @@ class BaseExperiment(Behaviour):
     @cached_property
     def trial_class_to_trial_analysis_series(self):
         result = defaultdict(dict)
-        if not runtime_settings.disable_process_pooling:
+        if runtime_settings.disable_process_pooling:
+            for trial_class, trial_objects in tqdm(
+                self.trial_class_to_trial_objects.items(), desc="Computing experiment features"
+            ):
+                result[trial_class] = {
+                    trial_object.label: trial_object.trial_analysis_series for trial_object in trial_objects
+                }
+
+        else:
             with yaspin(Spinners.pong, text="Computing experiment features..."):
                 with ProcessPoolExecutor(max_workers=runtime_settings.max_workers_in_process_pool) as executor:
                     for trial_class, trial_objects in self.trial_class_to_trial_objects.items():
@@ -661,14 +609,8 @@ class BaseExperiment(Behaviour):
                                 trial_objects, executor.map(attrgetter("trial_analysis_series"), trial_objects)
                             )
                         }
-        else:
-            for trial_class, trial_objects in tqdm(
-                self.trial_class_to_trial_objects.items(), desc="Computing experiment features"
-            ):
-                result[trial_class] = {
-                    trial_object.label: trial_object.trial_analysis_series for trial_object in trial_objects
-                }
-        return result
+
+        return dict(result)
 
     def analyze_trials(self):
         assert self.trial_class_to_trial_analysis_series
@@ -680,7 +622,7 @@ class BaseExperiment(Behaviour):
             return pd.concat(self._animal_id_to_sequential_features_list[::-1], axis=0)
 
     @cached_property
-    def trial_label_to_df(self) -> dict[str | PositiveInt, pd.DataFrame]:
+    def trial_label_to_df(self) -> dict[Label, pd.DataFrame]:
         result = {}
         for trial_class, data_dict in self.trial_class_to_trial_analysis_series.items():
             result[trial_class.excel_sheet_name] = pd.DataFrame.from_dict(data_dict, orient="index")
@@ -688,6 +630,66 @@ class BaseExperiment(Behaviour):
 
         if self._animal_id_to_sequential_features:
             result["AnimalToSequential"] = self._animal_id_to_sequential_features
+
+        return result
+
+    def trial_keyword_arguments(self, trial_id: Label) -> dict[str, Any]:
+        """
+        Function useful for customizing initiation parameters for trial objects
+        """
+        from bikipy.ingress.plugin.perimeter.change_reference import PluginChangeReference
+        from bikipy.ingress.plugin.perimeter.radial_maze import PluginRadial
+
+        result = self.video.dict(exclude_unset=True)
+
+        if self.common_trial_keyword_arguments:
+            result.update(self.common_trial_keyword_arguments)
+
+        if (
+            self.has_stages
+            and (trial_class_name := self.trial_id_to_trial_class_name[trial_id])
+            in self.trial_class_name_to_keyword_arguments
+        ):
+            result.update(self.trial_class_name_to_keyword_arguments[trial_class_name])
+
+        if self.trial_id_to_keyword_arguments:
+            result.update(self.trial_id_to_keyword_arguments[trial_id])
+
+        if self.trial_id_range_to_keyword_arguments:
+            if not isinstance(trial_id, int):
+                msg = "Trial IDs must be integers when trial_id_range_to_keyword_arguments is used"
+                raise AttributeError(msg)
+            result.update(self.trial_id_range_to_keyword_arguments[trial_id])
+
+        assert result["framewise_coordinates_path"]
+
+        if "animal_id" not in result:
+            result["animal_id"] = trial_id
+
+        result["inspect_arg"] = self.inspect_arg
+
+        if "label_to_perimeter" in result:
+            result.update(result.pop("label_to_perimeter"))
+
+        if "perimeter_set" in result:
+            perimeter_set: PerimeterSet = result.pop("perimeter_set")
+            result.update(perimeter_set.label_to_perimeter)
+
+        if PluginRadial.default_trial_argument_key in result:
+            perimeter_set_group: dict = result.pop(PluginRadial.default_trial_argument_key)
+            result.update(perimeter_set_group)
+
+        if PluginChangeReference.default_trial_argument_key in result:
+            val = result.pop(PluginChangeReference.default_trial_argument_key)
+            if isinstance(val, PerimeterSet):
+                result.update(val.label_to_perimeter)
+            elif isinstance(val, BaseSinglePerimeter):
+                result[val.label] = val
+            elif isinstance(val, dict):
+                result.update(val)
+            else:
+                msg = f"Unsupported type for PluginChangeReference: {type(val)}"
+                raise AttributeError(msg)
 
         return result
 
@@ -780,16 +782,10 @@ class BaseExperiment(Behaviour):
         )
         raise AttributeError(msg)
 
-    def save(self):
-        self.trial_class_to_trial_analysis_series
-        super().save()
+    def save(self, **kwargs):
+        self.analyze_trials()
+        super().save(**kwargs)
 
 
 ExperimentCLS = Type[BaseExperiment]
 Experiment = TypeVar("Experiment", bound=BaseExperiment)
-
-
-def compute_trial_series_and_destroy_trial(trial_obj: Trial) -> pd.Series:
-    result = trial_obj.trial_analysis_series
-    del globals()[trial_obj]
-    return result

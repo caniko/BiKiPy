@@ -40,5 +40,5 @@ class PhaseIngressWorkflow(BaseIngressWorkflow):
         return self._trialwise_plugins_for_trial_id(trial_id, trial_directory, "{trial_id}-{plugin_code_key}*")
 
 
-def _define_trial_id(phase_id: str | PositiveInt, stage_index: str | PositiveInt):
+def _define_trial_id(phase_id: Label, stage_index: Label):
     return f"{phase_id}_{stage_index}"

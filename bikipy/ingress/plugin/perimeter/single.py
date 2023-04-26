@@ -8,8 +8,8 @@ import pandas as pd
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin.base import PluginScope
 from bikipy.ingress.plugin.perimeter.base import AbcPerimeterPlugin
+from bikipy.ingress.plugin_scope import PluginScope
 from bikipy.perimeter.base import (
     SinglePerimeter,
     perimeter_set_from_makesense,
@@ -39,12 +39,6 @@ class PluginSinglePerimeter(AbcPerimeterPlugin):
         return self._info[1]
 
     @property
-    def init_args(self) -> list:
-        if len(self._info) == 3:
-            return []
-        return self._info[2:-1]
-
-    @property
     def label(self) -> str:
         return self._info[-1]
 
@@ -59,6 +53,8 @@ class PluginSinglePerimeter(AbcPerimeterPlugin):
     def trialwise_and_metadata(
         self, trial_id: Label, naive: bool = False
     ) -> dict[str, SinglePerimeter] | SinglePerimeter:
+        self._assert_correct_scope_trialwise_metadata()
+
         result = {}
         for label, perimeter in self.perimeter_mapper(trial_id).items():
             if PluginScope.METADATA in self.ingress.definition_single_perimeter:
@@ -80,6 +76,8 @@ class PluginSinglePerimeter(AbcPerimeterPlugin):
 
     @property
     def globally_defined(self) -> dict[str, SinglePerimeter]:
+        self._assert_correct_scope_global()
+
         result = {}
         for label, perimeter in self.perimeter_mapper().items():
             if self.label_prefix:

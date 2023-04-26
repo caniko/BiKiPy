@@ -13,10 +13,9 @@ import pandas as pd
 from inflection import underscore
 from projectkit.model.project import ProjectKitRootModelMixin
 from schemantic.model.project import SchemanticMixin
-from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments, Field
+from pydantic import DirectoryPath, FilePath, PositiveInt, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
-from bikipy import set_bikipy_settings_from_dict
 from bikipy.core.base_class import BikipyModel
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin_scope import PluginScope
@@ -39,7 +38,7 @@ from bikipy.utils.misc import defaultdict_dict_factory, sheet_names_from_path
 
 if TYPE_CHECKING:
     from bikipy.behaviour.core import Experiment, ExperimentCLS, TrialCLS
-    from bikipy.ingress.plugin.base import Plugin, PluginType
+    from bikipy.ingress.plugin.base import PluginType
 
 logger = getLogger(__name__)
 
@@ -524,7 +523,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin
     # Client-side functions ===============================
 
     @cached_property
-    def trial_label_to_df(self) -> dict[str | PositiveInt, pd.DataFrame]:
+    def trial_label_to_df(self) -> dict[Label, pd.DataFrame]:
         if self.metadata_trial_ids_are_higher_level:
             return self.experiment.trial_label_to_df
 
@@ -607,7 +606,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin
 
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
 
-    def get_meter_per_pixel(self, trial_id: Optional[str | PositiveInt] = None) -> NDArrayFp64:
+    def get_meter_per_pixel(self, trial_id: Optional[Label] = None) -> NDArrayFp64:
         from bikipy.ingress.plugin.meters_per_pixel import (
             detect_meters_per_pixel_in_perimeter_directory,
             PluginMeterPerPixel,
@@ -633,7 +632,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin
 
     # Private methods ===============================
 
-    def _trial_class_from_stage_index(self, stage_index: str | PositiveInt) -> "TrialCLS":
+    def _trial_class_from_stage_index(self, stage_index: Label) -> "TrialCLS":
         return self.experiment_class.stage_index_to_trial_class_name[stage_index]
 
     def _trialwise_plugins_for_trial_id(
@@ -704,7 +703,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin
         return result
 
     @staticmethod
-    def _get_id_from_path_stem(path: Path) -> str | PositiveInt:
+    def _get_id_from_path_stem(path: Path) -> Label:
         stem = path.stem
         if "-" in stem:
             stem = path.stem.split("-")[0]

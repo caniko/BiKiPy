@@ -18,6 +18,7 @@ from pydantic import (
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
+from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_coco_polygon,
@@ -410,7 +411,7 @@ class PerimeterSet(BasePerimeter):
             restricted_perimeters=self.restricted_perimeters + other,
         )
 
-    def __getitem__(self, item: str | PositiveInt) -> SinglePerimeter:
+    def __getitem__(self, item: Label) -> SinglePerimeter:
         for perimeter in self.all_perimeters:
             if perimeter.label == item or perimeter.int_id == item:
                 return perimeter
@@ -579,11 +580,9 @@ class PerimeterSet(BasePerimeter):
 
 @validate_arguments
 def perimeter_set_from_makesense(
-    perimeter_path: FilePath, shape: StringPerimeterShapes, init_args: Optional[list] = None, **perimeter_kwargs
+    perimeter_path: FilePath, shape: StringPerimeterShapes, **perimeter_kwargs
 ) -> dict[str, PerimeterSet]:
     unsupported_msg = f"Unsupported format, {shape}"
-
-    init_args = init_args or []
 
     match shape:
         case "circle_line" | "circle":
@@ -598,14 +597,14 @@ def perimeter_set_from_makesense(
         case "rectangle":
             match perimeter_path.suffix:
                 case ".csv":
-                    return init_polygon_from_makesense_csv_rectangle(perimeter_path, *init_args, **perimeter_kwargs)
+                    return init_polygon_from_makesense_csv_rectangle(perimeter_path, **perimeter_kwargs)
                 case ".json":
-                    return init_polygon_from_makesense_coco_polygon(perimeter_path, *init_args, **perimeter_kwargs)
+                    return init_polygon_from_makesense_coco_polygon(perimeter_path, **perimeter_kwargs)
                 case _:
                     raise ValueError(unsupported_msg)
 
         case "polygon" | "triangle":
-            return init_polygon_from_makesense_coco_polygon(perimeter_path, *init_args, **perimeter_kwargs)
+            return init_polygon_from_makesense_coco_polygon(perimeter_path, **perimeter_kwargs)
 
         case _:
             raise ValueError(unsupported_msg)

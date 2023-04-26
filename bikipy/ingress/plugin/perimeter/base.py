@@ -3,7 +3,8 @@ from typing import Optional, ClassVar
 
 from pydantic import PositiveInt
 
-from bikipy.ingress.plugin.base import BasePluginFile, HasReferenceMixin
+from bikipy.core.typing import Label
+from bikipy.ingress.plugin.base import BasePluginFile, HasReferenceMixin, IngressRequiredMixin
 from bikipy.perimeter.base import (
     SinglePerimeter,
     StringPerimeterShapes,
@@ -11,7 +12,7 @@ from bikipy.perimeter.base import (
 )
 
 
-class AbcPerimeterPlugin(BasePluginFile, HasReferenceMixin, ABC):
+class AbcPerimeterPlugin(BasePluginFile, HasReferenceMixin, IngressRequiredMixin, ABC):
     manual_shape: Optional[StringPerimeterShapes]
     plural_entries = True
 
@@ -22,23 +23,16 @@ class AbcPerimeterPlugin(BasePluginFile, HasReferenceMixin, ABC):
     default_trial_argument_key = "label_to_perimeter"
     human_readable_index = "Perimeter"
 
-    def perimeter_mapper(self, trial_id: Optional[str | PositiveInt] = None) -> dict[str, SinglePerimeter]:
-        additional_kwargs = {**self.perimeter_settings["common"]["defined"]}
-        if self.perimeter_settings["trial_perimeters"]:
-            additional_kwargs.update(
-                self._parse_plugin_settings(
-                    self.perimeter_settings["trial_perimeters"][self.trial_argument_key]["defined"]
-                )
-            )
-
+    def perimeter_mapper(
+        self, trial_id: Optional[Label] = None, **perimeter_model_field_kwargs
+    ) -> dict[str, SinglePerimeter]:
         image_name_to_perimeter_set = perimeter_set_from_makesense(
             self.data_path,
             self.manual_shape or self.shape,
-            init_args=self.init_args,
             meters_per_pixel=self.ingress.get_meter_per_pixel(trial_id),
             reference_point_array=self.reference_point,
             inspect_arg=self.ingress.inspect_directory_path,
-            **additional_kwargs,
+            **perimeter_model_field_kwargs,
         )
 
         result = {}

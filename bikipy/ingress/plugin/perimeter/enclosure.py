@@ -10,7 +10,9 @@ class PluginEnclosure(AbcPerimeterPlugin):
 
     @property
     def globally_defined(self):
-        return self.perimeter_mapper(self)
+        self._assert_correct_scope_global()
+        return self.perimeter_mapper()
 
     def trialwise_and_metadata(self, trial_id: Label, naive: bool = False):
-        return self.perimeter_mapper(self)
+        self._assert_correct_scope_trialwise_metadata()
+        return self.perimeter_mapper(trial_id)

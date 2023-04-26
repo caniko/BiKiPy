@@ -106,7 +106,6 @@ crop_time_seconds = 900
 
 [trial.specific.ObjectsInUpdatingLocationsUpdateTrial.defined]
 crop_time_seconds = 300
-crop_from_end = false
 
 [trial.specific.ObjectsInUpdatingLocationsTestTrial.defined]
 crop_time_seconds = 300

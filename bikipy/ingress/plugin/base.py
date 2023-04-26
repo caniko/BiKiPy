@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from enum import Enum
 from functools import cached_property
 from typing import Any, ClassVar, Optional, TypeVar, Type
 
@@ -10,23 +9,37 @@ from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.base_class import BikipyModel
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin_scope import PluginScope
+from bikipy.ingress.plugin_scope import ShallowPluginScope
 from bikipy.ingress.workflow.base import BaseIngressWorkflow
 from bikipy.utils.makesense import get_only_point_from_makesense
 
 
 class BasePlugin(BikipyModel, SchemanticMixin, ABC):
-    ingress: BaseIngressWorkflow = Field(
-        description="Bikipy ingress object to access project metadata relevant for defining perimeter"
-    )
     manual_trial_argument_key: Optional[str]
+    _shallow_plugin_scope: ShallowPluginScope
 
     required: ClassVar[bool] = False
+    plural_entries: ClassVar[bool] = False
 
     ingress_key: ClassVar[str] = ...
     code_key: ClassVar[str] = ...
     default_trial_argument_key: ClassVar[str] = ...
     human_readable_index: ClassVar[str] = ...
+
+    @abstractmethod
+    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False):
+        ...
+
+    @property
+    @abstractmethod
+    def globally_defined(self):
+        ...
+
+    def _assert_correct_scope_trialwise_metadata(self) -> None:
+        assert self._shallow_plugin_scope == ShallowPluginScope.METADATA_TRIALWISE
+
+    def _assert_correct_scope_global(self) -> None:
+        assert self._shallow_plugin_scope == ShallowPluginScope.GLOBAL
 
     @classmethod
     @property
@@ -61,15 +74,6 @@ class BasePlugin(BikipyModel, SchemanticMixin, ABC):
             assert self.plugin_name[0].isdigit()
             return int(self.plugin_name[0])
 
-    @abstractmethod
-    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False):
-        ...
-
-    @property
-    @abstractmethod
-    def globally_defined(self):
-        ...
-
 
 PluginType = Type[BasePlugin]
 Plugin = TypeVar("Plugin", bound=BasePlugin)
@@ -100,3 +104,9 @@ class TrialWiseMetadataOnlyMixin(BaseModel):
     def globally_defined(self) -> None:
         msg = f"{self.__class__.__name__} does not support globally defined"
         raise AttributeError(msg)
+
+
+class IngressRequiredMixin(BaseModel):
+    ingress: BaseIngressWorkflow = Field(
+        description="Bikipy ingress object to access project metadata relevant for defining perimeter"
+    )
