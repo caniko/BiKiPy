@@ -8,7 +8,7 @@ import pandas as pd
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin.core.name_parser import PluginFileStemParseLastIsLabel
+from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
 from bikipy.ingress.plugin.perimeter.base import AbcPerimeterPlugin
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 from bikipy.perimeter.base import (

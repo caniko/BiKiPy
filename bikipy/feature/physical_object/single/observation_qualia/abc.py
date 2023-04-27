@@ -1,11 +1,11 @@
-from abc import ABC
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Optional, TypeVar, Type, ClassVar, TYPE_CHECKING
+from typing import Any, Optional, TypeVar, Type, ClassVar, TYPE_CHECKING, TypeVarTuple, Generic
 
 import numpy as np
 import pandas as pd
+from pydantic.generics import GenericModel
 from pydantic_numpy.dtype import NDArrayBool
 
 from bikipy.core.base_class import BaseBikipyInspectMixin
@@ -17,27 +17,24 @@ from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.reader.base import Reader
 from bikipy.utils.plot.inspect import generic_inspection_finalization
-
-if TYPE_CHECKING:
-    from bikipy.feature.physical_object.set import PhysicalObjectSet
+from bikipy.feature.physical_object.set import PhysicalObjectSet
 
 logger = getLogger(__name__)
 
 
 ObservationComponent = TypeVar("ObservationComponent", bound=AbcObservationComponent)
-# TODO: Waiting for numba support for 3.11 https://github.com/numba/numba/milestone/63
+Components = TypeVarTuple("Components")
 # Variadic generics: https://peps.python.org/pep-0646/
-# NumberOfComponents = TypeVarTuple("NumberOfComponents")
 
 
 class AbcPhysicalObjectObservationQualia(
-    # GenericModel, Generic[ObservationComponent],
+    GenericModel,
+    Generic[ObservationComponent, *Components],
     BaseBikipyInspectMixin,
     VideoMetadataMixin,
-    AttentionModelMixin,
-    ABC,
+    AttentionModelMixin
 ):
-    physical_object_set: "PhysicalObjectSet"
+    physical_object_set: PhysicalObjectSet
     perimeter: SinglePerimeter
 
     # Inspection fields
@@ -50,7 +47,7 @@ class AbcPhysicalObjectObservationQualia(
     category = "physical_object"
 
     @cached_property
-    def observation_components(self) -> list[ObservationComponent, ObservationComponent]:
+    def observation_components(self) -> list[ObservationComponent, *Components]:
         self._fig, self._axes = self.video.subplots(
             nrows=self.number_of_components, ncols=self.max_component_row_length
         )

@@ -11,6 +11,7 @@ from bikipy import BikipyRuntimeSettings
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.mapping import experiment_name_to_class
 from bikipy.behaviour.radial_arm import BaseRadialMazeExperiment
+from bikipy.ingress.plugin.perimeter.enclosure import PluginEnclosure
 from bikipy.ingress.workflow.base import IngressWorkflow
 from bikipy.reader import DeepLabCutReader
 from bikipy.ingress.workflow.animal import AnimalIngressWorkflow
@@ -71,6 +72,8 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflo
         cds_homologs = []
         cds_hierarchical = []
 
+        plugin_models = set()
+
         assert experiment_class.trial_classes
         if len(experiment_class.trial_classes) == 1:
             cds_single.append(SingleSchema(manual_mapping_name="trial", model=experiment_class.trial_classes.pop()))
@@ -103,6 +106,7 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflo
                         models=set(trial_class_to_perimeter_enclosure.values()),
                     )
                 )
+            plugin_models.add(PluginEnclosure)
 
         if experiment_class.at_least_one_trial_has_perimeter:
             cds_hierarchical.append(
@@ -111,15 +115,12 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflo
                     models=experiment_class.trial_perimeter_label_to_perimeter_class,
                 )
             )
-            perimeter_plugin_classes = {PluginSinglePerimeter}
+            plugin_models.add(PluginSinglePerimeter)
             if issubclass(experiment_class, BaseRadialMazeExperiment):
-                perimeter_plugin_classes.add(PluginRadial)
-            cds_hierarchical.append(
-                GroupSchema.from_models(
-                    mapping_name="perimeter_plugin",
-                    models=set(perimeter_plugin_classes),
-                )
-            )
+                plugin_models.add(PluginRadial)
+
+        if plugin_models:
+            cds_hierarchical.append(GroupSchema.from_models(mapping_name="plugin", models=plugin_models))
 
         return {
             "project_directory": project_directory,

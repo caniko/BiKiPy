@@ -12,6 +12,7 @@ import pandas as pd
 from pydantic.generics import GenericModel
 from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8
 
+from bikipy.behaviour.core import Trial
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.video import VideoMetadataMixin
@@ -19,11 +20,7 @@ from bikipy.feature.physical_object.single.observation_qualia.abc import (
     PhysicalObjectObservationQualia,
     PhysicalObjectObservationQualiaCLS,
 )
-from bikipy.feature.physical_object.single.observation_qualia.rodent import RodentObservationQualia
 from bikipy.reader.base import Reader
-
-if TYPE_CHECKING:
-    pass
 
 logger = getLogger(__name__)
 
@@ -164,10 +161,8 @@ class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
         return {label: 0.0 for label in self.physical_object_label_to_observation_boolean_index}
 
 
-class GenericPhysicalObjectSet(GenericModel, Generic[PhysicalObjectObservationQualia], VideoMetadataMixin):
-    trial: Any
-
-    physical_object_profile_class: ClassVar[PhysicalObjectObservationQualiaCLS] = ...
+class GenericPhysicalObjectSet(VideoMetadataMixin):
+    trial: Trial
 
     @cached_property
     def __len__(self) -> int:
@@ -242,5 +237,3 @@ class GenericPhysicalObjectSet(GenericModel, Generic[PhysicalObjectObservationQu
 
 PhysicalObjectSet = TypeVar("PhysicalObjectSet", bound=GenericPhysicalObjectSet)
 PhysicalObjectSetCLS = Type[GenericPhysicalObjectSet]
-
-RodentObservationQualia.update_forward_refs(PhysicalObjectSet=PhysicalObjectSet)

@@ -4,9 +4,9 @@ from bikipy.feature.physical_object.single.component.olfaction import OlfactionC
 from bikipy.feature.physical_object.single.observation_qualia.abc import AbcPhysicalObjectObservationQualia
 
 
-class RodentObservationQualia(AbcPhysicalObjectObservationQualia):
+class RodentObservationQualia(AbcPhysicalObjectObservationQualia[GazeComponent, OlfactionComponent]):
     observation_component_classes = (GazeComponent, OlfactionComponent)
 
 
-class RodentFullBodyObservationQualia(AbcPhysicalObjectObservationQualia):
+class RodentFullBodyObservationQualia(AbcPhysicalObjectObservationQualia[GazeComponent, NoseTailProximity]):
     observation_component_classes = (GazeComponent, NoseTailProximity)

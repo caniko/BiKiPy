@@ -109,24 +109,12 @@ class VideoMetadata(_VideoMetadataBase):
     @classmethod
     def from_path(cls, video_path: FilePath, **kwargs) -> "VideoMetadata":
         info = extract_video(path_to_video=video_path)
-        return cls(
-            recording_resolution=info.resolution,
-            fps=info.fps,
-            frame=info.image,
-            **kwargs
-        )
+        return cls(recording_resolution=info.resolution, fps=info.fps, frame=info.image, **kwargs)
 
     @classmethod
-    def from_mextractor(
-        cls, mextractor_dir: DirectoryPath, **kwargs
-    ) -> "VideoMetadata":
+    def from_mextractor(cls, mextractor_dir: DirectoryPath, **kwargs) -> "VideoMetadata":
         info = load(mextractor_dir)
-        return cls(
-            recording_resolution=info.resolution,
-            fps=info.fps,
-            frame=info.image,
-            **kwargs
-        )
+        return cls(recording_resolution=info.resolution, fps=info.fps, frame=info.image, **kwargs)
 
     @cached_property
     def pixels_per_meter(self) -> MetersPerPixel | None:

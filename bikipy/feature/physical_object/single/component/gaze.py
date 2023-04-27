@@ -1,7 +1,6 @@
 from functools import cached_property
 
 import numpy as np
-import pandas as pd
 from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.attention.proximity import proximity_filter
@@ -81,20 +80,10 @@ class GazeComponent(AbcObservationComponent):
         return result
 
     @property
-    def component_summary(self) -> pd.Series:
-        return pd.concat(
-            [
-                super().component_summary,
-                pd.Series(
-                    [
-                        self.boolean_array_to_seconds(self.left_proximity),
-                        self.boolean_array_to_seconds(self.leftward_observation),
-                        self.boolean_array_to_seconds(self.right_proximity),
-                        self.boolean_array_to_seconds(self.rightward_observation),
-                    ],
-                    index=self._summary_indexer(
-                        ["LeftProximity", "LeftwardObservation", "RightProximity", "RightwardObservation"]
-                    ),
-                ),
-            ]
-        )
+    def component_summary_dict(self) -> dict:
+        return {
+            "LeftProximity": self.boolean_array_to_seconds(self.left_proximity),
+            "LeftwardObservation": self.boolean_array_to_seconds(self.leftward_observation),
+            "RightProximity": self.boolean_array_to_seconds(self.right_proximity),
+            "RightwardObservation": self.boolean_array_to_seconds(self.rightward_observation),
+        }

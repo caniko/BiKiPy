@@ -42,10 +42,8 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
                         raise ValueError(msg)
 
                     try:
-                        data_object = plugin_model(
-                            plugin_scope=PluginScope.TRIALWISE,
-                            data_path=plugin_data_files[0],
-                            ingress=self,
+                        data_object = self._define_plugin(
+                            plugin_model, PluginScope.TRIALWISE, data_path=plugin_data_files[0]
                         ).trialwise_and_metadata(trial_id=trial_id)
                     except IndexError:
                         continue

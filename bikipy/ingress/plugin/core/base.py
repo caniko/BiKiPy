@@ -7,7 +7,7 @@ from pydantic import DirectoryPath, FilePath
 
 from bikipy.core.base_class import BikipyModel
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin.core.name_parser import PluginFileStemParse
+from bikipy.ingress.name_parser import PluginFileStemParse
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 
 
@@ -44,7 +44,7 @@ class BasePlugin(BikipyModel, SchemanticMixin, ABC):
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
         upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.add("ingress")
+        upstream.update(("ingress", "data_path", "plugin_scope"))
         return upstream
 
     @cached_property

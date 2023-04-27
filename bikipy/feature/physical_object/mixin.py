@@ -19,20 +19,22 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         ...
 
-    @classmethod
     @property
-    def physical_object_set_class(cls) -> PhysicalObjectSetCLS:
-        match cls.animal_profile:
+    def physical_object_set_class(self) -> PhysicalObjectSetCLS:
+        match self.animal_profile:
             case "rodent":
                 from bikipy.feature.physical_object.single.observation_qualia.rodent import RodentObservationQualia
-                from bikipy.behaviour.core import Trial
-
-                GenericPhysicalObjectSet.update_forward_refs(Trial=Trial)
 
                 class RodentPhysicalObjectSet(GenericPhysicalObjectSet[RodentObservationQualia]):
-                    physical_object_profile_class = RodentObservationQualia
+                    physical_object_profile_class =
 
                 return RodentPhysicalObjectSet
+            case _:
+                msg = (
+                    f"{self.animal_profile} is an unsupported animal profile. "
+                    f"This issue should have been caught during Trial initialization, contact dev"
+                )
+                raise RuntimeError(msg)
 
     @cached_property
     def perimeters(self):

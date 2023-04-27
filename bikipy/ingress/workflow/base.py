@@ -38,7 +38,7 @@ from bikipy.utils.misc import defaultdict_dict_factory, sheet_names_from_path
 
 if TYPE_CHECKING:
     from bikipy.behaviour.core import Experiment, ExperimentCLS, TrialCLS
-    from bikipy.ingress.plugin.core.base import PluginType
+    from bikipy.ingress.plugin.core.base import PluginType, Plugin
 
 logger = getLogger(__name__)
 
@@ -154,7 +154,6 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin
     def trial_id_to_trial_class_name(self):
         if not self._experiment_data_defined:
             self.__post_init__()
-        assert self._trial_id_to_trial_class_name
         return self._trial_id_to_trial_class_name
 
     @property
@@ -420,8 +419,8 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin
 
         for plugin_model in self._global_plugins:
             first_file = next(self.plugin_directory_path.glob(f"{plugin_model.code_key}*"))
-            self._common_trial_keyword_arguments[plugin_model.default_trial_argument_key] = plugin_model(
-                plugin_scope=PluginScope.GLOBAL, data_path=first_file, ingress=self
+            self._common_trial_keyword_arguments[plugin_model.default_trial_argument_key] = self._define_plugin(
+                plugin_model, PluginScope.GLOBAL, data_path=first_file
             ).globally_defined
 
         metadata_trial_target_dict = (
@@ -441,10 +440,8 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin
                     if isinstance(trial_id_plugin_label, float) and np.isnan(trial_id_plugin_label):
                         continue
 
-                    metadata_trial_target_dict[trial_id][plugin_model.default_trial_argument_key] = plugin_model(
-                        plugin_scope=PluginScope.METADATA,
-                        data_path=label_to_file_path[str(trial_id_plugin_label)],
-                        ingress=self,
+                    metadata_trial_target_dict[trial_id][plugin_model.default_trial_argument_key] = self._define_plugin(
+                        plugin_model, PluginScope.METADATA, data_path=label_to_file_path[str(trial_id_plugin_label)]
                     ).trialwise_and_metadata(trial_id)
 
                 elif plugin_model.plural_entries:
@@ -453,8 +450,9 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin
                             continue
 
                         if plugin_model.human_readable_index in key:
-                            metadata_trial_target_dict[trial_id][underscore(key)] = plugin_model(
-                                plugin_scope=PluginScope.METADATA,
+                            metadata_trial_target_dict[trial_id][underscore(key)] = self._define_plugin(
+                                plugin_model,
+                                PluginScope.METADATA,
                                 data_path=label_to_file_path[str(trial_id_plugin_label)],
                                 manual_trial_argument_key=underscore(key),
                                 ingress=self,
@@ -496,6 +494,9 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin
         additional_kwargs = {}
 
         if self.experiment_class.has_stages:
+            assert self.trial_id_to_trial_class_name, "Trial ID to trial class map must be defined"
+            # assert self.trial_class_name_to_keyword_arguments
+
             additional_kwargs["trial_id_to_trial_class_name"] = self.trial_id_to_trial_class_name
             additional_kwargs["trial_class_name_to_keyword_arguments"] = self.trial_class_name_to_keyword_arguments
 
@@ -635,7 +636,21 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin
 
     # Private methods ===============================
 
+    def _define_plugin(self, plugin_model: "PluginType", plugin_scope: PluginScope, **field_kwargs) -> "Plugin":
+        additional_field_args = {}
+        if plugin_model.__name__ in self.project_kit_config["plugin"]:
+            additional_field_args.update(self.project_kit_config["plugin"][plugin_model.__name__])
+
+        return plugin_model(plugin_scope=plugin_scope, ingress=self, **additional_field_args, **field_kwargs)
+
     def _trial_class_from_stage_index(self, stage_index: Label) -> "TrialCLS":
+        from bikipy.behaviour.object_recognition.objects_in_updating_locations import (
+            ObjectsInUpdatingLocationsTrainingTrial,
+        )
+
+        if self.experiment_class.trial_sequence[0] != ObjectsInUpdatingLocationsTrainingTrial:
+            raise RuntimeError()
+
         return self.experiment_class.stage_index_to_trial_class_name[stage_index]
 
     def _trialwise_plugins_for_trial_id(
@@ -652,10 +667,8 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin
                 raise ValueError(msg)
 
             try:
-                result[plugin_model.default_trial_argument_key] = plugin_model(
-                    plugin_scope=PluginScope.TRIALWISE,
-                    data_path=plugin_data_files[0],
-                    ingress=self,
+                result[plugin_model.default_trial_argument_key] = self._define_plugin(
+                    plugin_model, PluginScope.TRIALWISE, data_path=plugin_data_files[0]
                 ).trialwise_and_metadata(trial_id)
             except IndexError:
                 pass

@@ -13,9 +13,10 @@ from bikipy.perimeter.base import (
 
 class AbcPerimeterPlugin(BasePluginFile, HasReferenceMixin, IngressRequiredMixin, ABC):
     manual_shape: Optional[StringPerimeterShapes]
-    plural_entries = True
 
     warn_missing_re_reference_file: ClassVar[bool] = False
+
+    plural_entries = True
 
     ingress_key = "perimeter"
     code_key = "perimeter"

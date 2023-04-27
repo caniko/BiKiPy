@@ -32,3 +32,7 @@ class OlfactionComponent(AbcObservationComponent):
     @property
     def combined_sensation(self) -> NDArrayBool:
         return self.nose_proximity
+
+    @property
+    def component_summary_dict(self) -> dict:
+        pass
