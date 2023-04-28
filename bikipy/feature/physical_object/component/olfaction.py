@@ -3,7 +3,7 @@ from functools import cached_property
 from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.attention.proximity import proximity_filter
-from bikipy.feature.physical_object.single.component.abc import AbcObservationComponent
+from bikipy.feature.physical_object.component.abc import AbcObservationComponent
 
 
 class OlfactionComponent(AbcObservationComponent):

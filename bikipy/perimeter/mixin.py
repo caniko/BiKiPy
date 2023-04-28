@@ -12,7 +12,7 @@ logger = getLogger(__name__)
 class TrialWithPerimeterMixin(BikipyModel, ABC):
     @property
     @abstractmethod
-    def perimeters(self) -> list[SinglePerimeter]:
+    def perimeters(self) -> list[SinglePerimeter, ...]:
         ...
 
     @cached_property

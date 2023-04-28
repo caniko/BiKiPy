@@ -33,6 +33,7 @@ from yaspin.spinners import Spinners
 
 from bikipy import runtime_settings
 from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
+from bikipy.behaviour.mixins.physical_object import PhysicalObjectTrialMixin
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import (
@@ -144,6 +145,11 @@ class BaseTrial(Behaviour):
     @property
     def has_perimeter(cls) -> bool:
         return is_generic_type(cls) or issubclass(cls, TrialWithPerimeterMixin)
+
+    @classmethod
+    @property
+    def has_physical_object(cls) -> bool:
+        return issubclass(cls, PhysicalObjectTrialMixin)
 
     @classmethod
     @property
@@ -368,6 +374,11 @@ class BaseExperiment(Behaviour):
     @property
     def at_least_one_trial_has_perimeter(cls) -> bool:
         return any(trial_class.has_perimeter for trial_class in cls.trial_classes)
+
+    @classmethod
+    @property
+    def at_least_one_trial_has_physical_object(cls) -> bool:
+        return any(trial_class.has_physical_object for trial_class in cls.trial_classes)
 
     @classmethod
     @property

@@ -1,7 +1,7 @@
 from abc import ABC
 
 from bikipy.behaviour.core.enclosure.rectangle import RectangleEnclosedTrial
-from bikipy.feature.physical_object.mixin import PhysicalObjectTrialMixin
+from bikipy.behaviour.mixins.physical_object import PhysicalObjectTrialMixin
 
 
 class RectangleEnclosedPhysicalObjectTrial(PhysicalObjectTrialMixin, RectangleEnclosedTrial, ABC):

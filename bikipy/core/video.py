@@ -9,11 +9,13 @@ from collections.abc import Iterable
 from functools import cached_property, partial
 from logging import getLogger
 from pathlib import Path
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, Sequence
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from mextractor.base import load
 from mextractor.extractors import extract_video
 from pydantic import DirectoryPath, Field, FilePath, validator
@@ -212,8 +214,9 @@ class VideoMetadata(_VideoMetadataBase):
         )
         ax.set_yticks(
             ticks=np.linspace(0.0, self.vertical_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
+            # Notice that we are inverting the y-axis at the label level to make the metric axes have the same direction
             labels=np.round(
-                np.linspace(0.0, self.metric_vertical_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks), decimals=2
+                np.linspace(self.metric_vertical_resolution * _TICK_END_OFFSET_RATIO, 0, number_of_ticks), decimals=2
             ),
             fontsize=self.plotting_default_font_size,
         )
@@ -238,7 +241,7 @@ class VideoMetadata(_VideoMetadataBase):
     def coordinates_need_to_be_scaled_for_plot(self) -> bool:
         return self.frame is not None
 
-    def subplots(self, nrows: int = 1, ncols: int = 1, **kwargs) -> tuple:
+    def subplots(self, nrows: int = 1, ncols: int = 1, **kwargs) -> tuple[Figure, Axes | Sequence[Axes]]:
         if self.frame is None:
             logger.debug("Video object was used to make subplot, but no frame was defined. Figure got no background.")
             return plt.subplots(
@@ -260,12 +263,11 @@ class VideoMetadata(_VideoMetadataBase):
             **kwargs,
         )
         if not isinstance(axes, Iterable):
-            ax_imshow_gray(axes, self.upscaled_video.greyscale_frame)
-            self.ax_ticks_metric_to_pixel(axes)
-        else:
-            for ax in np.array(axes).flatten():
-                ax_imshow_gray(ax, self.upscaled_video.greyscale_frame)
-                self.ax_ticks_metric_to_pixel(ax)
+            axes = [axes]
+
+        for ax in np.array(axes).flatten():
+            ax_imshow_gray(ax, self.upscaled_video.greyscale_frame)
+            self.ax_ticks_metric_to_pixel(ax)
 
         return fig, axes
 

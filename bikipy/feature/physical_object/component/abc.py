@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 from logging import getLogger
-from typing import Any, ClassVar
+from typing import Any, ClassVar, TypeVar, Type
 
 import pandas as pd
 from pydantic_numpy.dtype import NDArrayBool
@@ -94,3 +94,7 @@ class AbcObservationComponent(BaseBikipyInspectMixin, VideoMetadataMixin, Attent
 
     def __len__(self) -> int:
         return self.reader.frames
+
+
+ObservationComponentType = Type[AbcObservationComponent]
+ObservationComponent = TypeVar("ObservationComponent", bound=AbcObservationComponent)

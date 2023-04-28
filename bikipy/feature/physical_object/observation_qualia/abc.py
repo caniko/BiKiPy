@@ -12,17 +12,16 @@ from bikipy.core.base_class import BaseBikipyInspectMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.attention.model import AttentionModelMixin
-from bikipy.feature.physical_object.single.component.abc import AbcObservationComponent
+from bikipy.feature.physical_object.component.abc import AbcObservationComponent, ObservationComponent, \
+    ObservationComponentType
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.reader.base import Reader
 from bikipy.utils.plot.inspect import generic_inspection_finalization
-from bikipy.feature.physical_object.set import PhysicalObjectSet
+from bikipy.feature.physical_object.analysis import PhysicalObjectSet
 
 logger = getLogger(__name__)
 
-
-ObservationComponent = TypeVar("ObservationComponent", bound=AbcObservationComponent)
 Components = TypeVarTuple("Components")
 # Variadic generics: https://peps.python.org/pep-0646/
 
@@ -43,11 +42,9 @@ class AbcPhysicalObjectObservationQualia(
     _axes: Any = None
     _exporting_figure: bool = False
 
-    observation_component_classes: ClassVar[list] = ...
     category = "physical_object"
 
-    @cached_property
-    def observation_components(self) -> list[ObservationComponent, *Components]:
+    def __post_init__(self):
         self._fig, self._axes = self.video.subplots(
             nrows=self.number_of_components, ncols=self.max_component_row_length
         )
@@ -56,6 +53,8 @@ class AbcPhysicalObjectObservationQualia(
             fontsize=self.video.upscaled_video.plotting_title_font_size * 1.1,
         )
 
+    @cached_property
+    def observation_components(self) -> list[ObservationComponent, *Components]:
         return [
             observation_component_class(
                 perimeter=self.perimeter,
@@ -134,14 +133,14 @@ class AbcPhysicalObjectObservationQualia(
     def fig(self):
         if self._fig is not None:
             return self._fig
-        self.observation_components
+        self.__post_init__()
         return self._fig
 
     @property
     def axes(self):
         if self._axes is not None:
             return self._axes
-        self.observation_components
+        self.__post_init__()
         return self._axes
 
     @property

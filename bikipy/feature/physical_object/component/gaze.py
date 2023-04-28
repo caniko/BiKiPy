@@ -4,11 +4,11 @@ import numpy as np
 from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.attention.proximity import proximity_filter
-from bikipy.feature.physical_object.single.component.abc import AbcObservationComponent
+from bikipy.feature.physical_object.component.abc import AbcObservationComponent
 from bikipy.utils.math.cached import cached_deg2rad
 
 
-class GazeComponent(AbcObservationComponent):
+class CenterToEyesRayCasting(AbcObservationComponent):
     center_eye_label: str = "center_eye"
     left_eye_label: str = "left_ear"
     right_eye_label: str = "right_ear"
@@ -17,7 +17,7 @@ class GazeComponent(AbcObservationComponent):
     gaze_maximum_degrees: float = 45.0
 
     native_inspection_row_length = 4
-    component_label = "Gaze"
+    component_label = "FOV"
 
     @cached_property
     def gaze_length_pixels(self) -> float:

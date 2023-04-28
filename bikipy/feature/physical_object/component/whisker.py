@@ -2,7 +2,7 @@ from typing import ClassVar
 
 from pydantic_numpy import NDArrayBool
 
-from bikipy.feature.physical_object.single.component.abc import AbcObservationComponent
+from bikipy.feature.physical_object.component.abc import AbcObservationComponent
 
 
 class WhiskerComponent(AbcObservationComponent):

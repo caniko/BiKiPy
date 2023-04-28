@@ -5,22 +5,16 @@ Some methods are designed specifically for sets with a specific number of object
 
 from functools import cached_property
 from logging import getLogger
-from typing import Any, ClassVar, Generic, Type, TypeVar, TYPE_CHECKING
+from typing import ClassVar, Type, TypeVar
 
 import numpy as np
 import pandas as pd
-from pydantic.generics import GenericModel
 from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8
 
 from bikipy.behaviour.core import Trial
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.base_class import BaseBikipyHashable
 from bikipy.core.video import VideoMetadataMixin
-from bikipy.feature.physical_object.single.observation_qualia.abc import (
-    PhysicalObjectObservationQualia,
-    PhysicalObjectObservationQualiaCLS,
-)
-from bikipy.reader.base import Reader
 
 logger = getLogger(__name__)
 
@@ -163,76 +157,6 @@ class PhysicalObjectSetAnalysis(BaseBikipyHashable, VideoMetadataMixin):
 
 class GenericPhysicalObjectSet(VideoMetadataMixin):
     trial: Trial
-
-    @cached_property
-    def __len__(self) -> int:
-        return len(self.physical_objects)
-
-    def __getitem__(self, item):
-        return self.label_to_physical_object[item]
-
-    @property
-    def reader(self) -> Reader:
-        return self.physical_objects[0].reader
-
-    @cached_property
-    def labels(self) -> tuple[str, ...]:
-        return tuple(physical_object.label for physical_object in self.physical_objects)
-
-    @cached_property
-    def label_to_physical_object(self) -> dict:
-        return {physical_object.label: physical_object for physical_object in self.physical_objects}
-
-    @property
-    def analysis_objects(self) -> tuple[PhysicalObjectSetAnalysis, ...]:
-        return PhysicalObjectSetAnalysis(
-            analysis_label="TolGaze",
-            physical_object_label_to_observation_boolean_index={
-                physical_object.label: physical_object.attention_observance_boolean_index
-                for physical_object in self.physical_objects
-            },
-            manual_video=self.video,
-        ), PhysicalObjectSetAnalysis(
-            analysis_label="Proximity",
-            physical_object_label_to_observation_boolean_index={
-                physical_object.label: physical_object.attention_proximity_boolean_index
-                for physical_object in self.physical_objects
-            },
-            manual_video=self.video,
-        )
-
-    @property
-    def feature_summary(self) -> pd.Series:
-        return pd.concat(
-            (
-                # *(analysis_object.feature_summary for analysis_object in self.analysis_objects),
-                *(physical_object.summary for physical_object in self.physical_objects),
-            )
-        )
-
-    @property
-    def seconds_observing(self) -> float:
-        return self.analysis_objects[0].total_seconds_observing
-
-    def plot(self, ax: Any = None):
-        if not ax:
-            fix, ax = self.video.subplots()
-        for physical_objects in self.physical_objects:
-            ax = physical_objects.perimeter.plot(ax=ax)
-
-        return ax
-
-    @cached_property
-    def physical_objects(self) -> list[PhysicalObjectObservationQualia, ...]:
-        return [
-            self.physical_object_profile_class(
-                physical_object_set=self,
-                perimeter=perimeter,
-                manual_video=self.video,
-                inspect_arg=self.trial.inspect_arg,
-            )
-            for perimeter in self.trial.physical_object_perimeters
-        ]
 
 
 PhysicalObjectSet = TypeVar("PhysicalObjectSet", bound=GenericPhysicalObjectSet)
