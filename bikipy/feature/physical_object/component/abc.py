@@ -4,6 +4,7 @@ from logging import getLogger
 from typing import Any, ClassVar, TypeVar, Type
 
 import pandas as pd
+from pydantic import Field
 from pydantic_numpy.dtype import NDArrayBool
 
 from bikipy.core.base_class import BaseBikipyInspectMixin
@@ -16,9 +17,14 @@ from bikipy.reader.base import Reader
 logger = getLogger(__name__)
 
 
-class AbcObservationComponent(BaseBikipyInspectMixin, VideoMetadataMixin, AttentionModelMixin, ABC):
+class AbcQualiaComponent(BaseBikipyInspectMixin, VideoMetadataMixin, AttentionModelMixin, ABC):
     perimeter: SinglePerimeter = ...
     reader: Reader = ...
+    filter_in_sequence: bool = Field(
+        False,
+        description="When set to True, the component boolean index will be "
+        "considered in sequence with other components that are also filtered in sequence",
+    )
 
     axes_row: Any = ...
 
@@ -35,22 +41,21 @@ class AbcObservationComponent(BaseBikipyInspectMixin, VideoMetadataMixin, Attent
 
     @property
     @abstractmethod
-    def combined_sensation(self) -> NDArrayBool:
-        # _combined_sensation_plot(result)
+    def boolean_index(self) -> NDArrayBool:
         ...
 
     @property
     @abstractmethod
-    def component_summary_dict(self) -> dict:
+    def summary_series(self) -> pd.Series:
         ...
 
     @cached_property
-    def combined_sensation_seconds(self) -> float:
-        return self.boolean_array_to_seconds(self.combined_sensation)
+    def seconds_of_observation_qualia(self) -> float:
+        return self.boolean_array_to_seconds(self.boolean_index)
 
     @cached_property
     def tolerance_modeled_combined_sensation(self) -> NDArrayBool:
-        result = single_node_tolerance_model(self.combined_sensation, self.video.fps)
+        result = single_node_tolerance_model(self.boolean_index, self.video.fps)
         self.generic_result_plotter(result, self.axes_row[-1], "ToleranceModeledCombined")
         return result
 
@@ -60,7 +65,7 @@ class AbcObservationComponent(BaseBikipyInspectMixin, VideoMetadataMixin, Attent
 
     @cached_property
     def tolerance_vs_unfiltered_ratio(self) -> float:
-        return self.tolerance_modeled_combined_sensation_seconds / self.combined_sensation_seconds
+        return self.tolerance_modeled_combined_sensation_seconds / self.seconds_of_observation_qualia
 
     def _summary_indexer(self, data_labels: list[str], with_component_label: bool = True) -> pd.MultiIndex:
         if with_component_label:
@@ -72,21 +77,17 @@ class AbcObservationComponent(BaseBikipyInspectMixin, VideoMetadataMixin, Attent
     def component_summary(self) -> pd.Series:
         base = pd.Series(
             [
-                self.combined_sensation_seconds,
+                self.seconds_of_observation_qualia,
                 self.tolerance_modeled_combined_sensation_seconds,
                 self.tolerance_vs_unfiltered_ratio,
             ],
             index=self._summary_indexer(["CombinedSeconds", "TolCombinedSeconds", "TolUnfilteredRatio"]),
         )
-        return pd.concat([pd.Series(self.component_summary_dict), base])
+        return pd.concat([pd.Series(self.summary_series), base])
 
     @cached_property
     def video(self) -> VideoMetadata:
         return VideoMetadata.join(self.perimeter.video, self.reader.video, ignore_incongruity=True)
-
-    @property
-    def label(self):
-        return self.perimeter.label
 
     def generic_result_plotter(self, valid_boolean_index: NDArrayBool, ax: Any, label: str) -> None:
         ax.set_title(label, fontsize=self.video.upscaled_video.plotting_title_font_size)
@@ -96,5 +97,5 @@ class AbcObservationComponent(BaseBikipyInspectMixin, VideoMetadataMixin, Attent
         return self.reader.frames
 
 
-ObservationComponentType = Type[AbcObservationComponent]
-ObservationComponent = TypeVar("ObservationComponent", bound=AbcObservationComponent)
+QualiaComponentType = Type[AbcQualiaComponent]
+QualiaComponent = TypeVar("QualiaComponent", bound=AbcQualiaComponent)

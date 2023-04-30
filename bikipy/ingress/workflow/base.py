@@ -16,6 +16,7 @@ from schemantic.model.project import SchemanticMixin
 from pydantic import DirectoryPath, FilePath, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
+from bikipy._constant import READER_MAP_NAME
 from bikipy.core.base_class import BikipyModel
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
@@ -471,8 +472,8 @@ class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin
         else:
             self._common_trial_keyword_arguments.update(self.project_kit_config["trial"])
 
-        if "reader" in self.project_kit_config:
-            self._common_trial_keyword_arguments["manual_reader_kwargs"] = self.project_kit_config["reader"]
+        if READER_MAP_NAME in self.project_kit_config:
+            self._common_trial_keyword_arguments["manual_reader_kwargs"] = self.project_kit_config[READER_MAP_NAME]
 
         self._dataset_reader()
 

@@ -33,7 +33,7 @@ from yaspin.spinners import Spinners
 
 from bikipy import runtime_settings
 from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
-from bikipy.behaviour.mixins.physical_object import PhysicalObjectTrialMixin
+from bikipy.feature.physical_object.mixin import PhysicalObjectTrialMixin
 from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import (

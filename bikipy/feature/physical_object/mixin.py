@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Literal, Optional
 
 import pandas as pd
+from pydantic import Field
+from schemantic.model.project import SchemanticBranchingMixin
 
 from bikipy.feature.physical_object.analysis import (
     PhysicalObjectSetCLS,
@@ -10,15 +12,36 @@ from bikipy.feature.physical_object.analysis import (
     GenericPhysicalObjectSet,
     PhysicalObjectSetAnalysis,
 )
+from bikipy.feature.physical_object.component.abc import ObservationComponent
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.perimeter.mixin import TrialWithPerimeterMixin
 
 
-class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
+class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, SchemanticBranchingMixin, ABC):
+    qualia_definition_profile: Literal["rodent", None]
+    qualia_definition_sequence: Optional[list[ObservationComponent, ...]] = Field(default_factory=list)
+
     @property
     @abstractmethod
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         ...
+
+    def __getitem__(self, item):
+        return self.label_to_physical_object[item]
+
+    @classmethod
+    def _schemantic_branch_schema(cls, **kwargs) -> "GroupSchema":
+        """
+
+        :param kwargs:
+        :return:
+        """
+        ...
+
+    def physical_object_observation_qualia(self):
+        if self.qualia_definition_profile:
+            try:
+                return
 
     @cached_property
     def perimeters(self) -> list[SinglePerimeter, ...]:
@@ -30,22 +53,6 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         upstream_list = super()._trial_analysis_series_list
         upstream_list.append(self.physical_object_set.feature_summary)
         return upstream_list
-
-    @cached_property
-    def physical_object_component_kwargs(self) -> dict[str, Any]:
-        # TODO: Waiting for python 3.11 for variadic generic
-        return {
-            "reader": self.reader,
-            "trial_obj_label": self.label,
-            "inspect_arg": self.inspect_arg,
-        }
-
-    @cached_property
-    def __len__(self) -> int:
-        return len(self.physical_objects)
-
-    def __getitem__(self, item):
-        return self.label_to_physical_object[item]
 
     @cached_property
     def label_to_physical_object(self) -> dict:
@@ -91,15 +98,3 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
             ax = physical_objects.perimeter.plot(ax=ax)
 
         return ax
-
-    @cached_property
-    def physical_objects(self) -> list[PhysicalObjectObservationQualia, ...]:
-        return [
-            self.physical_object_profile_class(
-                physical_object_set=self,
-                perimeter=perimeter,
-                manual_video=self.video,
-                inspect_arg=self.trial.inspect_arg,
-            )
-            for perimeter in self.trial.physical_object_perimeters
-        ]

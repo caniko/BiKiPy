@@ -4,12 +4,12 @@ import numpy as np
 from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.attention.proximity import proximity_filter
-from bikipy.feature.physical_object.component.abc import AbcObservationComponent
+from bikipy.feature.physical_object.component.abc import AbcQualiaComponent
 from bikipy.utils.math.cached import cached_deg2rad
 
 
-class CenterToEyesRayCasting(AbcObservationComponent):
-    center_eye_label: str = "center_eye"
+class FOVCenterToEyesRayCasting(AbcQualiaComponent):
+    center_eye_label: str = "center_ear"
     left_eye_label: str = "left_ear"
     right_eye_label: str = "right_ear"
 
@@ -17,7 +17,7 @@ class CenterToEyesRayCasting(AbcObservationComponent):
     gaze_maximum_degrees: float = 45.0
 
     native_inspection_row_length = 4
-    component_label = "FOV"
+    component_label = "center_to_eye_fov"
 
     @cached_property
     def gaze_length_pixels(self) -> float:
@@ -74,16 +74,16 @@ class CenterToEyesRayCasting(AbcObservationComponent):
         return result
 
     @cached_property
-    def combined_sensation(self) -> NDArrayBool:
+    def boolean_index(self) -> NDArrayBool:
         result = self.leftward_observation | self.rightward_observation
         self._combined_sensation_plot(result)
         return result
 
     @property
-    def component_summary_dict(self) -> dict:
+    def summary_series(self) -> dict:
         return {
             "LeftProximity": self.boolean_array_to_seconds(self.left_proximity),
-            "LeftwardObservation": self.boolean_array_to_seconds(self.leftward_observation),
+            "LeftwardQualia": self.boolean_array_to_seconds(self.leftward_observation),
             "RightProximity": self.boolean_array_to_seconds(self.right_proximity),
-            "RightwardObservation": self.boolean_array_to_seconds(self.rightward_observation),
+            "RightwardQualia": self.boolean_array_to_seconds(self.rightward_observation),
         }

@@ -8,6 +8,17 @@ from projectkit.utils.misc import here_or_there
 from pydantic import DirectoryPath
 
 from bikipy import BikipyRuntimeSettings
+from bikipy._constant import (
+    RUNTIME_SETTINGS_MAP_NAME,
+    READER_MAP_NAME,
+    EXPERIMENT_MAP_NAME,
+    PERIMETER_MAP_NAME,
+    ENCLOSURE_MAP_NAME,
+    TRIAL_MAP_NAME,
+    PLUGIN_MAP_NAME,
+    PROJECTKIT_CONFIG_KEY_ORDER,
+    INGRESS_MAP_NAME,
+)
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.mapping import experiment_name_to_class
 from bikipy.behaviour.radial_arm import BaseRadialMazeExperiment
@@ -28,13 +39,11 @@ INGRESS_METHOD_NAME_TO_INGRESS_CLASS = {
 
 
 class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflow]):
-    config_key_order = OrderedSet(
-        ("manual", "ingress", "experiment", "trial", "enclosure", "perimeter", "perimeter_plugin", "runtime_settings")
-    )
+    config_key_order = PROJECTKIT_CONFIG_KEY_ORDER
 
     project_name = "bikipy"
 
-    root_class_config_key = "ingress"
+    root_class_config_key = INGRESS_MAP_NAME
     root_class_name_to_class = {
         cls.__name__: cls for cls in (AnimalIngressWorkflow, AnimalDayIngressWorkflow, PhaseIngressWorkflow)
     }
@@ -65,9 +74,11 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflo
                 manual_mapping_name=self.root_class_config_key,
                 model=self.root_class_name_to_class[ingress_method],
             ),
-            SingleSchema(manual_mapping_name="runtime_settings", model=BikipyRuntimeSettings),
-            SingleSchema(manual_mapping_name="reader", model=DeepLabCutReader),  # TODO: Cleo option to change reader
-            SingleSchema(manual_mapping_name="experiment", model=experiment_class),
+            SingleSchema(manual_mapping_name=RUNTIME_SETTINGS_MAP_NAME, model=BikipyRuntimeSettings),
+            SingleSchema(
+                manual_mapping_name=READER_MAP_NAME, model=DeepLabCutReader
+            ),  # TODO: Cleo option to change reader
+            SingleSchema(manual_mapping_name=EXPERIMENT_MAP_NAME, model=experiment_class),
         ]
         cds_homologs = []
         cds_hierarchical = []
@@ -76,10 +87,12 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflo
 
         assert experiment_class.trial_classes
         if len(experiment_class.trial_classes) == 1:
-            cds_single.append(SingleSchema(manual_mapping_name="trial", model=experiment_class.trial_classes.pop()))
+            cds_single.append(
+                SingleSchema(manual_mapping_name=TRIAL_MAP_NAME, model=experiment_class.trial_classes.pop())
+            )
         else:
             cds_hierarchical.append(
-                GroupSchema.from_models(mapping_name="trial", models=experiment_class.trial_classes)
+                GroupSchema.from_models(mapping_name=TRIAL_MAP_NAME, models=experiment_class.trial_classes)
             )
 
         if issubclass(experiment_class, EnclosedExperiment):
@@ -94,14 +107,14 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflo
             if len(trial_class_to_perimeter_enclosure) == 1:
                 cds_single.append(
                     SingleSchema(
-                        manual_mapping_name="enclosure",
+                        manual_mapping_name=ENCLOSURE_MAP_NAME,
                         model=trial_class_to_perimeter_enclosure.pop(tuple(trial_class_to_perimeter_enclosure)[0]),
                     )
                 )
             else:
                 cds_hierarchical.append(
                     GroupSchema.from_models(
-                        mapping_name="enclosure",
+                        mapping_name=ENCLOSURE_MAP_NAME,
                         instance_names=set({c.__name__ for c in trial_class_to_perimeter_enclosure}),
                         models=set(trial_class_to_perimeter_enclosure.values()),
                     )
@@ -111,7 +124,7 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflo
         if experiment_class.at_least_one_trial_has_perimeter:
             cds_hierarchical.append(
                 GroupSchema.from_models(
-                    mapping_name="perimeter",
+                    mapping_name=PERIMETER_MAP_NAME,
                     models=experiment_class.trial_perimeter_label_to_perimeter_class,
                 )
             )
@@ -120,7 +133,7 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflo
                 plugin_models.add(PluginRadial)
 
         if plugin_models:
-            cds_hierarchical.append(GroupSchema.from_models(mapping_name="plugin", models=plugin_models))
+            cds_hierarchical.append(GroupSchema.from_models(mapping_name=PLUGIN_MAP_NAME, models=plugin_models))
 
         return {
             "project_directory": project_directory,

@@ -12,8 +12,7 @@ from bikipy.core.base_class import BaseBikipyInspectMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.attention.model import AttentionModelMixin
-from bikipy.feature.physical_object.component.abc import AbcObservationComponent, ObservationComponent, \
-    ObservationComponentType
+from bikipy.feature.physical_object.component.abc import QualiaComponentType, QualiaComponent
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.reader.base import Reader
@@ -22,19 +21,10 @@ from bikipy.feature.physical_object.analysis import PhysicalObjectSet
 
 logger = getLogger(__name__)
 
-Components = TypeVarTuple("Components")
-# Variadic generics: https://peps.python.org/pep-0646/
 
-
-class AbcPhysicalObjectObservationQualia(
-    GenericModel,
-    Generic[ObservationComponent, *Components],
-    BaseBikipyInspectMixin,
-    VideoMetadataMixin,
-    AttentionModelMixin
-):
-    physical_object_set: PhysicalObjectSet
-    perimeter: SinglePerimeter
+class PhysicalObjectObservationQualia(BaseBikipyInspectMixin, VideoMetadataMixin, AttentionModelMixin):
+    observation_qualia_components: list[QualiaComponent, ...] = ...
+    perimeter_label: str = ...
 
     # Inspection fields
     trial_obj_label: Optional[Label]
@@ -54,34 +44,19 @@ class AbcPhysicalObjectObservationQualia(
         )
 
     @cached_property
-    def observation_components(self) -> list[ObservationComponent, *Components]:
-        return [
-            observation_component_class(
-                perimeter=self.perimeter,
-                axes_row=self._axes[i],
-                **self.physical_object_set.trial.physical_object_component_kwargs,
-            )
-            for i, observation_component_class in enumerate(self.observation_component_classes)
-        ]
-
-    @cached_property
-    def label(self) -> Label:
-        return self.perimeter.label
-
-    @cached_property
-    def combined_observation_components(self) -> NDArrayBool:
-        result = np.logical_or.reduce([component.combined_sensation for component in self.observation_components])
+    def merged_components(self) -> NDArrayBool:
+        result = np.logical_or.reduce([component.boolean_index for component in self.observation_components])
         self.generic_result_plotter(result, self.summary_axes_row[0], "CombinedComponents")
         return result
 
     @cached_property
-    def post_tolerance_modeled_combined_observation_components(self) -> NDArrayBool:
-        result = single_node_tolerance_model(self.combined_observation_components, self.video.fps)
+    def post_tolerance_modeled_merged_components(self) -> NDArrayBool:
+        result = single_node_tolerance_model(self.merged_components, self.video.fps)
         self.generic_result_plotter(result, self.summary_axes_row[1], "PostToleranceModeledCombinedComponents")
         return result
 
     @cached_property
-    def pre_tolerance_modeled_combined_observation_components(self) -> NDArrayBool:
+    def pre_tolerance_modeled_merged_components(self) -> NDArrayBool:
         result = np.logical_or.reduce(
             [component.tolerance_modeled_combined_sensation for component in self.observation_components]
         )
@@ -89,8 +64,8 @@ class AbcPhysicalObjectObservationQualia(
         return result
 
     @cached_property
-    def pre_post_tolerance_modeled_combined_observation_components(self) -> NDArrayBool:
-        result = single_node_tolerance_model(self.pre_tolerance_modeled_combined_observation_components, self.video.fps)
+    def pre_post_tolerance_modeled_merged_components(self) -> NDArrayBool:
+        result = single_node_tolerance_model(self.pre_tolerance_modeled_merged_components, self.video.fps)
         self.generic_result_plotter(result, self.summary_axes_row[3], "DoubleToleranceModeledCombinedComponents")
         return result
 
@@ -98,20 +73,20 @@ class AbcPhysicalObjectObservationQualia(
         if with_component_label:
             additive = self.component_label.capitalize()
             data_labels = [f"{additive}{label}" for label in data_labels]
-        return pd.MultiIndex.from_product([[self.perimeter.label], data_labels])
+        return pd.MultiIndex.from_product([[self.perimeter_label], data_labels])
 
     @property
     def summary(self) -> pd.Series:
         or_summary = pd.Series(
             [
-                self.boolean_array_to_seconds(self.combined_observation_components),
-                self.boolean_array_to_seconds(self.post_tolerance_modeled_combined_observation_components),
-                self.boolean_array_to_seconds(self.pre_tolerance_modeled_combined_observation_components),
-                self.boolean_array_to_seconds(self.pre_post_tolerance_modeled_combined_observation_components),
+                self.boolean_array_to_seconds(self.merged_components),
+                self.boolean_array_to_seconds(self.post_tolerance_modeled_merged_components),
+                self.boolean_array_to_seconds(self.pre_tolerance_modeled_merged_components),
+                self.boolean_array_to_seconds(self.pre_post_tolerance_modeled_merged_components),
             ],
             index=pd.MultiIndex.from_product(
                 [
-                    [self.perimeter.label],
+                    [self.perimeter_label],
                     ["OR_Observe", "OR_PostTolObserve", "OR_PreTolObserve", "OR_PrePostTolObserve"],
                 ]
             ),
@@ -164,7 +139,3 @@ class AbcPhysicalObjectObservationQualia(
         ax.scatter(
             *self._first_reader.plot_prepared_kinematic_coordinates[valid_boolean_index].T, marker="x", color="green"
         )
-
-
-PhysicalObjectObservationQualia = TypeVar("PhysicalObjectObservationQualia", bound=AbcPhysicalObjectObservationQualia)
-PhysicalObjectObservationQualiaCLS = Type[AbcPhysicalObjectObservationQualia]
