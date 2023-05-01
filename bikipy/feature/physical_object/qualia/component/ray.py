@@ -19,6 +19,6 @@ class RayCasting(AbstractQualiaComponent):
             self.reader[self.ray_direction_label],
             self.reader[self.ray_origin_label],
             cached_deg2rad(self.gaze_maximum_degrees),
-            manual_ax=self.axes_row[1],
+            manual_ax=self.ax,
             **self._global_attention_kwargs,
         )

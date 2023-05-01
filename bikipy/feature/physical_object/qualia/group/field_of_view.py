@@ -1,23 +1,21 @@
 from functools import cached_property
 
 import numpy as np
+import pandas as pd
 from pydantic_numpy import NDArrayBool
 
+from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.attention.proximity import proximity_filter
-from bikipy.feature.physical_object.qualia.component.abc import AbstractQualiaComponent
 from bikipy.utils.math.cached import cached_deg2rad, meters2pixels
 
 
-class FOVCenterToEyesRayCasting(AbstractQualiaComponent):
-    center_eye_label: str = "center_ear"
-    left_eye_label: str = "left_ear"
-    right_eye_label: str = "right_ear"
+class FOVCenterToEyesRayCasting(VideoMetadataMixin):
+    center_eye_label: str = ...
+    left_eye_label: str = ...
+    right_eye_label: str = ...
 
     maximum_gaze_distance_meters: float = 0.05
     gaze_maximum_degrees: float = 45.0
-
-    native_inspection_row_length = 4
-    component_label = "center_to_eye_fov"
 
     @property
     def gaze_length_pixels(self) -> float:
@@ -78,10 +76,12 @@ class FOVCenterToEyesRayCasting(AbstractQualiaComponent):
         return result
 
     @property
-    def summary_series(self) -> dict:
-        return {
-            "LeftProximity": self.boolean_array_to_seconds(self.left_proximity),
-            "LeftwardQualia": self.boolean_array_to_seconds(self.leftward_observation),
-            "RightProximity": self.boolean_array_to_seconds(self.right_proximity),
-            "RightwardQualia": self.boolean_array_to_seconds(self.rightward_observation),
-        }
+    def summary_series(self) -> pd.Series:
+        return pd.Series(
+            {
+                "LeftProximity": self.boolean_array_to_seconds(self.left_proximity),
+                "LeftwardQualia": self.boolean_array_to_seconds(self.leftward_observation),
+                "RightProximity": self.boolean_array_to_seconds(self.right_proximity),
+                "RightwardQualia": self.boolean_array_to_seconds(self.rightward_observation),
+            }
+        )

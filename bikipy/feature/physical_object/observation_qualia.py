@@ -10,7 +10,7 @@ from pydantic_numpy.dtype import NDArrayBool
 from bikipy.core.mixin import InspectPlotMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadataMixin
-from bikipy.feature.attention.model import AttentionModelMixin
+from bikipy.feature.attention.mixin import AttentionModelMixin
 from bikipy.feature.physical_object.qualia.component.abc import QualiaComponent
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.reader.base import Reader

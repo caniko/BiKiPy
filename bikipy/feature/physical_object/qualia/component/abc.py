@@ -10,7 +10,7 @@ from pydantic_numpy.dtype import NDArrayBool
 
 from bikipy.core.mixin import InspectPlotMixin
 from bikipy.core.video import VideoMetadataMixin
-from bikipy.feature.attention.model import AttentionModelMixin
+from bikipy.feature.attention.mixin import AttentionModelMixin
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.reader.base import Reader
 
