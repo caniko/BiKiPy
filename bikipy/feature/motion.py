@@ -7,7 +7,7 @@ import pandas as pd
 from pydantic import Field
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
-from bikipy.core.base_class import BikipyModel
+from bikipy.core.base import BikipyModel
 from bikipy.feature.tolerance.single import arg_single_node_tolerance_model
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.calculus import np_abs_diff

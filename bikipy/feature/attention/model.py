@@ -1,7 +1,7 @@
 from functools import cached_property
 from typing import Any
 
-from bikipy.core.base_class import BikipyModel
+from bikipy.core.base import BikipyModel
 
 
 class AttentionModelMixin(BikipyModel):

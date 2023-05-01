@@ -7,7 +7,7 @@ from pydantic import Field, PositiveInt
 # 1: Use the y coordinate(s) as the perimeter
 from pydantic_numpy.dtype import NDArrayFp64
 
-from bikipy.core.base_class import BaseBikipyHashable
+from bikipy.core.base import BikipyHashable
 from bikipy.core.video import VideoMetadataMixin
 
 ORIENTATION_TO_INDEX = {"vertical": 0, "horizontal": 1}
@@ -22,7 +22,7 @@ LOGIC_TO_FUNC = {
 }
 
 
-class LinePerimeter(BaseBikipyHashable, VideoMetadataMixin):
+class LinePerimeter(BikipyHashable, VideoMetadataMixin):
     location: float = Field(description="The location given in pixels")
     orientation: str | PositiveInt = Field(
         description=(

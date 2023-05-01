@@ -4,11 +4,11 @@ import numpy as np
 from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.attention.proximity import proximity_filter
-from bikipy.feature.physical_object.component.abc import AbcQualiaComponent
-from bikipy.utils.math.cached import cached_deg2rad
+from bikipy.feature.physical_object.qualia.component.abc import AbstractQualiaComponent
+from bikipy.utils.math.cached import cached_deg2rad, meters2pixels
 
 
-class FOVCenterToEyesRayCasting(AbcQualiaComponent):
+class FOVCenterToEyesRayCasting(AbstractQualiaComponent):
     center_eye_label: str = "center_ear"
     left_eye_label: str = "left_ear"
     right_eye_label: str = "right_ear"
@@ -19,11 +19,11 @@ class FOVCenterToEyesRayCasting(AbcQualiaComponent):
     native_inspection_row_length = 4
     component_label = "center_to_eye_fov"
 
-    @cached_property
+    @property
     def gaze_length_pixels(self) -> float:
-        return self.maximum_gaze_distance_meters * self.video.pixels_per_meter
+        return meters2pixels(self.maximum_gaze_distance_meters, self.video.pixels_per_meter)
 
-    @cached_property
+    @property
     def gaze_maximum_radians(self) -> float:
         return cached_deg2rad(self.gaze_maximum_degrees)
 
@@ -31,10 +31,9 @@ class FOVCenterToEyesRayCasting(AbcQualiaComponent):
     def left_proximity(self) -> NDArrayBool:
         return proximity_filter(
             self.perimeter,
-            self.reader[self.left_eye_label],
             self.gaze_length_pixels,
             self.reader[self.left_eye_label],
-            manual_ax=self.axes_row[0],
+            manual_ax=self.ax,
             **self._global_attention_kwargs,
         )
 
@@ -54,7 +53,6 @@ class FOVCenterToEyesRayCasting(AbcQualiaComponent):
     def right_proximity(self) -> NDArrayBool:
         return proximity_filter(
             self.perimeter,
-            self.reader[self.right_eye_label],
             self.gaze_length_pixels,
             self.reader[self.right_eye_label],
             manual_ax=self.axes_row[2],

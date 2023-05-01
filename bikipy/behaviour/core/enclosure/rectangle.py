@@ -8,7 +8,7 @@ import pandas as pd
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
-from bikipy.behaviour.core import HabituationTrialMixin
+from bikipy.behaviour.core.base import HabituationTrialMixin
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.core.enclosure.quadrant import Quadrant
 from bikipy.behaviour.utils import reduce_repeating_sequences, blanket_enclosed_experiment_label_generator
@@ -16,6 +16,7 @@ from bikipy.feature.motion import get_combined_features_from_merged_motion_islan
 from bikipy.perimeter import RectanglePerimeter
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
+from bikipy.utils.math.cached import meters2pixels
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 
@@ -148,7 +149,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             if self.manual_center_meters is not None:
                 manual_center = self.manual_center_meters
                 if self.video.coordinates_need_to_be_scaled_for_plot:
-                    manual_center *= self.video.pixels_per_meter
+                    manual_center = meters2pixels(manual_center, self.video.pixels_per_meter)
 
                 ax.scatter(*manual_center.T, color="k", label="ManualCenter")
 
@@ -276,8 +277,8 @@ class RectangleEnclosedTrial(EnclosedTrial):
         return np.sum(self.periphery_boolean_index) / self.video.fps
 
     @property
-    def _trial_analysis_series_list(self) -> list[pd.Series]:
-        upstream_list = super()._trial_analysis_series_list
+    def _analysis_series_list(self) -> list[pd.Series, ...]:
+        upstream_list = super()._analysis_series_list
         if self.video.resolution is None:
             return upstream_list
 

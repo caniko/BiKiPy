@@ -1,7 +1,6 @@
 from logging import getLogger
 from typing import Optional
 
-from ordered_set import OrderedSet
 from projectkit.model.jit import ProjectKitJITConfiguration
 from schemantic.model.schema import GroupSchema, SingleSchema
 from projectkit.utils.misc import here_or_there

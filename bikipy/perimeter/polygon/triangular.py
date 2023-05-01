@@ -59,8 +59,8 @@ class TriangularPerimeter(BasePolygonPerimeter):
 
     def ray_direction_filter(
         self,
-        ray_travel_direction_point: NDArrayFp64,
         ray_start_point: NDArrayFp64,
+        ray_travel_direction_point: NDArrayFp64,
         max_radians: float,
         manual_ax: Any = None,
         **kwargs,
@@ -78,8 +78,8 @@ class TriangularPerimeter(BasePolygonPerimeter):
                 **kwargs,
             )
         return super().ray_direction_filter(
-            ray_travel_direction_point=ray_travel_direction_point,
             ray_start_point=ray_start_point,
+            ray_travel_direction_point=ray_travel_direction_point,
             max_radians=max_radians,
             manual_ax=manual_ax,
             **kwargs,

@@ -14,7 +14,7 @@ from typing_extensions import Literal
 
 from bikipy import runtime_settings
 from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
-from bikipy.core.base_class import BaseBikipyHashable
+from bikipy.core.base import BikipyHashable
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.perimeter.base import BasePerimeter
@@ -30,7 +30,7 @@ logger = getLogger(__name__)
 Enclosure = TypeVar("Enclosure", bound=BasePerimeter)
 
 
-class BaseReader(GenericModel, Generic[Enclosure], BaseBikipyHashable, VideoMetadataMixin, ABC):
+class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadataMixin, ABC):
     df_path: FilePath = Field(..., description="Path to kinematic data, that will be " "converted to pd.DataFrame")
     df_read_kwargs: Optional[dict] = Field(
         default_factory=dict, description="Keyword arguments to pass to the padnas dataframe reader"

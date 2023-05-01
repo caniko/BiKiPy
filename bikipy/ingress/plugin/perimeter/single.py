@@ -9,7 +9,7 @@ from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
-from bikipy.ingress.plugin.perimeter.base import AbcPerimeterPlugin
+from bikipy.ingress.plugin.perimeter.base import AbstractPerimeterPlugin
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 from bikipy.perimeter.base import (
     SinglePerimeter,
@@ -32,7 +32,7 @@ class SinglePerimeterPluginFileStemParse(PluginFileStemParseLastIsLabel):
 
 
 # TODO: Manual radius readings from settings.yaml read.
-class PluginSinglePerimeter(AbcPerimeterPlugin):
+class PluginSinglePerimeter(AbstractPerimeterPlugin):
     label_prefix: Optional[str]
     label_suffix: Optional[str]
 

@@ -1,4 +1,4 @@
-from bikipy.behaviour.core import HabituationTrialMixin
+from bikipy.behaviour.core.base import HabituationTrialMixin
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.utils import blanket_enclosed_experiment_label_generator
 from bikipy.perimeter import CircleFixedRadiusPerimeter

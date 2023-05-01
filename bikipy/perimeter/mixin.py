@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from functools import cached_property, reduce
 from logging import getLogger
 
-from bikipy.core.base_class import BikipyModel
+from bikipy.core.base import BikipyModel
 from bikipy.core.video import VideoMetadata, incongruity_permissive_video_join
 from bikipy.perimeter.base import SinglePerimeter
 

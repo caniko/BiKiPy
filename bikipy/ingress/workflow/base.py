@@ -12,12 +12,12 @@ import numpy as np
 import pandas as pd
 from inflection import underscore
 from projectkit.model.project import ProjectKitRootModelMixin
-from schemantic.model.project import SchemanticMixin
+from schemantic.model.project import SchemanticProjectMixin
 from pydantic import DirectoryPath, FilePath, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy._constant import READER_MAP_NAME
-from bikipy.core.base_class import BikipyModel
+from bikipy.core.base import BikipyModel
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 
@@ -38,13 +38,13 @@ from bikipy.utils.constants import TO_PARQUET_KWARGS
 from bikipy.utils.misc import defaultdict_dict_factory, sheet_names_from_path
 
 if TYPE_CHECKING:
-    from bikipy.behaviour.core import Experiment, ExperimentCLS, TrialCLS
+    from bikipy.behaviour.core.base import Experiment, ExperimentCLS, TrialCLS
     from bikipy.ingress.plugin.core.base import PluginType, Plugin
 
 logger = getLogger(__name__)
 
 
-class BaseIngressWorkflow(BikipyModel, SchemanticMixin, ProjectKitRootModelMixin, ABC):
+class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitRootModelMixin, ABC):
     """
     This model stores methods to ingest data for bikipy-based analysis. The workflow differs slightly between daughter
     classes. The commonality are the levels in which data is introduced, which is quite similar to the bikipy experiment

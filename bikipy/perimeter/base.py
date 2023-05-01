@@ -16,7 +16,7 @@ from pydantic import (
 )
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
-from bikipy.core.base_class import BaseBikipyHashable, BaseBikipyInspectMixin
+from bikipy.core.base import BikipyHashable, InspectPlotMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.perimeter.polygon.makesense import (
@@ -41,7 +41,7 @@ logger = getLogger(__name__)
 StringPerimeterShapes = Literal["circle", "circle_line", "circle_point", "polygon", "rectangle"]
 
 
-class BasePerimeter(BaseBikipyHashable, BaseBikipyInspectMixin, ABC):
+class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
     def _manual_video_metadata_derived_inspection_preparation(
         self,
         manual_video: Optional[VideoMetadata] = None,
@@ -226,8 +226,8 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     @abstractmethod
     def ray_direction_filter(
         self,
-        ray_travel_direction_point: NDArrayFp64,
         ray_start_point: NDArrayFp64,
+        ray_travel_direction_point: NDArrayFp64,
         max_radians: float,
         manual_ax: Any = None,
         **kwargs,

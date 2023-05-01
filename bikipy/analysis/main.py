@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 from compress_pickle import compress_pickle
 
-from bikipy.core.base_class import BikipyModel
+from bikipy.core.base import BikipyModel
 
 
 class Analysis(BikipyModel):

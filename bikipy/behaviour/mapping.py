@@ -1,4 +1,4 @@
-from bikipy.behaviour.core import ExperimentCLS
+from bikipy.behaviour.core.base import ExperimentCLS
 from bikipy.behaviour.core.enclosure.circle import BlanketCircleEnclosedExperiment
 from bikipy.behaviour.core.enclosure.rectangle import BlanketRectangleEnclosedExperiment
 from bikipy.behaviour.object_recognition.novel_object_recognition import NortExperiment

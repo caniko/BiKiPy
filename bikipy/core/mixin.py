@@ -1,56 +1,49 @@
+from abc import ABC, abstractmethod
 from functools import cached_property
 from pathlib import Path
-from typing import ClassVar, Optional, TypeVar
+from typing import ClassVar, Optional
 
+import pandas as pd
 from compress_pickle import compress_pickle
-from schemantic.model.project import SchemanticMixin
-from pydantic import DirectoryPath, Field, FilePath, BaseModel
+from pydantic import DirectoryPath, Field, FilePath
 from pydantic_numpy.dtype import NDArrayUint8
 
-from bikipy.core.typing import Label
+from bikipy import runtime_settings
+from bikipy.core.base import BikipyConfigModel, BikipyHashable
 from bikipy.utils.plot.inspect import InspectArg, inspect_arg_description
 
 
-class BikipyModel(BaseModel):
-    class Config:
-        underscore_attrs_are_private = True
-        keep_untouched = (cached_property,)
-
-    category: ClassVar[str] = ...
-
-
-class BaseBikipyHashable(BikipyModel, SchemanticMixin):
-    label: Optional[Label]
-    int_id: Optional[int]
-
-    @classmethod
-    @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("label", "int_id"))
-        return upstream
+class FeatureCollectorMixin(BikipyHashable, ABC):
+    feature_collection_cache: ClassVar[bool] = False  # TODO: Add feat
 
     @property
-    def _to_hash(self) -> list:
-        return [self.__class__.__name__, self.category, self.int_id, self.label]
+    @abstractmethod
+    def _analysis_series_list(self) -> list[pd.Series, ...]:
+        ...
 
-    def __hash__(self):
-        return hash(tuple(self._to_hash))
+    @property
+    def analysis_series(self) -> pd.Series:
+        if runtime_settings.debug:
+            result = self.compute_analysis_series()
+        else:
+            try:
+                # Concatenate and reverse the order
+                result = self.compute_analysis_series()
+            except Exception as e:
+                msg = f"{self.category.capitalize()} ID: {self.int_id}; label: {self.label}, raised an error"
+                raise AttributeError(msg) from e
 
-    def __eq__(self, other: "BikipyHashableModel"):
-        try:
-            return self._to_hash == other._to_hash
-        except AttributeError:
-            return False
+        self._post_feature_collection_flush()
+        return result
 
-    def __ne__(self, other: "BikipyHashableModel"):
-        return not self.__eq__(other)
+    def compute_analysis_series(self) -> pd.Series:
+        return pd.concat(self._analysis_series_list[::-1], axis=0)
 
-
-BikipyHashableModel = TypeVar("BikipyHashableModel", bound=BaseBikipyHashable)
+    def _post_feature_collection_flush(self) -> None:
+        pass
 
 
-class BaseBikipyInspectMixin(BikipyModel):
+class InspectPlotMixin(BikipyConfigModel):
     inspect_arg: InspectArg = Field(False, description=inspect_arg_description)
     manual_inspect_image: Optional[NDArrayUint8] = Field(
         description="Image to use as background in the plots for visualising the analysis data",

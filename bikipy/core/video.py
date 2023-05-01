@@ -23,7 +23,7 @@ from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8, NDArrayBool
 
 from bikipy import runtime_settings
-from bikipy.core.base_class import BikipyModel
+from bikipy.core.base import BikipyModel
 from bikipy.core.typing import MetersPerPixel
 from bikipy.utils.image import read_image_from_path
 from bikipy.utils.plot.io import ax_imshow_gray
@@ -297,7 +297,6 @@ class VideoMetadataMixin(_VideoMetadataBase):
 
     @property
     def video(self) -> VideoMetadata:
-        # TODO: computed_field validation
         if self.required_video_metadata_fields and (
             missing_fields := self.required_video_metadata_fields.difference(self._video.dict(exclude_unset=True))
         ):

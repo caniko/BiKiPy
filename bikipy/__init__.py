@@ -4,12 +4,12 @@ import matplotlib
 
 from psutil import cpu_count
 from pydantic import BaseSettings, Field
-from schemantic.model.project import SchemanticMixin
+from schemantic.model.project import SchemanticProjectMixin
 
 matplotlib.use("Agg")
 
 
-class BikipyRuntimeSettings(BaseSettings, SchemanticMixin):
+class BikipyRuntimeSettings(BaseSettings, SchemanticProjectMixin):
     disable_process_pooling: bool = Field(
         False,
         description="initialize each DeepLabCutReader object with multiprocessing. "

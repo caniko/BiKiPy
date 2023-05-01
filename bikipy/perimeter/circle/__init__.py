@@ -9,6 +9,7 @@ from bikipy.core.video import VideoMetadata
 from bikipy.feature.attention.ray import ray_direction_filter_circle_triangle
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.utils.math.inside.ellipse import point_inside_ellipse
+from bikipy.utils.math.cached import meters2pixels
 from bikipy.utils.math.vector import unit_vector
 from bikipy.utils.plot.generic import plot_circle
 
@@ -123,7 +124,7 @@ class CircleVariableRadiusPerimeter(BaseCirclePerimeter):
 
     @property
     def radius_pixels(self) -> float:
-        return self.radius_meters * self.video.pixels_per_meter
+        return meters2pixels(self.radius_meters, self.video.pixels_per_meter)
 
     @property
     def _to_hash(self) -> list:

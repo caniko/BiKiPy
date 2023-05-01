@@ -196,4 +196,4 @@ ANGLE_METHOD_TO_FUNC = {
 
 if not runtime_settings.disable_numba:
     pass
-    # angle_from_a_to_b = jit(cache=True)(angle_from_a_to_b)
+    # angle_from_a_to_b = njit(cache=True)(angle_from_a_to_b)

@@ -11,7 +11,7 @@ from bikipy.perimeter.base import (
 )
 
 
-class AbcPerimeterPlugin(BasePluginFile, HasReferenceMixin, IngressRequiredMixin, ABC):
+class AbstractPerimeterPlugin(BasePluginFile, HasReferenceMixin, IngressRequiredMixin, ABC):
     manual_shape: Optional[StringPerimeterShapes]
 
     warn_missing_re_reference_file: ClassVar[bool] = False

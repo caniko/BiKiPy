@@ -206,8 +206,8 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
     def ray_direction_filter(
         self,
-        ray_travel_direction_point: NDArrayFp64,
         ray_start_point: NDArrayFp64,
+        ray_travel_direction_point: NDArrayFp64,
         max_radians: float,
         angular_resolution: int = 400,
         manual_ax: Any = None,

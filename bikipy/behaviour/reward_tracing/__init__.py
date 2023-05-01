@@ -9,7 +9,7 @@ from pydantic.generics import GenericModel
 from pydantic_numpy import NDArrayBool
 
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
-from bikipy.core.base_class import BikipyModel
+from bikipy.core.base import BikipyModel
 from bikipy.feature.motion import EMPTY_MOTION, Motion, motion_multi_indexer
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import BaseSinglePerimeter
@@ -101,8 +101,8 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
         return np.sum(self.reward_boolean) / self.video.fps
 
     @property
-    def _trial_analysis_series_list(self) -> list[pd.Series]:
-        upstream_list = super()._trial_analysis_series_list
+    def _analysis_series_list(self) -> list[pd.Series, ...]:
+        upstream_list = super()._analysis_series_list
 
         category = "Cheeseboard"
         upstream_list.append(

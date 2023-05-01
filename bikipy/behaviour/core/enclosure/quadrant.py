@@ -3,7 +3,7 @@ from functools import cached_property
 import numpy as np
 from pydantic_numpy import NDArrayBool, NDArrayFp64
 
-from bikipy.core.base_class import BikipyModel
+from bikipy.core.base import BikipyModel
 from bikipy.core.video import VideoMetadata
 from bikipy.feature.motion import get_combined_features_from_merged_motion_island_data
 from bikipy.utils.math.geometry import clockwise_sort_points

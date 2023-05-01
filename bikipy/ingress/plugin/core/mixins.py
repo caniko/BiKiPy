@@ -5,7 +5,7 @@ import pandas as pd
 from pydantic import BaseModel, Field
 from pydantic_numpy.dtype import NDArrayFp64
 
-from bikipy.core.base_class import BikipyModel
+from bikipy.core.base import BikipyModel
 from bikipy.ingress.workflow.base import BaseIngressWorkflow
 from bikipy.utils.makesense import get_only_point_from_makesense
 

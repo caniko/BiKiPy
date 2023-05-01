@@ -20,17 +20,17 @@ def test_proximity_filter():
     assert np.all(
         proximity_filter(
             perimeter=rectangle_perimeter_coco_test_object,
+            perimeter_border_normal_pixels=perimeter_border_normal_pixels,
             inside_perimeter_border=coordinates_inside_border,
             outside_perimeter=coordinates_outside_perimeter,
-            perimeter_border_normal_pixels=perimeter_border_normal_pixels,
         )[0]
     ), "Coordinates should be in proximity"
 
     assert not np.all(
         proximity_filter(
             perimeter=rectangle_perimeter_coco_test_object,
+            perimeter_border_normal_pixels=perimeter_border_normal_pixels,
             inside_perimeter_border=coordinates_outside_border,
             outside_perimeter=coordinates_inside_perimeter,
-            perimeter_border_normal_pixels=perimeter_border_normal_pixels,
         )[0]
     ), "Coordinates should not be in proximity"

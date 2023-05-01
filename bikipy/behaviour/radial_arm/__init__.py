@@ -9,13 +9,13 @@ import pandas as pd
 from pydantic import validator
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayUint8
 
-from bikipy.behaviour.core import BaseExperiment, BaseTrial
+from bikipy.behaviour.core.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import (
     feature_2d_multi_indexer,
     reduce_repeating_sequences,
     unique_with_counts_zipped,
 )
-from bikipy.core.base_class import BaseBikipyHashable
+from bikipy.core.base import BikipyHashable
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.perimeter.helper.confinement import detect_multi_node_sequential_perimeter_presence
 from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
@@ -23,7 +23,7 @@ from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
 logger = getLogger(__name__)
 
 
-class RadialMazeBase(BaseBikipyHashable):
+class RadialMazeBase(BikipyHashable):
     number_of_arms: ClassVar[Optional[int]]
 
     category = "radial_maze"
@@ -120,8 +120,8 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         ]
 
     @property
-    def _trial_analysis_series_list(self) -> list[pd.Series]:
-        upstream_list = super()._trial_analysis_series_list
+    def _analysis_series_list(self) -> list[pd.Series, ...]:
+        upstream_list = super()._analysis_series_list
 
         upstream_list.append(
             pd.Series(

@@ -1,28 +1,25 @@
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Optional, TypeVar, Type, ClassVar, TYPE_CHECKING, TypeVarTuple, Generic
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic.generics import GenericModel
 from pydantic_numpy.dtype import NDArrayBool
 
-from bikipy.core.base_class import BaseBikipyInspectMixin
+from bikipy.core.mixin import InspectPlotMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.attention.model import AttentionModelMixin
-from bikipy.feature.physical_object.component.abc import QualiaComponentType, QualiaComponent
+from bikipy.feature.physical_object.qualia.component.abc import QualiaComponent
 from bikipy.feature.tolerance.single import single_node_tolerance_model
-from bikipy.perimeter.base import SinglePerimeter
 from bikipy.reader.base import Reader
 from bikipy.utils.plot.inspect import generic_inspection_finalization
-from bikipy.feature.physical_object.analysis import PhysicalObjectSet
 
 logger = getLogger(__name__)
 
 
-class PhysicalObjectObservationQualia(BaseBikipyInspectMixin, VideoMetadataMixin, AttentionModelMixin):
+class PhysicalObjectObservationQualia(InspectPlotMixin, VideoMetadataMixin, AttentionModelMixin):
     observation_qualia_components: list[QualiaComponent, ...] = ...
     perimeter_label: str = ...
 

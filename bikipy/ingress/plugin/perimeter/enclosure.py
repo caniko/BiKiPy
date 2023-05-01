@@ -1,8 +1,8 @@
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin.perimeter.base import AbcPerimeterPlugin
+from bikipy.ingress.plugin.perimeter.base import AbstractPerimeterPlugin
 
 
-class PluginEnclosure(AbcPerimeterPlugin):
+class PluginEnclosure(AbstractPerimeterPlugin):
     ingress_key = "enclosure"
     code_key = "enclosure"
     default_trial_argument_key = "label_to_perimeter"

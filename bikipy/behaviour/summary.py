@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, validator
 
-from bikipy.core.base_class import BikipyModel
+from bikipy.core.base import BikipyModel
 
 try:
     from statsmodels.stats.multicomp import pairwise_tukeyhsd

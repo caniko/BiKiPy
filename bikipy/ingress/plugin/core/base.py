@@ -2,16 +2,16 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import Any, ClassVar, Optional, TypeVar, Type
 
-from schemantic.model.project import SchemanticMixin
+from schemantic.model.project import SchemanticProjectMixin
 from pydantic import DirectoryPath, FilePath
 
-from bikipy.core.base_class import BikipyModel
+from bikipy.core.base import BikipyModel
 from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParse
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 
 
-class BasePlugin(BikipyModel, SchemanticMixin, ABC):
+class BasePlugin(BikipyModel, SchemanticProjectMixin, ABC):
     plugin_scope: Optional[PluginScope]
     manual_trial_argument_key: Optional[str]
 
