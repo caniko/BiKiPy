@@ -10,7 +10,6 @@ from pydantic_numpy.dtype import NDArrayBool
 from bikipy.core.mixin import InspectPlotMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadataMixin
-from bikipy.feature.attention.mixin import AttentionModelMixin
 from bikipy.feature.physical_object.qualia.component.abc import QualiaComponent
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.reader.base import Reader
@@ -19,7 +18,7 @@ from bikipy.utils.plot.inspect import generic_inspection_finalization
 logger = getLogger(__name__)
 
 
-class PhysicalObjectObservationQualia(InspectPlotMixin, VideoMetadataMixin, AttentionModelMixin):
+class PhysicalObjectObservationQualia(InspectPlotMixin, VideoMetadataMixin):
     observation_qualia_components: list[QualiaComponent, ...] = ...
     perimeter_label: str = ...
 
@@ -131,7 +130,7 @@ class PhysicalObjectObservationQualia(InspectPlotMixin, VideoMetadataMixin, Atte
     def _first_reader(self) -> Reader:
         return self.observation_components[0].reader
 
-    def generic_result_plotter(self, valid_boolean_index: NDArrayBool, ax: Any, label: str) -> None:
+    def generic_result_plotter(self, valid_boolean_index: NDArrayBool, ax: Axes, label: str) -> None:
         ax.set_title(label, fontsize=self.video.upscaled_video.plotting_title_font_size)
         ax.scatter(
             *self._first_reader.plot_prepared_kinematic_coordinates[valid_boolean_index].T, marker="x", color="green"

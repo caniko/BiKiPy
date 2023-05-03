@@ -2,7 +2,9 @@ from functools import cached_property
 
 import numpy as np
 
-from bikipy.feature.physical_object.analysis.one import OnePhysicalObjectSetQualiaAnalysis
+from bikipy.feature.physical_object.analysis.one import (
+    OnePhysicalObjectSetQualiaAnalysis,
+)
 
 
 class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):

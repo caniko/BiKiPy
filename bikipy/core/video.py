@@ -20,7 +20,7 @@ from mextractor.base import load
 from mextractor.extractors import extract_video
 from pydantic import DirectoryPath, Field, FilePath, validator
 from pydantic_numpy import NDArray
-from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8, NDArrayBool
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16, NDArrayUint8
 
 from bikipy import runtime_settings
 from bikipy.core.base import BikipyConfigModel

@@ -11,5 +11,5 @@ class WhiskerInteractionQualiaGroup(AbstractQualiaComponent):
     right_whisker_label: ClassVar[str] = "right_whisker"
 
     @property
-    def boolean_index(self) -> NDArrayBool:
+    def result(self) -> NDArrayBool:
         pass

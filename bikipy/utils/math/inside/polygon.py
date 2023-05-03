@@ -1,5 +1,5 @@
 from pathlib import PurePath
-from typing import Any, Optional
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numba
@@ -60,8 +60,8 @@ def inaccurate_points_in_rectangle(
         if inspect_image is not None:
             axis_frame_imshow(inspect_image, ax)
 
-        ax.plot(*np.array((corner_a, ab_mid_corner)).T)
-        ax.plot(*np.array((corner_b, ab_mid_corner)).T)
+        ax.plot(,,
+        ax.plot(,,
 
         ax.scatter(*coordinates[boolean_index].T)
         ax.scatter(*coordinates[~boolean_index].T)
@@ -80,7 +80,7 @@ def parallel_point_inside_polygon(
     merge_ends: bool = True,
     inspect_arg: InspectArg = False,
     video: Optional[VideoMetadata] = None,
-    ax: Any = None,
+    ax: Axes = None,
     **inspect_kwargs,
 ) -> NDArrayBool:
     if merge_ends:

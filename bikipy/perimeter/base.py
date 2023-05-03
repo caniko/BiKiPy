@@ -7,23 +7,17 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Type, TypeVar
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sb
-from pydantic import (
-    DirectoryPath,
-    Field,
-    FilePath,
-    root_validator,
-    validate_arguments,
-)
+from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
 from bikipy.core.base import BikipyHashable, InspectPlotMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
+from bikipy.perimeter.helper.utils import get_coco_array_from_path_or_array
 from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_coco_polygon,
     init_polygon_from_makesense_csv_rectangle,
 )
-from bikipy.perimeter.helper.utils import get_coco_array_from_path_or_array
 from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
@@ -46,7 +40,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         self,
         manual_video: Optional[VideoMetadata] = None,
         coordinates: Optional[NDArrayFp64] = None,
-        ax: Any = None,
+        ax: Axes = None,
         **plot_kwargs,
     ) -> tuple[Any, NDArrayFp64, VideoMetadata]:
         if ax:
@@ -68,7 +62,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         boolean_index: NDArrayBool,
         coordinates: Optional[NDArrayFp64] = None,
         manual_video: Optional[VideoMetadata] = None,
-        ax: Any = None,
+        ax: Axes = None,
         **inspect_kwargs,
     ):
         if not self.inspect_arg:
@@ -109,7 +103,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
     @abstractmethod
     def compute_confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
+        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
     ) -> NDArrayBool:
         ...
 
@@ -225,12 +219,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
     @abstractmethod
     def ray_direction_filter(
-        self,
-        ray_start_point: NDArrayFp64,
-        ray_travel_direction_point: NDArrayFp64,
-        max_radians: float,
-        manual_ax: Any = None,
-        **kwargs,
+        self, ray_start_point: NDArrayFp64, ray_travel_direction_point: NDArrayFp64, max_radians: float, **kwargs
     ) -> NDArrayBool:
         ...
 
@@ -264,7 +253,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
             with sb.color_palette("Spectral", n_colors=5):
                 for i in evenly_spaced_indices_from_sequence(coordinates, 5):
-                    ax.plot(*np.vstack((result[i], coordinates[i])).T)
+                    ax.plot(,,
 
             generic_inspection_finalization(self.class_inspect_arg, f"{self.label}.jpg")
 
@@ -335,7 +324,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
     def plot(
         self,
-        ax: Any = None,
+        ax: Axes = None,
         coordinates: Optional[NDArrayFp64] = None,
         inspect_pixels: bool = False,
         **perimeter_plot_kwargs,
@@ -457,7 +446,7 @@ class PerimeterSet(BasePerimeter):
         return present
 
     def compute_confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
+        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
     ) -> NDArrayBool:
         result = self.combined_framewise_confined_coordinates(coordinates)
 
@@ -554,7 +543,7 @@ class PerimeterSet(BasePerimeter):
 
     def plot(
         self,
-        manual_ax: Any = None,
+        manual_ax: Axes = None,
         coordinates: Optional[NDArrayFp64] = None,
         inspect_pixels: bool = False,
         **perimeter_plot_kwargs,

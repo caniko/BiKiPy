@@ -50,12 +50,12 @@ def cathetus_from_similar_triangle_with_hypotenuse_points_from_original_triangle
         fig, axes = plt.subplots(1, 2)
         for ax, (a, b) in zip(axes, ((cathetus_a, cathetus_b), (similar_a, similar_b))):
             vector_a = np.array([a, 0.0])
-            ax.plot(*np.vstack([[0.0, 0.0], vector_a]).T, label="a")
+            ax.plot(,,
 
             vector_b = np.array([0.0, b])
-            ax.plot(*np.vstack([[0.0, 0.0], vector_b]).T, label="b")
+            ax.plot(,,
 
-            ax.plot(*np.vstack([vector_a, vector_b]).T, label="hypotenuse")
+            ax.plot(,,
 
         axes[0].set_title("Original")
         axes[1].set_title("Similar")
@@ -175,32 +175,7 @@ def expand_rectangle(
             loc="center left",
         )
 
-        axes[1].plot(
-            (down_left[0], down_right[0]),
-            (down_left[1], down_right[1]),
-            "o-",
-            (down_right[0], up_right[0]),
-            (down_right[1], up_right[1]),
-            "o-",
-            (up_right[0], up_left[0]),
-            (up_right[1], up_left[1]),
-            "o-",
-            (up_left[0], down_left[0]),
-            (up_left[1], down_left[1]),
-            "o-",
-            (off_down_left[0], off_down_right[0]),
-            (off_down_left[1], off_down_right[1]),
-            "o-",
-            (off_down_right[0], off_up_right[0]),
-            (off_down_right[1], off_up_right[1]),
-            "o-",
-            (off_up_right[0], off_up_left[0]),
-            (off_up_right[1], off_up_left[1]),
-            "o-",
-            (off_up_left[0], off_down_left[0]),
-            (off_up_left[1], off_down_left[1]),
-            "o-",
-        )
+        axes[1].plot((down_left[0], down_right[0]), (down_left[1], down_right[1]), "o-")
 
         box = axes[1].get_position()
         axes[1].set_position([box.x0, box.y0, box.width * 0.675, box.height])

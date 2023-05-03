@@ -1,6 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import cv2
 import numpy as np
@@ -39,7 +39,7 @@ def read_image_from_path(image_path: FilePath, imread_flagg: Optional[list] = No
     return cv2.imread(str(image_path))
 
 
-def axis_frame_imshow(ax: Any, image: NDArray):
+def axis_frame_imshow(ax: Axes, image: NDArray):
     ax.autoscale(enable=True)
 
     ax_imshow_gray(ax, image)

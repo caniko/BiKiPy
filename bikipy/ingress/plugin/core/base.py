@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Any, ClassVar, Optional, TypeVar, Type
+from typing import Any, ClassVar, Optional, Type, TypeVar
 
-from schemantic.model.project import SchemanticProjectMixin
 from pydantic import DirectoryPath, FilePath
+from schemantic.model.project import SchemanticProjectMixin
 
 from bikipy.core.base import BikipyModel
 from bikipy.core.typing import Label

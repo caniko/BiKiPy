@@ -2,31 +2,31 @@ from logging import getLogger
 from typing import Optional
 
 from projectkit.model.jit import ProjectKitJITConfiguration
-from schemantic.model.schema import GroupSchema, SingleSchema
 from projectkit.utils.misc import here_or_there
 from pydantic import DirectoryPath
+from schemantic.model.schema import GroupSchema, SingleSchema
 
 from bikipy import BikipyRuntimeSettings
 from bikipy._constant import (
-    RUNTIME_SETTINGS_MAP_NAME,
-    READER_MAP_NAME,
-    EXPERIMENT_MAP_NAME,
-    PERIMETER_MAP_NAME,
     ENCLOSURE_MAP_NAME,
-    TRIAL_MAP_NAME,
+    EXPERIMENT_MAP_NAME,
+    INGRESS_MAP_NAME,
+    PERIMETER_MAP_NAME,
     PLUGIN_MAP_NAME,
     PROJECTKIT_CONFIG_KEY_ORDER,
-    INGRESS_MAP_NAME,
+    READER_MAP_NAME,
+    RUNTIME_SETTINGS_MAP_NAME,
+    TRIAL_MAP_NAME,
 )
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.mapping import experiment_name_to_class
 from bikipy.behaviour.radial_arm import BaseRadialMazeExperiment
 from bikipy.ingress.plugin.perimeter.enclosure import PluginEnclosure
-from bikipy.ingress.workflow.base import IngressWorkflow
-from bikipy.reader import DeepLabCutReader
 from bikipy.ingress.workflow.animal import AnimalIngressWorkflow
 from bikipy.ingress.workflow.animal_day import AnimalDayIngressWorkflow
+from bikipy.ingress.workflow.base import IngressWorkflow
 from bikipy.ingress.workflow.phase import PhaseIngressWorkflow
+from bikipy.reader import DeepLabCutReader
 
 logger = getLogger(__name__)
 

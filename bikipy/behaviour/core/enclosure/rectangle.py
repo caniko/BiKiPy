@@ -11,12 +11,15 @@ from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from bikipy.behaviour.core.base import HabituationTrialMixin
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.core.enclosure.quadrant import Quadrant
-from bikipy.behaviour.utils import reduce_repeating_sequences, blanket_enclosed_experiment_label_generator
+from bikipy.behaviour.utils import (
+    blanket_enclosed_experiment_label_generator,
+    reduce_repeating_sequences,
+)
 from bikipy.feature.motion import get_combined_features_from_merged_motion_island_data
 from bikipy.perimeter import RectanglePerimeter
 from bikipy.utils.collection_utils import generic_multi_indexer
-from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
 from bikipy.utils.math.cached import meters2pixels
+from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 

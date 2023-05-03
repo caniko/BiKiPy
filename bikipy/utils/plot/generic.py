@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -30,7 +30,7 @@ def ax_plot_coordinate_with_boolean_index(
         plot_colors[boolean_index] = inside_colors[boolean_index]
 
         for color, point_a, point_b in zip(plot_colors, coordinates, coordinates[1:]):
-            ax.plot(*np.vstack((point_a, point_b)).T, c=color, linewidth=3.0)
+            ax.plot(,,
     else:
         ax.scatter(*coordinates[boolean_index].T, label="Inside", color="dodgerblue")
         ax.scatter(*coordinates[~boolean_index].T, label="Outside", color="crimson")
@@ -40,7 +40,7 @@ def ax_plot_coordinate_with_boolean_index(
 
 def plot_coordinates(
     coordinates: NDArrayFp64,
-    ax: Any = None,
+    ax: Axes = None,
     inspect_pixels: bool = False,
     video: Optional["VideoMetadata"] = None,
     **plot_kwargs,
@@ -52,7 +52,7 @@ def plot_coordinates(
     return ax
 
 
-def plot_circle(center: NDArrayFp64, radius: NDArrayFp64 | float, ax: Any = None):
+def plot_circle(center: NDArrayFp64, radius: NDArrayFp64 | float, ax: Axes = None):
     angles = np.linspace(0, 2 * np.pi, 200)
 
     result = center + radius * np.array([np.cos(angles), np.sin(angles)]).T

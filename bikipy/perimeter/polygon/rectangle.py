@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Any, Literal
+from typing import Literal
 
 import numpy as np
 from pydantic_numpy.dtype import NDArrayFp64
@@ -28,7 +28,7 @@ class RectanglePerimeter(BasePolygonPerimeter):
             )
 
     def expand(
-        self, perimeter_border_normal_pixels: float | NDArrayFp64, ax: Any = None, **inspect_kwargs
+        self, perimeter_border_normal_pixels: float | NDArrayFp64, ax: Axes = None, **inspect_kwargs
     ) -> "RectanglePerimeter":
         result = self.__class__(
             vertices_in_pixels=expand_rectangle(

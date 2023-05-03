@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from bikipy.ingress.plugin.bonsai_timestamp import PluginBonsaiTimestamp
 from bikipy.ingress.plugin.center import PluginCenter
 from bikipy.ingress.plugin.frame import PluginFrame
@@ -7,8 +9,6 @@ from bikipy.ingress.plugin.perimeter.enclosure import PluginEnclosure
 from bikipy.ingress.plugin.perimeter.radial_maze import PluginRadial
 from bikipy.ingress.plugin.perimeter.single import PluginSinglePerimeter
 from bikipy.ingress.plugin.video import PluginVideo
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bikipy.ingress.plugin.core.base import Plugin

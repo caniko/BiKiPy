@@ -1,10 +1,11 @@
 from abc import ABC
 from functools import cached_property
 from logging import getLogger
-from typing import Any, ClassVar, Literal, Optional, TypeVar
+from typing import ClassVar, Literal, Optional, TypeVar
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
 from pydantic import validator
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
@@ -161,7 +162,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         return unit_vector(closest_point_on_edge_to_coordinates - coordinates)
 
     def compute_confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
+        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
     ) -> NDArrayBool:
         result = parallel_point_inside_polygon(coordinates, self.metric_graph.linked_vertices, merge_ends=False)
 
@@ -210,8 +211,6 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         ray_travel_direction_point: NDArrayFp64,
         max_radians: float,
         angular_resolution: int = 400,
-        manual_ax: Any = None,
-        **inspect_kwargs,
     ) -> NDArrayBool:
         """
         Determine if the object is within the ray cone
@@ -224,7 +223,6 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         :param ray_start_point:
         :param max_radians:
         :param angular_resolution:
-        :param inspect_kwargs:
         :return:
         """
         ray_vectors = ray_travel_direction_point - ray_start_point
@@ -251,18 +249,6 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             )
         in_tolerable_los = np.any(in_tolerable_los, axis=0)
         result = project_mask_to_original(in_tolerable_los, in_direct_los) | in_direct_los
-
-        if self.inspect_arg or manual_ax:
-            from bikipy.feature.attention.ray import ray_inspection_plot
-
-            ray_inspection_plot(
-                self,
-                result,
-                ray_vectors,
-                ray_travel_direction_point,
-                manual_ax=manual_ax,
-                **inspect_kwargs,
-            )
 
         return result
 
@@ -299,11 +285,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
             corner_a = vertices[index]
             corner_b = vertices[following_index]
-            ax.plot(
-                *np.vstack((corner_a, corner_b)).T,
-                # label=f"{self.label}{index}",     # Uncomment this when inspecting the sorting of edges
-                # **plot_kwargs,
-            )
+            ax.plot(,
 
     def _add_label_to_str(self, in_string):
         if self.label:

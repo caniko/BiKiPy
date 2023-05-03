@@ -4,9 +4,9 @@ from typing import ClassVar
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.typing import Label
+from bikipy.ingress.name_parser import PluginFileStemParse
 from bikipy.ingress.plugin.core.base import BasePluginFile
 from bikipy.ingress.plugin.core.mixins import IngressRequiredMixin
-from bikipy.ingress.name_parser import PluginFileStemParse
 from bikipy.perimeter.base import BasePerimeter, Perimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.makesense import (

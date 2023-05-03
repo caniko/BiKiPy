@@ -12,15 +12,14 @@ import numpy as np
 import pandas as pd
 from inflection import underscore
 from projectkit.model.project import ProjectKitRootModelMixin
-from schemantic.model.project import SchemanticProjectMixin
 from pydantic import DirectoryPath, FilePath, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
+from schemantic.model.project import SchemanticProjectMixin
 
 from bikipy._constant import READER_MAP_NAME
 from bikipy.core.base import BikipyModel
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
-
 from bikipy.ingress.utils.io import (
     get_inspect_directory_path,
     get_plugin_directory_path,
@@ -39,7 +38,7 @@ from bikipy.utils.misc import defaultdict_dict_factory, sheet_names_from_path
 
 if TYPE_CHECKING:
     from bikipy.behaviour.core.base import Experiment, ExperimentCLS, TrialCLS
-    from bikipy.ingress.plugin.core.base import PluginType, Plugin
+    from bikipy.ingress.plugin.core.base import Plugin, PluginType
 
 logger = getLogger(__name__)
 
@@ -613,8 +612,8 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitRootMod
 
     def get_meter_per_pixel(self, trial_id: Optional[Label] = None) -> NDArrayFp64:
         from bikipy.ingress.plugin.meters_per_pixel import (
-            detect_meters_per_pixel_in_perimeter_directory,
             PluginMeterPerPixel,
+            detect_meters_per_pixel_in_perimeter_directory,
         )
 
         if PluginScope.TRIALWISE in self.definition_meters_per_pixel:

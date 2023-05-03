@@ -3,15 +3,7 @@ from concurrent.futures import ProcessPoolExecutor
 from functools import cached_property, lru_cache
 from logging import getLogger
 from operator import attrgetter
-from typing import (
-    ClassVar,
-    Hashable,
-    Literal,
-    Optional,
-    Type,
-    TypeVar,
-    Any,
-)
+from typing import Any, ClassVar, Hashable, Literal, Optional, Type, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -33,14 +25,12 @@ from yaspin.spinners import Spinners
 
 from bikipy import runtime_settings
 from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
-from bikipy.core.mixin import InspectPlotMixin, FeatureCollectorMixin
-from bikipy.feature.physical_object.mixin import PhysicalObjectTrialMixin
 from bikipy.core.base import BikipyHashable
+from bikipy.core.mixin import FeatureCollectorMixin, InspectPlotMixin
 from bikipy.core.typing import Label
-from bikipy.core.video import (
-    VideoMetadataMixin,
-)
+from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_multi_indexer
+from bikipy.feature.physical_object.mixin import PhysicalObjectTrialMixin
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
 from bikipy.perimeter.base import (
     BaseSinglePerimeter,
@@ -627,7 +617,9 @@ class BaseExperiment(Behaviour):
         """
         Function useful for customizing initiation parameters for trial objects
         """
-        from bikipy.ingress.plugin.perimeter.change_reference import PluginChangeReference
+        from bikipy.ingress.plugin.perimeter.change_reference import (
+            PluginChangeReference,
+        )
         from bikipy.ingress.plugin.perimeter.radial_maze import PluginRadial
 
         result = self.video.dict(exclude_unset=True)

@@ -6,8 +6,8 @@ from pydantic import DirectoryPath, FilePath, validator
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.typing import Label
-from bikipy.ingress.plugin.core.base import BasePluginFile
 from bikipy.ingress.name_parser import PluginFileStemParse
+from bikipy.ingress.plugin.core.base import BasePluginFile
 from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.makesense import read_first_makesense_line
 from bikipy.utils.math.geometry import meter_per_pixel_from_diagonal

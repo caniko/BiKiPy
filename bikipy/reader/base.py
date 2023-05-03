@@ -6,7 +6,8 @@ from typing import ClassVar, Generic, Hashable, Iterable, Optional, Type, TypeVa
 
 import numpy as np
 import pandas as pd
-from pydantic import Field, FilePath
+from matplotlib.axes import Axes
+from pydantic import Field, FilePath, validate_arguments
 from pydantic.generics import GenericModel
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayUint8
 from sklearn.neighbors import NearestNeighbors
@@ -331,11 +332,23 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             return self.raw_df.index.values[-1]
         return len(self.raw_df) * self.fps
 
-    def fused_neighbouring_points(self, region_of_interest: str) -> pd.DataFrame:
-        if region_of_interest in self._region_of_interest_to_fused_neighbouring_points:
-            return self._region_of_interest_to_fused_neighbouring_points[region_of_interest]
-        coordinates = self.df.loc[:, pd.IndexSlice[region_of_interest, ("x", "y")]].values
-        NearestNeighbors().fit(coordinates)
+    @validate_arguments
+    def plot_boolean_index(
+        self, boolean_index: NDArrayBool, ax: Axes, manual_kinematic_coordinates: Optional[str] = None
+    ) -> None:
+        region_label = manual_kinematic_coordinates or self.object_tracking_label_for_kinematics
+        ax.scatter(
+            *self[region_label][boolean_index].T,
+            marker="x",
+            alpha=runtime_settings.matplotlib_scatter_alpha,
+            label="Valid",
+        )
+        ax.scatter(
+            *self[region_label][~boolean_index].T,
+            marker="x",
+            alpha=runtime_settings.matplotlib_scatter_alpha,
+            label="Invalid",
+        )
 
     def _compute_midpoint(
         self,

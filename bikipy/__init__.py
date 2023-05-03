@@ -1,7 +1,6 @@
 from math import floor
 
 import matplotlib
-
 from psutil import cpu_count
 from pydantic import BaseSettings, Field
 from schemantic.model.project import SchemanticProjectMixin

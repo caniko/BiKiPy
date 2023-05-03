@@ -7,7 +7,6 @@ from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.utils.makesense import read_makesense_point
 
-
 logger = getLogger(__file__)
 
 

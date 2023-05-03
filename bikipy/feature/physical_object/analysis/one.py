@@ -3,7 +3,6 @@ from logging import getLogger
 from typing import ClassVar
 
 import numpy as np
-import pandas as pd
 from pydantic_numpy.dtype import NDArrayBool, NDArrayUint8
 
 from bikipy.behaviour.utils import reduce_repeating_sequences

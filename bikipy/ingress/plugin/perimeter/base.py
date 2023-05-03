@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Optional, ClassVar
+from typing import ClassVar, Optional
 
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.core.base import BasePluginFile

@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Optional
 
 import numpy as np
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
@@ -26,7 +26,7 @@ class TriangularPerimeter(BasePolygonPerimeter):
         pass
 
     def compute_confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
+        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
     ) -> NDArrayBool:
         """
         indices of the coordinates that are inside the respective perimeter
@@ -58,29 +58,18 @@ class TriangularPerimeter(BasePolygonPerimeter):
         )
 
     def ray_direction_filter(
-        self,
-        ray_start_point: NDArrayFp64,
-        ray_travel_direction_point: NDArrayFp64,
-        max_radians: float,
-        manual_ax: Any = None,
-        **kwargs,
+        self, ray_start_point: NDArrayFp64, ray_travel_direction_point: NDArrayFp64, max_radians: float, **kwargs
     ) -> NDArrayBool:
         if self.equilateral:
-            try:
-                kwargs["inspect"] = kwargs["inspect_pixels"]
-            except KeyError:
-                pass
             return self.circle.ray_direction_filter_circle_triangle(
                 ray_travel_direction_point=ray_travel_direction_point,
                 ray_start_point=ray_start_point,
                 max_radians=max_radians,
-                manual_ax=manual_ax,
                 **kwargs,
             )
         return super().ray_direction_filter(
             ray_start_point=ray_start_point,
             ray_travel_direction_point=ray_travel_direction_point,
             max_radians=max_radians,
-            manual_ax=manual_ax,
             **kwargs,
         )

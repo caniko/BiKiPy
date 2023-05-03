@@ -6,9 +6,9 @@ import pandas as pd
 from pydantic_numpy import NDArrayFp64
 
 from bikipy.core.typing import Label
+from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
 from bikipy.ingress.plugin.core.base import BasePluginDirectory
 from bikipy.ingress.plugin.core.mixins import HasReferenceMixin, IngressRequiredMixin
-from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Any, Literal, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 import pandas as pd
 from pydantic import Field, validate_arguments
@@ -60,11 +60,3 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, SchemanticBranchingMixin
                 *(physical_object.summary for physical_object in self.physical_objects),
             )
         )
-
-    def plot(self, ax: Any = None):
-        if not ax:
-            fix, ax = self.video.subplots()
-        for physical_objects in self.physical_objects:
-            ax = physical_objects.perimeter.plot(ax=ax)
-
-        return ax

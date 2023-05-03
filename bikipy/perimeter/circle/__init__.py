@@ -1,15 +1,16 @@
 from functools import cached_property
-from typing import Any, Optional, Type, TypeVar
+from typing import Optional, Type, TypeVar
 
 import numpy as np
+from matplotlib.axes import Axes
 from pydantic import validator
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
+from bikipy.behaviour.utils import ray_direction_filter_circle_triangle
 from bikipy.core.video import VideoMetadata
-from bikipy.feature.attention.ray import ray_direction_filter_circle_triangle
 from bikipy.perimeter.base import BaseSinglePerimeter
-from bikipy.utils.math.inside.ellipse import point_inside_ellipse
 from bikipy.utils.math.cached import meters2pixels
+from bikipy.utils.math.inside.ellipse import point_inside_ellipse
 from bikipy.utils.math.vector import unit_vector
 from bikipy.utils.plot.generic import plot_circle
 
@@ -56,7 +57,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         return self.__class__(**kwargs)
 
     def compute_confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Any = None, **inspect_kwargs
+        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
     ):
         if isinstance(self.radius_meters, float):
             distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
@@ -81,12 +82,10 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         """
         return unit_vector(self.center_meters - coordinates)
 
-    def ray_direction_filter(self, *args, **kwargs) -> NDArrayBool:
-        try:
-            kwargs["inspect"] = kwargs["inspect_pixels"]
-        except KeyError:
-            pass
-        return ray_direction_filter_circle_triangle(self, *args, **kwargs)
+    def ray_direction_filter(
+        self, ray_start_point: NDArrayFp64, ray_travel_direction_point: NDArrayFp64, max_radians: float, **kwargs
+    ) -> NDArrayBool:
+        return ray_direction_filter_circle_triangle(self, ray_travel_direction_point, ray_start_point, max_radians)
 
     def plot_perimeter_on_ax(
         self, ax, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs

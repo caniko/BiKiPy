@@ -9,12 +9,9 @@ from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
-from bikipy.ingress.plugin.perimeter.base import AbstractPerimeterPlugin
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
-from bikipy.perimeter.base import (
-    SinglePerimeter,
-    perimeter_set_from_makesense,
-)
+from bikipy.ingress.plugin.perimeter.base import AbstractPerimeterPlugin
+from bikipy.perimeter.base import SinglePerimeter, perimeter_set_from_makesense
 from bikipy.utils.collection_utils import get_first_key_in_dict
 from bikipy.utils.image import axis_frame_imshow, read_image_from_path
 from bikipy.utils.makesense import (
@@ -114,7 +111,7 @@ def inspect_annotations(annotation_path: FilePath, image_directory: Optional[Dir
         axis_frame_imshow(ax, read_image_from_path(image_directory / image_name))
         ax.invert_yaxis()
 
-        perimeter_set.plot(manual_ax=ax, inspect_pixels=True)
+        perimeter_set.plot(,,
 
     plt.show()
 

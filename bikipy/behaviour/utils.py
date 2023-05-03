@@ -4,9 +4,34 @@ from typing import Any, Iterable, Sequence
 import numpy as np
 from pydantic import validate_arguments
 from pydantic_numpy import NDArray
-from pydantic_numpy.dtype import NDArrayFp64
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+
+from bikipy.feature.angle import angle_from_a_to_b
+from bikipy.perimeter.base import SinglePerimeter
 
 logger = getLogger(__name__)
+
+
+def ray_direction_filter_circle_triangle(
+    perimeter: SinglePerimeter,
+    ray_travel_direction_point: NDArrayFp64,
+    ray_start_point: NDArrayFp64,
+    max_radians: float,
+) -> NDArrayBool:
+    ray_vectors = ray_travel_direction_point - ray_start_point
+
+    closest_points_on_edges = perimeter.closest_point_on_edge_to_coordinates(ray_travel_direction_point)
+    vector_to_closest_point_on_edge = perimeter.vector_to_closest_point_on_edge(ray_travel_direction_point)
+
+    direction_point_is_closer_than_start_point = np.linalg.norm(
+        closest_points_on_edges - ray_travel_direction_point, axis=1
+    ) <= np.linalg.norm(closest_points_on_edges - ray_start_point, axis=1)
+
+    angle_from_normal_to_ray = angle_from_a_to_b(vector_to_closest_point_on_edge, ray_vectors)
+
+    result = direction_point_is_closer_than_start_point & (np.abs(angle_from_normal_to_ray) <= max_radians)
+
+    return result
 
 
 def unique_with_counts_zipped(array: NDArray):
