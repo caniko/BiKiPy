@@ -30,7 +30,7 @@ def ax_plot_coordinate_with_boolean_index(
         plot_colors[boolean_index] = inside_colors[boolean_index]
 
         for color, point_a, point_b in zip(plot_colors, coordinates, coordinates[1:]):
-            ax.plot(,,
+            ax.plot(*np.vstack((point_a, point_b)).T, c=color, linewidth=3.0)
     else:
         ax.scatter(*coordinates[boolean_index].T, label="Inside", color="dodgerblue")
         ax.scatter(*coordinates[~boolean_index].T, label="Outside", color="crimson")

@@ -2,6 +2,7 @@
 Rectangle
 =========
 
+.. _center-periphery-confinement:
 Center-Periphery confinement
 ============================
 Confinement across video frames in the center can be quantified by defining the center as a rectangular perimeter, and the periphery as the coordinates outside.

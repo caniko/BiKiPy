@@ -5,17 +5,11 @@ Novel object recognition test
 
 Class outline
 =============
-A NORT experiment is a sequence of trials, *habituation*, *training*, *novelty*.
-
-The trials are conducted in a square enclosure; moreover, the NORT classes inherit from :code:`SquareEnclosed` classes. Confinement in the center of the square is defined as bravery, while periphery is defined as fear or cowardice. Each of the three trial classes compute every motion feature.
-
-Habituation
------------
-The trial is conducted in an open field, and only motion-related features are measured. The class is, therefore, an alias to :code:`SquareEnclosedTrial`.
+A NORT experiment is a sequence of trials, *habituation*, *training*, *novelty*. The trial is conducted in a rectangular box, see section :ref:`center-periphery-confinement` for the overview of measured features in every step. Habituation, being open field, only include the generic features.
 
 Training
 --------
-The animal is exposed to two identical objects during training. We measure the observation time of both objects defined by the :code:`confinement_filter` followed by the :code:`attention_filter`.
+The animal is exposed to two identical objects during training. We measure the observation time of both objects defined
 
 Novelty
 -------

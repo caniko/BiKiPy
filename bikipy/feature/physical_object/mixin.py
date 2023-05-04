@@ -1,21 +1,20 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import Literal, Optional
 
 import pandas as pd
 from pydantic import Field, validate_arguments
 from schemantic.model.project import SchemanticBranchingMixin
+from schemantic.model.schema import GroupSchema
 
-from bikipy.feature.physical_object.qualia.component.abc import QualiaComponent
+from bikipy.feature.physical_object.qualia.mapping import PROFILE_MAP
+from bikipy.feature.physical_object.qualia.profile.abc import QualiaProfile
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.perimeter.mixin import TrialWithPerimeterMixin
 
-if TYPE_CHECKING:
-    from schemantic.model.schema import GroupSchema
-
 
 class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, SchemanticBranchingMixin, ABC):
-    qualia_definition_sequence: Optional[list[QualiaComponent, ...]] = Field(default_factory=list)
+    qualia_definition_sequence: Optional[list[QualiaProfile, ...]] = Field(default_factory=list)
     qualia_definition_profile: Literal["rodent", None]
 
     @property
@@ -23,25 +22,30 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, SchemanticBranchingMixin
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         ...
 
-    def __getitem__(self, item):
-        return self.label_to_physical_object[item]
-
     @classmethod
     @validate_arguments
-    def _schemantic_branch_schema(cls, qualia_definition_sequence: Optional[list[QualiaComponent, ...]] = None,
-    qualia_definition_profile: Literal["rodent", None] = None) -> "GroupSchema":
+    def schemantic_branch_schema(cls, *, qualia_definition_profile: list[str, ...], **kwargs) -> list[GroupSchema, ...]:
         """
 
+        :param qualia_definition_profile:
         :param kwargs:
         :return:
         """
-        if qualia_definition_profile:
-
-
-    def physical_object_observation_qualia(self):
-        if self.qualia_definition_profile:
+        models = set()
+        assert qualia_definition_profile
+        for profile in qualia_definition_profile:
             try:
-                return
+                models.add(PROFILE_MAP[profile])
+            except KeyError:
+                msg = (
+                    f"The defined profile key, {profile}, is not defined. "
+                    f"Choose from the following: {', '.join(iter(PROFILE_MAP))}"
+                )
+                raise KeyError(msg)
+
+        upstream = super().schemantic_branch_schema(**kwargs)
+        upstream.append(GroupSchema.from_models(models=models))
+        return upstream
 
     @cached_property
     def perimeters(self) -> list[SinglePerimeter, ...]:

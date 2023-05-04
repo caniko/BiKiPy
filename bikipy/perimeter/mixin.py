@@ -15,10 +15,8 @@ class TrialWithPerimeterMixin(BikipyModel, ABC):
     def perimeters(self) -> list[SinglePerimeter, ...]:
         ...
 
-    @cached_property
-    def _int_id_to_perimeter(self) -> dict:
-        self._validate_perimeters_object()
-        return {perimeter.int_id: perimeter for perimeter in self.perimeters}
+    def __getitem__(self, item):
+        return self._label_to_perimeter[item]
 
     def _validate_perimeters_object(self) -> None:
         if not self.perimeters:
@@ -26,14 +24,14 @@ class TrialWithPerimeterMixin(BikipyModel, ABC):
             raise AttributeError(msg)
 
     @cached_property
-    def _perimeter_label_to_int_id(self) -> dict:
+    def _int_id_to_perimeter(self) -> dict:
         self._validate_perimeters_object()
-        return {label: i for i, label in enumerate(self.perimeters, start=1)}
+        return {perimeter.int_id: perimeter for perimeter in self.perimeters}
 
     @cached_property
-    def _int_id_to_perimeter_label(self) -> dict:
+    def _label_to_perimeter(self) -> dict:
         self._validate_perimeters_object()
-        return {i: label for i, label in enumerate(self.perimeters, start=1)}
+        return {perimeter.label: perimeter for perimeter in self.perimeters}
 
     @property
     def _video(self) -> VideoMetadata:

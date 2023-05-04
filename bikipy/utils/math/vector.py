@@ -149,7 +149,7 @@ def nearest_point_on_line_segment_to_coordinates(
         axes = flatten_sequence(axes)
 
         for i, ax in zip(evenly_spaced_indices_from_sequence(coordinates, 9), axes):
-            ax.plot(,,
+            ax.plot(*np.vstack((line_segment_start, line_segment_end)).T)
             ax.scatter(*result[i])
             ax.scatter(*coordinates[i])
 
@@ -207,7 +207,7 @@ def ray_and_line_segment_intersection(
             color="r",
         )
         ax.legend()
-        ax.plot(,,
+        ax.plot(*np.vstack([line_segment_start, line_segment_end]).T)
         plt.show()
 
     if return_points:

@@ -1,19 +1,17 @@
 from functools import cached_property
 from typing import Optional, Sequence
 
-import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
 from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.attention.proximity import ComputeProximity
 from bikipy.feature.attention.ray import ComputeRay
-from bikipy.feature.physical_object.qualia.component.abc import AbstractQualiaComponent
-from bikipy.feature.tolerance.single import single_node_tolerance_model
-from bikipy.utils.math.cached import cached_deg2rad, meters2pixels
+from bikipy.feature.physical_object.qualia.profile.abc import AbstractQualiaProfile, ProximityMixin, RayMixin
+from bikipy.feature.tolerance.plural import plural_node_tolerance_model
 
 
-class FOVCenterToEyesRayCasting(AbstractQualiaComponent):
+class FOVCenterToEyesRayCastingProfile(AbstractQualiaProfile, ProximityMixin, RayMixin):
     center_eye_label: str = "center_ear"
     left_eye_label: str = "left_ear"
     right_eye_label: str = "right_ear"
@@ -23,16 +21,21 @@ class FOVCenterToEyesRayCasting(AbstractQualiaComponent):
     manual_right_proximity: Optional[ComputeProximity]
     manual_rightward_observation: Optional[ComputeRay]
 
-    maximum_gaze_distance_meters: float = 0.05
-    gaze_maximum_degrees: float = 45.0
+    label = "ObjectInProximalFOV"
 
+    @classmethod
     @property
-    def gaze_length_pixels(self) -> float:
-        return meters2pixels(self.maximum_gaze_distance_meters, self.video.pixels_per_meter)
-
-    @property
-    def gaze_maximum_radians(self) -> float:
-        return cached_deg2rad(self.gaze_maximum_degrees)
+    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().schemantic_fields_to_exclude_from_config_schema
+        upstream.update(
+            (
+                "manual_left_eye_proximity",
+                "manual_leftward_observation",
+                "manual_right_proximity",
+                "manual_rightward_observation",
+            )
+        )
+        return upstream
 
     @cached_property
     def left_proximity(self) -> ComputeProximity:
@@ -41,7 +44,7 @@ class FOVCenterToEyesRayCasting(AbstractQualiaComponent):
             if self.manual_left_eye_proximity
             else ComputeProximity(
                 perimeter=self.perimeter,
-                perimeter_border_normal_pixels=self.gaze_length_pixels,
+                perimeter_border_normal_pixels=self.maximum_distance_pixels,
                 inside_perimeter_border=self.reader[self.left_eye_label],
                 manual_video=self.video,
             )
@@ -56,7 +59,7 @@ class FOVCenterToEyesRayCasting(AbstractQualiaComponent):
                 perimeter=self.perimeter,
                 ray_start_point=self.reader[self.left_eye_label],
                 ray_travel_direction_point=self.reader[self.center_eye_label],
-                max_radians=self.gaze_maximum_radians,
+                max_radians=self.maximum_radians,
                 manual_video=self.video,
             )
         )
@@ -68,7 +71,7 @@ class FOVCenterToEyesRayCasting(AbstractQualiaComponent):
             if self.manual_right_proximity
             else ComputeProximity(
                 perimeter=self.perimeter,
-                perimeter_border_normal_pixels=self.gaze_length_pixels,
+                perimeter_border_normal_pixels=self.maximum_distance_pixels,
                 inside_perimeter_border=self.reader[self.right_eye_label],
                 manual_video=self.video,
             )
@@ -83,20 +86,26 @@ class FOVCenterToEyesRayCasting(AbstractQualiaComponent):
                 perimeter=self.perimeter,
                 ray_start_point=self.reader[self.right_eye_label],
                 ray_travel_direction_point=self.reader[self.center_eye_label],
-                max_radians=self.gaze_maximum_radians,
+                max_radians=self.maximum_radians,
                 manual_video=self.video,
             )
         )
 
     @cached_property
+    def left_result(self) -> NDArrayBool:
+        return self.left_proximity.result & self.leftward_observation.result
+
+    @cached_property
+    def right_result(self) -> NDArrayBool:
+        return self.right_proximity.result & self.rightward_observation.result
+
+    @cached_property
     def result(self) -> NDArrayBool:
-        left = self.left_proximity.result & self.leftward_observation.result
-        right = self.right_proximity.result & self.rightward_observation.result
-        if self.filter_in_sequence:
-            return np.logical_or(
-                single_node_tolerance_model(left, self.video.fps), single_node_tolerance_model(right, self.video.fps)
-            )
-        return left | right
+        return (
+            plural_node_tolerance_model(self.left_result, self.right_result, fps=self.fps)
+            if self.filter_in_sequence
+            else self.left_result | self.right_result
+        )
 
     @property
     def summary_series(self) -> pd.Series:
@@ -106,15 +115,25 @@ class FOVCenterToEyesRayCasting(AbstractQualiaComponent):
                 "LeftwardFOV": self.leftward_observation.result_seconds,
                 "RightProximity": self.right_proximity.result_seconds,
                 "RightwardFOV": self.rightward_observation.result_seconds,
-                "ObjectInProximalFOV": self.result,
+                self.label: self.result,
             }
         )
 
     def plot(self, axes: Optional[Sequence[Axes]] = None) -> None:
-        fig, axes = self.video.subplots(ncols=5)
+        fig, axes = self.video.subplots(ncols=3, nrows=3)
 
-        self.left_proximity.plot(axes[0], self.video)
-        self.leftward_observation.plot(axes[1], self.video)
-        self.right_proximity.plot(axes[2], self.video)
-        self.rightward_observation.plot(axes[3], self.video)
-        self.reader.plot_boolean_index(self.result, axes[4])
+        # Left
+        self.left_proximity.plot(axes[0][0], self.video)
+        self.leftward_observation.plot(axes[0][1], self.video)
+
+        axes[0][2].set_title("LeftwardProximalFOV")
+        self.reader.plot_boolean_index(self.left_result, axes[0][2])
+
+        # Right
+        self.right_proximity.plot(axes[1][0], self.video)
+        self.rightward_observation.plot(axes[1][1], self.video)
+
+        axes[1][2].set_title("RightwardProximalFOV")
+        self.reader.plot_boolean_index(self.right_result, axes[1][2])
+
+        self.plot_result(axes[2][1])

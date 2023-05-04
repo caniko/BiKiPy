@@ -2,10 +2,10 @@ from typing import ClassVar
 
 from pydantic_numpy import NDArrayBool
 
-from bikipy.feature.physical_object.qualia.component.abc import AbstractQualiaComponent
+from bikipy.feature.physical_object.qualia.profile.abc import AbstractQualiaProfile
 
 
-class WhiskerInteractionQualiaGroup(AbstractQualiaComponent):
+class WhiskerInteractionQualiaGroup(AbstractQualiaProfile):
     whisker_midpoint_distance_from_nose_to_eye: ClassVar[float] = 0.2
     left_whisker_label: ClassVar[str] = "left_whisker"
     right_whisker_label: ClassVar[str] = "right_whisker"

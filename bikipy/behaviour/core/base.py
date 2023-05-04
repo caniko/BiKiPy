@@ -26,7 +26,7 @@ from yaspin.spinners import Spinners
 from bikipy import runtime_settings
 from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
 from bikipy.core.base import BikipyHashable
-from bikipy.core.mixin import FeatureCollectorMixin, InspectPlotMixin
+from bikipy.core.mixin import AbstractFeatureCollectorMixin, InspectPlotMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_multi_indexer
@@ -54,7 +54,7 @@ class Behaviour(BikipyHashable, InspectPlotMixin, VideoMetadataMixin):
     pass
 
 
-class BaseTrial(Behaviour, FeatureCollectorMixin):
+class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
     framewise_coordinates_path: FilePath = Field(..., description="Path to file storing coordinate data")
     manual_reader_kwargs: Optional[dict] = Field(
         default_factory=dict, description="Keyword arguments that will be passed on the reader objects on init"

@@ -13,7 +13,7 @@ from bikipy.core.base import BikipyConfigModel, BikipyHashable
 from bikipy.utils.plot.inspect import InspectArg, inspect_arg_description
 
 
-class FeatureCollectorMixin(BikipyHashable, ABC):
+class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
     feature_collection_cache: ClassVar[bool] = False  # TODO: Add feat
 
     @property

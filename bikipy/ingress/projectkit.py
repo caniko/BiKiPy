@@ -48,7 +48,11 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflo
     }
 
     def jit_init(
-        self, ingress_method: str, experiment_name: str, project_directory: Optional[DirectoryPath] = None
+        self,
+        ingress_method: str,
+        experiment_name: str,
+        project_directory: Optional[DirectoryPath] = None,
+        qualia_definition_profile: Optional[list[str, ...]] = None,
     ) -> dict:
         from bikipy.ingress.plugin.perimeter.radial_maze import PluginRadial
         from bikipy.ingress.plugin.perimeter.single import PluginSinglePerimeter
@@ -130,6 +134,10 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflo
             plugin_models.add(PluginSinglePerimeter)
             if issubclass(experiment_class, BaseRadialMazeExperiment):
                 plugin_models.add(PluginRadial)
+
+            if experiment_class.at_least_one_trial_has_physical_object:
+                assert qualia_definition_profile, "Experiments with physical objects require qualia profiling"
+                cds_hierarchical.extend()
 
         if plugin_models:
             cds_hierarchical.append(GroupSchema.from_models(mapping_name=PLUGIN_MAP_NAME, models=plugin_models))

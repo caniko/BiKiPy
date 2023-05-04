@@ -6,11 +6,11 @@ from typing import ClassVar, Generic, Hashable, Iterable, Optional, Type, TypeVa
 
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from pydantic import Field, FilePath, validate_arguments
 from pydantic.generics import GenericModel
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayUint8
-from sklearn.neighbors import NearestNeighbors
 from typing_extensions import Literal
 
 from bikipy import runtime_settings
@@ -22,6 +22,7 @@ from bikipy.perimeter.base import BasePerimeter
 from bikipy.reader.model import model_data
 from bikipy.reader.utils import compute_midpoint_label
 from bikipy.utils.constants import TO_PARQUET_KWARGS
+from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 
 BAD_COORDINATE = (np.nan, np.nan, 0.0)  # x, y, likelihood
 
@@ -349,6 +350,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             alpha=runtime_settings.matplotlib_scatter_alpha,
             label="Invalid",
         )
+        plt.legend(**BOTTOM_LEGEND_KWARGS)
 
     def _compute_midpoint(
         self,

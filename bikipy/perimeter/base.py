@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Type, TypeVar
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sb
+from matplotlib.axes import Axes
 from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
@@ -253,7 +254,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
             with sb.color_palette("Spectral", n_colors=5):
                 for i in evenly_spaced_indices_from_sequence(coordinates, 5):
-                    ax.plot(,,
+                    ax.plot(*np.vstack((result[i], coordinates[i])).T)
 
             generic_inspection_finalization(self.class_inspect_arg, f"{self.label}.jpg")
 

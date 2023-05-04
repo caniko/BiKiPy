@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, Type
 
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
@@ -42,4 +42,5 @@ class AbstractComputeBooleanIndex(AbstractCompute[NDArrayBool], VideoMetadataMix
         return self.boolean_array_to_seconds(self.result)
 
 
+ComputeBooleanIndexCLS = Type[AbstractComputeBooleanIndex]
 ComputeBooleanIndex = TypeVar("ComputeBooleanIndex", bound=AbstractComputeBooleanIndex)

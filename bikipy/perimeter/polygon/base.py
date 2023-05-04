@@ -285,7 +285,11 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
             corner_a = vertices[index]
             corner_b = vertices[following_index]
-            ax.plot(,
+            ax.plot(
+                *np.vstack((corner_a, corner_b)).T,
+                # label=f"{self.label}{index}",     # Uncomment this when inspecting the sorting of edges
+                # **plot_kwargs,
+            )
 
     def _add_label_to_str(self, in_string):
         if self.label:
