@@ -30,7 +30,7 @@ from bikipy.core.mixin import AbstractFeatureCollectorMixin, InspectPlotMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_multi_indexer
-from bikipy.feature.physical_object.trial_mixin import PhysicalObjectTrialMixin
+from bikipy.behaviour.physical_object import PhysicalObjectTrialMixin
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
 from bikipy.perimeter.base import (
     BaseSinglePerimeter,

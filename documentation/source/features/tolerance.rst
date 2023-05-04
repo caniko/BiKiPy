@@ -26,3 +26,8 @@ MinFA and MaxFD are used to tolerance model the provided binary sequence as foll
    When :code:`True`, and the distraction counter is more than 0, decrement by 1.
 
 #. The tolerance sequence is terminated at the index before the final :code:`False` element.
+
+
+The elevator pitch
+==================
+Tolerance is something we practice continuously, it is my opinion that it is an emergent practice in biological systems to counter the lack of accuracy in biological senses. The same principle can be applied to instances of binary streams of data. The binary data might have jitter that is false, and that needs rectification. The rectification should be manually controlled, and validated; nonetheless, rectifiers like any other tool should be used with discretion.

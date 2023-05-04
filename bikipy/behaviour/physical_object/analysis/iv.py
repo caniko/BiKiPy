@@ -1,4 +1,4 @@
-from bikipy.feature.physical_object.analysis.iii import (
+from bikipy.behaviour.physical_object.analysis.iii import (
     ThreePhysicalObjectSetQualiaAnalysis,
 )
 

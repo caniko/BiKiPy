@@ -6,7 +6,7 @@ from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.attention.proximity import ComputeProximity
 from bikipy.feature.attention.ray import ComputeRay
-from bikipy.feature.physical_object.qualia_profiler.abc import (
+from bikipy.behaviour.physical_object.qualia_profiler.abc import (
     AbstractQualiaProfile,
     ProximityMixin,
     RayMixin,

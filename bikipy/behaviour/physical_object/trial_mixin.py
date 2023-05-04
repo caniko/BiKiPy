@@ -8,10 +8,10 @@ from projectkit.model.project import ProjectKitDownstreamBranchingMixin
 from pydantic import validate_arguments, Field
 from schemantic.model.schema import GroupSchema
 
-from bikipy.feature.physical_object.analysis.i import QualiaAnalysis
-from bikipy.feature.physical_object.analysis.mapping import PO_NUMBER_TO_ANALYSIS_MODEL
-from bikipy.feature.physical_object.qualia_profiler.abc import QualiaProfile
-from bikipy.feature.physical_object.qualia_profiler.mapping import PROFILE_MAP
+from bikipy.behaviour.physical_object.analysis.i import QualiaAnalysis
+from bikipy.behaviour.physical_object.analysis.mapping import PO_NUMBER_TO_ANALYSIS_MODEL
+from bikipy.behaviour.physical_object.qualia_profiler.abc import QualiaProfile
+from bikipy.behaviour.physical_object.qualia_profiler.mapping import PROFILE_MAP
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.perimeter.mixin import PerimeterInstances, TrialWithPerimeterMixin
 from bikipy.utils.plot.inspect import generic_inspection_finalization

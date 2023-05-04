@@ -1,16 +1,16 @@
 from pydantic import PositiveInt
 
-from bikipy.feature.physical_object.analysis.i import (
+from bikipy.behaviour.physical_object.analysis.i import (
     OnePhysicalObjectSetQualiaAnalysis,
     QualiaAnalysis,
 )
-from bikipy.feature.physical_object.analysis.ii import (
+from bikipy.behaviour.physical_object.analysis.ii import (
     TwoPhysicalObjectSetQualiaAnalysis,
 )
-from bikipy.feature.physical_object.analysis.iii import (
+from bikipy.behaviour.physical_object.analysis.iii import (
     ThreePhysicalObjectSetQualiaAnalysis,
 )
-from bikipy.feature.physical_object.analysis.iv import (
+from bikipy.behaviour.physical_object.analysis.iv import (
     FourPhysicalObjectSetQualiaAnalysis,
 )
 

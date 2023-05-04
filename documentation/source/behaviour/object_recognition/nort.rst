@@ -9,7 +9,7 @@ A NORT experiment is a sequence of trials, *habituation*, *training*, *novelty*.
 
 Training
 --------
-The animal is exposed to two identical objects during training. We measure the observation time of both objects defined
+The animal is exposed to two identical objects during training, read more about
 
 Novelty
 -------
