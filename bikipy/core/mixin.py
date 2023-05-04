@@ -10,7 +10,11 @@ from pydantic_numpy.dtype import NDArrayUint8
 
 from bikipy import runtime_settings
 from bikipy.core.base import BikipyConfigModel, BikipyHashable
-from bikipy.utils.plot.inspect import InspectArg, inspect_arg_description
+from bikipy.utils.plot.inspect import (
+    InspectArg,
+    generic_inspection_finalization,
+    inspect_arg_description,
+)
 
 
 class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
@@ -54,6 +58,15 @@ class InspectPlotMixin(BikipyConfigModel):
 
     class_inspect_directory_name: ClassVar[Optional[str]] = None
 
+    @cached_property
+    def class_inspect_arg(self) -> InspectArg:
+        if isinstance(self.inspect_arg, Path):
+            result = self.inspect_arg / (self.class_inspect_directory_name or self.category)
+            result.mkdir(exist_ok=True)
+            return result
+
+        return self.inspect_arg
+
     def save(self, manual_save_path: Optional[DirectoryPath] = None) -> None:
         if manual_save_path:
             save_directory_path = manual_save_path
@@ -65,11 +78,5 @@ class InspectPlotMixin(BikipyConfigModel):
 
         compress_pickle.dump(self, save_directory_path / "experiment.pickle.lzma")
 
-    @cached_property
-    def class_inspect_arg(self) -> InspectArg:
-        if isinstance(self.inspect_arg, Path):
-            result = self.inspect_arg / (self.class_inspect_directory_name or self.category)
-            result.mkdir(exist_ok=True)
-            return result
-
-        return self.inspect_arg
+    def inspection_finalization(self, *args, **kwargs) -> None:
+        generic_inspection_finalization(self.inspect_arg, *args, **kwargs)

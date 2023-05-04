@@ -2,11 +2,13 @@ from functools import cached_property
 from typing import Optional
 
 import pandas as pd
-from matplotlib.axes import Axes
 from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.attention.proximity import ComputeProximity
-from bikipy.feature.physical_object.qualia_profiler.abc import AbstractQualiaProfile, ProximityMixin
+from bikipy.feature.physical_object.qualia_profiler.abc import (
+    AbstractQualiaProfile,
+    ProximityMixin,
+)
 from bikipy.feature.tolerance.plural import plural_node_tolerance_model
 
 
@@ -91,7 +93,7 @@ class BodyProximityProfile(AbstractQualiaProfile, ProximityMixin):
             }
         )
 
-    def plot(self, ax: Optional[Axes] = None) -> None:
+    def plot(self) -> None:
         fig, axes = self.video.subplots(ncols=4, nrows=1)
 
         self.center_eye_proximity.plot(axes[0], self.video)

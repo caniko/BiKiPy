@@ -1,6 +1,7 @@
 from functools import cached_property
 from itertools import permutations
 from logging import getLogger
+from typing import ClassVar
 
 import numpy as np
 import pandas as pd
@@ -13,26 +14,37 @@ logger = getLogger(__name__)
 
 
 class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
+    overlapping_frame_to_total_frame_warning_ratio: ClassVar[float] = 0.05
+
     @property
     def _analysis_series_list(self) -> list[pd.Series, ...]:
         upstream = super()._analysis_series_list
-        upstream.append(pd.Series({
-            **{f"AbsoluteDiscrimination{label_a.capitalize()}{label_b.capitalize()}": discrimination for (label_a, label_b), discrimination in
-               self.pair_to_absolute_object_discrimination.items()},
-            **{f"RelativeBiasScore{label.capitalize()}": rel_bias_score for label, rel_bias_score in
-               self.relative_object_bias_score.items()},
-            **{f"AbsoluteBiasScore{label.capitalize()}": abs_bias_score for label, abs_bias_score in
-               self.absolute_object_bias_score.items()},
-            "TotalObservationInstances": self.po_sum_of_observation_instances
-        }))
+        upstream.append(
+            pd.Series(
+                {
+                    **{
+                        f"AbsoluteDiscrimination{label_a.capitalize()}{label_b.capitalize()}": discrimination
+                        for (label_a, label_b), discrimination in self.pair_to_absolute_object_discrimination.items()
+                    },
+                    **{
+                        f"RelativeBiasScore{label.capitalize()}": rel_bias_score
+                        for label, rel_bias_score in self.relative_object_bias_score.items()
+                    },
+                    **{
+                        f"AbsoluteBiasScore{label.capitalize()}": abs_bias_score
+                        for label, abs_bias_score in self.absolute_object_bias_score.items()
+                    },
+                    "TotalObservationInstances": self.po_sum_of_observation_instances,
+                }
+            )
+        )
         return upstream
 
     @cached_property
     def pair_to_absolute_object_discrimination(self) -> dict[tuple[str, str], float]:
         return {
             (perm_a, perm_b): abs(
-                self.po_label_to_seconds_observing[perm_a]
-                - self.po_label_to_seconds_observing[perm_b]
+                self.po_label_to_seconds_observing[perm_a] - self.po_label_to_seconds_observing[perm_b]
             )
             for perm_a, perm_b in permutations(self.po_label_to_seconds_observing, 2)
         }
@@ -43,7 +55,7 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
             return self._physical_object_label_to_zero
         return {
             label: 100.0 * np.sum(observation_boolean_index) / self.po_total_seconds_observing
-            for label, observation_boolean_index in self.physical_object_label_to_observation_boolean_index.items()
+            for label, observation_boolean_index in self.po_label_to_qualia_boolean_index.items()
         }
 
     @property
@@ -60,7 +72,7 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
             return self._physical_object_label_to_zero
         return {
             label: 100.0 * observation_boolean_index / (self.frames * self.video.fps)
-            for label, observation_boolean_index in self.physical_object_label_to_observation_boolean_index.items()
+            for label, observation_boolean_index in self.po_label_to_qualia_boolean_index.items()
         }
 
     @cached_property
@@ -68,9 +80,7 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
         overlapping_frames = 0
 
         observation_sequence = np.zeros(self.frames, dtype=np.uint8)
-        for object_int_id, object_boolean_index in enumerate(
-            self.physical_object_label_to_observation_boolean_index.values(), start=1
-        ):
+        for object_int_id, object_boolean_index in enumerate(self.po_label_to_qualia_boolean_index.values(), start=1):
             overlapping_frames += np.sum(object_boolean_index & observation_sequence)
             observation_sequence[object_boolean_index] = object_int_id  # TODO: Revert
 

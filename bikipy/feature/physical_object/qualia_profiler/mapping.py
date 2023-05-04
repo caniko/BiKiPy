@@ -1,5 +1,9 @@
-from bikipy.feature.physical_object.qualia_profiler.body_proximity import BodyProximityProfile
-from bikipy.feature.physical_object.qualia_profiler.field_of_view import FOVCenterToEyesRayCastingProfile
+from bikipy.feature.physical_object.qualia_profiler.body_proximity import (
+    BodyProximityProfile,
+)
+from bikipy.feature.physical_object.qualia_profiler.field_of_view import (
+    FOVCenterToEyesRayCastingProfile,
+)
 
 PROFILES = (BodyProximityProfile, FOVCenterToEyesRayCastingProfile)
 

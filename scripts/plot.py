@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 ticklabelpad = mpl.rcParams["xtick.major.pad"] * 0.3
 

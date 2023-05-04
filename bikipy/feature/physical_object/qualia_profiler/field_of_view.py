@@ -1,13 +1,16 @@
 from functools import cached_property
-from typing import Optional, Sequence
+from typing import Optional
 
 import pandas as pd
-from matplotlib.axes import Axes
 from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.attention.proximity import ComputeProximity
 from bikipy.feature.attention.ray import ComputeRay
-from bikipy.feature.physical_object.qualia_profiler.abc import AbstractQualiaProfile, ProximityMixin, RayMixin
+from bikipy.feature.physical_object.qualia_profiler.abc import (
+    AbstractQualiaProfile,
+    ProximityMixin,
+    RayMixin,
+)
 from bikipy.feature.tolerance.plural import plural_node_tolerance_model
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 
@@ -122,7 +125,7 @@ class FOVCenterToEyesRayCastingProfile(AbstractQualiaProfile, ProximityMixin, Ra
             }
         )
 
-    def plot(self, axes: Optional[Sequence[Axes]] = None) -> None:
+    def plot(self) -> None:
         fig, axes = self.video.subplots(ncols=3, nrows=3)
 
         # Left

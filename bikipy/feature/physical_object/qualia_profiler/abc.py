@@ -1,20 +1,19 @@
 from abc import ABC, abstractmethod
-from typing import TypeVar, Optional, ClassVar, Type
+from typing import ClassVar, Type, TypeVar
 
 import pandas as pd
 from matplotlib.axes import Axes
-from pydantic import Field, BaseModel
+from pydantic import BaseModel, Field
 from pydantic_numpy import NDArrayBool
 from schemantic.model.project import SchemanticProjectMixin
 
-from bikipy.core.mixin import InspectPlotMixin
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.reader.base import Reader
-from bikipy.utils.math.cached import meters2pixels, cached_deg2rad
+from bikipy.utils.math.cached import cached_deg2rad, meters2pixels
 
 
-class AbstractQualiaProfile(VideoMetadataMixin, SchemanticProjectMixin, InspectPlotMixin, ABC):
+class AbstractQualiaProfile(VideoMetadataMixin, SchemanticProjectMixin, ABC):
     perimeter: SinglePerimeter = ...
     reader: Reader = ...
     filter_in_sequence: bool = Field(
@@ -36,16 +35,16 @@ class AbstractQualiaProfile(VideoMetadataMixin, SchemanticProjectMixin, InspectP
         ...
 
     @abstractmethod
-    def plot(self, ax: Optional[Axes] = None) -> None:
+    def plot(self) -> None:
         ...
 
-    def result_and_inspect(self, ax: Axes) -> NDArrayBool:
+    @property
+    def label(self) -> str:
+        return self.perimeter.label
+
+    def plot_result(self, ax: Axes):
         ax.set_title(self.profile_alias)
         self.reader.plot_boolean_index(self.result, ax)
-
-
-
-        return self.result
 
 
 QualiaProfileCLS = Type[AbstractQualiaProfile]
