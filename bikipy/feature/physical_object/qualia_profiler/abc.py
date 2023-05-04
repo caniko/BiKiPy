@@ -7,22 +7,23 @@ from pydantic import Field, BaseModel
 from pydantic_numpy import NDArrayBool
 from schemantic.model.project import SchemanticProjectMixin
 
+from bikipy.core.mixin import InspectPlotMixin
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.reader.base import Reader
 from bikipy.utils.math.cached import meters2pixels, cached_deg2rad
 
 
-class AbstractQualiaProfile(VideoMetadataMixin, SchemanticProjectMixin, ABC):
+class AbstractQualiaProfile(VideoMetadataMixin, SchemanticProjectMixin, InspectPlotMixin, ABC):
     perimeter: SinglePerimeter = ...
     reader: Reader = ...
     filter_in_sequence: bool = Field(
-        False,
+        True,
         description="When set to True, the component boolean index will be "
         "considered in sequence with other components that are also filtered in sequence",
     )
 
-    label: ClassVar[str] = ...
+    profile_alias: ClassVar[str] = ...
 
     @property
     @abstractmethod
@@ -38,9 +39,13 @@ class AbstractQualiaProfile(VideoMetadataMixin, SchemanticProjectMixin, ABC):
     def plot(self, ax: Optional[Axes] = None) -> None:
         ...
 
-    def plot_result(self, ax: Axes) -> None:
-        ax.set_title(self.label)
+    def result_and_inspect(self, ax: Axes) -> NDArrayBool:
+        ax.set_title(self.profile_alias)
         self.reader.plot_boolean_index(self.result, ax)
+
+
+
+        return self.result
 
 
 QualiaProfileCLS = Type[AbstractQualiaProfile]

@@ -111,7 +111,7 @@ def inspect_annotations(annotation_path: FilePath, image_directory: Optional[Dir
         axis_frame_imshow(ax, read_image_from_path(image_directory / image_name))
         ax.invert_yaxis()
 
-        perimeter_set.plot(,,
+        perimeter_set.plot(manual_ax=ax, inspect_pixels=True)
 
     plt.show()
 

@@ -6,7 +6,7 @@ from matplotlib.axes import Axes
 from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.attention.proximity import ComputeProximity
-from bikipy.feature.physical_object.qualia.profile.abc import AbstractQualiaProfile, ProximityMixin
+from bikipy.feature.physical_object.qualia_profiler.abc import AbstractQualiaProfile, ProximityMixin
 from bikipy.feature.tolerance.plural import plural_node_tolerance_model
 
 
@@ -19,7 +19,7 @@ class BodyProximityProfile(AbstractQualiaProfile, ProximityMixin):
     manual_torso: Optional[ComputeProximity]
     manual_tail_label: Optional[ComputeProximity]
 
-    label = "BodyProximity"
+    profile_alias = "BodyProximity"
 
     @classmethod
     @property
@@ -87,7 +87,7 @@ class BodyProximityProfile(AbstractQualiaProfile, ProximityMixin):
                 "CenterEyeProximity": self.center_eye_proximity.result,
                 "TorsoProximity": self.torso_proximity.result,
                 "BaseTailProximity": self.base_tail_proximity.result,
-                self.label: self.result,
+                self.profile_alias: self.result,
             }
         )
 

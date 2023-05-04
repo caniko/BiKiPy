@@ -7,8 +7,9 @@ from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.attention.proximity import ComputeProximity
 from bikipy.feature.attention.ray import ComputeRay
-from bikipy.feature.physical_object.qualia.profile.abc import AbstractQualiaProfile, ProximityMixin, RayMixin
+from bikipy.feature.physical_object.qualia_profiler.abc import AbstractQualiaProfile, ProximityMixin, RayMixin
 from bikipy.feature.tolerance.plural import plural_node_tolerance_model
+from bikipy.feature.tolerance.single import single_node_tolerance_model
 
 
 class FOVCenterToEyesRayCastingProfile(AbstractQualiaProfile, ProximityMixin, RayMixin):
@@ -21,7 +22,7 @@ class FOVCenterToEyesRayCastingProfile(AbstractQualiaProfile, ProximityMixin, Ra
     manual_right_proximity: Optional[ComputeProximity]
     manual_rightward_observation: Optional[ComputeRay]
 
-    label = "ObjectInProximalFOV"
+    profile_alias = "ObjectInProximalFOV"
 
     @classmethod
     @property
@@ -93,11 +94,13 @@ class FOVCenterToEyesRayCastingProfile(AbstractQualiaProfile, ProximityMixin, Ra
 
     @cached_property
     def left_result(self) -> NDArrayBool:
-        return self.left_proximity.result & self.leftward_observation.result
+        result = self.left_proximity.result & self.leftward_observation.result
+        return result if self.filter_in_sequence else single_node_tolerance_model(result, self.fps)
 
     @cached_property
     def right_result(self) -> NDArrayBool:
-        return self.right_proximity.result & self.rightward_observation.result
+        result = self.right_proximity.result & self.rightward_observation.result
+        return result if self.filter_in_sequence else single_node_tolerance_model(result, self.fps)
 
     @cached_property
     def result(self) -> NDArrayBool:
@@ -115,7 +118,7 @@ class FOVCenterToEyesRayCastingProfile(AbstractQualiaProfile, ProximityMixin, Ra
                 "LeftwardFOV": self.leftward_observation.result_seconds,
                 "RightProximity": self.right_proximity.result_seconds,
                 "RightwardFOV": self.rightward_observation.result_seconds,
-                self.label: self.result,
+                self.profile_alias: self.result,
             }
         )
 

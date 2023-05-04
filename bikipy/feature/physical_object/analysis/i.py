@@ -1,6 +1,6 @@
 from functools import cached_property
 from logging import getLogger
-from typing import ClassVar
+from typing import ClassVar, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -15,7 +15,6 @@ logger = getLogger(__name__)
 
 
 class OnePhysicalObjectSetQualiaAnalysis(BikipyHashable, AbstractFeatureCollectorMixin, VideoMetadataMixin):
-    analysis_label: str
     physical_object_label_to_observation_boolean_index: dict[str, NDArrayBool]
 
     overlapping_frame_to_total_frame_warning_ratio: ClassVar[float] = 0.05
@@ -50,3 +49,6 @@ class OnePhysicalObjectSetQualiaAnalysis(BikipyHashable, AbstractFeatureCollecto
             label: np.sum(observation_boolean_index) / self.video.fps
             for label, observation_boolean_index in self.physical_object_label_to_observation_boolean_index.items()
         }
+
+
+QualiaAnalysis = TypeVar("QualiaAnalysis", bound=OnePhysicalObjectSetQualiaAnalysis)
