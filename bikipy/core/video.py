@@ -23,7 +23,7 @@ from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16, NDArrayUint8
 
 from bikipy import runtime_settings
-from bikipy.core.base import BikipyConfigModel
+from bikipy.core.base import BikipyConfigModel, BikipyModel
 from bikipy.core.typing import MetersPerPixel
 from bikipy.utils.image import read_image_from_path
 from bikipy.utils.plot.io import ax_imshow_gray
@@ -37,7 +37,7 @@ _TICK_END_OFFSET_RATIO = 0.9
 _can_only_be_set_manually = {"meters_per_pixel", "image_resize_multiplier"}
 
 
-class _VideoMetadataBase(BikipyConfigModel):
+class _VideoMetadataBase(BikipyModel):
     meters_per_pixel: Optional[MetersPerPixel] = Field(
         description="Float or 1D array defining the meter to pixel ratio"
     )

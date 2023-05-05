@@ -101,7 +101,7 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
         return np.sum(self.reward_boolean) / self.video.fps
 
     @property
-    def _analysis_series_list(self) -> list[pd.Series, ...]:
+    def _analysis_series_list(self) -> list[pd.Series]:
         upstream_list = super()._analysis_series_list
 
         category = "Cheeseboard"

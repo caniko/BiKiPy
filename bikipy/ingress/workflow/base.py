@@ -379,7 +379,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitRootMod
         return result
 
     @cached_property
-    def _global_plugins(self) -> list["PluginType", ...]:
+    def _global_plugins(self) -> list["PluginType"]:
         from bikipy.ingress.plugin.map import ingress_key_to_model
 
         return [
@@ -389,7 +389,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitRootMod
         ]
 
     @cached_property
-    def _plugins_metadata(self) -> list["PluginType", ...]:
+    def _plugins_metadata(self) -> list["PluginType"]:
         from bikipy.ingress.plugin.map import ingress_key_to_model
 
         return [
@@ -399,7 +399,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitRootMod
         ]
 
     @cached_property
-    def _trialwise_plugins(self) -> list["PluginType", ...]:
+    def _trialwise_plugins(self) -> list["PluginType"]:
         from bikipy.ingress.plugin.map import ingress_key_to_model
 
         return [
@@ -676,7 +676,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitRootMod
         return result
 
     @validate_arguments
-    def _coordinate_files_in_directory(self, directory_path: DirectoryPath) -> list[FilePath, ...]:
+    def _coordinate_files_in_directory(self, directory_path: DirectoryPath) -> list[FilePath]:
         available_indices = {int(file.stem.split(".")[0]) for file in directory_path.iterdir() if file.is_file()}
 
         result = []

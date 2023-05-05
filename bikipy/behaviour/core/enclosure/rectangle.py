@@ -280,7 +280,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
         return np.sum(self.periphery_boolean_index) / self.video.fps
 
     @property
-    def _analysis_series_list(self) -> list[pd.Series, ...]:
+    def _analysis_series_list(self) -> list[pd.Series]:
         upstream_list = super()._analysis_series_list
         if self.video.resolution is None:
             return upstream_list
@@ -339,7 +339,7 @@ class BlanketRectangleEnclosedExperiment(RectangleEnclosedExperiment):
 @lru_cache
 def motion_column_headers(
     quadrant_grid_coordinates: tuple[tuple[int, int], ...], column_index_levels: int, center_periphery_is_defined: bool
-) -> list[tuple, ...]:
+) -> list[tuple]:
     result = [
         # ("Gaussian", "CenterToPeriphery")
     ]

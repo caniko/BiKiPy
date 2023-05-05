@@ -22,7 +22,14 @@ class AbstractQualiaProfile(VideoMetadataMixin, SchemanticProjectMixin, ABC):
         "considered in sequence with other components that are also filtered in sequence",
     )
 
-    profile_alias: ClassVar[str] = ...
+    heuristic_alias: ClassVar[str] = ...
+
+    @classmethod
+    @property
+    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
+        upstream = super().schemantic_fields_to_exclude_from_config_schema
+        upstream.update(("perimeter", "reader"))
+        return upstream
 
     @property
     @abstractmethod
@@ -43,7 +50,7 @@ class AbstractQualiaProfile(VideoMetadataMixin, SchemanticProjectMixin, ABC):
         return self.perimeter.label
 
     def plot_result(self, ax: Axes):
-        ax.set_title(self.profile_alias)
+        ax.set_title(self.heuristic_alias)
         self.reader.plot_boolean_index(self.result, ax)
 
 

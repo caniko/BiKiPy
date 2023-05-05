@@ -1,6 +1,6 @@
 from functools import cached_property
 from logging import getLogger
-from typing import TypeVar
+from typing import TypeVar, Type
 
 import numpy as np
 import pandas as pd
@@ -13,15 +13,15 @@ from bikipy.core.video import VideoMetadataMixin
 logger = getLogger(__name__)
 
 
-class OnePhysicalObjectSetQualiaAnalysis(BikipyHashable, AbstractFeatureCollectorMixin, VideoMetadataMixin):
+class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMetadataMixin):
     po_label_to_qualia_boolean_index: dict[str, NDArrayBool]
 
     @property
-    def _analysis_series_list(self) -> list[pd.Series, ...]:
+    def _analysis_series_list(self) -> list[pd.Series]:
         return [
             pd.Series(
                 {
-                    "TotalObservingSeconds": self.po_total_seconds_observing,
+                    "TotalSecondsObserving": self.po_total_seconds_observing,
                     **{
                         f"SecondsObserving{label.capitalize()}": seconds_observing
                         for label, seconds_observing in self.po_label_to_seconds_observing.items()
@@ -52,4 +52,5 @@ class OnePhysicalObjectSetQualiaAnalysis(BikipyHashable, AbstractFeatureCollecto
         }
 
 
+QualiaAnalysisType = Type[OnePhysicalObjectSetQualiaAnalysis]
 QualiaAnalysis = TypeVar("QualiaAnalysis", bound=OnePhysicalObjectSetQualiaAnalysis)

@@ -6,7 +6,6 @@ from matplotlib.axes import Axes
 from pydantic import validator
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
-from bikipy.behaviour.utils import ray_direction_filter_circle_triangle
 from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.utils.math.cached import meters2pixels
@@ -85,6 +84,8 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
     def ray_direction_filter(
         self, ray_start_point: NDArrayFp64, ray_travel_direction_point: NDArrayFp64, max_radians: float, **kwargs
     ) -> NDArrayBool:
+        from bikipy.behaviour.utils import ray_direction_filter_circle_triangle
+
         return ray_direction_filter_circle_triangle(self, ray_travel_direction_point, ray_start_point, max_radians)
 
     def plot_perimeter_on_ax(

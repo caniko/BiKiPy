@@ -130,7 +130,7 @@ stage = "string"
 trial_init_error_out_dir = "string"
 
 [perimeter]
-label_prefix = "object"
+label_prefix = "object_"
 label_suffix = ""
 perimeter_names_in_metadata = false
 radial_arm_rectangle_diagonal = -1

@@ -7,8 +7,12 @@ Training and novelty trials each contain two objects, and we evaluate whether th
 
 Training
 --------
-The animal is exposed to two identical objects during training,
+The animal is exposed to two identical objects. The total sum of seconds observing the objects is recorded.
 
 Novelty
 -------
-One of the objects from the training trial is exchanged with a different object.
+One of the objects from the training trial is exchanged with a different object. In addition to total seconds
+
+Methods
+=======
+

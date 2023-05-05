@@ -21,6 +21,7 @@ from bikipy._constant import (
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.mapping import experiment_name_to_class
 from bikipy.behaviour.radial_arm import BaseRadialMazeExperiment
+from bikipy.feature.qualia.physical_object.heuristic.mapping import PROFILE_MAP
 from bikipy.ingress.plugin.perimeter.enclosure import PluginEnclosure
 from bikipy.ingress.workflow.animal import AnimalIngressWorkflow
 from bikipy.ingress.workflow.animal_day import AnimalDayIngressWorkflow
@@ -37,7 +38,7 @@ INGRESS_METHOD_NAME_TO_INGRESS_CLASS = {
 }
 
 
-class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflow]):
+class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
     config_key_order = PROJECTKIT_CONFIG_KEY_ORDER
 
     project_name = "bikipy"
@@ -52,7 +53,7 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflo
         ingress_method: str,
         experiment_name: str,
         project_directory: Optional[DirectoryPath] = None,
-        qualia_definition_profile: Optional[list[str, ...]] = None,
+        qualia_heuristic: Optional[list[str]] = None,
     ) -> dict:
         from bikipy.ingress.plugin.perimeter.radial_maze import PluginRadial
         from bikipy.ingress.plugin.perimeter.single import PluginSinglePerimeter
@@ -88,7 +89,6 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflo
 
         plugin_models = set()
 
-        assert experiment_class.trial_classes
         if len(experiment_class.trial_classes) == 1:
             cds_single.append(
                 SingleSchema(manual_mapping_name=TRIAL_MAP_NAME, model=experiment_class.trial_classes.pop())
@@ -136,8 +136,19 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration[IngressWorkflo
                 plugin_models.add(PluginRadial)
 
             if experiment_class.at_least_one_trial_has_physical_object:
-                assert qualia_definition_profile, "Experiments with physical objects require qualia profiling"
-                cds_hierarchical.extend()
+                assert qualia_heuristic, "Experiments with physical objects require qualia profiling"
+                models = set()
+                for heuristic in qualia_heuristic:
+                    try:
+                        models.add(PROFILE_MAP[heuristic])
+                    except KeyError:
+                        msg = (
+                            f"The defined heuristic key, {heuristic}, is not defined. "
+                            f"Choose from the following: {', '.join(tuple(PROFILE_MAP))}"
+                        )
+                        raise KeyError(msg)
+
+                cds_hierarchical.append(GroupSchema.from_models(models=models, mapping_name="qualia_heuristics"))
 
         if plugin_models:
             cds_hierarchical.append(GroupSchema.from_models(mapping_name=PLUGIN_MAP_NAME, models=plugin_models))

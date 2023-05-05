@@ -5,7 +5,7 @@ import pandas as pd
 from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
-from bikipy.feature.qualia.physical_object.qualia_heuristic.abc import (
+from bikipy.feature.qualia.physical_object.heuristic.abc import (
     AbstractQualiaProfile,
     ProximityMixin,
 )
@@ -21,7 +21,7 @@ class BodyProximityProfile(AbstractQualiaProfile, ProximityMixin):
     manual_torso: Optional[ComputeProximity]
     manual_tail_label: Optional[ComputeProximity]
 
-    profile_alias = "BodyProximity"
+    heuristic_alias = "BodyProximity"
 
     @classmethod
     @property
@@ -89,7 +89,7 @@ class BodyProximityProfile(AbstractQualiaProfile, ProximityMixin):
                 "CenterEyeProximity": self.center_eye_proximity.result,
                 "TorsoProximity": self.torso_proximity.result,
                 "BaseTailProximity": self.base_tail_proximity.result,
-                self.profile_alias: self.result,
+                self.heuristic_alias: self.result,
             }
         )
 

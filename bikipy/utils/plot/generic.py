@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy.utils.plot.color import cmap

@@ -186,25 +186,6 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             return np.any(result, axis=0)
         return result
 
-    def closest_ray_intersection_points(
-        self,
-        ray_origins: NDArrayFp64,
-        ray_directions: NDArrayFp64,
-    ) -> NDArrayFp64:
-        """
-        The first intersection point between a ray, and the polygon
-
-        :return:
-        """
-        ray_intersection_points_on_polygon = self.ray_intersects_on_polygon(ray_origins, ray_directions)
-        vector_matrix = ray_origins - ray_intersection_points_on_polygon
-        distance_matrix = np.linalg.norm(vector_matrix, axis=2)
-
-        argsorted_distance = np.argsort(distance_matrix, axis=0)
-        closest_boolean_index = argsorted_distance == 0
-
-        return ray_intersection_points_on_polygon[closest_boolean_index]
-
     def ray_direction_filter(
         self,
         ray_start_point: NDArrayFp64,
@@ -217,7 +198,8 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
         This problem is called the "in line of sight" (ilos) problem, and is non-trivial. This is not the best solution
         in terms of speed for our application; nevertheless, it is quite robust and had the lowest implementation time.
-        The solution is to emit rays from
+        The solution is to emit rays from the point representing the region of interest, and checking for collisions
+        with the perimeter.
 
         :param ray_travel_direction_point:
         :param ray_start_point:

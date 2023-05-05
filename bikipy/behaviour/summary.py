@@ -17,7 +17,7 @@ except ImportError:
 class StatisticalAnalysis(BikipyModel):
     analysis_df: pd.DataFrame
     metadata_df: pd.DataFrame
-    category_columns: tuple[str, ...]
+    category_columns: tuple[str]
     feature_columns: tuple
     identifier: str
     project_directory: DirectoryPath

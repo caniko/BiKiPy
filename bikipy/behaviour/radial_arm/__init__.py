@@ -109,7 +109,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
 
     @classmethod
     @property
-    def radial_arm_feature_headers(cls) -> list[tuple[str, ...]]:
+    def radial_arm_feature_headers(cls) -> list[tuple[str]]:
         return [
             ("SpontaneousAlternations", ""),
             *feature_2d_multi_indexer("SecondsInArea", cls._arm_center_labels),
@@ -122,7 +122,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         ]
 
     @property
-    def _analysis_series_list(self) -> list[pd.Series, ...]:
+    def _analysis_series_list(self) -> list[pd.Series]:
         upstream_list = super()._analysis_series_list
 
         upstream_list.append(

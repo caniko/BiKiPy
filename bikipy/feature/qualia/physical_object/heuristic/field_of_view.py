@@ -5,8 +5,8 @@ import pandas as pd
 from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
-from bikipy.feature.qualia.axioms.ray import ComputeRay
-from bikipy.feature.qualia.physical_object.qualia_heuristic.abc import (
+from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
+from bikipy.feature.qualia.physical_object.heuristic.abc import (
     AbstractQualiaProfile,
     ProximityMixin,
     RayMixin,
@@ -21,11 +21,11 @@ class FOVCenterToEyesRayCastingProfile(AbstractQualiaProfile, ProximityMixin, Ra
     right_eye_label: str = "right_ear"
 
     manual_left_eye_proximity: Optional[ComputeProximity]
-    manual_leftward_observation: Optional[ComputeRay]
+    manual_leftward_observation: Optional[ComputeInLineOfSight]
     manual_right_proximity: Optional[ComputeProximity]
-    manual_rightward_observation: Optional[ComputeRay]
+    manual_rightward_observation: Optional[ComputeInLineOfSight]
 
-    profile_alias = "ObjectInProximalFOV"
+    heuristic_alias = "ObjectInProximalFOV"
 
     @classmethod
     @property
@@ -55,11 +55,11 @@ class FOVCenterToEyesRayCastingProfile(AbstractQualiaProfile, ProximityMixin, Ra
         )
 
     @cached_property
-    def leftward_observation(self) -> ComputeRay:
+    def leftward_observation(self) -> ComputeInLineOfSight:
         return (
             self.manual_leftward_observation
             if self.manual_leftward_observation
-            else ComputeRay(
+            else ComputeInLineOfSight(
                 perimeter=self.perimeter,
                 ray_start_point=self.reader[self.left_eye_label],
                 ray_travel_direction_point=self.reader[self.center_eye_label],
@@ -82,11 +82,11 @@ class FOVCenterToEyesRayCastingProfile(AbstractQualiaProfile, ProximityMixin, Ra
         )
 
     @cached_property
-    def rightward_observation(self) -> ComputeRay:
+    def rightward_observation(self) -> ComputeInLineOfSight:
         return (
             self.manual_rightward_observation
             if self.manual_rightward_observation
-            else ComputeRay(
+            else ComputeInLineOfSight(
                 perimeter=self.perimeter,
                 ray_start_point=self.reader[self.right_eye_label],
                 ray_travel_direction_point=self.reader[self.center_eye_label],
@@ -121,7 +121,7 @@ class FOVCenterToEyesRayCastingProfile(AbstractQualiaProfile, ProximityMixin, Ra
                 "LeftwardFOV": self.leftward_observation.result_seconds,
                 "RightProximity": self.right_proximity.result_seconds,
                 "RightwardFOV": self.rightward_observation.result_seconds,
-                self.profile_alias: self.result,
+                self.heuristic_alias: self.result,
             }
         )
 

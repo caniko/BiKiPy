@@ -49,7 +49,7 @@ class ComputeProximity(AbstractComputeBooleanIndex):
 
         return result
 
-    @validate_arguments
+    @validate_arguments(config={"arbitrary_types_allowed": True})
     def plot(self, ax: Axes, video: VideoMetadata, inspect_pixels: bool = False) -> None:
         assert self.result is not None
 

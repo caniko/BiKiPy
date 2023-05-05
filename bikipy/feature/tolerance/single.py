@@ -100,7 +100,7 @@ def arg_single_node_tolerance_model(
     fps: float,
     minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
     maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
-) -> list[NDArrayInt64, ...]:
+) -> list[NDArrayInt64]:
     """
     Deal with islands of data that need to be aggregated for analysis. These islands
     of data have to be merged arbitrarily.

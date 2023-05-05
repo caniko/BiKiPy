@@ -17,13 +17,13 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
     overlapping_frame_to_total_frame_warning_ratio: ClassVar[float] = 0.05
 
     @property
-    def _analysis_series_list(self) -> list[pd.Series, ...]:
+    def _analysis_series_list(self) -> list[pd.Series]:
         upstream = super()._analysis_series_list
         upstream.append(
             pd.Series(
                 {
                     **{
-                        f"AbsoluteDiscrimination{label_a.capitalize()}{label_b.capitalize()}": discrimination
+                        f"DiscriminationIndex{label_a.capitalize()}{label_b.capitalize()}": discrimination
                         for (label_a, label_b), discrimination in self.pair_to_absolute_object_discrimination.items()
                     },
                     **{

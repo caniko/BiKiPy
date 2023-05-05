@@ -1,3 +1,4 @@
+import logging
 from math import floor
 
 import matplotlib
@@ -6,6 +7,9 @@ from pydantic import BaseSettings, Field
 from schemantic.model.project import SchemanticProjectMixin
 
 matplotlib.use("Agg")
+
+
+logger = logging.getLogger(__file__)
 
 
 class BikipyRuntimeSettings(BaseSettings, SchemanticProjectMixin):
@@ -43,3 +47,5 @@ def set_bikipy_settings_from_dict(value: dict) -> None:
 
     global runtime_settings
     runtime_settings = BikipyRuntimeSettings(**value)
+
+    logger.info(runtime_settings)

@@ -2,6 +2,7 @@ from logging import getLogger
 from typing import Literal
 
 import numpy as np
+from matplotlib.axes import Axes
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter

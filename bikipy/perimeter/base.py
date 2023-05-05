@@ -11,7 +11,8 @@ from matplotlib.axes import Axes
 from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
-from bikipy.core.base import BikipyHashable, InspectPlotMixin
+from bikipy.core.base import BikipyHashable
+from bikipy.core.mixin import InspectPlotMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.perimeter.helper.utils import get_coco_array_from_path_or_array

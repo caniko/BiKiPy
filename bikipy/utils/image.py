@@ -4,6 +4,7 @@ from typing import Optional
 
 import cv2
 import numpy as np
+from matplotlib.axes import Axes
 from pydantic import FilePath, validate_arguments
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayUint8

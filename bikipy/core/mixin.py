@@ -22,7 +22,7 @@ class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
 
     @property
     @abstractmethod
-    def _analysis_series_list(self) -> list[pd.Series, ...]:
+    def _analysis_series_list(self) -> list[pd.Series]:
         ...
 
     @property

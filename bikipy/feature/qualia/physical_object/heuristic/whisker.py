@@ -2,7 +2,7 @@ from typing import ClassVar
 
 from pydantic_numpy import NDArrayBool
 
-from bikipy.feature.qualia.physical_object.qualia_heuristic.abc import AbstractQualiaProfile
+from bikipy.feature.qualia.physical_object.heuristic.abc import AbstractQualiaProfile
 
 
 class WhiskerInteractionQualiaGroup(AbstractQualiaProfile):

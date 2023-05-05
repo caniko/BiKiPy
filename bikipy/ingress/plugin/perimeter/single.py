@@ -58,9 +58,9 @@ class PluginSinglePerimeter(AbstractPerimeterPlugin):
             if PluginScope.METADATA in self.ingress.definition_single_perimeter:
                 label = self.label_to_trial_label_df.loc[trial_id, label]
             if self.label_prefix:
-                label = f"{self.label_prefix}_{label}"
+                label = f"{self.label_prefix}{label}"
             if self.label_suffix:
-                label = f"{label}_{self.label_suffix}"
+                label = f"{label}{self.label_suffix}"
 
             result[label] = _perimeter_with_label(perimeter, label)
 

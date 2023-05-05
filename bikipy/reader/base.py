@@ -333,7 +333,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             return self.raw_df.index.values[-1]
         return len(self.raw_df) * self.fps
 
-    @validate_arguments
+    @validate_arguments(config={"arbitrary_types_allowed": True})
     def plot_boolean_index(
         self, boolean_index: NDArrayBool, ax: Axes, manual_kinematic_coordinates: Optional[str] = None
     ) -> None:
