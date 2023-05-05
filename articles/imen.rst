@@ -1,11 +1,15 @@
-===========================
-Post-Hoc kinematic analysis
-===========================
-
 Experiments
 ===========
-The coordinates were smoothened with the use of a SARIMAX_ model.
 
+NORT
+----
+Novel object recognition test or NORT has three stages: *Habituation*, *training*, *novelty*. The habituation is absent of physical objects, and is only an open field; we record motion and center-periphery confinement features. Training and novelty trials each contain two objects, and we evaluate whether the animal is attentively observing them in every frame by employing qualia heuristics.
+
+Qualia definitions from kinematics data requires axioms in two categories, ray-casting and proximity. Ray-casting axioms includes casting ray(s) from body region, and can help us determine when an object is within the field of view (FOV), or if it stimulates untraceable appendages like whiskers. The proximity axioms lets us decide a range of distance between a body region and the physical object; it will True if and only if the distance is within the defined range.
+
+We combine axioms to define the occurrences of observation qualia at a given time, these combination are referred to as qualia heuristics. At the discretion of the end-user, heuristics can also be combined using AND or OR logic; the resulting boolean index is treated as a heuristic.
+
+The coordinates were smoothened with the use of a SARIMAX_ model.
 
 Habituation
 -----------

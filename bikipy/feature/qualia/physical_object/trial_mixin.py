@@ -8,10 +8,10 @@ from projectkit.model.project import ProjectKitDownstreamBranchingMixin
 from pydantic import validate_arguments, Field
 from schemantic.model.schema import GroupSchema
 
-from bikipy.behaviour.physical_object.analysis.i import QualiaAnalysis
-from bikipy.behaviour.physical_object.analysis.mapping import PO_NUMBER_TO_ANALYSIS_MODEL
-from bikipy.behaviour.physical_object.qualia_profiler.abc import QualiaProfile
-from bikipy.behaviour.physical_object.qualia_profiler.mapping import PROFILE_MAP
+from bikipy.feature.qualia.physical_object.analysis.i import QualiaAnalysis
+from bikipy.feature.qualia.physical_object.analysis.mapping import PO_NUMBER_TO_ANALYSIS_MODEL
+from bikipy.feature.qualia.physical_object.qualia_heuristic.abc import QualiaProfile
+from bikipy.feature.qualia.physical_object.qualia_heuristic.mapping import PROFILE_MAP
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.perimeter.mixin import PerimeterInstances, TrialWithPerimeterMixin
 from bikipy.utils.plot.inspect import generic_inspection_finalization
@@ -23,7 +23,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ProjectKitDownstreamBran
     qualia_profiles_combination_equations: list[str, ...] = Field(
         # TODO: Implement
         default_factory=list,
-        description="Performs analysis by combining qualia profile result with respect to "
+        description="Performs analysis by combining qualia heuristic result with respect to "
         "the defined logical method AND/OR using & or | respectively.",
     )
 
@@ -51,12 +51,12 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ProjectKitDownstreamBran
 
         models = set()
         assert qualia_definition_profile
-        for profile in qualia_definition_profile:
+        for heuristic in qualia_definition_profile:
             try:
-                models.add(PROFILE_MAP[profile])
+                models.add(PROFILE_MAP[heuristic])
             except KeyError:
                 msg = (
-                    f"The defined profile key, {profile}, is not defined. "
+                    f"The defined heuristic key, {heuristic}, is not defined. "
                     f"Choose from the following: {', '.join(iter(PROFILE_MAP))}"
                 )
                 raise KeyError(msg)

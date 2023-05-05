@@ -4,9 +4,9 @@ from typing import Optional
 import pandas as pd
 from pydantic_numpy import NDArrayBool
 
-from bikipy.feature.attention.proximity import ComputeProximity
-from bikipy.feature.attention.ray import ComputeRay
-from bikipy.behaviour.physical_object.qualia_profiler.abc import (
+from bikipy.feature.qualia.axioms.proximity import ComputeProximity
+from bikipy.feature.qualia.axioms.ray import ComputeRay
+from bikipy.feature.qualia.physical_object.qualia_heuristic.abc import (
     AbstractQualiaProfile,
     ProximityMixin,
     RayMixin,

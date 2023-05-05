@@ -8,7 +8,7 @@ import pandas as pd
 from pydantic_numpy import NDArrayUint8
 
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.behaviour.physical_object.analysis.i import OnePhysicalObjectSetQualiaAnalysis
+from bikipy.feature.qualia.physical_object.analysis.i import OnePhysicalObjectSetQualiaAnalysis
 
 logger = getLogger(__name__)
 

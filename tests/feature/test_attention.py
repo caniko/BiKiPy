@@ -1,6 +1,6 @@
 import numpy as np
 
-from bikipy.feature.attention.proximity import proximity_filter
+from bikipy.feature.qualia.axioms import proximity_filter
 from bikipy.utils.math.geometry import expand_rectangle
 from tests.test_data.perimeter.parallelogram.get_perimeter import (
     rectangle_perimeter_coco_test_object,
