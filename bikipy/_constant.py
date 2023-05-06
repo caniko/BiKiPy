@@ -9,6 +9,9 @@ PERIMETER_MAP_NAME = "perimeter"
 PLUGIN_MAP_NAME = "plugin"
 RUNTIME_SETTINGS_MAP_NAME = "runtime_settings"
 
+QUALIA_HEURISTICS_MAP_NAME = "qualia_heuristics"
+PHYSICAL_OBJECT_MAP_NAME = QUALIA_HEURISTICS_MAP_NAME
+
 PROJECTKIT_CONFIG_KEY_ORDER = OrderedSet(
     (
         "manual",

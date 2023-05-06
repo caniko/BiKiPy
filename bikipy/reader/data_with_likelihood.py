@@ -7,7 +7,8 @@ from typing import Generic, Hashable, Iterable, Optional
 import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath
-from pydantic_numpy.dtype import NDArrayBool
+from pydantic.generics import GenericModel
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy.reader.base import BaseReader, Enclosure
 from bikipy.reader.utils import compute_midpoint_label
@@ -43,18 +44,6 @@ class DataWithLikelihoodReader(BaseReader[Enclosure], Generic[Enclosure]):
 
     _df_needs_to_be_cleaned = True
 
-    def _isolate_coordinates(self, item):
-        # remove likelihood column
-        return np.delete(self.df[item].values, 2, 1)
-
-    @cached_property
-    def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:
-        return {roi: self.df[(roi, "likelihood")].values >= self.min_likelihood for roi in self.all_tracked_labels}
-
-    @property
-    def frames(self) -> int:
-        return self.df.shape[0]
-
     def _compute_midpoint(
         self, df: pd.DataFrame, midpoint_group: Iterable[str], manual_midpoint_label: Optional[Hashable] = None
     ) -> pd.DataFrame:
@@ -76,6 +65,18 @@ class DataWithLikelihoodReader(BaseReader[Enclosure], Generic[Enclosure]):
             ),
             axis=1,
         )
+
+    def _isolate_coordinates(self, item) -> NDArrayFp64:
+        # remove likelihood column
+        return np.delete(self.df[item].values, 2, 1)
+
+    @cached_property
+    def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:
+        return {roi: self.df[(roi, "likelihood")].values >= self.min_likelihood for roi in self.all_tracked_labels}
+
+    @property
+    def frames(self) -> int:
+        return self.df.shape[0]
 
 
 class DeepLabCutReader(DataWithLikelihoodReader[Enclosure], Generic[Enclosure]):

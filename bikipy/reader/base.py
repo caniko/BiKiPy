@@ -353,11 +353,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         plt.legend(**BOTTOM_LEGEND_KWARGS)
 
     def _compute_midpoint(
-        self,
-        df: pd.DataFrame,
-        midpoint_group: Iterable[str],
-        manual_midpoint_label: Optional[Hashable] = None,
-        **midpoint_kwargs,
+        self, df: pd.DataFrame, midpoint_group: Iterable[str], manual_midpoint_label: Optional[Hashable] = None
     ) -> pd.DataFrame:
         midpoint_label = compute_midpoint_label(midpoint_group, manual_midpoint_label)
         return pd.DataFrame(

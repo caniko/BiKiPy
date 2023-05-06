@@ -6,20 +6,20 @@ from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.physical_object.heuristic.abc import (
-    AbstractQualiaProfile,
+    AbstractQualiaHeuristic,
     ProximityMixin,
 )
 from bikipy.feature.tolerance.plural import plural_node_tolerance_model
 
 
-class BodyProximityProfile(AbstractQualiaProfile, ProximityMixin):
-    center_eye_label: str = "center_ear"
-    torso_label: str = "torso"
-    base_tail_label: str = "base_tail"
+class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
+    center_eye_label: str | None = "center_eye"
+    torso_label: str | None
+    base_tail_label: str | None = "base_tail"
 
     manual_center_eye: Optional[ComputeProximity]
     manual_torso: Optional[ComputeProximity]
-    manual_tail_label: Optional[ComputeProximity]
+    manual_base_tail: Optional[ComputeProximity]
 
     heuristic_alias = "BodyProximity"
 
@@ -27,46 +27,55 @@ class BodyProximityProfile(AbstractQualiaProfile, ProximityMixin):
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
         upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("manual_center_eye", "manual_torso", "manual_tail_label"))
+        upstream.update(("manual_center_eye", "manual_torso", "manual_base_tail"))
         return upstream
 
     @cached_property
-    def center_eye_proximity(self) -> ComputeProximity:
-        return (
-            self.manual_center_eye
-            if self.manual_center_eye
-            else ComputeProximity(
-                perimeter=self.perimeter,
-                perimeter_border_normal_pixels=self.maximum_distance_pixels,
-                inside_perimeter_border=self.reader[self.center_eye_label],
-                manual_video=self.video,
-            )
+    def center_eye_proximity(self) -> ComputeProximity | None:
+        if self.manual_center_eye is not None:
+            return self.manual_center_eye
+
+        if not self.center_eye_label:
+            return None
+
+        return ComputeProximity(
+            perimeter=self.perimeter,
+            perimeter_border_normal_pixels=self.maximum_distance_pixels,
+            inside_perimeter_border=self.reader[self.center_eye_label],
+            label="Center eye",
+            manual_video=self.video,
         )
 
     @cached_property
-    def torso_proximity(self) -> ComputeProximity:
-        return (
-            self.manual_torso
-            if self.manual_torso
-            else ComputeProximity(
-                perimeter=self.perimeter,
-                perimeter_border_normal_pixels=self.maximum_distance_pixels,
-                inside_perimeter_border=self.reader[self.torso_label],
-                manual_video=self.video,
-            )
+    def torso_proximity(self) -> ComputeProximity | None:
+        if self.manual_torso is not None:
+            return self.manual_torso
+
+        if not self.torso_label:
+            return None
+
+        return ComputeProximity(
+            perimeter=self.perimeter,
+            perimeter_border_normal_pixels=self.maximum_distance_pixels,
+            inside_perimeter_border=self.reader[self.torso_label],
+            label="Torso",
+            manual_video=self.video,
         )
 
     @cached_property
-    def base_tail_proximity(self) -> ComputeProximity:
-        return (
-            self.manual_tail_label
-            if self.manual_tail_label
-            else ComputeProximity(
-                perimeter=self.perimeter,
-                perimeter_border_normal_pixels=self.maximum_distance_pixels,
-                inside_perimeter_border=self.reader[self.base_tail_label],
-                manual_video=self.video,
-            )
+    def base_tail_proximity(self) -> ComputeProximity | None:
+        if self.manual_base_tail is not None:
+            return self.manual_base_tail
+
+        if not self.base_tail_label:
+            return None
+
+        return ComputeProximity(
+            perimeter=self.perimeter,
+            perimeter_border_normal_pixels=self.maximum_distance_pixels,
+            inside_perimeter_border=self.reader[self.base_tail_label],
+            label="Base tail",
+            manual_video=self.video,
         )
 
     @property

@@ -116,8 +116,8 @@ required = ["object_tracking_label_for_kinematics"]
 optional = ["cache_meters_augmented", "crop_from_end", "crop_time_seconds", "df_is_timestamped", "df_read_kwargs", "export_timestamp_data_as_parquet", "fps", "frame", "future_scaling", "invert_y_axis", "manual_video", "meters_per_pixel", "midpoint_groups", "min_likelihood", "minimum_frame_length", "model", "model_displacement_by_std", "model_kwargs", "model_method", "recording_resolution", "required_tail_likelihood", "x_axis_crop_end_point", "y_axis_crop_end_point"]
 
 [reader.defined]
-midpoint_groups = { center_eye = ["left_ear", "right_ear"], torso = ["center_eye", "base_tail"] }
-object_tracking_label_for_kinematics = "torso"
+midpoint_groups = { center_eye = ["left_ear", "right_ear"] }
+object_tracking_label_for_kinematics = "center_eye"
 
 [qualia_heuristics]
 [qualia_heuristics.common]
@@ -125,17 +125,17 @@ optional = ["center_eye_label", "filter_in_sequence", "fps", "frame", "manual_vi
 
 [qualia_heuristics.common.defined]
 
-[qualia_heuristics.FOVCenterToEyesRayCastingProfile]
-class_name = "FOVCenterToEyesRayCastingProfile"
+[qualia_heuristics.FOVCenterToEyesRayCastingHeuristic]
+class_name = "FOVCenterToEyesRayCastingHeuristic"
 optional = ["center_eye_label", "filter_in_sequence", "fps", "frame", "left_eye_label", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "right_eye_label"]
 
-[qualia_heuristics.FOVCenterToEyesRayCastingProfile.defined]
+[qualia_heuristics.FOVCenterToEyesRayCastingHeuristic.defined]
 
-[qualia_heuristics.BodyProximityProfile]
-class_name = "BodyProximityProfile"
+[qualia_heuristics.BodyProximityHeuristic]
+class_name = "BodyProximityHeuristic"
 optional = ["base_tail_label", "center_eye_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "torso_label"]
 
-[qualia_heuristics.BodyProximityProfile.defined]
+[qualia_heuristics.BodyProximityHeuristic.defined]
 
 [field]
 animal_profile = "string(default: rodent)"

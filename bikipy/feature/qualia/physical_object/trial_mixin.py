@@ -5,10 +5,11 @@ from functools import cached_property
 import pandas as pd
 from pydantic import Field
 
+from bikipy._constant import PHYSICAL_OBJECT_MAP_NAME
 from bikipy.feature.qualia.physical_object.analysis.i import QualiaAnalysis
 from bikipy.feature.qualia.physical_object.analysis.mapping import PO_NUMBER_TO_ANALYSIS_MODEL
-from bikipy.feature.qualia.physical_object.heuristic.abc import QualiaProfile
-from bikipy.feature.qualia.physical_object.heuristic.mapping import PROFILE_MAP
+from bikipy.feature.qualia.physical_object.heuristic.abc import QualiaHeuristic
+from bikipy.feature.qualia.physical_object.heuristic.mapping import HEURISTIC_MAP
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.perimeter.mixin import PerimeterInstances, TrialWithPerimeterMixin
 from bikipy.utils.plot.inspect import generic_inspection_finalization
@@ -35,12 +36,14 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     @cached_property
     def po_heuristic_alias_to_physical_objects_heuristic(
         self,
-    ) -> dict[str, list[QualiaProfile]]:
+    ) -> dict[str, list[QualiaHeuristic]]:
         result = defaultdict(list)
-        for heuristic_alias, heuristic_config in self.project_kit_get_branch_config.items():
+        for heuristic_alias, heuristic_config in self.project_kit_config[PHYSICAL_OBJECT_MAP_NAME].items():
             for perimeter in self.physical_object_perimeters:
                 result[heuristic_alias].append(
-                    PROFILE_MAP[heuristic_alias](perimeter=perimeter, reader=self.reader, **heuristic_config)
+                    HEURISTIC_MAP[heuristic_alias](
+                        perimeter=perimeter, reader=self.reader, manual_video=self.video, **heuristic_config
+                    )
                 )
         return dict(result)
 

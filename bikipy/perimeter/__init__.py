@@ -1,5 +1,5 @@
 from bikipy.perimeter.base import BaseSinglePerimeter
-from bikipy.perimeter.circle import (
+from bikipy.perimeter.circle.model import (
     CircleFixedRadiusPerimeter,
     CircleVariableRadiusPerimeter,
 )

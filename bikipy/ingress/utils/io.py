@@ -2,7 +2,7 @@ import shutil
 from functools import lru_cache
 from logging import getLogger
 
-import tomlkit
+import rtoml
 import yaml
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
@@ -28,12 +28,12 @@ def load_settings(project_directory: DirectoryPath, deprecated_file_name: bool =
             return yaml.safe_load(in_file)
     else:
         with open(get_project_settings_path(project_directory), "r") as in_file:
-            return tomlkit.load(in_file)
+            return rtoml.load(in_file)
 
 
 def dump_settings(settings_path: FilePath, settings: dict) -> None:
     with open(settings_path, "w") as out_file:
-        tomlkit.dump(settings, out_file, sort_keys=False)
+        rtoml.dump(settings, out_file, sort_keys=False)
 
 
 @lru_cache(2)

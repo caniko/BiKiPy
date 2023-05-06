@@ -73,6 +73,12 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         ax, inspection_coordinates, video = self._manual_video_metadata_derived_inspection_preparation(
             manual_video, coordinates, ax
         )
+
+        # _manual_video_metadata_derived_inspection_preparation -> video.subplot makes sure the axes is in a list,
+        # we need to revert that action.
+        if isinstance(ax, list):
+            ax = ax[0]
+
         self.plot_perimeter_on_ax(
             ax,
             inspect_pixels=video.coordinates_need_to_be_scaled_for_plot,

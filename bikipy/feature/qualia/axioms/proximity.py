@@ -27,21 +27,27 @@ class ComputeProximity(AbstractComputeBooleanIndex):
     @cached_property
     def result(self):
         self.perimeter_border = self.perimeter.expand(self.perimeter_border_normal_pixels)
-        self.inside_perimeter_border = self.perimeter_border.confined_coordinate(
+        self.inside_perimeter_border = self.perimeter_border.compute_confined_coordinate_boolean_index(
             coordinates=self.inside_perimeter_border
         )
         result = self.inside_perimeter_border
 
         if self.perimeter.impenetrable:
-            self.outside_impenetrable_bi = ~self.perimeter.confined_coordinate(coordinates=self.inside_perimeter_border)
+            self.outside_impenetrable_bi = ~self.perimeter.compute_confined_coordinate_boolean_index(
+                coordinates=self.inside_perimeter_border
+            )
             result = result & self.outside_impenetrable_bi
 
         if self.outside_perimeter_border is not None:
-            self.outside_perimeter_border_bi = ~self.perimeter_border.confined_coordinate(self.outside_perimeter_border)
+            self.outside_perimeter_border_bi = ~self.perimeter_border.compute_confined_coordinate_boolean_index(
+                self.outside_perimeter_border
+            )
             result = result & self.outside_perimeter_border_bi
 
         if self.outside_perimeter is not None:
-            self.outside_perimeter_bi = ~self.perimeter.confined_coordinate(self.outside_perimeter_border)
+            self.outside_perimeter_bi = ~self.perimeter.compute_confined_coordinate_boolean_index(
+                self.outside_perimeter_border
+            )
             result = result & self.outside_perimeter_bi
 
         if self.tolerance_modelling:

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 import numpy as np
 import pandas as pd
 from inflection import underscore
-from projectkit.model.project import ProjectKitRootModelMixin
+from projectkit.model.project import ProjectKitModelMixin
 from pydantic import DirectoryPath, FilePath, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 from schemantic.model.project import SchemanticProjectMixin
@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 
 
-class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitRootModelMixin, ABC):
+class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMixin, ABC):
     """
     This model stores methods to ingest data for bikipy-based analysis. The workflow differs slightly between daughter
     classes. The commonality are the levels in which data is introduced, which is quite similar to the bikipy experiment
@@ -416,6 +416,8 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitRootMod
 
     def __post_init__(self) -> None:
         # Alias: define_experiment_data
+
+        self._common_trial_keyword_arguments["project_kit_config"] = self.project_kit_config
 
         for plugin_model in self._global_plugins:
             first_file = next(self.plugin_directory_path.glob(f"{plugin_model.code_key}*"))

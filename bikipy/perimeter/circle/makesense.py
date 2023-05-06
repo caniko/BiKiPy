@@ -7,7 +7,7 @@ from bikipy.perimeter.base import (
     PerimeterSet,
     perimeter_set_from_image_name_to_perimeters,
 )
-from bikipy.perimeter.circle import (
+from bikipy.perimeter.circle.model import (
     CircleFixedRadiusPerimeter,
     CircleVariableRadiusPerimeter,
 )

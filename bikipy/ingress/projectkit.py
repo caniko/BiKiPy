@@ -17,11 +17,12 @@ from bikipy._constant import (
     READER_MAP_NAME,
     RUNTIME_SETTINGS_MAP_NAME,
     TRIAL_MAP_NAME,
+    PHYSICAL_OBJECT_MAP_NAME,
 )
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.mapping import experiment_name_to_class
 from bikipy.behaviour.radial_arm import BaseRadialMazeExperiment
-from bikipy.feature.qualia.physical_object.heuristic.mapping import PROFILE_MAP
+from bikipy.feature.qualia.physical_object.heuristic.mapping import HEURISTIC_MAP
 from bikipy.ingress.plugin.perimeter.enclosure import PluginEnclosure
 from bikipy.ingress.workflow.animal import AnimalIngressWorkflow
 from bikipy.ingress.workflow.animal_day import AnimalDayIngressWorkflow
@@ -140,15 +141,15 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
                 models = set()
                 for heuristic in qualia_heuristic:
                     try:
-                        models.add(PROFILE_MAP[heuristic])
+                        models.add(HEURISTIC_MAP[heuristic])
                     except KeyError:
                         msg = (
                             f"The defined heuristic key, {heuristic}, is not defined. "
-                            f"Choose from the following: {', '.join(tuple(PROFILE_MAP))}"
+                            f"Choose from the following: {', '.join(tuple(HEURISTIC_MAP))}"
                         )
                         raise KeyError(msg)
 
-                cds_hierarchical.append(GroupSchema.from_models(models=models, mapping_name="qualia_heuristics"))
+                cds_hierarchical.append(GroupSchema.from_models(models=models, mapping_name=PHYSICAL_OBJECT_MAP_NAME))
 
         if plugin_models:
             cds_hierarchical.append(GroupSchema.from_models(mapping_name=PLUGIN_MAP_NAME, models=plugin_models))

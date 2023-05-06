@@ -13,7 +13,7 @@ from bikipy.reader.base import Reader
 from bikipy.utils.math.cached import cached_deg2rad, meters2pixels
 
 
-class AbstractQualiaProfile(VideoMetadataMixin, SchemanticProjectMixin, ABC):
+class AbstractQualiaHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
     perimeter: SinglePerimeter = ...
     reader: Reader = ...
     filter_in_sequence: bool = Field(
@@ -54,8 +54,8 @@ class AbstractQualiaProfile(VideoMetadataMixin, SchemanticProjectMixin, ABC):
         self.reader.plot_boolean_index(self.result, ax)
 
 
-QualiaProfileCLS = Type[AbstractQualiaProfile]
-QualiaProfile = TypeVar("QualiaProfile", bound=AbstractQualiaProfile)
+QualiaHeuristicCLS = Type[AbstractQualiaHeuristic]
+QualiaHeuristic = TypeVar("QualiaHeuristic", bound=AbstractQualiaHeuristic)
 
 
 class ProximityMixin(BaseModel):

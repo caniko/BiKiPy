@@ -1,13 +1,13 @@
 from bikipy.feature.qualia.physical_object.heuristic.body_proximity import (
-    BodyProximityProfile,
+    BodyProximityHeuristic,
 )
 from bikipy.feature.qualia.physical_object.heuristic.field_of_view import (
-    FOVCenterToEyesRayCastingProfile,
+    FOVCenterToEyesRayCastingHeuristic,
 )
 
-PROFILES = (BodyProximityProfile, FOVCenterToEyesRayCastingProfile)
+HEURISTICS = (BodyProximityHeuristic, FOVCenterToEyesRayCastingHeuristic)
 
-LABEL_TO_PROFILE = {heuristic.heuristic_alias: heuristic for heuristic in PROFILES}
-PROFILE_NAME_TO_PROFILE = {heuristic.__name__: heuristic for heuristic in PROFILES}
+LABEL_TO_HEURISTIC = {heuristic.heuristic_alias: heuristic for heuristic in HEURISTICS}
+HEURISTIC_NAME_TO_HEURISTIC = {heuristic.__name__: heuristic for heuristic in HEURISTICS}
 
-PROFILE_MAP = {**LABEL_TO_PROFILE, **PROFILE_NAME_TO_PROFILE}
+HEURISTIC_MAP = {**LABEL_TO_HEURISTIC, **HEURISTIC_NAME_TO_HEURISTIC}

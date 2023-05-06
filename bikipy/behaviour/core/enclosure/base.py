@@ -32,9 +32,10 @@ class EnclosedTrial(BaseTrial):
             raise AttributeError(msg)
         return value
 
+    @classmethod
     @property
-    def reader_class(self) -> ReaderCLS:
-        return super().reader_class[self.trial_perimeter_enclosure_class]
+    def reader_class(cls) -> ReaderCLS:
+        return super().reader_class[cls.trial_perimeter_enclosure_class]
 
     @property
     def _reader_kwargs(self) -> dict:

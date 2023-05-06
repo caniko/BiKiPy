@@ -4,7 +4,7 @@ from typing import Generic, Type, TypeVar
 
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
-from pydantic import validate_arguments
+from pydantic import validate_arguments, Extra
 from pydantic.generics import GenericModel
 from pydantic_numpy import NDArrayBool
 
@@ -16,6 +16,9 @@ T = TypeVar("T")
 
 class AbstractCompute(GenericModel, Generic[T], BikipyModel, ABC):
     label: str = ...
+
+    class Config:
+        extra = Extra.allow
 
     @property
     @abstractmethod

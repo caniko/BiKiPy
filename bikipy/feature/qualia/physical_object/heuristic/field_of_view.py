@@ -7,7 +7,7 @@ from pydantic_numpy import NDArrayBool
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
 from bikipy.feature.qualia.physical_object.heuristic.abc import (
-    AbstractQualiaProfile,
+    AbstractQualiaHeuristic,
     ProximityMixin,
     RayMixin,
 )
@@ -15,7 +15,7 @@ from bikipy.feature.tolerance.plural import plural_node_tolerance_model
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 
 
-class FOVCenterToEyesRayCastingProfile(AbstractQualiaProfile, ProximityMixin, RayMixin):
+class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
     center_eye_label: str = "center_ear"
     left_eye_label: str = "left_ear"
     right_eye_label: str = "right_ear"
@@ -50,6 +50,7 @@ class FOVCenterToEyesRayCastingProfile(AbstractQualiaProfile, ProximityMixin, Ra
                 perimeter=self.perimeter,
                 perimeter_border_normal_pixels=self.maximum_distance_pixels,
                 inside_perimeter_border=self.reader[self.left_eye_label],
+                label="Left",
                 manual_video=self.video,
             )
         )
@@ -64,6 +65,7 @@ class FOVCenterToEyesRayCastingProfile(AbstractQualiaProfile, ProximityMixin, Ra
                 ray_start_point=self.reader[self.left_eye_label],
                 ray_travel_direction_point=self.reader[self.center_eye_label],
                 max_radians=self.maximum_radians,
+                label="Left",
                 manual_video=self.video,
             )
         )
@@ -77,6 +79,7 @@ class FOVCenterToEyesRayCastingProfile(AbstractQualiaProfile, ProximityMixin, Ra
                 perimeter=self.perimeter,
                 perimeter_border_normal_pixels=self.maximum_distance_pixels,
                 inside_perimeter_border=self.reader[self.right_eye_label],
+                label="Right",
                 manual_video=self.video,
             )
         )
@@ -91,6 +94,7 @@ class FOVCenterToEyesRayCastingProfile(AbstractQualiaProfile, ProximityMixin, Ra
                 ray_start_point=self.reader[self.right_eye_label],
                 ray_travel_direction_point=self.reader[self.center_eye_label],
                 max_radians=self.maximum_radians,
+                label="Right",
                 manual_video=self.video,
             )
         )

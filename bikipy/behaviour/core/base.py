@@ -7,6 +7,8 @@ from typing import Any, ClassVar, Hashable, Literal, Optional, Type, TypeVar
 
 import numpy as np
 import pandas as pd
+from ordered_set import OrderedSet
+from projectkit.model.project import ProjectKitModelMixin
 from pydantic import (
     BaseModel,
     DirectoryPath,
@@ -54,7 +56,7 @@ class Behaviour(BikipyHashable, InspectPlotMixin, VideoMetadataMixin):
     pass
 
 
-class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
+class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
     framewise_coordinates_path: FilePath = Field(..., description="Path to file storing coordinate data")
     manual_reader_kwargs: Optional[dict] = Field(
         default_factory=dict, description="Keyword arguments that will be passed on the reader objects on init"
@@ -68,10 +70,6 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
     crop_from_end: bool = Field(
         False,
         description="Only affective if crop_time_seconds is not 0.0. Will crop from start instead when set to False",
-    )
-
-    reader_class_label: str = Field(
-        "DeepLabCutReader", description="Label of the reader class to use for reading coordinate data"
     )
 
     # Derive meters per pixel from perimeter
@@ -100,6 +98,9 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
 
     # Variables for trials with zones, see doc for more info.
     trial_start_perimeter: Optional[str]
+
+    # Label of the reader class to use for reading coordinate data
+    reader_class_label: ClassVar[str] = "DeepLabCutReader"
 
     required_video_metadata_fields = {"meters_per_pixel", "recording_resolution", "fps"}
 
@@ -161,14 +162,15 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
 
             return result
 
+    @classmethod
     @property
-    def reader_class(self) -> ReaderCLS:
+    def reader_class(cls) -> ReaderCLS:
         try:
-            return READER_CLASS_LABEL_TO_CLASS[self.reader_class_label]
+            return READER_CLASS_LABEL_TO_CLASS[cls.reader_class_label]
         except KeyError as e:
             msg = (
                 f"Invalid reader_class_label defined in Trial class, "
-                f"{self.reader_class_label}. Pick from: {tuple(READER_CLASS_LABEL_TO_CLASS)}"
+                f"{cls.reader_class_label}. Pick from: {tuple(READER_CLASS_LABEL_TO_CLASS)}"
             )
             raise AttributeError(msg) from e
 
@@ -324,9 +326,9 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
-    def trial_classes(cls) -> set[TrialCLS]:
+    def trial_classes(cls) -> OrderedSet[TrialCLS]:
         """All trials designed for the experiment class"""
-        return set(cls.trial_sequence)
+        return OrderedSet(cls.trial_sequence)
 
     @classmethod
     def trial_sequence_repetition(cls, repetitions: int) -> "ExperimentCLS":
