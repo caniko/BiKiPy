@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
-from pydantic import Field, FilePath, validate_arguments
+from pydantic import Field, FilePath, validate_arguments, validator
 from pydantic.generics import GenericModel
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayUint8
 from typing_extensions import Literal
@@ -89,7 +89,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     )
 
     export_timestamp_data_as_parquet: bool = Field(
-        False, description="When timestemp index is defined, export re-indexed df as parquet"
+        False, description="When timestamp index is defined, export re-indexed df as parquet"
     )
 
     _using_bikipy_ingress: bool = Field(
@@ -103,6 +103,15 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     _cached_augmented_df: pd.DataFrame | None
 
     augmented_coordinate_cached_file_label: ClassVar[str] = "augmented"
+
+    def __getitem__(self, query: Iterable[Hashable] | Hashable) -> pd.DataFrame:
+        if not isinstance(query, str) and isinstance(query, abc.Iterable):
+            return pd.merge([self._isolate_coordinates(item) for item in query], axis=1)
+        else:
+            if query not in self.all_tracked_labels:
+                msg = f"'{query}' is not in object DataFrame (self.summary_frame)"
+                raise AttributeError(msg)
+            return self._isolate_coordinates(query)
 
     @classmethod
     @property
@@ -120,14 +129,36 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:
         ...
 
-    def __getitem__(self, query: Iterable[Hashable] | Hashable) -> pd.DataFrame:
-        if not isinstance(query, str) and isinstance(query, abc.Iterable):
-            return pd.merge([self._isolate_coordinates(item) for item in query], axis=1)
-        else:
-            if query not in self.all_tracked_labels:
-                msg = f"'{query}' is not in object DataFrame (self.summary_frame)"
-                raise AttributeError(msg)
-            return self._isolate_coordinates(query)
+    @property
+    def find_timestamp_index(self) -> NDArrayFp64 | None:
+        if self.timestamp_index is not None:
+            return self.timestamp_index
+
+        assert not self.augmented.empty
+
+        if self.df_is_timestamped:
+            return self.augmented.index.values
+
+    @cached_property
+    def fps_from_timestamped_index(self) -> float | None:
+        if (tstamps := self.find_timestamp_index) is None:
+            return None
+
+        # We convert timestamps to time difference, i.e. delta(seconds)
+        time_deltas = np.diff(tstamps)
+
+        per_second_counts = []
+        count = 0
+        cum_sum = 0.0
+        for time_delta in time_deltas:
+            cum_sum += time_delta
+            count += 1
+            if cum_sum >= 1.0:
+                per_second_counts.append(count)
+                count = 1
+                cum_sum = cum_sum - 1.0
+
+        return float(np.mean(per_second_counts))
 
     @property
     def kinematic_coordinates(self) -> pd.DataFrame:
@@ -293,10 +324,12 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             index=[("Reader", "RawFrames"), ("Reader", "AugmentedFrames"), ("Reader", "DurationSeconds")],
         )
 
-    def _read_hdf(self, path: FilePath) -> pd.DataFrame:
+    @staticmethod
+    def _read_hdf(path: FilePath) -> pd.DataFrame:
         return pd.read_hdf(path)
 
-    def _read_parquet(self, path: FilePath) -> pd.DataFrame:
+    @staticmethod
+    def _read_parquet(path: FilePath) -> pd.DataFrame:
         return pd.read_parquet(path)
 
     @cached_property
@@ -326,12 +359,6 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     @property
     def combined_raw_likelihood(self) -> NDArrayFp64:
         return np.multiply.reduce(self.raw_df.loc[:, pd.IndexSlice[:, "likelihood"]], axis=1)
-
-    @cached_property
-    def trial_length_seconds(self) -> float:
-        if self.df_is_timestamped:
-            return self.raw_df.index.values[-1]
-        return len(self.raw_df) * self.fps
 
     @validate_arguments(config={"arbitrary_types_allowed": True})
     def plot_boolean_index(

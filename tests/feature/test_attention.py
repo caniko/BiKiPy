@@ -21,7 +21,7 @@ def test_proximity_filter():
         proximity_filter(
             perimeter=rectangle_perimeter_coco_test_object,
             perimeter_border_normal_pixels=perimeter_border_normal_pixels,
-            inside_perimeter_border=coordinates_inside_border,
+            should_be_inside_perimeter_border=coordinates_inside_border,
             outside_perimeter=coordinates_outside_perimeter,
         )[0]
     ), "Coordinates should be in proximity"
@@ -30,7 +30,7 @@ def test_proximity_filter():
         proximity_filter(
             perimeter=rectangle_perimeter_coco_test_object,
             perimeter_border_normal_pixels=perimeter_border_normal_pixels,
-            inside_perimeter_border=coordinates_outside_border,
+            should_be_inside_perimeter_border=coordinates_outside_border,
             outside_perimeter=coordinates_inside_perimeter,
         )[0]
     ), "Coordinates should not be in proximity"

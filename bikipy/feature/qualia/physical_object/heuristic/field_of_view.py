@@ -16,7 +16,7 @@ from bikipy.feature.tolerance.single import single_node_tolerance_model
 
 
 class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
-    center_eye_label: str = "center_ear"
+    center_eye_label: str = "center_eye"
     left_eye_label: str = "left_ear"
     right_eye_label: str = "right_ear"
 
@@ -49,7 +49,7 @@ class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin
             else ComputeProximity(
                 perimeter=self.perimeter,
                 perimeter_border_normal_pixels=self.maximum_distance_pixels,
-                inside_perimeter_border=self.reader[self.left_eye_label],
+                should_be_inside_perimeter_border=self.reader[self.left_eye_label],
                 label="Left",
                 manual_video=self.video,
             )
@@ -78,7 +78,7 @@ class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin
             else ComputeProximity(
                 perimeter=self.perimeter,
                 perimeter_border_normal_pixels=self.maximum_distance_pixels,
-                inside_perimeter_border=self.reader[self.right_eye_label],
+                should_be_inside_perimeter_border=self.reader[self.right_eye_label],
                 label="Right",
                 manual_video=self.video,
             )
@@ -102,17 +102,17 @@ class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin
     @cached_property
     def left_result(self) -> NDArrayBool:
         result = self.left_proximity.result & self.leftward_observation.result
-        return result if self.filter_in_sequence else single_node_tolerance_model(result, self.fps)
+        return result if self.filter_in_sequence else single_node_tolerance_model(result, self.video.fps)
 
     @cached_property
     def right_result(self) -> NDArrayBool:
         result = self.right_proximity.result & self.rightward_observation.result
-        return result if self.filter_in_sequence else single_node_tolerance_model(result, self.fps)
+        return result if self.filter_in_sequence else single_node_tolerance_model(result, self.video.fps)
 
     @cached_property
     def result(self) -> NDArrayBool:
         return (
-            plural_node_tolerance_model(self.left_result, self.right_result, fps=self.fps)
+            plural_node_tolerance_model(self.left_result, self.right_result, fps=self.video.fps)
             if self.filter_in_sequence
             else self.left_result | self.right_result
         )

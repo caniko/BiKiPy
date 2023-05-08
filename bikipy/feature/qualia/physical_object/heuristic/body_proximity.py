@@ -41,7 +41,7 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
         return ComputeProximity(
             perimeter=self.perimeter,
             perimeter_border_normal_pixels=self.maximum_distance_pixels,
-            inside_perimeter_border=self.reader[self.center_eye_label],
+            should_be_inside_perimeter_border=self.reader[self.center_eye_label],
             label="Center eye",
             manual_video=self.video,
         )
@@ -57,7 +57,7 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
         return ComputeProximity(
             perimeter=self.perimeter,
             perimeter_border_normal_pixels=self.maximum_distance_pixels,
-            inside_perimeter_border=self.reader[self.torso_label],
+            should_be_inside_perimeter_border=self.reader[self.torso_label],
             label="Torso",
             manual_video=self.video,
         )
@@ -73,7 +73,7 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
         return ComputeProximity(
             perimeter=self.perimeter,
             perimeter_border_normal_pixels=self.maximum_distance_pixels,
-            inside_perimeter_border=self.reader[self.base_tail_label],
+            should_be_inside_perimeter_border=self.reader[self.base_tail_label],
             label="Base tail",
             manual_video=self.video,
         )
@@ -85,7 +85,7 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
                 self.center_eye_proximity.result,
                 self.torso_proximity.result,
                 self.base_tail_proximity.result,
-                fps=self.fps,
+                fps=self.video.fps,
             )
             if self.filter_in_sequence
             else self.center_eye_proximity.result | self.torso_proximity.result | self.base_tail_proximity.result
@@ -105,8 +105,13 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
     def plot(self) -> None:
         fig, axes = self.video.subplots(ncols=4, nrows=1)
 
-        self.center_eye_proximity.plot(axes[0], self.video)
-        self.torso_proximity.plot(axes[1], self.video)
-        self.base_tail_proximity.plot(axes[2], self.video)
+        if self.center_eye_proximity:
+            self.center_eye_proximity.plot(axes[0], self.video)
+
+        if self.torso_proximity:
+            self.torso_proximity.plot(axes[1], self.video)
+
+        if self.base_tail_proximity:
+            self.base_tail_proximity.plot(axes[2], self.video)
 
         self.plot_result(axes[3])

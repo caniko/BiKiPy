@@ -20,15 +20,15 @@ logger = getLogger(__name__)
 class ComputeProximity(AbstractComputeBooleanIndex):
     perimeter: SinglePerimeter
     perimeter_border_normal_pixels: float | NDArrayFp64
-    inside_perimeter_border: NDArrayFp64
-    outside_perimeter_border: Optional[NDArrayFp64]
+    should_be_inside_perimeter_border: NDArrayFp64
+    should_be_outside_perimeter_border: Optional[NDArrayFp64]
     outside_perimeter: Optional[NDArrayBool]
 
     @cached_property
     def result(self):
         self.perimeter_border = self.perimeter.expand(self.perimeter_border_normal_pixels)
         self.inside_perimeter_border = self.perimeter_border.compute_confined_coordinate_boolean_index(
-            coordinates=self.inside_perimeter_border
+            coordinates=self.should_be_inside_perimeter_border
         )
         result = self.inside_perimeter_border
 
@@ -38,20 +38,20 @@ class ComputeProximity(AbstractComputeBooleanIndex):
             )
             result = result & self.outside_impenetrable_bi
 
-        if self.outside_perimeter_border is not None:
+        if self.should_be_outside_perimeter_border is not None:
             self.outside_perimeter_border_bi = ~self.perimeter_border.compute_confined_coordinate_boolean_index(
-                self.outside_perimeter_border
+                self.should_be_outside_perimeter_border
             )
             result = result & self.outside_perimeter_border_bi
 
         if self.outside_perimeter is not None:
             self.outside_perimeter_bi = ~self.perimeter.compute_confined_coordinate_boolean_index(
-                self.outside_perimeter_border
+                self.should_be_outside_perimeter_border
             )
             result = result & self.outside_perimeter_bi
 
         if self.tolerance_modelling:
-            result = single_node_tolerance_model(result, self.fps)
+            result = single_node_tolerance_model(result, self.video.fps)
 
         return result
 
@@ -60,7 +60,7 @@ class ComputeProximity(AbstractComputeBooleanIndex):
         assert self.result is not None
 
         inside_perimeter_border_plot_scaled = video.prepare_coordinates_for_plotting(
-            self.inside_perimeter_border, inspect_pixels
+            self.should_be_inside_perimeter_border, inspect_pixels
         )
 
         if inspect_pixels:
@@ -74,7 +74,7 @@ class ComputeProximity(AbstractComputeBooleanIndex):
         color_count = 1
         if self.perimeter.impenetrable:
             color_count += 1
-        if self.outside_perimeter_border is not None:
+        if self.should_be_outside_perimeter_border is not None:
             color_count += 1
         if self.outside_perimeter is not None:
             color_count += 1
@@ -97,7 +97,7 @@ class ComputeProximity(AbstractComputeBooleanIndex):
                 label="Outside impenetrable valid; other invalid",
                 color=next(color_map_iter),
             )
-        if self.outside_perimeter_border is not None:
+        if self.should_be_outside_perimeter_border is not None:
             ax.scatter(
                 *inside_perimeter_border_plot_scaled[self.outside_perimeter_border_bi & not_result].T,
                 marker="x",

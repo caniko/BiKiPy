@@ -38,7 +38,7 @@ object_tracking_label_for_kinematics = "center"
 model = true
 
 [manual_reader_kwargs.defined.midpoint_groups]
-center_ear = ["left_ear", "right_ear"]
+center_eye = ["left_ear", "right_ear"]
 
 [manual_reader_kwargs.required]
 object_tracking_label_for_kinematics = "string"

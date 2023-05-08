@@ -22,8 +22,8 @@ class VideoWriter:
     @property
     def input_args(self):
         return {
-            "r": self.fps,
-            "framerate": self.fps,
+            "r": self.video.fps,
+            "framerate": self.video.fps,
             "pix_fmt": self.in_pix_fmt,
             **self.extra_input_args,
         }

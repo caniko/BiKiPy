@@ -153,13 +153,13 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     @property
     def trial_id_to_trial_class_name(self):
         if not self._experiment_data_defined:
-            self.__post_init__()
+            self.model_post_init()
         return self._trial_id_to_trial_class_name
 
     @property
     def common_trial_keyword_arguments(self):
         if not self._experiment_data_defined:
-            self.__post_init__()
+            self.model_post_init()
         return self._common_trial_keyword_arguments
 
     @property
@@ -175,7 +175,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     @property
     def metadata_index_to_trial_id(self):
         if not self._experiment_data_defined:
-            self.__post_init__()
+            self.model_post_init()
         return self._metadata_index_to_trial_id
 
     # I/O ============================
@@ -412,9 +412,9 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
     def _define_experiment_data_if_not_defined(self):
         if not self._experiment_data_defined:
-            self.__post_init__()
+            self.model_post_init()
 
-    def __post_init__(self) -> None:
+    def model_post_init(self) -> None:
         # Alias: define_experiment_data
 
         self._common_trial_keyword_arguments["project_kit_config"] = self.project_kit_config

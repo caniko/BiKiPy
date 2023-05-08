@@ -21,7 +21,7 @@ class ComputeInLineOfSight(AbstractComputeBooleanIndex):
             self.ray_start_point, self.ray_travel_direction_point, self.max_radians
         )
         if self.tolerance_modelling:
-            result = single_node_tolerance_model(result, self.fps)
+            result = single_node_tolerance_model(result, self.video.fps)
         return result
 
     def plot(self, ax: Axes, video: VideoMetadata, inspect_pixels: bool = False) -> None:

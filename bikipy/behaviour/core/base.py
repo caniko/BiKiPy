@@ -215,8 +215,8 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
         result = self.reader_class(**self._reader_kwargs)
 
         # In case the reader finds no time index, see fps property in reader
-        if result.fps:
-            self.fps = result.fps
+        if result.fps_from_timestamped_index:
+            self.fps = result.fps_from_timestamped_index
 
         return result
 
