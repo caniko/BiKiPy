@@ -42,7 +42,7 @@ class RectanglePerimeter(BasePolygonPerimeter):
 
         if self.inspect_arg:
             if ax is None:
-                fig, ax = self.video.subplots()
+                fig, ax = self.video.subplot()
                 ax.set_title("ExpandPerimeter")
 
             self.plot_perimeter(manual_ax=ax, label="Original")

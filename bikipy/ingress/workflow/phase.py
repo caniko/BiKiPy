@@ -21,7 +21,7 @@ class PhaseIngressWorkflow(BaseIngressWorkflow):
                 trial_id = _define_trial_id(phase_id, phase_designated_trial_id)
                 trial_number = int(trial_id.split("_")[1])
 
-                if trial_id not in self.metadata.index:
+                if self._to_skip_trial_id(trial_id):
                     continue
 
                 self._trial_id_to_keyword_arguments[trial_id] = {

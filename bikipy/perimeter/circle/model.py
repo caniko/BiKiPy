@@ -89,7 +89,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         return ray_direction_filter_circle_triangle(self, ray_travel_direction_point, ray_start_point, max_radians)
 
     def plot_perimeter_on_ax(
-        self, ax, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs
+        self, ax: Axes, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs
     ) -> None:
         center, radius = (
             (self.center_pixels, self.radius_pixels) if inspect_pixels else (self.center_meters, self.radius_meters)

@@ -281,9 +281,6 @@ class BaseExperiment(Behaviour):
     )
     trial_init_error_out_dir: Optional[DirectoryPath] = Field(description="Directory to write Trial class init errors")
 
-    compute_first_two_feature_series_only: bool = Field(
-        False, description="Used to rapidly generate combo df during debugging"
-    )
     skip_habituation: bool = Field(
         False, description="Skip the habituation class during analysis, practically skipping the the habituation class"
     )
@@ -581,7 +578,7 @@ class BaseExperiment(Behaviour):
     @cached_property
     def trial_class_to_trial_analysis_series(self):
         result = defaultdict(dict)
-        if not runtime_settings.disable_process_pooling:
+        if runtime_settings.disable_process_pooling:
             for trial_class, trial_objects in tqdm(
                 self.trial_class_to_trial_objects.items(), desc="Computing experiment features"
             ):
@@ -734,8 +731,6 @@ class BaseExperiment(Behaviour):
     @cached_property
     def _trial_class_to_trial_objects(self) -> dict:
         def filter_trial_objects(trial_objects):
-            if self.compute_first_two_feature_series_only:
-                return trial_objects[:2]
             return trial_objects
 
         if not self.has_stages:

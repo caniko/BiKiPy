@@ -41,7 +41,7 @@ invert_y_axis = true
 
 [manual_reader_kwargs.defined.midpoint_groups]
 center_eye = ["left_ear", "right_ear"]
-torso = ["center_eye", "base_tail"]
+torso = ["center_eye", "tail_base"]
 
 
 
@@ -79,7 +79,7 @@ y_axis_crop_end_point = "number -> 0.0"
 [trial]
 [trial.common]
 [trial.common.defined]
-object_labels_for_y_maze_confinement_tracking = ["center_eye", "torso", "base_tail"]
+object_labels_for_y_maze_confinement_tracking = ["center_eye", "torso", "tail_base"]
 
 [trial.common.required]
 object_labels_for_y_maze_confinement_tracking = "array"

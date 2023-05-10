@@ -31,7 +31,7 @@ class AbstractCompute(GenericModel, Generic[T], BikipyModel, ABC):
 
     @validate_arguments
     def save_fig(self, path: Path, video: VideoMetadata, **plot_kwargs) -> None:
-        fig, ax = video.subplots()
+        fig, ax = video.subplot()
         self.plot(ax, **plot_kwargs)
         plt.tight_layout()
         plt.savefig(path)

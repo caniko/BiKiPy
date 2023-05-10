@@ -34,7 +34,7 @@ class AnimalDayIngressWorkflow(BaseIngressWorkflow):
 
                     trial_id = define_trial_id()
 
-                    if not self.trial_id_exists(trial_id):
+                    if self._to_skip_trial_id(trial_id):
                         continue
 
                     plugin_data = {}

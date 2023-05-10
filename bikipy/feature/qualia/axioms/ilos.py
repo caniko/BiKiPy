@@ -1,3 +1,5 @@
+from functools import cached_property
+
 from matplotlib.axes import Axes
 from pydantic_numpy.dtype import NDArrayFp64
 
@@ -16,6 +18,7 @@ class ComputeInLineOfSight(AbstractComputeBooleanIndex):
     ray_travel_direction_point: NDArrayFp64 = ...
     max_radians: float = ...
 
+    @cached_property
     def result(self):
         result = self.perimeter.ray_direction_filter(
             self.ray_start_point, self.ray_travel_direction_point, self.max_radians

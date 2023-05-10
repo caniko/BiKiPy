@@ -128,7 +128,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             for quadrant_index, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items()
         }
         if self.inspect_arg:
-            fig, ax = self.video.subplots()
+            fig, ax = self.video.subplot()
             ax.set_title(f"Quadrants_Trial_#{self.label}")
 
             coordinates = self.video.prepare_coordinates_for_plotting(self.reader.kinematic_coordinates)
@@ -152,7 +152,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             if self.manual_center_meters is not None:
                 manual_center = self.manual_center_meters
                 if self.video.coordinates_need_to_be_scaled_for_plot:
-                    manual_center = meters2pixels(manual_center, self.video.pixels_per_meter)
+                    manual_center = manual_center * self.video.pixels_per_meter
 
                 ax.scatter(*manual_center.T, color="k", label="ManualCenter")
 

@@ -28,7 +28,7 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
 
                 trial_id = define_trial_id()
 
-                if trial_id not in self.metadata.index:
+                if self._to_skip_trial_id(trial_id):
                     continue
 
                 plugin_data = {}
@@ -63,6 +63,9 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
                     **self._trial_id_to_keyword_arguments[trial_id],
                     **plugin_data,
                 }
+
+            if self.only_one_instance_of_trial_class:
+                break
 
     def trialwise_plugins_for_trial_id(self, trial_id: Label, trial_directory: DirectoryPath):
         return self._trialwise_plugins_for_trial_id(trial_id, trial_directory, "{trial_id}.{plugin_code_key}*")

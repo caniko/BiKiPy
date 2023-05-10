@@ -1,6 +1,7 @@
 from functools import cached_property
 from typing import Optional
 
+import numpy as np
 import pandas as pd
 from pydantic_numpy import NDArrayBool
 
@@ -15,11 +16,11 @@ from bikipy.feature.tolerance.plural import plural_node_tolerance_model
 class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
     center_eye_label: str | None = "center_eye"
     torso_label: str | None
-    base_tail_label: str | None = "base_tail"
+    tail_base_label: str | None = "tail_base"
 
     manual_center_eye: Optional[ComputeProximity]
     manual_torso: Optional[ComputeProximity]
-    manual_base_tail: Optional[ComputeProximity]
+    manual_tail_base: Optional[ComputeProximity]
 
     heuristic_alias = "BodyProximity"
 
@@ -27,7 +28,7 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
         upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("manual_center_eye", "manual_torso", "manual_base_tail"))
+        upstream.update(("manual_center_eye", "manual_torso", "manual_tail_base"))
         return upstream
 
     @cached_property
@@ -63,32 +64,33 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
         )
 
     @cached_property
-    def base_tail_proximity(self) -> ComputeProximity | None:
-        if self.manual_base_tail is not None:
-            return self.manual_base_tail
+    def tail_base_proximity(self) -> ComputeProximity | None:
+        if self.manual_tail_base is not None:
+            return self.manual_tail_base
 
-        if not self.base_tail_label:
+        if not self.tail_base_label:
             return None
 
         return ComputeProximity(
             perimeter=self.perimeter,
             perimeter_border_normal_pixels=self.maximum_distance_pixels,
-            should_be_inside_perimeter_border=self.reader[self.base_tail_label],
-            label="Base tail",
+            should_be_inside_perimeter_border=self.reader[self.tail_base_label],
+            label="Tail base",
             manual_video=self.video,
         )
 
-    @property
+    @cached_property
     def result(self) -> NDArrayBool:
+        nodes = [
+            node.result
+            for node in (self.center_eye_proximity, self.torso_proximity, self.tail_base_proximity)
+            if node is not None
+        ]
+
         return (
-            plural_node_tolerance_model(
-                self.center_eye_proximity.result,
-                self.torso_proximity.result,
-                self.base_tail_proximity.result,
-                fps=self.video.fps,
-            )
+            plural_node_tolerance_model(*nodes, fps=self.video.fps)
             if self.filter_in_sequence
-            else self.center_eye_proximity.result | self.torso_proximity.result | self.base_tail_proximity.result
+            else np.logical_or.reduce(nodes)
         )
 
     @property
@@ -97,21 +99,33 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
             {
                 "CenterEyeProximity": self.center_eye_proximity.result,
                 "TorsoProximity": self.torso_proximity.result,
-                "BaseTailProximity": self.base_tail_proximity.result,
+                "BaseTailProximity": self.tail_base_proximity.result,
                 self.heuristic_alias: self.result,
             }
         )
 
     def plot(self) -> None:
-        fig, axes = self.video.subplots(ncols=4, nrows=1)
+        fig, axes = self.video.subplots(
+            ncols=sum((bool(self.center_eye_proximity), bool(self.torso_proximity), bool(self.tail_base_proximity)))
+            + 1,
+            nrows=1,
+        )
+
+        ax_idx = 0
 
         if self.center_eye_proximity:
-            self.center_eye_proximity.plot(axes[0], self.video)
+            axes[ax_idx].set_title("Center eye")
+            self.center_eye_proximity.plot(axes[ax_idx], self.video)
+            ax_idx += 1
 
         if self.torso_proximity:
-            self.torso_proximity.plot(axes[1], self.video)
+            axes[ax_idx].set_title("Torso")
+            self.torso_proximity.plot(axes[ax_idx], self.video)
+            ax_idx += 1
 
-        if self.base_tail_proximity:
-            self.base_tail_proximity.plot(axes[2], self.video)
+        if self.tail_base_proximity:
+            axes[ax_idx].set_title("Tail base")
+            self.tail_base_proximity.plot(axes[ax_idx], self.video)
+            ax_idx += 1
 
-        self.plot_result(axes[3])
+        self.plot_result(axes[ax_idx])

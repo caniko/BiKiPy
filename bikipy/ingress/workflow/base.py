@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from inflection import underscore
 from projectkit.model.project import ProjectKitModelMixin
-from pydantic import DirectoryPath, FilePath, validate_arguments
+from pydantic import DirectoryPath, FilePath, validate_arguments, Field
 from pydantic_numpy.dtype import NDArrayFp64
 from schemantic.model.project import SchemanticProjectMixin
 
@@ -67,6 +67,12 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     first_stage_is_habituation: bool = False
     metadata_trial_ids_are_higher_level: bool = False
     trial_sequence_loops: int = 1
+    only_one_instance_of_trial_class: bool = Field(
+        False,
+        description="When troubleshooting a runtime, avoid ingesting all data, "
+        "and only focus on one of each trial class",
+    )
+    trial_ids_to_analyse: Optional[list[Label]] = Field(default_factory=list)
 
     definition_meters_per_pixel: frozenset[PluginScope]
     definition_single_perimeter: Optional[frozenset[PluginScope]]
@@ -721,6 +727,9 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             result["coordinate_timestamp_set_path"] = potential_timestamp_set_path_finder[0]
 
         return result
+
+    def _to_skip_trial_id(self, trial_id: Label) -> bool:
+        return self.trial_ids_to_analyse and trial_id not in self.trial_ids_to_analyse or self.trial_id_exists(trial_id)
 
     @staticmethod
     def _get_id_from_path_stem(path: Path) -> Label:

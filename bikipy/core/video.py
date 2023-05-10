@@ -203,7 +203,7 @@ class VideoMetadata(_VideoMetadataBase):
             recording_resolution=new_frame.shape[0:2:][::-1],
         )
 
-    def ax_ticks_metric_to_pixel(self, ax, number_of_ticks: int = 7):
+    def ax_ticks_metric_to_pixel(self, ax: Axes, number_of_ticks: int = 7):
         ax.set_xticks(
             ticks=np.linspace(0.0, self.horizontal_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
             labels=np.round(
@@ -241,7 +241,7 @@ class VideoMetadata(_VideoMetadataBase):
     def coordinates_need_to_be_scaled_for_plot(self) -> bool:
         return self.frame is not None
 
-    def subplots(self, nrows: int = 1, ncols: int = 1, **kwargs) -> tuple[Figure, Axes | Sequence[Axes]]:
+    def subplots(self, nrows: int = 1, ncols: int = 1, **kwargs) -> tuple[Figure, Sequence[Axes]]:
         if self.frame is None:
             logger.debug("Video object was used to make subplot, but no frame was defined. Figure got no background.")
             return plt.subplots(
@@ -270,6 +270,11 @@ class VideoMetadata(_VideoMetadataBase):
             self.ax_ticks_metric_to_pixel(ax)
 
         return fig, axes
+
+    def subplot(self, **kwargs) -> tuple[Figure, Axes]:
+        fig, ax = self.subplots(nrows=1, ncols=1, **kwargs)
+        ax = ax[0]
+        return fig, ax
 
     def prepare_coordinates_for_plotting(
         self, data: NDArray | float, manual_inspect_pixels: bool = False

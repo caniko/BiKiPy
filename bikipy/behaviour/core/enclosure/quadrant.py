@@ -25,12 +25,12 @@ class Quadrant(BikipyModel):
 
     @cached_property
     def seconds_present(self) -> float:
-        return np.sum(self.confinement_boolean_index) / self.video.fps
+        return np.sum(self.confinement_boolean_index) / self.fps
 
     @cached_property
     def motion(self) -> dict[str, float]:
         return get_combined_features_from_merged_motion_island_data(
             self.confinement_boolean_index,
             self.kinematic_coordinates,
-            self.video.fps,
+            self.fps,
         )

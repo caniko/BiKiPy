@@ -43,7 +43,7 @@ manual_reader_kwargs:
       - right_ear
       torso:
       - center_eye
-      - base_tail
+      - tail_base
   optional:
     crop_from_end: boolean -> False
     crop_time_seconds: number -> 0.0
@@ -68,7 +68,7 @@ trial:
       object_labels_for_y_maze_confinement_tracking:
       - center_eye
       - torso
-      - base_tail
+      - tail_base
       object_tracking_label_for_kinematics: torso
     required:
       object_labels_for_y_maze_confinement_tracking: array

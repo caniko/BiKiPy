@@ -103,6 +103,6 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
     def po_sum_of_observation_instances(self) -> int:
         return np.sum(
             reduce_repeating_sequences(
-                self.observation_sequence != 0, frame_tolerance=self.video.minimum_frames_tolerance
+                self.po_observation_sequence != 0, frame_tolerance=self.video.minimum_frames_tolerance
             )
         )

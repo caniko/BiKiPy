@@ -16,8 +16,11 @@ definition_enclosure = ["metadata"]
 definition_timestamp = ["trialwise"]
 definition_video = ["trialwise"]
 
+only_one_instance_of_trial_class = false
+#trial_ids_to_analyse = ["118_0"]
+
 [experiment]
-optional = ["compute_first_two_feature_series_only", "fps", "frame", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_trial_ids", "manual_video", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "skip_habituation", "stage", "trial_init_error_out_dir"]
+optional = ["fps", "frame", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_trial_ids", "manual_video", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "skip_habituation", "stage", "trial_init_error_out_dir"]
 
 [experiment.defined]
 
@@ -109,15 +112,15 @@ optional = ["manual_reference", "manual_shape", "manual_trial_argument_key"]
 optional = ["debug", "disable_numba", "disable_process_pooling", "ignore_pre_existing_inspection_directory", "matplotlib_invert_y_axis", "matplotlib_scatter_alpha", "maximum_seconds_distraction", "minimum_seconds_tolerance", "only_physical_cores"]
 
 [runtime_settings.defined]
-disable_process_pooling = true
+disable_process_pooling = false
 
 [reader]
 required = ["object_tracking_label_for_kinematics"]
 optional = ["cache_meters_augmented", "crop_from_end", "crop_time_seconds", "df_is_timestamped", "df_read_kwargs", "export_timestamp_data_as_parquet", "fps", "frame", "future_scaling", "invert_y_axis", "manual_video", "meters_per_pixel", "midpoint_groups", "min_likelihood", "minimum_frame_length", "model", "model_displacement_by_std", "model_kwargs", "model_method", "recording_resolution", "required_tail_likelihood", "x_axis_crop_end_point", "y_axis_crop_end_point"]
 
 [reader.defined]
-midpoint_groups = { center_eye = ["left_ear", "right_ear"] }
-object_tracking_label_for_kinematics = "center_eye"
+midpoint_groups = { center_eye = ["left_ear", "right_ear"], torso = ["center_eye", "tail_base"] }
+object_tracking_label_for_kinematics = "torso"
 
 [qualia_heuristics]
 [qualia_heuristics.common]
@@ -133,13 +136,13 @@ optional = ["center_eye_label", "filter_in_sequence", "fps", "frame", "left_eye_
 
 [qualia_heuristics.BodyProximityHeuristic]
 class_name = "BodyProximityHeuristic"
-optional = ["base_tail_label", "center_eye_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "torso_label"]
+optional = ["tail_base_label", "center_eye_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "torso_label"]
 
 [qualia_heuristics.BodyProximityHeuristic.defined]
 
 [field]
 animal_profile = "string(default: rodent)"
-base_tail_label = "string(default: base_tail)"
+tail_base_label = "string(default: tail_base)"
 cache_meters_augmented = "boolean(default: True)"
 center_eye_label = "string(default: center_eye)"
 center_rectangle_dimensions_to_spatial_resolution_ratio = "number"

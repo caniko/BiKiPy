@@ -103,7 +103,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         if manual_ax:
             ax = manual_ax
         else:
-            fig, ax = video.subplots()
+            fig, ax = video.subplot()
 
         return self.plot_perimeter_on_ax(
             ax, inspect_pixels=video.coordinates_need_to_be_scaled_for_plot, manual_video=video
@@ -117,7 +117,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
     @abstractmethod
     def plot_perimeter_on_ax(
-        self, ax, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs
+        self, ax: Axes, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs
     ) -> None:
         ...
 
@@ -354,7 +354,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         Axes object with plots
         """
         if not ax:
-            fig, ax = self.video.subplots()
+            fig, ax = self.video.subplot()
             ax.set_title(self.label)
 
         if coordinates is not None:
@@ -544,7 +544,7 @@ class PerimeterSet(BasePerimeter):
         return self.all_perimeters[0]
 
     def plot_perimeter_on_ax(
-        self, ax, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs
+        self, ax: Axes, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs
     ) -> None:
         for perimeter in self.all_perimeters:
             perimeter.plot_perimeter_on_ax(ax, inspect_pixels, manual_resize_multiplier, **plot_kwargs)

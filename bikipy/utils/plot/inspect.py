@@ -1,3 +1,4 @@
+import os
 from logging import getLogger
 from pathlib import Path
 from typing import Optional
@@ -8,6 +9,8 @@ from pydantic import validate_arguments
 from bikipy.utils.misc import int_file_stem_incrementor
 
 logger = getLogger(__file__)
+
+DEFAULT_FORMAT = ".jpg"
 
 InspectArg = Path | bool
 inspect_arg_description = (
@@ -25,12 +28,24 @@ def generic_inspection_finalization(
         # This should raise a TypeError if it is a bool and not a Path
         file_path = inspect_arg / potential_label if potential_label else inspect_arg
 
-        if not file_path.suffix:
-            file_path = file_path.with_suffix(".jpg")
+        if file_path.is_dir():
+            logger.debug(f"Ensuring that {file_path} directory exists")
+            os.makedirs(file_path, exist_ok=True)
 
-        if file_path.stem.split("-")[0].isdigit():
-            file_path = int_file_stem_incrementor(file_path)
+            current_idx = 1
+            while (current_path := file_path / f"{current_idx}{DEFAULT_FORMAT}").exists():
+                current_idx += 1
+            file_path = current_path
+        else:
+            logger.debug(f"Ensuring that {file_path.parent} directory exists")
+            os.makedirs(file_path.parent, exist_ok=True)
 
+            if file_path.stem.split("-")[0].isdigit():
+                file_path = int_file_stem_incrementor(file_path)
+
+            file_path = file_path.with_suffix(DEFAULT_FORMAT)
+
+        logger.debug(f"Saving inspection file: {file_path}")
         plt.savefig(file_path)
 
         if debug_save_message:

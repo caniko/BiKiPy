@@ -93,7 +93,7 @@ def parallel_point_inside_polygon(
 
     if inspect_arg or ax is not None:
         if video:
-            fig, ax = video.subplots()
+            fig, ax = video.subplot()
 
             points = video.prepare_coordinates_for_plotting(points)
 

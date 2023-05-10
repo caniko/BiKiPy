@@ -35,6 +35,10 @@ class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMet
         return {label: 0.0 for label in self.po_label_to_qualia_boolean_index}
 
     @cached_property
+    def frames(self) -> int:
+        return len(tuple(self.po_label_to_qualia_boolean_index.values())[0])
+
+    @cached_property
     def po_observing_per_frame(self) -> NDArrayBool:
         return np.logical_or.reduce(
             [observation_boolean_index for observation_boolean_index in self.po_label_to_qualia_boolean_index.values()]
