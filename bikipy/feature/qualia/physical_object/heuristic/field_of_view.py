@@ -111,22 +111,18 @@ class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin
 
     @cached_property
     def result(self) -> NDArrayBool:
-        return (
-            plural_node_tolerance_model(self.left_result, self.right_result, fps=self.video.fps)
-            if self.filter_in_sequence
-            else self.left_result | self.right_result
-        )
+        return self.left_result | self.right_result
 
     @property
     def summary_series(self) -> pd.Series:
         label = self.perimeter.label.capitalize()
         return pd.Series(
             {
-                f"LeftProximity{label}": self.left_proximity.result_seconds,
-                f"LeftwardFOV{label}": self.leftward_observation.result_seconds,
-                f"RightProximity{label}": self.right_proximity.result_seconds,
-                f"RightwardFOV{label}": self.rightward_observation.result_seconds,
-                f"{self.heuristic_alias}{label}": self.boolean_array_to_seconds(self.result),
+                f"ObservingSecLeftProximity{label}": self.left_proximity.result_seconds,
+                f"ObservingSecLeftwardFOV{label}": self.leftward_observation.result_seconds,
+                f"ObservingSecRightProximity{label}": self.right_proximity.result_seconds,
+                f"ObservingSecRightwardFOV{label}": self.rightward_observation.result_seconds,
+                f"ObservingSec{self.heuristic_alias}Total{label}": self.boolean_array_to_seconds(self.result),
             }
         )
 

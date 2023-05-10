@@ -98,12 +98,12 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
             data[f"ObservingSecCenterEyeProximity{label}"] = self.center_eye_proximity.result_seconds
 
         if self.torso_proximity:
-            data[f"TorsoProximity{label}"] = self.torso_proximity.result_seconds
+            data[f"ObservingSecTorsoProximity{label}"] = self.torso_proximity.result_seconds
 
         if self.tail_base_proximity:
-            data[f"BaseTailProximity{label}"] = self.tail_base_proximity.result_seconds
+            data[f"ObservingSecBaseTailProximity{label}"] = self.tail_base_proximity.result_seconds
 
-        data[f"{self.heuristic_alias}{label}"] = self.boolean_array_to_seconds(self.result)
+        data[f"ObservingSec{self.heuristic_alias}Total{label}"] = self.boolean_array_to_seconds(self.result)
 
         return pd.Series(data)
 

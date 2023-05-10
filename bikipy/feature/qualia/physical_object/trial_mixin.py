@@ -72,14 +72,15 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                     )
 
             result.append(
-                analysis_model(po_to_qualia_boolean_index=po_to_qualia_boolean_index, manual_video=self.video)
+                analysis_model(po_label_to_qualia_boolean_index=po_to_qualia_boolean_index, manual_video=self.video)
             )
 
         return result
 
     @property
     def all_summary_series(self) -> list[pd.Series]:
-        return [
-            physical_objects_heuristic.summary_series
-            for physical_objects_heuristic in self.po_heuristic_alias_to_physical_objects_heuristic.values()
-        ]
+        result = []
+        for physical_objects_heuristics in self.po_heuristic_alias_to_physical_objects_heuristic.values():
+            for physical_objects_heuristic in physical_objects_heuristics:
+                result.append(physical_objects_heuristic.summary_series)
+        return result

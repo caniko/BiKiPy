@@ -248,6 +248,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
                     for physical_object_analyser in self.physical_object_analysers
                 )
             )
+            upstream.extend(self.all_summary_series)
         return upstream
 
     @cached_property

@@ -98,8 +98,8 @@ def analysis_cache_file_name_from_trial_id(trial_id: Label) -> str:
 
 @validate_arguments
 def flush_analysis_cache(dataset_directory: DirectoryPath) -> None:
-    analysis_cache_files = dataset_directory.glob(
-        f"**/*{ANALYSIS_CACHE_STEM_ID}.pickle{runtime_settings.compressed_pickle_suffix}"
+    analysis_cache_files = tuple(
+        dataset_directory.glob(f"**/*{ANALYSIS_CACHE_STEM_ID}.pickle{runtime_settings.compressed_pickle_suffix}")
     )
 
     assert analysis_cache_files, "No cache files found"
