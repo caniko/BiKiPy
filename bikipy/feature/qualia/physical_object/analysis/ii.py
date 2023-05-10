@@ -23,16 +23,19 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
             pd.Series(
                 {
                     **{
-                        f"DiscriminationIndex{label_a.capitalize()}{label_b.capitalize()}": discrimination
-                        for (label_a, label_b), discrimination in self.pair_to_absolute_object_discrimination.items()
+                        f"DiscriminationIndex{po_label_a.capitalize()}{po_label_b.capitalize()}": discrimination
+                        for (
+                            po_label_a,
+                            po_label_b,
+                        ), discrimination in self.pair_to_absolute_object_discrimination.items()
                     },
                     **{
-                        f"RelativeBiasScore{label.capitalize()}": rel_bias_score
-                        for label, rel_bias_score in self.relative_object_bias_score.items()
+                        f"RelativeBiasScore{po_label.capitalize()}": rel_bias_score
+                        for po_label, rel_bias_score in self.relative_object_bias_score.items()
                     },
                     **{
-                        f"AbsoluteBiasScore{label.capitalize()}": abs_bias_score
-                        for label, abs_bias_score in self.absolute_object_bias_score.items()
+                        f"AbsoluteBiasScore{po_label.capitalize()}": abs_bias_score
+                        for po_label, abs_bias_score in self.absolute_object_bias_score.items()
                     },
                     "TotalObservationInstances": self.po_sum_of_observation_instances,
                 }
@@ -52,10 +55,10 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
     @cached_property
     def relative_object_bias_score(self) -> dict[str, float]:
         if not self.po_total_seconds_observing:
-            return self._physical_object_label_to_zero
+            return self._po_label_to_zero
         return {
-            label: 100.0 * np.sum(observation_boolean_index) / self.po_total_seconds_observing
-            for label, observation_boolean_index in self.po_label_to_qualia_boolean_index.items()
+            po_label: 100.0 * frames_observing / self.po_total_seconds_observing
+            for po_label, frames_observing in self.po_label_to_frames_observing.items()
         }
 
     @property
@@ -69,10 +72,10 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
     @cached_property
     def absolute_object_bias_score(self) -> dict[str, float]:
         if not self.po_total_seconds_observing:
-            return self._physical_object_label_to_zero
+            return self._po_label_to_zero
         return {
-            label: 100.0 * observation_boolean_index / (self.frames * self.video.fps)
-            for label, observation_boolean_index in self.po_label_to_qualia_boolean_index.items()
+            po_label: 100.0 * frames_observing / (self.frames * self.video.fps)
+            for po_label, frames_observing in self.po_label_to_frames_observing.items()
         }
 
     @cached_property

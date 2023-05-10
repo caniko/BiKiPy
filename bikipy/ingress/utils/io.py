@@ -1,3 +1,4 @@
+import os
 import shutil
 from functools import lru_cache
 from logging import getLogger
@@ -93,3 +94,26 @@ def result_directory_path(project_directory: DirectoryPath) -> DirectoryPath:
 
 def analysis_cache_file_name_from_trial_id(trial_id: Label) -> str:
     return f"{trial_id}_{ANALYSIS_CACHE_STEM_ID}.pickle{runtime_settings.compressed_pickle_suffix}"
+
+
+@validate_arguments
+def flush_analysis_cache(dataset_directory: DirectoryPath) -> None:
+    analysis_cache_files = dataset_directory.glob(
+        f"**/*{ANALYSIS_CACHE_STEM_ID}.pickle{runtime_settings.compressed_pickle_suffix}"
+    )
+
+    assert analysis_cache_files, "No cache files found"
+
+    joined_file_paths = "\n".join((str(p) for p in analysis_cache_files))
+    delete_input = input(f"{joined_file_paths}\nDeleting cache files, confirm (y/N): ")
+
+    if delete_input.lower() != "y":
+        import sys
+
+        print("Aborted by user")
+        sys.exit(0)
+
+    for f in analysis_cache_files:
+        os.remove(f)
+
+    print("Analysis cache deletion complete")

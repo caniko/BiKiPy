@@ -16,7 +16,7 @@ from pydantic import DirectoryPath, FilePath, validate_arguments, Field
 from pydantic_numpy.dtype import NDArrayFp64
 from schemantic.model.project import SchemanticProjectMixin
 
-from bikipy._constant import READER_MAP_NAME
+from bikipy._constant import READER_MAP_NAME, ANALYSIS_CACHE_STEM_ID
 from bikipy.core.base import BikipyModel
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
@@ -687,7 +687,11 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
     @validate_arguments
     def _coordinate_files_in_directory(self, directory_path: DirectoryPath) -> list[FilePath]:
-        available_indices = {int(file.stem.split(".")[0]) for file in directory_path.iterdir() if file.is_file()}
+        available_indices = {
+            int(file.stem.split(".")[0])
+            for file in directory_path.iterdir()
+            if file.is_file() and ANALYSIS_CACHE_STEM_ID not in file.stem
+        }
 
         result = []
         for index in available_indices:

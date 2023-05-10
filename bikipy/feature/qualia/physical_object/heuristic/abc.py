@@ -17,7 +17,7 @@ class AbstractQualiaHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
     perimeter: SinglePerimeter = ...
     reader: Reader = ...
     filter_in_sequence: bool = Field(
-        True,
+        False,
         description="When set to True, the component boolean index will be "
         "considered in sequence with other components that are also filtered in sequence",
     )
@@ -46,7 +46,7 @@ class AbstractQualiaHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
         ...
 
     @property
-    def label(self) -> str:
+    def po_label(self) -> str:
         return self.perimeter.label
 
     def plot_result(self, ax: Axes):

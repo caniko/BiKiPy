@@ -62,19 +62,24 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                 # inspect_arg is a bool
                 current_inspect_arg = self.inspect_arg
 
-            po_label_to_qualia_boolean_index = {}
+            po_to_qualia_boolean_index = {}
             for heuristic in physical_objects_heuristic:
-                po_label_to_qualia_boolean_index[heuristic.label] = heuristic.result
+                po_to_qualia_boolean_index[heuristic.po_label] = heuristic.result
                 if self.inspect_arg:
                     heuristic.plot()
                     generic_inspection_finalization(
-                        current_inspect_arg, f"{self.label}_{heuristic.label}_{heuristic_alias}.jpg"
+                        current_inspect_arg, f"{self.label}_{heuristic.po_label}_{heuristic_alias}.jpg"
                     )
 
             result.append(
-                analysis_model(
-                    po_label_to_qualia_boolean_index=po_label_to_qualia_boolean_index, manual_video=self.video
-                )
+                analysis_model(po_to_qualia_boolean_index=po_to_qualia_boolean_index, manual_video=self.video)
             )
 
         return result
+
+    @property
+    def all_summary_series(self) -> list[pd.Series]:
+        return [
+            physical_objects_heuristic.summary_series
+            for physical_objects_heuristic in self.po_heuristic_alias_to_physical_objects_heuristic.values()
+        ]

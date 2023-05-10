@@ -3,6 +3,7 @@ from concurrent.futures import ProcessPoolExecutor
 from functools import cached_property, lru_cache
 from logging import getLogger
 from operator import attrgetter
+from time import sleep
 from typing import Any, ClassVar, Hashable, Literal, Optional, Type, TypeVar
 
 import numpy as np
@@ -45,6 +46,7 @@ from bikipy.perimeter.mixin import TrialWithPerimeterMixin
 from bikipy.reader import READER_CLASS_LABEL_TO_CLASS
 from bikipy.reader.base import Reader, ReaderCLS
 from bikipy.reader.data_with_likelihood import DeepLabCutReader
+from bikipy.utils.memory import wait_for_more_physical_memory
 from bikipy.utils.ranged_dict import RangeDict
 
 LABEL_to_DATA_READER = {"deeplabcut": DeepLabCutReader}
@@ -590,12 +592,16 @@ class BaseExperiment(Behaviour):
             with yaspin(Spinners.pong, text="Computing experiment features..."):
                 with ProcessPoolExecutor(max_workers=runtime_settings.max_workers_in_process_pool) as executor:
                     for trial_class, trial_objects in self.trial_class_to_trial_objects.items():
-                        result[trial_class] = {
-                            trial_object.label: features
-                            for trial_object, features in zip(
-                                trial_objects, executor.map(attrgetter("analysis_series"), trial_objects)
+                        for trial_object in trial_objects:
+                            wait_for_more_physical_memory()
+                            result[trial_class][trial_object.label] = executor.submit(
+                                attrgetter("analysis_series"), trial_object
                             )
-                        }
+                            sleep(0.6)
+
+                for trial_class, trial_objects in self.trial_class_to_trial_objects.items():
+                    for trial_object in trial_objects:
+                        result[trial_class][trial_object.label] = result[trial_class][trial_object.label].result()
 
         return dict(result)
 

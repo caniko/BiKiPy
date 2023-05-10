@@ -33,6 +33,7 @@ class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTri
     perimeter_labels = {"object_1", "object_2"}
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
+    excel_sheet_name = "Training"
     trial_label = "Training"
 
     @classmethod
@@ -54,6 +55,7 @@ class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial
     perimeter_labels = {"object_1", "object_3"}
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
+    excel_sheet_name = "Update"
     trial_label = "Update"
 
     @classmethod
@@ -77,6 +79,7 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
     perimeter_labels = {"object_1", "object_2", "object_3", "object_4"}
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
+    excel_sheet_name = "Test"
     trial_label = "Test"
 
     @classmethod

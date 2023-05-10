@@ -15,7 +15,7 @@ from bikipy.feature.tolerance.plural import plural_node_tolerance_model
 
 class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
     center_eye_label: str | None = "center_eye"
-    torso_label: str | None
+    torso_label: str | None = "torso"
     tail_base_label: str | None = "tail_base"
 
     manual_center_eye: Optional[ComputeProximity]
@@ -87,22 +87,25 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
             if node is not None
         ]
 
-        return (
-            plural_node_tolerance_model(*nodes, fps=self.video.fps)
-            if self.filter_in_sequence
-            else np.logical_or.reduce(nodes)
-        )
+        return np.logical_or.reduce(nodes)
 
     @property
     def summary_series(self) -> pd.Series:
-        return pd.Series(
-            {
-                "CenterEyeProximity": self.center_eye_proximity.result,
-                "TorsoProximity": self.torso_proximity.result,
-                "BaseTailProximity": self.tail_base_proximity.result,
-                self.heuristic_alias: self.result,
-            }
-        )
+        data = {}
+        label = self.perimeter.label.capitalize()
+
+        if self.center_eye_proximity:
+            data[f"ObservingSecCenterEyeProximity{label}"] = self.center_eye_proximity.result_seconds
+
+        if self.torso_proximity:
+            data[f"TorsoProximity{label}"] = self.torso_proximity.result_seconds
+
+        if self.tail_base_proximity:
+            data[f"BaseTailProximity{label}"] = self.tail_base_proximity.result_seconds
+
+        data[f"{self.heuristic_alias}{label}"] = self.boolean_array_to_seconds(self.result)
+
+        return pd.Series(data)
 
     def plot(self) -> None:
         fig, axes = self.video.subplots(

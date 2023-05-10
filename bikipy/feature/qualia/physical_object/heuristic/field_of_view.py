@@ -119,13 +119,14 @@ class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin
 
     @property
     def summary_series(self) -> pd.Series:
+        label = self.perimeter.label.capitalize()
         return pd.Series(
             {
-                "LeftProximity": self.left_proximity.result_seconds,
-                "LeftwardFOV": self.leftward_observation.result_seconds,
-                "RightProximity": self.right_proximity.result_seconds,
-                "RightwardFOV": self.rightward_observation.result_seconds,
-                self.heuristic_alias: self.result,
+                f"LeftProximity{label}": self.left_proximity.result_seconds,
+                f"LeftwardFOV{label}": self.leftward_observation.result_seconds,
+                f"RightProximity{label}": self.right_proximity.result_seconds,
+                f"RightwardFOV{label}": self.rightward_observation.result_seconds,
+                f"{self.heuristic_alias}{label}": self.boolean_array_to_seconds(self.result),
             }
         )
 

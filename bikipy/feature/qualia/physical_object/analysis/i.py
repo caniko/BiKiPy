@@ -23,16 +23,16 @@ class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMet
                 {
                     "TotalSecondsObserving": self.po_total_seconds_observing,
                     **{
-                        f"SecondsObserving{label.capitalize()}": seconds_observing
-                        for label, seconds_observing in self.po_label_to_seconds_observing.items()
+                        f"SecondsObserving{po_label.capitalize()}": seconds_observing
+                        for po_label, seconds_observing in self.po_label_to_seconds_observing.items()
                     },
                 }
             )
         ]
 
     @cached_property
-    def _physical_object_label_to_zero(self) -> dict:
-        return {label: 0.0 for label in self.po_label_to_qualia_boolean_index}
+    def _po_label_to_zero(self) -> dict:
+        return {po_label: 0.0 for po_label in self.po_label_to_qualia_boolean_index}
 
     @cached_property
     def frames(self) -> int:
@@ -49,10 +49,17 @@ class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMet
         return np.sum(self.po_observing_per_frame) / self.video.fps
 
     @cached_property
+    def po_label_to_frames_observing(self) -> dict[str, int]:
+        return {
+            po_label: np.sum(observation_boolean_index)
+            for po_label, observation_boolean_index in self.po_label_to_qualia_boolean_index.items()
+        }
+
+    @cached_property
     def po_label_to_seconds_observing(self) -> dict[str, int]:
         return {
-            label: np.sum(observation_boolean_index) / self.video.fps
-            for label, observation_boolean_index in self.po_label_to_qualia_boolean_index.items()
+            po_label: frames_observing / self.video.fps
+            for po_label, frames_observing in self.po_label_to_frames_observing.items()
         }
 
 
