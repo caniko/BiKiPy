@@ -365,14 +365,15 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         self, boolean_index: NDArrayBool, ax: Axes, manual_kinematic_coordinates: Optional[str] = None
     ) -> None:
         region_label = manual_kinematic_coordinates or self.object_tracking_label_for_kinematics
+        coordinates_for_plot = self.video.prepare_coordinates_for_plotting(self[region_label])
         ax.scatter(
-            *self[region_label][boolean_index].T,
+            *coordinates_for_plot[boolean_index].T,
             marker="x",
             alpha=runtime_settings.matplotlib_scatter_alpha,
             label="Valid",
         )
         ax.scatter(
-            *self[region_label][~boolean_index].T,
+            *coordinates_for_plot[~boolean_index].T,
             marker="x",
             alpha=runtime_settings.matplotlib_scatter_alpha,
             label="Invalid",

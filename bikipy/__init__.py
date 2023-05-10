@@ -21,6 +21,8 @@ class BikipyRuntimeSettings(BaseSettings, SchemanticProjectMixin):
     only_physical_cores: bool = False
     disable_numba: bool = False
 
+    compressed_pickle_suffix: str = ".lz4"
+
     ignore_pre_existing_inspection_directory: bool = False
 
     matplotlib_scatter_alpha: float = 0.60

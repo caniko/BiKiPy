@@ -252,19 +252,6 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
         # if self.moving_field_name == "reference_point_array":
 
-    def inspect_closest_point_on_edge_to_coordinates(self, result: NDArrayFp64, coordinates: NDArrayFp64):
-        if self.inspect_arg:
-            sb.set_theme(style="darkgrid")
-            fig, ax = plt.subplots(dpi=500)
-
-            self.plot_perimeter(manual_ax=ax)
-
-            with sb.color_palette("Spectral", n_colors=5):
-                for i in evenly_spaced_indices_from_sequence(coordinates, 5):
-                    ax.plot(*np.vstack((result[i], coordinates[i])).T)
-
-            generic_inspection_finalization(self.class_inspect_arg, f"{self.label}.jpg")
-
     @property
     def reference_point(self):
         if self.reference_point_array is None and not self.reference_point_coco_path:

@@ -226,7 +226,8 @@ class RectangleEnclosedTrial(EnclosedTrial):
         return parallel_point_inside_polygon(
             self.reader.kinematic_coordinates,
             self.center_rectangle_vertices,
-            inspect_arg=self.class_inspect_arg / f"{self.label}.jpg",
+            inspect_arg=self.class_inspect_arg,
+            potential_label=f"{self.label}.jpg",
             video=self.video,
         )
 

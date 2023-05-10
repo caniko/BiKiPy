@@ -7,6 +7,8 @@ import yaml
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from bikipy import runtime_settings
+from bikipy._constant import ANALYSIS_CACHE_STEM_ID
+from bikipy.core.typing import Label
 
 logger = getLogger(__name__)
 
@@ -87,3 +89,7 @@ def result_directory_path(project_directory: DirectoryPath) -> DirectoryPath:
     result_directory = project_directory / "result"
     result_directory.mkdir(exist_ok=True)
     return result_directory
+
+
+def analysis_cache_file_name_from_trial_id(trial_id: Label) -> str:
+    return f"{trial_id}_{ANALYSIS_CACHE_STEM_ID}.pickle{runtime_settings.compressed_pickle_suffix}"

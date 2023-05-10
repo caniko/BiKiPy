@@ -18,6 +18,8 @@ from bikipy.utils.plot.inspect import (
 
 
 class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
+    analysis_series_cache_path: Optional[Path]
+
     feature_collection_cache: ClassVar[bool] = False  # TODO: Add feat
 
     @property
@@ -27,15 +29,18 @@ class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
 
     @property
     def analysis_series(self) -> pd.Series:
-        if runtime_settings.debug:
+        if self.analysis_series_cache_path and self.analysis_series_cache_path.exists():
+            return compress_pickle.load(self.analysis_series_cache_path)
+
+        try:
+            # Concatenate and reverse the order
             result = self.compute_analysis_series()
-        else:
-            try:
-                # Concatenate and reverse the order
-                result = self.compute_analysis_series()
-            except Exception as e:
-                msg = f"{self.category.capitalize()} ID: {self.int_id}; label: {self.label}, raised an error"
-                raise AttributeError(msg) from e
+        except Exception as e:
+            msg = f"{self.category.capitalize()} ID: {self.int_id}; label: {self.label}, raised an error"
+            raise AttributeError(msg) from e
+
+        if self.analysis_series_cache_path:
+            compress_pickle.dump(result, self.analysis_series_cache_path)
 
         self._post_feature_collection_flush()
         return result

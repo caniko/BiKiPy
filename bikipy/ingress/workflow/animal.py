@@ -3,8 +3,11 @@ from typing import ClassVar
 
 from pydantic import DirectoryPath
 
+from bikipy import runtime_settings
+from bikipy._constant import ANALYSIS_CACHE_STEM_ID
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
+from bikipy.ingress.utils.io import analysis_cache_file_name_from_trial_id
 from bikipy.ingress.workflow.base import BaseIngressWorkflow
 
 logger = getLogger(__name__)
@@ -59,6 +62,7 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
                     "label": trial_id,
                     "animal_id": animal_id,
                     "framewise_coordinates_path": framewise_coordinates_path,
+                    "analysis_series_cache_path": animal_dir / analysis_cache_file_name_from_trial_id(trial_id),
                     **self.trialwise_plugins_for_trial_id(trial_id, animal_dir),
                     **self._trial_id_to_keyword_arguments[trial_id],
                     **plugin_data,

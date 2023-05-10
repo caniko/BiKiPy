@@ -51,6 +51,7 @@ class AbstractQualiaHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
 
     def plot_result(self, ax: Axes):
         ax.set_title(self.heuristic_alias)
+        self.perimeter.plot(ax=ax, inspect_pixels=False)
         self.reader.plot_boolean_index(self.result, ax)
 
 

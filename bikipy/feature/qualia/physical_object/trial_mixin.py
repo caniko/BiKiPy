@@ -64,11 +64,12 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
 
             po_label_to_qualia_boolean_index = {}
             for heuristic in physical_objects_heuristic:
-                heuristic.plot()
-                generic_inspection_finalization(
-                    current_inspect_arg, f"{self.label}_{heuristic.label}_{heuristic_alias}.jpg"
-                )
                 po_label_to_qualia_boolean_index[heuristic.label] = heuristic.result
+                if self.inspect_arg:
+                    heuristic.plot()
+                    generic_inspection_finalization(
+                        current_inspect_arg, f"{self.label}_{heuristic.label}_{heuristic_alias}.jpg"
+                    )
 
             result.append(
                 analysis_model(

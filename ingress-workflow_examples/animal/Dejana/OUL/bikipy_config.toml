@@ -16,6 +16,7 @@ definition_enclosure = ["metadata"]
 definition_timestamp = ["trialwise"]
 definition_video = ["trialwise"]
 
+create_inspection_plots = false
 only_one_instance_of_trial_class = false
 #trial_ids_to_analyse = ["118_0"]
 

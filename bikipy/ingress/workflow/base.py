@@ -64,6 +64,8 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     dataset_directory: DirectoryPath = ...
     experiment_class_name: str = ...
 
+    create_inspection_plots: bool = True
+
     first_stage_is_habituation: bool = False
     metadata_trial_ids_are_higher_level: bool = False
     trial_sequence_loops: int = 1
@@ -513,7 +515,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             **additional_kwargs,
             common_trial_keyword_arguments=self.common_trial_keyword_arguments,
             trial_id_to_keyword_arguments=self.trial_id_to_keyword_arguments,
-            inspect_arg=self.inspect_directory_path,
+            inspect_arg=self.inspect_directory_path if self.create_inspection_plots else False,
             trial_init_error_out_dir=self.result_directory_path,
         )
 
@@ -729,7 +731,11 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         return result
 
     def _to_skip_trial_id(self, trial_id: Label) -> bool:
-        return self.trial_ids_to_analyse and trial_id not in self.trial_ids_to_analyse or self.trial_id_exists(trial_id)
+        return (
+            self.trial_ids_to_analyse
+            and trial_id not in self.trial_ids_to_analyse
+            or not self.trial_id_exists(trial_id)
+        )
 
     @staticmethod
     def _get_id_from_path_stem(path: Path) -> Label:

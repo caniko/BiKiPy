@@ -24,3 +24,5 @@ PROJECTKIT_CONFIG_KEY_ORDER = OrderedSet(
         RUNTIME_SETTINGS_MAP_NAME,
     )
 )
+
+ANALYSIS_CACHE_STEM_ID = "analysis_cache"
