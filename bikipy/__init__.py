@@ -6,7 +6,7 @@ from psutil import cpu_count
 from pydantic import BaseSettings, Field
 from schemantic.model.project import SchemanticProjectMixin
 
-matplotlib.use("Agg")
+matplotlib.use("module://mplcairo.base")
 
 
 logger = logging.getLogger(__file__)

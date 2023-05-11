@@ -25,4 +25,5 @@ PROJECTKIT_CONFIG_KEY_ORDER = OrderedSet(
     )
 )
 
+INSPECT_FIG_FILE_FORMAT = ".svgz"
 ANALYSIS_CACHE_STEM_ID = "analysis_cache"

@@ -11,6 +11,7 @@ from matplotlib.axes import Axes
 from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
+from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.core.base import BikipyHashable
 from bikipy.core.mixin import InspectPlotMixin
 from bikipy.core.typing import Label
@@ -556,7 +557,7 @@ class PerimeterSet(BasePerimeter):
 
         if not manual_ax:
             ax.legend(**BOTTOM_LEGEND_KWARGS)
-            generic_inspection_finalization(self.class_inspect_arg or True, f"0-{self.label}.jpg")
+            generic_inspection_finalization(self.class_inspect_arg or True, f"0-{self.label}{INSPECT_FIG_FILE_FORMAT}")
 
         return ax
 

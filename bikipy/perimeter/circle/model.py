@@ -11,7 +11,7 @@ from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.utils.math.cached import meters2pixels
 from bikipy.utils.math.inside.ellipse import point_inside_ellipse
 from bikipy.utils.math.vector import unit_vector
-from bikipy.utils.plot.generic import plot_circle
+from bikipy.utils.plot.generic import plot_ellipse
 
 
 class BaseCirclePerimeter(BaseSinglePerimeter):
@@ -99,7 +99,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
             image_resize_multiplier = manual_resize_multiplier or self.video.image_resize_multiplier
             center, radius = center * image_resize_multiplier, radius * image_resize_multiplier
 
-        return plot_circle(center, radius, ax)
+        return plot_ellipse(center, radius, ax)
 
     @classmethod
     @property

@@ -6,11 +6,10 @@ from typing import Optional
 from matplotlib import pyplot as plt
 from pydantic import validate_arguments
 
+from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.utils.misc import int_file_stem_incrementor
 
 logger = getLogger(__file__)
-
-DEFAULT_FORMAT = ".jpg"
 
 InspectArg = Path | bool
 inspect_arg_description = (
@@ -33,7 +32,7 @@ def generic_inspection_finalization(
             os.makedirs(file_path, exist_ok=True)
 
             current_idx = 1
-            while (current_path := file_path / f"{current_idx}{DEFAULT_FORMAT}").exists():
+            while (current_path := file_path / f"{current_idx}{INSPECT_FIG_FILE_FORMAT}").exists():
                 current_idx += 1
             file_path = current_path
         else:
@@ -43,7 +42,7 @@ def generic_inspection_finalization(
             if file_path.stem.split("-")[0].isdigit():
                 file_path = int_file_stem_incrementor(file_path)
 
-            file_path = file_path.with_suffix(DEFAULT_FORMAT)
+            file_path = file_path.with_suffix(INSPECT_FIG_FILE_FORMAT)
 
         logger.debug(f"Saving inspection file: {file_path}")
         plt.savefig(file_path)

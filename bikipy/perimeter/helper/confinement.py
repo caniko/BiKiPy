@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 from pydantic import validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
+from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.feature.tolerance.plural import plural_node_tolerance_model
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import Perimeter, PerimeterSet
@@ -128,7 +129,7 @@ def detect_multi_node_sequential_perimeter_presence(
 
         ax.legend(**BOTTOM_LEGEND_KWARGS)
         fig.tight_layout()
-        generic_inspection_finalization(inspect_arg, f"0-{label}.jpg", **inspect_kwargs)
+        generic_inspection_finalization(inspect_arg, f"0-{label}{INSPECT_FIG_FILE_FORMAT}", **inspect_kwargs)
 
     if clean_outliers:
         presence = presence[valid_indices]

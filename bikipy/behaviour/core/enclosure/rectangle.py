@@ -8,6 +8,7 @@ import pandas as pd
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
+from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.behaviour.core.base import HabituationTrialMixin
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.core.enclosure.quadrant import Quadrant
@@ -159,7 +160,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             plt.legend(**BOTTOM_LEGEND_KWARGS)
 
             generic_inspection_finalization(
-                self._inspect_quadrant_directory / f"{self.label}.jpg",
+                self._inspect_quadrant_directory / f"{self.label}{INSPECT_FIG_FILE_FORMAT}",
                 debug_save_message=f"Saved perimeter_set {self.label} inspect plot to {self.class_inspect_arg}",
             )
 
@@ -227,7 +228,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             self.reader.kinematic_coordinates,
             self.center_rectangle_vertices,
             inspect_arg=self.class_inspect_arg,
-            potential_label=f"{self.label}.jpg",
+            potential_label=f"{self.label}{INSPECT_FIG_FILE_FORMAT}",
             video=self.video,
         )
 

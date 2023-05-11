@@ -2,8 +2,9 @@ from logging import getLogger
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, patches
 from matplotlib.axes import Axes
+from pydantic import validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy.utils.plot.color import cmap
@@ -53,15 +54,24 @@ def plot_coordinates(
     return ax
 
 
-def plot_circle(center: NDArrayFp64, radius: NDArrayFp64 | float, ax: Axes = None):
-    angles = np.linspace(0, 2 * np.pi, 200)
-
-    result = center + radius * np.array([np.cos(angles), np.sin(angles)]).T
-
+@validate_arguments(config={"arbitrary_types_allowed": True})
+def plot_ellipse(center: tuple[float, float], radius: tuple[float, float] | float, ax: Axes = None) -> Axes:
     if ax is None:
         fig, ax = plt.subplots()
 
-    ax.plot(*result.T)
+    if isinstance(radius, tuple) and np.isclose(radius[0], radius[1]):
+        radius = radius[0]
+
+    if isinstance(radius, float):
+        circle = plt.Circle(center, radius, fill=False)
+        ax.add_artist(circle)
+    elif isinstance(radius, tuple):
+        ellipse = patches.Ellipse(center, *radius, edgecolor="g", facecolor="none")
+        ax.add_patch(ellipse)
+    else:
+        msg = f"Provided radius has invalid type: {type(radius)}"
+        raise ValueError(msg)
+
     ax.scatter(*center, marker=",")
 
     return ax
