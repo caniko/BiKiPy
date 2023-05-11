@@ -90,7 +90,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
 
     def plot_perimeter_on_ax(
         self, ax: Axes, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs
-    ) -> None:
+    ) -> Axes:
         center, radius = (
             (self.center_pixels, self.radius_pixels) if inspect_pixels else (self.center_meters, self.radius_meters)
         )
@@ -99,7 +99,10 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
             image_resize_multiplier = manual_resize_multiplier or self.video.image_resize_multiplier
             center, radius = center * image_resize_multiplier, radius * image_resize_multiplier
 
-        return plot_ellipse(center, radius, ax)
+        if isinstance(radius, np.ndarray):
+            radius = tuple(radius)
+
+        return plot_ellipse(tuple(center), radius, ax)
 
     @classmethod
     @property

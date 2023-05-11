@@ -272,6 +272,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
                 # label=f"{self.label}{index}",     # Uncomment this when inspecting the sorting of edges
                 # **plot_kwargs,
             )
+        return ax
 
     def _add_label_to_str(self, in_string):
         if self.label:

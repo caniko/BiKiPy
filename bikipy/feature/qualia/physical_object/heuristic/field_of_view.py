@@ -118,11 +118,9 @@ class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin
         label = self.perimeter.label.capitalize()
         return pd.Series(
             {
-                f"ObservingSecLeftProximity{label}": self.left_proximity.result_seconds,
-                f"ObservingSecLeftwardFOV{label}": self.leftward_observation.result_seconds,
-                f"ObservingSecRightProximity{label}": self.right_proximity.result_seconds,
-                f"ObservingSecRightwardFOV{label}": self.rightward_observation.result_seconds,
-                f"ObservingSec{self.heuristic_alias}Total{label}": self.boolean_array_to_seconds(self.result),
+                f"ObservingSecLeftwardProxFOV{label}": self.boolean_array_to_seconds(self.left_result),
+                f"ObservingSecRightwardProxFOV{label}": self.boolean_array_to_seconds(self.right_result),
+                f"ObservingSecCombinedProxFOV{label}": self.boolean_array_to_seconds(self.result),
             }
         )
 
@@ -134,13 +132,13 @@ class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin
         self.leftward_observation.plot(axes[0][1], self.video)
 
         axes[0][2].set_title("LeftwardProximalFOV")
-        self.reader.plot_boolean_index(self.left_result, axes[0][2])
+        self.reader.plot_boolean_index(self.left_result, axes[0][2], self.left_eye_label)
 
         # Right
         self.right_proximity.plot(axes[1][0], self.video)
         self.rightward_observation.plot(axes[1][1], self.video)
 
         axes[1][2].set_title("RightwardProximalFOV")
-        self.reader.plot_boolean_index(self.right_result, axes[1][2])
+        self.reader.plot_boolean_index(self.right_result, axes[1][2], self.right_eye_label)
 
         self.plot_result(axes[2][1])

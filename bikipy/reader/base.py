@@ -360,12 +360,20 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     def combined_raw_likelihood(self) -> NDArrayFp64:
         return np.multiply.reduce(self.raw_df.loc[:, pd.IndexSlice[:, "likelihood"]], axis=1)
 
+    label_to_plot_prepped_coordinates: dict[str, NDArrayFp64] | None = Field(default_factory=dict)
+
+    def coordinates_for_plot(self, label_to_plot: str) -> NDArrayFp64:
+        try:
+            return self.label_to_plot_prepped_coordinates[label_to_plot]
+        except KeyError:
+            result = self.video.prepare_coordinates_for_plotting(self[label_to_plot])
+        self.label_to_plot_prepped_coordinates[label_to_plot] = result
+        return result
+
     @validate_arguments(config={"arbitrary_types_allowed": True})
-    def plot_boolean_index(
-        self, boolean_index: NDArrayBool, ax: Axes, manual_kinematic_coordinates: Optional[str] = None
-    ) -> None:
-        region_label = manual_kinematic_coordinates or self.object_tracking_label_for_kinematics
-        coordinates_for_plot = self.video.prepare_coordinates_for_plotting(self[region_label])
+    def plot_boolean_index(self, boolean_index: NDArrayBool, ax: Axes, label_to_plot: Optional[str] = None) -> None:
+        coordinates_for_plot = self.coordinates_for_plot(label_to_plot or self.object_tracking_label_for_kinematics)
+
         ax.scatter(
             *coordinates_for_plot[boolean_index].T,
             marker="x",

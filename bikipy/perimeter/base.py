@@ -119,7 +119,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
     @abstractmethod
     def plot_perimeter_on_ax(
         self, ax: Axes, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs
-    ) -> None:
+    ) -> Axes:
         ...
 
     @abstractmethod
@@ -533,9 +533,11 @@ class PerimeterSet(BasePerimeter):
 
     def plot_perimeter_on_ax(
         self, ax: Axes, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs
-    ) -> None:
+    ) -> Axes:
         for perimeter in self.all_perimeters:
             perimeter.plot_perimeter_on_ax(ax, inspect_pixels, manual_resize_multiplier, **plot_kwargs)
+
+        return ax
 
     def plot(
         self,

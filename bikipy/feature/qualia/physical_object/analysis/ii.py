@@ -23,7 +23,7 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
             pd.Series(
                 {
                     **{
-                        f"DiscriminationIndex{po_label_a.capitalize()}{po_label_b.capitalize()}": discrimination
+                        f"AbsoluteDiscrimination{po_label_a.capitalize()}{po_label_b.capitalize()}": discrimination
                         for (
                             po_label_a,
                             po_label_b,

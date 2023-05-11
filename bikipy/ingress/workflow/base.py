@@ -589,7 +589,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         with pd.ExcelWriter(self.result_directory_path / f"{self.experiment_class_name}.xlsx") as writer:
             for trial_label, df in self.trial_label_to_df.items():
                 df.to_excel(writer, sheet_name=str(trial_label))
-                df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_class_name}.parquet", **TO_PARQUET_KWARGS)
+                # df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_class_name}.parquet", **TO_PARQUET_KWARGS)
 
     def purge_cached_reads(self, override_pattern: Optional[str] = None) -> None:
         pattern = override_pattern or BaseReader.augmented_coordinate_cached_file_label
