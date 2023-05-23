@@ -8,7 +8,6 @@ from compress_pickle import compress_pickle
 from pydantic import DirectoryPath, Field, FilePath
 from pydantic_numpy.dtype import NDArrayUint8
 
-from bikipy import runtime_settings
 from bikipy.core.base import BikipyConfigModel, BikipyHashable
 from bikipy.utils.plot.inspect import (
     InspectArg,

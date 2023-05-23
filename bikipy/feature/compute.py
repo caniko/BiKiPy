@@ -4,7 +4,7 @@ from typing import Generic, Type, TypeVar
 
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
-from pydantic import validate_arguments, Extra
+from pydantic import Extra, validate_arguments
 from pydantic.generics import GenericModel
 from pydantic_numpy import NDArrayBool
 

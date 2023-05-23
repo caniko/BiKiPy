@@ -49,10 +49,10 @@ class AbstractQualiaHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
     def po_label(self) -> str:
         return self.perimeter.label
 
-    def plot_result(self, ax: Axes):
+    def plot_result(self, ax: Axes, label_to_plot: str):
         ax.set_title(self.heuristic_alias)
         self.perimeter.plot(ax=ax, inspect_pixels=False)
-        self.reader.plot_boolean_index(self.result, ax)
+        self.reader.plot_boolean_index(self.result, ax, label_to_plot)
 
 
 QualiaHeuristicCLS = Type[AbstractQualiaHeuristic]

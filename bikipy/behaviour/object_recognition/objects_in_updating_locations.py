@@ -14,7 +14,6 @@ Test hypothesis:
 TG: Equal
 WT: 4 > 3 > 2 >~ 1
 """
-from pydantic.main import ModelMetaclass
 
 from bikipy.behaviour.core.enclosure.rectangle import (
     RectangleEnclosedExperiment,

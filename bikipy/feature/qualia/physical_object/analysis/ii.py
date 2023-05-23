@@ -8,7 +8,9 @@ import pandas as pd
 from pydantic_numpy import NDArrayUint8
 
 from bikipy.behaviour.utils import reduce_repeating_sequences
-from bikipy.feature.qualia.physical_object.analysis.i import OnePhysicalObjectSetQualiaAnalysis
+from bikipy.feature.qualia.physical_object.analysis.i import (
+    OnePhysicalObjectSetQualiaAnalysis,
+)
 
 logger = getLogger(__name__)
 
@@ -30,13 +32,13 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
                         ), discrimination in self.pair_to_absolute_object_discrimination.items()
                     },
                     **{
-                        f"RelativeBiasScore{po_label.capitalize()}": rel_bias_score
+                        f"BiasScore{po_label.capitalize()}": rel_bias_score
                         for po_label, rel_bias_score in self.relative_object_bias_score.items()
                     },
-                    **{
-                        f"AbsoluteBiasScore{po_label.capitalize()}": abs_bias_score
-                        for po_label, abs_bias_score in self.absolute_object_bias_score.items()
-                    },
+                    # **{
+                    #     f"AbsoluteBiasScore{po_label.capitalize()}": abs_bias_score
+                    #     for po_label, abs_bias_score in self.absolute_object_bias_score.items()
+                    # },
                     "TotalObservationInstances": self.po_sum_of_observation_instances,
                 }
             )
@@ -57,7 +59,7 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
         if not self.po_total_seconds_observing:
             return self._po_label_to_zero
         return {
-            po_label: 100.0 * frames_observing / self.po_total_seconds_observing
+            po_label: 100.0 * frames_observing / self.frames_observing
             for po_label, frames_observing in self.po_label_to_frames_observing.items()
         }
 
@@ -74,7 +76,7 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
         if not self.po_total_seconds_observing:
             return self._po_label_to_zero
         return {
-            po_label: 100.0 * frames_observing / (self.frames * self.video.fps)
+            po_label: 100.0 * frames_observing / self.frames
             for po_label, frames_observing in self.po_label_to_frames_observing.items()
         }
 

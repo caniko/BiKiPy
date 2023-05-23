@@ -1,6 +1,7 @@
 import os
 import pstats
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from cProfile import Profile
 from functools import cached_property
 from itertools import chain
@@ -12,13 +13,15 @@ import numpy as np
 import pandas as pd
 from inflection import underscore
 from projectkit.model.project import ProjectKitModelMixin
-from pydantic import DirectoryPath, FilePath, validate_arguments, Field
+from pydantic import DirectoryPath, Field, FilePath, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 from schemantic.model.project import SchemanticProjectMixin
 
-from bikipy._constant import READER_MAP_NAME, ANALYSIS_CACHE_STEM_ID
+from bikipy._constant import ANALYSIS_CACHE_STEM_ID, READER_MAP_NAME
 from bikipy.core.base import BikipyModel
 from bikipy.core.typing import Label
+from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
+from bikipy.ingress.plugin.core import plugin_scope
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 from bikipy.ingress.utils.io import (
     get_inspect_directory_path,
@@ -33,7 +36,6 @@ from bikipy.utils.collection_utils import (
     copycat_assumes_levels_of_icon,
     get_first_value_in_dict,
 )
-from bikipy.utils.constants import TO_PARQUET_KWARGS
 from bikipy.utils.misc import defaultdict_dict_factory, sheet_names_from_path
 
 if TYPE_CHECKING:
@@ -101,6 +103,8 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
     profile_runtime: ClassVar[bool] = True
     ingress_method: ClassVar[str]
+
+    _coordinate_file_index_delimiter: ClassVar[str] = "."
 
     class Config:
         keep_untouched = (cached_property,)
@@ -189,19 +193,19 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     # I/O ============================
 
     @cached_property
-    def _metadata_sheet_names(self) -> list[str]:
+    def metadata_sheet_names(self) -> list[str]:
         return sheet_names_from_path(self.metadata_path)
 
     @cached_property
     def ranged_metadata(self) -> pd.DataFrame | None:
-        if "ranged" in self._metadata_sheet_names:
+        if "ranged" in self.metadata_sheet_names:
             column_names = set(pd.read_excel(self.metadata_path, sheet_name="ranged").columns)
             if "Phase" in column_names:
                 return pd.read_excel(self.metadata_path, sheet_name="ranged", index_col=[0, 1, 2])
 
     @cached_property
     def animal_metadata(self) -> pd.DataFrame | None:
-        if "animal" in self._metadata_sheet_names:
+        if "animal" in self.metadata_sheet_names:
             animal_df = pd.read_excel(
                 self.metadata_path,
                 sheet_name="animal",
@@ -217,7 +221,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
                 df = df.join(self.animal_metadata, how="inner")
             return df
 
-        if "trial_id" in self._metadata_sheet_names:
+        if "trial_id" in self.metadata_sheet_names:
             trial_id_df = pd.read_excel(
                 self.metadata_path,
                 sheet_name="trial_id",
@@ -227,7 +231,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
             trial_id_df = join_trial_df_with_animal_metadata(trial_id_df)
 
-        elif "phase" in self._metadata_sheet_names:
+        elif "phase" in self.metadata_sheet_names:
             """
             The phase layout of trial ID is very similar to the original layout, with one minor difference:
             There are three index columns the 1st is the Phase column, the 2nd is the PhasePart column, and the
@@ -238,7 +242,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
             trial_id_df = join_trial_df_with_animal_metadata(trial_id_df)
 
-        elif "animal_sequence" in self._metadata_sheet_names:
+        elif "animal_sequence" in self.metadata_sheet_names:
             """
             The Animal-Sequence layout derives trial ID from Animal and Sequence ID.
             """
@@ -255,7 +259,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             trial_id_df.index = trial_id_df.index.map(lambda idx: f"{idx[0]}_{idx[1]}")
             trial_id_df.index.names = ["Trial"]
 
-        elif "animal_day" in self._metadata_sheet_names:
+        elif "animal_day" in self.metadata_sheet_names:
             """
             The Animal-Sequence layout derives trial ID from Animal and Day.
             """
@@ -292,7 +296,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
                 phase_to_df = {
                     phase: pd.read_excel(self.metadata_path, sheet_name=phase, index_col=[0, 1])
                     for phase in np.unique(self.animal_metadata["Phase"])
-                    if phase in self._metadata_sheet_names
+                    if phase in self.metadata_sheet_names
                 }
 
                 df_data = {}
@@ -644,6 +648,19 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         raise AttributeError(f"Could not find meters_per_pixel for trial {trial_id}")
 
+    @cached_property
+    def metadata_plugin_to_label_to_path(self) -> dict[str, dict[str, FilePath]]:
+        result = defaultdict(dict)
+        for plugin in self._plugins_metadata:
+            for metadata_file in self.plugin_directory_path.glob("*.*"):
+                if issubclass(plugin.plugin_file_stem_parser, PluginFileStemParseLastIsLabel):
+                    stem_info = plugin.plugin_file_stem_parser(metadata_file.stem, plugin_scope.METADATA)
+                    result[plugin.code_key][stem_info.label] = metadata_file
+                else:
+                    raise NotImplementedError
+
+        return dict(result)
+
     # Private methods ===============================
 
     def _define_plugin(self, plugin_model: "PluginType", plugin_scope: PluginScope, **field_kwargs) -> "Plugin":
@@ -654,13 +671,6 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         return plugin_model(plugin_scope=plugin_scope, ingress=self, **additional_field_args, **field_kwargs)
 
     def _trial_class_from_stage_index(self, stage_index: Label) -> "TrialCLS":
-        from bikipy.behaviour.object_recognition.objects_in_updating_locations import (
-            ObjectsInUpdatingLocationsTrainingTrial,
-        )
-
-        if self.experiment_class.trial_sequence[0] != ObjectsInUpdatingLocationsTrainingTrial:
-            raise RuntimeError()
-
         return self.experiment_class.stage_index_to_trial_class_name[stage_index]
 
     def _trialwise_plugins_for_trial_id(
@@ -688,14 +698,16 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     @validate_arguments
     def _coordinate_files_in_directory(self, directory_path: DirectoryPath) -> list[FilePath]:
         available_indices = {
-            int(file.stem.split(".")[0])
+            int(file.stem.split(self._coordinate_file_index_delimiter)[0])
             for file in directory_path.iterdir()
             if file.is_file() and ANALYSIS_CACHE_STEM_ID not in file.stem
         }
 
         result = []
         for index in available_indices:
-            index_files = [f for f in directory_path.glob(f"{index}.*") if f.is_file()]
+            index_files = [
+                f for f in directory_path.glob(f"{index}{self._coordinate_file_index_delimiter}*") if f.is_file()
+            ]
             if any((current_file := file).stem.endswith("timestamped") for file in index_files):
                 result.append(current_file)
                 continue
@@ -705,6 +717,10 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
                 and BaseReader.augmented_coordinate_cached_file_label not in file.stem
                 for file in index_files
             ):
+                result.append(current_file)
+                continue
+
+            if any((current_file := file).suffix == ".parquet" for file in index_files):
                 result.append(current_file)
                 continue
 

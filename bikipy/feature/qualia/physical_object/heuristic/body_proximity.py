@@ -10,7 +10,6 @@ from bikipy.feature.qualia.physical_object.heuristic.abc import (
     AbstractQualiaHeuristic,
     ProximityMixin,
 )
-from bikipy.feature.tolerance.plural import plural_node_tolerance_model
 
 
 class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
@@ -43,6 +42,7 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
             perimeter=self.perimeter,
             perimeter_border_normal_pixels=self.maximum_distance_pixels,
             should_be_inside_perimeter_border=self.reader[self.center_eye_label],
+            should_be_outside_perimeter_border=self.reader[self.torso_label] if self.perimeter.impenetrable else None,
             label="Center eye",
             manual_video=self.video,
         )
@@ -59,6 +59,7 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
             perimeter=self.perimeter,
             perimeter_border_normal_pixels=self.maximum_distance_pixels,
             should_be_inside_perimeter_border=self.reader[self.torso_label],
+            should_be_outside_perimeter_border=self.reader[self.torso_label] if self.perimeter.impenetrable else None,
             label="Torso",
             manual_video=self.video,
         )
@@ -75,6 +76,7 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
             perimeter=self.perimeter,
             perimeter_border_normal_pixels=self.maximum_distance_pixels,
             should_be_inside_perimeter_border=self.reader[self.tail_base_label],
+            should_be_outside_perimeter_border=self.reader[self.torso_label] if self.perimeter.impenetrable else None,
             label="Tail base",
             manual_video=self.video,
         )

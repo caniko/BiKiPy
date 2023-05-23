@@ -25,6 +25,7 @@ class NortTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
 
     experiment_class_name = "NortExperiment"
     trial_label = "Training"
+    excel_sheet_name = "Training"
 
     @classmethod
     @property
@@ -46,6 +47,7 @@ class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
 
     experiment_class_name = "NortExperiment"
     trial_label = "Novelty"
+    excel_sheet_name = "Novelty"
 
     @classmethod
     @property

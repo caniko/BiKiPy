@@ -7,7 +7,6 @@ from typing import Generic, Hashable, Iterable, Optional
 import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath
-from pydantic.generics import GenericModel
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy.reader.base import BaseReader, Enclosure

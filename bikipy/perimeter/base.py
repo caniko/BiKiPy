@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Type, TypeVar
 
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sb
 from matplotlib.axes import Axes
 from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
@@ -21,7 +20,6 @@ from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_coco_polygon,
     init_polygon_from_makesense_csv_rectangle,
 )
-from bikipy.utils.collection_utils import evenly_spaced_indices_from_sequence
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.generic import (

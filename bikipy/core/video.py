@@ -23,7 +23,7 @@ from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16, NDArrayUint8
 
 from bikipy import runtime_settings
-from bikipy.core.base import BikipyConfigModel, BikipyModel
+from bikipy.core.base import BikipyModel
 from bikipy.core.typing import MetersPerPixel
 from bikipy.utils.image import read_image_from_path
 from bikipy.utils.plot.io import ax_imshow_gray

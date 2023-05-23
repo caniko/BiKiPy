@@ -3,8 +3,6 @@ from typing import ClassVar
 
 from pydantic import DirectoryPath
 
-from bikipy import runtime_settings
-from bikipy._constant import ANALYSIS_CACHE_STEM_ID
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 from bikipy.ingress.utils.io import analysis_cache_file_name_from_trial_id

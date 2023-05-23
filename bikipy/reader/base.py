@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
-from pydantic import Field, FilePath, validate_arguments, validator
+from pydantic import Field, FilePath, validate_arguments
 from pydantic.generics import GenericModel
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayUint8
 from typing_extensions import Literal

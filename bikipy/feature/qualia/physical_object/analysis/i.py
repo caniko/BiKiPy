@@ -1,12 +1,11 @@
 from functools import cached_property
 from logging import getLogger
-from typing import TypeVar, Type
+from typing import Type, TypeVar
 
 import numpy as np
 import pandas as pd
 from pydantic_numpy.dtype import NDArrayBool
 
-from bikipy.core.base import BikipyHashable
 from bikipy.core.mixin import AbstractFeatureCollectorMixin
 from bikipy.core.video import VideoMetadataMixin
 
@@ -45,8 +44,12 @@ class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMet
         )
 
     @cached_property
+    def frames_observing(self) -> int:
+        return int(np.sum(self.po_observing_per_frame))
+
+    @cached_property
     def po_total_seconds_observing(self) -> float:
-        return np.sum(self.po_observing_per_frame) / self.video.fps
+        return self.frames_observing / self.video.fps
 
     @cached_property
     def po_label_to_frames_observing(self) -> dict[str, int]:

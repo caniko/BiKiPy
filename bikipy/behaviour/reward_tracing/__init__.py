@@ -10,7 +10,7 @@ from pydantic_numpy import NDArrayBool
 
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.core.base import BikipyModel
-from bikipy.feature.motion import EMPTY_MOTION, Motion, motion_multi_indexer
+from bikipy.feature.motion import EMPTY_MOTION, Motion, motion_analysis_indexer
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import BaseSinglePerimeter
 
@@ -111,7 +111,7 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
                 index=[
                     (category, "RewardAreaSeconds"),
                     (category, "RewardTraceSeconds"),
-                    *motion_multi_indexer("StartToReward", 2),
+                    *motion_analysis_indexer("StartToReward", 2),
                 ],
             )
         )

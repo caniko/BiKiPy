@@ -217,9 +217,17 @@ EMPTY_MOTION_WEIGHT = np.full(5, np.nan)
 
 
 @lru_cache
-def motion_multi_indexer(category: str, level: int):
+def motion_analysis_indexer(category: str, level: int):
     assert level >= 2, "Must be at least 2 levels"
     return generic_multi_indexer("Displacement", "MedianSpeed", "MedianAcceleration", "FreezingTime")(category, level)
+
+
+@lru_cache
+def bulk_motion_analysis_indexer(categories: Iterable[str], level: int):
+    result = []
+    for category in categories:
+        result.extend(motion_analysis_indexer(category, level))
+    return result
 
 
 def get_combined_features_from_merged_motion_island_data(

@@ -12,21 +12,20 @@ from bikipy._constant import (
     EXPERIMENT_MAP_NAME,
     INGRESS_MAP_NAME,
     PERIMETER_MAP_NAME,
+    PHYSICAL_OBJECT_MAP_NAME,
     PLUGIN_MAP_NAME,
     PROJECTKIT_CONFIG_KEY_ORDER,
     READER_MAP_NAME,
     RUNTIME_SETTINGS_MAP_NAME,
     TRIAL_MAP_NAME,
-    PHYSICAL_OBJECT_MAP_NAME,
 )
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.mapping import experiment_name_to_class
-from bikipy.behaviour.radial_arm import BaseRadialMazeExperiment
+from bikipy.behaviour.radial_arm.base import BaseRadialMazeExperiment
 from bikipy.feature.qualia.physical_object.heuristic.mapping import HEURISTIC_MAP
 from bikipy.ingress.plugin.perimeter.enclosure import PluginEnclosure
 from bikipy.ingress.workflow.animal import AnimalIngressWorkflow
 from bikipy.ingress.workflow.animal_day import AnimalDayIngressWorkflow
-from bikipy.ingress.workflow.base import IngressWorkflow
 from bikipy.ingress.workflow.phase import PhaseIngressWorkflow
 from bikipy.reader import DeepLabCutReader
 

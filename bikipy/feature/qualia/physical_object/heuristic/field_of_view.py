@@ -4,14 +4,13 @@ from typing import Optional
 import pandas as pd
 from pydantic_numpy import NDArrayBool
 
-from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
+from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.physical_object.heuristic.abc import (
     AbstractQualiaHeuristic,
     ProximityMixin,
     RayMixin,
 )
-from bikipy.feature.tolerance.plural import plural_node_tolerance_model
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 
 

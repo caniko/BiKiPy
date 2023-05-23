@@ -17,12 +17,19 @@ from bikipy.utils.makesense import (
 
 class ChangeReferencePluginFileStemParse(PluginFileStemParse):
     def __pop_split_till_empty__(self) -> None:
-        self.stem_info.label = self.split.popleft()
+        self.label = self.split.popleft()
+
         try:
-            self.new_label = self.split.popleft()
-        except IndexError as e:
-            msg = f"The reference file has no new_label defined, hence it cannot be used globally: {self.data_path}"
-            raise AttributeError(msg) from e
+            self._new_label = self.split.popleft()
+        except IndexError:
+            self._new_label = None
+
+    @property
+    def new_label(self):
+        if not self._new_label:
+            msg = f"The reference file has no new_label defined, hence it cannot be used globally: {self.stem}"
+            raise AttributeError(msg)
+        return self._new_label
 
 
 class PluginChangeReference(BasePluginFile, IngressRequiredMixin):

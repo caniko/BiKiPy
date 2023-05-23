@@ -19,6 +19,8 @@ from bikipy.utils.makesense import (
     first_image_name_from_makesense,
 )
 
+LABEL_TO_TRIAL_SHEET_NAME = "perimeter_label"
+
 logger = getLogger(__name__)
 
 
@@ -44,10 +46,6 @@ class PluginSinglePerimeter(AbstractPerimeterPlugin):
     def image_name(self):
         return first_image_name_from_makesense(self.data_path, SHAPE_TO_MAKESENSE_TYPE[self.stem_info.shape])
 
-    @cached_property
-    def label_to_trial_label_df(self) -> pd.DataFrame:
-        return _open_label_to_trial_label_df(self.ingress.metadata_path)
-
     def trialwise_and_metadata(
         self, trial_id: Label, naive: bool = False
     ) -> dict[str, SinglePerimeter] | SinglePerimeter:
@@ -55,8 +53,11 @@ class PluginSinglePerimeter(AbstractPerimeterPlugin):
 
         result = {}
         for label, perimeter in self.perimeter_mapper(trial_id).items():
-            if PluginScope.METADATA in self.ingress.definition_single_perimeter:
-                label = self.label_to_trial_label_df.loc[trial_id, label]
+            if (
+                PluginScope.METADATA in self.ingress.definition_single_perimeter
+                and LABEL_TO_TRIAL_SHEET_NAME in self.ingress.metadata_sheet_names
+            ):
+                label = _open_label_to_trial_label_df(self.ingress.metadata_path).loc[trial_id, label]
             if self.label_prefix:
                 label = f"{self.label_prefix}{label}"
             if self.label_suffix:
@@ -133,4 +134,4 @@ def _open_label_to_trial_label_df(metadata_path: FilePath):
     :param metadata_path:
     :return:
     """
-    return pd.read_excel(metadata_path, sheet_name="perimeter_label", index_col=0)
+    return pd.read_excel(metadata_path, sheet_name=LABEL_TO_TRIAL_SHEET_NAME, index_col=0)

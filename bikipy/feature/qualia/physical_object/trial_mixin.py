@@ -5,7 +5,7 @@ from functools import cached_property
 import pandas as pd
 from pydantic import Field
 
-from bikipy._constant import PHYSICAL_OBJECT_MAP_NAME, INSPECT_FIG_FILE_FORMAT
+from bikipy._constant import INSPECT_FIG_FILE_FORMAT, PHYSICAL_OBJECT_MAP_NAME
 from bikipy.feature.qualia.physical_object.analysis.i import QualiaAnalysis
 from bikipy.feature.qualia.physical_object.analysis.mapping import PO_NUMBER_TO_ANALYSIS_MODEL
 from bikipy.feature.qualia.physical_object.heuristic.abc import QualiaHeuristic

@@ -19,7 +19,6 @@ from bikipy.behaviour.utils import (
 from bikipy.feature.motion import get_combined_features_from_merged_motion_island_data
 from bikipy.perimeter import RectanglePerimeter
 from bikipy.utils.collection_utils import generic_multi_indexer
-from bikipy.utils.math.cached import meters2pixels
 from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.inspect import generic_inspection_finalization
@@ -30,7 +29,7 @@ quadrant_grid_typing = tuple[int, int]
 A = 1
 
 
-def motion_multi_indexer_for_subsection(category: Any, level: int):
+def motion_analysis_indexer_for_subsection(category: Any, level: int):
     return generic_multi_indexer(
         "Displacement", "MedianSpeed", "MedianAcceleration", "FreezingTime", "Entries", "SecondsPresent"
     )(category, level)
@@ -349,13 +348,13 @@ def motion_column_headers(
     if center_periphery_is_defined:
         result.extend(
             (
-                *motion_multi_indexer_for_subsection("Center", column_index_levels),
-                *motion_multi_indexer_for_subsection("Periphery", column_index_levels),
+                *motion_analysis_indexer_for_subsection("Center", column_index_levels),
+                *motion_analysis_indexer_for_subsection("Periphery", column_index_levels),
             )
         )
 
     for quadrant_grid_coordinate in quadrant_grid_coordinates:
         category = f"Quadrant{quadrant_grid_coordinate}"
-        result.extend(motion_multi_indexer_for_subsection(category, 2))
+        result.extend(motion_analysis_indexer_for_subsection(category, 2))
 
     return result

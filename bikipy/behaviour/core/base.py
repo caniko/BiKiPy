@@ -32,7 +32,7 @@ from bikipy.core.base import BikipyHashable
 from bikipy.core.mixin import AbstractFeatureCollectorMixin, InspectPlotMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadataMixin
-from bikipy.feature.motion import Motion, motion_multi_indexer
+from bikipy.feature.motion import Motion, motion_analysis_indexer
 from bikipy.feature.qualia.physical_object.trial_mixin import PhysicalObjectTrialMixin
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
 from bikipy.perimeter.base import (
@@ -240,7 +240,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
     # Miscellaneous
     @property
     def _analysis_series_list(self) -> list[pd.Series]:
-        upstream = [self.reader.info, pd.Series(self.motion.as_tuple, index=motion_multi_indexer("All", 2))]
+        upstream = [self.reader.info, pd.Series(self.motion.as_tuple, index=motion_analysis_indexer("All", 2))]
         if self.has_physical_object:
             upstream.extend(
                 (
