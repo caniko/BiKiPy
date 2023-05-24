@@ -133,4 +133,4 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
             self.tail_base_proximity.plot(axes[ax_idx], self.video)
             ax_idx += 1
 
-        self.plot_result(axes[ax_idx])
+        self.plot_result(axes[ax_idx], self.torso_label or self.center_eye_label or self.tail_base_label)

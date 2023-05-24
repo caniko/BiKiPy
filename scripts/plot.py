@@ -20,5 +20,5 @@ ax.annotate(
     fontproperties=fontproperties,
 )
 
-plt.tight_layout()
-plt.show()
+fig.tight_layout()
+fig.show()

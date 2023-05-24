@@ -153,7 +153,7 @@ def nearest_point_on_line_segment_to_coordinates(
             ax.scatter(*result[i])
             ax.scatter(*coordinates[i])
 
-        plt.tight_layout()
+        fig.tight_layout()
         plt.show()
 
     return result

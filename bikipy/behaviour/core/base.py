@@ -122,6 +122,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
                 "enclosure",
                 "coordinate_timestamp_set_path",
                 "animal_id",
+                "analysis_series_cache_directory_path",
             )
         )
         return upstream
@@ -290,9 +291,9 @@ class BaseExperiment(Behaviour):
 
     experiment_labels: ClassVar[set[str]] = ...
 
-    habituation_trial_class: ClassVar[Optional[TrialCLS]] = Field(
-        description="The trial class that will be used in case set_first_trial_to_habituation is called"
-    )
+    # The trial class that will be used in case set_first_trial_to_habituation is called
+    habituation_trial_class: ClassVar[Optional[TrialCLS]] = None
+
     _first_trial_is_habituation: ClassVar[bool] = False
 
     # "Sequence of trial classes designed for the experiment class"

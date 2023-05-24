@@ -1,8 +1,0 @@
-Python_version = "3.11.3"
-schema_snapshot = ["manual", "perimeter", "runtime_settings", "reader", "experiment", "trial", "plugin", "ingress", "enclosure", "qualia_heuristics", "field"]
-
-[ProjectKit]
-format = ".toml"
-version = "0.2.2"
-
-[new_kwargs]

@@ -96,7 +96,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     _trial_id_to_trial_class_name: dict[Label, str] = {}
     _common_trial_keyword_arguments: dict[str, Any] = {}
     _trial_id_to_keyword_arguments: dict[Label, dict[str, Any]] = defaultdict_dict_factory()
-    _trial_class_name_to_keyword_arguments: dict[str, dict] = {}
+    _trial_class_name_to_keyword_arguments: dict[str, dict] = defaultdict_dict_factory()
 
     _trial_id_to_designator_id: dict[str, str] = {}
     _designator_id_to_kwargs: dict[str, dict] = defaultdict_dict_factory()
@@ -140,8 +140,16 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         if self.trial_sequence_loops:
             experiment = experiment.trial_sequence_repetition(self.trial_sequence_loops)
-        if self.first_stage_is_habituation:
+
+        if (
+            self.first_stage_is_habituation
+            or "habituation" in self.project_kit_config
+            and self.project_kit_config["habituation"]
+        ):
             experiment = experiment.set_first_trial_to_habituation()
+            self._trial_class_name_to_keyword_arguments[experiment.habituation_trial_class.__name__].update(
+                self.project_kit_config["habituation"]
+            )
 
         return experiment
 
@@ -365,6 +373,11 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     def result_directory_path(self) -> DirectoryPath:
         return result_directory_path(self.project_directory)
 
+    @cached_property
+    def cache_directory_path(self) -> DirectoryPath:
+        os.makedirs(result := self.project_directory / "bikipy_ingress_cache", exist_ok=True)
+        return result
+
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
 
     @cached_property
@@ -429,7 +442,9 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     def model_post_init(self) -> None:
         # Alias: define_experiment_data
 
-        self._common_trial_keyword_arguments["project_kit_config"] = self.project_kit_config
+        self._common_trial_keyword_arguments.update(
+            project_kit_config=self.project_kit_config, analysis_series_cache_directory_path=self.cache_directory_path
+        )
 
         for plugin_model in self._global_plugins:
             first_file = next(self.plugin_directory_path.glob(f"{plugin_model.code_key}*"))
@@ -578,12 +593,13 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
     def save_analysis_data(self):
         if self.profile_runtime:
-            with Profile() as pr:
-                self.experiment.analyze_trials()
-
-            stats = pstats.Stats(pr)
-            stats.sort_stats(pstats.SortKey.TIME)
-            stats.dump_stats(self.inspect_directory_path / "performance_analysis.prof")
+            try:
+                with Profile() as pr:
+                    self.experiment.analyze_trials()
+            finally:
+                stats = pstats.Stats(pr)
+                stats.sort_stats(pstats.SortKey.TIME)
+                stats.dump_stats(self.inspect_directory_path / "performance_analysis.prof")
 
         parquet_dir = (
             self.result_directory_path / "parquet" if len(self.trial_label_to_df) == 1 else self.result_directory_path
@@ -630,6 +646,17 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             detect_meters_per_pixel_in_perimeter_directory,
         )
 
+        if PluginScope.OTHER in self.definition_meters_per_pixel:
+            if self.definition_radial:
+                # Radial defines the meters per pixel on the respective PerimeterSet
+                from bikipy.ingress.plugin.perimeter.radial_maze import PluginRadial
+
+                return (
+                    self._common_trial_keyword_arguments[PluginRadial.default_trial_argument_key]
+                    if PluginScope.GLOBAL in self.definition_radial
+                    else self._trial_id_to_keyword_arguments[trial_id][PluginRadial.default_trial_argument_key]
+                ).meters_per_pixel
+
         if PluginScope.TRIALWISE in self.definition_meters_per_pixel:
             try:
                 return self.trial_id_to_keyword_arguments[trial_id][PluginMeterPerPixel.default_trial_argument_key]
@@ -665,7 +692,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
     def _define_plugin(self, plugin_model: "PluginType", plugin_scope: PluginScope, **field_kwargs) -> "Plugin":
         additional_field_args = {}
-        if plugin_model.__name__ in self.project_kit_config["plugin"]:
+        if "plugin" in self.project_kit_config and plugin_model.__name__ in self.project_kit_config["plugin"]:
             additional_field_args.update(self.project_kit_config["plugin"][plugin_model.__name__])
 
         return plugin_model(plugin_scope=plugin_scope, ingress=self, **additional_field_args, **field_kwargs)

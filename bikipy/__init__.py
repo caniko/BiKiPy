@@ -1,5 +1,6 @@
 import logging
 from math import floor
+from typing import Any
 
 import matplotlib
 from psutil import cpu_count
@@ -43,11 +44,12 @@ class BikipyRuntimeSettings(BaseSettings, SchemanticProjectMixin):
 runtime_settings: BikipyRuntimeSettings = BikipyRuntimeSettings()
 
 
-def set_bikipy_settings_from_dict(value: dict) -> None:
-    if not value:
+def set_bikipy_settings_from_dict(key_value_map: dict[str, Any]) -> None:
+    if not key_value_map:
         return
 
     global runtime_settings
-    runtime_settings = BikipyRuntimeSettings(**value)
+    for k, v in key_value_map.items():
+        setattr(runtime_settings, k, v)
 
     logger.info(runtime_settings)

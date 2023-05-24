@@ -7,10 +7,15 @@ import pandas as pd
 from pydantic import Field
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
+from bikipy import runtime_settings
 from bikipy.core.base import BikipyModel
-from bikipy.feature.tolerance.single import arg_single_node_tolerance_model
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.calculus import np_abs_diff
+from bikipy.utils.math.discrete import (
+    boolean_index_truth_sequence_start_end_and_length,
+    tolerance_modeled_boolean_index_truth_sequence_start_end_length,
+)
+from bikipy.utils.math.statistics import nan_average
 
 logger = getLogger(__name__)
 
@@ -234,7 +239,8 @@ def get_combined_features_from_merged_motion_island_data(
     boolean_index: NDArrayBool,
     coordinate_sequence: NDArrayFp64,
     fps: float,
-    minimum_seconds_of_data: float = 4.0,
+    tolerance_model: bool = False,
+    minimum_seconds_of_data: float = runtime_settings.minimum_seconds_tolerance,
 ):
     """
     The purpose of this function is to deal with islands of data that need to be aggregated for analysis. These islands
@@ -242,26 +248,33 @@ def get_combined_features_from_merged_motion_island_data(
 
     A simple merge would make the computation of speed and acceleration wrong.
     """
-    tolerance_args = arg_single_node_tolerance_model(
-        boolean_index, fps, minimum_seconds_attention=minimum_seconds_of_data
+    motion_islands = (
+        tolerance_modeled_boolean_index_truth_sequence_start_end_length(
+            boolean_index, fps, minimum_seconds_attention=minimum_seconds_of_data
+        )
+        if tolerance_model
+        else boolean_index_truth_sequence_start_end_and_length(boolean_index)
     )
 
-    if not tolerance_args:
+    if not motion_islands:
         return _zero_return
 
     df = pd.DataFrame(
         [
             Motion(coordinate_sequence=coordinate_sequence[start:end], fps=fps, weight=length).as_tuple
-            for start, end, length in tolerance_args
+            for start, end, length in motion_islands
         ],
         columns=["total_displacement", "median_speed", "median_acceleration", "freezing_time", "weight"],
     )
+
     # Making sure to not have any np.nans before np.average
     df.dropna(axis=0, inplace=True)
 
     return {
         "total_displacement": df["total_displacement"].sum(),
-        "median_speed": np.average(df["median_speed"], weights=df["weight"]),
-        "median_acceleration": np.average(df["median_acceleration"], weights=df["weight"]),
+        "median_speed": 0.0 if np.all(np.isnan(df["median_speed"])) else nan_average(df["median_speed"], df["weight"]),
+        "median_acceleration": 0.0
+        if np.all(np.isnan(df["median_acceleration"]))
+        else nan_average(df["median_acceleration"], df["weight"]),
         "freezing_time": df["freezing_time"].sum(),
     }

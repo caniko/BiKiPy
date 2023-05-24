@@ -40,7 +40,7 @@ class PluginChangeReference(BasePluginFile, IngressRequiredMixin):
     plugin_file_stem_parser = ChangeReferencePluginFileStemParse
 
     human_readable_index = "ChangeReference"
-    _human_readable_index_image_name: ClassVar[str] = "ChangeReferenceImageName"
+    name_human_readable_index: ClassVar[str] = "ChangeReferenceImageName"
 
     @cached_property
     def image_name_to_re_referencing_point(self) -> dict[str, NDArrayFp64]:
@@ -49,7 +49,7 @@ class PluginChangeReference(BasePluginFile, IngressRequiredMixin):
     def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> Perimeter | dict:
         self._assert_correct_scope_trialwise_metadata()
 
-        trial_id_image_name = self.ingress.metadata.loc[trial_id, self._human_readable_index_image_name]
+        trial_id_image_name = self.ingress.metadata.loc[trial_id, self.name_human_readable_index]
         reference_data = self.image_name_to_re_referencing_point[trial_id_image_name]
 
         original_perimeter = self.ingress.ingress_defined_perimeters[self.stem_info.label]

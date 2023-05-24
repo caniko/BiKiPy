@@ -124,7 +124,8 @@ class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin
         )
 
     def plot(self) -> None:
-        fig, axes = self.video.subplots(ncols=3, nrows=3)
+        fig, axes = self.video.subplots(ncols=3, nrows=3, exclude_imaging_from_rc_coord=((0, 2), (2, 2)))
+        fig.suptitle(self.heuristic_alias)
 
         # Left
         self.left_proximity.plot(axes[0][0], self.video)
@@ -140,4 +141,4 @@ class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin
         axes[1][2].set_title("RightwardProximalFOV")
         self.reader.plot_boolean_index(self.right_result, axes[1][2], self.right_eye_label)
 
-        self.plot_result(axes[2][1])
+        self.plot_result(axes[2][1], self.center_eye_label)

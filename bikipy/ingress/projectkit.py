@@ -1,6 +1,7 @@
 from logging import getLogger
 from typing import Optional
 
+from ordered_set import OrderedSet
 from projectkit.model.jit import ProjectKitJITConfiguration
 from projectkit.utils.misc import here_or_there
 from pydantic import DirectoryPath
@@ -18,6 +19,7 @@ from bikipy._constant import (
     READER_MAP_NAME,
     RUNTIME_SETTINGS_MAP_NAME,
     TRIAL_MAP_NAME,
+    HABITUATION_TRIAL_MAP_NAME,
 )
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.mapping import experiment_name_to_class
@@ -84,6 +86,13 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
             ),  # TODO: Cleo option to change reader
             SingleSchema(manual_mapping_name=EXPERIMENT_MAP_NAME, model=experiment_class),
         ]
+        if experiment_class.habituation_trial_class:
+            cds_single.append(
+                SingleSchema(
+                    manual_mapping_name=HABITUATION_TRIAL_MAP_NAME, model=experiment_class.habituation_trial_class
+                )
+            )
+
         cds_homologs = []
         cds_hierarchical = []
 

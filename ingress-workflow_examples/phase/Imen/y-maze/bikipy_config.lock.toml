@@ -1,0 +1,8 @@
+Python_version = "3.11.3"
+schema_snapshot = ["reader", "field"]
+
+[ProjectKit]
+format = ".toml"
+version = "0.2.2"
+
+[new_kwargs]

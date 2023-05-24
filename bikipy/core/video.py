@@ -241,7 +241,13 @@ class VideoMetadata(_VideoMetadataBase):
     def coordinates_need_to_be_scaled_for_plot(self) -> bool:
         return self.frame is not None
 
-    def subplots(self, nrows: int = 1, ncols: int = 1, **kwargs) -> tuple[Figure, Sequence[Axes]]:
+    def subplots(
+        self,
+        nrows: int = 1,
+        ncols: int = 1,
+        exclude_imaging_from_rc_coord: Optional[tuple[tuple[int, int], ...]] = None,
+        **kwargs,
+    ) -> tuple[Figure, Sequence[Axes]]:
         if self.frame is None:
             logger.debug("Video object was used to make subplot, but no frame was defined. Figure got no background.")
             return plt.subplots(
@@ -265,7 +271,14 @@ class VideoMetadata(_VideoMetadataBase):
         if not isinstance(axes, Iterable):
             axes = [axes]
 
-        for ax in np.array(axes).flatten():
+        if exclude_imaging_from_rc_coord:
+            idx_to_exclude = [c + r * nrows for c, r in exclude_imaging_from_rc_coord]
+
+        for idx, ax in enumerate(np.array(axes).flatten()):
+            if exclude_imaging_from_rc_coord and idx in idx_to_exclude:
+                ax.axis("off")
+                continue
+
             ax_imshow_gray(ax, self.upscaled_video.greyscale_frame)
             self.ax_ticks_metric_to_pixel(ax)
 

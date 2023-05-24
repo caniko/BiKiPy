@@ -5,3 +5,4 @@ class PluginScope(str, Enum):
     GLOBAL = "global"
     METADATA = "metadata"
     TRIALWISE = "trialwise"
+    OTHER = "other"

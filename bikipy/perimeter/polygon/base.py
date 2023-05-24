@@ -26,6 +26,7 @@ from bikipy.utils.math.vector import (
     rotate_vectors_with_angle,
     unit_vector,
 )
+from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS, TIGHT_LAYOUT_KWARGS
 
 logger = getLogger(__name__)
 
@@ -146,8 +147,8 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
                     to_skip.extend(np.where(duplicates_boolean_indices)[0].tolist())
 
                 ax.scatter(*coordinates[i], label="coordinate")
-                plt.legend()
-                plt.tight_layout()
+                fig.legend(**BOTTOM_LEGEND_KWARGS)
+                fig.tight_layout(**TIGHT_LAYOUT_KWARGS)
                 plt.show()
 
         return result

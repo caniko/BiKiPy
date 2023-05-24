@@ -3,6 +3,7 @@ from ordered_set import OrderedSet
 INGRESS_MAP_NAME = "ingress"
 READER_MAP_NAME = "reader"
 EXPERIMENT_MAP_NAME = "experiment"
+HABITUATION_TRIAL_MAP_NAME = "habituation"
 TRIAL_MAP_NAME = "trial"
 ENCLOSURE_MAP_NAME = "enclosure"
 PERIMETER_MAP_NAME = "perimeter"

@@ -26,3 +26,8 @@ def feature_scale(
     maximum = real_max or data.max()
 
     return (data - minimum) / maximum - minimum
+
+
+def nan_average(data, weights):
+    ma = np.ma.MaskedArray(data, mask=np.isnan(data))
+    return np.ma.average(ma, weights=weights)

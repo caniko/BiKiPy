@@ -98,6 +98,11 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         upstream.update(("center", "arms"))
         return upstream
 
+    @classmethod
+    @property
+    def has_perimeter(cls) -> bool:
+        return True
+
     @validator("center")
     def center_has_1_as_int_id(cls, value):
         value.int_id = 1

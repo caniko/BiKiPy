@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import ClassVar, Type, TypeVar
 
+import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.axes import Axes
 from pydantic import BaseModel, Field
@@ -11,6 +12,7 @@ from bikipy.core.video import VideoMetadataMixin
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.reader.base import Reader
 from bikipy.utils.math.cached import cached_deg2rad, meters2pixels
+from bikipy.utils.plot import TIGHT_LAYOUT_KWARGS
 
 
 class AbstractQualiaHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
@@ -50,9 +52,11 @@ class AbstractQualiaHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
         return self.perimeter.label
 
     def plot_result(self, ax: Axes, label_to_plot: str):
-        ax.set_title(self.heuristic_alias)
+        ax.set_title("Combined")
         self.perimeter.plot(ax=ax, inspect_pixels=False)
         self.reader.plot_boolean_index(self.result, ax, label_to_plot)
+
+        plt.tight_layout(**TIGHT_LAYOUT_KWARGS)
 
 
 QualiaHeuristicCLS = Type[AbstractQualiaHeuristic]

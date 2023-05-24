@@ -235,7 +235,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
     def periphery_boolean_index(self) -> NDArrayBool:
         return ~self.center_boolean_index
 
-    @cached_property
+    @property
     def motion_center(self) -> dict:
         return get_combined_features_from_merged_motion_island_data(
             self.center_boolean_index,
@@ -243,7 +243,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             self.video.fps,
         )
 
-    @cached_property
+    @property
     def motion_periphery(self) -> dict:
         return get_combined_features_from_merged_motion_island_data(
             self.periphery_boolean_index,
@@ -264,19 +264,19 @@ class RectangleEnclosedTrial(EnclosedTrial):
             )
         )
 
-    @cached_property
+    @property
     def center_entries(self) -> int:
         return np.sum(self.location_sequence_center_periphery == 1)
 
-    @cached_property
+    @property
     def periphery_entries(self) -> int:
         return np.sum(self.location_sequence_center_periphery == 2)
 
-    @cached_property
+    @property
     def seconds_on_center(self) -> int:
         return np.sum(self.center_boolean_index) / self.video.fps
 
-    @cached_property
+    @property
     def seconds_on_periphery(self) -> int:
         return np.sum(self.periphery_boolean_index) / self.video.fps
 
@@ -319,8 +319,8 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
 
 class RectangleEnclosedHabituationTrial(HabituationTrialMixin, RectangleEnclosedTrial):
-    # TODO: Fix incorrect trial_label, when using this class
     trial_label = "Habituation"
+    excel_sheet_name = "Habituation"
 
 
 class BlanketRectangleEnclosedTrial(RectangleEnclosedTrial):
