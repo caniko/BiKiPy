@@ -16,7 +16,7 @@ def plural_node_tolerance_model(
     fps: float,
     minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
     maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
-) -> NDArrayBool | None:
+) -> np.ndarray[bool, bool] | None:
     all_true = np.logical_and.reduce(boolean_indices)
     any_true = np.logical_or.reduce(boolean_indices)
 
@@ -37,7 +37,7 @@ def _filter(
     fps: float,
     minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
     maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
-) -> NDArrayBool | None:
+) -> np.ndarray[bool, bool] | None:
     """
     Combines boolean indices into one boolean index into one. We do this with both an AND and OR filter, yielding two
     datasets; "all_true" and "any_true". We also flip the "any_true" dataset to get "any_".

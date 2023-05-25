@@ -20,7 +20,7 @@ class Quadrant(BikipyModel):
         return video.prepare_coordinates_for_plotting(self.vertices_in_meters)
 
     @cached_property
-    def confinement_boolean_index(self) -> NDArrayBool:
+    def confinement_boolean_index(self) -> np.ndarray[bool, bool]:
         return parallel_point_inside_polygon(self.kinematic_coordinates, clockwise_sort_points(self.vertices_in_meters))
 
     @cached_property

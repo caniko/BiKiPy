@@ -35,7 +35,7 @@ class AbstractQualiaHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
 
     @property
     @abstractmethod
-    def result(self) -> NDArrayBool:
+    def result(self) -> np.ndarray[bool, bool]:
         ...
 
     @property

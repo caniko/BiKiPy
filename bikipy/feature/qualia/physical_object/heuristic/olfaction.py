@@ -61,7 +61,7 @@ class OlfactionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
         )
 
     @cached_property
-    def result(self) -> NDArrayBool:
+    def result(self) -> np.ndarray[bool, bool]:
         return self.nose_proximity.result & self.nose_forward_direction_rays.result
 
     @property

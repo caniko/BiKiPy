@@ -82,7 +82,7 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
         )
 
     @cached_property
-    def result(self) -> NDArrayBool:
+    def result(self) -> np.ndarray[bool, bool]:
         nodes = [
             node.result
             for node in (self.center_eye_proximity, self.torso_proximity, self.tail_base_proximity)

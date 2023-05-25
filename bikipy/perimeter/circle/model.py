@@ -83,7 +83,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
 
     def ray_direction_filter(
         self, ray_start_point: NDArrayFp64, ray_travel_direction_point: NDArrayFp64, max_radians: float, **kwargs
-    ) -> NDArrayBool:
+    ) -> np.ndarray[bool, bool]:
         from bikipy.behaviour.utils import ray_direction_filter_circle_triangle
 
         return ray_direction_filter_circle_triangle(self, ray_travel_direction_point, ray_start_point, max_radians)

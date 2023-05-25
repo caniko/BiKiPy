@@ -9,7 +9,7 @@ from pydantic.generics import GenericModel
 from bikipy.core.base import BikipyModel
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadata, incongruity_permissive_video_join
-from bikipy.perimeter.base import SinglePerimeter
+from bikipy.perimeter.base import Perimeter
 
 logger = getLogger(__name__)
 
@@ -17,13 +17,13 @@ logger = getLogger(__name__)
 PerimeterInstances = TypeVarTuple("PerimeterInstances")
 
 
-class TrialWithPerimeterMixin(GenericModel, Generic[SinglePerimeter, *PerimeterInstances], BikipyModel, ABC):
+class TrialWithPerimeterMixin(GenericModel, Generic[Perimeter, *PerimeterInstances], BikipyModel, ABC):
     @property
     @abstractmethod
-    def perimeters(self) -> list[SinglePerimeter, *PerimeterInstances]:
+    def perimeters(self) -> list[Perimeter, *PerimeterInstances]:
         ...
 
-    def __getitem__(self, item) -> SinglePerimeter:
+    def __getitem__(self, item) -> Perimeter:
         return self._label_to_perimeter[item]
 
     def _validate_perimeters_object(self) -> None:
@@ -32,12 +32,12 @@ class TrialWithPerimeterMixin(GenericModel, Generic[SinglePerimeter, *PerimeterI
             raise AttributeError(msg)
 
     @cached_property
-    def _int_id_to_perimeter(self) -> dict[PositiveInt, SinglePerimeter]:
+    def _int_id_to_perimeter(self) -> dict[PositiveInt, Perimeter]:
         self._validate_perimeters_object()
         return {perimeter.int_id: perimeter for perimeter in self.perimeters}
 
     @cached_property
-    def _label_to_perimeter(self) -> dict[Label, SinglePerimeter]:
+    def _label_to_perimeter(self) -> dict[Label, Perimeter]:
         self._validate_perimeters_object()
         return {perimeter.label: perimeter for perimeter in self.perimeters}
 

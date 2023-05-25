@@ -57,6 +57,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
                     next(iglob(str(self.data_path / "center*"))),
                     reference_point_array=self.reference_point,
                     group_label="center",
+                    derived_meters_per_pixel_source="side",
                     inspect_arg=self.ingress.inspect_directory_path,
                     invert_y_axis=True,
                 )

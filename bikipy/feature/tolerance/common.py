@@ -12,7 +12,9 @@ logger = getLogger(__name__)
 
 
 @validate_arguments
-def tolerance_model_warning_wrapper(tolerance_model: Callable, result_length: int, *args, **kwargs) -> NDArrayBool:
+def tolerance_model_warning_wrapper(
+    tolerance_model: Callable, result_length: int, *args, **kwargs
+) -> np.ndarray[bool, bool]:
     attention_boolean_index = tolerance_model(*args, **kwargs)
 
     if attention_boolean_index is None:

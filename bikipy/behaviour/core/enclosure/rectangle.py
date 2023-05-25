@@ -16,9 +16,17 @@ from bikipy.behaviour.utils import (
     blanket_enclosed_experiment_label_generator,
     reduce_repeating_sequences,
 )
-from bikipy.feature.motion import get_combined_features_from_merged_motion_island_data
+from bikipy.feature.motion import (
+    get_combined_features_from_merged_motion_island_data,
+    merge_motion_island_data,
+    MotionIsland,
+)
 from bikipy.perimeter import RectanglePerimeter
 from bikipy.utils.collection_utils import generic_multi_indexer
+from bikipy.utils.math.discrete import (
+    tolerance_modeled_boolean_index_truth_sequence_start_end_length,
+    boolean_index_truth_sequence_start_end_and_length,
+)
 from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.inspect import generic_inspection_finalization
@@ -46,6 +54,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     manual_center_rectangle_dimensions_meters: Optional[NDArrayFp64]
     center_rectangle_dimensions_to_spatial_resolution_ratio: Optional[float]
+    center_periphery_tolerance_model: bool = False
 
     @cached_property
     def _center_periphery_is_defined(self) -> bool:
@@ -194,6 +203,36 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     # Center vs Periphery ==============================================================
     @cached_property
+    def _center_boolean_index_motion_island(self) -> tuple[MotionIsland, np.ndarray[bool, bool]]:
+        raw_center_boolean_index = parallel_point_inside_polygon(
+            self.reader.kinematic_coordinates,
+            self.center_rectangle_vertices,
+            inspect_arg=self.class_inspect_arg,
+            potential_label=f"{self.label}{INSPECT_FIG_FILE_FORMAT}",
+            video=self.video,
+        )
+
+        return tolerance_modeled_boolean_index_truth_sequence_start_end_length(raw_center_boolean_index, self.video.fps)
+
+    @property
+    def center_boolean_index(self) -> np.ndarray[bool, bool]:
+        return self._center_boolean_index_motion_island[1]
+
+    @property
+    def motion_center(self) -> dict[str, float]:
+        return merge_motion_island_data(
+            self._center_boolean_index_motion_island[0], self.reader.kinematic_coordinates, self.video.fps
+        )
+
+    @cached_property
+    def periphery_boolean_index(self) -> np.ndarray[bool, bool]:
+        return ~self.center_boolean_index
+
+    @property
+    def motion_periphery(self) -> dict[str, float]:
+        return merge_motion_island_data(self.periphery_boolean_index, self.reader.kinematic_coordinates, self.video.fps)
+
+    @cached_property
     def center_rectangle_dimensions_meters(self) -> NDArrayFp64 | None:
         if self._center_periphery_is_defined is None:
             return None
@@ -220,36 +259,6 @@ class RectangleEnclosedTrial(EnclosedTrial):
         x_short, y_long = center - center_point_to_center_rectangle_side_normal_lengths
 
         return np.array(((x_short, y_short), (x_short, y_long), (x_long, y_long), (x_long, y_short)))
-
-    @cached_property
-    def center_boolean_index(self) -> NDArrayBool:
-        return parallel_point_inside_polygon(
-            self.reader.kinematic_coordinates,
-            self.center_rectangle_vertices,
-            inspect_arg=self.class_inspect_arg,
-            potential_label=f"{self.label}{INSPECT_FIG_FILE_FORMAT}",
-            video=self.video,
-        )
-
-    @cached_property
-    def periphery_boolean_index(self) -> NDArrayBool:
-        return ~self.center_boolean_index
-
-    @property
-    def motion_center(self) -> dict:
-        return get_combined_features_from_merged_motion_island_data(
-            self.center_boolean_index,
-            self.reader.kinematic_coordinates,
-            self.video.fps,
-        )
-
-    @property
-    def motion_periphery(self) -> dict:
-        return get_combined_features_from_merged_motion_island_data(
-            self.periphery_boolean_index,
-            self.reader.kinematic_coordinates,
-            self.video.fps,
-        )
 
     @cached_property
     def location_sequence_center_periphery(self) -> NDArray:

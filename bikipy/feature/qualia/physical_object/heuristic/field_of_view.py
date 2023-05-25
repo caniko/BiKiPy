@@ -99,17 +99,17 @@ class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin
         )
 
     @cached_property
-    def left_result(self) -> NDArrayBool:
+    def left_result(self) -> np.ndarray[bool, bool]:
         result = self.left_proximity.result & self.leftward_observation.result
         return result if self.filter_in_sequence else single_node_tolerance_model(result, self.video.fps)
 
     @cached_property
-    def right_result(self) -> NDArrayBool:
+    def right_result(self) -> np.ndarray[bool, bool]:
         result = self.right_proximity.result & self.rightward_observation.result
         return result if self.filter_in_sequence else single_node_tolerance_model(result, self.video.fps)
 
     @cached_property
-    def result(self) -> NDArrayBool:
+    def result(self) -> np.ndarray[bool, bool]:
         return self.left_result | self.right_result
 
     @property

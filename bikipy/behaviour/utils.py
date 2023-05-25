@@ -17,7 +17,7 @@ def ray_direction_filter_circle_triangle(
     ray_travel_direction_point: NDArrayFp64,
     ray_start_point: NDArrayFp64,
     max_radians: float,
-) -> NDArrayBool:
+) -> np.ndarray[bool, bool]:
     ray_vectors = ray_travel_direction_point - ray_start_point
 
     closest_points_on_edges = perimeter.closest_point_on_edge_to_coordinates(ray_travel_direction_point)

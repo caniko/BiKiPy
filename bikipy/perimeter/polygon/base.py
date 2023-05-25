@@ -33,7 +33,7 @@ logger = getLogger(__name__)
 
 class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
     vertices_in_pixels: NDArrayFp64 = ...
-    derived_meters_per_pixel_source: Literal["side", None]
+    derived_meters_per_pixel_source: Optional[Literal["side"]]
 
     category = "polygon_perimeter"
 
@@ -43,7 +43,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
         upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.add("vertices_in_pixels")
+        upstream.update(("vertices_in_pixels", "derived_meters_per_pixel_source"))
         return upstream
 
     @property
@@ -164,7 +164,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
     def compute_confined_coordinate_boolean_index(
         self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
-    ) -> NDArrayBool:
+    ) -> np.ndarray[bool, bool]:
         result = parallel_point_inside_polygon(coordinates, self.metric_graph.linked_vertices, merge_ends=False)
 
         self._post_confinement_analysis_inspect_plot(result, coordinates, manual_video, ax, **inspect_kwargs)
@@ -193,7 +193,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         ray_travel_direction_point: NDArrayFp64,
         max_radians: float,
         angular_resolution: int = 400,
-    ) -> NDArrayBool:
+    ) -> np.ndarray[bool, bool]:
         """
         Determine if the object is within the ray cone
 

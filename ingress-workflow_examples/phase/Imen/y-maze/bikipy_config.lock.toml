@@ -1,5 +1,5 @@
 Python_version = "3.11.3"
-schema_snapshot = ["reader", "field"]
+schema_snapshot = ["manual", "trial", "ingress", "reader", "perimeter", "experiment", "runtime_settings", "field", "plugin"]
 
 [ProjectKit]
 format = ".toml"

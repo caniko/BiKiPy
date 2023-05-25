@@ -11,5 +11,5 @@ class WhiskerInteractionQualiaGroup(AbstractQualiaHeuristic):
     right_whisker_label: ClassVar[str] = "right_whisker"
 
     @property
-    def result(self) -> NDArrayBool:
+    def result(self) -> np.ndarray[bool, bool]:
         pass

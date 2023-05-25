@@ -8,8 +8,7 @@ required = ["dataset_directory", "definition_meters_per_pixel", "project_kit_con
 optional = ["create_inspection_plots", "definition_center", "definition_change_reference", "definition_enclosure", "definition_frame", "definition_radial", "definition_single_perimeter", "definition_timestamp", "definition_video", "deprecated_project_settings_file_name", "first_stage_is_habituation", "ingress_defined_perimeters", "metadata_trial_ids_are_higher_level", "only_one_instance_of_trial_class", "trial_ids_to_analyse", "trial_sequence_loops"]
 
 [ingress.defined]
-dataset_directory = "/home/can/data/y_maze_mextracted/"
-only_one_instance_of_trial_class = true
+dataset_directory = "/home/can/data/y_maze_mextracted"
 definition_meters_per_pixel = ["other"]
 definition_radial = ["metadata"]
 definition_change_reference = ["metadata"]
@@ -39,6 +38,7 @@ required = ["radial_arm_rectangle_diagonal"]
 optional = ["manual_reference", "manual_trial_argument_key"]
 
 [plugin.PluginRadial.defined]
+radial_arm_rectangle_diagonal = 0.359
 
 [plugin.PluginSinglePerimeter]
 class_name = "PluginSinglePerimeter"

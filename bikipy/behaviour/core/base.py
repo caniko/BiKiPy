@@ -1,6 +1,6 @@
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
-from functools import cached_property, lru_cache
+from functools import cached_property, lru_cache, reduce
 from logging import getLogger
 from operator import attrgetter
 from time import sleep
@@ -31,7 +31,7 @@ from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
 from bikipy.core.base import BikipyHashable
 from bikipy.core.mixin import AbstractFeatureCollectorMixin, InspectPlotMixin
 from bikipy.core.typing import Label
-from bikipy.core.video import VideoMetadataMixin
+from bikipy.core.video import VideoMetadataMixin, VideoMetadata
 from bikipy.feature.motion import Motion, motion_analysis_indexer
 from bikipy.feature.qualia.physical_object.trial_mixin import PhysicalObjectTrialMixin
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
@@ -137,7 +137,9 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
     @classmethod
     @property
     def has_perimeter(cls) -> bool:
-        return is_generic_type(cls) or issubclass(cls, TrialWithPerimeterMixin)
+        from bikipy.behaviour.radial_arm.base import BaseRadialMazeTrial
+
+        return is_generic_type(cls) or issubclass(cls, (TrialWithPerimeterMixin, BaseRadialMazeTrial))
 
     @classmethod
     @property
@@ -176,6 +178,14 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
                 f"{cls.reader_class_label}. Pick from: {tuple(READER_CLASS_LABEL_TO_CLASS)}"
             )
             raise AttributeError(msg) from e
+
+    @property
+    def _video(self) -> VideoMetadata:
+        upstream_video = super()._video
+
+        if self.has_perimeter:
+            for self.all
+            upstream_video = VideoMetadata.join(upstream_video)
 
     @property
     def perimeter_to_derive_meters_per_pixel(self) -> Perimeter:

@@ -98,11 +98,6 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         upstream.update(("center", "arms"))
         return upstream
 
-    @classmethod
-    @property
-    def has_perimeter(cls) -> bool:
-        return True
-
     @validator("center")
     def center_has_1_as_int_id(cls, value):
         value.int_id = 1
@@ -168,11 +163,11 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return self._border_presence_data[0]
 
     @property
-    def valid_indices(self) -> NDArrayBool:
+    def valid_indices(self) -> np.ndarray[bool, bool]:
         return self._border_presence_data[1]
 
     @property
-    def valid_boolean_index(self) -> NDArrayBool:
+    def valid_boolean_index(self) -> np.ndarray[bool, bool]:
         return self._border_presence_data[2]
 
     @cached_property
@@ -190,11 +185,11 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return self._border_center_presence_data[0]
 
     @property
-    def valid_indices_with_center(self) -> NDArrayBool:
+    def valid_indices_with_center(self) -> np.ndarray[bool, bool]:
         return self._border_center_presence_data[1]
 
     @property
-    def valid_boolean_index_with_center(self) -> NDArrayBool:
+    def valid_boolean_index_with_center(self) -> np.ndarray[bool, bool]:
         return self._border_center_presence_data[2]
 
     @cached_property
@@ -324,7 +319,7 @@ class BaseRadialMazeTrial(BaseTrial, RadialMazeBase):
         return tuple(self.reader[node_label] for node_label in self.radial_arm_confinement_tracking_object_labels)
 
     @cached_property
-    def _border_center_presence_data(self) -> NDArrayBool:
+    def _border_center_presence_data(self) -> np.ndarray[bool, bool]:
         return detect_multi_node_sequential_perimeter_presence(
             self._multi_node_coordinates,
             (self.center, *self.arms),

@@ -4,7 +4,9 @@ from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 from bikipy import runtime_settings
 
 
-def point_inside_ellipse(points: NDArrayFp64, center: NDArrayFp64, ellipse_radius: NDArrayFp64) -> NDArrayBool:
+def point_inside_ellipse(
+    points: NDArrayFp64, center: NDArrayFp64, ellipse_radius: NDArrayFp64
+) -> np.ndarray[bool, bool]:
     center_x, center_y = center
     radius_x, radius_y = ellipse_radius
 

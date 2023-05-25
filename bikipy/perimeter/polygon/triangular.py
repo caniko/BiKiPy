@@ -28,7 +28,7 @@ class TriangularPerimeter(BasePolygonPerimeter):
 
     def compute_confined_coordinate_boolean_index(
         self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
-    ) -> NDArrayBool:
+    ) -> np.ndarray[bool, bool]:
         """
         indices of the coordinates that are inside the respective perimeter
 
@@ -60,7 +60,7 @@ class TriangularPerimeter(BasePolygonPerimeter):
 
     def ray_direction_filter(
         self, ray_start_point: NDArrayFp64, ray_travel_direction_point: NDArrayFp64, max_radians: float, **kwargs
-    ) -> NDArrayBool:
+    ) -> np.ndarray[bool, bool]:
         if self.equilateral:
             return self.circle.ray_direction_filter_circle_triangle(
                 ray_travel_direction_point=ray_travel_direction_point,

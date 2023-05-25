@@ -66,7 +66,7 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
         return np.any(np.isnan((self._start_frame_idx, self._reward_arrival_idx)))
 
     @cached_property
-    def reward_boolean(self) -> NDArrayBool:
+    def reward_boolean(self) -> np.ndarray[bool, bool]:
         confined_bool = self.reward_perimeter.compute_confined_coordinate_boolean_index(
             self.reader.kinematic_coordinates, potential_label=f"{self.label}_reward", manual_video=self.video
         )

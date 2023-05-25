@@ -16,7 +16,7 @@ def single_node_tolerance_model(
     fps: float,
     minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
     maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
-) -> NDArrayBool | None:
+) -> np.ndarray[bool, bool] | None:
     return tolerance_model_warning_wrapper(
         _filter, len(boolean_index), boolean_index, fps, minimum_seconds_attention, maximum_seconds_distraction
     )
@@ -27,7 +27,7 @@ def _filter(
     fps: float,
     minimum_seconds_attention: float,
     maximum_seconds_distraction: float,
-) -> NDArrayBool | None:
+) -> np.ndarray[bool, bool] | None:
     """
     MinFA and MaxFD are used to tolerance model the provided binary sequence as follows:
 

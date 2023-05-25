@@ -111,7 +111,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
     @abstractmethod
     def compute_confined_coordinate_boolean_index(
         self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
-    ) -> NDArrayBool:
+    ) -> np.ndarray[bool, bool]:
         ...
 
     @abstractmethod
@@ -227,7 +227,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     @abstractmethod
     def ray_direction_filter(
         self, ray_start_point: NDArrayFp64, ray_travel_direction_point: NDArrayFp64, max_radians: float, **kwargs
-    ) -> NDArrayBool:
+    ) -> np.ndarray[bool, bool]:
         ...
 
     @root_validator(pre=True)
@@ -239,7 +239,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
     def confined_coordinate_boolean_index(
         self, coordinates: NDArrayFp64, reader: Optional["Reader"] = None
-    ) -> NDArrayBool:
+    ) -> np.ndarray[bool, bool]:
         """
         This function integrates moving perimeter routine into the static perimeter workflow
         """
@@ -441,7 +441,7 @@ class PerimeterSet(BasePerimeter):
 
     def compute_confined_coordinate_boolean_index(
         self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
-    ) -> NDArrayBool:
+    ) -> np.ndarray[bool, bool]:
         result = self.combined_framewise_confined_coordinates(coordinates)
 
         self._post_confinement_analysis_inspect_plot(result, coordinates, manual_video, ax, **inspect_kwargs)

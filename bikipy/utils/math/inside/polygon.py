@@ -23,7 +23,7 @@ def inaccurate_points_in_rectangle(
     coordinates: NDArrayFp64,
     inspect: Optional[PurePath],
     inspect_image: Optional[NDArrayFp64],
-) -> NDArrayBool:
+) -> np.ndarray[bool, bool]:
     """
     Algebraic solver for finding points contained inside the respective rectangle.
 
@@ -82,7 +82,7 @@ def parallel_point_inside_polygon(
     video: Optional[VideoMetadata] = None,
     ax: Any = None,
     **inspect_kwargs,
-) -> NDArrayBool:
+) -> np.ndarray[bool, bool]:
     if merge_ends:
         polygon = np.append(polygon, np.expand_dims(polygon[0], 0), axis=0)
 
@@ -157,7 +157,7 @@ def _is_inside_sm(point: NDArrayFp64, polygon: NDArrayFp64):
 if runtime_settings.disable_numba:
     is_inside_sm = _is_inside_sm
 
-    def is_inside_sm_parallel(points: NDArrayFp64, polygon: NDArrayFp64) -> NDArrayBool:
+    def is_inside_sm_parallel(points: NDArrayFp64, polygon: NDArrayFp64) -> np.ndarray[bool, bool]:
         ln = len(points)
         result = np.empty(ln, dtype=bool)
         for i in range(ln):
@@ -168,7 +168,7 @@ else:
     is_inside_sm = njit(nogil=True, cache=True)(_is_inside_sm)
 
     @njit(parallel=True, cache=True)
-    def is_inside_sm_parallel(points: NDArrayFp64, polygon: NDArrayFp64) -> NDArrayBool:
+    def is_inside_sm_parallel(points: NDArrayFp64, polygon: NDArrayFp64) -> np.ndarray[bool, bool]:
         ln = len(points)
         result = np.empty(ln, dtype=numba.boolean)
         for i in numba.prange(ln):

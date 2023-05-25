@@ -11,14 +11,11 @@ from bikipy import runtime_settings
 from bikipy.core.base import BikipyModel
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.calculus import np_abs_diff
-from bikipy.utils.math.discrete import (
-    boolean_index_truth_sequence_start_end_and_length,
-    tolerance_modeled_boolean_index_truth_sequence_start_end_length,
-)
 from bikipy.utils.math.statistics import nan_average
 
 logger = getLogger(__name__)
 
+MotionIsland = list[tuple[int, int, int]]
 
 summary_motion_features = (
     "total_displacement",
@@ -177,7 +174,7 @@ class Motion(BikipyModel):
         return np.nanmedian(self.meters_per_second)
 
     @cached_property
-    def frozen_boolean_index(self) -> NDArrayBool:
+    def frozen_boolean_index(self) -> np.ndarray[bool, bool]:
         if not self.total_displacement:
             return np.nan
         return frozen_frames(self.fps, (self.meters_per_frame,))
@@ -235,27 +232,13 @@ def bulk_motion_analysis_indexer(categories: Iterable[str], level: int):
     return result
 
 
-def get_combined_features_from_merged_motion_island_data(
-    boolean_index: NDArrayBool,
-    coordinate_sequence: NDArrayFp64,
-    fps: float,
-    tolerance_model: bool = False,
-    minimum_seconds_of_data: float = runtime_settings.minimum_seconds_tolerance,
-):
+def merge_motion_island_data(motion_islands: MotionIsland, coordinate_sequence: NDArrayFp64, fps: float):
     """
     The purpose of this function is to deal with islands of data that need to be aggregated for analysis. These islands
     of data have to be merged arbitrarily.
 
     A simple merge would make the computation of speed and acceleration wrong.
     """
-    motion_islands = (
-        tolerance_modeled_boolean_index_truth_sequence_start_end_length(
-            boolean_index, fps, minimum_seconds_attention=minimum_seconds_of_data
-        )
-        if tolerance_model
-        else boolean_index_truth_sequence_start_end_and_length(boolean_index)
-    )
-
     if not motion_islands:
         return _zero_return
 

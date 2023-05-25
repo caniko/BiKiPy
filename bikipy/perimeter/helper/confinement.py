@@ -25,7 +25,7 @@ def detect_sequential_perimeter_presence(
     coordinates: NDArrayFp64,
     inferior_to_superior_perimeter_instances: Iterable[Perimeter],
     clean_outliers: bool = True,
-) -> NDArrayBool:
+) -> np.ndarray[bool, bool]:
     """
 
     :param coordinates:
@@ -72,7 +72,7 @@ def detect_multi_node_sequential_perimeter_presence(
     inspect_arg: InspectArg = False,
     inspect_coords: Optional[NDArrayFp64] = None,
     **inspect_kwargs,
-) -> NDArrayBool:
+) -> np.ndarray[bool, bool]:
     number_of_perimeters = len(inferior_to_superior_perimeter_instances)
 
     presence = np.zeros(
