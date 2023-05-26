@@ -14,7 +14,6 @@ import pandas as pd
 from inflection import underscore
 from projectkit.model.project import ProjectKitModelMixin
 from pydantic import DirectoryPath, Field, FilePath, validate_arguments
-from pydantic_numpy.dtype import NDArrayFp64
 from schemantic.model.project import SchemanticProjectMixin
 
 from bikipy._constant import ANALYSIS_CACHE_STEM_ID, READER_MAP_NAME
@@ -185,6 +184,11 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     @property
     def trial_id_to_keyword_arguments(self):
         self._define_experiment_data_if_not_defined()
+
+        for trial_id in tuple(self._trial_id_to_keyword_arguments):
+            if self._to_skip_trial_id(trial_id):
+                del self._trial_id_to_keyword_arguments[trial_id]
+
         return dict(self._trial_id_to_keyword_arguments)
 
     @property
@@ -622,10 +626,10 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             )
         ]
         if not to_delete:
-            logger.info(f"No files found with pattern {pattern}")
+            print(f"No files found with pattern {pattern}")
             return
 
-        readable_to_delete = "\n".join((f.name for f in to_delete))
+        readable_to_delete = "\n".join((f.relative_to(self.dataset_directory) for f in to_delete))
         if (
             input(
                 f"Pattern: {pattern}\n"
@@ -640,7 +644,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
 
-    def get_meter_per_pixel(self, trial_id: Optional[Label] = None) -> NDArrayFp64:
+    def get_meter_per_pixel(self, trial_id: Optional[Label] = None) -> np.ndarray[float, np.float64]:
         from bikipy.ingress.plugin.meters_per_pixel import (
             PluginMeterPerPixel,
             detect_meters_per_pixel_in_perimeter_directory,

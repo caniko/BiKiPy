@@ -2,7 +2,7 @@ from typing import Optional
 
 import numpy as np
 from matplotlib.axes import Axes
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter

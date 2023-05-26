@@ -1,5 +1,6 @@
+import numpy as np
 from numba import njit
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import runtime_settings
 

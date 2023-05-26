@@ -1,8 +1,8 @@
 from functools import cached_property
 from typing import Optional
 
+import numpy as np
 import pandas as pd
-from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity

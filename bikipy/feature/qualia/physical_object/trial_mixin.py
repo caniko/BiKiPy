@@ -7,11 +7,13 @@ from pydantic import Field
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT, PHYSICAL_OBJECT_MAP_NAME
 from bikipy.feature.qualia.physical_object.analysis.i import QualiaAnalysis
-from bikipy.feature.qualia.physical_object.analysis.mapping import PO_NUMBER_TO_ANALYSIS_MODEL
+from bikipy.feature.qualia.physical_object.analysis.mapping import (
+    PO_NUMBER_TO_ANALYSIS_MODEL,
+)
 from bikipy.feature.qualia.physical_object.heuristic.abc import QualiaHeuristic
 from bikipy.feature.qualia.physical_object.heuristic.mapping import HEURISTIC_MAP
 from bikipy.perimeter.base import SinglePerimeter
-from bikipy.perimeter.mixin import PerimeterInstances, TrialWithPerimeterMixin
+from bikipy.perimeter.mixin import TrialWithPerimeterMixin
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 
 
@@ -29,9 +31,9 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         ...
 
     @cached_property
-    def perimeters(self) -> list[SinglePerimeter, *PerimeterInstances]:
+    def perimeters(self):
         # Inherit and append non-physical-object perimeters to the list
-        return list(self.physical_object_perimeters)
+        return tuple(self.physical_object_perimeters)
 
     @cached_property
     def po_heuristic_alias_to_physical_objects_heuristic(

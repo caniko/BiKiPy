@@ -7,7 +7,9 @@ from pydantic_numpy.dtype import NDArrayFp64
 
 
 @validate_arguments
-def compute_midpoint(point_1: NDArrayFp64, point_2: NDArrayFp64, midpoint_multiplier: float = 0.5) -> NDArrayFp64:
+def compute_midpoint(
+    point_1: NDArrayFp64, point_2: NDArrayFp64, midpoint_multiplier: float = 0.5
+) -> np.ndarray[float, np.float64]:
     """
     Computes the point(s) between two points, midpoint(s), with respect to the index.
 
@@ -39,7 +41,7 @@ def compute_midpoint(point_1: NDArrayFp64, point_2: NDArrayFp64, midpoint_multip
     return compute
 
 
-def recursive_midpoint(*point_sets: NDArrayFp64, midpoint_multiplier: float = 0.5) -> NDArrayFp64:
+def recursive_midpoint(*point_sets: NDArrayFp64, midpoint_multiplier: float = 0.5) -> np.ndarray[float, np.float64]:
     """
     Compute midpoint(s) using last midpoint as first in the pair,
     and the upcoming point as the second in the pair in compute_midpoint.

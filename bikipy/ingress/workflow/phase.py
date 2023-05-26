@@ -51,14 +51,6 @@ class PhaseIngressWorkflow(BaseIngressWorkflow):
                 if self.experiment_class.has_stages:
                     self._trial_id_to_trial_class_name[trial_id] = trial_class
 
-                    if self.only_one_instance_of_trial_class:
-                        trial_class_include[trial_class] = True
-                        if all(iter(trial_class_include.values())):
-                            break
-
-                elif self.only_one_instance_of_trial_class:
-                    break
-
     def trialwise_plugins_for_trial_id(self, trial_id: Label, trial_directory: DirectoryPath):
         return self._trialwise_plugins_for_trial_id(trial_id, trial_directory, "{trial_id}-{plugin_code_key}*")
 

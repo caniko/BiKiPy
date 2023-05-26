@@ -20,7 +20,7 @@ from mextractor.base import load
 from mextractor.extractors import extract_video
 from pydantic import DirectoryPath, Field, FilePath, validator
 from pydantic_numpy import NDArray
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16, NDArrayUint8
+from pydantic_numpy.dtype import NDArrayBool, NDArrayInt16, NDArrayUint8
 
 from bikipy import runtime_settings
 from bikipy.core.base import BikipyModel
@@ -60,18 +60,18 @@ class _VideoMetadataBase(BikipyModel):
         keep_untouched = (cached_property,)
 
     @validator("frame")
-    def make_sure_frame_is_read(cls, value: Frame) -> NDArrayUint8:
+    def make_sure_frame_is_read(cls, value: Frame) -> np.ndarray[int, np.uint8]:
         return read_image_from_path(value) if isinstance(value, Path) else value
 
     @cached_property
-    def resolution(self) -> NDArrayInt16 | None:
+    def resolution(self) -> np.ndarray[int, np.int16] | None:
         if self.recording_resolution is not None:
             return self.recording_resolution
         if self.frame is not None:
             return np.array([self.frame.shape[1], self.frame.shape[0]], dtype=np.int16)
 
     def boolean_array_to_seconds(self, boolean_array: NDArrayBool) -> float:
-        return np.sum(boolean_array) / self.video.fps
+        return np.sum(boolean_array) / self.fps
 
 
 class VideoMetadata(_VideoMetadataBase):
@@ -97,16 +97,32 @@ class VideoMetadata(_VideoMetadataBase):
         master: "VideoMetadata",
         slave: "VideoMetadata",
         ignore_incongruity: bool = False,
+        use_slave_meters_per_pixel: bool = False,
         meters_per_pixel_mean: bool = False,
     ) -> "VideoMetadata":
         if not (master & slave) and not ignore_incongruity:
             msg = "VideoMetadata are incongruent"
             raise AttributeError(msg)
+
+        meters_per_pixel: float | None = None
+
         if meters_per_pixel_mean and "meters_per_pixel" in slave and "meters_per_pixel" in master:
-            master.meters_per_pixel = np.mean([slave.meters_per_pixel, master.meters_per_pixel], axis=0)
-        new_metadata = slave.dict(exclude_unset=True)
-        new_metadata.update(master.dict(exclude_unset=True))
-        return cls(**new_metadata)
+            assert not meters_per_pixel_mean, "Multiple meters per pixel sources defined"
+            meters_per_pixel = float(np.mean([slave.meters_per_pixel, master.meters_per_pixel], axis=0))
+        elif use_slave_meters_per_pixel and slave.meters_per_pixel:
+            assert not use_slave_meters_per_pixel, "Multiple meters per pixel sources defined"
+            meters_per_pixel = slave.meters_per_pixel
+        elif master.meters_per_pixel:
+            meters_per_pixel = master.meters_per_pixel
+
+        return cls(
+            meters_per_pixel=meters_per_pixel,
+            recording_resolution=master.recording_resolution
+            if master.recording_resolution is not None
+            else slave.recording_resolution,
+            fps=master.fps or slave.fps,
+            frame=master.frame if master.frame is not None else slave.frame,
+        )
 
     @classmethod
     def from_path(cls, video_path: FilePath, **kwargs) -> "VideoMetadata":
@@ -124,13 +140,13 @@ class VideoMetadata(_VideoMetadataBase):
             return 1.0 / self.meters_per_pixel
 
     @cached_property
-    def multiplied_resolution(self) -> NDArrayInt16:
+    def multiplied_resolution(self) -> np.ndarray[int, np.int16]:
         if self.image_resize_multiplier == 1:
             return self.recording_resolution
         return np.round(self.resolution * self.image_resize_multiplier).astype(np.int16)
 
     @cached_property
-    def center_pixel(self) -> NDArrayInt16:
+    def center_pixel(self) -> np.ndarray[int, np.int16]:
         return np.round(self.resolution / 2.0)
 
     @property
@@ -142,15 +158,15 @@ class VideoMetadata(_VideoMetadataBase):
         return self.resolution[1]
 
     @cached_property
-    def metric_resolution(self) -> NDArrayFp64:
+    def metric_resolution(self) -> np.ndarray[float, np.float64]:
         return self.resolution * self.meters_per_pixel
 
     @cached_property
-    def center_meters(self) -> NDArrayFp64:
+    def center_meters(self) -> np.ndarray[float, np.float64]:
         return self.metric_resolution / 2.0
 
     @property
-    def center_for_plot(self) -> NDArrayFp64:
+    def center_for_plot(self) -> np.ndarray[float, np.float64]:
         return self.center_pixel if self.coordinates_need_to_be_scaled_for_plot else self.center_meters
 
     @property
@@ -178,7 +194,7 @@ class VideoMetadata(_VideoMetadataBase):
         return 1.0
 
     @cached_property
-    def greyscale_frame(self) -> NDArrayUint8:
+    def greyscale_frame(self) -> np.ndarray[int, np.uint8]:
         if len(self.frame.shape) == 3 and self.frame.shape[2] == 3:
             return cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         if len(self.frame.shape) == 2:
@@ -291,7 +307,7 @@ class VideoMetadata(_VideoMetadataBase):
 
     def prepare_coordinates_for_plotting(
         self, data: NDArray | float, manual_inspect_pixels: bool = False
-    ) -> NDArrayFp64 | float:
+    ) -> np.ndarray[float, np.float64] | float:
         if manual_inspect_pixels or self.coordinates_need_to_be_scaled_for_plot:
             return data * self.pixels_per_meter * self.image_resize_multiplier
         return data

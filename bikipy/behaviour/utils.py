@@ -4,7 +4,7 @@ from typing import Any, Iterable, Sequence
 import numpy as np
 from pydantic import validate_arguments
 from pydantic_numpy import NDArray
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.feature.angle import angle_from_a_to_b
 from bikipy.perimeter.base import SinglePerimeter
@@ -52,7 +52,7 @@ def reduce_repeating_sequences(
     repeating_sequence: NDArray,
     frame_tolerance: int,
     connector_element: Any = None,
-) -> list:
+) -> np.ndarray:
     """
     Reduce consecutive sub-sequences in string sequence
 
@@ -91,7 +91,7 @@ def reduce_repeating_sequences(
                 if i + frame_tolerance == last_index:
                     break
 
-    return reduced_sequence
+    return np.array(reduced_sequence)
 
 
 def reduce_repeating_sequences_absolute(

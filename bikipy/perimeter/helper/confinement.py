@@ -6,9 +6,11 @@ from typing import Iterable, Optional, Sequence
 import numpy as np
 import seaborn as sb
 from matplotlib import pyplot as plt
+from numba import njit
 from pydantic import validate_arguments
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 
+from bikipy import runtime_settings
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.feature.tolerance.plural import plural_node_tolerance_model
 from bikipy.feature.tolerance.single import single_node_tolerance_model
@@ -67,7 +69,7 @@ def detect_sequential_perimeter_presence(
 
 def detect_multi_node_sequential_perimeter_presence(
     multi_node_coordinates: Sequence[NDArrayFp64],
-    inferior_to_superior_perimeter_instances: Iterable[Perimeter],
+    inferior_to_superior_perimeter_instances: Sequence[Perimeter],
     clean_outliers: bool = True,
     inspect_arg: InspectArg = False,
     inspect_coords: Optional[NDArrayFp64] = None,
@@ -134,4 +136,4 @@ def detect_multi_node_sequential_perimeter_presence(
     if clean_outliers:
         presence = presence[valid_indices]
 
-    return presence, valid_indices, boolean_array
+    return presence, boolean_array

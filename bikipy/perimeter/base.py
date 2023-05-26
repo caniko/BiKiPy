@@ -126,7 +126,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
     @property
     @abstractmethod
-    def centroid_meters(self) -> NDArrayFp64:
+    def centroid_meters(self) -> np.ndarray[float, np.float64]:
         ...
 
 
@@ -217,11 +217,11 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         ...
 
     @abstractmethod
-    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> NDArrayFp64:
+    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.float64]:
         ...
 
     @abstractmethod
-    def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> NDArrayFp64:
+    def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.float64]:
         ...
 
     @abstractmethod
@@ -401,7 +401,10 @@ class PerimeterSet(BasePerimeter):
 
     @cached_property
     def video(self) -> VideoMetadata:
-        return self.all_perimeters[0].video
+        result = self.all_perimeters[0].video
+        for p in self.all_perimeters[1:]:
+            result = VideoMetadata.join(result, p.video)
+        return result
 
     @cached_property
     def mean_meters_per_pixel(self) -> float:

@@ -1,14 +1,14 @@
 from abc import ABC, abstractmethod
-from functools import cached_property, reduce
+from functools import cached_property
 from logging import getLogger
-from typing import Generic, TypeVarTuple
+from typing import Generic, Literal, Optional, TypeVarTuple
 
-from pydantic import PositiveInt
+from pydantic import Field, PositiveInt
 from pydantic.generics import GenericModel
 
 from bikipy.core.base import BikipyModel
 from bikipy.core.typing import Label
-from bikipy.core.video import VideoMetadata, incongruity_permissive_video_join
+from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.base import Perimeter
 
 logger = getLogger(__name__)
@@ -18,9 +18,23 @@ PerimeterInstances = TypeVarTuple("PerimeterInstances")
 
 
 class TrialWithPerimeterMixin(GenericModel, Generic[Perimeter, *PerimeterInstances], BikipyModel, ABC):
+    # Derive meters per pixel from perimeter
+    # TODO: Put this logic in the backend by prioritizing preferred sources
+    meters_per_pixel_from_perimeter_source: Literal["side", "diagonal", "diameter", "radius", None] = Field(
+        None,
+        description="The perimeter attribute that will be used to derive meters_per_pixel. Supported sources with "
+        "respect to SinglePerimeter type:\n"
+        "Polygon: To be decided\n"
+        "Regular polygon (every side has equal length): side\n"
+        "Rectangle: diagonal\n"
+        "Circle: diameter, radius\n",
+    )
+    length_meters_of_meters_per_pixel_source: Optional[float]
+    manual_perimeter_to_derive_meters_per_pixel: Optional[str]
+
     @property
     @abstractmethod
-    def perimeters(self) -> list[Perimeter, *PerimeterInstances]:
+    def perimeters(self) -> tuple[Perimeter, *PerimeterInstances]:
         ...
 
     def __getitem__(self, item) -> Perimeter:
@@ -46,28 +60,11 @@ class TrialWithPerimeterMixin(GenericModel, Generic[Perimeter, *PerimeterInstanc
         video = super()._video
 
         if self.perimeters:
-            perimeter_video = reduce(
-                incongruity_permissive_video_join, (perimeter.video for perimeter in self.perimeters)
-            )
-            # Manually passed video parameters should override any
-            new_video = VideoMetadata.join(video, perimeter_video, ignore_incongruity=True)
-
-            # The resolution on perimeters should be more correct than whatever
-            # provided by the user, hence it being master
-            final_video = VideoMetadata.join(new_video, video, ignore_incongruity=True)
-
-            if self.meters_per_pixel_from_perimeter:
-                logger.debug("meters_per_pixel_from_perimeter -> True: Deriving meters_per_pixel from perimeter")
-                if not self.perimeter_to_derive_meters_per_pixel:
-                    msg = f"perimeter_to_derive_meters_per_pixel is not defined for class, {self.__class__.__name__}"
-                    raise AttributeError(msg)
-
-                final_video.meters_per_pixel = (
-                    self.perimeter_to_derive_meters_per_pixel.derived_meters_per_pixel.derived_meters_per_pixel
-                )
+            # Considered making this logic optional; going with user-side discretion instead
+            for perimeter in self.perimeters:
+                video = VideoMetadata.join(perimeter.video, video, ignore_incongruity=True)
 
             for perimeter in self.perimeters:
-                perimeter.manual_video = final_video
-            return final_video
+                perimeter.manual_video = video
 
         return video

@@ -8,7 +8,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from pydantic import validator
 from pydantic_numpy import NDArray
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.base import BaseSinglePerimeter
@@ -79,11 +79,11 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             return self.derived_meters_per_pixel_source_metric_length / first_side
 
     @property
-    def centroid_meters(self) -> NDArrayFp64:
+    def centroid_meters(self) -> np.ndarray[float, np.float64]:
         return self.metric_graph.centroid
 
     @cached_property
-    def vertices_in_meters(self) -> NDArrayFp64:
+    def vertices_in_meters(self) -> np.ndarray[float, np.float64]:
         return self.vertices_in_pixels * self.video.meters_per_pixel
 
     @cached_property
@@ -111,7 +111,9 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             manual_video=self.video,
         )
 
-    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64, inspect: bool = False) -> NDArrayFp64:
+    def closest_point_on_edge_to_coordinates(
+        self, coordinates: NDArrayFp64, inspect: bool = False
+    ) -> np.ndarray[float, np.float64]:
         # Closest point on the index-respective edge along axis 0, and coordinates along 1.
         closest_edge_point_to_coordinates_matrix = np.array(
             [
@@ -157,7 +159,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         self,
         coordinates: NDArrayFp64,
         closest_point_on_edge_to_coordinates: Optional[NDArrayFp64] = None,
-    ) -> NDArrayFp64:
+    ) -> np.ndarray[float, np.float64]:
         if closest_point_on_edge_to_coordinates is None:
             closest_point_on_edge_to_coordinates = self.closest_point_on_edge_to_coordinates(coordinates)
         return unit_vector(closest_point_on_edge_to_coordinates - coordinates)

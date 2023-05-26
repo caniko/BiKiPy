@@ -1,7 +1,7 @@
 from functools import cached_property
 
+import numpy as np
 from pydantic import DirectoryPath, FilePath, validate_arguments
-from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.core.base import BasePluginFile
@@ -15,15 +15,15 @@ class PluginCenter(BasePluginFile):
     human_readable_index = "Center"
 
     @cached_property
-    def only_center(self) -> NDArrayFp64:
+    def only_center(self) -> np.ndarray[float, np.float64]:
         return get_only_point_from_makesense(self.data_path)
 
-    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> NDArrayFp64:
+    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> np.ndarray[float, np.float64]:
         self._assert_correct_scope_trialwise_metadata()
         return self.only_center
 
     @property
-    def globally_defined(self) -> NDArrayFp64:
+    def globally_defined(self) -> np.ndarray[float, np.float64]:
         self._assert_correct_scope_global()
         return self.only_center
 

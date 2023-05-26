@@ -1,7 +1,5 @@
 from typing import ClassVar
 
-from pydantic_numpy import NDArrayBool
-
 from bikipy.feature.qualia.physical_object.heuristic.abc import AbstractQualiaHeuristic
 
 

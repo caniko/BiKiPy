@@ -5,7 +5,6 @@ from typing import ClassVar
 
 import numpy as np
 import pandas as pd
-from pydantic_numpy import NDArrayUint8
 
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.qualia.physical_object.analysis.i import (
@@ -81,7 +80,7 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
         }
 
     @cached_property
-    def po_observation_sequence(self) -> NDArrayUint8:
+    def po_observation_sequence(self) -> np.ndarray[int, np.uint8]:
         overlapping_frames = 0
 
         observation_sequence = np.zeros(self.frames, dtype=np.uint8)

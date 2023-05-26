@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 from matplotlib import patches
@@ -46,11 +46,20 @@ def plot_coordinates(
     ax: Axes = None,
     inspect_pixels: bool = False,
     video: Optional["VideoMetadata"] = None,
+    color: Any = None,
     **plot_kwargs,
 ):
-    coordinates = video.prepare_coordinates_for_plotting(coordinates, inspect_pixels)
+    if not ax:
+        if video:
+            _fig, ax = video.subplot()
+        else:
+            print("Video not provided")
+            _fig, ax = plt.subplots()
 
-    ax.plot(*coordinates.T, color=cmap(len(coordinates)), **plot_kwargs)
+    if video:
+        coordinates = video.prepare_coordinates_for_plotting(coordinates, inspect_pixels)
+
+    ax.plot(*coordinates.T, color=color or cmap(len(coordinates)), **plot_kwargs)
 
     return ax
 

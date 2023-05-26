@@ -4,18 +4,16 @@ from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import Field
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+from pydantic import Field, validate_arguments
+from pydantic_numpy.dtype import NDArrayFp64
 
-from bikipy import runtime_settings
 from bikipy.core.base import BikipyModel
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.calculus import np_abs_diff
+from bikipy.utils.math.discrete import TruthIslandMetadata
 from bikipy.utils.math.statistics import nan_average
 
 logger = getLogger(__name__)
-
-MotionIsland = list[tuple[int, int, int]]
 
 summary_motion_features = (
     "total_displacement",
@@ -30,7 +28,7 @@ def displacement_by_frame(
     coordinate_sequence: NDArrayFp64,
     interpolation_method: str = "akima",
     remove_tails: bool = False,
-) -> NDArrayFp64:
+) -> np.ndarray[float, np.float64]:
     """
     Compute the absolute displacement of the given point from its coordinates across frames.
     The values on the tails are removed if they are undefined or "not a number" (NaN). The
@@ -58,7 +56,7 @@ def frozen_frames(
     rigid_body_node_displacements: Iterable[NDArrayFp64],
     second_threshold: float = 1.0,
     metric_displacement_threshold: float = 0.005,
-) -> NDArrayFp64:
+) -> np.ndarray[float, np.float64]:
     """
     Compute the time the rigid body has been frozen or "stood still" throughout
     the trial. The acceleration at these frames should be close to zero.
@@ -153,11 +151,11 @@ class Motion(BikipyModel):
         return round(self.fps)
 
     @cached_property
-    def meters_per_frame(self) -> NDArrayFp64:
+    def meters_per_frame(self) -> np.ndarray[float, np.float64]:
         return displacement_by_frame(self.coordinate_sequence)
 
     @cached_property
-    def meters_per_second(self) -> NDArrayFp64:
+    def meters_per_second(self) -> np.ndarray[float, np.float64]:
         return [
             np.nansum(self.meters_per_frame[i : i + self.int_fps])
             for i in range(0, self.meters_per_frame.size, self.int_fps)
@@ -186,7 +184,7 @@ class Motion(BikipyModel):
         return np.nansum(self.frozen_boolean_index) / self.fps
 
     @cached_property
-    def acceleration(self) -> NDArrayFp64:
+    def acceleration(self) -> np.ndarray[float, np.float64]:
         if not self.total_displacement:
             return np.nan
         return np_abs_diff(self.meters_per_second)
@@ -218,21 +216,23 @@ EMPTY_MOTION = np.full(4, np.nan)
 EMPTY_MOTION_WEIGHT = np.full(5, np.nan)
 
 
+@validate_arguments
 @lru_cache
 def motion_analysis_indexer(category: str, level: int):
     assert level >= 2, "Must be at least 2 levels"
     return generic_multi_indexer("Displacement", "MedianSpeed", "MedianAcceleration", "FreezingTime")(category, level)
 
 
+@validate_arguments
 @lru_cache
-def bulk_motion_analysis_indexer(categories: Iterable[str], level: int):
+def bulk_motion_analysis_indexer(categories: tuple[str, ...], level: int):
     result = []
     for category in categories:
         result.extend(motion_analysis_indexer(category, level))
     return result
 
 
-def merge_motion_island_data(motion_islands: MotionIsland, coordinate_sequence: NDArrayFp64, fps: float):
+def merge_motion_island_data(motion_islands: TruthIslandMetadata, coordinate_sequence: NDArrayFp64, fps: float):
     """
     The purpose of this function is to deal with islands of data that need to be aggregated for analysis. These islands
     of data have to be merged arbitrarily.

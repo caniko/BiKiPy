@@ -1,14 +1,14 @@
-from dataclasses import dataclass
-
 import numpy as np
 from numba import njit
-from pydantic_numpy import NDArrayBool, NDArrayInt64
+from pydantic_numpy import NDArrayBool
 
 from bikipy import runtime_settings
 from bikipy.feature.tolerance.common import common_preparation
 
+TruthIslandMetadata = list[tuple[int, int, int]]
 
-def boolean_index_truth_sequence_start_end_and_length(boolean_index: NDArrayBool) -> list[tuple[int, int, int]]:
+
+def boolean_index_truth_sequence_start_end_and_length(boolean_index: NDArrayBool) -> TruthIslandMetadata:
     result = []
 
     array_length = len(boolean_index)
@@ -36,7 +36,7 @@ def tolerance_modeled_boolean_index_truth_sequence_start_end_length(
     fps: float,
     minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
     maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
-) -> tuple[list[tuple[int, int, int]], np.ndarray[bool, bool]]:
+) -> tuple[TruthIslandMetadata, np.ndarray[bool, bool]]:
     """
     Deal with islands of data that need to be aggregated for analysis. These islands
     of data have to be merged arbitrarily.

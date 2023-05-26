@@ -17,6 +17,7 @@ class BaseYMaze(BaseModel):
 
 class YMazeTrial(BaseYMaze, BaseRadialMazeTrial):
     trial_label = "Y-Maze"
+    excel_sheet_name = "Y-Maze"
 
 
 class YMazeExperiment(BaseYMaze, BaseRadialMazeExperiment):

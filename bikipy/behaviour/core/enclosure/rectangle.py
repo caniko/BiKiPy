@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pydantic_numpy import NDArray
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.behaviour.core.base import HabituationTrialMixin
@@ -16,16 +16,11 @@ from bikipy.behaviour.utils import (
     blanket_enclosed_experiment_label_generator,
     reduce_repeating_sequences,
 )
-from bikipy.feature.motion import (
-    get_combined_features_from_merged_motion_island_data,
-    merge_motion_island_data,
-    MotionIsland,
-)
+from bikipy.feature.motion import TruthIslandMetadata, merge_motion_island_data
 from bikipy.perimeter import RectanglePerimeter
 from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.discrete import (
     tolerance_modeled_boolean_index_truth_sequence_start_end_length,
-    boolean_index_truth_sequence_start_end_and_length,
 )
 from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
@@ -175,7 +170,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
         return result
 
     @cached_property
-    def location_sequence_quadrant(self) -> NDArrayFp64:
+    def location_sequence_quadrant(self) -> np.ndarray[float, np.float64]:
         raw_location_sequence_quadrant = np.zeros(self.number_of_frames, dtype=np.uint8)
         for quadrant_index, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items():
             quadrant = self.quadrant_grid_coordinate_to_quadrant[quadrant_grid_coordinate]
@@ -203,7 +198,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     # Center vs Periphery ==============================================================
     @cached_property
-    def _center_boolean_index_motion_island(self) -> tuple[MotionIsland, np.ndarray[bool, bool]]:
+    def _center_boolean_index_motion_island(self) -> tuple[TruthIslandMetadata, np.ndarray[bool, bool]]:
         raw_center_boolean_index = parallel_point_inside_polygon(
             self.reader.kinematic_coordinates,
             self.center_rectangle_vertices,
@@ -233,7 +228,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
         return merge_motion_island_data(self.periphery_boolean_index, self.reader.kinematic_coordinates, self.video.fps)
 
     @cached_property
-    def center_rectangle_dimensions_meters(self) -> NDArrayFp64 | None:
+    def center_rectangle_dimensions_meters(self) -> np.ndarray[float, np.float64] | None:
         if self._center_periphery_is_defined is None:
             return None
         if self.manual_center_rectangle_dimensions_meters is not None:
@@ -242,7 +237,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             return self.video.metric_resolution / self.center_rectangle_dimensions_to_spatial_resolution_ratio
 
     @cached_property
-    def center_rectangle_vertices(self) -> NDArrayFp64:
+    def center_rectangle_vertices(self) -> np.ndarray[float, np.float64]:
         if not self._center_periphery_is_defined:
             msg = (
                 "manual_center_rectangle_dimensions_meters or center_rectangle_dimensions_to_spatial_resolution_ratio "
@@ -311,6 +306,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
                 )
             )
 
+        # qgc = Quadrant grid coordinates
         for (qgc_i, quadrant), (qgc_ii, entries) in zip(
             self.quadrant_grid_coordinate_to_quadrant.items(), self.quadrant_grid_coordinate_to_entries.items()
         ):

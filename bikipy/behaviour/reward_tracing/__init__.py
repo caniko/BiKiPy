@@ -6,7 +6,6 @@ from typing import ClassVar, Generic, TypeVar
 import numpy as np
 import pandas as pd
 from pydantic.generics import GenericModel
-from pydantic_numpy import NDArrayBool
 
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.core.base import BikipyModel

@@ -3,7 +3,6 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.physical_object.heuristic.abc import (

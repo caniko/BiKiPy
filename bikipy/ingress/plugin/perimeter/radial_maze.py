@@ -3,7 +3,6 @@ from glob import iglob
 
 import numpy as np
 import pandas as pd
-from pydantic_numpy import NDArrayFp64
 
 from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
@@ -24,7 +23,8 @@ from bikipy.utils.math.geometry import (
 
 
 class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin):
-    radial_arm_rectangle_diagonal: int
+    radial_arm_rectangle_diagonal: float
+    derive_meters_per_pixel: bool = True
 
     plugin_file_stem_parser = PluginFileStemParseLastIsLabel
 
@@ -46,7 +46,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
         return raw_line_data.iloc[clockwise_argsort, :]
 
     @property
-    def lines(self) -> NDArrayFp64:
+    def lines(self) -> np.ndarray[float, np.float64]:
         return get_all_lines_from_makesense_line_df(self.line_data)
 
     @property
@@ -105,16 +105,13 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
 
     @cached_property
     def grouped_radial_maze_perimeters(self) -> dict[str, tuple[SinglePerimeter, ...]]:
-        perimeter_set = PerimeterSet(
-            perimeters=[*self.arms, self.center],
-            # inspect_arg=self.ingress.inspect_directory_path, label="radial_arm"
-        )
+        perimeter_set = PerimeterSet(perimeters=[*self.arms, self.center])
 
         # perimeter_set.plot(with_midpoints=True)
 
         grouped = perimeter_set.group()
-        self.ingress.ingress_defined_perimeters[self.stem_info.label] = grouped
 
+        self.ingress.ingress_defined_perimeters[self.stem_info.label] = grouped
         return grouped
 
     def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> dict[str, tuple[SinglePerimeter, ...]]:

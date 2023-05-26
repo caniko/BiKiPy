@@ -109,7 +109,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             return pd.merge([self._isolate_coordinates(item) for item in query], axis=1)
         else:
             if query not in self.all_tracked_labels:
-                msg = f"'{query}' is not in object DataFrame (self.summary_frame)"
+                msg = f"'{query}' is not in object DataFrame (self.summary_frame): {self.all_tracked_labels}"
                 raise AttributeError(msg)
             return self._isolate_coordinates(query)
 
@@ -130,7 +130,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         ...
 
     @property
-    def find_timestamp_index(self) -> NDArrayFp64 | None:
+    def find_timestamp_index(self) -> np.ndarray[float, np.float64] | None:
         if self.timestamp_index is not None:
             return self.timestamp_index
 
@@ -165,7 +165,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         return self[self.object_tracking_label_for_kinematics]
 
     @cached_property
-    def plot_prepared_kinematic_coordinates(self) -> NDArrayFp64:
+    def plot_prepared_kinematic_coordinates(self) -> np.ndarray[float, np.float64]:
         return self.video.prepare_coordinates_for_plotting(self.kinematic_coordinates)
 
     @cached_property
@@ -272,7 +272,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             result.loc[:, pd.IndexSlice[:, "x"]] = result.loc[:, pd.IndexSlice[:, "x"]] * self.video.meters_per_pixel[0]
             result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] * self.video.meters_per_pixel[1]
         else:
-            raise RuntimeError(f"Could not match video.meters_per_pixel type: {type(self.video.meters_per_pixel)}")
+            raise TypeError(f"Could not match video.meters_per_pixel type: {type(self.video.meters_per_pixel)}")
 
         if self.midpoint_groups:
             generated_midpoints = set()
@@ -357,12 +357,12 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         return df
 
     @property
-    def combined_raw_likelihood(self) -> NDArrayFp64:
+    def combined_raw_likelihood(self) -> np.ndarray[float, np.float64]:
         return np.multiply.reduce(self.raw_df.loc[:, pd.IndexSlice[:, "likelihood"]], axis=1)
 
     label_to_plot_prepped_coordinates: dict[str, NDArrayFp64] | None = Field(default_factory=dict)
 
-    def coordinates_for_plot(self, label_to_plot: str) -> NDArrayFp64:
+    def coordinates_for_plot(self, label_to_plot: str) -> np.ndarray[float, np.float64]:
         try:
             return self.label_to_plot_prepped_coordinates[label_to_plot]
         except KeyError:

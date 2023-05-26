@@ -1,6 +1,6 @@
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
-from functools import cached_property, lru_cache, reduce
+from functools import cached_property, lru_cache
 from logging import getLogger
 from operator import attrgetter
 from time import sleep
@@ -20,7 +20,7 @@ from pydantic import (
 )
 from pydantic.fields import FieldInfo
 from pydantic_numpy import NDArray
-from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16, NDArrayUint8
+from pydantic_numpy.dtype import NDArrayInt16
 from tqdm import tqdm
 from typing_inspect import is_generic_type
 from yaspin import yaspin
@@ -31,7 +31,7 @@ from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
 from bikipy.core.base import BikipyHashable
 from bikipy.core.mixin import AbstractFeatureCollectorMixin, InspectPlotMixin
 from bikipy.core.typing import Label
-from bikipy.core.video import VideoMetadataMixin, VideoMetadata
+from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_analysis_indexer
 from bikipy.feature.qualia.physical_object.trial_mixin import PhysicalObjectTrialMixin
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
@@ -73,24 +73,6 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
         False,
         description="Only affective if crop_time_seconds is not 0.0. Will crop from start instead when set to False",
     )
-
-    # Derive meters per pixel from perimeter
-    meters_per_pixel_from_perimeter: bool = Field(
-        False,
-        description="Derive meters per pixel from perimeter dimensions. The ratio is derived from source defined in "
-        "meters_per_pixel_from_perimeter_source",
-    )
-    meters_per_pixel_from_perimeter_source: Literal["side", "diagonal", "diameter", "radius", None] = Field(
-        None,
-        description="The perimeter attribute that will be used to derive meters_per_pixel. Supported sources with "
-        "respect to SinglePerimeter type:\n"
-        "Polygon: To be decided\n"
-        "Regular polygon (every side has equal length): side\n"
-        "Rectangle: diagonal\n"
-        "Circle: diameter, radius\n",
-    )
-    length_meters_of_meters_per_pixel_source: Optional[float]
-    manual_perimeter_to_derive_meters_per_pixel: Optional[str]
 
     # Class variables
     category = "trial"
@@ -180,14 +162,6 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
             raise AttributeError(msg) from e
 
     @property
-    def _video(self) -> VideoMetadata:
-        upstream_video = super()._video
-
-        if self.has_perimeter:
-            for self.all
-            upstream_video = VideoMetadata.join(upstream_video)
-
-    @property
     def perimeter_to_derive_meters_per_pixel(self) -> Perimeter:
         if self.manual_perimeter_to_derive_meters_per_pixel:
             try:
@@ -202,12 +176,12 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
                 raise AttributeError(msg)
 
     @cached_property
-    def manual_center_meters(self) -> NDArrayFp64 | None:
+    def manual_center_meters(self) -> np.ndarray[float, np.float64] | None:
         if self.manual_center_pixels is not None:
             return self.manual_center_pixels * self.video.meters_per_pixel
 
     @cached_property
-    def center_meter_translation(self) -> NDArrayFp64 | None:
+    def center_meter_translation(self) -> np.ndarray[float, np.float64] | None:
         if self.manual_center_meters is not None:
             return self.manual_center_meters - self.video.center_meters
 
@@ -263,7 +237,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
         return upstream
 
     @cached_property
-    def _uint_zeros_based_on_frame_length(self) -> NDArrayUint8:
+    def _uint_zeros_based_on_frame_length(self) -> np.ndarray[int, np.uint8]:
         return np.zeros(self.number_of_frames, dtype=np.uint8)
 
     @cached_property

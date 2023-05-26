@@ -2,10 +2,10 @@ from abc import ABC, abstractmethod
 from typing import ClassVar, Type, TypeVar
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
 from pydantic import BaseModel, Field
-from pydantic_numpy import NDArrayBool
 from schemantic.model.project import SchemanticProjectMixin
 
 from bikipy.core.video import VideoMetadataMixin
