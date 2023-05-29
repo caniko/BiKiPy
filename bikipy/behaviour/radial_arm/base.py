@@ -273,23 +273,23 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
             msg = f"Alternation compute methods yielded differing values: {alternations} != {alternative_alternations}"
             raise ValueError(msg)
 
-        return 100.0 * alternations / self.sum_of_entries
+        return 100.0 * alternations / (self.sum_of_entries - 2)
 
     @cached_property
-    def _multi_node_coordinates(self) -> tuple[NDArrayFp64, ...]:
+    def _coordinates(self) -> tuple[NDArrayFp64, ...]:
         return tuple(self.reader[node_label] for node_label in self.radial_arm_confinement_tracking_object_labels)
 
     @cached_property
     def _border_center_presence_data(self) -> np.ndarray[bool, bool]:
         return detect_multi_node_sequential_perimeter_presence(
-            self._multi_node_coordinates, (self.center, *self.arms), clean_outliers=False
+            self._coordinates, (self.center, *self.arms), clean_outliers=False
         )
 
     @cached_property
     def _border_presence_data(self):
         # alternation_sequence, valid_boolean_index
         return detect_multi_node_sequential_perimeter_presence(
-            self._multi_node_coordinates,
+            self._coordinates,
             self.arms,
             clean_outliers=False,
             inspect_arg=self.class_inspect_arg,

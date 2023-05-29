@@ -61,7 +61,7 @@ optional = ["cache_meters_augmented", "crop_from_end", "crop_time_seconds", "df_
 object_tracking_label_for_kinematics = "torso"
 x_axis_crop_end_point = 95.0
 y_axis_crop_end_point = 75.0
-invert_y_axis = true
+#invert_y_axis = true
 midpoint_groups = { center_eye = ["left_ear", "right_ear"], torso = ["center_eye", "base_tail"] }
 
 [field]
