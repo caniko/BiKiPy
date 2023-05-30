@@ -14,7 +14,7 @@ from bikipy.feature.qualia.physical_object.heuristic.abc import (
 
 
 class OlfactionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
-    maximum_degrees = 70.0
+    maximum_degrees = 45.0
 
     nose_label: str | None = "nose"
     torso_label: str | None = "torso"

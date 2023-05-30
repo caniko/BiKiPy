@@ -88,9 +88,7 @@ def tolerance_modeled_boolean_index_truth_sequence_start_end_length(
 
 
 if not runtime_settings.disable_numba:
-    boolean_index_truth_sequence_start_end_and_length = njit(cache=True)(
-        boolean_index_truth_sequence_start_end_and_length
-    )
+    boolean_index_truth_sequence_start_end = njit(cache=True)(boolean_index_truth_sequence_start_end)
 
     tolerance_modeled_boolean_index_truth_sequence_start_end_length = njit(cache=True)(
         tolerance_modeled_boolean_index_truth_sequence_start_end_length
