@@ -23,6 +23,7 @@ from bikipy.reader.model import model_data
 from bikipy.reader.utils import compute_midpoint_label
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
+from bikipy.utils.plot.generic import ax_plot_coordinate_with_boolean_index
 
 BAD_COORDINATE = (np.nan, np.nan, 0.0)  # x, y, likelihood
 
@@ -373,19 +374,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     @validate_arguments(config={"arbitrary_types_allowed": True})
     def plot_boolean_index(self, boolean_index: NDArrayBool, ax: Axes, label_to_plot: Optional[str] = None) -> None:
         coordinates_for_plot = self.coordinates_for_plot(label_to_plot or self.object_tracking_label_for_kinematics)
-
-        ax.scatter(
-            *coordinates_for_plot[boolean_index].T,
-            marker="x",
-            alpha=runtime_settings.matplotlib_scatter_alpha,
-            label="Valid",
-        )
-        ax.scatter(
-            *coordinates_for_plot[~boolean_index].T,
-            marker="x",
-            alpha=runtime_settings.matplotlib_scatter_alpha,
-            label="Invalid",
-        )
+        ax_plot_coordinate_with_boolean_index(ax, boolean_index, coordinates_for_plot, plot_line=True, plot_false=False)
         plt.legend(**BOTTOM_LEGEND_KWARGS)
 
     def _compute_midpoint(

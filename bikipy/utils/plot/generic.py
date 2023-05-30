@@ -8,6 +8,7 @@ from matplotlib.axes import Axes
 from pydantic import validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
+from bikipy.utils.math.discrete import boolean_index_truth_sequence_start_end
 from bikipy.utils.plot.color import cmap
 
 if TYPE_CHECKING:
@@ -18,27 +19,22 @@ logger = getLogger(__file__)
 
 
 def ax_plot_coordinate_with_boolean_index(
-    ax, boolean_index: NDArrayBool, coordinates: NDArrayFp64, plot_line: bool = False
+    ax, boolean_index: NDArrayBool, coordinates: NDArrayFp64, plot_false: bool = False, plot_line: bool = False
 ) -> None:
-    from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
-
-    length = len(boolean_index)
-    assert length == len(coordinates)
-
     if plot_line:
-        inside_colors = plt.cm.winter(np.linspace(0, 1, length))
-        # outside_colors = plt.cm.Wistia(np.linspace(0, 1, length))
+        x, y = coordinates.T
 
-        plot_colors = plt.cm.Wistia(np.linspace(0, 1, length))
-        plot_colors[boolean_index] = inside_colors[boolean_index]
+        for start, end, length in boolean_index_truth_sequence_start_end(boolean_index):
+            ax.plot(x[start:end], y[start:end], c=plt.cm.winter(np.linspace(0, 1, length)), linewidth=3.0)
 
-        for color, point_a, point_b in zip(plot_colors, coordinates, coordinates[1:]):
-            ax.plot(*np.vstack((point_a, point_b)).T, c=color, linewidth=3.0)
+        if plot_false:
+            for start, end, length in boolean_index_truth_sequence_start_end(~boolean_index):
+                ax.plot(x[start:end], y[start:end], c=plt.cm.Wistia(np.linspace(0.1, 1, length)), linewidth=3.0)
+
     else:
-        ax.scatter(*coordinates[boolean_index].T, label="Inside", color="dodgerblue")
-        ax.scatter(*coordinates[~boolean_index].T, label="Outside", color="crimson")
-
-        ax.legend(**BOTTOM_LEGEND_KWARGS)
+        ax.scatter(*coordinates[boolean_index].T, label="Valid", color="dodgerblue")
+        if plot_false:
+            ax.scatter(*coordinates[~boolean_index].T, label="Invalid", color="crimson")
 
 
 def plot_coordinates(
