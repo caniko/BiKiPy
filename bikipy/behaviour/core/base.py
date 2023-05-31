@@ -402,6 +402,11 @@ class BaseExperiment(Behaviour):
 
     @classmethod
     @property
+    def habituation_trial_class_name(cls) -> str:
+        return cls.habituation_trial_class.__name__
+
+    @classmethod
+    @property
     def stage_index_to_trial_class(cls) -> dict[int, TrialCLS]:
         if not cls.has_stages:
             msg = f"{cls.__name__}: stage_index_to_trial_class is undefined in non-sequential experiment classes"
@@ -484,16 +489,26 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def trial_class_to_trial_objects(self) -> dict[str, Trial]:
-        return (
-            {
-                self.trial_class_name_to_trial_class[trial_class_name]: [
-                    self.trial_id_to_trial_object[trial_id] for trial_id in trial_ids
-                ]
-                for trial_class_name, trial_ids in self._trial_class_name_to_trial_ids.items()
-            }
-            if self.has_stages
-            else {self.trial_class: self.trial_objects}
+        assert not self.skip_habituation or (self.skip_habituation and self._first_trial_is_habituation), (
+            "skip_habituation is True, but the experiment has no habituation trial set. Possible mistakes:\n"
+            "  - skip_habituation was set to True by mistake.\n"
+            '  - Forgot to set ingress.first_stage_is_habituation to "True" '
+            "in the project settings.yaml file.\n"
+            "  - advanced users did not run set_first_trial_to_habituation, "
+            "an Experiment classmethod that is required for habituation inclusive workflows."
         )
+
+        if not self.has_stages:
+            return {self.trial_class: self.trial_objects}
+
+        return {
+            self.trial_class_name_to_trial_class[trial_class_name]: [
+                self.trial_id_to_trial_object[trial_id] for trial_id in trial_ids
+            ]
+            for trial_class_name, trial_ids in self._trial_class_name_to_trial_ids.items()
+            if not self.skip_habituation
+            or (self.skip_habituation and trial_class_name != self.habituation_trial_class_name)
+        }
 
     @cached_property
     def animal_id_to_trial_objects(self) -> dict[Hashable, Trial]:
@@ -719,35 +734,6 @@ class BaseExperiment(Behaviour):
             result[trial_class_name].append(trial_id)
 
         return result
-
-    @cached_property
-    def _trial_class_to_trial_objects(self) -> dict:
-        def filter_trial_objects(trial_objects):
-            return trial_objects
-
-        if not self.has_stages:
-            return {self.trial_class: filter_trial_objects(self.trial_objects)}
-
-        if self.skip_habituation:
-            if not self._first_trial_is_habituation:
-                msg = (
-                    "skip_habituation is True, but the experiment has no habituation trial set. Possible mistakes:\n"
-                    "  - skip_habituation was set to True by mistake.\n"
-                    '  - Forgot to set ingress.first_stage_is_habituation to "True" '
-                    "in the project settings.yaml file.\n"
-                    "  - advanced users did not run set_first_trial_to_habituation, "
-                    "an Experiment classmethod that is required for habituation inclusive workflows."
-                )
-                raise AttributeError(msg)
-            logger.warning(
-                "skip_habituation is True, skipping the the habituation class, thereby, the belonging trial object set"
-            )
-
-        return {
-            self.trial_class_name_to_label[trial_class_name]: filter_trial_objects(trial_objects)
-            for trial_class_name, trial_objects in self.trial_class_name_to_trial_objects.items()
-            if not (self.skip_habituation and self.trial_class_name_to_label[trial_class_name] == "Habituation")
-        }
 
     @cached_property
     def _class_labels(self):

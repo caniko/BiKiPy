@@ -15,7 +15,7 @@ def get_ingress(project_directory: Optional[DirectoryPath] = None):
     )
 
 
-def analyze_and_save(project_directory: DirectoryPath):
+def analyze_and_save(project_directory: DirectoryPath) -> None:
     ingress = get_ingress(project_directory)
 
     set_bikipy_settings_from_dict(ingress.project_kit_config[RUNTIME_SETTINGS_MAP_NAME])

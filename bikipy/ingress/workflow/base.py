@@ -76,6 +76,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         "and only focus on one of each trial class",
     )
     trial_ids_to_analyse: Optional[list[Label]] = Field(default_factory=list)
+    no_cache: bool = False
 
     definition_meters_per_pixel: frozenset[PluginScope]
     definition_single_perimeter: Optional[frozenset[PluginScope]]
@@ -446,9 +447,10 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     def model_post_init(self) -> None:
         # Alias: define_experiment_data
 
-        self._common_trial_keyword_arguments.update(
-            project_kit_config=self.project_kit_config, analysis_series_cache_directory_path=self.cache_directory_path
-        )
+        self._common_trial_keyword_arguments["project_kit_config"] = self.project_kit_config
+
+        if not self.no_cache:
+            self._common_trial_keyword_arguments["analysis_series_cache_directory_path"] = self.cache_directory_path
 
         for plugin_model in self._global_plugins:
             first_file = next(self.plugin_directory_path.glob(f"{plugin_model.code_key}*"))
