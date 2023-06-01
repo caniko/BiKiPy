@@ -34,10 +34,10 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
                         f"BiasScore{po_label.capitalize()}": rel_bias_score
                         for po_label, rel_bias_score in self.relative_object_bias_score.items()
                     },
-                    # **{
-                    #     f"AbsoluteBiasScore{po_label.capitalize()}": abs_bias_score
-                    #     for po_label, abs_bias_score in self.absolute_object_bias_score.items()
-                    # },
+                    **{
+                        f"AbsoluteBiasScore{po_label.capitalize()}": abs_bias_score
+                        for po_label, abs_bias_score in self.absolute_object_bias_score.items()
+                    },
                     "TotalObservationInstances": self.po_sum_of_observation_instances,
                 }
             )

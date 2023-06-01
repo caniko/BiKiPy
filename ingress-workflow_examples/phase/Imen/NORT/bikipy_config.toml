@@ -28,6 +28,7 @@ optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_
 
 [trial.common.defined]
 manual_center_rectangle_dimensions_meters = [0.2, 0.2]
+crop_time_seconds = 10
 
 [trial.NortTrainingTrial]
 class_name = "NortTrainingTrial"

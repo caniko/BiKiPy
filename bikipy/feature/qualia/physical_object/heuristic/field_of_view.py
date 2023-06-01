@@ -15,6 +15,8 @@ from bikipy.feature.tolerance.single import single_node_tolerance_model
 
 
 class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
+    maximum_distance_meters = 0.035
+
     center_eye_label: str = "center_eye"
     left_eye_label: str = "left_ear"
     right_eye_label: str = "right_ear"
