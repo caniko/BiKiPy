@@ -23,6 +23,7 @@ from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayInt16, NDArrayUint8
 
 from bikipy import runtime_settings
+from bikipy._constant import MINIMUM_FIG_DPI
 from bikipy.core.base import BikipyModel
 from bikipy.core.typing import MetersPerPixel
 from bikipy.utils.image import read_image_from_path
@@ -264,16 +265,8 @@ class VideoMetadata(_VideoMetadataBase):
         exclude_imaging_from_rc_coord: Optional[tuple[tuple[int, int], ...]] = None,
         **kwargs,
     ) -> tuple[Figure, Sequence[Axes]]:
-        if self.frame is None:
-            logger.debug("Video object was used to make subplot, but no frame was defined. Figure got no background.")
-            return plt.subplots(
-                nrows,
-                ncols,
-                figsize=(
-                    self.horizontal_resolution * self.image_resize_multiplier * min(0.1, ncols / nrows),
-                    self.vertical_resolution * self.image_resize_multiplier * min(0.1, nrows / ncols),
-                ),
-            )
+        # Minimum dpi is set to 350
+        kwargs["dpi"] = max(MINIMUM_FIG_DPI, kwargs.get("dpi", default=0))
 
         fig, axes = plt.subplots(
             nrows,
@@ -284,6 +277,10 @@ class VideoMetadata(_VideoMetadataBase):
             ),
             **kwargs,
         )
+        if self.frame is None:
+            logger.debug("Video object was used to make subplot, but no frame was defined. Figure got no background.")
+            return fig, axes
+
         if not isinstance(axes, Iterable):
             axes = [axes]
 

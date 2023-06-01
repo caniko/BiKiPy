@@ -29,7 +29,7 @@ scikit-learn = "^1.1.2"
 statsmodels = "^0.13.1"
 scikit-guess = {git = "https://gitlab.com/madphysicist/scikit-guess"}
 
-pandas = { version = "^2.0.0", extras = ["performance", "hdf5", "parquet", "excel", "compression"] }
+pandas = { version = "^2.0.0", extras = ["performance", "compression", "hdf5", "parquet", "excel"] }
 
 matplotlib = "^3.2.2"
 seaborn = "*"

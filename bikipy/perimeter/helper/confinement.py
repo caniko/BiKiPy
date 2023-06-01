@@ -83,7 +83,6 @@ def detect_multi_node_sequential_perimeter_presence(
 
     perimeter_id_to_confinement = {}
 
-    int_id_to_overlap_boolean_index = defaultdict(partial(np.zeros_like, presence, dtype=bool))
     for perimeter in inferior_to_superior_perimeter_instances:
         confinement_booleans_index = np.logical_and.reduce(
             perimeter.confined_coordinate_boolean_index(coordinates) for coordinates in coordinates
@@ -92,7 +91,6 @@ def detect_multi_node_sequential_perimeter_presence(
 
         if presence[confinement_booleans_index].any():
             overlap_boolean_index = overlap_boolean_index | confinement_booleans_index
-            int_id_to_overlap_boolean_index[perimeter.int_id][overlap_boolean_index] = True
 
         presence[confinement_booleans_index] = perimeter.int_id
 
