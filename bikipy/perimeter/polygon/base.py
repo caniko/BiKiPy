@@ -5,9 +5,9 @@ from typing import ClassVar, Literal, Optional, TypeVar
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as nt
 from matplotlib.axes import Axes
 from pydantic import validator
-from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.video import VideoMetadata
@@ -19,7 +19,7 @@ from bikipy.utils.collection_utils import (
 )
 from bikipy.utils.graph import Graph
 from bikipy.utils.math.geometry import clockwise_sort_points
-from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
+from bikipy.utils.math.confinement.polygon import parallel_point_inside_polygon
 from bikipy.utils.math.vector import (
     nearest_point_on_line_segment_to_coordinates,
     ray_and_line_segment_intersection,
@@ -34,8 +34,6 @@ logger = getLogger(__name__)
 class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
     vertices_in_pixels: NDArrayFp64 = ...
     derived_meters_per_pixel_source: Optional[Literal["side"]]
-
-    category = "polygon_perimeter"
 
     polygon_order: ClassVar[Optional[int]]
 
@@ -79,11 +77,11 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             return self.derived_meters_per_pixel_source_metric_length / first_side
 
     @property
-    def centroid_meters(self) -> np.ndarray[float, np.float64]:
+    def centroid_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.metric_graph.centroid
 
     @cached_property
-    def vertices_in_meters(self) -> np.ndarray[float, np.float64]:
+    def vertices_in_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.vertices_in_pixels * self.video.meters_per_pixel
 
     @cached_property
@@ -113,7 +111,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
     def closest_point_on_edge_to_coordinates(
         self, coordinates: NDArrayFp64, inspect: bool = False
-    ) -> np.ndarray[float, np.float64]:
+    ) -> np.ndarray[float, np.dtype[np.float64]]:
         # Closest point on the index-respective edge along axis 0, and coordinates along 1.
         closest_edge_point_to_coordinates_matrix = np.array(
             [
@@ -159,7 +157,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         self,
         coordinates: NDArrayFp64,
         closest_point_on_edge_to_coordinates: Optional[NDArrayFp64] = None,
-    ) -> np.ndarray[float, np.float64]:
+    ) -> np.ndarray[float, np.dtype[np.float64]]:
         if closest_point_on_edge_to_coordinates is None:
             closest_point_on_edge_to_coordinates = self.closest_point_on_edge_to_coordinates(coordinates)
         return unit_vector(closest_point_on_edge_to_coordinates - coordinates)
@@ -178,7 +176,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         ray_origins: NDArrayFp64,
         ray_directions: NDArrayFp64,
         return_points: bool = False,
-    ) -> NDArray:
+    ) -> nt.NDArray:
         result = np.array(
             [
                 ray_and_line_segment_intersection(ray_origins, ray_directions, *line_segment_pair, return_points)

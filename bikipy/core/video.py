@@ -61,7 +61,7 @@ class _VideoMetadataBase(BikipyModel):
         keep_untouched = (cached_property,)
 
     @validator("frame")
-    def make_sure_frame_is_read(cls, value: Frame) -> np.ndarray[int, np.uint8]:
+    def make_sure_frame_is_read(cls, value: Frame) -> np.ndarray[int, np.dtype[np.uint8]]:
         return read_image_from_path(value) if isinstance(value, Path) else value
 
     @cached_property
@@ -159,15 +159,15 @@ class VideoMetadata(_VideoMetadataBase):
         return self.resolution[1]
 
     @cached_property
-    def metric_resolution(self) -> np.ndarray[float, np.float64]:
+    def metric_resolution(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.resolution * self.meters_per_pixel
 
     @cached_property
-    def center_meters(self) -> np.ndarray[float, np.float64]:
+    def center_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.metric_resolution / 2.0
 
     @property
-    def center_for_plot(self) -> np.ndarray[float, np.float64]:
+    def center_for_plot(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.center_pixel if self.coordinates_need_to_be_scaled_for_plot else self.center_meters
 
     @property
@@ -195,7 +195,7 @@ class VideoMetadata(_VideoMetadataBase):
         return 1.0
 
     @cached_property
-    def greyscale_frame(self) -> np.ndarray[int, np.uint8]:
+    def greyscale_frame(self) -> np.ndarray[int, np.dtype[np.uint8]]:
         if len(self.frame.shape) == 3 and self.frame.shape[2] == 3:
             return cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         if len(self.frame.shape) == 2:
@@ -304,7 +304,7 @@ class VideoMetadata(_VideoMetadataBase):
 
     def prepare_coordinates_for_plotting(
         self, data: NDArray | float, manual_inspect_pixels: bool = False
-    ) -> np.ndarray[float, np.float64] | float:
+    ) -> np.ndarray[float, np.dtype[np.float64]] | float:
         if manual_inspect_pixels or self.coordinates_need_to_be_scaled_for_plot:
             return data * self.pixels_per_meter * self.image_resize_multiplier
         return data

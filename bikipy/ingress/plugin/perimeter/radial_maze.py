@@ -46,7 +46,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
         return raw_line_data.iloc[clockwise_argsort, :]
 
     @property
-    def lines(self) -> np.ndarray[float, np.float64]:
+    def lines(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return get_all_lines_from_makesense_line_df(self.line_data)
 
     @property

@@ -23,7 +23,9 @@ def save_plt_fig_cv(figure, save_path: Path) -> None:
     cv2.imwrite(str(save_path.with_suffix(".png")), img, [cv2.IMWRITE_PNG_COMPRESSION, 9])
 
 
-def read_image(image: FilePath | NDArrayUint8, imread_flagg: Optional[list] = None) -> np.ndarray[int, np.uint8]:
+def read_image(
+    image: FilePath | NDArrayUint8, imread_flagg: Optional[list] = None
+) -> np.ndarray[int, np.dtype[np.uint8]]:
     if isinstance(image, (Path, str)):
         image_path = Path(image).resolve()
         assert image_path.exists(), image_path
@@ -36,7 +38,9 @@ def read_image(image: FilePath | NDArrayUint8, imread_flagg: Optional[list] = No
 
 @validate_arguments
 @lru_cache
-def read_image_from_path(image_path: FilePath, imread_flagg: Optional[list] = None) -> np.ndarray[int, np.uint8]:
+def read_image_from_path(
+    image_path: FilePath, imread_flagg: Optional[list] = None
+) -> np.ndarray[int, np.dtype[np.uint8]]:
     return cv2.imread(str(image_path))
 
 

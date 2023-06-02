@@ -1,7 +1,8 @@
 import json
+from collections import defaultdict
 from logging import getLogger
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from pydantic import DirectoryPath, FilePath
@@ -14,6 +15,9 @@ from bikipy.utils.makesense import (
     read_makesense_rectangle,
 )
 
+if TYPE_CHECKING:
+    from bikipy.perimeter.base import PerimeterSet
+
 logger = getLogger(__name__)
 
 
@@ -24,7 +28,7 @@ def init_polygon_from_makesense_coco_polygon(
     reference_point_array: Optional[NDArrayFp64] = None,
     invert_y_axis: bool = runtime_settings.matplotlib_invert_y_axis,
     **perimeter_kwargs,
-) -> dict:
+) -> dict[str, "PerimeterSet"]:
     from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters
     from bikipy.perimeter.polygon.base import init_polygon
 
@@ -44,15 +48,12 @@ def init_polygon_from_makesense_coco_polygon(
     if reference_point_csv_path:
         image_name_to_reference_point = image_name_to_point_from_makesense(reference_point_csv_path)
 
-    result = {}
+    result = defaultdict(dict)
     for annotation in coco["annotations"]:
         current_kwargs = {}
         image_index = annotation["image_id"] - 1
         image_name = coco["images"][image_index]["file_name"]
         label = coco["categories"][annotation["category_id"] - 1]["name"]
-
-        if image_name not in result:
-            result[image_name] = {}
 
         if reference_point_array is None:
             reference_point_array = image_name_to_reference_point[image_name] if reference_point_csv_path else None
@@ -80,7 +81,7 @@ def init_polygon_from_makesense_coco_polygon(
             **perimeter_kwargs,
         )
 
-    return perimeter_set_from_image_name_to_perimeters(result)
+    return perimeter_set_from_image_name_to_perimeters(dict(result))
 
 
 def init_polygon_from_makesense_csv_rectangle(
@@ -89,7 +90,7 @@ def init_polygon_from_makesense_csv_rectangle(
     reference_point_csv_path: Optional[FilePath] = None,
     invert_y_axis: bool = runtime_settings.matplotlib_invert_y_axis,
     **perimeter_kwargs,
-):
+) -> dict[str, "PerimeterSet"]:
     from bikipy.perimeter.base import perimeter_set_from_image_name_to_perimeters
     from bikipy.perimeter.polygon.base import init_polygon
 
@@ -100,7 +101,7 @@ def init_polygon_from_makesense_csv_rectangle(
     if reference_point_csv_path:
         image_name_to_reference_point = image_name_to_point_from_makesense(reference_point_csv_path)
 
-    result = {}
+    result = defaultdict(dict)
     for label, row in csv_data.iterrows():
         start = np.array(row[:2], dtype=int)
         end = start + np.array(row[2:4], dtype=int)
@@ -111,9 +112,6 @@ def init_polygon_from_makesense_csv_rectangle(
             )
 
         image_name = row["image_name"]
-        if image_name not in result:
-            result[image_name] = {}
-
         result[image_name][label] = init_polygon(
             np.array((start, (start[0], end[1]), end, (end[0], start[1])), dtype=float),
             label=label,
@@ -123,4 +121,4 @@ def init_polygon_from_makesense_csv_rectangle(
             **perimeter_kwargs,
         )
 
-    return perimeter_set_from_image_name_to_perimeters(result)
+    return perimeter_set_from_image_name_to_perimeters(dict(result))

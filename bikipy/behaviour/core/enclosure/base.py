@@ -16,7 +16,7 @@ from bikipy.reader.base import ReaderCLS
 class EnclosedTrial(BaseTrial):
     manual_enclosure: Optional[Perimeter] = enclosure_field
 
-    trial_perimeter_enclosure_class: ClassVar[PerimeterCLS] = ...
+    trial_perimeter_enclosure_class: ClassVar[PerimeterCLS]
     enclosure_perimeter_object_attribute_names: ClassVar[set[str]] = set()
 
     gaussian_dividend_multiplayer: ClassVar[int] = 1

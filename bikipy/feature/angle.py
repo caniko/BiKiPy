@@ -11,7 +11,7 @@ from bikipy.utils.math.vector import dot_axis_1_1d, unit_vector
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}
 
 
-def _find_median_vector(row_vectors: NDArrayFp64) -> np.ndarray[float, np.float64]:
+def _find_median_vector(row_vectors: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
     """
     Computes the median point from a row vectors
 
@@ -32,7 +32,7 @@ def _find_median_vector(row_vectors: NDArrayFp64) -> np.ndarray[float, np.float6
 def clockwise_angel_2d(
     start_vector: NDArrayFp64,
     end_vector: NDArrayFp64,
-) -> np.ndarray[float, np.float64]:
+) -> np.ndarray[float, np.dtype[np.float64]]:
     """
     Computes the counterclockwise angle, [0, 2pi], from start to end in radians
 
@@ -119,7 +119,7 @@ def compute_angles_from_points_abc(
     median_points: Optional[Sequence[str] | str] = None,
     method: str = "inner",
     degrees: bool = False,
-) -> np.ndarray[float, np.float64]:
+) -> np.ndarray[float, np.dtype[np.float64]]:
     """
     Computes the angle between three groups of vectors
 
@@ -178,7 +178,7 @@ def compute_angles_from_points_abc(
     return computation
 
 
-def angle_from_a_to_b(vector_a: NDArrayFp64, vector_b: NDArrayFp64) -> np.ndarray[float, np.float64]:
+def angle_from_a_to_b(vector_a: NDArrayFp64, vector_b: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
     b_x, b_y = vector_b.T
     vector_p = np.array([-b_y, b_x]).T
 

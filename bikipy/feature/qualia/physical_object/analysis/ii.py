@@ -80,7 +80,7 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
         }
 
     @cached_property
-    def po_observation_sequence(self) -> np.ndarray[int, np.uint8]:
+    def po_observation_sequence(self) -> np.ndarray[int, np.dtype[np.uint8]]:
         overlapping_frames = 0
 
         observation_sequence = np.zeros(self.frames, dtype=np.uint8)

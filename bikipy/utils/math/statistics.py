@@ -7,7 +7,7 @@ def feature_scale(
     data: Sequence,
     real_min: Optional[float],
     real_max: Optional[float],
-) -> np.ndarray[float, np.float64]:
+) -> np.ndarray[float, np.dtype[np.float64]]:
     """
     Scale the data to [0, 1]; 0 is the smallest and 1 is the highest
 
@@ -19,12 +19,12 @@ def feature_scale(
     :return: Feature scaled data in nd.array
     """
 
-    data = np.asarray(data)
+    data_array = np.asarray(data)
 
-    minimum = real_min or data.min()
-    maximum = real_max or data.max()
+    minimum = real_min or data_array.min()
+    maximum = real_max or data_array.max()
 
-    return (data - minimum) / maximum - minimum
+    return (data_array - minimum) / maximum - minimum
 
 
 def nan_average(data, weights):

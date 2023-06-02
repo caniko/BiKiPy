@@ -86,7 +86,8 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     )
     model_displacement_by_std: Optional[float] = Field(
         2.0,
-        description="When set the maximum displacement by frame will have an upper bound defined by the given scale of the STD",
+        description="When set the maximum displacement by frame will have an upper "
+        "bound defined by the given scale of the STD",
     )
 
     export_timestamp_data_as_parquet: bool = Field(
@@ -95,7 +96,8 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
     _using_bikipy_ingress: bool = Field(
         False,
-        description="This is a flagg used by the developer to signal the use of bikipy ingress to the class. Currently, it only affects augmented df caching",
+        description="This is a flagg used by the developer to signal the use of bikipy ingress to the class. "
+        "Currently, it only affects augmented df caching",
     )
 
     _post_read_midpoints: set = set()
@@ -131,7 +133,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         ...
 
     @property
-    def find_timestamp_index(self) -> np.ndarray[float, np.float64] | None:
+    def find_timestamp_index(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
         if self.timestamp_index is not None:
             return self.timestamp_index
 
@@ -166,7 +168,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         return self[self.object_tracking_label_for_kinematics]
 
     @cached_property
-    def plot_prepared_kinematic_coordinates(self) -> np.ndarray[float, np.float64]:
+    def plot_prepared_kinematic_coordinates(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.video.prepare_coordinates_for_plotting(self.kinematic_coordinates)
 
     @cached_property
@@ -358,12 +360,12 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         return df
 
     @property
-    def combined_raw_likelihood(self) -> np.ndarray[float, np.float64]:
+    def combined_raw_likelihood(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return np.multiply.reduce(self.raw_df.loc[:, pd.IndexSlice[:, "likelihood"]], axis=1)
 
     label_to_plot_prepped_coordinates: dict[str, NDArrayFp64] | None = Field(default_factory=dict)
 
-    def coordinates_for_plot(self, label_to_plot: str) -> np.ndarray[float, np.float64]:
+    def coordinates_for_plot(self, label_to_plot: str) -> np.ndarray[float, np.dtype[np.float64]]:
         try:
             return self.label_to_plot_prepped_coordinates[label_to_plot]
         except KeyError:

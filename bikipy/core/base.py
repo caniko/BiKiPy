@@ -14,7 +14,7 @@ class BikipyConfigModel(BaseModel):
 
 
 class BikipyModel(BikipyConfigModel):
-    category: ClassVar[str] = ...
+    category: ClassVar[str]
 
 
 class BikipyHashable(BikipyModel, SchemanticProjectMixin):
@@ -32,16 +32,16 @@ class BikipyHashable(BikipyModel, SchemanticProjectMixin):
     def _to_hash(self) -> list:
         return [self.__class__.__name__, self.category, self.int_id, self.label]
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(tuple(self._to_hash))
 
-    def __eq__(self, other: "BikipyHashableModel"):
+    def __eq__(self, other: "BikipyHashableModel") -> bool:
         try:
             return self._to_hash == other._to_hash
         except AttributeError:
             return False
 
-    def __ne__(self, other: "BikipyHashableModel"):
+    def __ne__(self, other: "BikipyHashableModel") -> bool:
         return not self.__eq__(other)
 
 

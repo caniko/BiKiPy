@@ -2,6 +2,7 @@ from typing import Callable
 
 import numba
 import numpy as np
+import numpy.typing as nt
 from matplotlib import pyplot as plt
 from numba import njit
 from numpy.linalg import LinAlgError
@@ -18,7 +19,7 @@ from bikipy.utils.collection_utils import (
 
 
 @validate_arguments
-def unit_vector(row_vectors: NDArrayFp64, force_1_dim: bool = False) -> np.ndarray[float, np.float64]:
+def unit_vector(row_vectors: NDArrayFp64, force_1_dim: bool = False) -> np.ndarray[float, np.dtype[np.float64]]:
     """
     Computes unit vector, i.e. vector/<norm of the vector>
 
@@ -41,7 +42,7 @@ def unit_vector(row_vectors: NDArrayFp64, force_1_dim: bool = False) -> np.ndarr
     return (row_vectors.T / np.linalg.norm(row_vectors, axis=1)).T
 
 
-def orthogonal_vector(row_vectors: NDArrayFp64) -> np.ndarray[float, np.float64]:
+def orthogonal_vector(row_vectors: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
     """
     Computes the orthogonal row_vectors of the given 2D row_vectors
 
@@ -55,7 +56,7 @@ def orthogonal_vector(row_vectors: NDArrayFp64) -> np.ndarray[float, np.float64]
     return np.ascontiguousarray((-row_vectors.T[1], row_vectors.T[0])).T
 
 
-def orthogonal_unit_vector(row_vectors: NDArrayFp64) -> np.ndarray[float, np.float64]:
+def orthogonal_unit_vector(row_vectors: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
     """
     Computes the orthogonal unit row_vectors of the given 2D row_vectors
 
@@ -65,7 +66,7 @@ def orthogonal_unit_vector(row_vectors: NDArrayFp64) -> np.ndarray[float, np.flo
     return unit_vector(orthogonal_vector(row_vectors))
 
 
-def dot_axis_1_1d(row_vectors_a: NDArrayFp64, row_vectors_b: NDArrayFp64) -> np.ndarray[float, np.float64]:
+def dot_axis_1_1d(row_vectors_a: NDArrayFp64, row_vectors_b: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
     """
     Convenience function to perform dot product of vectors in stored in arrays of row vectors.
     The two row vector arrays must have the same shape; numpy will raise an error in cases when this is not true
@@ -115,7 +116,7 @@ def normal_from_line_to_point(line_vector: NDArrayFp64, line_start: NDArrayFp64,
     return sol
 
 
-def distance_between_line_and_point(*args, **kwargs) -> np.ndarray[float, np.float64]:
+def distance_between_line_and_point(*args, **kwargs) -> np.ndarray[float, np.dtype[np.float64]]:
     """
     Compute distance between point and a line.
 
@@ -130,7 +131,7 @@ def nearest_point_on_line_segment_to_coordinates(
     line_segment_end: NDArrayFp64,
     coordinates: NDArrayFp64,
     inspect: bool = False,
-) -> np.ndarray[float, np.float64]:
+) -> np.ndarray[float, np.dtype[np.float64]]:
     # # https://stackoverflow.com/a/47484153/9793651
     start_end_vector = line_segment_end - line_segment_start
     start_coordinate_vectors = coordinates - line_segment_start
@@ -168,7 +169,7 @@ def ray_and_line_segment_intersection(
     return_points: bool = False,
     inspect: bool = False,
     number_of_vectors: int = 150,
-) -> np.ndarray[float, np.float64]:
+) -> np.ndarray[float, np.dtype[np.float64]]:
     # Ray-Line Segment Intersection Test in 2D
     # http://bit.ly/1CoxdrG
     v1 = ray_origins - line_segment_start
@@ -234,7 +235,7 @@ def intersection_between_two_lines(
     vector_b: NDArrayFp64,
     vector_a_start: NDArrayFp64,
     vector_b_start: NDArrayFp64,
-) -> np.ndarray[float, np.float64] | None:
+) -> np.ndarray[float, np.dtype[np.float64]] | None:
     """
     Compute the intersection between two lines designated by a starting point
     and a direction/unit vector
@@ -278,7 +279,7 @@ def numpy_bin(
     bin_step: int,
     bin_size: int,
     reducer: Callable = np.nanmean,
-) -> NDArray:
+) -> nt.NDArray:
     arg_dims = np.arange(data.ndim)
     arg_dims[0], arg_dims[axis] = arg_dims[axis], arg_dims[0]
     data = data.transpose(arg_dims)
@@ -292,12 +293,12 @@ def numpy_bin(
     return np.array(data).transpose(arg_dims)
 
 
-def rotation_matrix_from_radians(radians: NDArrayFp64) -> np.ndarray[float, np.float64]:
+def rotation_matrix_from_radians(radians: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
     cos, sin = np.cos(radians), np.sin(radians)
     return np.array(([cos, -sin], [sin, cos])).transpose(2, 0, 1)
 
 
-def rotate_vectors_with_angle(vectors: NDArrayFp64, angle: NDArrayFp64) -> np.ndarray[float, np.float64]:
+def rotate_vectors_with_angle(vectors: NDArrayFp64, angle: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
     rotation_matrix = rotation_matrix_from_radians(angle)
     return np.array([np.dot(vector, rotation_matrix) for vector in vectors]).transpose(1, 0, 2)
 
@@ -310,7 +311,7 @@ if not runtime_settings.disable_numba:
     @njit(parallel=True, nogil=True, cache=True)
     def rotate_vectors_with_rotation_matrix(
         vectors: NDArrayFp64, rotation_matrices: NDArrayFp64
-    ) -> np.ndarray[float, np.float64]:
+    ) -> np.ndarray[float, np.dtype[np.float64]]:
         result = np.empty_like(vectors)
         for i in numba.prange(len(vectors)):
             result[i] = np.dot(vectors[i], rotation_matrices[i])

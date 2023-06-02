@@ -1,7 +1,7 @@
 import string
 from copy import copy
 from functools import cached_property, lru_cache
-from itertools import permutations, chain
+from itertools import chain, permutations
 from logging import getLogger
 from typing import ClassVar, Optional
 
@@ -20,7 +20,9 @@ from bikipy.behaviour.utils import (
 from bikipy.core.base import BikipyHashable
 from bikipy.feature.motion import Motion, bulk_motion_analysis_indexer
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
-from bikipy.perimeter.helper.confinement import detect_multi_node_sequential_perimeter_presence
+from bikipy.perimeter.helper.confinement import (
+    detect_multi_node_sequential_perimeter_presence,
+)
 from bikipy.perimeter.mixin import TrialWithPerimeterMixin
 from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
 
@@ -128,7 +130,7 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
         return PerimeterSet(perimeters=self.perimeters)
 
     @property
-    def alternation_sequence(self) -> np.ndarray[int, np.uint8]:
+    def alternation_sequence(self) -> np.ndarray[int, np.dtype[np.uint8]]:
         return self._border_presence_data[0]
 
     @property
@@ -136,7 +138,7 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
         return self._border_presence_data[1]
 
     @cached_property
-    def reduced_alternation_sequence_without_center(self) -> np.ndarray[int, np.uint8]:
+    def reduced_alternation_sequence_without_center(self) -> np.ndarray[int, np.dtype[np.uint8]]:
         result = reduce_repeating_sequences(
             self.alternation_sequence, round(self.video.fps * self.minimum_seconds_for_entry)
         )

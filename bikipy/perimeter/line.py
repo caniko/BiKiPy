@@ -54,7 +54,7 @@ class LinePerimeter(BikipyHashable, VideoMetadataMixin):
         """Given name of orientation"""
         return INDEX_TO_ORIENTATION[self.orientation]
 
-    def __mod__(self, other: NDArrayFp64) -> np.ndarray[float, np.float64]:
+    def __mod__(self, other: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
         """
         Compute values that are true to the perimeter logic
 
@@ -75,5 +75,5 @@ class LinePerimeter(BikipyHashable, VideoMetadataMixin):
     def __repr__(self):
         return f"{self.logic}{self.location}; {self.orientation_label}"
 
-    def true_values(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.float64]:
+    def true_values(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
         return np.asarray(coordinates)[self.location % coordinates]

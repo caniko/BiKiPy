@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Generic, Type, TypeVar
+from typing import Generic, Type, TypeVar, Optional
 
 from matplotlib.axes import Axes
 from pydantic import Extra, validate_arguments
@@ -9,6 +9,7 @@ from pydantic_numpy import NDArrayBool
 
 from bikipy.core.base import BikipyModel
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
+from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 
 T = TypeVar("T")
 
@@ -27,6 +28,11 @@ class AbstractCompute(GenericModel, Generic[T], BikipyModel, ABC):
     @abstractmethod
     def plot(self, ax: Axes, *args, **kwargs) -> None:
         ...
+
+    def plot_finalization(self, ax: Axes, video: Optional[VideoMetadata] = None) -> None:
+        font_size = video.upscaled_video.plotting_title_font_size if video else None
+        ax.set_title(self.label, fontsize=font_size)
+        ax.legend(**BOTTOM_LEGEND_KWARGS, fontsize=font_size)
 
     @validate_arguments
     def save_fig(self, path: Path, video: VideoMetadata, **plot_kwargs) -> None:

@@ -88,9 +88,9 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
 
     required_video_metadata_fields = {"meters_per_pixel", "recording_resolution", "fps"}
 
-    experiment_class_name: ClassVar[str] = ...
-    trial_label: ClassVar[str] = ...
-    excel_sheet_name: ClassVar[str] = ...
+    experiment_class_name: ClassVar[str]
+    trial_label: ClassVar[str]
+    excel_sheet_name: ClassVar[str]
 
     second_tolerance: ClassVar[float] = 0.15
 
@@ -176,12 +176,12 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
                 raise AttributeError(msg)
 
     @cached_property
-    def manual_center_meters(self) -> np.ndarray[float, np.float64] | None:
+    def manual_center_meters(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
         if self.manual_center_pixels is not None:
             return self.manual_center_pixels * self.video.meters_per_pixel
 
     @cached_property
-    def center_meter_translation(self) -> np.ndarray[float, np.float64] | None:
+    def center_meter_translation(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
         if self.manual_center_meters is not None:
             return self.manual_center_meters - self.video.center_meters
 
@@ -237,7 +237,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
         return upstream
 
     @cached_property
-    def _uint_zeros_based_on_frame_length(self) -> np.ndarray[int, np.uint8]:
+    def _uint_zeros_based_on_frame_length(self) -> np.ndarray[int, np.dtype[np.uint8]]:
         return np.zeros(self.number_of_frames, dtype=np.uint8)
 
     @cached_property
@@ -273,7 +273,7 @@ class BaseExperiment(Behaviour):
         False, description="Skip the habituation class during analysis, practically skipping the the habituation class"
     )
 
-    experiment_labels: ClassVar[set[str]] = ...
+    experiment_labels: ClassVar[set[str]]
 
     # The trial class that will be used in case set_first_trial_to_habituation is called
     habituation_trial_class: ClassVar[Optional[TrialCLS]] = None
@@ -281,7 +281,7 @@ class BaseExperiment(Behaviour):
     _first_trial_is_habituation: ClassVar[bool] = False
 
     # "Sequence of trial classes designed for the experiment class"
-    trial_sequence: ClassVar[tuple[TrialCLS, ...]] = ...
+    trial_sequence: ClassVar[tuple[TrialCLS, ...]]
 
     @validator("trial_id_to_trial_class_name")
     def sort_trial_id_to_trial_class_name_ascending(cls, value):

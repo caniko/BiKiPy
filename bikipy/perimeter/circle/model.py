@@ -9,7 +9,7 @@ from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16
 from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.utils.math.cached import meters2pixels
-from bikipy.utils.math.inside.ellipse import point_inside_ellipse
+from bikipy.utils.math.confinement.ellipse import point_inside_ellipse
 from bikipy.utils.math.vector import unit_vector
 from bikipy.utils.plot.generic import plot_ellipse
 
@@ -17,7 +17,6 @@ from bikipy.utils.plot.generic import plot_ellipse
 class BaseCirclePerimeter(BaseSinglePerimeter):
     center_pixels: NDArrayInt16
 
-    category = "circle_perimeter"
     class_inspect_directory_name = "circle"
 
     @validator("center_pixels")
@@ -34,11 +33,11 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         return value.astype(float)
 
     @property
-    def centroid_meters(self) -> np.ndarray[float, np.float64]:
+    def centroid_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.center_meters
 
     @cached_property
-    def center_meters(self) -> np.ndarray[float, np.float64]:
+    def center_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.center_pixels * self.video.meters_per_pixel
 
     def change_reference(self, new_reference: NDArrayFp64, makesense_image_name: Optional[str] = None):
@@ -70,10 +69,10 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
 
         return result
 
-    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.float64]:
+    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.center_meters + self.radius_meters * unit_vector(self.vector_to_closest_point_on_edge(coordinates))
 
-    def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.float64]:
+    def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
         """
         Strictly for circles, these vectors are the closest normals from the circle
         :param coordinates:

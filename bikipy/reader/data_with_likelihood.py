@@ -65,7 +65,7 @@ class DataWithLikelihoodReader(BaseReader[Enclosure], Generic[Enclosure]):
             axis=1,
         )
 
-    def _isolate_coordinates(self, item) -> np.ndarray[float, np.float64]:
+    def _isolate_coordinates(self, item) -> np.ndarray[float, np.dtype[np.float64]]:
         # remove likelihood column
         return np.delete(self.df[item].values, 2, 1)
 

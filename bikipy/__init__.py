@@ -7,9 +7,6 @@ from psutil import cpu_count
 from pydantic import BaseSettings, Field
 from schemantic.model.project import SchemanticProjectMixin
 
-matplotlib.use("Agg")
-
-
 logger = logging.getLogger(__file__)
 
 
@@ -32,6 +29,7 @@ class BikipyRuntimeSettings(BaseSettings, SchemanticProjectMixin):
     minimum_seconds_tolerance: float = 1.0 / 3.0
     maximum_seconds_distraction: float = 2.0 / 3.0
 
+    testing: bool = False
     debug: bool = False
 
     @property
@@ -42,6 +40,8 @@ class BikipyRuntimeSettings(BaseSettings, SchemanticProjectMixin):
 
 
 runtime_settings: BikipyRuntimeSettings = BikipyRuntimeSettings()
+if not runtime_settings.testing:
+    matplotlib.use("Agg")
 
 
 def set_bikipy_settings_from_dict(key_value_map: dict[str, Any]) -> None:

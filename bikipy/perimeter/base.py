@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Optional, Type, TypeVar
 
 import matplotlib.pyplot as plt
@@ -37,6 +38,8 @@ StringPerimeterShapes = Literal["circle", "circle_line", "circle_point", "polygo
 
 
 class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
+    category = "perimeter"
+
     def _manual_video_metadata_derived_inspection_preparation(
         self,
         manual_video: Optional[VideoMetadata] = None,
@@ -126,7 +129,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
     @property
     @abstractmethod
-    def centroid_meters(self) -> np.ndarray[float, np.float64]:
+    def centroid_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
         ...
 
 
@@ -134,6 +137,7 @@ PerimeterCLS = Type[BasePerimeter]
 Perimeter = TypeVar("Perimeter", bound=BasePerimeter)
 
 
+# ruff ignore E402
 from bikipy.reader.base import BaseReader
 
 BaseReader.update_forward_refs(Perimeter=Perimeter)
@@ -167,7 +171,6 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
     moving_field_name: Optional[str]
 
-    category = "perimeter"
     required_video_metadata_fields = {"recording_resolution"}
 
     @classmethod
@@ -201,7 +204,10 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
                 msg = "Derivation source, meters_per_pixel_from_perimeter_source, for meters_per_pixel undefined"
                 raise AttributeError(msg)
             if not self.derived_meters_per_pixel_source_metric_length:
-                msg = "Length of source, length_meters_of_meters_per_pixel_source, for deriving meters_per_pixel is undefined"
+                msg = (
+                    "Length of source, length_meters_of_meters_per_pixel_source, "
+                    "for deriving meters_per_pixel is undefined"
+                )
                 raise AttributeError(msg)
 
             upstream_video.meters_per_pixel = self.derived_meters_per_pixel
@@ -217,11 +223,11 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         ...
 
     @abstractmethod
-    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.float64]:
+    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
         ...
 
     @abstractmethod
-    def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.float64]:
+    def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
         ...
 
     @abstractmethod
@@ -354,11 +360,10 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 SinglePerimeter = TypeVar("SinglePerimeter", bound=BaseSinglePerimeter)
 
 
+# TODO: Variadic generics Pydantic V2.1
 class PerimeterSet(BasePerimeter):
     perimeters: list[SinglePerimeter]
     restricted_perimeters: Optional[list[SinglePerimeter]]
-
-    category = "PerimeterSet"
 
     @classmethod
     @property
@@ -428,13 +433,13 @@ class PerimeterSet(BasePerimeter):
         return dict(grouped)
 
     @cached_property
-    def centroid_meters(self):
+    def centroid_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
         """
         :return: The mean of all perimeter centroids in the set
         """
         return np.mean([perimeter.centroid_meters for perimeter in self.all_perimeters], axis=0)
 
-    def combined_framewise_confined_coordinates(self, coordinates: NDArrayFp64):
+    def combined_framewise_confined_coordinates(self, coordinates: NDArrayFp64) -> np.ndarray[bool, bool]:
         present = np.any([perimeter.confined_coordinate_boolean_index(coordinates) for perimeter in self.perimeters])
         if self.restricted_perimeters:
             present = present & ~np.any(
@@ -451,7 +456,7 @@ class PerimeterSet(BasePerimeter):
 
         return result
 
-    def change_reference(self, **perimeter_change_reference_kwargs):
+    def change_reference(self, **perimeter_change_reference_kwargs) -> "PerimeterSet":
         return self.__class__(
             perimeters=tuple(
                 perimeter.change_reference(**perimeter_change_reference_kwargs) for perimeter in self.perimeters
@@ -465,23 +470,23 @@ class PerimeterSet(BasePerimeter):
         )
 
     @property
-    def perimeter_to_int_id(self):
+    def perimeter_to_int_id(self) -> dict[Perimeter, int]:
         return {perimeter: perimeter.int_id for perimeter in self.all_perimeters}
 
     @property
-    def int_id_to_perimeter(self):
+    def int_id_to_perimeter(self) -> dict[int, Perimeter]:
         return {perimeter.int_id: perimeter for perimeter in self.all_perimeters}
 
     @property
-    def label_to_perimeter(self):
+    def label_to_perimeter(self) -> dict[str, Perimeter]:
         return {perimeter.label: perimeter for perimeter in self.all_perimeters}
 
     @property
-    def int_id_to_label(self):
+    def int_id_to_label(self) -> dict[int, str]:
         return {perimeter.int_id: perimeter.label for perimeter in self.all_perimeters}
 
     @property
-    def reference_point(self):
+    def reference_point(self) -> np.ndarray[float, np.dtype[np.float64]]:
         expected_reference_point = self.all_perimeters[0].reference_point
         if equality := np.all(
             expected_reference_point == perimeter.reference_point for perimeter in self.all_perimeters
@@ -492,13 +497,13 @@ class PerimeterSet(BasePerimeter):
         return expected_reference_point
 
     @property
-    def inspect_image(self):
+    def inspect_image(self) -> np.ndarray[int, np.dtype[np.uint8]]:
         result = self.all_perimeters[0].inspect_image
         assert all(result == perimeter.inspect_image for perimeter in self.all_perimeters)
         return result
 
     @property
-    def inspect_image_path(self):
+    def inspect_image_path(self) -> Path:
         result = self.all_perimeters[0].inspect_image_path
         assert all(result == perimeter.inspect_image_path for perimeter in self.all_perimeters)
         return result
@@ -510,7 +515,7 @@ class PerimeterSet(BasePerimeter):
         return *self.perimeters, *self.restricted_perimeters
 
     @property
-    def labels(self) -> tuple:
+    def labels(self) -> tuple[str, ...]:
         return tuple(perimeter.label for perimeter in self.all_perimeters)
 
     @cached_property
@@ -606,5 +611,7 @@ def perimeter_set_from_image_name_to_perimeters(image_name_to_perimeters: dict[s
                 restricted_perimeters.append(perimeter)
             else:
                 filtered_perimeters.append(perimeter)
-        result[image_name] = PerimeterSet(perimeters=filtered_perimeters, restricted_perimeters=restricted_perimeters)
+        result[image_name] = PerimeterSet(
+            perimeters=filtered_perimeters, restricted_perimeters=restricted_perimeters, label=image_name
+        )
     return result

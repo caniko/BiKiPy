@@ -646,7 +646,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
 
-    def get_meter_per_pixel(self, trial_id: Optional[Label] = None) -> np.ndarray[float, np.float64]:
+    def get_meter_per_pixel(self, trial_id: Optional[Label] = None) -> np.ndarray[float, np.dtype[np.float64]]:
         from bikipy.ingress.plugin.meters_per_pixel import (
             PluginMeterPerPixel,
             detect_meters_per_pixel_in_perimeter_directory,

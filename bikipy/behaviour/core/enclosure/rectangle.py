@@ -1,11 +1,11 @@
 from functools import cached_property, lru_cache
 from logging import getLogger
-from typing import Any, Optional
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as nt
 import pandas as pd
-from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT
@@ -18,11 +18,11 @@ from bikipy.behaviour.utils import (
 )
 from bikipy.feature.motion import TruthIslandMetadata, merge_motion_island_data
 from bikipy.perimeter import RectanglePerimeter
-from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.discrete import (
     tolerance_modeled_boolean_index_truth_sequence_start_end_length,
 )
-from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
+from bikipy.utils.math.confinement.polygon import parallel_point_inside_polygon
+from bikipy.utils.pandas import motion_analysis_indexer_for_subsection
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 
@@ -30,12 +30,6 @@ logger = getLogger(__name__)
 quadrant_grid_typing = tuple[int, int]
 
 A = 1
-
-
-def motion_analysis_indexer_for_subsection(category: Any, level: int):
-    return generic_multi_indexer(
-        "Displacement", "MedianSpeed", "MedianAcceleration", "FreezingTime", "Entries", "SecondsPresent"
-    )(category, level)
 
 
 class RectangleEnclosedExperiment(EnclosedExperiment):
@@ -71,7 +65,9 @@ class RectangleEnclosedTrial(EnclosedTrial):
         return result
 
     @cached_property
-    def quadrant_grid_coordinate_to_vertices(self) -> dict[quadrant_grid_typing, NDArrayFp64]:
+    def quadrant_grid_coordinate_to_vertices(
+        self,
+    ) -> dict[quadrant_grid_typing, np.ndarray[float, np.dtype[np.float64]]]:
         horizontal_uniform_distance = self.video.metric_horizontal_resolution / self.rectangle_2d_bin[0]
         vertical_uniform_distance = self.video.metric_vertical_resolution / self.rectangle_2d_bin[1]
         result = {}
@@ -170,7 +166,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
         return result
 
     @cached_property
-    def location_sequence_quadrant(self) -> np.ndarray[float, np.float64]:
+    def location_sequence_quadrant(self) -> np.ndarray[float, np.dtype[np.float64]]:
         raw_location_sequence_quadrant = np.zeros(self.number_of_frames, dtype=np.uint8)
         for quadrant_index, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items():
             quadrant = self.quadrant_grid_coordinate_to_quadrant[quadrant_grid_coordinate]
@@ -228,7 +224,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
         return merge_motion_island_data(self.periphery_boolean_index, self.reader.kinematic_coordinates, self.video.fps)
 
     @cached_property
-    def center_rectangle_dimensions_meters(self) -> np.ndarray[float, np.float64] | None:
+    def center_rectangle_dimensions_meters(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
         if self._center_periphery_is_defined is None:
             return None
         if self.manual_center_rectangle_dimensions_meters is not None:
@@ -237,7 +233,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             return self.video.metric_resolution / self.center_rectangle_dimensions_to_spatial_resolution_ratio
 
     @cached_property
-    def center_rectangle_vertices(self) -> np.ndarray[float, np.float64]:
+    def center_rectangle_vertices(self) -> np.ndarray[float, np.dtype[np.float64]]:
         if not self._center_periphery_is_defined:
             msg = (
                 "manual_center_rectangle_dimensions_meters or center_rectangle_dimensions_to_spatial_resolution_ratio "
@@ -256,7 +252,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
         return np.array(((x_short, y_short), (x_short, y_long), (x_long, y_long), (x_long, y_short)))
 
     @cached_property
-    def location_sequence_center_periphery(self) -> NDArray:
+    def location_sequence_center_periphery(self) -> nt.NDArray:
         # 1 is center, 2 is periphery, 0 is unknown
         location_sequence_center_periphery = np.zeros_like(self.center_boolean_index, dtype=np.uint8)
         location_sequence_center_periphery[self.center_boolean_index] = 1
@@ -270,11 +266,11 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @property
     def center_entries(self) -> int:
-        return np.sum(self.location_sequence_center_periphery == 1)
+        return int(np.sum(self.location_sequence_center_periphery == 1))
 
     @property
     def periphery_entries(self) -> int:
-        return np.sum(self.location_sequence_center_periphery == 2)
+        return int(np.sum(self.location_sequence_center_periphery == 2))
 
     @property
     def seconds_on_center(self) -> int:
@@ -316,7 +312,9 @@ class RectangleEnclosedTrial(EnclosedTrial):
         upstream_list.append(
             pd.Series(
                 data,
-                index=motion_column_headers(self.quadrant_grid_coordinates, 2, self._center_periphery_is_defined),
+                index=rectangle_motion_column_headers(
+                    self.quadrant_grid_coordinates, 2, self._center_periphery_is_defined
+                ),
             )
         )
 
@@ -343,9 +341,9 @@ class BlanketRectangleEnclosedExperiment(RectangleEnclosedExperiment):
 
 
 @lru_cache
-def motion_column_headers(
+def rectangle_motion_column_headers(
     quadrant_grid_coordinates: tuple[tuple[int, int], ...], column_index_levels: int, center_periphery_is_defined: bool
-) -> list[tuple]:
+) -> list[tuple[str, ...]]:
     result = [
         # ("Gaussian", "CenterToPeriphery")
     ]

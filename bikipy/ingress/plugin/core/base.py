@@ -20,10 +20,10 @@ class BasePlugin(BikipyModel, SchemanticProjectMixin, ABC):
     required: ClassVar[bool] = False
     plural_entries: ClassVar[bool] = False
 
-    ingress_key: ClassVar[str] = ...
-    code_key: ClassVar[str] = ...
-    default_trial_argument_key: ClassVar[str] = ...
-    human_readable_index: ClassVar[str] = ...
+    ingress_key: ClassVar[str]
+    code_key: ClassVar[str]
+    default_trial_argument_key: ClassVar[str]
+    human_readable_index: ClassVar[str]
 
     @abstractmethod
     def trialwise_and_metadata(self, trial_id: Label, naive: bool = False):

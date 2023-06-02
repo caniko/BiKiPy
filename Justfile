@@ -4,6 +4,7 @@ format:
 	black .
 	isort .
 	ruff check . --fix
+	@echo "Formatting complete 🎉"
 
 mypy:
-	poetry run mypy -p bikipy
+	mypy -p bikipy

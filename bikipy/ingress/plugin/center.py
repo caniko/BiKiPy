@@ -15,15 +15,15 @@ class PluginCenter(BasePluginFile):
     human_readable_index = "Center"
 
     @cached_property
-    def only_center(self) -> np.ndarray[float, np.float64]:
+    def only_center(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return get_only_point_from_makesense(self.data_path)
 
-    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> np.ndarray[float, np.float64]:
+    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> np.ndarray[float, np.dtype[np.float64]]:
         self._assert_correct_scope_trialwise_metadata()
         return self.only_center
 
     @property
-    def globally_defined(self) -> np.ndarray[float, np.float64]:
+    def globally_defined(self) -> np.ndarray[float, np.dtype[np.float64]]:
         self._assert_correct_scope_global()
         return self.only_center
 

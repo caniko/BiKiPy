@@ -45,12 +45,12 @@ class OlfactionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
             perimeter_border_normal_pixels=self.maximum_distance_pixels,
             should_be_inside_perimeter_border=self.reader[self.nose_label],
             should_be_outside_perimeter_border=self.reader[self.torso_label],
-            label="Nose",
+            label="NoseProximity",
             manual_video=self.video,
         )
 
     @cached_property
-    def nose_forward_direction_rays(self) -> ComputeInLineOfSight:
+    def snout_towards_object_rays(self) -> ComputeInLineOfSight:
         return (
             self.manual_nose_olfaction_rays
             if self.manual_nose_olfaction_rays
@@ -59,31 +59,27 @@ class OlfactionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
                 ray_start_point=self.reader[self.center_eye_label],
                 ray_travel_direction_point=self.reader[self.nose_label],
                 max_radians=self.maximum_radians,
-                label="NoseForwardDirection",
+                label="SnoutTowardsObject",
                 manual_video=self.video,
             )
         )
 
     @cached_property
     def result(self) -> np.ndarray[bool, bool]:
-        return self.nose_proximity.result & self.nose_forward_direction_rays.result
+        return self.nose_proximity.result & self.snout_towards_object_rays.result
 
     @property
     def summary_series(self) -> pd.Series:
         label = self.perimeter.label.capitalize()
         return pd.Series(
-            [self.nose_proximity.result_seconds, self.nose_forward_direction_rays.result_seconds],
-            index=[f"ObservingSecNoseProximity{label}", f""],
+            [self.nose_proximity.result_seconds, self.snout_towards_object_rays.result_seconds],
+            index=[f"ObservingSecNoseProximity{label}", ""],
         )
 
     def plot(self) -> None:
         fig, axes = self.video.subplots(nrows=3)
         fig.suptitle(self.heuristic_alias)
 
-        axes[0].set_title("NoseProximity")
         self.nose_proximity.plot(axes[0], self.video)
-
-        axes[1].set_title("NoseForwardDirectionRays")
-        self.nose_forward_direction_rays.plot(axes[1], self.video)
-
+        self.snout_towards_object_rays.plot(axes[1], self.video)
         self.plot_result(axes[2], self.nose_label)

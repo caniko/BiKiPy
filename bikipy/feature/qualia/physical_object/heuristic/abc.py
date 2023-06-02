@@ -24,7 +24,7 @@ class AbstractQualiaHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
         "considered in sequence with other components that are also filtered in sequence",
     )
 
-    heuristic_alias: ClassVar[str] = ...
+    heuristic_alias: ClassVar[str]
 
     @classmethod
     @property

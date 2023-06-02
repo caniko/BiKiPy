@@ -1,4 +1,5 @@
 from functools import cached_property
+from typing import Optional
 
 from matplotlib.axes import Axes
 from pydantic_numpy.dtype import NDArrayFp64
@@ -27,19 +28,20 @@ class ComputeInLineOfSight(AbstractComputeBooleanIndex):
             result = single_node_tolerance_model(result, self.video.fps)
         return result
 
-    def plot(self, ax: Axes, video: VideoMetadata, inspect_pixels: bool = False) -> None:
-        ray_travel_direction_point = video.prepare_coordinates_for_plotting(
-            self.ray_travel_direction_point, inspect_pixels
+    def plot(self, ax: Axes, video: Optional[VideoMetadata] = None, inspect_pixels: bool = False) -> None:
+        ray_travel_direction_point = (
+            video.prepare_coordinates_for_plotting(self.ray_travel_direction_point, inspect_pixels)
+            if video
+            else self.ray_travel_direction_point
         )
-        ray_vectors = video.prepare_coordinates_for_plotting(
-            unit_vector(self.ray_travel_direction_point - self.ray_start_point) * 0.025, inspect_pixels
-        )
+        ray_vectors = ray_travel_direction_point - self.ray_start_point
 
-        if inspect_pixels:
-            video.upscaled_video.ax_ticks_metric_to_pixel(ax)
+        if video:
+            ray_vectors = video.prepare_coordinates_for_plotting(unit_vector(ray_vectors), inspect_pixels) * 0.025
+            if inspect_pixels:
+                video.upscaled_video.ax_ticks_metric_to_pixel(ax)
 
         self.perimeter.plot(inspect_pixels=inspect_pixels, ax=ax)
-        ax.set_title(self.label, fontsize=video.upscaled_video.plotting_title_font_size)
 
         quiver_kwargs = {
             "angles": "xy",
@@ -65,4 +67,4 @@ class ComputeInLineOfSight(AbstractComputeBooleanIndex):
             **quiver_kwargs,
         )
 
-        ax.legend(**BOTTOM_LEGEND_KWARGS, fontsize=video.upscaled_video.plotting_default_font_size)
+        self.plot_finalization(ax, video)

@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as nt
 from pydantic import validate_arguments
-from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.feature.angle import clockwise_angel_2d
@@ -90,7 +90,7 @@ def clockwise_argsort_points(points: NDArrayFp64):
 
 
 @validate_arguments
-def clockwise_sort_points(points: NDArrayFp64, inspect: bool = False) -> NDArray:
+def clockwise_sort_points(points: NDArrayFp64, inspect: bool = False) -> nt.NDArray:
     # Sort from top-right point
     result = points[clockwise_argsort_points(points)]
 

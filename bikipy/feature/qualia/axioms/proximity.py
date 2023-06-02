@@ -56,17 +56,17 @@ class ComputeProximity(AbstractComputeBooleanIndex):
         return result
 
     @validate_arguments(config={"arbitrary_types_allowed": True})
-    def plot(self, ax: Axes, video: VideoMetadata, inspect_pixels: bool = False) -> None:
+    def plot(self, ax: Axes, video: Optional[VideoMetadata] = None, inspect_pixels: bool = False) -> None:
         assert self.result is not None
 
-        inside_perimeter_border_plot_scaled = video.prepare_coordinates_for_plotting(
-            self.should_be_inside_perimeter_border, inspect_pixels
-        )
+        inside_perimeter_border_plot_scaled = self.should_be_inside_perimeter_border
 
-        if inspect_pixels:
-            video.upscaled_video.ax_ticks_metric_to_pixel(ax)
-
-        ax.set_title(self.label, fontsize=video.upscaled_video.plotting_title_font_size)
+        if video:
+            inside_perimeter_border_plot_scaled = video.prepare_coordinates_for_plotting(
+                inside_perimeter_border_plot_scaled, inspect_pixels
+            )
+            if inspect_pixels:
+                video.upscaled_video.ax_ticks_metric_to_pixel(ax)
 
         self.perimeter.plot(ax=ax, inspect_pixels=inspect_pixels)
         self.perimeter_border.plot(ax=ax, inspect_pixels=inspect_pixels)
@@ -94,7 +94,7 @@ class ComputeProximity(AbstractComputeBooleanIndex):
                 *inside_perimeter_border_plot_scaled[self.outside_impenetrable_bi & not_result].T,
                 marker="x",
                 alpha=runtime_settings.matplotlib_scatter_alpha,
-                label="Outside impenetrable valid; other invalid",
+                label="Only outside impenetrable object",
                 color=next(color_map_iter),
             )
         if self.should_be_outside_perimeter_border is not None:
@@ -102,7 +102,7 @@ class ComputeProximity(AbstractComputeBooleanIndex):
                 *inside_perimeter_border_plot_scaled[self.outside_perimeter_border_bi & not_result].T,
                 marker="x",
                 alpha=runtime_settings.matplotlib_scatter_alpha,
-                label="Outside border valid; other invalid",
+                label="Only outside border",
                 color=next(color_map_iter),
             )
         if self.outside_perimeter is not None:
@@ -110,8 +110,8 @@ class ComputeProximity(AbstractComputeBooleanIndex):
                 *inside_perimeter_border_plot_scaled[self.outside_perimeter_bi & not_result].T,
                 marker="x",
                 alpha=runtime_settings.matplotlib_scatter_alpha,
-                label="Outside perimeter valid; other invalid",
+                label="Only outside perimeter",
                 color=next(color_map_iter),
             )
 
-        ax.legend(**BOTTOM_LEGEND_KWARGS, fontsize=video.upscaled_video.plotting_default_font_size)
+        self.plot_finalization(ax, video)

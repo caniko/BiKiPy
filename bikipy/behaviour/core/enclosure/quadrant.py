@@ -11,7 +11,7 @@ from bikipy.utils.math.discrete import (
     tolerance_modeled_boolean_index_truth_sequence_start_end_length,
 )
 from bikipy.utils.math.geometry import clockwise_sort_points
-from bikipy.utils.math.inside.polygon import parallel_point_inside_polygon
+from bikipy.utils.math.confinement.polygon import parallel_point_inside_polygon
 
 
 class Quadrant(BikipyModel):
@@ -27,7 +27,7 @@ class Quadrant(BikipyModel):
             self.fps,
         )
 
-    def plot_vertices(self, video: VideoMetadata) -> np.ndarray[float, np.float64]:
+    def plot_vertices(self, video: VideoMetadata) -> np.ndarray[float, np.dtype[np.float64]]:
         return video.prepare_coordinates_for_plotting(self.vertices_in_meters)
 
     @property
