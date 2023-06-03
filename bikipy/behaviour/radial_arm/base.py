@@ -278,7 +278,7 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
         return 100.0 * alternations / (self.sum_of_entries - 2)
 
     @cached_property
-    def _coordinates(self) -> tuple[NDArrayFp64, ...]:
+    def _coordinates(self) -> tuple[np.ndarray[float, np.dtype[np.float64]], ...]:
         return tuple(self.reader[node_label] for node_label in self.radial_arm_confinement_tracking_object_labels)
 
     @cached_property

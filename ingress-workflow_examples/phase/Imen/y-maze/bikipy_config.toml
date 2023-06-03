@@ -52,7 +52,7 @@ optional = ["label_prefix", "label_suffix", "manual_reference", "manual_shape", 
 optional = ["compressed_pickle_suffix", "debug", "disable_numba", "disable_process_pooling", "ignore_pre_existing_inspection_directory", "matplotlib_invert_y_axis", "matplotlib_scatter_alpha", "maximum_seconds_distraction", "minimum_seconds_tolerance", "only_physical_cores"]
 
 [runtime_settings.defined]
-#disable_process_pooling = true
+disable_process_pooling = true
 
 [reader]
 required = ["object_tracking_label_for_kinematics"]

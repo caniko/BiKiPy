@@ -8,10 +8,10 @@ from pydantic import Field, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.base import BikipyModel
-from bikipy.utils.collection_utils import generic_multi_indexer
 from bikipy.utils.math.calculus import np_abs_diff
 from bikipy.utils.math.discrete import TruthIslandMetadata
 from bikipy.utils.math.statistics import nan_average
+from bikipy.utils.pandas import generic_multi_indexer
 
 logger = getLogger(__name__)
 

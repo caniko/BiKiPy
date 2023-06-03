@@ -38,19 +38,19 @@ def detect_sequential_perimeter_presence(
 
     overlap_locations = {}
     for perimeter in inferior_to_superior_perimeter_instances:
-        confinement_booleans_index = single_node_tolerance_model(
+        confinement_boolean_index = single_node_tolerance_model(
             perimeter.confined_coordinate_boolean_index(coordinates), perimeter.video
         )
 
-        if presence[confinement_booleans_index].any():
-            overlap_locations[perimeter.label] = np.flatnonzero(presence[confinement_booleans_index])
+        if presence[confinement_boolean_index].any():
+            overlap_locations[perimeter.label] = np.flatnonzero(presence[confinement_boolean_index])
             presence[overlap_locations[perimeter.label]] = 0
             logger.info(
                 f"BaseSinglePerimeter {perimeter.label} has coordinate overlap with "
                 f"other perimeter_vertices, {overlap_locations[perimeter.label].size}"
             )
 
-        presence[confinement_booleans_index] = perimeter.int_id
+        presence[confinement_boolean_index] = perimeter.int_id
 
     valid_indices = np.nonzero(presence)
     if clean_outliers:
@@ -79,15 +79,15 @@ def detect_multi_node_sequential_perimeter_presence(
     perimeter_id_to_confinement = {}
 
     for perimeter in inferior_to_superior_perimeter_instances:
-        confinement_booleans_index = np.logical_and.reduce(
-            perimeter.confined_coordinate_boolean_index(coordinates) for coordinates in coordinates
+        confinement_boolean_index = np.logical_and.reduce(
+            [perimeter.confined_coordinate_boolean_index(coordinates) for coordinates in coordinates]
         )
-        perimeter_id_to_confinement[perimeter.int_id] = confinement_booleans_index
+        perimeter_id_to_confinement[perimeter.int_id] = confinement_boolean_index
 
-        if presence[confinement_booleans_index].any():
-            overlap_boolean_index = overlap_boolean_index | confinement_booleans_index
+        if presence[confinement_boolean_index].any():
+            overlap_boolean_index = overlap_boolean_index | confinement_boolean_index
 
-        presence[confinement_booleans_index] = perimeter.int_id
+        presence[confinement_boolean_index] = perimeter.int_id
 
     if inspect_arg:
         fig, ax = plt.subplots()

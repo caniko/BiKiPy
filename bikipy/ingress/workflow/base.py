@@ -31,11 +31,9 @@ from bikipy.ingress.utils.io import (
 )
 from bikipy.perimeter.base import Perimeter
 from bikipy.reader.base import BaseReader
-from bikipy.utils.collection_utils import (
-    copycat_assumes_levels_of_icon,
-    get_first_value_in_dict,
-)
+from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.misc import defaultdict_dict_factory, sheet_names_from_path
+from bikipy.utils.pandas import copycat_assumes_levels_of_icon
 
 if TYPE_CHECKING:
     from bikipy.behaviour.core.base import Experiment, ExperimentCLS, TrialCLS

@@ -266,7 +266,7 @@ class VideoMetadata(_VideoMetadataBase):
         **kwargs,
     ) -> tuple[Figure, Sequence[Axes]]:
         # Minimum dpi is set to 350
-        kwargs["dpi"] = max(MINIMUM_FIG_DPI, kwargs.get("dpi", default=0))
+        kwargs["dpi"] = max(MINIMUM_FIG_DPI, kwargs["dpi"]) if "dpi" in kwargs else MINIMUM_FIG_DPI
 
         fig, axes = plt.subplots(
             nrows,
