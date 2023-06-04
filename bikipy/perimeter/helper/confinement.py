@@ -5,7 +5,8 @@ import numpy as np
 import seaborn as sb
 from matplotlib import pyplot as plt
 from pydantic import validate_arguments
-from pydantic_numpy.dtype import NDArrayFp64
+from pydantic_numpy import NDArray
+from pydantic_numpy.dtype import NDArrayFp64, NDArrayBool
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.feature.tolerance.single import single_node_tolerance_model
@@ -17,69 +18,19 @@ from bikipy.utils.plot.inspect import InspectArg, generic_inspection_finalizatio
 logger = getLogger(__file__)
 
 
-@validate_arguments
-def detect_sequential_perimeter_presence(
-    coordinates: NDArrayFp64,
-    inferior_to_superior_perimeter_instances: Iterable[Perimeter],
-    clean_outliers: bool = True,
-) -> np.ndarray[bool, bool]:
-    """
-
-    :param coordinates:
-    :param inferior_to_superior_perimeter_instances:
-    :param clean_outliers:
-    :return:
-    """
-
-    presence = np.zeros(
-        coordinates.shape[0],
-        dtype=np.uint8 if len(inferior_to_superior_perimeter_instances) <= 255 else np.uint16,
-    )
-
-    overlap_locations = {}
-    for perimeter in inferior_to_superior_perimeter_instances:
-        confinement_boolean_index = single_node_tolerance_model(
-            perimeter.confined_coordinate_boolean_index(coordinates), perimeter.video
-        )
-
-        if presence[confinement_boolean_index].any():
-            overlap_locations[perimeter.label] = np.flatnonzero(presence[confinement_boolean_index])
-            presence[overlap_locations[perimeter.label]] = 0
-            logger.info(
-                f"BaseSinglePerimeter {perimeter.label} has coordinate overlap with "
-                f"other perimeter_vertices, {overlap_locations[perimeter.label].size}"
-            )
-
-        presence[confinement_boolean_index] = perimeter.int_id
-
-    valid_indices = np.nonzero(presence)
-    if clean_outliers:
-        presence = presence[valid_indices]
-
-    boolean_array = np.full(coordinates.shape[0], False, dtype=np.bool)
-    boolean_array[valid_indices] = True
-
-    return presence, valid_indices, boolean_array
-
-
 def detect_multi_node_sequential_perimeter_presence(
-    coordinates: Sequence[NDArrayFp64],
-    inferior_to_superior_perimeter_instances: Sequence[Perimeter],
-    inspect_arg: InspectArg = False,
-    **inspect_kwargs,
+    coordinates: Sequence[NDArrayFp64], inferior2superior_perimeter_set: PerimeterSet, all_or_false: bool = True
 ) -> np.ndarray[bool, bool]:
-    number_of_perimeters = len(inferior_to_superior_perimeter_instances)
-
     presence = np.zeros(
         coordinates[0].shape[0],
-        dtype=np.uint8 if number_of_perimeters <= 255 else np.uint16,
+        dtype=inferior2superior_perimeter_set.size_respective_dtype,
     )
     overlap_boolean_index = np.zeros(coordinates[0].shape[0], dtype=bool)
+    np_logic_func = np.logical_and.reduce if all_or_false else np.logical_or.reduce
 
     perimeter_id_to_confinement = {}
-
-    for perimeter in inferior_to_superior_perimeter_instances:
-        confinement_boolean_index = np.logical_and.reduce(
+    for perimeter in inferior2superior_perimeter_set.all_perimeters:
+        confinement_boolean_index = np_logic_func(
             [perimeter.confined_coordinate_boolean_index(coordinates) for coordinates in coordinates]
         )
         perimeter_id_to_confinement[perimeter.int_id] = confinement_boolean_index
@@ -89,28 +40,38 @@ def detect_multi_node_sequential_perimeter_presence(
 
         presence[confinement_boolean_index] = perimeter.int_id
 
-    if inspect_arg:
-        fig, ax = plt.subplots()
-
-        perimeter_set = PerimeterSet(perimeters=inferior_to_superior_perimeter_instances)
-
-        with sb.color_palette("cubehelix", n_colors=perimeter_set.number_of_vertices):
-            perimeter_set.plot(manual_ax=ax)
-
-        has_overlap = np.any(overlap_boolean_index)
-        coord_cmap = iter(sb.color_palette("Spectral", n_colors=number_of_perimeters + has_overlap + 1))
-
-        for color, (int_id, label) in zip(coord_cmap, perimeter_set.int_id_to_label.items()):
-            if np.any((boolean_index := presence == int_id)):
-                plot_coordinates(coordinates[boolean_index], ax, label=label, color=color)
-
-        plot_coordinates(coordinates[~np.any(presence, axis=0)], ax, label="NotConfined", color=next(coord_cmap))
-
-        if has_overlap:
-            plot_coordinates(coordinates[overlap_boolean_index], ax, label="Overlap", color=next(coord_cmap))
-
-        ax.legend(**BOTTOM_LEGEND_KWARGS)
-        fig.tight_layout()
-        generic_inspection_finalization(inspect_arg, f"0-{label}{INSPECT_FIG_FILE_FORMAT}", **inspect_kwargs)
-
     return presence
+
+
+def inspect_sequential_confinement(
+    inspect_arg: InspectArg,
+    perimeter_set: PerimeterSet,
+    coordinate: NDArrayFp64,
+    presence: NDArray,
+    overlap_boolean_index: NDArrayBool,
+    **inspect_kwargs,
+):
+    if not inspect_arg:
+        return
+
+    fig, ax = plt.subplots()
+
+    has_overlap = np.any(overlap_boolean_index)
+    coord_cmap = iter(sb.color_palette("Spectral", n_colors=perimeter_set.number_of_perimeters + has_overlap + 1))
+
+    for color, (int_id, label) in zip(coord_cmap, perimeter_set.int_id_to_label.items()):
+        perimeter_presence = presence == int_id
+        if has_overlap:
+            perimeter_presence[overlap_boolean_index] = False
+        if np.any(perimeter_presence):
+            plot_coordinates(coordinate[perimeter_presence], ax, label=label, color=color)
+
+    plot_coordinates(coordinate[~np.any(presence, axis=0)], ax, label="Outside", color=next(coord_cmap))
+
+    if has_overlap:
+        plot_coordinates(coordinate[overlap_boolean_index], ax, label="Overlap", color=next(coord_cmap))
+
+    ax.legend(**BOTTOM_LEGEND_KWARGS)
+    fig.tight_layout()
+
+    generic_inspection_finalization(inspect_arg, **inspect_kwargs)

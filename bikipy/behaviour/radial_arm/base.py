@@ -43,7 +43,7 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
 
     number_of_arms: ClassVar[Optional[int]]
 
-    radial_arm_confinement_tracking_object_labels: OrderedSet[str] = ...
+    tracking_labels_for_radial_arm_confinement: OrderedSet[str] = ...
 
     minimum_seconds_for_entry: float = 0.5
 
@@ -278,20 +278,20 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
         return 100.0 * alternations / (self.sum_of_entries - 2)
 
     @cached_property
-    def _coordinates(self) -> tuple[np.ndarray[float, np.dtype[np.float64]], ...]:
-        return tuple(self.reader[node_label] for node_label in self.radial_arm_confinement_tracking_object_labels)
+    def confinement_coordinates(self) -> tuple[np.ndarray[float, np.dtype[np.float64]], ...]:
+        return tuple(self.reader[node_label] for node_label in self.tracking_labels_for_radial_arm_confinement)
 
     @cached_property
     def _border_center_presence_data(self) -> np.ndarray[bool, bool]:
         return detect_multi_node_sequential_perimeter_presence(
-            self._coordinates, (self.center, *self.arms), clean_outliers=False
+            self.confinement_coordinates, PerimeterSet(perimeters=(*self.arms, self.center))
         )
 
     @cached_property
     def _border_presence_data(self):
         # alternation_sequence, valid_boolean_index
         return detect_multi_node_sequential_perimeter_presence(
-            self._coordinates,
+            self.confinement_coordinates,
             self.arms,
             clean_outliers=False,
             inspect_arg=self.class_inspect_arg,

@@ -5,9 +5,11 @@ from logging import getLogger
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Optional, Type, TypeVar
 
+import seaborn as sb
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
+from numpy import unsignedinteger
 from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
@@ -523,6 +525,10 @@ class PerimeterSet(BasePerimeter):
         return len(self.all_perimeters)
 
     @cached_property
+    def size_respective_dtype(self) -> Type[unsignedinteger]:
+        return np.uint8 if self.number_of_perimeters <= 255 else np.uint16
+
+    @cached_property
     def number_of_vertices(self) -> int:
         vertex_numbers = []
         for p in self.all_perimeters:
@@ -557,11 +563,12 @@ class PerimeterSet(BasePerimeter):
         else:
             ax = manual_ax
 
-        for perimeter in self.all_perimeters:
-            perimeter.plot_perimeter(manual_ax=ax, inspect_pixels=inspect_pixels, **perimeter_plot_kwargs)
+        with sb.color_palette("cubehelix", n_colors=self.number_of_vertices):
+            for perimeter in self.all_perimeters:
+                perimeter.plot_perimeter(manual_ax=ax, inspect_pixels=inspect_pixels, **perimeter_plot_kwargs)
 
-        if coordinates is not None:
-            ax = plot_coordinates(coordinates, ax, inspect_pixels, self.video)
+            if coordinates is not None:
+                plot_coordinates(coordinates, ax, inspect_pixels, self.video)
 
         if not manual_ax:
             ax.legend(**BOTTOM_LEGEND_KWARGS)

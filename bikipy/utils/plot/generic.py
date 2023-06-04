@@ -44,7 +44,7 @@ def plot_coordinates(
     video: Optional["VideoMetadata"] = None,
     color: Any = None,
     **plot_kwargs,
-):
+) -> Axes:
     if not ax:
         if video:
             _fig, ax = video.subplot()

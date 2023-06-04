@@ -23,19 +23,24 @@ def generic_inspection_finalization(
     potential_label: Optional[str] = None,
     debug_save_message: Optional[str] = None,
 ) -> None:
-    try:
-        # This should raise a TypeError if it is a bool and not a Path
-        file_path = inspect_arg / potential_label if potential_label else inspect_arg
+    if isinstance(inspect_arg, Path):
+        if inspect_arg.is_dir():
 
-        if file_path.is_dir():
-            logger.debug(f"Ensuring that {file_path} directory exists")
-            os.makedirs(file_path, exist_ok=True)
+            def img_name():
+                result = f"{current_idx}{potential_label}" if potential_label else str(current_idx)
+                return f"{result}{INSPECT_FIG_FILE_FORMAT}"
+
+            logger.debug(f"Ensuring that {inspect_arg} directory exists")
+            os.makedirs(inspect_arg, exist_ok=True)
 
             current_idx = 1
-            while (current_path := file_path / f"{current_idx}{INSPECT_FIG_FILE_FORMAT}").exists():
+            while (current_path := inspect_arg / img_name()).exists():
                 current_idx += 1
+
             file_path = current_path
         else:
+            file_path = inspect_arg / potential_label if potential_label else inspect_arg
+
             logger.debug(f"Ensuring that {file_path.parent} directory exists")
             os.makedirs(file_path.parent, exist_ok=True)
 
@@ -49,10 +54,9 @@ def generic_inspection_finalization(
 
         if debug_save_message:
             logger.debug(debug_save_message)
-
-    except TypeError:
+    else:
         # inspect_arg is most likely a boolean
         if inspect_arg:
             plt.show()
-    finally:
-        plt.close()
+
+    plt.close()

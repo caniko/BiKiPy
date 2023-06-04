@@ -199,7 +199,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             self.reader.kinematic_coordinates,
             self.center_rectangle_vertices,
             inspect_arg=self.class_inspect_arg,
-            potential_label=f"{self.label}{INSPECT_FIG_FILE_FORMAT}",
+            potential_label=self.label,
             video=self.video,
         )
 
