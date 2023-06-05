@@ -27,6 +27,7 @@ numba = { version = "*", allow-prereleases = true }
 scipy = "^1.8.0"
 scikit-learn = "^1.1.2"
 statsmodels = "^0.13.1"
+formulaic = "^0.6.1"
 scikit-guess = {git = "https://gitlab.com/madphysicist/scikit-guess"}
 
 pandas = { version = "^2.0.0", extras = ["performance", "compression", "hdf5", "parquet", "excel"] }

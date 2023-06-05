@@ -19,21 +19,31 @@ logger = getLogger(__file__)
 
 
 def ax_plot_coordinate_with_boolean_index(
-    ax, boolean_index: NDArrayBool, coordinates: NDArrayFp64, plot_false: bool = False, plot_line: bool = False
+    ax, boolean_index: NDArrayBool, coordinates: NDArrayFp64, plot_non_confined: bool = False, plot_line: bool = False
 ) -> None:
     if plot_line:
         x, y = coordinates.T
 
-        for start, end, length in boolean_index_truth_sequence_start_end(boolean_index):
-            ax.plot(x[start:end], y[start:end], c=plt.cm.winter(np.linspace(0, 1, length)), linewidth=3.0)
+        for start, end in boolean_index_truth_sequence_start_end(boolean_index):
+            for line_x, line_y, color in zip(
+                zip(x[start:end], x[start + 1 : end]),
+                zip(y[start:end], y[start + 1 : end]),
+                plt.cm.winter(np.linspace(0, 1, end - start - 1)),
+            ):
+                ax.plot(line_x, line_y, c=color, linewidth=3.0)
 
-        if plot_false:
-            for start, end, length in boolean_index_truth_sequence_start_end(~boolean_index):
-                ax.plot(x[start:end], y[start:end], c=plt.cm.Wistia(np.linspace(0.1, 1, length)), linewidth=3.0)
+        if plot_non_confined:
+            for start, end in boolean_index_truth_sequence_start_end(~boolean_index):
+                for line_x, line_y, color in zip(
+                    zip(x[start:end], x[start + 1 : end]),
+                    zip(y[start:end], y[start + 1 : end]),
+                    plt.cm.Wistia(np.linspace(0, 1, end - start - 1)),
+                ):
+                    ax.plot(line_x, line_y, c=color, linewidth=3.0)
 
     else:
         ax.scatter(*coordinates[boolean_index].T, label="Valid", color="dodgerblue")
-        if plot_false:
+        if plot_non_confined:
             ax.scatter(*coordinates[~boolean_index].T, label="Invalid", color="crimson")
 
 

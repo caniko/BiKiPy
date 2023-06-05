@@ -18,8 +18,8 @@ from bikipy.utils.collection_utils import (
     project_mask_to_original,
 )
 from bikipy.utils.graph import Graph
-from bikipy.utils.math.geometry import clockwise_sort_points
 from bikipy.utils.math.confinement.polygon import parallel_point_inside_polygon
+from bikipy.utils.math.geometry import clockwise_sort_points
 from bikipy.utils.math.vector import (
     nearest_point_on_line_segment_to_coordinates,
     ray_and_line_segment_intersection,

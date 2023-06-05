@@ -11,7 +11,6 @@ from bikipy.core.video import VideoMetadata
 from bikipy.feature.compute import AbstractComputeBooleanIndex
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import SinglePerimeter
-from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.color import make_color_map
 
 logger = getLogger(__name__)

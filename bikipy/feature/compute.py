@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Generic, Type, TypeVar, Optional
+from typing import Generic, Optional, Type, TypeVar
 
 from matplotlib.axes import Axes
 from pydantic import Extra, validate_arguments

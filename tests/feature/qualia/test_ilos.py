@@ -1,10 +1,6 @@
-import matplotlib.pyplot as plt
 import numpy as np
-from pydantic_numpy.dtype import NDArrayFp64
 
-from bikipy.feature.compute import AbstractComputeBooleanIndex
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
-from bikipy.perimeter.base import SinglePerimeter
 from tests.test_data.perimeter.test_perimeter_readers import (
     rectangle_perimeter_rectangle_test_object,
 )

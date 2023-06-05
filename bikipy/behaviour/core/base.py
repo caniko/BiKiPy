@@ -598,7 +598,7 @@ class BaseExperiment(Behaviour):
                             result[trial_class][trial_object.label] = executor.submit(
                                 attrgetter("analysis_series"), trial_object
                             )
-                            sleep(0.6)
+                            sleep(2)
 
                 for trial_class, trial_objects in self.trial_class_to_trial_objects.items():
                     for trial_object in trial_objects:

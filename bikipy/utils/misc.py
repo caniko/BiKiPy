@@ -58,9 +58,9 @@ def seek_next_file_index(filepath: Union[PurePath, str]) -> PurePath:
     return new_filepath
 
 
-def int_file_stem_incrementor(starting_filename: Path):
+def int_file_stem_incrementor(starting_filename: Path, delimiter: str = "-"):
     while starting_filename.exists():
-        split_stem = starting_filename.stem.split("-")
+        split_stem = starting_filename.stem.split(delimiter)
 
         try:
             int_id = int(split_stem[0]) + 1

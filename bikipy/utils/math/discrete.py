@@ -8,9 +8,7 @@ from bikipy.feature.tolerance.common import common_preparation
 TruthIslandMetadata = list[tuple[int, int, int]]
 
 
-def boolean_index_truth_sequence_start_end(
-    boolean_index: NDArrayBool, with_length: bool = False
-) -> TruthIslandMetadata | list[tuple[int, int]]:
+def boolean_index_truth_sequence_start_end(boolean_index: NDArrayBool) -> list[tuple[int, int]]:
     result = []
 
     array_length = len(boolean_index)
@@ -25,7 +23,7 @@ def boolean_index_truth_sequence_start_end(
             while boolean_index[idx] and idx < array_length:
                 idx += 1
 
-            result.append((start, idx, idx - start) if with_length else (start, idx))
+            result.append((start, idx))
 
         idx += 1
 

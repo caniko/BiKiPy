@@ -1,5 +1,7 @@
 from functools import cached_property
 
+import cv2
+import matplotlib.pyplot as plt
 from mextractor import constants
 from pydantic import DirectoryPath, FilePath
 
@@ -9,6 +11,8 @@ from bikipy.ingress.plugin.core.base import BasePlugin
 
 
 class PluginVideo(BasePlugin):
+    flip_frame: bool = True
+
     data_path: FilePath | DirectoryPath
 
     ingress_key = "video"
@@ -18,9 +22,14 @@ class PluginVideo(BasePlugin):
 
     @cached_property
     def video(self) -> VideoMetadata:
-        if self.data_path.suffix == constants.DUMP_PATH_SUFFIX:
-            return VideoMetadata.from_mextractor(self.data_path)
-        return VideoMetadata.from_path(video_path=self.data_path)
+        result = (
+            VideoMetadata.from_mextractor(self.data_path)
+            if self.data_path.suffix == constants.DUMP_PATH_SUFFIX
+            else VideoMetadata.from_path(video_path=self.data_path)
+        )
+        if self.flip_frame:
+            result.frame = cv2.flip(result.frame, 0)
+        return result
 
     def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> VideoMetadata:
         self._assert_correct_scope_trialwise_metadata()

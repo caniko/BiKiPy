@@ -27,7 +27,7 @@ PROJECTKIT_CONFIG_KEY_ORDER = OrderedSet(
 )
 
 INSPECT_FIG_FILE_FORMAT = ".jpg"
-MINIMUM_FIG_DPI = 350
+MINIMUM_FIG_DPI = 300
 ANALYSIS_CACHE_STEM_ID = "analysis_cache"
 
 plt_subplots_kwargs = {"dpi": MINIMUM_FIG_DPI}

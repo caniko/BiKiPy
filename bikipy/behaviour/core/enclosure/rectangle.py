@@ -18,10 +18,10 @@ from bikipy.behaviour.utils import (
 )
 from bikipy.feature.motion import TruthIslandMetadata, merge_motion_island_data
 from bikipy.perimeter import RectanglePerimeter
+from bikipy.utils.math.confinement.polygon import parallel_point_inside_polygon
 from bikipy.utils.math.discrete import (
     tolerance_modeled_boolean_index_truth_sequence_start_end_length,
 )
-from bikipy.utils.math.confinement.polygon import parallel_point_inside_polygon
 from bikipy.utils.pandas import motion_analysis_indexer_for_subsection
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.inspect import generic_inspection_finalization

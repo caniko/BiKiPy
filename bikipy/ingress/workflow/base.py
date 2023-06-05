@@ -7,6 +7,7 @@ from functools import cached_property
 from itertools import chain
 from logging import getLogger
 from pathlib import Path
+from shutil import rmtree
 from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 
 import numpy as np
@@ -32,7 +33,11 @@ from bikipy.ingress.utils.io import (
 from bikipy.perimeter.base import Perimeter
 from bikipy.reader.base import BaseReader
 from bikipy.utils.collection_utils import get_first_value_in_dict
-from bikipy.utils.misc import defaultdict_dict_factory, sheet_names_from_path
+from bikipy.utils.misc import (
+    defaultdict_dict_factory,
+    int_file_stem_incrementor,
+    sheet_names_from_path,
+)
 from bikipy.utils.pandas import copycat_assumes_levels_of_icon
 
 if TYPE_CHECKING:
@@ -88,7 +93,11 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
     ingress_defined_perimeters: dict[str, Perimeter] = {}
 
-    deprecated_project_settings_file_name: bool = False
+    lazy_dev_mode: bool = Field(
+        False,
+        description="Quality of life improvements for the lazy developer. "
+        "Currently changes the name of the inspection if there is an exception during analysis",
+    )
 
     _experiment_data_defined: bool = False
     _trial_id_to_trial_class_name: dict[Label, str] = {}
@@ -358,7 +367,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
     @property
     def settings_path(self) -> FilePath:
-        return get_project_settings_path(self.project_directory, self.deprecated_project_settings_file_name)
+        return get_project_settings_path(self.project_directory)
 
     @property
     def metadata_path(self) -> FilePath:
@@ -600,7 +609,11 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             try:
                 with Profile() as pr:
                     self.experiment.analyze_trials()
-            finally:
+            except Exception as e:
+                if self.lazy_dev_mode:
+                    rmtree(self.inspect_directory_path)
+                raise e
+            else:
                 stats = pstats.Stats(pr)
                 stats.sort_stats(pstats.SortKey.TIME)
                 stats.dump_stats(self.inspect_directory_path / "performance_analysis.prof")

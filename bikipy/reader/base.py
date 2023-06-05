@@ -376,7 +376,9 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     @validate_arguments(config={"arbitrary_types_allowed": True})
     def plot_boolean_index(self, boolean_index: NDArrayBool, ax: Axes, label_to_plot: Optional[str] = None) -> None:
         coordinates_for_plot = self.coordinates_for_plot(label_to_plot or self.object_tracking_label_for_kinematics)
-        ax_plot_coordinate_with_boolean_index(ax, boolean_index, coordinates_for_plot, plot_line=True, plot_false=False)
+        ax_plot_coordinate_with_boolean_index(
+            ax, boolean_index, coordinates_for_plot, plot_line=True, plot_non_confined=False
+        )
         plt.legend(**BOTTOM_LEGEND_KWARGS)
 
     def _compute_midpoint(

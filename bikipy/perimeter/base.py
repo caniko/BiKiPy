@@ -5,9 +5,9 @@ from logging import getLogger
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Optional, Type, TypeVar
 
-import seaborn as sb
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sb
 from matplotlib.axes import Axes
 from numpy import unsignedinteger
 from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments

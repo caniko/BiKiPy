@@ -6,6 +6,8 @@ from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 
 class PluginFileStemParse(ABC):
     def __init__(self, stem: str, plugin_scope: PluginScope):
+        self.stage: str | None
+
         if plugin_scope == PluginScope.TRIALWISE:
             self.stage, info = stem.split(".")
         else:

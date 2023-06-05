@@ -265,8 +265,8 @@ class VideoMetadata(_VideoMetadataBase):
         exclude_imaging_from_rc_coord: Optional[tuple[tuple[int, int], ...]] = None,
         **kwargs,
     ) -> tuple[Figure, Sequence[Axes]]:
-        # Minimum dpi is set to 350
-        kwargs["dpi"] = max(MINIMUM_FIG_DPI, kwargs["dpi"]) if "dpi" in kwargs else MINIMUM_FIG_DPI
+        # TODO: Minimum dpi is set to 300
+        # kwargs["dpi"] = max(MINIMUM_FIG_DPI, kwargs["dpi"]) if "dpi" in kwargs else MINIMUM_FIG_DPI
 
         fig, axes = plt.subplots(
             nrows,

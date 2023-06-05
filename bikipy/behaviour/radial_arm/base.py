@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from ordered_set import OrderedSet
 from pydantic import PositiveInt, validator
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayBool
 
 from bikipy.behaviour.core.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import (
@@ -97,13 +97,13 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
     @classmethod
     @property
     def _center_arm_labels(cls) -> tuple[str, ...]:
-        return "Center", *cls.arm_labels
+        return *cls.arm_labels, "Center"
 
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
         upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("center", "arms"))
+        upstream.update(("arms", "center"))
         return upstream
 
     @validator("center")
@@ -135,12 +135,13 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
         return PerimeterSet(perimeters=self.perimeters)
 
     @property
-    def alternation_sequence(self) -> np.ndarray[int, np.dtype[np.uint8]]:
+    def alternation_sequence_with_center(self) -> np.ndarray[int, np.dtype[np.uint8]]:
         result, overlap_boolean_index = detect_multi_node_sequential_perimeter_presence(
             self.confinement_coordinates, self.perimeter_set
         )
         inspect_sequential_confinement(
             self.inspect_subdir_or_bool("alternation_sequence_w/center"),
+            self.video,
             self.perimeter_set,
             self.reader.kinematic_coordinates,
             result,
@@ -149,14 +150,15 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
         return result
 
     @cached_property
-    def alternation_sequence_with_center(self) -> np.ndarray[bool, bool]:
-        perimeter_set = PerimeterSet(perimeters=self.arms)
+    def alternation_sequence(self) -> np.ndarray[int, np.dtype[np.uint8] | np.dtype[np.uint16]]:
+        perimeter_set_only_arms = PerimeterSet(perimeters=self.arms)
         result, overlap_boolean_index = detect_multi_node_sequential_perimeter_presence(
-            self.confinement_coordinates, perimeter_set
+            self.confinement_coordinates, perimeter_set_only_arms
         )
         inspect_sequential_confinement(
             self.inspect_subdir_or_bool("alternation_sequence"),
-            perimeter_set,
+            self.video,
+            perimeter_set_only_arms,
             self.reader.kinematic_coordinates,
             result,
             overlap_boolean_index,
@@ -164,7 +166,7 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
         return result
 
     @cached_property
-    def reduced_alternation_sequence_without_center(self) -> np.ndarray[int, np.dtype[np.uint8]]:
+    def reduced_alternation_sequence(self) -> np.ndarray[int, np.dtype[np.uint8] | np.dtype[np.uint16]]:
         result = reduce_repeating_sequences(
             self.alternation_sequence, round(self.video.fps * self.minimum_seconds_for_entry)
         )
@@ -172,13 +174,7 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
 
     @cached_property
     def sum_of_entries(self) -> int:
-        return len(self.reduced_alternation_sequence_without_center) - 1
-
-    @cached_property
-    def reduced_alternation_sequence_with_center(self):
-        return reduce_repeating_sequences(
-            self.alternation_sequence_with_center, round(self.video.fps * self.minimum_seconds_for_entry)
-        )
+        return len(self.reduced_alternation_sequence) - 1
 
     @cached_property
     def area_to_confinement_boolean_index(self) -> dict[str, NDArrayBool]:
@@ -217,9 +213,9 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
         -------
         dict, arm label vs alternations to arm
         """
-        result = {k: int(v) for k, v in unique_with_counts_zipped(self.reduced_alternation_sequence_without_center)}
+        result = {k: int(v) for k, v in unique_with_counts_zipped(self.reduced_alternation_sequence)}
 
-        start_loc = self.reduced_alternation_sequence_without_center[0]
+        start_loc = self.reduced_alternation_sequence[0]
         assert result[start_loc] > 0
         result[start_loc] -= 1
 
@@ -255,7 +251,7 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
         """
         distribution = copy(self._arm_permutation_to_zero)
         for i in range(self.sum_of_entries):
-            current_permutation = self.reduced_alternation_sequence_without_center[i : i + self.arm_len]
+            current_permutation = self.reduced_alternation_sequence[i : i + self.arm_len]
             if all(arm.int_id in current_permutation for arm in self.arms):
                 distribution[tuple(current_permutation)] += 1
 
@@ -284,7 +280,7 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
 
         alternations = 0
         for i in range(self.sum_of_entries):
-            current_permutation = self.reduced_alternation_sequence_without_center[i : i + self.arm_len]
+            current_permutation = self.reduced_alternation_sequence[i : i + self.arm_len]
             if all(arm.int_id in current_permutation for arm in self.arms):
                 alternations += 1
 
@@ -315,32 +311,32 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
     def _analysis_series_list(self) -> list[pd.Series]:
         upstream_list = super()._analysis_series_list
 
-        upstream_list.append(
-            pd.Series(
-                (
-                    self.spontaneous_alternations,
-                    *self.arm_to_entries.values(),
-                    self.sum_of_entries,
-                    *self.permutation_alternation_distribution.values(),
-                    self.sum_of_permutation_alternation_distribution,
-                    *self.area_to_seconds_spent.values(),
-                    self.sum_of_seconds_in_arms,
-                    self.sum_of_seconds_in_arms_and_center,
-                    *chain(*self.area_to_motion.values()),
-                ),
-                index=[
-                    ("SpontaneousAlternations", ""),
-                    *feature_2d_multi_indexer("ArmEntries", self.arm_labels),
-                    ("ArmEntries", "Sum"),
-                    *feature_2d_multi_indexer("PermutationAlternation", self._arm_label_permutations_as_string),
-                    ("PermutationAlternation", "Sum"),
-                    *feature_2d_multi_indexer("SecondsInArea", self._center_arm_labels),
-                    ("SecondsInArea", "Arms"),
-                    ("SecondsInArea", "All"),
-                    *bulk_motion_analysis_indexer(self._center_arm_labels, 2),
-                ],
-            )
+        # stored in variable for easier debugging
+
+        values = (
+            self.spontaneous_alternations,
+            *self.arm_to_entries.values(),
+            self.sum_of_entries,
+            *self.permutation_alternation_distribution.values(),
+            self.sum_of_permutation_alternation_distribution,
+            *self.area_to_seconds_spent.values(),
+            self.sum_of_seconds_in_arms,
+            self.sum_of_seconds_in_arms_and_center,
+            *chain(*self.area_to_motion.values()),
         )
+        indices = [
+            ("SpontaneousAlternations", ""),
+            *feature_2d_multi_indexer("ArmEntries", self.arm_labels),
+            ("ArmEntries", "Sum"),
+            *feature_2d_multi_indexer("PermutationAlternation", self._arm_label_permutations_as_string),
+            ("PermutationAlternation", "Sum"),
+            *feature_2d_multi_indexer("SecondsInArea", self._center_arm_labels),
+            ("SecondsInArea", "Arms"),
+            ("SecondsInArea", "All"),
+            *bulk_motion_analysis_indexer(self._center_arm_labels, 2),
+        ]
+
+        upstream_list.append(pd.Series(values, index=indices))
 
         return upstream_list
 

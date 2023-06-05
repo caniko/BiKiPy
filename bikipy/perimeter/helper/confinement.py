@@ -1,16 +1,13 @@
 from logging import getLogger
-from typing import Iterable, Sequence
+from typing import Sequence
 
 import numpy as np
 import seaborn as sb
-from matplotlib import pyplot as plt
-from pydantic import validate_arguments
 from pydantic_numpy import NDArray
-from pydantic_numpy.dtype import NDArrayFp64, NDArrayBool
+from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
-from bikipy._constant import INSPECT_FIG_FILE_FORMAT
-from bikipy.feature.tolerance.single import single_node_tolerance_model
-from bikipy.perimeter.base import Perimeter, PerimeterSet
+from bikipy.core.video import VideoMetadata
+from bikipy.perimeter.base import PerimeterSet
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.generic import plot_coordinates
 from bikipy.utils.plot.inspect import InspectArg, generic_inspection_finalization
@@ -52,6 +49,7 @@ def detect_multi_node_sequential_perimeter_presence(
 
 def inspect_sequential_confinement(
     inspect_arg: InspectArg,
+    video: VideoMetadata,
     perimeter_set: PerimeterSet,
     coordinate: NDArrayFp64,
     presence: NDArray,
@@ -61,10 +59,10 @@ def inspect_sequential_confinement(
     if not inspect_arg:
         return
 
-    fig, ax = plt.subplots()
+    fig, ax = video.subplot()
 
     has_overlap = np.any(overlap_boolean_index)
-    coord_cmap = iter(sb.color_palette("Spectral", n_colors=perimeter_set.number_of_perimeters + has_overlap + 1))
+    coord_cmap = iter(sb.color_palette("Spectral", n_colors=perimeter_set.number_of_perimeters + has_overlap + 2))
 
     for color, (int_id, label) in zip(coord_cmap, perimeter_set.int_id_to_label.items()):
         perimeter_presence = presence == int_id

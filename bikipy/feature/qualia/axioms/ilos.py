@@ -10,7 +10,6 @@ from bikipy.feature.compute import AbstractComputeBooleanIndex
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.utils.math.vector import unit_vector
-from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 
 
 class ComputeInLineOfSight(AbstractComputeBooleanIndex):

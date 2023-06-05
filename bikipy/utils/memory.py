@@ -21,6 +21,6 @@ def current_memory_headroom_gb(**kwargs) -> float:
     return current_memory_headroom(**kwargs) / 10**9
 
 
-def wait_for_more_physical_memory():
+def wait_for_more_physical_memory() -> None:
     while 0 > current_memory_headroom():
         sleep(1)

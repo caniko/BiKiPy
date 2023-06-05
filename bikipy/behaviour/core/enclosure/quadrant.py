@@ -6,12 +6,12 @@ from pydantic_numpy import NDArrayFp64
 from bikipy.core.base import BikipyModel
 from bikipy.core.video import VideoMetadata
 from bikipy.feature.motion import merge_motion_island_data
+from bikipy.utils.math.confinement.polygon import parallel_point_inside_polygon
 from bikipy.utils.math.discrete import (
     TruthIslandMetadata,
     tolerance_modeled_boolean_index_truth_sequence_start_end_length,
 )
 from bikipy.utils.math.geometry import clockwise_sort_points
-from bikipy.utils.math.confinement.polygon import parallel_point_inside_polygon
 
 
 class Quadrant(BikipyModel):
