@@ -22,6 +22,7 @@ from bikipy.feature.motion import Motion, bulk_motion_analysis_indexer
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.perimeter.helper.confinement import (
     detect_multi_node_sequential_perimeter_presence,
+    inspect_sequential_confinement,
 )
 from bikipy.perimeter.mixin import TrialWithPerimeterMixin
 from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
@@ -119,6 +120,10 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
 
     @property
     def perimeters(self):
+        """
+        Do not change the order of the perimeters, this will break the alternation sequence,
+        which uses it as inferior to superior sequence for `detect_multi_node_sequential_perimeter_presence`
+        """
         return *self.arms, self.center
 
     @cached_property
@@ -131,11 +136,32 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
 
     @property
     def alternation_sequence(self) -> np.ndarray[int, np.dtype[np.uint8]]:
-        return self._border_presence_data[0]
+        result, overlap_boolean_index = detect_multi_node_sequential_perimeter_presence(
+            self.confinement_coordinates, self.perimeter_set
+        )
+        inspect_sequential_confinement(
+            self.inspect_subdir_or_bool("alternation_sequence_w/center"),
+            self.perimeter_set,
+            self.reader.kinematic_coordinates,
+            result,
+            overlap_boolean_index,
+        )
+        return result
 
-    @property
-    def valid_boolean_index(self) -> np.ndarray[bool, bool]:
-        return self._border_presence_data[1]
+    @cached_property
+    def alternation_sequence_with_center(self) -> np.ndarray[bool, bool]:
+        perimeter_set = PerimeterSet(perimeters=self.arms)
+        result, overlap_boolean_index = detect_multi_node_sequential_perimeter_presence(
+            self.confinement_coordinates, perimeter_set
+        )
+        inspect_sequential_confinement(
+            self.inspect_subdir_or_bool("alternation_sequence"),
+            perimeter_set,
+            self.reader.kinematic_coordinates,
+            result,
+            overlap_boolean_index,
+        )
+        return result
 
     @cached_property
     def reduced_alternation_sequence_without_center(self) -> np.ndarray[int, np.dtype[np.uint8]]:
@@ -147,14 +173,6 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
     @cached_property
     def sum_of_entries(self) -> int:
         return len(self.reduced_alternation_sequence_without_center) - 1
-
-    @property
-    def alternation_sequence_with_center(self):
-        return self._border_center_presence_data[0]
-
-    @property
-    def valid_boolean_index_with_center(self) -> np.ndarray[bool, bool]:
-        return self._border_center_presence_data[1]
 
     @cached_property
     def reduced_alternation_sequence_with_center(self):
@@ -280,23 +298,6 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
     @cached_property
     def confinement_coordinates(self) -> tuple[np.ndarray[float, np.dtype[np.float64]], ...]:
         return tuple(self.reader[node_label] for node_label in self.tracking_labels_for_radial_arm_confinement)
-
-    @cached_property
-    def _border_center_presence_data(self) -> np.ndarray[bool, bool]:
-        return detect_multi_node_sequential_perimeter_presence(
-            self.confinement_coordinates, PerimeterSet(perimeters=(*self.arms, self.center))
-        )
-
-    @cached_property
-    def _border_presence_data(self):
-        # alternation_sequence, valid_boolean_index
-        return detect_multi_node_sequential_perimeter_presence(
-            self.confinement_coordinates,
-            self.arms,
-            clean_outliers=False,
-            inspect_arg=self.class_inspect_arg,
-            inspect_coords=self.reader.kinematic_coordinates,
-        )
 
     @cached_property
     def _arm_permutation_to_zero(self):

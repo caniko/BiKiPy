@@ -5,7 +5,7 @@ from typing import ClassVar, Optional
 
 import pandas as pd
 from compress_pickle import compress_pickle
-from pydantic import DirectoryPath, Field, FilePath
+from pydantic import DirectoryPath, Field, FilePath, validate_arguments
 from pydantic_numpy.dtype import NDArrayUint8
 
 from bikipy.core.base import BikipyConfigModel, BikipyHashable
@@ -77,6 +77,14 @@ class InspectPlotMixin(BikipyConfigModel):
 
         return self.inspect_arg
 
+    @validate_arguments
+    def inspect_subdir_or_bool(self, subdir_name: str) -> DirectoryPath | bool:
+        if isinstance(self.inspect_arg, Path):
+            return self.inspect_arg / subdir_name
+        assert isinstance(self.inspect_arg, bool)
+        return self.inspect_arg
+
+    @validate_arguments
     def save(self, manual_save_path: Optional[DirectoryPath] = None) -> None:
         if manual_save_path:
             save_directory_path = manual_save_path

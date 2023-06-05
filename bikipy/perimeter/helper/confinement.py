@@ -20,7 +20,14 @@ logger = getLogger(__file__)
 
 def detect_multi_node_sequential_perimeter_presence(
     coordinates: Sequence[NDArrayFp64], inferior2superior_perimeter_set: PerimeterSet, all_or_false: bool = True
-) -> np.ndarray[bool, bool]:
+) -> np.ndarray[int, np.dtype[np.uint8] | np.dtype[np.uint16]]:
+    """
+
+    :param coordinates:
+    :param inferior2superior_perimeter_set:
+    :param all_or_false:
+    :return:
+    """
     presence = np.zeros(
         coordinates[0].shape[0],
         dtype=inferior2superior_perimeter_set.size_respective_dtype,
@@ -40,7 +47,7 @@ def detect_multi_node_sequential_perimeter_presence(
 
         presence[confinement_boolean_index] = perimeter.int_id
 
-    return presence
+    return presence, overlap_boolean_index
 
 
 def inspect_sequential_confinement(
