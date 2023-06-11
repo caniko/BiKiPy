@@ -365,13 +365,13 @@ SinglePerimeter = TypeVar("SinglePerimeter", bound=BaseSinglePerimeter)
 # TODO: Variadic generics Pydantic V2.1
 class PerimeterSet(BasePerimeter):
     perimeters: list[SinglePerimeter]
-    restricted_perimeters: Optional[list[SinglePerimeter]]
+    restricting_perimeters: Optional[list[SinglePerimeter]]
 
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
         upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("perimeters", "restricted_perimeters"))
+        upstream.update(("perimeters", "restricting_perimeters"))
         return upstream
 
     @property
@@ -383,21 +383,21 @@ class PerimeterSet(BasePerimeter):
     def __mod__(self, other: "PerimeterSet") -> "PerimeterSet":
         return PerimeterSet(
             perimeters=self.perimeters + other.perimeters,
-            restricted_perimeters=self.restricted_perimeters + other.restricted_perimeters,
+            restricting_perimeters=self.restricting_perimeters + other.restricting_perimeters,
         )
 
     def __add__(self, other: SinglePerimeter) -> "PerimeterSet":
         # Subtraction includes the area in the PerimeterSet
         return PerimeterSet(
             perimeters=self.perimeters + other,
-            restricted_perimeters=self.restricted_perimeters,
+            restricting_perimeters=self.restricting_perimeters,
         )
 
     def __sub__(self, other: SinglePerimeter) -> "PerimeterSet":
         # Subtraction excludes the area from the PerimeterSet
         return PerimeterSet(
             perimeters=self.perimeters,
-            restricted_perimeters=self.restricted_perimeters + other,
+            restricting_perimeters=self.restricting_perimeters + other,
         )
 
     def __getitem__(self, item: Label) -> SinglePerimeter:
@@ -443,9 +443,9 @@ class PerimeterSet(BasePerimeter):
 
     def combined_framewise_confined_coordinates(self, coordinates: NDArrayFp64) -> np.ndarray[bool, bool]:
         present = np.any([perimeter.confined_coordinate_boolean_index(coordinates) for perimeter in self.perimeters])
-        if self.restricted_perimeters:
+        if self.restricting_perimeters:
             present = present & ~np.any(
-                [perimeter.confined_coordinate_boolean_index(coordinates) for perimeter in self.restricted_perimeters]
+                [perimeter.confined_coordinate_boolean_index(coordinates) for perimeter in self.restricting_perimeters]
             )
         return present
 
@@ -463,11 +463,11 @@ class PerimeterSet(BasePerimeter):
             perimeters=tuple(
                 perimeter.change_reference(**perimeter_change_reference_kwargs) for perimeter in self.perimeters
             ),
-            restricted_perimeters=tuple(
+            restricting_perimeters=tuple(
                 perimeter.change_reference(**perimeter_change_reference_kwargs)
-                for perimeter in self.restricted_perimeters
+                for perimeter in self.restricting_perimeters
             )
-            if self.restricted_perimeters
+            if self.restricting_perimeters
             else None,
         )
 
@@ -512,9 +512,9 @@ class PerimeterSet(BasePerimeter):
 
     @property
     def all_perimeters(self) -> tuple[SinglePerimeter, ...]:
-        if not self.restricted_perimeters:
+        if not self.restricting_perimeters:
             return tuple(self.perimeters)
-        return *self.perimeters, *self.restricted_perimeters
+        return *self.perimeters, *self.restricting_perimeters
 
     @property
     def labels(self) -> tuple[str, ...]:
@@ -612,13 +612,13 @@ def perimeter_set_from_makesense(
 def perimeter_set_from_image_name_to_perimeters(image_name_to_perimeters: dict[str, "SinglePerimeter"]):
     result = {}
     for image_name, perimeters in image_name_to_perimeters.items():
-        filtered_perimeters, restricted_perimeters = [], []
+        filtered_perimeters, restricting_perimeters = [], []
         for label, perimeter in perimeters.items():
             if isinstance(label, str) and label.lower().startswith("restricted"):
-                restricted_perimeters.append(perimeter)
+                restricting_perimeters.append(perimeter)
             else:
                 filtered_perimeters.append(perimeter)
         result[image_name] = PerimeterSet(
-            perimeters=filtered_perimeters, restricted_perimeters=restricted_perimeters, label=image_name
+            perimeters=filtered_perimeters, restricting_perimeters=restricting_perimeters, label=image_name
         )
     return result
