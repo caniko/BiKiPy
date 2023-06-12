@@ -208,7 +208,7 @@ modules.xml
 
 ### Example data
 dataset/
-bikipy_ingress_cache/
+*bikipy_ingress_cache/
 *inspect/
 inspect.7z
 inspect.tar.gz

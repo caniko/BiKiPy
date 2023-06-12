@@ -1,7 +1,6 @@
 from functools import cached_property
 
 import cv2
-import matplotlib.pyplot as plt
 from mextractor import constants
 from pydantic import DirectoryPath, FilePath
 
