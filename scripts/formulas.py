@@ -5,12 +5,11 @@ from parsimonious.nodes import NodeVisitor
 # define the grammar
 grammar = Grammar(
     """
-    expr = or_expr / and_expr / not_expr / parens
+    expr = or_expr / and_expr / not_expr
     or_expr = var "or" var
     and_expr = var "and" var
-    not_expr = "not" var
-    parens = "(" expr ")"
-    var = ~"[a-z]+"
+    not_expr = ("not" / "~") var
+    var = ~r"\w+"
     """
 )
 
