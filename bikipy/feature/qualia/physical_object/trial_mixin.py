@@ -13,6 +13,7 @@ from bikipy.feature.qualia.physical_object.analysis.mapping import (
 from bikipy.feature.qualia.physical_object.heuristic.abc import QualiaHeuristic
 from bikipy.feature.qualia.physical_object.heuristic.mapping import HEURISTIC_MAP
 from bikipy.perimeter.base import SinglePerimeter
+from bikipy.perimeter.helper.confinement import ConfinementSequence
 from bikipy.perimeter.mixin import TrialWithPerimeterMixin
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 
@@ -36,7 +37,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         return tuple(self.physical_object_perimeters)
 
     @cached_property
-    def po_heuristic_alias_to_physical_objects_heuristic(
+    def po_heuristic_to_physical_objects_heuristic(
         self,
     ) -> dict[str, list[QualiaHeuristic]]:
         result = defaultdict(list)
@@ -57,7 +58,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         for (
             heuristic_alias,
             physical_objects_heuristic,
-        ) in self.po_heuristic_alias_to_physical_objects_heuristic.items():
+        ) in self.po_heuristic_to_physical_objects_heuristic.items():
             try:
                 current_inspect_arg = self.inspect_arg / heuristic_alias
             except TypeError:
@@ -83,7 +84,30 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     @property
     def all_summary_series(self) -> list[pd.Series]:
         result = []
-        for physical_objects_heuristics in self.po_heuristic_alias_to_physical_objects_heuristic.values():
+        for physical_objects_heuristics in self.po_heuristic_to_physical_objects_heuristic.values():
             for physical_objects_heuristic in physical_objects_heuristics:
                 result.append(physical_objects_heuristic.summary_series)
         return result
+
+    @cached_property
+    def po_heuristic_to_object_alternation_sequence(self) -> dict[str, ConfinementSequence]:
+        perimeter_set_only_arms = PerimeterSet(perimeters=self.arms)
+        result, overlap_boolean_index = detect_multi_node_sequential_perimeter_presence(
+            self.confinement_coordinates, perimeter_set_only_arms
+        )
+        inspect_sequential_confinement(
+            self.inspect_subdir_or_bool("alternation_sequence"),
+            self.video,
+            perimeter_set_only_arms,
+            self.reader.kinematic_coordinates,
+            result,
+            overlap_boolean_index,
+        )
+        return result
+
+    @cached_property
+    def reduced_alternation_sequence(self) -> ConfinementSequence:
+        result = reduce_repeating_sequences(
+            self.alternation_sequence, round(self.video.fps * self.minimum_seconds_for_entry)
+        )
+        return result[np.nonzero(result)]

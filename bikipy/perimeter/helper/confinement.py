@@ -14,28 +14,31 @@ from bikipy.utils.plot.inspect import InspectArg, generic_inspection_finalizatio
 
 logger = getLogger(__file__)
 
+# uint8 when there are 255 or fewer perimeters in the trial.
+ConfinementSequence = np.ndarray[int, np.dtype[np.uint8] | np.dtype[np.uint16]]
+
 
 def detect_multi_node_sequential_perimeter_presence(
-    coordinates: Sequence[NDArrayFp64], inferior2superior_perimeter_set: PerimeterSet, all_or_false: bool = True
-) -> np.ndarray[int, np.dtype[np.uint8] | np.dtype[np.uint16]]:
+    coordinate_set: Sequence[NDArrayFp64], inferior2superior_perimeter_set: PerimeterSet, all_or_false: bool = True
+) -> ConfinementSequence:
     """
 
-    :param coordinates:
+    :param coordinate_set:
     :param inferior2superior_perimeter_set:
     :param all_or_false:
     :return:
     """
     presence = np.zeros(
-        coordinates[0].shape[0],
+        coordinate_set[0].shape[0],
         dtype=inferior2superior_perimeter_set.size_respective_dtype,
     )
-    overlap_boolean_index = np.zeros(coordinates[0].shape[0], dtype=bool)
+    overlap_boolean_index = np.zeros(coordinate_set[0].shape[0], dtype=bool)
     np_logic_func = np.logical_and.reduce if all_or_false else np.logical_or.reduce
 
     perimeter_id_to_confinement = {}
     for perimeter in inferior2superior_perimeter_set.all_perimeters:
         confinement_boolean_index = np_logic_func(
-            [perimeter.confined_coordinate_boolean_index(coordinates) for coordinates in coordinates]
+            [perimeter.confined_coordinate_boolean_index(coordinates) for coordinates in coordinate_set]
         )
         perimeter_id_to_confinement[perimeter.int_id] = confinement_boolean_index
 
@@ -51,7 +54,7 @@ def inspect_sequential_confinement(
     inspect_arg: InspectArg,
     video: VideoMetadata,
     perimeter_set: PerimeterSet,
-    coordinate: NDArrayFp64,
+    coordinates: NDArrayFp64,
     presence: NDArray,
     overlap_boolean_index: NDArrayBool,
     **inspect_kwargs,
@@ -69,12 +72,12 @@ def inspect_sequential_confinement(
         if has_overlap:
             perimeter_presence[overlap_boolean_index] = False
         if np.any(perimeter_presence):
-            plot_coordinates(coordinate[perimeter_presence], ax, label=label, color=color)
+            plot_coordinates(coordinates[perimeter_presence], ax, label=label, color=color)
 
-    plot_coordinates(coordinate[~np.any(presence, axis=0)], ax, label="Outside", color=next(coord_cmap))
+    plot_coordinates(coordinates[~np.any(presence, axis=0)], ax, label="Outside", color=next(coord_cmap))
 
     if has_overlap:
-        plot_coordinates(coordinate[overlap_boolean_index], ax, label="Overlap", color=next(coord_cmap))
+        plot_coordinates(coordinates[overlap_boolean_index], ax, label="Overlap", color=next(coord_cmap))
 
     ax.legend(**BOTTOM_LEGEND_KWARGS)
     fig.tight_layout()

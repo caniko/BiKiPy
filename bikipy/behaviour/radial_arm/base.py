@@ -23,6 +23,7 @@ from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.perimeter.helper.confinement import (
     detect_multi_node_sequential_perimeter_presence,
     inspect_sequential_confinement,
+    ConfinementSequence,
 )
 from bikipy.perimeter.mixin import TrialWithPerimeterMixin
 from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
@@ -150,7 +151,7 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
         return result
 
     @cached_property
-    def alternation_sequence(self) -> np.ndarray[int, np.dtype[np.uint8] | np.dtype[np.uint16]]:
+    def alternation_sequence(self) -> ConfinementSequence:
         perimeter_set_only_arms = PerimeterSet(perimeters=self.arms)
         result, overlap_boolean_index = detect_multi_node_sequential_perimeter_presence(
             self.confinement_coordinates, perimeter_set_only_arms
@@ -166,7 +167,7 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
         return result
 
     @cached_property
-    def reduced_alternation_sequence(self) -> np.ndarray[int, np.dtype[np.uint8] | np.dtype[np.uint16]]:
+    def reduced_alternation_sequence(self) -> ConfinementSequence:
         result = reduce_repeating_sequences(
             self.alternation_sequence, round(self.video.fps * self.minimum_seconds_for_entry)
         )
