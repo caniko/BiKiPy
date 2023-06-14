@@ -2,10 +2,12 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cached_property
 
+import numpy as np
 import pandas as pd
 from pydantic import Field
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT, PHYSICAL_OBJECT_MAP_NAME
+from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.qualia.physical_object.analysis.i import QualiaAnalysis
 from bikipy.feature.qualia.physical_object.analysis.mapping import (
     PO_NUMBER_TO_ANALYSIS_MODEL,
@@ -37,9 +39,13 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         return tuple(self.physical_object_perimeters)
 
     @cached_property
-    def po_heuristic_to_physical_objects_heuristic(
-        self,
-    ) -> dict[str, list[QualiaHeuristic]]:
+    def po_heuristic_to_heuristic_physical_objects(self) -> dict[str, list[QualiaHeuristic]]:
+        """
+        Note that the values being lists are bijective counterparts to
+        self.physical_object_perimeters sequence of perimeters.
+
+        :return:
+        """
         result = defaultdict(list)
         for heuristic_alias, heuristic_config in self.project_kit_config[PHYSICAL_OBJECT_MAP_NAME].items():
             for perimeter in self.physical_object_perimeters:
@@ -58,7 +64,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         for (
             heuristic_alias,
             physical_objects_heuristic,
-        ) in self.po_heuristic_to_physical_objects_heuristic.items():
+        ) in self.po_heuristic_to_heuristic_physical_objects.items():
             try:
                 current_inspect_arg = self.inspect_arg / heuristic_alias
             except TypeError:
@@ -84,30 +90,26 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     @property
     def all_summary_series(self) -> list[pd.Series]:
         result = []
-        for physical_objects_heuristics in self.po_heuristic_to_physical_objects_heuristic.values():
+        for physical_objects_heuristics in self.po_heuristic_to_heuristic_physical_objects.values():
             for physical_objects_heuristic in physical_objects_heuristics:
                 result.append(physical_objects_heuristic.summary_series)
         return result
 
     @cached_property
     def po_heuristic_to_object_alternation_sequence(self) -> dict[str, ConfinementSequence]:
-        perimeter_set_only_arms = PerimeterSet(perimeters=self.arms)
-        result, overlap_boolean_index = detect_multi_node_sequential_perimeter_presence(
-            self.confinement_coordinates, perimeter_set_only_arms
-        )
-        inspect_sequential_confinement(
-            self.inspect_subdir_or_bool("alternation_sequence"),
-            self.video,
-            perimeter_set_only_arms,
-            self.reader.kinematic_coordinates,
-            result,
-            overlap_boolean_index,
-        )
-        return result
+        result = self.reader.confinement_sequence_defaultdict()
+        for heuristic, po_heuristic_results in self.po_heuristic_to_heuristic_physical_objects.items():
+            for perimeter_idx, po_qualia_heuristic in enumerate(po_heuristic_results, start=1):
+                result[heuristic][po_qualia_heuristic.result] = perimeter_idx
+
+        return dict(result)
 
     @cached_property
-    def reduced_alternation_sequence(self) -> ConfinementSequence:
-        result = reduce_repeating_sequences(
-            self.alternation_sequence, round(self.video.fps * self.minimum_seconds_for_entry)
-        )
-        return result[np.nonzero(result)]
+    def reduced_alternation_sequence(self) -> dict[str, ConfinementSequence]:
+        result = {}
+        for heuristic, object_alternation_sequence in self.po_heuristic_to_object_alternation_sequence.items():
+            rrs = reduce_repeating_sequences(
+                object_alternation_sequence, round(self.video.fps * self.minimum_seconds_tolerance)
+            )
+            result[heuristic] = rrs[np.nonzero(rrs)]
+        return result

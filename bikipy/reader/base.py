@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from collections import abc
+from collections import abc, defaultdict
 from functools import cached_property
 from logging import getLogger
 from typing import ClassVar, Generic, Hashable, Iterable, Optional, Type, TypeVar
 
+import matplotlib
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -19,10 +20,12 @@ from bikipy.core.base import BikipyHashable
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.perimeter.base import BasePerimeter
+from bikipy.perimeter.helper.confinement import ConfinementSequence
 from bikipy.reader.model import model_data
 from bikipy.reader.utils import compute_midpoint_label
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
+from bikipy.utils.plot.color import make_color_map
 from bikipy.utils.plot.generic import ax_plot_coordinate_with_boolean_index
 
 BAD_COORDINATE = (np.nan, np.nan, 0.0)  # x, y, likelihood
@@ -82,7 +85,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     crop_time_seconds: float = 0.0
     crop_from_end: bool = Field(
         False,
-        description="Only affective if crop_frames is not 0. " "Will crop from start instead when set to False",
+        description="Evaluated when crop_time_seconds is not 0. Will crop from start instead when set to False",
     )
     model_displacement_by_std: Optional[float] = Field(
         2.0,
@@ -104,6 +107,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     _time_index_derived_fps: float | None
     _region_of_interest_to_fused_neighbouring_points: dict[str, NDArrayUint8] = Field(default_factory=dict)
     _cached_augmented_df: pd.DataFrame | None
+    _crop_frames: int | None
 
     augmented_coordinate_cached_file_label: ClassVar[str] = "augmented"
 
@@ -131,6 +135,12 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     @abstractmethod
     def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:
         ...
+
+    @property
+    def crop_frames(self) -> Optional[int]:
+        if not hasattr(self, "_crop_frames"):
+            self.augmented
+        return self._crop_frames
 
     @property
     def find_timestamp_index(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
@@ -186,6 +196,12 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     def all_tracked_labels(self) -> set[str]:
         return self.physically_tracked_labels | self.tracked_midpoint_labels
 
+    @cached_property
+    def label_to_plot_color(self) -> dict[str, matplotlib.colors.ListedColormap]:
+        return {
+            label: color for label, color in zip(self.all_tracked_labels, make_color_map(len(self.all_tracked_labels)))
+        }
+
     @property
     def required_video_metadata_fields(self) -> set:
         base = {"meters_per_pixel", "recording_resolution"}
@@ -237,26 +253,30 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             logger.debug(f"Filtering {self.df_path.stem} with the {self.model_method} method")
             result = model_data(result, self.model_method, **self.model_kwargs)
 
-        crop_frames = None
         if self.df_is_timestamped:
             try:
-                crop_frames = np.where(self.raw_df.index.values >= self.crop_time_seconds)[0][0]
+                self._crop_frames = np.where(self.raw_df.index.values >= self.crop_time_seconds)[0][0]
             except IndexError:
                 logger.warning(f"The defined crop seconds, {self.crop_time_seconds}, is out of bounds for DataFrame")
                 self.crop_time_seconds = False
 
         if self.crop_time_seconds:
-            crop_frames = crop_frames or round(self.video.fps * self.crop_time_seconds)
+            self._crop_frames = self._crop_frames or round(self.video.fps * self.crop_time_seconds)
 
-            if crop_frames > self.raw_frames:
+            if self._crop_frames > self.raw_frames:
                 logger.warning(
-                    f"(cropping number_of_frames: {self.crop_time_seconds} seconds -> {crop_frames} number_of_frames) "
+                    f"(cropping number_of_frames: {self.crop_time_seconds} seconds -> {self._crop_frames} number_of_frames) "
                     f"> total of {self.raw_frames} number_of_frames"
                 )
             else:
                 result = (
-                    result.iloc[self.raw_frames - crop_frames :] if self.crop_from_end else result.iloc[:crop_frames]
+                    result.iloc[self.raw_frames - self._crop_frames :]
+                    if self.crop_from_end
+                    else result.iloc[: self._crop_frames]
                 )
+
+        if not hasattr(self, "_crop_frames"):
+            self._crop_frames = None
 
         if self.invert_y_axis:
             result.loc[:, pd.IndexSlice[:, "y"]] = self.video.vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
@@ -363,6 +383,13 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     def combined_raw_likelihood(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return np.multiply.reduce(self.raw_df.loc[:, pd.IndexSlice[:, "likelihood"]], axis=1)
 
+    def confinement_defaultdict(self) -> defaultdict[np.ndarray[bool, bool]]:
+        return defaultdict(lambda: np.zeros(len(self.augmented), dtype=bool))
+
+    def confinement_sequence_defaultdict(self, more_than_254: bool = False) -> defaultdict[ConfinementSequence]:
+        data_type = np.uint16 if more_than_254 else np.uint8
+        return defaultdict(lambda: np.zeros(len(self.augmented), dtype=data_type))
+
     label_to_plot_prepped_coordinates: dict[str, NDArrayFp64] | None = Field(default_factory=dict)
 
     def coordinates_for_plot(self, label_to_plot: str) -> np.ndarray[float, np.dtype[np.float64]]:
@@ -370,8 +397,8 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             return self.label_to_plot_prepped_coordinates[label_to_plot]
         except KeyError:
             result = self.video.prepare_coordinates_for_plotting(self[label_to_plot])
-        self.label_to_plot_prepped_coordinates[label_to_plot] = result
-        return result
+            self.label_to_plot_prepped_coordinates[label_to_plot] = result
+            return result
 
     @validate_arguments(config={"arbitrary_types_allowed": True})
     def plot_boolean_index(self, boolean_index: NDArrayBool, ax: Axes, label_to_plot: Optional[str] = None) -> None:
@@ -380,6 +407,18 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             ax, boolean_index, coordinates_for_plot, plot_line=True, plot_non_confined=False
         )
         plt.legend(**BOTTOM_LEGEND_KWARGS)
+
+    def plot_skeleton_in_frame(self, frame_idx: int, ax: Axes) -> None:
+        for label in self.all_tracked_labels:
+            ax.scatter(self.coordinates_for_plot(label)[frame_idx], c=self.label_to_plot_color[label], label=label)
+        ax.legend(bbox_to_anchor=(1.01, 0.5), loc="center left")
+
+    def flush_reads(self) -> None:
+        try:
+            del self.raw_df
+            del self.augmented
+        except AttributeError as e:
+            logger.error(str(e))
 
     def _compute_midpoint(
         self, df: pd.DataFrame, midpoint_group: Iterable[str], manual_midpoint_label: Optional[Hashable] = None
@@ -395,13 +434,6 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
     def _cache_augmented(self, df: pd.DataFrame) -> None:
         df.to_parquet(self.cached_augmented_df_path, **TO_PARQUET_KWARGS)
-
-    def flush_reads(self) -> None:
-        try:
-            del self.raw_df
-            del self.augmented
-        except AttributeError as e:
-            logger.error(str(e))
 
 
 ReaderCLS = Type[BaseReader]

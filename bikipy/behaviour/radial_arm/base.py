@@ -21,9 +21,9 @@ from bikipy.core.base import BikipyHashable
 from bikipy.feature.motion import Motion, bulk_motion_analysis_indexer
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.perimeter.helper.confinement import (
+    ConfinementSequence,
     detect_multi_node_sequential_perimeter_presence,
     inspect_sequential_confinement,
-    ConfinementSequence,
 )
 from bikipy.perimeter.mixin import TrialWithPerimeterMixin
 from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids

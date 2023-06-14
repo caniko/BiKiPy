@@ -97,12 +97,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
     def subplot(self, manual_video: Optional[VideoMetadata] = None, **plot_kwargs):
         return manual_video.subplots(**plot_kwargs) if manual_video else self.video.subplots(**plot_kwargs)
 
-    def plot_perimeter(
-        self,
-        manual_video: Optional[VideoMetadata] = None,
-        manual_ax=None,
-        **plot_kwargs,
-    ):
+    def plot_perimeter(self, manual_video: Optional[VideoMetadata] = None, manual_ax=None, **plot_kwargs):
         video = manual_video or self.video
         if manual_ax:
             ax = manual_ax
@@ -110,7 +105,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
             fig, ax = video.subplot()
 
         return self.plot_perimeter_on_ax(
-            ax, inspect_pixels=video.coordinates_need_to_be_scaled_for_plot, manual_video=video
+            ax, inspect_pixels=video.coordinates_need_to_be_scaled_for_plot, manual_video=video, **plot_kwargs
         )
 
     @abstractmethod

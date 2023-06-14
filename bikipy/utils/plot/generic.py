@@ -71,18 +71,20 @@ def plot_coordinates(
 
 
 @validate_arguments(config={"arbitrary_types_allowed": True})
-def plot_ellipse(center: tuple[float, float], radius: tuple[float, float] | float, ax: Axes = None) -> Axes:
+def plot_ellipse(center: tuple[float, float], radius: tuple[float, float] | float, color: Any, ax: Axes = None) -> Axes:
     if ax is None:
         fig, ax = plt.subplots()
 
     if isinstance(radius, tuple) and np.isclose(radius[0], radius[1]):
         radius = radius[0]
 
+    color = color or "g"
+
     if isinstance(radius, float):
-        circle = plt.Circle(center, radius, fill=False)
+        circle = plt.Circle(center, radius, fill=False, color=color)
         ax.add_artist(circle)
     elif isinstance(radius, tuple):
-        ellipse = patches.Ellipse(center, *radius, edgecolor="g", facecolor="none")
+        ellipse = patches.Ellipse(center, *radius, edgecolor=color, facecolor="none")
         ax.add_patch(ellipse)
     else:
         msg = f"Provided radius has invalid type: {type(radius)}"

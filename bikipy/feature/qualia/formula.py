@@ -2,7 +2,6 @@ import numpy as np
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
 
-
 _heuristic_merge_grammar = Grammar(
     """
     expr = or_expr / and_expr / var

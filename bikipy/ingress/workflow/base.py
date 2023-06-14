@@ -33,11 +33,8 @@ from bikipy.ingress.utils.io import (
 from bikipy.perimeter.base import Perimeter
 from bikipy.reader.base import BaseReader
 from bikipy.utils.collection_utils import get_first_value_in_dict
-from bikipy.utils.misc import (
-    defaultdict_dict_factory,
-    int_file_stem_incrementor,
-    sheet_names_from_path,
-)
+from bikipy.utils.constants import TO_PARQUET_KWARGS
+from bikipy.utils.misc import sheet_names_from_path
 from bikipy.utils.pandas import copycat_assumes_levels_of_icon
 
 if TYPE_CHECKING:
@@ -102,8 +99,8 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     _experiment_data_defined: bool = False
     _trial_id_to_trial_class_name: dict[Label, str] = {}
     _common_trial_keyword_arguments: dict[str, Any] = {}
-    _trial_id_to_keyword_arguments: dict[Label, dict[str, Any]] = defaultdict_dict_factory()
-    _trial_class_name_to_keyword_arguments: dict[str, dict] = defaultdict_dict_factory()
+    _trial_id_to_keyword_arguments: dict[Label, dict[str, Any]] = defaultdict(dict)
+    _trial_class_name_to_keyword_arguments: dict[str, dict] = defaultdict(dict)
 
     _trial_id_to_designator_id: dict[str, str] = {}
     _designator_id_to_kwargs: dict[str, dict] = defaultdict_dict_factory()
@@ -623,10 +620,14 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         )
         parquet_dir.mkdir(exist_ok=True)
 
+        # We define to_excel and to_parquet in their own loops for atomicity with respect to formats
+        # as parquet crashes sometimes.
         with pd.ExcelWriter(self.result_directory_path / f"{self.experiment_class_name}.xlsx") as writer:
             for trial_label, df in self.trial_label_to_df.items():
                 df.to_excel(writer, sheet_name=str(trial_label))
-                # df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_class_name}.parquet", **TO_PARQUET_KWARGS)
+
+        for trial_label, df in self.trial_label_to_df.items():
+            df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_class_name}.parquet", **TO_PARQUET_KWARGS)
 
     def purge_cached_reads(self, override_pattern: Optional[str] = None) -> None:
         pattern = override_pattern or BaseReader.augmented_coordinate_cached_file_label

@@ -1,20 +1,23 @@
 import glob
 from collections import defaultdict
-from functools import partial
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
+
+def defaultdict_list():
+    return defaultdict(list)
+
+
 for f in glob.iglob("**/**/*.parquet"):
     f = Path(f)
     df = pd.read_parquet(f)
 
-    dict_dict_list = partial(defaultdict, list)
     reward_trace_raw, in_reward_area_raw, distance_raw, probe_records = (
-        defaultdict(dict_dict_list),
-        defaultdict(dict_dict_list),
-        defaultdict(dict_dict_list),
+        defaultdict(defaultdict_list),
+        defaultdict(defaultdict_list),
+        defaultdict(defaultdict_list),
         {},
     )
     for trial_id, row in df.iterrows():

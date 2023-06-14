@@ -6,10 +6,10 @@ Classes that define videos should have this mixin: VideoMetadata, BaseExperiment
 bare metadata, and its purpose is to either initialize or relay an existing VideoMetadata object
 """
 from collections.abc import Iterable
-from functools import cached_property, partial
+from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import ClassVar, Optional, Sequence
+from typing import ClassVar, Generator, Optional, Sequence
 
 import cv2
 import matplotlib.pyplot as plt
@@ -23,7 +23,6 @@ from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayInt16, NDArrayUint8
 
 from bikipy import runtime_settings
-from bikipy._constant import MINIMUM_FIG_DPI
 from bikipy.core.base import BikipyModel
 from bikipy.core.typing import MetersPerPixel
 from bikipy.utils.image import read_image_from_path
@@ -49,6 +48,7 @@ class _VideoMetadataBase(BikipyModel):
     frame: Optional[Frame] = Field(
         description="Frame from the video stored in numpy array, use read_image_from_path to read from file paths"
     )
+    video_path: Optional[FilePath] = Field(description="Path to the video file")
     minimum_frame_length: Optional[int] = Field(
         600,
         description="Must be defined in case the original frame has been resized. "
@@ -73,6 +73,29 @@ class _VideoMetadataBase(BikipyModel):
 
     def boolean_array_to_seconds(self, boolean_array: NDArrayBool) -> float:
         return np.sum(boolean_array) / self.fps
+
+    def video_read_frames(self) -> Generator[np.ndarray[int, np.dtype[np.uint8]]]:
+        if not self.video_path:
+            logger.error(
+                f"Tried to read frames of video, but the {self.__class__.__name__} "
+                f"does not have a video path defined"
+            )
+            return
+
+        cap = cv2.VideoCapture(self.video_path)
+
+        if not cap.isOpened():
+            logger.error(f"Error opening video file: {self.video_path}")
+            return
+
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if ret:
+                yield frame
+            else:
+                break
+
+        cap.release()
 
 
 class VideoMetadata(_VideoMetadataBase):
@@ -362,6 +385,3 @@ def inspect_video_is_none_during_inspection(inspect_video: VideoMetadata | None)
             "required for generating inspection figure"
         )
         raise ValueError(msg)
-
-
-incongruity_permissive_video_join = partial(VideoMetadata.join, ignore_incongruity=True)
