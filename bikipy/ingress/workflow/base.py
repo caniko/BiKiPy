@@ -75,7 +75,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         description="When troubleshooting a runtime, avoid ingesting all data, "
         "and only focus on one of each trial class",
     )
-    trial_ids_to_analyse: Optional[list[Label]] = Field(default_factory=list)
+    trial_ids_to_analyse: Optional[Iterable[Label]] = Field(default_factory=frozenset)
     no_cache: bool = False
 
     definition_meters_per_pixel: frozenset[PluginScope]
@@ -103,7 +103,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     _trial_class_name_to_keyword_arguments: dict[str, dict] = defaultdict(dict)
 
     _trial_id_to_designator_id: dict[str, str] = {}
-    _designator_id_to_kwargs: dict[str, dict] = defaultdict_dict_factory()
+    _designator_id_to_kwargs: dict[str, dict] = defaultdict(dict)
 
     profile_runtime: ClassVar[bool] = True
     ingress_method: ClassVar[str]
@@ -628,6 +628,9 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         for trial_label, df in self.trial_label_to_df.items():
             df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_class_name}.parquet", **TO_PARQUET_KWARGS)
+
+    def create_analysis_videos(self, trial_ids: Iterable[Label], output_directory: Optional[DirectoryPath] = None) -> None:
+        for trial in self.experiment.trial_id_to_trial_object[]
 
     def purge_cached_reads(self, override_pattern: Optional[str] = None) -> None:
         pattern = override_pattern or BaseReader.augmented_coordinate_cached_file_label

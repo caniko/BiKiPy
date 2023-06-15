@@ -115,7 +115,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
             result[heuristic] = rrs[np.nonzero(rrs)]
         return result
 
-    def create_inspection_video(self, **kwargs) -> None:
+    def generate_inspection_video(self, **kwargs) -> None:
         for heuristic_alias, physical_objects in self.heuristic_to_physical_objects.items():
             perimeter_to_boolean_index = self.reader.confinement_index_defaultdict
             label_to_boolean_index = self.reader.confinement_index_defaultdict

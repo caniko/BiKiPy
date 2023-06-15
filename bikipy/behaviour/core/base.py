@@ -222,6 +222,9 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
             fps=self.video.fps,
         )
 
+    def generate_inspection_video(self, **kwargs) -> None:
+        raise NotImplementedError()
+
     # Miscellaneous
     @property
     def _analysis_series_list(self) -> list[pd.Series]:
