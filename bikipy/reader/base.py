@@ -2,7 +2,15 @@ from abc import ABC, abstractmethod
 from collections import abc, defaultdict
 from functools import cached_property
 from logging import getLogger
-from typing import ClassVar, Generic, Hashable, Iterable, Optional, Type, TypeVar
+from typing import (
+    ClassVar,
+    Generic,
+    Hashable,
+    Iterable,
+    Optional,
+    Type,
+    TypeVar,
+)
 
 import matplotlib
 import numpy as np
@@ -383,13 +391,6 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     def combined_raw_likelihood(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return np.multiply.reduce(self.raw_df.loc[:, pd.IndexSlice[:, "likelihood"]], axis=1)
 
-    def confinement_defaultdict(self) -> defaultdict[np.ndarray[bool, bool]]:
-        return defaultdict(lambda: np.zeros(len(self.augmented), dtype=bool))
-
-    def confinement_sequence_defaultdict(self, more_than_254: bool = False) -> defaultdict[ConfinementSequence]:
-        data_type = np.uint16 if more_than_254 else np.uint8
-        return defaultdict(lambda: np.zeros(len(self.augmented), dtype=data_type))
-
     label_to_plot_prepped_coordinates: dict[str, NDArrayFp64] | None = Field(default_factory=dict)
 
     def coordinates_for_plot(self, label_to_plot: str) -> np.ndarray[float, np.dtype[np.float64]]:
@@ -408,10 +409,25 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         )
         plt.legend(**BOTTOM_LEGEND_KWARGS)
 
-    def plot_skeleton_in_frame(self, frame_idx: int, ax: Axes) -> None:
+    def plot_skeleton_in_frame(
+        self, frame_idx: int, ax: Axes, labels_to_exclude: Optional[Iterable[str]] = None
+    ) -> None:
         for label in self.all_tracked_labels:
+            if labels_to_exclude and label in labels_to_exclude:
+                continue
             ax.scatter(self.coordinates_for_plot(label)[frame_idx], c=self.label_to_plot_color[label], label=label)
+
         ax.legend(bbox_to_anchor=(1.01, 0.5), loc="center left")
+
+    def confinement_index_defaultdict(self) -> defaultdict[np.ndarray[bool, bool]]:
+        return defaultdict(lambda: np.zeros(len(self.augmented), dtype=bool))
+
+    def confinement_sequence_defaultdict(self, more_than_254: bool = False) -> defaultdict[ConfinementSequence]:
+        data_type = np.uint16 if more_than_254 else np.uint8
+        return defaultdict(lambda: np.zeros(len(self.augmented), dtype=data_type))
+
+    def coordinate_sequence_defaultdict(self) -> defaultdict[ConfinementSequence]:
+        return defaultdict(lambda: np.zeros((len(self.augmented), 2), dtype=np.float64))
 
     def flush_reads(self) -> None:
         try:

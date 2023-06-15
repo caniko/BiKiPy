@@ -91,6 +91,10 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
         return np.logical_or.reduce(nodes)
 
     @property
+    def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
+        return {self.nose_label: self.nose_proximity}
+
+    @property
     def summary_series(self) -> pd.Series:
         data = {}
         label = self.perimeter.label.capitalize()

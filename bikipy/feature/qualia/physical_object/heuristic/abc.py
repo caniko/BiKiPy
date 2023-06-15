@@ -70,6 +70,11 @@ class ProximityMixin(BaseModel):
     def maximum_distance_pixels(self) -> float:
         return meters2pixels(self.maximum_distance_meters, self.video.pixels_per_meter)
 
+    @property
+    @abstractmethod
+    def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
+        ...
+
 
 class RayMixin(BaseModel):
     maximum_degrees: float = 45.0
@@ -77,3 +82,8 @@ class RayMixin(BaseModel):
     @property
     def maximum_radians(self) -> float:
         return cached_deg2rad(self.maximum_degrees)
+
+    @property
+    @abstractmethod
+    def label_to_ray_vector_direction_points(self) -> dict[str, np.ndarray[float, np.dtype[np.float64]]]:
+        ...

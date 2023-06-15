@@ -2,11 +2,11 @@ from bikipy.feature.qualia.physical_object.heuristic.body_proximity import (
     BodyProximityHeuristic,
 )
 from bikipy.feature.qualia.physical_object.heuristic.field_of_view import (
-    FOVCenterToEyesRayCastingHeuristic,
+    WhiskerInteractionHeuristic,
 )
 from bikipy.feature.qualia.physical_object.heuristic.olfaction import OlfactionHeuristic
 
-HEURISTICS = (BodyProximityHeuristic, FOVCenterToEyesRayCastingHeuristic, OlfactionHeuristic)
+HEURISTICS = (BodyProximityHeuristic, WhiskerInteractionHeuristic, OlfactionHeuristic)
 
 LABEL_TO_HEURISTIC = {heuristic.heuristic_alias: heuristic for heuristic in HEURISTICS}
 HEURISTIC_NAME_TO_HEURISTIC = {heuristic.__name__: heuristic for heuristic in HEURISTICS}

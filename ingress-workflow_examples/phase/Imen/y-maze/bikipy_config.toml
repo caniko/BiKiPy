@@ -1,7 +1,7 @@
 [manual.jit_init]
 ingress_method = "phase"
 experiment_name = "y_maze"
-qualia_heuristic = ["OlfactionHeuristic", "ObjectInProximalFOV"]
+qualia_heuristic = ["OlfactionHeuristic", "WhiskerInteraction"]
 
 [ingress]
 required = ["dataset_directory", "definition_meters_per_pixel", "project_kit_config"]

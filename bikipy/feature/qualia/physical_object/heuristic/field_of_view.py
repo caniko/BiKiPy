@@ -14,7 +14,7 @@ from bikipy.feature.qualia.physical_object.heuristic.abc import (
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 
 
-class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
+class WhiskerInteractionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
     maximum_distance_meters = 0.035
 
     center_eye_label: str = "center_eye"
@@ -26,7 +26,7 @@ class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin
     manual_right_proximity: Optional[ComputeProximity]
     manual_rightward_observation: Optional[ComputeInLineOfSight]
 
-    heuristic_alias = "ObjectInProximalFOV"
+    heuristic_alias = "WhiskerInteraction"
 
     @classmethod
     @property
@@ -63,8 +63,8 @@ class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin
             if self.manual_leftward_observation
             else ComputeInLineOfSight(
                 perimeter=self.perimeter,
-                ray_start_point=self.reader[self.left_eye_label],
-                ray_travel_direction_point=self.reader[self.center_eye_label],
+                ray_start_point=self.reader[self.center_eye_label],
+                ray_travel_direction_point=self.reader[self.left_eye_label],
                 max_radians=self.maximum_radians,
                 label="Left",
                 manual_video=self.video,
@@ -92,8 +92,8 @@ class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin
             if self.manual_rightward_observation
             else ComputeInLineOfSight(
                 perimeter=self.perimeter,
-                ray_start_point=self.reader[self.right_eye_label],
-                ray_travel_direction_point=self.reader[self.center_eye_label],
+                ray_start_point=self.reader[self.center_eye_label],
+                ray_travel_direction_point=self.reader[self.right_eye_label],
                 max_radians=self.maximum_radians,
                 label="Right",
                 manual_video=self.video,
@@ -124,6 +124,17 @@ class FOVCenterToEyesRayCastingHeuristic(AbstractQualiaHeuristic, ProximityMixin
                 f"ObservingSecCombinedProxFOV{label}": self.boolean_array_to_seconds(self.result),
             }
         )
+
+    @property
+    def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
+        return {self.left_eye_label: self.left_proximity, self.right_eye_label: self.right_proximity}
+
+    @property
+    def label_to_ray_vector_direction_points(self) -> dict[str, np.ndarray[float, np.dtype[np.float64]]]:
+        return {
+            self.left_eye_label: self.reader[self.left_eye_label],
+            self.right_eye_label: self.reader[self.right_eye_label],
+        }
 
     def plot(self) -> None:
         fig, axes = self.video.subplots(ncols=3, nrows=3, exclude_imaging_from_rc_coord=((0, 2), (2, 2)))

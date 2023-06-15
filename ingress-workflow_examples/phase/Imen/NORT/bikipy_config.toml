@@ -1,7 +1,7 @@
 [manual.jit_init]
 ingress_method = "phase"
 experiment_name = "nort"
-qualia_heuristic = ["OlfactionHeuristic", "ObjectInProximalFOV"]
+qualia_heuristic = ["OlfactionHeuristic", "WhiskerInteraction"]
 
 [ingress]
 required = ["dataset_directory", "definition_meters_per_pixel", "project_kit_config"]
@@ -123,11 +123,11 @@ optional = ["center_eye_label", "filter_in_sequence", "fps", "frame", "manual_no
 
 [qualia_heuristics.OlfactionHeuristic.defined]
 
-[qualia_heuristics.FOVCenterToEyesRayCastingHeuristic]
-class_name = "FOVCenterToEyesRayCastingHeuristic"
+[qualia_heuristics.WhiskerInteractionHeuristic]
+class_name = "WhiskerInteractionHeuristic"
 optional = ["center_eye_label", "filter_in_sequence", "fps", "frame", "left_eye_label", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "right_eye_label"]
 
-[qualia_heuristics.FOVCenterToEyesRayCastingHeuristic.defined]
+[qualia_heuristics.WhiskerInteractionHeuristic.defined]
 
 [field]
 analysis_series_cache_format = "string(default: .lz4)"

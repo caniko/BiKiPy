@@ -1,7 +1,7 @@
 [manual.jit_init]
 ingress_method = "animal"
 experiment_name = "oul"
-qualia_heuristic = ["BodyProximity", "ObjectInProximalFOV"]
+qualia_heuristic = ["BodyProximity", "WhiskerInteraction"]
 
 [ingress]
 required = ["dataset_directory", "definition_meters_per_pixel", "project_kit_config"]
@@ -129,11 +129,11 @@ optional = ["center_eye_label", "filter_in_sequence", "fps", "frame", "manual_vi
 
 [qualia_heuristics.common.defined]
 
-[qualia_heuristics.FOVCenterToEyesRayCastingHeuristic]
-class_name = "FOVCenterToEyesRayCastingHeuristic"
+[qualia_heuristics.WhiskerInteractionHeuristic]
+class_name = "WhiskerInteractionHeuristic"
 optional = ["center_eye_label", "filter_in_sequence", "fps", "frame", "left_eye_label", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "right_eye_label"]
 
-[qualia_heuristics.FOVCenterToEyesRayCastingHeuristic.defined]
+[qualia_heuristics.WhiskerInteractionHeuristic.defined]
 
 [qualia_heuristics.BodyProximityHeuristic]
 class_name = "BodyProximityHeuristic"

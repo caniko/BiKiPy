@@ -7,12 +7,13 @@ import pandas as pd
 from pydantic import Field
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT, PHYSICAL_OBJECT_MAP_NAME
+from bikipy.analysis.video import make_inspection_video
 from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.qualia.physical_object.analysis.i import QualiaAnalysis
 from bikipy.feature.qualia.physical_object.analysis.mapping import (
     PO_NUMBER_TO_ANALYSIS_MODEL,
 )
-from bikipy.feature.qualia.physical_object.heuristic.abc import QualiaHeuristic
+from bikipy.feature.qualia.physical_object.heuristic.abc import QualiaHeuristic, RayMixin, ProximityMixin
 from bikipy.feature.qualia.physical_object.heuristic.mapping import HEURISTIC_MAP
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.perimeter.helper.confinement import ConfinementSequence
@@ -39,7 +40,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         return tuple(self.physical_object_perimeters)
 
     @cached_property
-    def po_heuristic_to_heuristic_physical_objects(self) -> dict[str, list[QualiaHeuristic]]:
+    def heuristic_to_physical_objects(self) -> dict[str, list[QualiaHeuristic]]:
         """
         Note that the values being lists are bijective counterparts to
         self.physical_object_perimeters sequence of perimeters.
@@ -64,7 +65,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         for (
             heuristic_alias,
             physical_objects_heuristic,
-        ) in self.po_heuristic_to_heuristic_physical_objects.items():
+        ) in self.heuristic_to_physical_objects.items():
             try:
                 current_inspect_arg = self.inspect_arg / heuristic_alias
             except TypeError:
@@ -90,16 +91,16 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     @property
     def all_summary_series(self) -> list[pd.Series]:
         result = []
-        for physical_objects_heuristics in self.po_heuristic_to_heuristic_physical_objects.values():
+        for physical_objects_heuristics in self.heuristic_to_physical_objects.values():
             for physical_objects_heuristic in physical_objects_heuristics:
                 result.append(physical_objects_heuristic.summary_series)
         return result
 
     @cached_property
-    def po_heuristic_to_object_alternation_sequence(self) -> dict[str, ConfinementSequence]:
+    def heuristic_to_object_alternation_sequence(self) -> dict[str, ConfinementSequence]:
         result = self.reader.confinement_sequence_defaultdict()
-        for heuristic, po_heuristic_results in self.po_heuristic_to_heuristic_physical_objects.items():
-            for perimeter_idx, po_qualia_heuristic in enumerate(po_heuristic_results, start=1):
+        for heuristic, heuristic_results in self.heuristic_to_physical_objects.items():
+            for perimeter_idx, po_qualia_heuristic in enumerate(heuristic_results, start=1):
                 result[heuristic][po_qualia_heuristic.result] = perimeter_idx
 
         return dict(result)
@@ -107,9 +108,37 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     @cached_property
     def reduced_alternation_sequence(self) -> dict[str, ConfinementSequence]:
         result = {}
-        for heuristic, object_alternation_sequence in self.po_heuristic_to_object_alternation_sequence.items():
+        for heuristic, object_alternation_sequence in self.heuristic_to_object_alternation_sequence.items():
             rrs = reduce_repeating_sequences(
                 object_alternation_sequence, round(self.video.fps * self.minimum_seconds_tolerance)
             )
             result[heuristic] = rrs[np.nonzero(rrs)]
         return result
+
+    def create_inspection_video(self, **kwargs) -> None:
+        for heuristic_alias, physical_objects in self.heuristic_to_physical_objects.items():
+            perimeter_to_boolean_index = self.reader.confinement_index_defaultdict
+            label_to_boolean_index = self.reader.confinement_index_defaultdict
+            label_to_quiver_rays = self.reader.coordinate_sequence_defaultdict
+
+            for physical_object in physical_objects:
+                perimeter_to_boolean_index[physical_object.perimeter] = (
+                    perimeter_to_boolean_index[physical_object.perimeter] | physical_object.result
+                )
+                if issubclass(HEURISTIC_MAP[heuristic_alias], ProximityMixin):
+                    for label, proximity_boolean_index in physical_object.label_to_proximity_boolean.items():
+                        label_to_boolean_index[label] = label_to_boolean_index[label] | proximity_boolean_index
+                if issubclass(HEURISTIC_MAP[heuristic_alias], RayMixin):
+                    for label, ray_direction_points in physical_object.label_to_ray_vector_direction_points.items():
+                        label_to_quiver_rays[label][physical_object.result] = ray_direction_points[
+                            physical_object.result
+                        ]
+
+            make_inspection_video(
+                video_frames=self.video.video_read_frames(),
+                reader=self.reader,
+                perimeter_to_boolean_index={po.perimeter: po.result for po in physical_objects},
+                label_to_boolean_index=label_to_boolean_index,
+                label_to_quiver_rays=label_to_quiver_rays,
+                **kwargs,
+            )

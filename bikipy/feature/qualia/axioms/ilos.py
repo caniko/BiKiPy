@@ -18,6 +18,8 @@ class ComputeInLineOfSight(AbstractComputeBooleanIndex):
     ray_travel_direction_point: NDArrayFp64 = ...
     max_radians: float = ...
 
+    manual_ray_vectors: Optional[NDArrayFp64]
+
     @cached_property
     def result(self):
         result = self.perimeter.ray_direction_filter(
@@ -33,7 +35,7 @@ class ComputeInLineOfSight(AbstractComputeBooleanIndex):
             if video
             else self.ray_travel_direction_point
         )
-        ray_vectors = ray_travel_direction_point - self.ray_start_point
+        ray_vectors = self.manual_ray_vectors or (ray_travel_direction_point - self.ray_start_point)
 
         if video:
             ray_vectors = video.prepare_coordinates_for_plotting(unit_vector(ray_vectors), inspect_pixels) * 0.025

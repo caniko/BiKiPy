@@ -76,6 +76,14 @@ class OlfactionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
             index=[f"ObservingSecNoseProximity{label}", ""],
         )
 
+    @property
+    def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
+        return {self.nose_label: self.nose_proximity}
+
+    @property
+    def label_to_ray_vector_direction_points(self) -> dict[str, np.ndarray[float, np.dtype[np.float64]]]:
+        return {self.nose_label: self.reader[self.nose_label]}
+
     def plot(self) -> None:
         fig, axes = self.video.subplots(nrows=3)
         fig.suptitle(self.heuristic_alias)
