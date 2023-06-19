@@ -629,8 +629,13 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         for trial_label, df in self.trial_label_to_df.items():
             df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_class_name}.parquet", **TO_PARQUET_KWARGS)
 
-    def create_analysis_videos(self, trial_ids: Iterable[Label], output_directory: Optional[DirectoryPath] = None) -> None:
-        for trial in self.experiment.trial_id_to_trial_object[]
+    def create_analysis_videos(self, trial_ids: Iterable[Label], **trial_video_kwargs) -> None:
+        for trial_id in trial_ids:
+            self.experiment.trial_id_to_trial_object[trial_id].generate_inspection_video(**trial_video_kwargs)
+
+    def sample_one_trial_from_each_trial_class(self, **trial_video_kwargs) -> None:
+        for trial_objects in self.experiment.trial_class_to_trial_objects.values():
+            trial_objects[0].generate_inspection_video(**trial_video_kwargs)
 
     def purge_cached_reads(self, override_pattern: Optional[str] = None) -> None:
         pattern = override_pattern or BaseReader.augmented_coordinate_cached_file_label

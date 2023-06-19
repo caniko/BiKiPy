@@ -41,7 +41,7 @@ class BikipyRuntimeSettings(BaseSettings, SchemanticProjectMixin):
 
 runtime_settings: BikipyRuntimeSettings = BikipyRuntimeSettings()
 if not runtime_settings.testing:
-    matplotlib.use("Agg")
+    matplotlib.use("module://mplcairo.base")
 
 
 def set_bikipy_settings_from_dict(key_value_map: dict[str, Any]) -> None:

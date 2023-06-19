@@ -24,6 +24,12 @@ def analyze_and_save(project_directory: DirectoryPath) -> None:
     ingress.save_analysis_data()
 
 
-def generate_inspection_videos(project_directory: DirectoryPath, trial_ids: Iterable[Label]) -> None:
-    ingress = get_ingress(project_directory)
-    ingress.trial_ids_to_analyse = trial_ids
+def generate_inspection_videos(
+    trial_ids: Iterable[Label],
+    project_directory: Optional[DirectoryPath] = None,
+    output_directory: Optional[DirectoryPath] = None,
+    codec: Optional[str] = None,
+) -> None:
+    get_ingress(here_or_there(project_directory)).create_analysis_videos(
+        trial_ids, output_directory=output_directory, codec=codec
+    )

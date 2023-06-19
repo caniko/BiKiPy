@@ -222,8 +222,14 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
             fps=self.video.fps,
         )
 
-    def generate_inspection_video(self, **kwargs) -> None:
+    def generate_inspection_video(
+        self, output_directory: Optional[DirectoryPath] = None, codec: Optional[str] = None
+    ) -> None:
         raise NotImplementedError()
+
+    def _video_file_name(self, output_directory: Optional[DirectoryPath] = None) -> FilePath:
+        output_directory = output_directory or self.framewise_coordinates_path.parent
+        return output_directory / f"{self.trial_label}."
 
     # Miscellaneous
     @property
@@ -454,31 +460,49 @@ class BaseExperiment(Behaviour):
             )
             raise AttributeError(msg)
 
+    _trial_objects: list[Trial] = Field(default_factory=list)
+    _trial_id_to_trial_object: dict[Label, Trial] = Field(default_factory=dict)
+    _bad_trial_ids_to_error_msg: dict[Label, str] = Field(default_factory=dict)
+    __analysed_trials: set[Label] = Field(default_factory=set)
+
+    def get_trial_object(self, trial_id: Label) -> Trial:
+        if trial_id in self.__analysed_trials:
+            return self._trial_id_to_trial_object[trial_id]
+
+        trial_class = (
+            self.trial_class_name_to_trial_class[self.trial_id_to_trial_class_name[trial_id]]
+            if self.has_stages
+            else self.trial_class
+        )
+        try:
+            result = trial_class(**self.trial_keyword_arguments(trial_id))
+            self._trial_objects.append(result)
+            self._trial_id_to_trial_object[trial_id] = result
+            return result
+        except ValidationError as e:
+            self._bad_trial_ids_to_error_msg[trial_id] = str(e)
+        finally:
+            self.__analysed_trials.add(trial_id)
+
     @cached_property
     def trial_objects(self) -> list[Trial]:
-        result, bad_trial_ids_to_error_msg = [], {}
-        for trial_id in self.trial_ids:
-            trial_class = (
-                self.trial_class_name_to_trial_class[self.trial_id_to_trial_class_name[trial_id]]
-                if self.has_stages
-                else self.trial_class
-            )
-            try:
-                result.append(trial_class(**self.trial_keyword_arguments(trial_id)))
-            except ValidationError as e:
-                bad_trial_ids_to_error_msg[trial_id] = str(e)
-                continue
-        if bad_trial_ids_to_error_msg:
+        for trial_id in self.trial_id_set.difference(self.__analysed_trials):
+            self.get_trial_object(trial_id)
+
+        if self._bad_trial_ids_to_error_msg:
             msg = "Some trial IDs yielded pydantic validation errors:"
-            for trial_id, trial_msg in bad_trial_ids_to_error_msg.items():
+            for trial_id, trial_msg in self._bad_trial_ids_to_error_msg.items():
                 msg += f"\n{trial_id}:\n{trial_msg}\n"
             if self.trial_init_error_out_dir:
                 error_out_path = self.trial_init_error_out_dir / "trial_init_error.log"
                 with open(error_out_path, "w") as out_file:
                     out_file.write(msg)
                     msg += f"\nError logs were saved to {error_out_path}\n"
-            raise ValueError(f"{msg}\n{len(bad_trial_ids_to_error_msg)} errors out of {len(self.trial_ids)} Trials")
-        return result
+            raise ValueError(
+                f"{msg}\n{len(self._bad_trial_ids_to_error_msg)} errors out of {len(self.trial_ids)} Trials"
+            )
+
+        return self._trial_objects
 
     @cached_property
     def trial_class_name_to_trial_ids(self) -> dict[str, Trial]:
@@ -487,8 +511,9 @@ class BaseExperiment(Behaviour):
         }
 
     @cached_property
-    def trial_id_to_trial_object(self) -> dict[Hashable, Trial]:
-        return {trial.label: trial for trial in self.trial_objects}
+    def trial_id_to_trial_object(self) -> dict[Label, Trial]:
+        assert self.trial_objects
+        return self._trial_id_to_trial_object
 
     @cached_property
     def trial_class_to_trial_objects(self) -> dict[str, Trial]:
@@ -502,7 +527,7 @@ class BaseExperiment(Behaviour):
         )
 
         if not self.has_stages:
-            return {self.trial_class: self.trial_objects}
+            return {self.trial_class_names[0]: self.trial_objects}
 
         return {
             self.trial_class_name_to_trial_class[trial_class_name]: [
@@ -526,14 +551,14 @@ class BaseExperiment(Behaviour):
         return dict(sorted(result.items()))
 
     @cached_property
-    def animal_id_to_trial_ids(self) -> dict:
+    def animal_id_to_trial_ids(self) -> dict[Label, list[Label]]:
         return {
-            animal_id: (trial_object.int_id for trial_object in trial_objects)
+            animal_id: [trial_object.int_id for trial_object in trial_objects]
             for animal_id, trial_objects in self.animal_id_to_trial_objects.items()
         }
 
     @cached_property
-    def trial_id_to_animal_id(self) -> dict:
+    def trial_id_to_animal_id(self) -> dict[Label, Label]:
         result = {trial_id: kwargs["animal_id"] for trial_id, kwargs in self.trial_id_to_keyword_arguments.items()}
         return dict(sorted(result.items(), key=lambda item: item[1]))
 
@@ -546,15 +571,24 @@ class BaseExperiment(Behaviour):
         elif self.trial_id_to_trial_class_name:
             result = tuple(self.trial_id_to_trial_class_name)
         else:
-            self._neither_singular_trial_class_or_trial_id_to_trial_class_name()
+            msg = (
+                "Either trial_class has to be singularly defined, "
+                "or trial_id_to_trial_class_name have to be exclusively defined"
+            )
+            raise AttributeError(msg)
 
         first_trial_id = result[0]
         first_type = type(first_trial_id)
+
         if not all(isinstance(trial_id, first_type) for trial_id in result):
             msg = "The Trial IDs must have the same type"
             raise AttributeError(msg)
 
         return result
+
+    @cached_property
+    def trial_id_set(self) -> frozenset[Label]:
+        return frozenset(self.trial_ids)
 
     @cached_property
     def animals_ids(self) -> set:
@@ -741,14 +775,6 @@ class BaseExperiment(Behaviour):
     @cached_property
     def _class_labels(self):
         return tuple(trial_class.trial_label for trial_class in self.trial_sequence)
-
-    @staticmethod
-    def _neither_singular_trial_class_or_trial_id_to_trial_class_name(self):
-        msg = (
-            "Either trial_class has to be singularly defined, "
-            "or trial_id_to_trial_class_name have to be exclusively defined"
-        )
-        raise AttributeError(msg)
 
     def save(self, **kwargs):
         self.analyze_trials()

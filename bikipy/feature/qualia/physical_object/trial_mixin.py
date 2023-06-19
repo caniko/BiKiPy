@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cached_property
+from typing import Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import Field
+from pydantic import Field, DirectoryPath
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT, PHYSICAL_OBJECT_MAP_NAME
 from bikipy.analysis.video import make_inspection_video
@@ -115,7 +116,9 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
             result[heuristic] = rrs[np.nonzero(rrs)]
         return result
 
-    def generate_inspection_video(self, **kwargs) -> None:
+    def generate_inspection_video(
+        self, output_directory: Optional[DirectoryPath] = None, codec: Optional[str] = None
+    ) -> None:
         for heuristic_alias, physical_objects in self.heuristic_to_physical_objects.items():
             perimeter_to_boolean_index = self.reader.confinement_index_defaultdict
             label_to_boolean_index = self.reader.confinement_index_defaultdict
@@ -140,5 +143,6 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                 perimeter_to_boolean_index={po.perimeter: po.result for po in physical_objects},
                 label_to_boolean_index=label_to_boolean_index,
                 label_to_quiver_rays=label_to_quiver_rays,
-                **kwargs,
+                output_file_path=self._video_file_name(output_directory),
+                codec=codec,
             )

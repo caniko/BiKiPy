@@ -18,6 +18,7 @@ projectkit = {path = "/home/can/Projects/projectkit", develop = true}
 pydantic-numpy = "^2.2.1"
 mextractor = "^3.0.0"
 
+moviepy = "^1.0.3"
 inflection = "^0.5.1"
 psutil = "^5.9.4"
 typing-inspect = "^0.8.0"
@@ -31,8 +32,11 @@ scikit-guess = {git = "https://gitlab.com/madphysicist/scikit-guess"}
 
 pandas = { version = "^2.0.0", extras = ["performance", "compression", "hdf5", "parquet", "excel"] }
 
+parsimonious = "^0.10.0"
+
 matplotlib = "^3.2.2"
 seaborn = "*"
+mplcairo = "*"
 
 ffmpeg-python = "^0.2.0"
 opencv-python-headless = "^4.5"
@@ -41,9 +45,6 @@ tqdm = "*"
 yaspin = "*"
 
 compress-pickle = {extras = ["lz4"], version = "*"}
-
-parsimonious = "^0.10.0"
-moviepy = "^1.0.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.2"
