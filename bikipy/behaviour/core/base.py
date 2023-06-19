@@ -342,11 +342,12 @@ class BaseExperiment(Behaviour):
 
         new_sequence = []
         for trial_cls in custom_trial_sequence:
+            trial_cls = resolve_trial(trial_cls, cls.__name__)
             assert trial_cls in cls.trial_classes, (
                 f"The new sequence must consist of classes that are defined for the experiment ({cls.__name__}), "
                 f"{trial_cls} is not included"
             )
-            new_sequence.append(resolve_trial(trial_cls, cls.__name__))
+            new_sequence.append(trial_cls)
 
         cls.trial_sequence = tuple(new_sequence)
         return cls
@@ -467,10 +468,10 @@ class BaseExperiment(Behaviour):
             )
             raise AttributeError(msg)
 
-    _trial_objects: list[Trial] = Field(default_factory=list)
-    _trial_id_to_trial_object: dict[Label, Trial] = Field(default_factory=dict)
-    _bad_trial_ids_to_error_msg: dict[Label, str] = Field(default_factory=dict)
-    __analysed_trials: set[Label] = Field(default_factory=set)
+    _trial_objects: list[Trial] = []
+    _trial_id_to_trial_object: dict[Label, Trial] = {}
+    _bad_trial_ids_to_error_msg: dict[Label, str] = {}
+    __analysed_trials: set[Label] = set()
 
     def get_trial_object(self, trial_id: Label) -> Trial:
         if trial_id in self.__analysed_trials:

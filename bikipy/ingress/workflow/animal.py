@@ -38,7 +38,7 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
                     if len(plugin_data_files) > 1:
                         msg = (
                             f"Only one file per trial: Animal {animal_id} -> Stage {stage_index} "
-                            f"-> Plugin {plugin_model.human_readable_index}"
+                            f"-> Plugin {plugin_model.human_readable_index}:\n{plugin_data_files}"
                         )
                         raise ValueError(msg)
 

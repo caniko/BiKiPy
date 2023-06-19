@@ -1,3 +1,4 @@
+from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.behaviour.core.enclosure.circle import (
     CircleEnclosedExperiment,
     CircleEnclosedHabituationTrial,
@@ -9,7 +10,7 @@ from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 
 
 class CheeseboardTrial(RewardTraceTrialMixin[RectanglePerimeter, CircleVariableRadiusPerimeter], CircleEnclosedTrial):
-    experiment_stage = "CheeseboardRewardTrace"
+    experiment_stage = ExperimentStage.SINGLE
 
     enclosure_perimeter_object_attribute_names = "start_perimeter"
 

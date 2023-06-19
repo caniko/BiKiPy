@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from pydantic.generics import GenericModel
 
+from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.core.base import BikipyModel
 from bikipy.feature.motion import EMPTY_MOTION, Motion, motion_analysis_indexer
@@ -119,7 +120,7 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
 
 
 class GenericRewardTraceTrial(EnclosedTrial, RewardTraceTrialMixin):
-    experiment_stage = "reward_trace"
+    experiment_stage = ExperimentStage.SINGLE
 
 
 class GenericRewardTraceExperiment(EnclosedExperiment):

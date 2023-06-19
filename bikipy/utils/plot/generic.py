@@ -2,7 +2,7 @@ from logging import getLogger
 from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
-from matplotlib import patches
+from matplotlib import patches, colors
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from pydantic import validate_arguments
@@ -81,7 +81,7 @@ def plot_ellipse(center: tuple[float, float], radius: tuple[float, float] | floa
     color = color or "g"
 
     if isinstance(radius, float):
-        circle = plt.Circle(center, radius, fill=False, color=color)
+        circle = plt.Circle(center, radius, fill=False, color=colors.to_rgba(color))
         ax.add_artist(circle)
     elif isinstance(radius, tuple):
         ellipse = patches.Ellipse(center, *radius, edgecolor=color, facecolor="none")

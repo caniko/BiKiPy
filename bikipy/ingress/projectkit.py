@@ -23,7 +23,7 @@ from bikipy._constant import (
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.mapping import experiment_name_to_class
 from bikipy.behaviour.radial_arm.base import BaseRadialMazeExperiment
-from bikipy.feature.qualia.physical_object.heuristic.mapping import HEURISTIC_MAP
+from bikipy.feature.qualia.physical_object.heuristic.mapping import ALIAS_TO_HEURISTIC_CLS
 from bikipy.ingress.plugin.perimeter.enclosure import PluginEnclosure
 from bikipy.ingress.workflow.animal import AnimalIngressWorkflow
 from bikipy.ingress.workflow.animal_day import AnimalDayIngressWorkflow
@@ -74,7 +74,7 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
         logger.info(f"Generating experiment configuration at {project_directory}")
 
         experiment_class = experiment_name_to_class[experiment_name]
-        cds_single = [
+        cds_single = {
             SingleSchema(
                 manual_mapping_name=self.root_class_config_key,
                 model=self.root_class_name_to_class[ingress_method],
@@ -84,25 +84,23 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
                 manual_mapping_name=READER_MAP_NAME, model=DeepLabCutReader
             ),  # TODO: Cleo option to change reader
             SingleSchema(manual_mapping_name=EXPERIMENT_MAP_NAME, model=experiment_class),
-        ]
+        }
         if experiment_class.habituation_trial_class:
-            cds_single.append(
+            cds_single.add(
                 SingleSchema(
                     manual_mapping_name=HABITUATION_TRIAL_MAP_NAME, model=experiment_class.habituation_trial_class
                 )
             )
 
-        cds_homologs = []
-        cds_hierarchical = []
+        cds_homologs = set()
+        cds_hierarchical = set()
 
         plugin_models = set()
 
         if len(experiment_class.trial_classes) == 1:
-            cds_single.append(
-                SingleSchema(manual_mapping_name=TRIAL_MAP_NAME, model=experiment_class.trial_classes.pop())
-            )
+            cds_single.add(SingleSchema(manual_mapping_name=TRIAL_MAP_NAME, model=experiment_class.trial_classes.pop()))
         else:
-            cds_hierarchical.append(
+            cds_hierarchical.add(
                 GroupSchema.from_models(mapping_name=TRIAL_MAP_NAME, models=experiment_class.trial_classes)
             )
 
@@ -116,14 +114,14 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
                 trial_class_to_perimeter_enclosure
             ), f"{experiment_class.__name__}, is an enclosed experiment, but has no class"
             if len(trial_class_to_perimeter_enclosure) == 1:
-                cds_single.append(
+                cds_single.add(
                     SingleSchema(
                         manual_mapping_name=ENCLOSURE_MAP_NAME,
                         model=trial_class_to_perimeter_enclosure.pop(tuple(trial_class_to_perimeter_enclosure)[0]),
                     )
                 )
             else:
-                cds_hierarchical.append(
+                cds_hierarchical.add(
                     GroupSchema.from_models(
                         mapping_name=ENCLOSURE_MAP_NAME,
                         instance_names=set({c.__name__ for c in trial_class_to_perimeter_enclosure}),
@@ -133,7 +131,7 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
             plugin_models.add(PluginEnclosure)
 
         if experiment_class.at_least_one_trial_has_perimeter:
-            cds_hierarchical.append(
+            cds_hierarchical.add(
                 GroupSchema.from_models(
                     mapping_name=PERIMETER_MAP_NAME,
                     models=experiment_class.trial_perimeter_label_to_perimeter_class,
@@ -148,22 +146,22 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
                 models = set()
                 for heuristic in qualia_heuristic:
                     try:
-                        models.add(HEURISTIC_MAP[heuristic])
+                        models.add(ALIAS_TO_HEURISTIC_CLS[heuristic])
                     except KeyError:
                         msg = (
                             f"The defined heuristic key, {heuristic}, is not defined. "
-                            f"Choose from the following: {', '.join(tuple(HEURISTIC_MAP))}"
+                            f"Choose from the following: {', '.join(tuple(ALIAS_TO_HEURISTIC_CLS))}"
                         )
                         raise KeyError(msg)
 
-                cds_hierarchical.append(GroupSchema.from_models(models=models, mapping_name=PHYSICAL_OBJECT_MAP_NAME))
+                cds_hierarchical.add(GroupSchema.from_models(models=models, mapping_name=PHYSICAL_OBJECT_MAP_NAME))
 
         if plugin_models:
-            cds_hierarchical.append(GroupSchema.from_models(mapping_name=PLUGIN_MAP_NAME, models=plugin_models))
+            cds_hierarchical.add(GroupSchema.from_models(mapping_name=PLUGIN_MAP_NAME, models=plugin_models))
 
-        return {
-            "project_directory": project_directory,
-            "cds_singles": set(cds_single),
-            "cds_homologs": set(cds_homologs),
-            "cds_groups": set(cds_hierarchical),
-        }
+        return dict(
+            project_directory=project_directory,
+            cds_singles=cds_single,
+            cds_homologs=cds_homologs,
+            cds_groups=cds_hierarchical,
+        )

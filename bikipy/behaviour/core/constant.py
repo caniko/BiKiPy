@@ -6,6 +6,8 @@ class ExperimentStage(Enum):
     BLANKET = "blanket"
 
     HABITUATION = "habituation"
+
     TRAINING = "training"
     UPDATE = "update"
+
     TEST = "test"

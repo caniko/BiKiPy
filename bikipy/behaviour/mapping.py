@@ -3,6 +3,7 @@ from collections import defaultdict
 from pydantic import validate_arguments
 
 from bikipy.behaviour.core.base import ExperimentCLS, TrialCLS
+from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.behaviour.core.enclosure.circle import BlanketCircleEnclosedExperiment
 from bikipy.behaviour.core.enclosure.rectangle import BlanketRectangleEnclosedExperiment
 from bikipy.behaviour.object_recognition.novel_object_recognition import NORTExperiment
@@ -35,7 +36,7 @@ for experiment in EXPERIMENTS:
         trial_name_to_trial_class[trial_cls.__name__] = trial_cls
         if hasattr(trial_cls, "experiment_stage"):
             experiment_name_to_experiment_stage_to_trial_class[experiment.__name__][
-                trial_cls.experiment_stage
+                trial_cls.experiment_stage.value
             ] = trial_cls
 
 

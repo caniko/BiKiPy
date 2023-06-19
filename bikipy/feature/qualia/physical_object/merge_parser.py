@@ -1,6 +1,7 @@
-import numpy as np
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
+
+from bikipy.feature.qualia.physical_object.analysis.i import QualiaAnalysis
 
 _heuristic_merge_grammar = Grammar(
     """
@@ -23,19 +24,24 @@ class HeuristicMergeVisitor(NodeVisitor):
         return children[0]
 
     def visit_or_expr(self, node, children):
+        var: QualiaAnalysis
+        expr: QualiaAnalysis
         var, _, _, _, expr = children
-        return np.logical_or(var, expr)
+        return var | expr
 
     def visit_and_expr(self, node, children):
+        var: QualiaAnalysis
+        expr: QualiaAnalysis
         var, _, _, _, expr = children
-        return np.logical_and(var, expr)
+        return var & expr
 
     def visit_var(self, node, children):
         return children[0]
 
     def visit_not_var(self, node, children):
+        var_atom: QualiaAnalysis
         _, _, var_atom = children
-        return np.logical_not(var_atom)
+        return ~var_atom
 
     def visit_var_atom(self, node, children):
         return self.context[node.text]
@@ -47,9 +53,7 @@ class HeuristicMergeVisitor(NodeVisitor):
         return children or node
 
 
-def parse_heuristic_merge_equation(
-    formula: str, name2boolean_index: dict[str, np.ndarray[bool, bool]]
-) -> np.ndarray[bool, bool]:
-    visitor = HeuristicMergeVisitor(name2boolean_index)
+def parse_heuristic_merge_equation(formula: str, alias_to_qualia_analysis: dict[str, QualiaAnalysis]) -> QualiaAnalysis:
+    visitor = HeuristicMergeVisitor(alias_to_qualia_analysis)
     tree = _heuristic_merge_grammar.parse(formula)
     return visitor.visit(tree)

@@ -26,6 +26,7 @@ class NORTTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
 
     experiment_class_name = "NORTExperiment"
     experiment_stage = ExperimentStage.TRAINING
+    trial_label = "Familiarization"
 
     @classmethod
     @property
@@ -46,7 +47,8 @@ class NORTNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
     perimeter_labels = {"novel", "familiar"}
 
     experiment_class_name = "NORTExperiment"
-    experiment_stage = "Novelty"
+    experiment_stage = ExperimentStage.TEST
+    trial_label = "Novelty"
 
     @classmethod
     @property

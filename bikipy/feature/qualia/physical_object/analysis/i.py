@@ -11,9 +11,45 @@ from bikipy.core.video import VideoMetadataMixin
 
 logger = getLogger(__name__)
 
+AND_OR_HEURISTIC_INCONGRUENCE_ERROR_MSG = (
+    "The provided heuristic analyzers do not have identical physical object objects"
+)
+
 
 class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMetadataMixin):
     po_label_to_qualia_boolean_index: dict[str, NDArrayBool]
+
+    def __and__(self, other: "QualiaAnalysis") -> "QualiaAnalysis":
+        assert self.__class__ == other.__class__
+        try:
+            return self.__class__(
+                po_label_to_qualia_boolean_index={
+                    po_label: qualia_boolean_index & other.po_label_to_qualia_boolean_index[po_label]
+                    for po_label, qualia_boolean_index in self.po_label_to_qualia_boolean_index.items()
+                }
+            )
+        except KeyError:
+            raise KeyError(AND_OR_HEURISTIC_INCONGRUENCE_ERROR_MSG)
+
+    def __or__(self, other: "QualiaAnalysis") -> "QualiaAnalysis":
+        assert self.__class__ == other.__class__
+        try:
+            return self.__class__(
+                po_label_to_qualia_boolean_index={
+                    po_label: qualia_boolean_index | other.po_label_to_qualia_boolean_index[po_label]
+                    for po_label, qualia_boolean_index in self.po_label_to_qualia_boolean_index.items()
+                }
+            )
+        except KeyError:
+            raise KeyError(AND_OR_HEURISTIC_INCONGRUENCE_ERROR_MSG)
+
+    def __invert__(self) -> "QualiaAnalysis":
+        return self.__class__(
+            po_label_to_qualia_boolean_index={
+                po_label: ~qualia_boolean_index
+                for po_label, qualia_boolean_index in self.po_label_to_qualia_boolean_index.items()
+            }
+        )
 
     @property
     def _analysis_series_list(self) -> list[pd.Series]:
