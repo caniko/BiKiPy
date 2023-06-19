@@ -85,7 +85,7 @@ class EnclosedExperiment(BaseExperiment):
     @property
     def trial_perimeter_enclosure_classes(cls) -> dict[str, PerimeterCLS]:
         return {
-            enclosed_trial_class.trial_label: enclosed_trial_class.trial_perimeter_enclosure_class
+            enclosed_trial_class.experiment_stage: enclosed_trial_class.trial_perimeter_enclosure_class
             for enclosed_trial_class in cls.trial_classes
             if issubclass(enclosed_trial_class, EnclosedTrial)
         }

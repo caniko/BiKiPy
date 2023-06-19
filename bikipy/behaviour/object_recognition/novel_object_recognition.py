@@ -4,6 +4,7 @@ from typing import ClassVar
 
 import pandas as pd
 
+from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.behaviour.core.enclosure.rectangle import (
     RectangleEnclosedExperiment,
     RectangleEnclosedHabituationTrial,
@@ -17,15 +18,14 @@ from bikipy.perimeter.base import SinglePerimeter
 logger = getLogger(__name__)
 
 
-class NortTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
+class NORTTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
     variable: SinglePerimeter = ...
     familiar: SinglePerimeter = ...
 
     perimeter_labels = {"variable", "familiar"}
 
-    experiment_class_name = "NortExperiment"
-    trial_label = "Training"
-    excel_sheet_name = "Training"
+    experiment_class_name = "NORTExperiment"
+    experiment_stage = ExperimentStage.TRAINING
 
     @classmethod
     @property
@@ -39,15 +39,14 @@ class NortTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
         return self.variable, self.familiar
 
 
-class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
+class NORTNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
     novel: SinglePerimeter = ...
     familiar: SinglePerimeter = ...
 
     perimeter_labels = {"novel", "familiar"}
 
-    experiment_class_name = "NortExperiment"
-    trial_label = "Novelty"
-    excel_sheet_name = "Novelty"
+    experiment_class_name = "NORTExperiment"
+    experiment_stage = "Novelty"
 
     @classmethod
     @property
@@ -108,11 +107,11 @@ class NortNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
             raise AttributeError(msg)
 
 
-class NortExperiment(RectangleEnclosedExperiment):
+class NORTExperiment(RectangleEnclosedExperiment):
     experiment_labels = {"nort", "novel_object_recognition_test"}
 
     habituation_trial_class = RectangleEnclosedHabituationTrial
-    trial_sequence = (NortTrainingTrial, NortNoveltyTrial)
+    trial_sequence = (NORTTrainingTrial, NORTNoveltyTrial)
 
     experiment_stage_name_to_stage_index: ClassVar[dict[str, int]] = {
         "habituation": 0,
@@ -131,17 +130,17 @@ class NortExperiment(RectangleEnclosedExperiment):
         upstream = super().trial_keyword_arguments(trial_id)
 
         match self.trial_id_to_trial_class_name[trial_id]:
-            case "NortTrainingTrial":
+            case "NORTTrainingTrial":
                 if "novel" in upstream:
-                    logger.debug("Renaming perimeter label: novel to variable for use in NortTrainingTrial")
+                    logger.debug("Renaming perimeter label: novel to variable for use in NORTTrainingTrial")
 
                     perimeter = upstream.pop("novel")
                     perimeter.label = "variable"
                     upstream["variable"] = upstream.pop("novel")
 
-            case "NortNoveltyTrial":
+            case "NORTNoveltyTrial":
                 if "variable" in upstream:
-                    logger.debug("Renaming perimeter label: variable to novel for use in NortNoveltyTrial")
+                    logger.debug("Renaming perimeter label: variable to novel for use in NORTNoveltyTrial")
 
                     perimeter = upstream.pop("variable")
                     perimeter.label = "novel"

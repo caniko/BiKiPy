@@ -1,7 +1,7 @@
 [immutable]
 metadata_filename = "metadata.xlsx"
-experiment_class = "NortExperiment"
-trial_sequence = ["NortTrainingTrial", "NortNoveltyTrial"]
+experiment_class = "NORTExperiment"
+trial_sequence = ["NORTTrainingTrial", "NORTNoveltyTrial"]
 
 [developer]
 activate_debugging = false
@@ -103,9 +103,9 @@ rigid_nodes_freezing = "array"
 trial_start_perimeter = "string"
 
 [trial.specific]
-[trial.specific.NortTrainingTrial.defined]
+[trial.specific.NORTTrainingTrial.defined]
 
-[trial.specific.NortNoveltyTrial.defined]
+[trial.specific.NORTNoveltyTrial.defined]
 
 [experiment]
 [experiment.defined]

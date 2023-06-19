@@ -10,6 +10,7 @@ from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.behaviour.core.base import HabituationTrialMixin
+from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.core.enclosure.quadrant import Quadrant
 from bikipy.behaviour.utils import (
@@ -322,15 +323,12 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
 
 class RectangleEnclosedHabituationTrial(HabituationTrialMixin, RectangleEnclosedTrial):
-    trial_label = "Habituation"
-    excel_sheet_name = "Habituation"
+    experiment_stage = ExperimentStage.HABITUATION
 
 
 class BlanketRectangleEnclosedTrial(RectangleEnclosedTrial):
-    trial_label = "blanket_rectangle_enclosed_trial"
-    excel_sheet_name = "Rectangle enclosed"
-
     experiment_class_name = "BlanketRectangleEnclosedExperiment"
+    experiment_stage = ExperimentStage.BLANKET
 
 
 class BlanketRectangleEnclosedExperiment(RectangleEnclosedExperiment):

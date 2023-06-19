@@ -69,6 +69,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
     first_stage_is_habituation: bool = False
     metadata_trial_ids_are_higher_level: bool = False
+    custom_trial_sequence: Optional[tuple[str, ...]] = Field(default_factory=tuple)
     trial_sequence_loops: int = 1
     only_one_instance_of_trial_class: bool = Field(
         False,
@@ -76,6 +77,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         "and only focus on one of each trial class",
     )
     trial_ids_to_analyse: Optional[Iterable[Label]] = Field(default_factory=frozenset)
+
     no_cache: bool = False
 
     definition_meters_per_pixel: frozenset[PluginScope]
@@ -154,6 +156,9 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             self._trial_class_name_to_keyword_arguments[experiment.habituation_trial_class.__name__].update(
                 self.project_kit_config["habituation"]
             )
+
+        if self.custom_trial_sequence:
+            experiment = experiment.set_custom_trial_sequence(self.custom_trial_sequence)
 
         return experiment
 
@@ -571,7 +576,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             return self.experiment.trial_label_to_df
 
         result = {}
-        for trial_label, analysis_df in self.experiment.trial_label_to_df.items():
+        for experiment_stage, analysis_df in self.experiment.trial_label_to_df.items():
             metadata = (
                 self.metadata
                 if self.metadata.columns.nlevels >= analysis_df.columns.nlevels
@@ -582,7 +587,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
                 if analysis_df.columns.nlevels >= self.metadata.columns.nlevels
                 else copycat_assumes_levels_of_icon(analysis_df, self.metadata, "")
             )
-            result[trial_label] = analysis_df.join(metadata, how="inner")
+            result[experiment_stage] = analysis_df.join(metadata, how="inner")
 
         return result
 
@@ -623,11 +628,11 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         # We define to_excel and to_parquet in their own loops for atomicity with respect to formats
         # as parquet crashes sometimes.
         with pd.ExcelWriter(self.result_directory_path / f"{self.experiment_class_name}.xlsx") as writer:
-            for trial_label, df in self.trial_label_to_df.items():
-                df.to_excel(writer, sheet_name=str(trial_label))
+            for experiment_stage, df in self.trial_label_to_df.items():
+                df.to_excel(writer, sheet_name=str(experiment_stage))
 
-        for trial_label, df in self.trial_label_to_df.items():
-            df.to_parquet(parquet_dir / f"{trial_label}-{self.experiment_class_name}.parquet", **TO_PARQUET_KWARGS)
+        for experiment_stage, df in self.trial_label_to_df.items():
+            df.to_parquet(parquet_dir / f"{experiment_stage}-{self.experiment_class_name}.parquet", **TO_PARQUET_KWARGS)
 
     def create_analysis_videos(self, trial_ids: Iterable[Label], **trial_video_kwargs) -> None:
         for trial_id in trial_ids:

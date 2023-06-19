@@ -5,19 +5,23 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import Field, DirectoryPath
+from pydantic import DirectoryPath, Field
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT, PHYSICAL_OBJECT_MAP_NAME
 from bikipy.analysis.video import make_inspection_video
 from bikipy.behaviour.utils import reduce_repeating_sequences
+from bikipy.core.typing import ConfinementSequence
 from bikipy.feature.qualia.physical_object.analysis.i import QualiaAnalysis
 from bikipy.feature.qualia.physical_object.analysis.mapping import (
     PO_NUMBER_TO_ANALYSIS_MODEL,
 )
-from bikipy.feature.qualia.physical_object.heuristic.abc import QualiaHeuristic, RayMixin, ProximityMixin
+from bikipy.feature.qualia.physical_object.heuristic.abc import (
+    ProximityMixin,
+    QualiaHeuristic,
+    RayMixin,
+)
 from bikipy.feature.qualia.physical_object.heuristic.mapping import HEURISTIC_MAP
 from bikipy.perimeter.base import SinglePerimeter
-from bikipy.perimeter.helper.confinement import ConfinementSequence
 from bikipy.perimeter.mixin import TrialWithPerimeterMixin
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 

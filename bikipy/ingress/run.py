@@ -1,4 +1,4 @@
-from typing import Optional, Iterable
+from typing import Iterable, Optional
 
 from projectkit.utils.misc import here_or_there
 from pydantic import DirectoryPath

@@ -119,7 +119,7 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
 
 
 class GenericRewardTraceTrial(EnclosedTrial, RewardTraceTrialMixin):
-    trial_label = "reward_trace"
+    experiment_stage = "reward_trace"
 
 
 class GenericRewardTraceExperiment(EnclosedExperiment):

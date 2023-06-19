@@ -3,6 +3,7 @@ from typing import ClassVar, Optional
 
 from pydantic import BaseModel
 
+from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.behaviour.radial_arm.base import (
     BaseRadialMazeExperiment,
     BaseRadialMazeTrial,
@@ -16,8 +17,7 @@ class BaseYMaze(BaseModel):
 
 
 class YMazeTrial(BaseYMaze, BaseRadialMazeTrial):
-    trial_label = "Y-Maze"
-    excel_sheet_name = "Y-Maze"
+    experiment_stage = ExperimentStage.SINGLE
 
 
 class YMazeExperiment(BaseYMaze, BaseRadialMazeExperiment):

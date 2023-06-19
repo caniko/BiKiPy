@@ -14,7 +14,7 @@ Test hypothesis:
 TG: Equal
 WT: 4 > 3 > 2 >~ 1
 """
-
+from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.behaviour.core.enclosure.rectangle import (
     RectangleEnclosedExperiment,
     RectangleEnclosedHabituationTrial,
@@ -32,8 +32,7 @@ class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTri
     perimeter_labels = {"object_1", "object_2"}
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
-    excel_sheet_name = "Training"
-    trial_label = "Training"
+    experiment_stage = ExperimentStage.TRAINING
 
     @classmethod
     @property
@@ -54,8 +53,7 @@ class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial
     perimeter_labels = {"object_1", "object_3"}
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
-    excel_sheet_name = "Update"
-    trial_label = "Update"
+    experiment_stage = ExperimentStage.UPDATE
 
     @classmethod
     @property
@@ -78,8 +76,7 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
     perimeter_labels = {"object_1", "object_2", "object_3", "object_4"}
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
-    excel_sheet_name = "Test"
-    trial_label = "Test"
+    experiment_stage = ExperimentStage.TEST
 
     @classmethod
     @property

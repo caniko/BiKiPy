@@ -6,14 +6,11 @@ import pandas as pd
 
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
-from bikipy.feature.qualia.physical_object.heuristic.abc import (
-    AbstractQualiaHeuristic,
-    ProximityMixin,
-    RayMixin,
-)
+from bikipy.feature.qualia.physical_object.heuristic.abc import AbstractQualiaHeuristic, ProximityMixin, RayMixin
 
 
 class OlfactionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
+    maximum_distance_meters: float = 0.035
     maximum_degrees = 45.0
 
     nose_label: str | None = "nose"
@@ -23,7 +20,7 @@ class OlfactionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
     manual_nose: Optional[ComputeProximity]
     manual_nose_olfaction_rays: Optional[ComputeInLineOfSight]
 
-    heuristic_alias = "BodyProximity"
+    heuristic_alias = "Olfaction"
 
     @classmethod
     @property

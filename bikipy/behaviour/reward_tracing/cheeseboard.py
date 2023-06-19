@@ -9,7 +9,7 @@ from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 
 
 class CheeseboardTrial(RewardTraceTrialMixin[RectanglePerimeter, CircleVariableRadiusPerimeter], CircleEnclosedTrial):
-    trial_label = "CheeseboardRewardTrace"
+    experiment_stage = "CheeseboardRewardTrace"
 
     enclosure_perimeter_object_attribute_names = "start_perimeter"
 

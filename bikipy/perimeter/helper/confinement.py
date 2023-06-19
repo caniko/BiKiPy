@@ -6,6 +6,7 @@ import seaborn as sb
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
+from bikipy.core.typing import ConfinementSequence
 from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.base import PerimeterSet
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
@@ -13,9 +14,6 @@ from bikipy.utils.plot.generic import plot_coordinates
 from bikipy.utils.plot.inspect import InspectArg, generic_inspection_finalization
 
 logger = getLogger(__file__)
-
-# uint8 when there are 255 or fewer perimeters in the trial.
-ConfinementSequence = np.ndarray[int, np.dtype[np.uint8] | np.dtype[np.uint16]]
 
 
 def detect_multi_node_sequential_perimeter_presence(

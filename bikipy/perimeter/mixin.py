@@ -37,6 +37,20 @@ class TrialWithPerimeterMixin(GenericModel, Generic[Perimeter, *PerimeterInstanc
     def perimeters(self) -> tuple[Perimeter, *PerimeterInstances]:
         ...
 
+    @property
+    def perimeter_to_derive_meters_per_pixel(self) -> Perimeter:
+        if self.manual_perimeter_to_derive_meters_per_pixel:
+            try:
+                return self._label_to_perimeter[self.manual_perimeter_to_derive_meters_per_pixel]
+            except TypeError:
+                # self._label_to_perimeter is None -> TypeError
+                msg = (
+                    f"The class, {self.__class__.__name__}, does not define _label_to_perimeter, "
+                    f"which makes the mapping of manual_perimeter_to_derive_meters_per_pixel "
+                    f"to a Perimeter object impossible"
+                )
+                raise AttributeError(msg)
+
     def __getitem__(self, item) -> Perimeter:
         return self._label_to_perimeter[item]
 

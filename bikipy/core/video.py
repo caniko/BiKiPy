@@ -74,7 +74,7 @@ class _VideoMetadataBase(BikipyModel):
     def boolean_array_to_seconds(self, boolean_array: NDArrayBool) -> float:
         return np.sum(boolean_array) / self.fps
 
-    def video_read_frames(self) -> Generator[np.ndarray[int, np.dtype[np.uint8]]]:
+    def video_read_frames(self) -> Generator[np.ndarray[int, np.dtype[np.uint8]], None, None]:
         if not self.video_path:
             logger.error(
                 f"Tried to read frames of video, but the {self.__class__.__name__} "
@@ -85,8 +85,8 @@ class _VideoMetadataBase(BikipyModel):
         cap = cv2.VideoCapture(self.video_path)
 
         if not cap.isOpened():
-            logger.error(f"Error opening video file: {self.video_path}")
-            return
+            msg = f"Error opening video file: {self.video_path}"
+            raise ValueError(msg)
 
         while cap.isOpened():
             ret, frame = cap.read()

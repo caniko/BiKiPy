@@ -16,6 +16,7 @@ from pydantic import (
     Field,
     FilePath,
     ValidationError,
+    validate_arguments,
     validator,
 )
 from pydantic.fields import FieldInfo
@@ -28,6 +29,7 @@ from yaspin.spinners import Spinners
 
 from bikipy import runtime_settings
 from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
+from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.core.base import BikipyHashable
 from bikipy.core.mixin import AbstractFeatureCollectorMixin, InspectPlotMixin
 from bikipy.core.typing import Label
@@ -89,8 +91,8 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
     required_video_metadata_fields = {"meters_per_pixel", "recording_resolution", "fps"}
 
     experiment_class_name: ClassVar[str]
-    trial_label: ClassVar[str]
-    excel_sheet_name: ClassVar[str]
+    experiment_stage: ClassVar[ExperimentStage]
+    trial_label: ClassVar[Optional[str]] = None
 
     second_tolerance: ClassVar[float] = 0.15
 
@@ -161,20 +163,6 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
             )
             raise AttributeError(msg) from e
 
-    @property
-    def perimeter_to_derive_meters_per_pixel(self) -> Perimeter:
-        if self.manual_perimeter_to_derive_meters_per_pixel:
-            try:
-                return self._label_to_perimeter[self.manual_perimeter_to_derive_meters_per_pixel]
-            except TypeError:
-                # self._label_to_perimeter is None -> TypeError
-                msg = (
-                    f"The class, {self.__class__.__name__}, does not define _label_to_perimeter, "
-                    f"which makes the mapping of manual_perimeter_to_derive_meters_per_pixel "
-                    f"to a Perimeter object impossible"
-                )
-                raise AttributeError(msg)
-
     @cached_property
     def manual_center_meters(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
         if self.manual_center_pixels is not None:
@@ -222,6 +210,10 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
             fps=self.video.fps,
         )
 
+    @cached_property
+    def excel_sheet_name(self) -> str:
+        return f"{self.experiment_stage}: {self.trial_label}" if self.trial_label else self.experiment_stage
+
     def generate_inspection_video(
         self, output_directory: Optional[DirectoryPath] = None, codec: Optional[str] = None
     ) -> None:
@@ -229,7 +221,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
 
     def _video_file_name(self, output_directory: Optional[DirectoryPath] = None) -> FilePath:
         output_directory = output_directory or self.framewise_coordinates_path.parent
-        return output_directory / f"{self.trial_label}."
+        return output_directory / f"{self.experiment_stage}."
 
     # Miscellaneous
     @property
@@ -263,7 +255,7 @@ Trial = TypeVar("Trial", bound=BaseTrial)
 
 
 class HabituationTrialMixin(BaseModel):
-    trial_label = "Habituation"
+    experiment_stage = ExperimentStage.HABITUATION
 
 
 class BaseExperiment(Behaviour):
@@ -287,7 +279,7 @@ class BaseExperiment(Behaviour):
     # The trial class that will be used in case set_first_trial_to_habituation is called
     habituation_trial_class: ClassVar[Optional[TrialCLS]] = None
 
-    _first_trial_is_habituation: ClassVar[bool] = False
+    first_trial_is_habituation: ClassVar[bool] = False
 
     # "Sequence of trial classes designed for the experiment class"
     trial_sequence: ClassVar[tuple[TrialCLS, ...]]
@@ -325,23 +317,38 @@ class BaseExperiment(Behaviour):
         return OrderedSet(cls.trial_sequence)
 
     @classmethod
-    def trial_sequence_repetition(cls, repetitions: int) -> "ExperimentCLS":
-        cls.trial_sequence = tuple(cls.trial_classes) * repetitions
-        return cls
-
-    @classmethod
     def set_first_trial_to_habituation(cls) -> "ExperimentCLS":
         if not cls.habituation_trial_class:
             msg = f"Habituation trial class for {cls.__name__} has not been defined, contact the maintainers"
             raise AttributeError(msg)
-        if cls._first_trial_is_habituation:
+        if cls.first_trial_is_habituation:
             msg = "The first trial has already been set to habituation"
             raise AttributeError(msg)
 
         cls.habituation_trial_class.experiment_class_name = cls.__name__
         cls.trial_sequence = (cls.habituation_trial_class, *cls.trial_sequence)
-        cls._first_trial_is_habituation = True
+        cls.first_trial_is_habituation = True
 
+        return cls
+
+    @classmethod
+    def trial_sequence_repetition(cls, repetitions: int) -> "ExperimentCLS":
+        cls.trial_sequence = tuple(cls.trial_classes) * repetitions
+        return cls
+
+    @classmethod
+    def set_custom_trial_sequence(cls, custom_trial_sequence: tuple[TrialCLS | str, ...]) -> "ExperimentCLS":
+        from bikipy.behaviour.mapping import resolve_trial
+
+        new_sequence = []
+        for trial_cls in custom_trial_sequence:
+            assert trial_cls in cls.trial_classes, (
+                f"The new sequence must consist of classes that are defined for the experiment ({cls.__name__}), "
+                f"{trial_cls} is not included"
+            )
+            new_sequence.append(resolve_trial(trial_cls, cls.__name__))
+
+        cls.trial_sequence = tuple(new_sequence)
         return cls
 
     @classmethod
@@ -393,7 +400,7 @@ class BaseExperiment(Behaviour):
     @classmethod
     @property
     def trial_class_labels(cls) -> tuple[str, ...]:
-        return tuple(trial_class.trial_label for trial_class in cls.trial_sequence)
+        return tuple(trial_class.experiment_stage for trial_class in cls.trial_sequence)
 
     @classmethod
     @property
@@ -517,7 +524,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def trial_class_to_trial_objects(self) -> dict[str, Trial]:
-        assert not self.skip_habituation or (self.skip_habituation and self._first_trial_is_habituation), (
+        assert not self.skip_habituation or (self.skip_habituation and self.first_trial_is_habituation), (
             "skip_habituation is True, but the experiment has no habituation trial set. Possible mistakes:\n"
             "  - skip_habituation was set to True by mistake.\n"
             '  - Forgot to set ingress.first_stage_is_habituation to "True" '
@@ -774,7 +781,7 @@ class BaseExperiment(Behaviour):
 
     @cached_property
     def _class_labels(self):
-        return tuple(trial_class.trial_label for trial_class in self.trial_sequence)
+        return tuple(trial_class.experiment_stage for trial_class in self.trial_sequence)
 
     def save(self, **kwargs):
         self.analyze_trials()

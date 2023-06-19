@@ -2,15 +2,7 @@ from abc import ABC, abstractmethod
 from collections import abc, defaultdict
 from functools import cached_property
 from logging import getLogger
-from typing import (
-    ClassVar,
-    Generic,
-    Hashable,
-    Iterable,
-    Optional,
-    Type,
-    TypeVar,
-)
+from typing import ClassVar, Generic, Hashable, Iterable, Optional, Type, TypeVar
 
 import matplotlib
 import numpy as np
@@ -25,10 +17,10 @@ from typing_extensions import Literal
 from bikipy import runtime_settings
 from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
 from bikipy.core.base import BikipyHashable
+from bikipy.core.typing import ConfinementSequence
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.perimeter.base import BasePerimeter
-from bikipy.perimeter.helper.confinement import ConfinementSequence
 from bikipy.reader.model import model_data
 from bikipy.reader.utils import compute_midpoint_label
 from bikipy.utils.constants import TO_PARQUET_KWARGS
