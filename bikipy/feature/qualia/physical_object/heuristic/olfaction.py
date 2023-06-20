@@ -25,9 +25,9 @@ class OlfactionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("manual_nose", "manual_torso", "manual_tail_base"))
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(("manual_nose", "manual_torso", "manual_tail_base"))
+        return result
 
     @cached_property
     def nose_proximity(self) -> ComputeProximity | None:

@@ -4,7 +4,7 @@ from bikipy.behaviour.core.enclosure.circle import (
     CircleEnclosedHabituationTrial,
     CircleEnclosedTrial,
 )
-from bikipy.behaviour.reward_tracing import RewardTraceTrialMixin
+from bikipy.behaviour.reward_tracing.base import RewardTraceTrialMixin
 from bikipy.perimeter.circle.model import CircleVariableRadiusPerimeter
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 

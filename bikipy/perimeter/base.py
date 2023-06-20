@@ -173,8 +173,8 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(
             {
                 "int_id",
                 "group_label",
@@ -183,7 +183,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
                 "reference_point_array",
             }
         )
-        return upstream
+        return result
 
     @property
     def _to_hash(self) -> list:
@@ -365,9 +365,9 @@ class PerimeterSet(BasePerimeter):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("perimeters", "restricting_perimeters"))
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(("perimeters", "restricting_perimeters"))
+        return result
 
     @property
     def _to_hash(self) -> list:

@@ -19,8 +19,8 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
 
     @property
     def _analysis_series_list(self) -> list[pd.Series]:
-        upstream = super()._analysis_series_list
-        upstream.append(
+        result = super()._analysis_series_list
+        result.append(
             pd.Series(
                 {
                     **{
@@ -42,7 +42,7 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
                 }
             )
         )
-        return upstream
+        return result
 
     @cached_property
     def pair_to_absolute_object_discrimination(self) -> dict[tuple[str, str], float]:

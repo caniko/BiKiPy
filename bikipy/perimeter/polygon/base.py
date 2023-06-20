@@ -40,9 +40,9 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("vertices_in_pixels", "derived_meters_per_pixel_source"))
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(("vertices_in_pixels", "derived_meters_per_pixel_source"))
+        return result
 
     @property
     def _to_hash(self) -> list:

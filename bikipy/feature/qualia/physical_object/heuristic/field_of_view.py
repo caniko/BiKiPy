@@ -31,8 +31,8 @@ class WhiskerInteractionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMi
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(
             (
                 "manual_left_eye_proximity",
                 "manual_leftward_observation",
@@ -40,7 +40,7 @@ class WhiskerInteractionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMi
                 "manual_rightward_observation",
             )
         )
-        return upstream
+        return result
 
     @cached_property
     def left_proximity(self) -> ComputeProximity:

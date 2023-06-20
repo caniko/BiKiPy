@@ -40,9 +40,9 @@ class LinePerimeter(BikipyHashable, VideoMetadataMixin):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("location", "orientation", "logic"))
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(("location", "orientation", "logic"))
+        return result
 
     @property
     def feat_border(self):

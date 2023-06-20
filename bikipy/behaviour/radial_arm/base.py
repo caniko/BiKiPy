@@ -35,11 +35,11 @@ class RadialMazeBase(BikipyHashable):
     category = "radial_maze"
 
 
-class BaseRadialMazeExperiment(BaseExperiment, RadialMazeBase):
+class BaseRadialMazeExperiment(RadialMazeBase, BaseExperiment):
     pass
 
 
-class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
+class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
     center: SinglePerimeter = ...
     arms: tuple[SinglePerimeter, ...] = ...
 
@@ -103,9 +103,9 @@ class BaseRadialMazeTrial(BaseTrial, TrialWithPerimeterMixin, RadialMazeBase):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("arms", "center"))
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(("arms", "center"))
+        return result
 
     @validator("center")
     def center_has_1_as_int_id(cls, value):

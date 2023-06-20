@@ -37,9 +37,9 @@ class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTri
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("object_1", "object_2"))
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(("object_1", "object_2"))
+        return result
 
     @property
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
@@ -58,9 +58,9 @@ class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("object_1", "object_3"))
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(("object_1", "object_3"))
+        return result
 
     @property
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
@@ -81,9 +81,9 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("object_1", "object_2", "object_3", "object_4"))
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(("object_1", "object_2", "object_3", "object_4"))
+        return result
 
     @property
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:

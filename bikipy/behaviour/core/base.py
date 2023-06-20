@@ -99,8 +99,8 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(
             (
                 "framewise_coordinates_path",
                 "enclosure",
@@ -109,7 +109,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
                 "analysis_series_cache_directory_path",
             )
         )
-        return upstream
+        return result
 
     @classmethod
     @property
@@ -226,16 +226,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
     # Miscellaneous
     @property
     def _analysis_series_list(self) -> list[pd.Series]:
-        upstream = [self.reader.info, pd.Series(self.motion.as_tuple, index=motion_analysis_indexer("All", 2))]
-        if self.has_physical_object:
-            upstream.extend(
-                (
-                    physical_object_analyser.analysis_series
-                    for physical_object_analyser in self.physical_object_analysers
-                )
-            )
-            upstream.extend(self.all_summary_series)
-        return upstream
+        return [self.reader.info, pd.Series(self.motion.as_tuple, index=motion_analysis_indexer("All", 2))]
 
     @cached_property
     def _uint_zeros_based_on_frame_length(self) -> np.ndarray[int, np.dtype[np.uint8]]:
@@ -298,8 +289,8 @@ class BaseExperiment(Behaviour):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(
             (
                 "trial_id_to_trial_class_name",
                 "trial_id_to_keyword_arguments",
@@ -308,7 +299,7 @@ class BaseExperiment(Behaviour):
                 "common_trial_keyword_arguments",
             )
         )
-        return upstream
+        return result
 
     @classmethod
     @property

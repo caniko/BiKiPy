@@ -31,9 +31,9 @@ class NORTTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("variable", "familiar"))
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(("variable", "familiar"))
+        return result
 
     @property
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
@@ -53,9 +53,9 @@ class NORTNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("novel", "familiar"))
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(("novel", "familiar"))
+        return result
 
     @cached_property
     def _trial_physical_object_feature_series_list(self) -> list[pd.Series]:
@@ -129,23 +129,23 @@ class NORTExperiment(RectangleEnclosedExperiment):
     }
 
     def trial_keyword_arguments(self, trial_id: Label) -> dict:
-        upstream = super().trial_keyword_arguments(trial_id)
+        result = super().trial_keyword_arguments(trial_id)
 
         match self.trial_id_to_trial_class_name[trial_id]:
             case "NORTTrainingTrial":
-                if "novel" in upstream:
+                if "novel" in result:
                     logger.debug("Renaming perimeter label: novel to variable for use in NORTTrainingTrial")
 
-                    perimeter = upstream.pop("novel")
+                    perimeter = result.pop("novel")
                     perimeter.label = "variable"
-                    upstream["variable"] = upstream.pop("novel")
+                    result["variable"] = result.pop("novel")
 
             case "NORTNoveltyTrial":
-                if "variable" in upstream:
+                if "variable" in result:
                     logger.debug("Renaming perimeter label: variable to novel for use in NORTNoveltyTrial")
 
-                    perimeter = upstream.pop("variable")
+                    perimeter = result.pop("variable")
                     perimeter.label = "novel"
-                    upstream["novel"] = perimeter
+                    result["novel"] = perimeter
 
-        return upstream
+        return result

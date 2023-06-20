@@ -25,9 +25,9 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("manual_center_eye", "manual_torso", "manual_tail_base"))
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(("manual_center_eye", "manual_torso", "manual_tail_base"))
+        return result
 
     @cached_property
     def center_eye_proximity(self) -> ComputeProximity | None:

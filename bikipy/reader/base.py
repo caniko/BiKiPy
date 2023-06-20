@@ -123,9 +123,9 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("df_path", "trial_enclosure", "timestamp_index", "_using_bikipy_ingress"))
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(("df_path", "trial_enclosure", "timestamp_index", "_using_bikipy_ingress"))
+        return result
 
     @abstractmethod
     def _isolate_coordinates(self, key: Iterable[Hashable] | Hashable) -> pd.DataFrame:

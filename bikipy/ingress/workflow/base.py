@@ -127,9 +127,9 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("project_directory", "experiment_class_name"))
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(("project_directory", "experiment_class_name"))
+        return result
 
     @cached_property
     def experiment_class(self) -> "ExperimentCLS":

@@ -54,46 +54,46 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         :return:
         """
         result = defaultdict(list)
+
         for heuristic_alias, heuristic_config in self.project_kit_config[PHYSICAL_OBJECT_MAP_NAME].items():
+            heuristic_inspect_arg = (
+                self.inspect_arg if isinstance(self.inspect_arg, bool) else self.inspect_arg / heuristic_alias
+            )
             for perimeter in self.physical_object_perimeters:
-                result[heuristic_alias].append(
-                    ALIAS_TO_HEURISTIC_CLS[heuristic_alias](
-                        perimeter=perimeter, reader=self.reader, manual_video=self.video, **heuristic_config
-                    )
+                heuristic = ALIAS_TO_HEURISTIC_CLS[heuristic_alias](
+                    perimeter=perimeter, reader=self.reader, manual_video=self.video, **heuristic_config
                 )
-        return dict(result)
-
-    @cached_property
-    def physical_object_analysers(self) -> list[QualiaAnalysis]:
-        analysis_model = PO_NUMBER_TO_ANALYSIS_MODEL[len(self.physical_object_perimeters)]
-
-        result = []
-        for heuristic_alias, physical_objects_heuristic in self.alias_to_heuristic_physical_objects.items():
-            try:
-                current_inspect_arg = self.inspect_arg / heuristic_alias
-            except TypeError:
-                # inspect_arg is a bool
-                current_inspect_arg = self.inspect_arg
-
-            po_to_qualia_boolean_index = {}
-            for heuristic in physical_objects_heuristic:
-                po_to_qualia_boolean_index[heuristic.po_label] = heuristic.result
                 if self.inspect_arg:
                     heuristic.plot()
                     generic_inspection_finalization(
-                        current_inspect_arg,
+                        heuristic_inspect_arg,
                         f"{self.label}_{heuristic.po_label}_{heuristic_alias}{INSPECT_FIG_FILE_FORMAT}",
                     )
+                result[heuristic_alias].append(heuristic)
 
-            result.append(
-                analysis_model(po_label_to_qualia_boolean_index=po_to_qualia_boolean_index, manual_video=self.video)
+        for heuristic_alias, heuristic_equation in self.alias_to_qualia_heuristics_combination_equations:
+            result[heuristic_alias] = parse_heuristic_merge_equation(heuristic_equation, result)
+
+        return dict(result)
+
+    @cached_property
+    def physical_object_analysers(self) -> dict[str, QualiaAnalysis]:
+        analysis_model = PO_NUMBER_TO_ANALYSIS_MODEL[len(self.physical_object_perimeters)]
+
+        result = {}
+        for heuristic_alias, physical_objects_heuristic in self.alias_to_heuristic_physical_objects.items():
+            result[heuristic_alias] = analysis_model(
+                manual_video=self.video,
+                po_label_to_qualia_boolean_index={
+                    heuristic.po_label: heuristic.result for heuristic in physical_objects_heuristic
+                },
             )
 
-        alias_to_heuristic_result = {}
-        for heuristic_equation in self.qualia_heuristics_combination_equations:
-            parse_heuristic_merge_equation
-
         return result
+
+    @property
+    def alias_to_merged_heuristics(self) -> dict[str, QualiaAnalysis]:
+        pass
 
     @property
     def all_summary_series(self) -> list[pd.Series]:
@@ -152,3 +152,12 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                 output_file_path=self._video_file_name(output_directory),
                 codec=codec,
             )
+
+    @property
+    def _analysis_series_list(self) -> list[pd.Series]:
+        result = super()._analysis_series_list
+        result.extend(
+            (physical_object_analyser.analysis_series for physical_object_analyser in self.physical_object_analysers)
+        )
+        result.extend(self.all_summary_series)
+        return result

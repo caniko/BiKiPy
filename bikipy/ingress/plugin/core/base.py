@@ -43,9 +43,9 @@ class BasePlugin(BikipyModel, SchemanticProjectMixin, ABC):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("ingress", "data_path", "plugin_scope"))
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(("ingress", "data_path", "plugin_scope"))
+        return result
 
     @cached_property
     def stem_info(self):

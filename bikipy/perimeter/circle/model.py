@@ -106,9 +106,9 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.add("center_pixels")
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.add("center_pixels")
+        return result
 
     @property
     def _to_hash(self) -> list:
@@ -149,9 +149,9 @@ class CircleFixedRadiusPerimeter(BaseCirclePerimeter):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.add("radius_pixels")
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.add("radius_pixels")
+        return result
 
     @property
     def _to_hash(self) -> list:

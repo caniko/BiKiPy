@@ -24,9 +24,9 @@ class BikipyHashable(BikipyModel, SchemanticProjectMixin):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("label", "int_id"))
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(("label", "int_id"))
+        return result
 
     @property
     def _to_hash(self) -> list:

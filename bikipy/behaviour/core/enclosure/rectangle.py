@@ -30,8 +30,6 @@ from bikipy.utils.plot.inspect import generic_inspection_finalization
 logger = getLogger(__name__)
 quadrant_grid_typing = tuple[int, int]
 
-A = 1
-
 
 class RectangleEnclosedExperiment(EnclosedExperiment):
     pass

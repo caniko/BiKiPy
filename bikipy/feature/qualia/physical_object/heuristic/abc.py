@@ -29,9 +29,9 @@ class AbstractQualiaHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        upstream = super().schemantic_fields_to_exclude_from_config_schema
-        upstream.update(("perimeter", "reader"))
-        return upstream
+        result = super().schemantic_fields_to_exclude_from_config_schema
+        result.update(("perimeter", "reader"))
+        return result
 
     @property
     @abstractmethod

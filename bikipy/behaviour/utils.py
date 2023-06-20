@@ -120,6 +120,6 @@ def blanket_experiment_label_generator(experiment_label: str) -> set[str]:
 
 
 def blanket_enclosed_experiment_label_generator(experiment_label: str) -> set[str]:
-    upstream = blanket_experiment_label_generator(experiment_label)
-    upstream.add(f"{experiment_label.capitalize()}Enclosed")
-    return upstream
+    result = blanket_experiment_label_generator(experiment_label)
+    result.add(f"{experiment_label.capitalize()}Enclosed")
+    return result
