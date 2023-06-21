@@ -284,8 +284,8 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
                 result = result.iloc[: -self.cropped_frames]
             else:
                 result = result.iloc[self.cropped_frames :]
-                if self.df_is_timestamped:
-                    result.index = result.index - result.index[0]
+                # if self.df_is_timestamped:
+                #     result.index = result.index - result.index[0]
 
         if self.invert_y_axis:
             result.loc[:, pd.IndexSlice[:, "y"]] = self.video.vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
@@ -344,7 +344,9 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     @property
     def number_of_frames(self) -> int:
         result = len(self.df)
-        assert not self.cropped_frames or self.raw_frames - self.cropped_frames == result
+        assert (
+            not self.cropped_frames or self.raw_frames - self.cropped_frames == result
+        ), f"{self.raw_frames} - {self.cropped_frames} != {result}\n{self.raw_frames - self.cropped_frames} != {result}"
         return result
 
     @property
