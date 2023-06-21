@@ -16,7 +16,6 @@ from pydantic import (
     Field,
     FilePath,
     ValidationError,
-    validate_arguments,
     validator,
 )
 from pydantic.fields import FieldInfo
@@ -70,10 +69,10 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
     coordinate_timestamp_index: Optional[NDArray] = timestamp_index_field
     manual_center_pixels: Optional[NDArrayInt16]
     enclosure: Optional[Perimeter] = enclosure_field
-    crop_time_seconds: float = 0.0
+    cropped_total_seconds: float = 0.0
     crop_from_end: bool = Field(
         False,
-        description="Only affective if crop_time_seconds is not 0.0. Will crop from start instead when set to False",
+        description="Only affective if cropped_total_seconds is not 0.0. Will crop from start instead when set to False",
     )
 
     # Class variables
@@ -180,7 +179,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
             "timestamp_index": self.coordinate_timestamp_index,
             "label": self.framewise_coordinates_path.stem,
             "manual_video": self.video,
-            "crop_time_seconds": self.crop_time_seconds,
+            "cropped_total_seconds": self.cropped_total_seconds,
             "enclosure": self.enclosure,
             **self.manual_reader_kwargs,
         }
@@ -612,6 +611,9 @@ class BaseExperiment(Behaviour):
         """
         return []
 
+    def analyze_trials(self):
+        assert self.trial_class_to_trial_analysis_series
+
     # DataFrame methods =========================================
 
     @cached_property
@@ -641,9 +643,6 @@ class BaseExperiment(Behaviour):
                         result[trial_class][trial_object.label] = result[trial_class][trial_object.label].result()
 
         return dict(result)
-
-    def analyze_trials(self):
-        assert self.trial_class_to_trial_analysis_series
 
     @cached_property
     def _animal_id_to_sequential_features(self) -> pd.DataFrame | None:

@@ -26,23 +26,23 @@ skip_habituation = true
 
 [trial.common]
 required = ["project_kit_config"]
-optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "crop_time_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "qualia_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter"]
+optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "alias_to_qualia_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter"]
 
 [trial.common.defined]
 manual_center_rectangle_dimensions_meters = [0.2, 0.2]
-crop_time_seconds = 10
+cropped_total_seconds = 10
 
 [trial.NORTTrainingTrial]
 class_name = "NORTTrainingTrial"
 required = ["project_kit_config"]
-optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "crop_time_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "qualia_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter"]
+optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "alias_to_qualia_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter"]
 
 [trial.NORTTrainingTrial.defined]
 
 [trial.NORTNoveltyTrial]
 class_name = "NORTNoveltyTrial"
 required = ["project_kit_config"]
-optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "crop_time_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "qualia_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter"]
+optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "alias_to_qualia_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter"]
 
 [trial.NORTNoveltyTrial.defined]
 [enclosure.RectanglePerimeter]
@@ -97,14 +97,14 @@ optional = ["compressed_pickle_suffix", "debug", "disable_numba", "disable_proce
 
 [habituation]
 required = ["project_kit_config"]
-optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "crop_time_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "rectangle_2d_bin", "trial_label", "trial_start_perimeter"]
+optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "rectangle_2d_bin", "trial_label", "trial_start_perimeter"]
 
 [habituation.defined]
 manual_center_rectangle_dimensions_meters = [0.2, 0.2]
 
 [reader]
 required = ["object_tracking_label_for_kinematics"]
-optional = ["cache_meters_augmented", "crop_from_end", "crop_time_seconds", "df_is_timestamped", "df_read_kwargs", "export_timestamp_data_as_parquet", "fps", "frame", "future_scaling", "invert_y_axis", "label_to_plot_prepped_coordinates", "manual_video", "meters_per_pixel", "midpoint_groups", "min_likelihood", "minimum_frame_length", "model", "model_displacement_by_std", "model_kwargs", "model_method", "recording_resolution", "required_tail_likelihood", "x_axis_crop_end_point", "y_axis_crop_end_point"]
+optional = ["cache_meters_augmented", "crop_from_end", "cropped_total_seconds", "df_is_timestamped", "df_read_kwargs", "export_timestamp_data_as_parquet", "fps", "frame", "future_scaling", "invert_y_axis", "label_to_plot_prepped_coordinates", "manual_video", "meters_per_pixel", "midpoint_groups", "min_likelihood", "minimum_frame_length", "model", "model_displacement_by_std", "model_kwargs", "model_method", "recording_resolution", "required_tail_likelihood", "x_axis_crop_end_point", "y_axis_crop_end_point"]
 
 [reader.defined]
 object_tracking_label_for_kinematics = "torso"
@@ -140,7 +140,7 @@ compressed_pickle_suffix = "string(default: .lz4)"
 coordinate_timestamp_index = "np.ndarray"
 create_inspection_plots = "boolean(default: True)"
 crop_from_end = "boolean(default: False)"
-crop_time_seconds = "number(default: 0.0)"
+cropped_total_seconds = "number(default: 0.0)"
 dataset_directory = "string"
 debug = "boolean(default: False)"
 definition_center = "array"
@@ -211,7 +211,7 @@ object_tracking_label_for_kinematics = "string"
 only_one_instance_of_trial_class = "boolean(default: False)"
 only_physical_cores = "boolean(default: False)"
 project_kit_config = "object"
-qualia_heuristics_combination_equations = "array"
+alias_to_qualia_heuristics_combination_equations = "array"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=int required=True]"
 rectangle_2d_bin = "array(default: (2, 2))"
 required_tail_likelihood = "number(default: 0.8)"

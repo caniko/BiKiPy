@@ -23,7 +23,9 @@ from bikipy._constant import (
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.mapping import experiment_name_to_class
 from bikipy.behaviour.radial_arm.base import BaseRadialMazeExperiment
-from bikipy.feature.qualia.physical_object.heuristic.mapping import ALIAS_TO_HEURISTIC_CLS
+from bikipy.feature.qualia.physical_object.heuristic.mapping import (
+    ALIAS_TO_HEURISTIC_CLS,
+)
 from bikipy.ingress.plugin.perimeter.enclosure import PluginEnclosure
 from bikipy.ingress.workflow.animal import AnimalIngressWorkflow
 from bikipy.ingress.workflow.animal_day import AnimalDayIngressWorkflow

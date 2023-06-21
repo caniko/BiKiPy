@@ -2,7 +2,7 @@ from logging import getLogger
 from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
-from matplotlib import patches, colors
+from matplotlib import colors, patches
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from pydantic import validate_arguments

@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
 from pydantic import BaseModel, Field
+from pydantic_numpy import NDArrayBool
 from schemantic.model.project import SchemanticProjectMixin
 
 from bikipy.core.video import VideoMetadataMixin
@@ -48,7 +49,7 @@ class AbstractQualiaHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
         ...
 
     @property
-    def po_label(self) -> str:
+    def physical_object_label(self) -> str:
         return self.perimeter.label
 
     def plot_result(self, ax: Axes, label_to_plot: str):
@@ -61,6 +62,22 @@ class AbstractQualiaHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
 
 QualiaHeuristicCLS = Type[AbstractQualiaHeuristic]
 QualiaHeuristic = TypeVar("QualiaHeuristic", bound=AbstractQualiaHeuristic)
+
+
+class CombinedQualiaHeuristic(AbstractQualiaHeuristic):
+    label: str
+    combined_result: NDArrayBool
+
+    @property
+    def result(self) -> np.ndarray[bool, bool]:
+        return self.combined_result
+
+    @property
+    def summary_series(self) -> pd.Series:
+        return pd.Series([self.combined_result], index=self.label)
+
+    def plot(self) -> None:
+        pass
 
 
 class ProximityMixin(BaseModel):

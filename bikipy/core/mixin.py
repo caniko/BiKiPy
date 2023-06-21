@@ -8,6 +8,7 @@ from compress_pickle import compress_pickle
 from pydantic import DirectoryPath, Field, FilePath, validate_arguments
 from pydantic_numpy.dtype import NDArrayUint8
 
+from bikipy import runtime_settings
 from bikipy.core.base import BikipyConfigModel, BikipyHashable
 from bikipy.utils.plot.inspect import (
     InspectArg,
@@ -37,12 +38,14 @@ class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
         if self.analysis_series_cache_path and self.analysis_series_cache_path.exists():
             return compress_pickle.load(self.analysis_series_cache_path)
 
-        try:
-            # Concatenate and reverse the order
+        if runtime_settings.disable_process_pooling:
             result = self.compute_analysis_series()
-        except Exception as e:
-            msg = f"{self.category.capitalize()} ID: {self.int_id}; label: {self.label}, raised an error"
-            raise AttributeError(msg) from e
+        else:
+            try:
+                result = self.compute_analysis_series()
+            except Exception as e:
+                msg = f"{self.category.capitalize()} ID: {self.int_id}; label: {self.label}, raised an error"
+                raise AttributeError(msg) from e
 
         if self.analysis_series_cache_path:
             compress_pickle.dump(result, self.analysis_series_cache_path)

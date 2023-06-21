@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import abc, defaultdict
 from functools import cached_property
 from logging import getLogger
-from typing import ClassVar, Generic, Hashable, Iterable, Optional, Type, TypeVar
+from typing import Generic, Hashable, Iterable, Optional, Type, TypeVar
 
 import matplotlib
 import numpy as np
@@ -15,6 +15,7 @@ from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayUint8
 from typing_extensions import Literal
 
 from bikipy import runtime_settings
+from bikipy._constant import AUGMENTED_COORDINATE_CACHED_FILE_LABEL
 from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
 from bikipy.core.base import BikipyHashable
 from bikipy.core.typing import ConfinementSequence
@@ -82,10 +83,10 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         ),
     )
 
-    crop_time_seconds: float = 0.0
+    cropped_total_seconds: float = 0.0
     crop_from_end: bool = Field(
         False,
-        description="Evaluated when crop_time_seconds is not 0. Will crop from start instead when set to False",
+        description="Evaluated when cropped_total_seconds is not 0. Will crop from start instead when set to False",
     )
     model_displacement_by_std: Optional[float] = Field(
         2.0,
@@ -107,9 +108,6 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     _time_index_derived_fps: float | None
     _region_of_interest_to_fused_neighbouring_points: dict[str, NDArrayUint8] = Field(default_factory=dict)
     _cached_augmented_df: pd.DataFrame | None
-    _crop_frames: int | None
-
-    augmented_coordinate_cached_file_label: ClassVar[str] = "augmented"
 
     def __getitem__(self, query: Iterable[Hashable] | Hashable) -> pd.DataFrame:
         if not isinstance(query, str) and isinstance(query, abc.Iterable):
@@ -136,11 +134,39 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:
         ...
 
-    @property
-    def crop_frames(self) -> Optional[int]:
-        if not hasattr(self, "_crop_frames"):
-            self.augmented
-        return self._crop_frames
+    @cached_property
+    def cropped_frames(self) -> int | None:
+        if not self.cropped_total_seconds:
+            return None
+
+        result = None
+
+        if self.df_is_timestamped:
+            try:
+                if self.crop_from_end:
+                    result = (
+                        self.raw_frames
+                        - np.where(
+                            self.raw_df.index.values[::-1] <= self.raw_df.index.values[-1] - self.cropped_total_seconds
+                        )[0][0]
+                    )
+                else:
+                    result = self.raw_frames - np.where(self.raw_df.index.values >= self.cropped_total_seconds)[0][0]
+            except IndexError:
+                logger.warning(
+                    f"The defined crop seconds, {self.cropped_total_seconds}, is out of bounds for DataFrame"
+                )
+                return None
+        else:
+            result = result or round(self.video.fps * self.cropped_total_seconds)
+            if result > self.raw_frames:
+                logger.warning(
+                    f"(cropping number_of_frames: {self.cropped_total_seconds} seconds -> {result} number_of_frames) "
+                    f"> total of {self.raw_frames} number_of_frames"
+                )
+                return None
+
+        return result
 
     @property
     def find_timestamp_index(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
@@ -205,13 +231,13 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     @property
     def required_video_metadata_fields(self) -> set:
         base = {"meters_per_pixel", "recording_resolution"}
-        if self.crop_time_seconds:
+        if self.cropped_total_seconds:
             base.add("fps")
         return base
 
     @property
     def augmented_file_name(self) -> str:
-        stem = self.df_path.stem.replace("coordinates-", f"coordinates-{self.augmented_coordinate_cached_file_label}-")
+        stem = self.df_path.stem.replace("coordinates-", f"coordinates-{AUGMENTED_COORDINATE_CACHED_FILE_LABEL}-")
         return f"{stem}.parquet"
 
     @property
@@ -253,30 +279,13 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             logger.debug(f"Filtering {self.df_path.stem} with the {self.model_method} method")
             result = model_data(result, self.model_method, **self.model_kwargs)
 
-        if self.df_is_timestamped:
-            try:
-                self._crop_frames = np.where(self.raw_df.index.values >= self.crop_time_seconds)[0][0]
-            except IndexError:
-                logger.warning(f"The defined crop seconds, {self.crop_time_seconds}, is out of bounds for DataFrame")
-                self.crop_time_seconds = False
-
-        if self.crop_time_seconds:
-            self._crop_frames = self._crop_frames or round(self.video.fps * self.crop_time_seconds)
-
-            if self._crop_frames > self.raw_frames:
-                logger.warning(
-                    f"(cropping number_of_frames: {self.crop_time_seconds} seconds -> {self._crop_frames} number_of_frames) "
-                    f"> total of {self.raw_frames} number_of_frames"
-                )
+        if self.cropped_frames and self.cropped_frames <= self.raw_frames:
+            if self.crop_from_end:
+                result = result.iloc[: -self.cropped_frames]
             else:
-                result = (
-                    result.iloc[self.raw_frames - self._crop_frames :]
-                    if self.crop_from_end
-                    else result.iloc[: self._crop_frames]
-                )
-
-        if not hasattr(self, "_crop_frames"):
-            self._crop_frames = None
+                result = result.iloc[self.cropped_frames :]
+                if self.df_is_timestamped:
+                    result.index = result.index - result.index[0]
 
         if self.invert_y_axis:
             result.loc[:, pd.IndexSlice[:, "y"]] = self.video.vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
@@ -334,7 +343,9 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
     @property
     def number_of_frames(self) -> int:
-        return len(self.df)
+        result = len(self.df)
+        assert not self.cropped_frames or self.raw_frames - self.cropped_frames == result
+        return result
 
     @property
     def duration_seconds(self) -> float:
@@ -374,6 +385,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             self.df_is_timestamped = True
 
         if isinstance(df.index, (np.timedelta64, pd.TimedeltaIndex)):
+            # Converting the timestamps to nanoseconds and then to seconds.
             df.index = df.index.values.astype(float) / 10.0**9.0
             self.df_is_timestamped = True
 

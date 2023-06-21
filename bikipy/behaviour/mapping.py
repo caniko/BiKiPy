@@ -3,7 +3,6 @@ from collections import defaultdict
 from pydantic import validate_arguments
 
 from bikipy.behaviour.core.base import ExperimentCLS, TrialCLS
-from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.behaviour.core.enclosure.circle import BlanketCircleEnclosedExperiment
 from bikipy.behaviour.core.enclosure.rectangle import BlanketRectangleEnclosedExperiment
 from bikipy.behaviour.object_recognition.novel_object_recognition import NORTExperiment

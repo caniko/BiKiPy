@@ -17,7 +17,11 @@ from projectkit.model.project import ProjectKitModelMixin
 from pydantic import DirectoryPath, Field, FilePath, validate_arguments
 from schemantic.model.project import SchemanticProjectMixin
 
-from bikipy._constant import ANALYSIS_CACHE_STEM_ID, READER_MAP_NAME
+from bikipy._constant import (
+    ANALYSIS_CACHE_STEM_ID,
+    AUGMENTED_COORDINATE_CACHED_FILE_LABEL,
+    READER_MAP_NAME,
+)
 from bikipy.core.base import BikipyModel
 from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
@@ -643,7 +647,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             trial_objects[0].generate_inspection_video(**trial_video_kwargs)
 
     def purge_cached_reads(self, override_pattern: Optional[str] = None) -> None:
-        pattern = override_pattern or BaseReader.augmented_coordinate_cached_file_label
+        pattern = override_pattern or AUGMENTED_COORDINATE_CACHED_FILE_LABEL
         to_delete = [
             f
             for f in chain(
@@ -656,7 +660,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             print(f"No files found with pattern {pattern}")
             return
 
-        readable_to_delete = "\n".join((f.relative_to(self.dataset_directory) for f in to_delete))
+        readable_to_delete = "\n".join((str(f.relative_to(self.dataset_directory)) for f in to_delete))
         if (
             input(
                 f"Pattern: {pattern}\n"
@@ -758,7 +762,10 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         available_indices = {
             int(file.stem.split(self._coordinate_file_index_delimiter)[0])
             for file in directory_path.iterdir()
-            if file.is_file() and ANALYSIS_CACHE_STEM_ID not in file.stem
+            if file.is_file()
+            and ANALYSIS_CACHE_STEM_ID not in file.stem
+            and AUGMENTED_COORDINATE_CACHED_FILE_LABEL not in file.stem
+            and "~lock" not in file.stem
         }
 
         result = []
@@ -771,14 +778,9 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
                 continue
 
             if any(
-                (current_file := file).suffix == ".parquet"
-                and BaseReader.augmented_coordinate_cached_file_label not in file.stem
+                (current_file := file).suffix == ".parquet" and AUGMENTED_COORDINATE_CACHED_FILE_LABEL not in file.stem
                 for file in index_files
             ):
-                result.append(current_file)
-                continue
-
-            if any((current_file := file).suffix == ".parquet" for file in index_files):
                 result.append(current_file)
                 continue
 

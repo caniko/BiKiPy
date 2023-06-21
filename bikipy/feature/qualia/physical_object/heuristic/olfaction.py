@@ -6,7 +6,11 @@ import pandas as pd
 
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
-from bikipy.feature.qualia.physical_object.heuristic.abc import AbstractQualiaHeuristic, ProximityMixin, RayMixin
+from bikipy.feature.qualia.physical_object.heuristic.abc import (
+    AbstractQualiaHeuristic,
+    ProximityMixin,
+    RayMixin,
+)
 
 
 class OlfactionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):

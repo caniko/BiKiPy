@@ -43,7 +43,7 @@ object_tracking_label_for_kinematics = "string"
 [manual_reader_kwargs.optional]
 cache_meters_augmented = "boolean -> True"
 crop_from_end = "boolean -> False"
-crop_time_seconds = "number -> 0.0"
+cropped_total_seconds = "number -> 0.0"
 df_is_timestamped = "boolean -> False"
 df_read_kwargs = "object"
 export_timestamp_data_as_parquet = "boolean -> False"
@@ -74,7 +74,7 @@ minimum_frame_length = 600
 [trial.common.optional]
 coordinate_timestamp_index = "np.ndarray"
 crop_from_end = "boolean -> False"
-crop_time_seconds = "number -> 0.0"
+cropped_total_seconds = "number -> 0.0"
 enclosure = "[{'$ref': '#/definitions/BasePerimeter'}]"
 fps = "number"
 frame = "[{'type': 'string', 'format': 'file-path'}, {'type': 'uint8'}]"

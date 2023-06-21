@@ -41,7 +41,7 @@ def make_inspection_video(
         msg = "label_to_boolean_index must be defined for use of label_to_quiver_rays"
         raise ValueError(msg)
 
-    if reader.crop_time_seconds and not reader.crop_from_end:
+    if reader.cropped_total_seconds and not reader.crop_from_end:
         for i in range(reader.crop_frames):
             next(video_frames)
 

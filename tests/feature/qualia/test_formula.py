@@ -1,7 +1,9 @@
 import numpy as np
 import pytest
 
-from bikipy.feature.qualia.physical_object.merge_parser import parse_heuristic_merge_equation
+from bikipy.feature.qualia.physical_object.merge_parser import (
+    parse_heuristic_merge_equation,
+)
 
 
 def test_parse_heuristic_merge_equation():

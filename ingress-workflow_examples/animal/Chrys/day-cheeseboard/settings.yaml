@@ -25,7 +25,7 @@ manual_reader_kwargs:
   optional:
     cache_meters_augmented: boolean -> True
     crop_from_end: boolean -> False
-    crop_time_seconds: number -> 0.0
+    cropped_total_seconds: number -> 0.0
     df_is_timestamped: boolean -> False
     df_read_kwargs: object
     export_timestamp_data_as_parquet: boolean -> False
@@ -62,7 +62,7 @@ trial:
     optional:
       coordinate_timestamp_index: np.ndarray
       crop_from_end: boolean -> True
-      crop_time_seconds: number -> 0.0
+      cropped_total_seconds: number -> 0.0
       data_format_label: string -> deeplabcut
       fps: number
       frame: '[{''type'': ''string'', ''format'': ''file-path''}, {''type'': ''uint8''}]'
