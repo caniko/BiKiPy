@@ -46,10 +46,6 @@ def read_image_from_path(
 
 def axis_frame_imshow(ax: Axes, image: NDArray):
     ax.autoscale(enable=True)
-
     ax_imshow_gray(ax, image)
-
-    ax.invert_yaxis()
-    # ax.set_aspect("equal", adjustable="box")
 
     return ax

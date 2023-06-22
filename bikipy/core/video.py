@@ -243,11 +243,11 @@ class VideoMetadata(_VideoMetadataBase):
             recording_resolution=new_frame.shape[0:2:][::-1],
         )
 
-    def ax_ticks_metric_to_pixel(self, ax: Axes, number_of_ticks: int = 7):
+    def ax_ticks_metric_to_pixel(self, ax: Axes, number_of_ticks: int = 7) -> None:
         ax.set_xticks(
-            ticks=np.linspace(0.0, self.horizontal_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
+            ticks=np.linspace(0, self.horizontal_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
             labels=np.round(
-                np.linspace(0.0, self.metric_horizontal_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
+                np.linspace(0, self.metric_horizontal_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
                 decimals=2,
             ),
             fontsize=self.plotting_default_font_size,

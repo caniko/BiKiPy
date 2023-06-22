@@ -138,7 +138,6 @@ def expand_rectangle(
 
     if inspect:
         fig, axes = plt.subplots(2, 1)
-        fig.gca().invert_yaxis()
 
         fig.suptitle("Rectangle expansion")
         axes[0].set_title("Scattered")

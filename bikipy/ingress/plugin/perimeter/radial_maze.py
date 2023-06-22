@@ -4,6 +4,7 @@ from glob import iglob
 import numpy as np
 import pandas as pd
 
+from bikipy import runtime_settings
 from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
 from bikipy.ingress.plugin.core.base import BasePluginDirectory
@@ -37,7 +38,9 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
 
     @cached_property
     def line_data(self) -> pd.DataFrame:
-        raw_line_data = read_makesense_line(self.data_path / "arm-lines.csv", invert_y_axis=True)
+        raw_line_data = read_makesense_line(
+            self.data_path / "arm-lines.csv", invert_y_axis=runtime_settings.matplotlib_invert_y_axis
+        )
 
         lines = get_all_lines_from_makesense_line_df(raw_line_data)
         line_midpoints = np.mean(lines, axis=1)
@@ -59,7 +62,6 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
                     group_label="center",
                     derived_meters_per_pixel_source="side",
                     inspect_arg=self.ingress.inspect_directory_path,
-                    invert_y_axis=True,
                 )
             ).get_only_perimeter
 

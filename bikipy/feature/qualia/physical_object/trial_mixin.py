@@ -65,7 +65,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                 for perimeter in self.physical_object_perimeters
             ]
 
-        for heuristic_alias, heuristic_equation in self.alias_to_qualia_heuristics_combination_equations:
+        for heuristic_alias, heuristic_equation in self.alias_to_qualia_heuristics_combination_equations.items():
             result[heuristic_alias] = parse_heuristic_merge_equation(heuristic_equation, result)
 
         if self.inspect_arg:
@@ -79,7 +79,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                     physical_object_heuristic.plot()
                     generic_inspection_finalization(
                         heuristic_inspect_arg,
-                        f"{self.label}_{physical_objects_heuristic.physical_object_label}_{heuristic_alias}"
+                        f"{self.label}_{physical_object_heuristic.physical_object_label}_{heuristic_alias}"
                         f"{INSPECT_FIG_FILE_FORMAT}",
                     )
 
@@ -162,7 +162,10 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     def _analysis_series_list(self) -> list[pd.Series]:
         result = super()._analysis_series_list
         result.extend(
-            (physical_object_analyser.analysis_series for physical_object_analyser in self.physical_object_analysers)
+            (
+                physical_object_analyser.analysis_series
+                for physical_object_analyser in self.physical_object_analysers.values()
+            )
         )
         result.extend(self.all_summary_series)
         return result

@@ -1,24 +1,22 @@
-import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 
-ticklabelpad = mpl.rcParams["xtick.major.pad"] * 0.3
+# Create some data
+x = np.linspace(0, 10, 100)
+y = np.sin(x)
 
+# Create a figure and a set of subplots
 fig, ax = plt.subplots()
-ax.set_xlim([0, 5])
 
-dx_in_points = 6
-fontproperties = ax.xaxis.get_label().get_fontproperties()
+# Plot the data
+ax.plot(x, y)
 
-ax.annotate(
-    "XLabel",
-    xy=(1, 0),
-    xytext=(dx_in_points, -ticklabelpad),
-    ha="left",
-    va="top",
-    xycoords="axes fraction",
-    textcoords="offset points",
-    fontproperties=fontproperties,
-)
+# Set the y-tick positions
+yticks = np.linspace(-1, 1, 5)
+ax.set_yticks(yticks)
 
-fig.tight_layout()
-fig.show()
+# Set the y-tick labels in reverse order
+# ax.set_yticklabels(yticks[::-1])
+
+# Display the plot
+plt.show()

@@ -47,6 +47,7 @@ from bikipy.perimeter.mixin import TrialWithPerimeterMixin
 from bikipy.reader import READER_CLASS_LABEL_TO_CLASS
 from bikipy.reader.base import Reader, ReaderCLS
 from bikipy.reader.data_with_likelihood import DeepLabCutReader
+from bikipy.utils.collection_utils import dict_deep_update
 from bikipy.utils.memory import wait_for_more_physical_memory
 from bikipy.utils.ranged_dict import RangeDict
 
@@ -69,11 +70,6 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
     coordinate_timestamp_index: Optional[NDArray] = timestamp_index_field
     manual_center_pixels: Optional[NDArrayInt16]
     enclosure: Optional[Perimeter] = enclosure_field
-    cropped_total_seconds: float = 0.0
-    crop_from_end: bool = Field(
-        False,
-        description="Only affective if cropped_total_seconds is not 0.0. Will crop from start instead when set to False",
-    )
 
     # Class variables
     category = "trial"
@@ -162,6 +158,11 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
             )
             raise AttributeError(msg) from e
 
+    @classmethod
+    @property
+    def excel_sheet_name(cls) -> str:
+        return f"{cls.experiment_stage}: {cls.trial_label}" if cls.trial_label else cls.experiment_stage.value
+
     @cached_property
     def manual_center_meters(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
         if self.manual_center_pixels is not None:
@@ -179,7 +180,6 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
             "timestamp_index": self.coordinate_timestamp_index,
             "label": self.framewise_coordinates_path.stem,
             "manual_video": self.video,
-            "cropped_total_seconds": self.cropped_total_seconds,
             "enclosure": self.enclosure,
             **self.manual_reader_kwargs,
         }
@@ -190,7 +190,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
 
         # In case the reader finds no time index, see fps property in reader
         if result.fps_from_timestamped_index:
-            self.fps = result.fps_from_timestamped_index
+            self.video.fps = result.fps_from_timestamped_index
 
         return result
 
@@ -208,10 +208,6 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
             coordinate_sequence=self.reader.kinematic_coordinates,
             fps=self.video.fps,
         )
-
-    @cached_property
-    def excel_sheet_name(self) -> str:
-        return f"{self.experiment_stage}: {self.trial_label}" if self.trial_label else self.experiment_stage
 
     def generate_inspection_video(
         self, output_directory: Optional[DirectoryPath] = None, codec: Optional[str] = None
@@ -674,23 +670,23 @@ class BaseExperiment(Behaviour):
         result = self.video.dict(exclude_unset=True)
 
         if self.common_trial_keyword_arguments:
-            result.update(self.common_trial_keyword_arguments)
+            dict_deep_update(result, self.common_trial_keyword_arguments)
 
         if (
             self.has_stages
             and (trial_class_name := self.trial_id_to_trial_class_name[trial_id])
             in self.trial_class_name_to_keyword_arguments
         ):
-            result.update(self.trial_class_name_to_keyword_arguments[trial_class_name])
+            dict_deep_update(result, self.trial_class_name_to_keyword_arguments[trial_class_name])
 
         if self.trial_id_to_keyword_arguments:
-            result.update(self.trial_id_to_keyword_arguments[trial_id])
+            dict_deep_update(result, self.trial_id_to_keyword_arguments[trial_id])
 
         if self.trial_id_range_to_keyword_arguments:
             if not isinstance(trial_id, int):
                 msg = "Trial IDs must be integers when trial_id_range_to_keyword_arguments is used"
                 raise AttributeError(msg)
-            result.update(self.trial_id_range_to_keyword_arguments[trial_id])
+            dict_deep_update(result, self.trial_id_range_to_keyword_arguments[trial_id])
 
         assert result["framewise_coordinates_path"]
 
@@ -700,24 +696,24 @@ class BaseExperiment(Behaviour):
         result["inspect_arg"] = self.inspect_arg
 
         if "label_to_perimeter" in result:
-            result.update(result.pop("label_to_perimeter"))
+            dict_deep_update(result, result.pop("label_to_perimeter"))
 
         if "perimeter_set" in result:
             perimeter_set: PerimeterSet = result.pop("perimeter_set")
-            result.update(perimeter_set.label_to_perimeter)
+            dict_deep_update(result, perimeter_set.label_to_perimeter)
 
         if PluginRadial.default_trial_argument_key in result:
             perimeter_set_group: dict = result.pop(PluginRadial.default_trial_argument_key)
-            result.update(perimeter_set_group)
+            dict_deep_update(result, perimeter_set_group)
 
         if PluginChangeReference.default_trial_argument_key in result:
             val = result.pop(PluginChangeReference.default_trial_argument_key)
             if isinstance(val, PerimeterSet):
-                result.update(val.label_to_perimeter)
+                dict_deep_update(result, val.label_to_perimeter)
             elif isinstance(val, BaseSinglePerimeter):
                 result[val.label] = val
             elif isinstance(val, dict):
-                result.update(val)
+                dict_deep_update(result, val)
             else:
                 msg = f"Unsupported type for PluginChangeReference: {type(val)}"
                 raise AttributeError(msg)

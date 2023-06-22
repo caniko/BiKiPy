@@ -104,9 +104,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         else:
             fig, ax = video.subplot()
 
-        return self.plot_perimeter_on_ax(
-            ax, inspect_pixels=video.coordinates_need_to_be_scaled_for_plot, manual_video=video, **plot_kwargs
-        )
+        return self.plot_perimeter_on_ax(ax, inspect_pixels=video.coordinates_need_to_be_scaled_for_plot, **plot_kwargs)
 
     @abstractmethod
     def compute_confined_coordinate_boolean_index(
@@ -351,7 +349,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
         ax.set_title(self.label)
 
-        return self.plot_perimeter(manual_ax=ax, inspect_pixels=inspect_pixels, **perimeter_plot_kwargs)
+        return self.plot_perimeter(manual_ax=ax, **perimeter_plot_kwargs)
 
 
 SinglePerimeter = TypeVar("SinglePerimeter", bound=BaseSinglePerimeter)
@@ -554,7 +552,7 @@ class PerimeterSet(BasePerimeter):
         **perimeter_plot_kwargs,
     ):
         if manual_ax is None:
-            fig, ax = plt.subplots(constrained_layout=True)
+            fig, ax = self.video.subplot(constrained_layout=True)
         else:
             ax = manual_ax
 

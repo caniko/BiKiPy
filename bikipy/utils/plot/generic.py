@@ -71,7 +71,9 @@ def plot_coordinates(
 
 
 @validate_arguments(config={"arbitrary_types_allowed": True})
-def plot_ellipse(center: tuple[float, float], radius: tuple[float, float] | float, color: Any, ax: Axes = None) -> Axes:
+def plot_ellipse(
+    center: tuple[float, float], radius: tuple[float, float] | float, color: Any = None, ax: Axes = None
+) -> Axes:
     if ax is None:
         fig, ax = plt.subplots()
 
@@ -81,7 +83,7 @@ def plot_ellipse(center: tuple[float, float], radius: tuple[float, float] | floa
     color = color or "g"
 
     if isinstance(radius, float):
-        circle = plt.Circle(center, radius, fill=False, color=colors.to_rgba(color))
+        circle = plt.Circle(center, radius, fill=False, color=colors.to_rgba(color) if color else None)
         ax.add_artist(circle)
     elif isinstance(radius, tuple):
         ellipse = patches.Ellipse(center, *radius, edgecolor=color, facecolor="none")

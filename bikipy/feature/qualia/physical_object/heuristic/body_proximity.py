@@ -108,7 +108,7 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
         if self.tail_base_proximity:
             data[f"ObservingSecBaseTailProximity{label}"] = self.tail_base_proximity.result_seconds
 
-        data[f"ObservingSec{self.heuristic_alias}Total{label}"] = self.boolean_array_to_seconds(self.result)
+        data[f"ObservingSec{self.heuristic_alias}Total{label}"] = self.video.boolean_array_to_seconds(self.result)
 
         return pd.Series(data)
 

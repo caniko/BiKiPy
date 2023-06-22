@@ -119,9 +119,9 @@ class WhiskerInteractionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMi
         label = self.perimeter.label.capitalize()
         return pd.Series(
             {
-                f"ObservingSecLeftwardProxFOV{label}": self.boolean_array_to_seconds(self.left_result),
-                f"ObservingSecRightwardProxFOV{label}": self.boolean_array_to_seconds(self.right_result),
-                f"ObservingSecCombinedProxFOV{label}": self.boolean_array_to_seconds(self.result),
+                f"ObservingSecLeftwardProxFOV{label}": self.video.boolean_array_to_seconds(self.left_result),
+                f"ObservingSecRightwardProxFOV{label}": self.video.boolean_array_to_seconds(self.right_result),
+                f"ObservingSecCombinedProxFOV{label}": self.video.boolean_array_to_seconds(self.result),
             }
         )
 

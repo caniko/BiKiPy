@@ -18,7 +18,8 @@ from bikipy.utils.plot.inspect import (
 
 
 class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
-    analysis_series_cache_directory_path: Optional[Path]
+    analysis_series_cache_directory_path: Optional[DirectoryPath]
+    analysis_series_cache_file_path: Optional[Path]
     analysis_series_cache_format: str = ".lz4"
 
     feature_collection_cache: ClassVar[bool] = False  # TODO: Add feat
@@ -30,6 +31,8 @@ class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
 
     @cached_property
     def analysis_series_cache_path(self) -> FilePath:
+        if self.analysis_series_cache_file_path:
+            return self.analysis_series_cache_file_path
         if self.analysis_series_cache_directory_path:
             return self.analysis_series_cache_directory_path / f"{self.label}{self.analysis_series_cache_format}"
 

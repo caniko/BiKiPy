@@ -53,3 +53,20 @@ def get_first_key_in_dict(source: dict) -> Any:
 
 def get_first_value_in_dict(source: dict) -> Any:
     return next(iter(source.values()))
+
+
+def dict_deep_update(source: dict, subsumed: dict) -> dict:
+    """
+    Update source dictionary, while updating dictionaries that are nested inside, recursively.
+    The subsumed dictionary has priority.
+
+    :param source: Source dictionary.
+    :param subsumed: Dictionary that updates the source.
+    :return: New dictionary.
+    """
+    for key, value in subsumed.items():
+        if isinstance(value, dict):
+            source[key] = dict_deep_update(source.get(key, {}), value)
+        else:
+            source[key] = value
+    return source

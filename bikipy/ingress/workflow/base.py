@@ -580,7 +580,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             return self.experiment.trial_label_to_df
 
         result = {}
-        for experiment_stage, analysis_df in self.experiment.trial_label_to_df.items():
+        for trial_label, analysis_df in self.experiment.trial_label_to_df.items():
             metadata = (
                 self.metadata
                 if self.metadata.columns.nlevels >= analysis_df.columns.nlevels
@@ -591,7 +591,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
                 if analysis_df.columns.nlevels >= self.metadata.columns.nlevels
                 else copycat_assumes_levels_of_icon(analysis_df, self.metadata, "")
             )
-            result[experiment_stage] = analysis_df.join(metadata, how="inner")
+            result[trial_label] = analysis_df.join(metadata, how="inner")
 
         return result
 
@@ -632,11 +632,11 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         # We define to_excel and to_parquet in their own loops for atomicity with respect to formats
         # as parquet crashes sometimes.
         with pd.ExcelWriter(self.result_directory_path / f"{self.experiment_class_name}.xlsx") as writer:
-            for experiment_stage, df in self.trial_label_to_df.items():
-                df.to_excel(writer, sheet_name=str(experiment_stage))
+            for trial_label, df in self.trial_label_to_df.items():
+                df.to_excel(writer, sheet_name=trial_label)
 
-        for experiment_stage, df in self.trial_label_to_df.items():
-            df.to_parquet(parquet_dir / f"{experiment_stage}-{self.experiment_class_name}.parquet", **TO_PARQUET_KWARGS)
+        for trial_label, df in self.trial_label_to_df.items():
+            df.to_parquet(parquet_dir / f"{trial_label}.parquet", **TO_PARQUET_KWARGS)
 
     def create_analysis_videos(self, trial_ids: Iterable[Label], **trial_video_kwargs) -> None:
         for trial_id in trial_ids:

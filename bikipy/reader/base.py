@@ -206,7 +206,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     @property
     def required_video_metadata_fields(self) -> set:
         base = {"meters_per_pixel", "recording_resolution"}
-        if self.cropped_total_seconds:
+        if self.crop_seconds_from_start or self.crop_seconds_from_end or self.crop_target_trial_length_seconds:
             base.add("fps")
         return base
 

@@ -96,12 +96,13 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
 
         if inspect_pixels:
             image_resize_multiplier = manual_resize_multiplier or self.video.image_resize_multiplier
-            center, radius = center * image_resize_multiplier, radius * image_resize_multiplier
+            center = center * image_resize_multiplier
+            radius = radius * image_resize_multiplier
 
         if isinstance(radius, np.ndarray):
             radius = tuple(radius)
 
-        return plot_ellipse(tuple(center), radius, ax)
+        return plot_ellipse(tuple(center), radius, ax=ax, **plot_kwargs)
 
     @classmethod
     @property

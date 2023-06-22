@@ -22,6 +22,7 @@ from bikipy.perimeter import RectanglePerimeter
 from bikipy.utils.math.confinement.polygon import parallel_point_inside_polygon
 from bikipy.utils.math.discrete import (
     tolerance_modeled_boolean_index_truth_sequence_start_end_length,
+    boolean_index_truth_sequence_start_end_length,
 )
 from bikipy.utils.pandas import motion_analysis_indexer_for_subsection
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
@@ -220,7 +221,11 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @property
     def motion_periphery(self) -> dict[str, float]:
-        return merge_motion_island_data(self.periphery_boolean_index, self.reader.kinematic_coordinates, self.video.fps)
+        return merge_motion_island_data(
+            boolean_index_truth_sequence_start_end_length(self.periphery_boolean_index),
+            self.reader.kinematic_coordinates,
+            self.video.fps,
+        )
 
     @cached_property
     def center_rectangle_dimensions_meters(self) -> np.ndarray[float, np.dtype[np.float64]] | None:

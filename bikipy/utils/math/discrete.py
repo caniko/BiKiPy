@@ -30,6 +30,29 @@ def boolean_index_truth_sequence_start_end(boolean_index: NDArrayBool) -> list[t
     return result
 
 
+def boolean_index_truth_sequence_start_end_length(boolean_index: NDArrayBool) -> TruthIslandMetadata:
+    result = []
+
+    array_length = len(boolean_index)
+    last_index = array_length - 1
+    idx = 0
+
+    while idx < array_length:
+        if boolean_index[idx]:
+            start = idx
+            if start != 0:
+                start -= 1
+
+            while boolean_index[idx] and idx < last_index:
+                idx += 1
+
+            result.append((start, idx, idx - start))
+
+        idx += 1
+
+    return result
+
+
 def tolerance_modeled_boolean_index_truth_sequence_start_end_length(
     boolean_index: NDArrayBool,
     fps: float,
@@ -85,9 +108,9 @@ def tolerance_modeled_boolean_index_truth_sequence_start_end_length(
     return data, new_boolean_index
 
 
-if not runtime_settings.disable_numba:
-    boolean_index_truth_sequence_start_end = njit(cache=True)(boolean_index_truth_sequence_start_end)
-
-    tolerance_modeled_boolean_index_truth_sequence_start_end_length = njit(cache=True)(
-        tolerance_modeled_boolean_index_truth_sequence_start_end_length
-    )
+# if not runtime_settings.disable_numba:
+#     boolean_index_truth_sequence_start_end = njit(cache=True)(boolean_index_truth_sequence_start_end)
+#
+#     tolerance_modeled_boolean_index_truth_sequence_start_end_length = njit(cache=True)(
+#         tolerance_modeled_boolean_index_truth_sequence_start_end_length
+#     )

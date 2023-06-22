@@ -18,6 +18,7 @@ definition_video = ["trialwise"]
 
 create_inspection_plots = true
 only_one_instance_of_trial_class = false
+lazy_dev_mode = true
 custom_trial_sequence = ["training", "training", "training", "update", "test"]
 #trial_ids_to_analyse = [""]
 
@@ -31,7 +32,7 @@ required = ["project_kit_config"]
 optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "alias_to_qualia_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
 
 [trial.ObjectsInUpdatingLocationsTrainingTrial.defined]
-crop_target_trial_length_seconds = 900
+manual_reader_kwargs = {crop_target_trial_length_seconds = 900}
 
 [trial.ObjectsInUpdatingLocationsUpdateTrial]
 class_name = "ObjectsInUpdatingLocationsUpdateTrial"
@@ -39,7 +40,7 @@ required = ["project_kit_config"]
 optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "alias_to_qualia_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
 
 [trial.ObjectsInUpdatingLocationsUpdateTrial.defined]
-crop_target_trial_length_seconds = 300
+manual_reader_kwargs = {crop_target_trial_length_seconds = 300}
 
 [trial.ObjectsInUpdatingLocationsTestTrial]
 class_name = "ObjectsInUpdatingLocationsTestTrial"
@@ -47,16 +48,15 @@ required = ["project_kit_config"]
 optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "alias_to_qualia_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
 
 [trial.ObjectsInUpdatingLocationsTestTrial.defined]
-crop_target_trial_length_seconds = 300
+manual_reader_kwargs = {crop_target_trial_length_seconds = 300}
 
 [trial.common]
 required = ["project_kit_config"]
 optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "alias_to_qualia_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
 
 [trial.common.defined]
-crop_seconds_from_start = 1.0
 manual_center_rectangle_dimensions_meters = [0.35, 0.35]
-alias_to_qualia_heuristics_combination_equations = {body_olfaction="BodyProximity & Olfaction"}
+alias_to_qualia_heuristics_combination_equations = {body_olfaction="BodyProximityHeuristic | OlfactionHeuristic"}
 
 [enclosure.RectanglePerimeter]
 class_name = "RectanglePerimeter"
@@ -115,7 +115,7 @@ optional = ["manual_reference", "manual_shape", "manual_trial_argument_key"]
 optional = ["compressed_pickle_suffix", "debug", "disable_numba", "disable_process_pooling", "ignore_pre_existing_inspection_directory", "matplotlib_invert_y_axis", "matplotlib_scatter_alpha", "maximum_seconds_distraction", "minimum_seconds_tolerance", "only_physical_cores", "testing"]
 
 [runtime_settings.defined]
-#disable_process_pooling = true
+disable_process_pooling = true
 
 [qualia_heuristics.BodyProximityHeuristic]
 class_name = "BodyProximityHeuristic"
@@ -152,6 +152,7 @@ optional = ["cache_meters_augmented", "crop_from_end", "cropped_total_seconds", 
 
 [reader.defined]
 midpoint_groups = { center_eye = ["left_ear", "right_ear"], torso = ["center_eye", "tail_base"] }
+crop_seconds_from_start = 1.0
 object_tracking_label_for_kinematics = "torso"
 
 [field]
