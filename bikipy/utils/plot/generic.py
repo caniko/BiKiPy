@@ -19,7 +19,11 @@ logger = getLogger(__file__)
 
 
 def ax_plot_coordinate_with_boolean_index(
-    ax, boolean_index: NDArrayBool, coordinates: NDArrayFp64, plot_non_confined: bool = False, plot_line: bool = False
+    ax,
+    boolean_index: NDArrayBool,
+    coordinates: NDArrayFp64,
+    plot_non_confinement: bool = False,
+    plot_line: bool = False,
 ) -> None:
     if plot_line:
         x, y = coordinates.T
@@ -32,7 +36,7 @@ def ax_plot_coordinate_with_boolean_index(
             ):
                 ax.plot(line_x, line_y, c=color, linewidth=3.0)
 
-        if plot_non_confined:
+        if plot_non_confinement:
             for start, end in boolean_index_truth_sequence_start_end(~boolean_index):
                 for line_x, line_y, color in zip(
                     zip(x[start:end], x[start + 1 : end]),
@@ -43,7 +47,7 @@ def ax_plot_coordinate_with_boolean_index(
 
     else:
         ax.scatter(*coordinates[boolean_index].T, label="Valid", color="dodgerblue")
-        if plot_non_confined:
+        if plot_non_confinement:
             ax.scatter(*coordinates[~boolean_index].T, label="Invalid", color="crimson")
 
 

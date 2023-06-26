@@ -3,7 +3,7 @@
 format:
 	black .
 	isort .
-	ruff check . --fix
+	ruff check bikipy/ --fix
 	@echo "Formatting complete 🎉"
 
 mypy:

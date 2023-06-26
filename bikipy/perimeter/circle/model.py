@@ -17,7 +17,7 @@ from bikipy.utils.plot.generic import plot_ellipse
 class BaseCirclePerimeter(BaseSinglePerimeter):
     center_pixels: NDArrayInt16
 
-    class_inspect_directory_name = "circle"
+    perimeter_label = "circle"
 
     @validator("center_pixels")
     def center_vector_is_2d(cls, value):
@@ -49,28 +49,30 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
             }
         )
 
-    def expand(self, perimeter_border_normal_pixels: float | NDArrayFp64):
+    def expand(self, perimeter_border_normal_pixels: float | NDArrayFp64) -> "BaseCirclePerimeter":
         kwargs = self.dict()
-        kwargs["radius_pixels"] += perimeter_border_normal_pixels
+        kwargs["radius_length_pixels"] += perimeter_border_normal_pixels
         return self.__class__(**kwargs)
 
-    def compute_confined_coordinate_boolean_index(
+    def compute_confinement_boolean_index(
         self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
     ):
-        if isinstance(self.radius_meters, float):
+        if isinstance(self.radius_length_meters, float):
             distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
-            result = np.abs(distance_of_point_from_center) <= self.radius_meters
-        elif isinstance(self.radius_meters, np.ndarray):
-            result = point_inside_ellipse(coordinates, self.center_meters, self.radius_meters)
+            result = np.abs(distance_of_point_from_center) <= self.radius_length_meters
+        elif isinstance(self.radius_length_meters, np.ndarray):
+            result = point_inside_ellipse(coordinates, self.center_meters, self.radius_length_meters)
         else:
             raise RuntimeError
 
-        self._post_confinement_analysis_inspect_plot(result, coordinates, manual_video, ax, **inspect_kwargs)
+        self.post_confinement_analysis_inspect_plot(result, coordinates, manual_video, ax, **inspect_kwargs)
 
         return result
 
     def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
-        return self.center_meters + self.radius_meters * unit_vector(self.vector_to_closest_point_on_edge(coordinates))
+        return self.center_meters + self.radius_length_meters * unit_vector(
+            self.vector_to_closest_point_on_edge(coordinates)
+        )
 
     def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
         """
@@ -91,7 +93,9 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         self, ax: Axes, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs
     ) -> Axes:
         center, radius = (
-            (self.center_pixels, self.radius_pixels) if inspect_pixels else (self.center_meters, self.radius_meters)
+            (self.center_pixels, self.radius_length_pixels)
+            if inspect_pixels
+            else (self.center_meters, self.radius_length_meters)
         )
 
         if inspect_pixels:
@@ -123,39 +127,39 @@ CirclePerimeter = TypeVar("CirclePerimeter", bound=BaseCirclePerimeter)
 
 
 class CircleVariableRadiusPerimeter(BaseCirclePerimeter):
-    radius_meters: float
+    radius_length_meters: float
 
     @property
-    def radius_pixels(self) -> float:
-        return meters2pixels(self.radius_meters, self.video.pixels_per_meter)
+    def radius_length_pixels(self) -> float:
+        return meters2pixels(self.radius_length_meters, self.video.pixels_per_meter)
 
     @property
     def _to_hash(self) -> list:
         result = super()._to_hash
-        result.append(self.radius_meters)
+        result.append(self.radius_length_meters)
         return result
 
 
 class CircleFixedRadiusPerimeter(BaseCirclePerimeter):
-    radius_pixels: float
+    radius_length_pixels: float
 
     @property
     def derived_meters_per_pixel(self) -> float:
-        return self.derived_meters_per_pixel_source_metric_length / self.radius_pixels
+        return self.derived_meters_per_pixel_source_metric_length / self.radius_length_pixels
 
     @cached_property
-    def radius_meters(self) -> float:
-        return np.mean(self.radius_pixels * self.video.meters_per_pixel)
+    def radius_length_meters(self) -> float:
+        return np.mean(self.radius_length_pixels * self.video.meters_per_pixel)
 
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
         result = super().schemantic_fields_to_exclude_from_config_schema
-        result.add("radius_pixels")
+        result.add("radius_length_pixels")
         return result
 
     @property
     def _to_hash(self) -> list:
         result = super()._to_hash
-        result.append(self.radius_pixels)
+        result.append(self.radius_length_pixels)
         return result

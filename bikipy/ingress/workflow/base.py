@@ -1,5 +1,6 @@
 import os
 import pstats
+import shutil
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from cProfile import Profile
@@ -17,6 +18,7 @@ from projectkit.model.project import ProjectKitModelMixin
 from pydantic import DirectoryPath, Field, FilePath, validate_arguments
 from schemantic.model.project import SchemanticProjectMixin
 
+from bikipy import runtime_settings
 from bikipy._constant import (
     ANALYSIS_CACHE_STEM_ID,
     AUGMENTED_COORDINATE_CACHED_FILE_LABEL,
@@ -27,6 +29,7 @@ from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
 from bikipy.ingress.plugin.core import plugin_scope
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
+from bikipy.ingress.plugin.perimeter.constant import LABEL_TO_TRIAL_SHEET_NAME
 from bikipy.ingress.utils.io import (
     get_inspect_directory_path,
     get_plugin_directory_path,
@@ -35,7 +38,6 @@ from bikipy.ingress.utils.io import (
     result_directory_path,
 )
 from bikipy.perimeter.base import Perimeter
-from bikipy.reader.base import BaseReader
 from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 from bikipy.utils.misc import sheet_names_from_path
@@ -371,6 +373,25 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         return trial_id_df
 
+    @cached_property
+    def metadata_perimeter_label_sheet(self) -> pd.DataFrame | None:
+        """
+        The sheet has Trial IDs as row indices; trial perimeter attributes
+        as column indices; the value is the label of the perimeter belonging to
+        the respective trial in the given column index
+        :return:
+        """
+        if LABEL_TO_TRIAL_SHEET_NAME in self.metadata_sheet_names:
+            return pd.read_excel(self.metadata_path, sheet_name=LABEL_TO_TRIAL_SHEET_NAME, index_col=0)
+
+    def metadata_plugin_to_correct_sheet(self, plugin_model: "PluginType") -> pd.DataFrame:
+        from bikipy.ingress.plugin.perimeter.single import PluginSinglePerimeter
+
+        if plugin_model == PluginSinglePerimeter and self.metadata_perimeter_label_sheet is not None:
+            return self.metadata_perimeter_label_sheet
+
+        return self.metadata
+
     @property
     def settings_path(self) -> FilePath:
         return get_project_settings_path(self.project_directory)
@@ -385,7 +406,28 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
     @property
     def inspect_directory_path(self) -> DirectoryPath:
-        return get_inspect_directory_path(self.project_directory)
+        result = get_inspect_directory_path(self.project_directory)
+        if (
+            not runtime_settings.ignore_pre_existing_inspection_directory
+            and result.exists()
+            and tuple(result.glob("**/*"))
+        ):
+            if not self.lazy_dev_mode:
+                already_exists_prompt = input(
+                    f"Inspection directory, {result}, already exists. "
+                    "Proceeding would result in deletion of directory tree. "
+                    "Would you like to proceed? y/N "
+                )
+                if already_exists_prompt.strip().lower() != "y":
+                    import sys
+
+                    logger.info("Aborted by user, inspection directory already exists")
+                    sys.exit(0)
+
+            shutil.rmtree(result)
+
+        result.mkdir(exist_ok=True)
+        return result
 
     @property
     def result_directory_path(self) -> DirectoryPath:
@@ -482,7 +524,8 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
                 file_path.stem.split("-")[-1]: file_path
                 for file_path in self.plugin_directory_path.glob(f"{plugin_model.code_key}*")
             }
-            for trial_id, row in self.metadata.iterrows():
+
+            for trial_id, row in self.metadata_plugin_to_correct_sheet(plugin_model).iterrows():
                 if plugin_model.human_readable_index in row:
                     trial_id_plugin_label = row[plugin_model.human_readable_index]
                     if isinstance(trial_id_plugin_label, float) and np.isnan(trial_id_plugin_label):
@@ -615,11 +658,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             try:
                 with Profile() as pr:
                     self.experiment.analyze_trials()
-            except Exception as e:
-                if self.lazy_dev_mode:
-                    rmtree(self.inspect_directory_path)
-                raise e
-            else:
+            finally:
                 stats = pstats.Stats(pr)
                 stats.sort_stats(pstats.SortKey.TIME)
                 stats.dump_stats(self.inspect_directory_path / "performance_analysis.prof")
@@ -640,7 +679,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
     def create_analysis_videos(self, trial_ids: Iterable[Label], **trial_video_kwargs) -> None:
         for trial_id in trial_ids:
-            self.experiment.trial_id_to_trial_object[trial_id].generate_inspection_video(**trial_video_kwargs)
+            self.experiment.get_trial_object(trial_id).generate_inspection_video(**trial_video_kwargs)
 
     def sample_one_trial_from_each_trial_class(self, **trial_video_kwargs) -> None:
         for trial_objects in self.experiment.trial_class_to_trial_objects.values():
@@ -810,6 +849,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         return result
 
+    @validate_arguments
     def _to_skip_trial_id(self, trial_id: Label) -> bool:
         return (
             self.trial_ids_to_analyse

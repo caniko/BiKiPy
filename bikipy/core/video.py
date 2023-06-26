@@ -243,7 +243,7 @@ class VideoMetadata(_VideoMetadataBase):
             recording_resolution=new_frame.shape[0:2:][::-1],
         )
 
-    def ax_ticks_metric_to_pixel(self, ax: Axes, number_of_ticks: int = 7) -> None:
+    def ax_ticks_metric_to_pixel(self, ax: Axes, number_of_ticks: int = 5) -> None:
         ax.set_xticks(
             ticks=np.linspace(0, self.horizontal_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
             labels=np.round(
@@ -253,7 +253,7 @@ class VideoMetadata(_VideoMetadataBase):
             fontsize=self.plotting_default_font_size,
         )
         ax.set_yticks(
-            ticks=np.linspace(0.0, self.vertical_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
+            ticks=np.linspace(0, self.vertical_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
             # Notice that we are inverting the y-axis at the label level to make the metric axes have the same direction
             labels=np.round(
                 np.linspace(self.metric_vertical_resolution * _TICK_END_OFFSET_RATIO, 0, number_of_ticks), decimals=2
@@ -310,6 +310,7 @@ class VideoMetadata(_VideoMetadataBase):
         if exclude_imaging_from_rc_coord:
             idx_to_exclude = [c + r * nrows for c, r in exclude_imaging_from_rc_coord]
 
+        ax: Axes
         for idx, ax in enumerate(np.array(axes).flatten()):
             if exclude_imaging_from_rc_coord and idx in idx_to_exclude:
                 ax.axis("off")

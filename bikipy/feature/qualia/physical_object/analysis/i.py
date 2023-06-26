@@ -8,6 +8,7 @@ from pydantic_numpy.dtype import NDArrayBool
 
 from bikipy.core.mixin import AbstractFeatureCollectorMixin
 from bikipy.core.video import VideoMetadataMixin
+from bikipy.utils.math.shortcut import np_sum_int
 
 logger = getLogger(__name__)
 
@@ -83,7 +84,7 @@ class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMet
 
     @cached_property
     def frames_observing(self) -> int:
-        return int(np.sum(self.po_observing_per_frame))
+        return np_sum_int(self.po_observing_per_frame)
 
     @cached_property
     def po_total_seconds_observing(self) -> float:

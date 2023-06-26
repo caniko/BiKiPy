@@ -8,7 +8,6 @@ from pydantic import DirectoryPath, Field
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT, PHYSICAL_OBJECT_MAP_NAME
 from bikipy.analysis.video import make_inspection_video
-from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.core.typing import ConfinementSequence
 from bikipy.feature.qualia.physical_object.analysis.i import QualiaAnalysis
 from bikipy.feature.qualia.physical_object.analysis.mapping import (
@@ -26,7 +25,8 @@ from bikipy.feature.qualia.physical_object.merge_parser import (
     parse_heuristic_merge_equation,
 )
 from bikipy.perimeter.base import SinglePerimeter
-from bikipy.perimeter.mixin import TrialWithPerimeterMixin
+from bikipy.perimeter.trial_mixin import TrialWithPerimeterMixin
+from bikipy.utils.math.discrete import reduce_repeating_sequences
 from bikipy.utils.plot.inspect import InspectArg, generic_inspection_finalization
 
 
@@ -79,8 +79,8 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                     physical_object_heuristic.plot()
                     generic_inspection_finalization(
                         heuristic_inspect_arg,
-                        f"{self.label}_{physical_object_heuristic.physical_object_label}_{heuristic_alias}"
-                        f"{INSPECT_FIG_FILE_FORMAT}",
+                        potential_label=f"{self.label}_{physical_object_heuristic.physical_object_label}_{heuristic_alias}",
+                        inspect_fig_file_format=INSPECT_FIG_FILE_FORMAT,
                     )
 
         return result
@@ -121,8 +121,10 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     def reduced_alternation_sequence(self) -> dict[str, ConfinementSequence]:
         result = {}
         for heuristic, object_alternation_sequence in self.heuristic_to_object_alternation_sequence.items():
-            rrs = reduce_repeating_sequences(
-                object_alternation_sequence, round(self.video.fps * self.minimum_seconds_tolerance)
+            rrs = np.array(
+                reduce_repeating_sequences(
+                    object_alternation_sequence, round(self.video.fps * self.minimum_seconds_tolerance)
+                )
             )
             result[heuristic] = rrs[np.nonzero(rrs)]
         return result
@@ -130,6 +132,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     def generate_inspection_video(
         self, output_directory: Optional[DirectoryPath] = None, codec: Optional[str] = None
     ) -> None:
+        super().generate_inspection_video(output_directory, codec)
         for heuristic_alias, physical_objects in self.alias_to_heuristic_physical_objects.items():
             perimeter_to_boolean_index = self.reader.confinement_index_defaultdict
             label_to_boolean_index = self.reader.confinement_index_defaultdict
@@ -154,7 +157,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                 perimeter_to_boolean_index={po.perimeter: po.result for po in physical_objects},
                 label_to_boolean_index=label_to_boolean_index,
                 label_to_quiver_rays=label_to_quiver_rays,
-                output_file_path=self._video_file_name(output_directory),
+                output_file_path=self._video_file_name(output_directory, context_label=heuristic_alias),
                 codec=codec,
             )
 

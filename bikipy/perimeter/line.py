@@ -37,6 +37,8 @@ class LinePerimeter(BikipyHashable, VideoMetadataMixin):
 
     polygon_order: ClassVar[int] = 1
 
+    perimeter_label = "circle"
+
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:

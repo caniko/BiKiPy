@@ -8,8 +8,10 @@ from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 
 
-class TriangularPerimeter(BasePolygonPerimeter):
+class TrianglePerimeter(BasePolygonPerimeter):
     polygon_order = 3
+
+    perimeter_label = "triangle"
 
     @property
     def base_a(self):
@@ -24,9 +26,9 @@ class TriangularPerimeter(BasePolygonPerimeter):
         return self.vertices_in_meters[2]
 
     def expand(self, perimeter_border_normal_meters: float | NDArrayFp64):
-        pass
+        raise NotImplementedError()
 
-    def compute_confined_coordinate_boolean_index(
+    def compute_confinement_boolean_index(
         self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
     ) -> np.ndarray[bool, bool]:
         """

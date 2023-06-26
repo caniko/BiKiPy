@@ -115,7 +115,7 @@ optional = ["manual_reference", "manual_shape", "manual_trial_argument_key"]
 optional = ["compressed_pickle_suffix", "debug", "disable_numba", "disable_process_pooling", "ignore_pre_existing_inspection_directory", "matplotlib_invert_y_axis", "matplotlib_scatter_alpha", "maximum_seconds_distraction", "minimum_seconds_tolerance", "only_physical_cores", "testing"]
 
 [runtime_settings.defined]
-disable_process_pooling = true
+#disable_process_pooling = true
 
 [qualia_heuristics.BodyProximityHeuristic]
 class_name = "BodyProximityHeuristic"

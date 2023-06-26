@@ -8,22 +8,20 @@ import numpy.typing as nt
 import pandas as pd
 from pydantic_numpy.dtype import NDArrayFp64
 
-from bikipy._constant import INSPECT_FIG_FILE_FORMAT
+from bikipy._constant import INSPECT_FIG_FILE_FORMAT, INSPECT_SIMPLE_FIG_FILE_FORMAT
 from bikipy.behaviour.core.base import HabituationTrialMixin
 from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
 from bikipy.behaviour.core.enclosure.quadrant import Quadrant
-from bikipy.behaviour.utils import (
-    blanket_enclosed_experiment_label_generator,
-    reduce_repeating_sequences,
-)
+from bikipy.behaviour.utils import blanket_enclosed_experiment_label_generator
 from bikipy.feature.motion import TruthIslandMetadata, merge_motion_island_data
 from bikipy.perimeter import RectanglePerimeter
-from bikipy.utils.math.confinement.polygon import parallel_point_inside_polygon
 from bikipy.utils.math.discrete import (
-    tolerance_modeled_boolean_index_truth_sequence_start_end_length,
     boolean_index_truth_sequence_start_end_length,
+    reduce_repeating_sequences,
+    tolerance_modeled_boolean_index_truth_sequence_start_end_length,
 )
+from bikipy.utils.math.shortcut import np_sum_int
 from bikipy.utils.pandas import motion_analysis_indexer_for_subsection
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.inspect import generic_inspection_finalization
@@ -133,7 +131,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
             coordinates = self.video.prepare_coordinates_for_plotting(self.reader.kinematic_coordinates)
 
-            confined = np.zeros(self.reader.frames, dtype=bool)
+            confinement = np.zeros(self.reader.frames, dtype=bool)
 
             colors = plt.cm.rainbow(np.linspace(0, 1, len(result) + 1))
             for color, (grid_coordinate, quadrant) in zip(colors, result.items()):
@@ -144,9 +142,9 @@ class RectangleEnclosedTrial(EnclosedTrial):
                 )
                 ax.scatter(*coordinates[quadrant.confinement_boolean_index].T, color=color)
 
-                confined = confined | quadrant.confinement_boolean_index
+                confinement = confinement | quadrant.confinement_boolean_index
 
-            ax.scatter(*coordinates[~confined].T, color=colors[-1], label="Unconfined")
+            ax.scatter(*coordinates[~confinement].T, color=colors[-1], label="Unconfinement")
             ax.scatter(*self.video.center_for_plot.T, color="r", label="VideoCenter")
 
             if self.manual_center_meters is not None:
@@ -159,8 +157,9 @@ class RectangleEnclosedTrial(EnclosedTrial):
             plt.legend(**BOTTOM_LEGEND_KWARGS)
 
             generic_inspection_finalization(
-                self._inspect_quadrant_directory / f"{self.label}{INSPECT_FIG_FILE_FORMAT}",
-                debug_save_message=f"Saved perimeter_set {self.label} inspect plot to {self.class_inspect_arg}",
+                self._inspect_quadrant_directory,
+                potential_label=self.label,
+                inspect_fig_file_format=INSPECT_FIG_FILE_FORMAT,
             )
 
         return result
@@ -195,14 +194,14 @@ class RectangleEnclosedTrial(EnclosedTrial):
     # Center vs Periphery ==============================================================
     @cached_property
     def _center_boolean_index_motion_island(self) -> tuple[TruthIslandMetadata, np.ndarray[bool, bool]]:
-        raw_center_boolean_index = parallel_point_inside_polygon(
+        raw_center_boolean_index = self.center_rectangle.confinement_coordinate_boolean_index(
             self.reader.kinematic_coordinates,
-            self.center_rectangle_vertices,
-            inspect_arg=self.class_inspect_arg,
+            inspect_arg=self.inspect_arg,
+            potential_dir="rectangle_enclosure_confinement",
             potential_label=self.label,
+            inspect_fig_file_format=INSPECT_SIMPLE_FIG_FILE_FORMAT,
             video=self.video,
         )
-
         return tolerance_modeled_boolean_index_truth_sequence_start_end_length(raw_center_boolean_index, self.video.fps)
 
     @property
@@ -237,11 +236,11 @@ class RectangleEnclosedTrial(EnclosedTrial):
             return self.video.metric_resolution / self.center_rectangle_dimensions_to_spatial_resolution_ratio
 
     @cached_property
-    def center_rectangle_vertices(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def center_rectangle(self) -> RectanglePerimeter:
         if not self._center_periphery_is_defined:
             msg = (
                 "manual_center_rectangle_dimensions_meters or center_rectangle_dimensions_to_spatial_resolution_ratio "
-                "must be defined for center_rectangle_vertices to be defined"
+                "must be defined for center_rectangle to be defined"
             )
             raise AttributeError(msg)
 
@@ -253,7 +252,10 @@ class RectangleEnclosedTrial(EnclosedTrial):
         x_long, y_short = center + center_point_to_center_rectangle_side_normal_lengths
         x_short, y_long = center - center_point_to_center_rectangle_side_normal_lengths
 
-        return np.array(((x_short, y_short), (x_short, y_long), (x_long, y_long), (x_long, y_short)))
+        return RectanglePerimeter(
+            vertices_in_pixels=np.array(((x_short, y_short), (x_short, y_long), (x_long, y_long), (x_long, y_short))),
+            manual_video=self.video,
+        )
 
     @cached_property
     def location_sequence_center_periphery(self) -> nt.NDArray:
@@ -262,19 +264,16 @@ class RectangleEnclosedTrial(EnclosedTrial):
         location_sequence_center_periphery[self.center_boolean_index] = 1
         location_sequence_center_periphery[self.periphery_boolean_index] = 2
         return np.array(
-            reduce_repeating_sequences(
-                location_sequence_center_periphery,
-                frame_tolerance=self._frame_tolerance,
-            )
+            reduce_repeating_sequences(location_sequence_center_periphery, frame_tolerance=self._frame_tolerance)
         )
 
     @property
     def center_entries(self) -> int:
-        return int(np.sum(self.location_sequence_center_periphery == 1))
+        return np_sum_int(self.location_sequence_center_periphery == 1)
 
     @property
     def periphery_entries(self) -> int:
-        return int(np.sum(self.location_sequence_center_periphery == 2))
+        return np_sum_int(self.location_sequence_center_periphery == 2)
 
     @property
     def seconds_on_center(self) -> int:

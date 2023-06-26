@@ -12,11 +12,11 @@ def get_first(struct):
 
 
 def chain_lists_to_tuple(lists: Iterable[list]) -> tuple:
-    return tuple(chain(*lists))
+    return tuple(chain.from_iterable(lists))
 
 
 def chain_iterables_to_multi_index(iterables: Iterable[Iterable[tuple[str, ...]]]) -> pd.MultiIndex:
-    return pd.MultiIndex.from_tuples(chain(*iterables))
+    return pd.MultiIndex.from_tuples(chain.from_iterable(iterables))
 
 
 def max_len_in_iterable(iterable: Iterable[Sequence]):

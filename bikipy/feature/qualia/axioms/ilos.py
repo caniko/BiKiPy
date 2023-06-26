@@ -5,8 +5,8 @@ from matplotlib.axes import Axes
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import runtime_settings
+from bikipy.core.compute import AbstractComputeBooleanIndex
 from bikipy.core.video import VideoMetadata
-from bikipy.feature.compute import AbstractComputeBooleanIndex
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.utils.math.vector import unit_vector

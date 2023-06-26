@@ -6,10 +6,10 @@ from typing import ClassVar
 import numpy as np
 import pandas as pd
 
-from bikipy.behaviour.utils import reduce_repeating_sequences
 from bikipy.feature.qualia.physical_object.analysis.i import (
     OnePhysicalObjectSetQualiaAnalysis,
 )
+from bikipy.utils.math.discrete import reduce_repeating_sequences
 
 logger = getLogger(__name__)
 
@@ -105,8 +105,10 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
 
     @cached_property
     def po_sum_of_observation_instances(self) -> int:
-        return np.sum(
-            reduce_repeating_sequences(
-                self.po_observation_sequence != 0, frame_tolerance=self.video.minimum_frames_tolerance
+        return sum(
+            e != 0
+            for e in reduce_repeating_sequences(
+                self.po_observation_sequence,
+                frame_tolerance=self.video.minimum_frames_tolerance,
             )
         )

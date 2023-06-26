@@ -4,7 +4,7 @@ from functools import cached_property, lru_cache
 from logging import getLogger
 from operator import attrgetter
 from time import sleep
-from typing import Any, ClassVar, Hashable, Literal, Optional, Type, TypeVar
+from typing import Any, ClassVar, Hashable, Literal, Optional, Type, TypeVar, Iterable
 
 import numpy as np
 import pandas as pd
@@ -43,7 +43,7 @@ from bikipy.perimeter.base import (
     PerimeterSet,
     SinglePerimeter,
 )
-from bikipy.perimeter.mixin import TrialWithPerimeterMixin
+from bikipy.perimeter.trial_mixin import TrialWithPerimeterMixin
 from bikipy.reader import READER_CLASS_LABEL_TO_CLASS
 from bikipy.reader.base import Reader, ReaderCLS
 from bikipy.reader.data_with_likelihood import DeepLabCutReader
@@ -54,6 +54,9 @@ from bikipy.utils.ranged_dict import RangeDict
 LABEL_to_DATA_READER = {"deeplabcut": DeepLabCutReader}
 
 logger = getLogger(__name__)
+
+K = TypeVar("K")
+V = TypeVar("V")
 
 
 class Behaviour(BikipyHashable, InspectPlotMixin, VideoMetadataMixin):
@@ -161,7 +164,11 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
     @classmethod
     @property
     def excel_sheet_name(cls) -> str:
-        return f"{cls.experiment_stage}: {cls.trial_label}" if cls.trial_label else cls.experiment_stage.value
+        return (
+            f"{cls.experiment_stage.value.capitalize()}{cls.trial_label.capitalize()}"
+            if cls.trial_label
+            else cls.experiment_stage.value.capitalize()
+        )
 
     @cached_property
     def manual_center_meters(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
@@ -212,11 +219,16 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
     def generate_inspection_video(
         self, output_directory: Optional[DirectoryPath] = None, codec: Optional[str] = None
     ) -> None:
-        raise NotImplementedError()
+        ...
 
-    def _video_file_name(self, output_directory: Optional[DirectoryPath] = None) -> FilePath:
+    def _video_file_name(
+        self, output_directory: Optional[DirectoryPath] = None, context_label: Optional[str] = None
+    ) -> FilePath:
         output_directory = output_directory or self.framewise_coordinates_path.parent
-        return output_directory / f"{self.experiment_stage}."
+        stem = f"{self.experiment_stage}_{self.label}"
+        if context_label:
+            stem = f"{stem}_{context_label}"
+        return output_directory / f"{stem}.mp4"
 
     # Miscellaneous
     @property
@@ -230,6 +242,10 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
     @cached_property
     def _frame_tolerance(self) -> int:
         return round(self.second_tolerance * self.video.fps)
+
+    @staticmethod
+    def _dev_debug_merge_indices_with_values(indices: Iterable[K], values: Iterable[V]) -> dict[K, V]:
+        return dict(zip(chain()))
 
     def _post_feature_collection_flush(self) -> None:
         self.reader.flush_reads()
@@ -470,8 +486,13 @@ class BaseExperiment(Behaviour):
         )
         try:
             result = trial_class(**self.trial_keyword_arguments(trial_id))
+            if cached_instance := result.load_self_from_cache():
+                # We replace the new instance with the cached instances, saving compute
+                result = cached_instance
+
             self._trial_objects.append(result)
             self._trial_id_to_trial_object[trial_id] = result
+
             return result
         except ValidationError as e:
             self._bad_trial_ids_to_error_msg[trial_id] = str(e)
@@ -571,6 +592,7 @@ class BaseExperiment(Behaviour):
             )
             raise AttributeError(msg)
 
+        assert result, "No trials were found"
         first_trial_id = result[0]
         first_type = type(first_trial_id)
 

@@ -3,9 +3,8 @@ from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Type, TypeVar
 
-import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sb
 from matplotlib.axes import Axes
@@ -13,18 +12,17 @@ from numpy import unsignedinteger
 from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
-from bikipy._constant import INSPECT_FIG_FILE_FORMAT
+from bikipy._constant import INSPECT_SIMPLE_FIG_FILE_FORMAT
 from bikipy.core.base import BikipyHashable
 from bikipy.core.mixin import InspectPlotMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
-from bikipy.perimeter.helper.utils import get_coco_array_from_path_or_array
 from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_coco_polygon,
     init_polygon_from_makesense_csv_rectangle,
 )
+from bikipy.perimeter.utils.misc import get_coco_array_from_path_or_array
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
-from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.generic import (
     ax_plot_coordinate_with_boolean_index,
     plot_coordinates,
@@ -41,6 +39,8 @@ StringPerimeterShapes = Literal["circle", "circle_line", "circle_point", "polygo
 
 class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
     category = "perimeter"
+
+    perimeter_label: ClassVar[str]
 
     def _manual_video_metadata_derived_inspection_preparation(
         self,
@@ -63,7 +63,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
         return ax, coordinates, video
 
-    def _post_confinement_analysis_inspect_plot(
+    def post_confinement_analysis_inspect_plot(
         self,
         boolean_index: NDArrayBool,
         coordinates: Optional[NDArrayFp64] = None,
@@ -92,7 +92,12 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         if coordinates is not None:
             ax_plot_coordinate_with_boolean_index(ax, boolean_index, inspection_coordinates)
 
-        generic_inspection_finalization(self.class_inspect_arg, **inspect_kwargs)
+        generic_inspection_finalization(
+            self.inspect_arg,
+            potential_dir=f"{self.perimeter_label}_confinement",
+            inspect_fig_file_format=INSPECT_SIMPLE_FIG_FILE_FORMAT,
+            **inspect_kwargs,
+        )
 
     def subplot(self, manual_video: Optional[VideoMetadata] = None, **plot_kwargs):
         return manual_video.subplots(**plot_kwargs) if manual_video else self.video.subplots(**plot_kwargs)
@@ -107,7 +112,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         return self.plot_perimeter_on_ax(ax, inspect_pixels=video.coordinates_need_to_be_scaled_for_plot, **plot_kwargs)
 
     @abstractmethod
-    def compute_confined_coordinate_boolean_index(
+    def compute_confinement_boolean_index(
         self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
     ) -> np.ndarray[bool, bool]:
         ...
@@ -214,7 +219,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         return
 
     @abstractmethod
-    def expand(self, perimeter_border_normal_meters: float | NDArrayFp64) -> "SinglePerimeter":
+    def expand(self, perimeter_border_normal_meters: float | NDArrayFp64):
         ...
 
     @abstractmethod
@@ -238,14 +243,14 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
             raise AttributeError(msg)
         return values
 
-    def confined_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, reader: Optional["Reader"] = None
+    def confinement_coordinate_boolean_index(
+        self, coordinates: NDArrayFp64, reader: Optional["Reader"] = None, **inspect_kwargs
     ) -> np.ndarray[bool, bool]:
         """
         This function integrates moving perimeter routine into the static perimeter workflow
         """
         if not self.moving_field_name:
-            return self.compute_confined_coordinate_boolean_index(coordinates)
+            return self.compute_confinement_boolean_index(coordinates, **inspect_kwargs)
         if not reader:
             msg = "reader must be passed to Perimeter when moving field name is utilized"
             raise AttributeError(msg)
@@ -434,20 +439,23 @@ class PerimeterSet(BasePerimeter):
         """
         return np.mean([perimeter.centroid_meters for perimeter in self.all_perimeters], axis=0)
 
-    def combined_framewise_confined_coordinates(self, coordinates: NDArrayFp64) -> np.ndarray[bool, bool]:
-        present = np.any([perimeter.confined_coordinate_boolean_index(coordinates) for perimeter in self.perimeters])
+    def combined_framewise_confinement_coordinates(self, coordinates: NDArrayFp64) -> np.ndarray[bool, bool]:
+        present = np.any([perimeter.confinement_coordinate_boolean_index(coordinates) for perimeter in self.perimeters])
         if self.restricting_perimeters:
             present = present & ~np.any(
-                [perimeter.confined_coordinate_boolean_index(coordinates) for perimeter in self.restricting_perimeters]
+                [
+                    perimeter.confinement_coordinate_boolean_index(coordinates)
+                    for perimeter in self.restricting_perimeters
+                ]
             )
         return present
 
-    def compute_confined_coordinate_boolean_index(
+    def compute_confinement_boolean_index(
         self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
     ) -> np.ndarray[bool, bool]:
-        result = self.combined_framewise_confined_coordinates(coordinates)
+        result = self.combined_framewise_confinement_coordinates(coordinates)
 
-        self._post_confinement_analysis_inspect_plot(result, coordinates, manual_video, ax, **inspect_kwargs)
+        self.post_confinement_analysis_inspect_plot(result, coordinates, manual_video, ax, **inspect_kwargs)
 
         return result
 
@@ -564,8 +572,7 @@ class PerimeterSet(BasePerimeter):
                 plot_coordinates(coordinates, ax, inspect_pixels, self.video)
 
         if not manual_ax:
-            ax.legend(**BOTTOM_LEGEND_KWARGS)
-            generic_inspection_finalization(self.class_inspect_arg or True, f"0-{self.label}{INSPECT_FIG_FILE_FORMAT}")
+            generic_inspection_finalization(self.class_inspect_arg, f"0-{self.label}{INSPECT_SIMPLE_FIG_FILE_FORMAT}")
 
         return ax
 

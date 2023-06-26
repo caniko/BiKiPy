@@ -40,7 +40,7 @@ def circle_from_makesense_line(data_path: FilePath, **perimeter_kwargs) -> dict[
         center, edge = get_line_endpoints_from_makesense_row(row)
         result[row["image_name"]][row["label"]] = CircleFixedRadiusPerimeter(
             center_pixels=center,
-            radius_pixels=np.linalg.norm((center - edge)),  # AB vector is in pixels, must be meters
+            radius_length_pixels=np.linalg.norm((center - edge)),  # AB vector is in pixels, must be meters
             label=row["label"],
             recording_resolution=recording_resolution_from_makesense_row(row),
             makesense_image_name=row["image_name"],

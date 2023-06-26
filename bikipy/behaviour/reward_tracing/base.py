@@ -30,20 +30,20 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
 
     @cached_property
     def _start_frame_idx(self) -> int:
-        confined_bool = self.start_perimeter.compute_confined_coordinate_boolean_index(
+        confinement_bool = self.start_perimeter.compute_confinement_boolean_index(
             self.reader.kinematic_coordinates, potential_label=f"{self.label}_start", manual_video=self.video
         )
-        if not np.any(confined_bool):
+        if not np.any(confinement_bool):
             return np.nan
 
         if self.tolerate_boolean_index:
-            confined_bool = single_node_tolerance_model(confined_bool, self.video.fps)
+            confinement_bool = single_node_tolerance_model(confinement_bool, self.video.fps)
 
-        was_confined = False
-        for i, b in enumerate(confined_bool):
+        was_confinement = False
+        for i, b in enumerate(confinement_bool):
             if b:
-                was_confined = True
-            elif was_confined:  # and not b
+                was_confinement = True
+            elif was_confinement:  # and not b
                 logger.debug(f"Subject {self.label} was in the start area, and then left the starting area")
                 return i
 
@@ -67,13 +67,13 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
 
     @cached_property
     def reward_boolean(self) -> np.ndarray[bool, bool]:
-        confined_bool = self.reward_perimeter.compute_confined_coordinate_boolean_index(
+        confinement_bool = self.reward_perimeter.compute_confinement_boolean_index(
             self.reader.kinematic_coordinates, potential_label=f"{self.label}_reward", manual_video=self.video
         )
         if self.tolerate_boolean_index:
-            confined_bool = single_node_tolerance_model(confined_bool, self.video.fps)
+            confinement_bool = single_node_tolerance_model(confinement_bool, self.video.fps)
 
-        return confined_bool
+        return confinement_bool
 
     @property
     def start_to_reward_motion(self) -> tuple:

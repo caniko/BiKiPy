@@ -225,30 +225,25 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
     @cached_property
     def crop_frames_from_start(self) -> int:
-        if not self.crop_seconds_from_start:
-            return 0
+        result = round(self.crop_seconds_from_start / self.video.fps)
         if self.df_is_timestamped and self.crop_target_trial_length_frames:
-            result = self.raw_frames - np.where(self.raw_df.index.values >= self.crop_target_trial_length_frames)[0][0]
-        else:
-            result = 0
-        return round((result + self.crop_seconds_from_start) * self.video.fps)
+            result += (
+                self.raw_frames - np.where(self.raw_df.index.values >= self.crop_target_trial_length_seconds)[0][0]
+            )
+        return result
 
     @cached_property
     def crop_frames_from_end(self) -> int:
-        if not self.crop_seconds_from_end:
-            return 0
+        result = round(self.crop_seconds_from_end / self.video.fps)
         if self.df_is_timestamped and self.crop_target_trial_length_frames:
-            result = (
+            result += (
                 self.raw_frames
                 - np.where(
                     self.raw_df.index.values[::-1]
-                    <= self.raw_df.index.values[-1] - self.crop_target_trial_length_frames
-                )[0][0],
+                    <= self.raw_df.index.values[-1] - self.crop_target_trial_length_seconds
+                )[0][0]
             )
-        else:
-            result = 0
-
-        return round((result + self.crop_seconds_from_end) * self.video.fps)
+        return result
 
     @cached_property
     def augmented(self) -> pd.DataFrame:
@@ -276,8 +271,8 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             )
             for ptl in self.physically_tracked_labels:
                 result.loc[:, ptl][
-                    ~self.trial_enclosure.compute_confined_coordinate_boolean_index(
-                        result.loc[:, pd.IndexSlice[ptl, ("x", "y")]].values
+                    ~self.trial_enclosure.compute_confinement_boolean_index(
+                        result.loc[:, pd.IndexSlice[ptl, ("x", "y")]].values, potential_label="trial_enclosure"
                     )
                 ] = BAD_COORDINATE
 
@@ -290,13 +285,13 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         if self.crop_frames_from_end:
             result = result.iloc[: -self.crop_frames_from_end]
 
-        if self.invert_y_axis:
-            result.loc[:, pd.IndexSlice[:, "y"]] = self.video.vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
-
         if self.x_axis_crop_end_point:
             result.loc[:, pd.IndexSlice[:, "x"]] = self.x_axis_crop_end_point + result.loc[:, pd.IndexSlice[:, "x"]]
         if self.y_axis_crop_end_point:
             result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] - self.y_axis_crop_end_point
+
+        if self.invert_y_axis:
+            result.loc[:, pd.IndexSlice[:, "y"]] = self.video.vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
 
         # convert to meters
         if isinstance(self.video.meters_per_pixel, float):
@@ -410,7 +405,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     def plot_boolean_index(self, boolean_index: NDArrayBool, ax: Axes, label_to_plot: Optional[str] = None) -> None:
         coordinates_for_plot = self.coordinates_for_plot(label_to_plot or self.object_tracking_label_for_kinematics)
         ax_plot_coordinate_with_boolean_index(
-            ax, boolean_index, coordinates_for_plot, plot_line=True, plot_non_confined=False
+            ax, boolean_index, coordinates_for_plot, plot_line=True, plot_non_confinement=False
         )
         plt.legend(**BOTTOM_LEGEND_KWARGS)
 

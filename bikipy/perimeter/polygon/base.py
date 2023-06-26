@@ -162,12 +162,12 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             closest_point_on_edge_to_coordinates = self.closest_point_on_edge_to_coordinates(coordinates)
         return unit_vector(closest_point_on_edge_to_coordinates - coordinates)
 
-    def compute_confined_coordinate_boolean_index(
+    def compute_confinement_boolean_index(
         self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
     ) -> np.ndarray[bool, bool]:
         result = parallel_point_inside_polygon(coordinates, self.metric_graph.linked_vertices, merge_ends=False)
 
-        self._post_confinement_analysis_inspect_plot(result, coordinates, manual_video, ax, **inspect_kwargs)
+        self.post_confinement_analysis_inspect_plot(result, coordinates, manual_video, ax, **inspect_kwargs)
 
         return result
 
@@ -288,9 +288,9 @@ PolygonPerimeter = TypeVar("PolygonPerimeter", bound=BasePolygonPerimeter)
 def init_polygon(vertices_in_meters: NDArrayFp64, **kwargs) -> PolygonPerimeter:
     match vertices_in_meters.shape[0]:  # polygon_order
         case 3:
-            from bikipy.perimeter.polygon.triangular import TriangularPerimeter
+            from bikipy.perimeter.polygon.triangle import TrianglePerimeter
 
-            return TriangularPerimeter(vertices_in_pixels=vertices_in_meters, **kwargs)
+            return TrianglePerimeter(vertices_in_pixels=vertices_in_meters, **kwargs)
         case 4:
             from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 

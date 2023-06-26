@@ -7,8 +7,8 @@ from pydantic import validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy import runtime_settings
+from bikipy.core.compute import AbstractComputeBooleanIndex
 from bikipy.core.video import VideoMetadata
-from bikipy.feature.compute import AbstractComputeBooleanIndex
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.utils.plot.color import make_color_map
@@ -26,26 +26,26 @@ class ComputeProximity(AbstractComputeBooleanIndex):
     @cached_property
     def result(self):
         self.perimeter_border = self.perimeter.expand(self.perimeter_border_normal_pixels)
-        self.inside_perimeter_border = self.perimeter_border.compute_confined_coordinate_boolean_index(
-            coordinates=self.should_be_inside_perimeter_border
+        self.inside_perimeter_border = self.perimeter_border.compute_confinement_boolean_index(
+            coordinates=self.should_be_inside_perimeter_border, potential_label="proximity_inside_border"
         )
         result = self.inside_perimeter_border
 
         if self.perimeter.impenetrable:
-            self.outside_impenetrable_bi = ~self.perimeter.compute_confined_coordinate_boolean_index(
-                coordinates=self.inside_perimeter_border
+            self.outside_impenetrable_bi = ~self.perimeter.compute_confinement_boolean_index(
+                coordinates=self.inside_perimeter_border, potential_label="proximity_outside_impenetrable"
             )
             result = result & self.outside_impenetrable_bi
 
         if self.should_be_outside_perimeter_border is not None:
-            self.outside_perimeter_border_bi = ~self.perimeter_border.compute_confined_coordinate_boolean_index(
-                self.should_be_outside_perimeter_border
+            self.outside_perimeter_border_bi = ~self.perimeter_border.compute_confinement_boolean_index(
+                self.should_be_outside_perimeter_border, potential_label="proximity_outside_border"
             )
             result = result & self.outside_perimeter_border_bi
 
         if self.outside_perimeter is not None:
-            self.outside_perimeter_bi = ~self.perimeter.compute_confined_coordinate_boolean_index(
-                self.should_be_outside_perimeter_border
+            self.outside_perimeter_bi = ~self.perimeter.compute_confinement_boolean_index(
+                self.should_be_outside_perimeter_border, potential_label="proximity_outside_perimeter"
             )
             result = result & self.outside_perimeter_bi
 

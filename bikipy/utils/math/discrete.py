@@ -1,3 +1,6 @@
+from itertools import groupby
+from typing import TypeVar, Sequence
+
 import numpy as np
 from numba import njit
 from pydantic_numpy import NDArrayBool
@@ -108,9 +111,21 @@ def tolerance_modeled_boolean_index_truth_sequence_start_end_length(
     return data, new_boolean_index
 
 
-# if not runtime_settings.disable_numba:
-#     boolean_index_truth_sequence_start_end = njit(cache=True)(boolean_index_truth_sequence_start_end)
-#
-#     tolerance_modeled_boolean_index_truth_sequence_start_end_length = njit(cache=True)(
-#         tolerance_modeled_boolean_index_truth_sequence_start_end_length
-#     )
+T = TypeVar("T")
+
+
+def reduce_repeating_sequences(repeating_sequence: Sequence[T], minimum_repeating: int) -> list[T]:
+    reduced_seq = []
+    for key, group in groupby(repeating_sequence):
+        if len(tuple(group)) >= minimum_repeating and (not reduced_seq or reduced_seq[-1] != key):
+            reduced_seq.append(key)
+
+    return reduced_seq
+
+
+if not runtime_settings.disable_numba:
+    boolean_index_truth_sequence_start_end = njit(cache=True)(boolean_index_truth_sequence_start_end)
+
+    tolerance_modeled_boolean_index_truth_sequence_start_end_length = njit(cache=True)(
+        tolerance_modeled_boolean_index_truth_sequence_start_end_length
+    )

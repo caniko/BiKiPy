@@ -7,7 +7,6 @@ from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 from bikipy.utils.math.geometry import expand_rectangle
-from bikipy.utils.plot.inspect import generic_inspection_finalization
 
 logger = getLogger(__name__)
 
@@ -17,7 +16,7 @@ class RectanglePerimeter(BasePolygonPerimeter):
 
     polygon_order = 4
 
-    class_inspect_directory_name = "rectangle"
+    perimeter_label = "rectangle"
 
     @property
     def derived_meters_per_pixel(self) -> float:
@@ -31,25 +30,12 @@ class RectanglePerimeter(BasePolygonPerimeter):
     def expand(
         self, perimeter_border_normal_pixels: float | NDArrayFp64, ax: Axes = None, **inspect_kwargs
     ) -> "RectanglePerimeter":
-        result = self.__class__(
-            vertices_in_pixels=expand_rectangle(
-                self.vertices_in_pixels,
-                perimeter_border_normal_pixels,
-            ),
-            manual_video=self.video,
-            label=f"border_{self.label}",
+        expanded_vertices = expand_rectangle(
+            self.vertices_in_pixels,
+            perimeter_border_normal_pixels,
         )
+        if any(np.any(expanded_vertex > self.video.recording_resolution) for expanded_vertex in expanded_vertices):
+            msg = "The expanded vertex is out of bounds with respect to the video"
+            raise ValueError(msg)
 
-        if self.inspect_arg:
-            if ax is None:
-                fig, ax = self.video.subplot()
-                ax.set_title("ExpandPerimeter")
-
-            self.plot_perimeter(manual_ax=ax, label="Original")
-            result.plot_perimeter(manual_ax=ax, label="Expanded")
-
-            ax.legend()
-
-            generic_inspection_finalization(self.class_inspect_arg / "expand", **inspect_kwargs)
-
-        return result
+        return self.__class__(vertices_in_pixels=expanded_vertices, manual_video=self.video, label=self.label)

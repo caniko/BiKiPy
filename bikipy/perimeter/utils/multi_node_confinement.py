@@ -36,7 +36,7 @@ def detect_multi_node_sequential_perimeter_presence(
     perimeter_id_to_confinement = {}
     for perimeter in inferior2superior_perimeter_set.all_perimeters:
         confinement_boolean_index = np_logic_func(
-            [perimeter.confined_coordinate_boolean_index(coordinates) for coordinates in coordinate_set]
+            [perimeter.confinement_coordinate_boolean_index(coordinates) for coordinates in coordinate_set]
         )
         perimeter_id_to_confinement[perimeter.int_id] = confinement_boolean_index
 

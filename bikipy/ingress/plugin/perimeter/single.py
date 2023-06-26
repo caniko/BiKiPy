@@ -4,13 +4,13 @@ from pathlib import Path
 from typing import Optional
 
 import matplotlib.pyplot as plt
-import pandas as pd
 from pydantic import DirectoryPath, FilePath, validate_arguments
 
 from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 from bikipy.ingress.plugin.perimeter.base import AbstractPerimeterPlugin
+from bikipy.ingress.plugin.perimeter.constant import LABEL_TO_TRIAL_SHEET_NAME
 from bikipy.perimeter.base import SinglePerimeter, perimeter_set_from_makesense
 from bikipy.utils.collection_utils import get_first_key_in_dict
 from bikipy.utils.image import axis_frame_imshow, read_image_from_path
@@ -18,8 +18,6 @@ from bikipy.utils.makesense import (
     SHAPE_TO_MAKESENSE_TYPE,
     first_image_name_from_makesense,
 )
-
-LABEL_TO_TRIAL_SHEET_NAME = "perimeter_label"
 
 logger = getLogger(__name__)
 
@@ -57,7 +55,7 @@ class PluginSinglePerimeter(AbstractPerimeterPlugin):
                 PluginScope.METADATA in self.ingress.definition_single_perimeter
                 and LABEL_TO_TRIAL_SHEET_NAME in self.ingress.metadata_sheet_names
             ):
-                label = _open_label_to_trial_label_df(self.ingress.metadata_path).loc[trial_id, label]
+                label = self.ingress.metadata_perimeter_label_sheet.loc[trial_id, label]
             if self.label_prefix:
                 label = f"{self.label_prefix}{label}"
             if self.label_suffix:
@@ -120,16 +118,3 @@ def _perimeter_with_label(perimeter: SinglePerimeter, new_label: str) -> SingleP
     if new_label == perimeter.label:
         return perimeter
     return perimeter.copy(update={"label": new_label})
-
-
-@lru_cache
-def _open_label_to_trial_label_df(metadata_path: FilePath):
-    """
-    Opens a sheet in an excel file. The sheet has Trial IDs as row indices; trial perimeter attributes
-    as column indices; the value is the label of the perimeter belonging to
-    the respective trial in the given column index
-
-    :param metadata_path:
-    :return:
-    """
-    return pd.read_excel(metadata_path, sheet_name=LABEL_TO_TRIAL_SHEET_NAME, index_col=0)

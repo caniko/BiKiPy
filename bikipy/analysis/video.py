@@ -25,7 +25,7 @@ def make_inspection_video(
     :param video_frames: Iterator that stores sequential video frames
     :param reader: Respective reader for video
     :param perimeter_to_boolean_index: K: perimeter; V: Boolean index stating confinement,
-        confined is green otherwise red
+        confinement is green otherwise red
     :param label_to_boolean_index:
     :param label_to_quiver_rays:
     :param output_file_path:
@@ -60,10 +60,10 @@ def make_inspection_video(
         reader.plot_skeleton_in_frame(frame_idx, ax, labels_to_exclude)
 
         for label, boolean_index in label_to_boolean_index.items():
-            is_confined = boolean_index[frame_idx]
-            color = "g" if is_confined else reader.label_to_plot_color[label]
-            if is_confined and label in label_to_quiver_rays:
-                # We draw arrows only when confined
+            is_confinement = boolean_index[frame_idx]
+            color = "g" if is_confinement else reader.label_to_plot_color[label]
+            if is_confinement and label in label_to_quiver_rays:
+                # We draw arrows only when confinement
                 ax.quiver(
                     *reader.coordinates_for_plot(label)[frame_idx],
                     *label_to_quiver_rays[label][frame_idx],
