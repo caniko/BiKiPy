@@ -17,7 +17,9 @@ logger = getLogger(__file__)
 
 
 def detect_multi_node_sequential_perimeter_presence(
-    coordinate_set: Sequence[NDArrayFp64], inferior2superior_perimeter_set: PerimeterSet, all_or_false: bool = True
+    coordinate_set: Sequence[NDArrayFp64],
+    inferior2superior_perimeter_set: PerimeterSet,
+    all_or_false: bool | tuple[bool, ...] = True,
 ) -> ConfinementSequence:
     """
 
@@ -31,9 +33,17 @@ def detect_multi_node_sequential_perimeter_presence(
         dtype=inferior2superior_perimeter_set.size_respective_dtype,
     )
 
+    if isinstance(all_or_false, bool):
+        np_logic_func = np.logical_and.reduce if all_or_false else np.logical_or.reduce
+    elif not isinstance(all_or_false, tuple):
+        msg = "all_or_false must be either bool or tuple"
+        raise TypeError(msg)
+
     overlap_boolean_index = np.zeros(coordinate_set[0].shape[0], dtype=bool)
-    np_logic_func = np.logical_and.reduce if all_or_false else np.logical_or.reduce
-    for perimeter in inferior2superior_perimeter_set.all_perimeters:
+    for iter_idx, perimeter in enumerate(inferior2superior_perimeter_set.all_perimeters):
+        if isinstance(all_or_false, tuple):
+            np_logic_func = np.logical_and.reduce if all_or_false[iter_idx] else np.logical_or.reduce
+
         confinement_boolean_index = np_logic_func(
             [perimeter.confinement_coordinate_boolean_index(coordinates) for coordinates in coordinate_set]
         )

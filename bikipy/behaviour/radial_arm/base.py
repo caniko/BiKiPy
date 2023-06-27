@@ -140,11 +140,8 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
     @cached_property
     def alternation_sequence_with_center(self) -> np.ndarray[int, np.dtype[np.uint8]]:
         result, overlap_boolean_index = detect_multi_node_sequential_perimeter_presence(
-            self.confinement_coordinates, self.perimeter_set
+            self.confinement_coordinates, self.perimeter_set, (False, True, True, True)
         )
-
-        # When it is nowhere it must be on center
-        result[result == 0] = 1
 
         inspect_sequential_confinement(
             self.inspect_arg,
@@ -158,11 +155,16 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         )
         return result
 
+    @property
+    def cleaned_arm_alternation_sequence(self) -> ConfinementSequence:
+        # When it is nowhere it must be on center; we can safely remove undefined instances
+        return self.alternation_sequence_with_center[self.alternation_sequence_with_center != 0]
+
     @cached_property
     def reduced_arm_alternation_sequence(self) -> ConfinementSequence:
         result = np.array(
             reduce_repeating_sequences(
-                self.alternation_sequence_with_center, round(self.video.fps * self.minimum_seconds_for_entry)
+                self.cleaned_arm_alternation_sequence, round(self.video.fps * self.minimum_seconds_for_entry)
             )
         )
         return result[result != self.center.int_id]

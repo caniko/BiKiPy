@@ -10,7 +10,6 @@ from pydantic_numpy.dtype import NDArrayFp64
 from bikipy import runtime_settings
 from bikipy.core.compute import AbstractComputeBooleanIndex, T
 from bikipy.core.video import VideoMetadata
-from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.utils.plot.color import make_color_map
 

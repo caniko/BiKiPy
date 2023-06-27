@@ -291,7 +291,7 @@ class VideoMetadata(_VideoMetadataBase):
                 self.upscaled_video.horizontal_resolution / runtime_settings.matplotlib_dpi * ncols,
                 self.upscaled_video.vertical_resolution / runtime_settings.matplotlib_dpi * nrows,
             ),
-            dpi=runtime_settings.matplotlib_dpi,
+            dpi=2 * runtime_settings.matplotlib_dpi,
             **kwargs,
         )
 
@@ -299,13 +299,13 @@ class VideoMetadata(_VideoMetadataBase):
         base_font_size = ncols * self.upscaled_video.vertical_resolution / runtime_settings.matplotlib_dpi * 0.1
 
         # Update font sizes
-        fig.rc("font", size=base_font_size)
-        fig.rc("axes", titlesize=base_font_size)
-        fig.rc("axes", labelsize=base_font_size)
-        fig.rc("xtick", labelsize=base_font_size)
-        fig.rc("ytick", labelsize=base_font_size)
-        fig.rc("legend", fontsize=base_font_size)
-        fig.rc("figure", titlesize=base_font_size)
+        plt.rc("font", size=base_font_size)
+        plt.rc("axes", titlesize=base_font_size)
+        plt.rc("axes", labelsize=base_font_size)
+        plt.rc("xtick", labelsize=base_font_size)
+        plt.rc("ytick", labelsize=base_font_size)
+        plt.rc("legend", fontsize=base_font_size)
+        plt.rc("figure", titlesize=base_font_size)
 
         if self.frame is None:
             logger.debug("Video object was used to make subplot, but no frame was defined. Figure got no background.")

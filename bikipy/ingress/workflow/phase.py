@@ -15,12 +15,8 @@ class PhaseIngressWorkflow(BaseIngressWorkflow):
     _coordinate_file_index_delimiter = "-"
 
     def _dataset_reader(self) -> None:
-        """
-        TODO: Consider code cleanup,
-        :return:
-        """
-        if self.experiment_class.has_stages and self.only_one_instance_of_trial_class:
-            trial_class_include = {cls.__name__: False for cls in self.experiment_class.trial_sequence}
+        class_name = None
+        observed_classes_to_trial_id = {}
 
         for phase_dir in self.dataset_directory.iterdir():
             phase_id = self._get_id_from_path_stem(phase_dir)
@@ -34,9 +30,8 @@ class PhaseIngressWorkflow(BaseIngressWorkflow):
 
                 if self.experiment_class.has_stages:
                     stage_index = self.metadata.loc[trial_id, "Stage"]
-                    trial_class = self._trial_class_from_stage_index(stage_index)
-                    if self.only_one_instance_of_trial_class and trial_class_include[trial_class]:
-                        continue
+                    class_name = self._trial_class_from_stage_index(stage_index).__name__
+                    self._trial_id_to_trial_class_name[trial_id] = class_name
 
                 trial_number = int(trial_id.split("_")[1])
 
@@ -48,8 +43,16 @@ class PhaseIngressWorkflow(BaseIngressWorkflow):
                     **self._trial_id_to_keyword_arguments[trial_id],
                 }
 
-                if self.experiment_class.has_stages:
-                    self._trial_id_to_trial_class_name[trial_id] = trial_class
+                if self.only_one_instance_of_trial_class:
+                    observed_classes_to_trial_id[class_name] = trial_id
+                    if (
+                        not self.experiment_class.has_stages
+                        or frozenset(observed_classes_to_trial_id) == self.experiment_class.trial_classes
+                    ):
+                        for trial_id in tuple(self._trial_id_to_keyword_arguments):
+                            if trial_id not in observed_classes_to_trial_id.values():
+                                del self._trial_id_to_keyword_arguments[trial_id]
+                        return
 
     def trialwise_plugins_for_trial_id(self, trial_id: Label, trial_directory: DirectoryPath):
         return self._trialwise_plugins_for_trial_id(trial_id, trial_directory, "{trial_id}-{plugin_code_key}*")

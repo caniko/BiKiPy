@@ -8,7 +8,8 @@ required = ["dataset_directory", "definition_meters_per_pixel", "project_kit_con
 optional = ["create_inspection_plots", "definition_center", "definition_change_reference", "definition_enclosure", "definition_frame", "definition_radial", "definition_single_perimeter", "definition_timestamp", "definition_video", "deprecated_project_settings_file_name", "first_stage_is_habituation", "ingress_defined_perimeters", "metadata_trial_ids_are_higher_level", "only_one_instance_of_trial_class", "trial_ids_to_analyse", "trial_sequence_loops"]
 
 [ingress.defined]
-only_one_instance_of_trial_class = true
+#only_one_instance_of_trial_class = true
+lazy_dev_mode = true
 dataset_directory = "/home/can/data/y_maze_mextracted"
 definition_meters_per_pixel = ["other"]
 definition_radial = ["metadata"]
@@ -51,7 +52,7 @@ optional = ["label_prefix", "label_suffix", "manual_reference", "manual_shape", 
 optional = ["compressed_pickle_suffix", "debug", "disable_numba", "disable_process_pooling", "ignore_pre_existing_inspection_directory", "matplotlib_invert_y_axis", "matplotlib_scatter_alpha", "maximum_seconds_distraction", "minimum_seconds_tolerance", "only_physical_cores"]
 
 [runtime_settings.defined]
-disable_process_pooling = true
+#disable_process_pooling = true
 
 [reader]
 required = ["object_tracking_label_for_kinematics"]

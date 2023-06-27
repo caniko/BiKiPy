@@ -6,7 +6,9 @@ import pandas as pd
 
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.physical_object.heuristic.abc import ProximityMixin
-from bikipy.feature.qualia.physical_object.heuristic.helper.abc import AbstractQualiaHelperHeuristic
+from bikipy.feature.qualia.physical_object.heuristic.helper.abc import (
+    AbstractQualiaHelperHeuristic,
+)
 
 
 class TorsoOutsideObjectPerimeterHeuristic(AbstractQualiaHelperHeuristic, ProximityMixin):

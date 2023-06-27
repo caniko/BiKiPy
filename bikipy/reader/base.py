@@ -285,13 +285,13 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         if self.crop_frames_from_end:
             result = result.iloc[: -self.crop_frames_from_end]
 
+        if self.invert_y_axis:
+            result.loc[:, pd.IndexSlice[:, "y"]] = self.video.vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
+
         if self.x_axis_crop_end_point:
             result.loc[:, pd.IndexSlice[:, "x"]] = self.x_axis_crop_end_point + result.loc[:, pd.IndexSlice[:, "x"]]
         if self.y_axis_crop_end_point:
             result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] - self.y_axis_crop_end_point
-
-        if self.invert_y_axis:
-            result.loc[:, pd.IndexSlice[:, "y"]] = self.video.vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
 
         # convert to meters
         if isinstance(self.video.meters_per_pixel, float):

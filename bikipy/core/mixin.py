@@ -10,10 +10,7 @@ from pydantic_numpy.dtype import NDArrayUint8
 
 from bikipy import runtime_settings
 from bikipy.core.base import BikipyConfigModel, BikipyHashable
-from bikipy.utils.plot.inspect import (
-    InspectArg,
-    inspect_arg_description,
-)
+from bikipy.utils.plot.inspect import InspectArg, inspect_arg_description
 
 
 class AbstractFeatureCollectorMixin(BikipyHashable, ABC):

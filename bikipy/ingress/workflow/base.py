@@ -403,7 +403,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     def plugin_directory_path(self) -> DirectoryPath:
         return get_plugin_directory_path(self.project_directory)
 
-    @property
+    @cached_property
     def inspect_directory_path(self) -> DirectoryPath:
         result = get_inspect_directory_path(self.project_directory)
         if (
@@ -414,8 +414,8 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             if not self.lazy_dev_mode:
                 already_exists_prompt = input(
                     f"Inspection directory, {result}, already exists. "
-                    "Proceeding would result in deletion of directory tree. "
-                    "Would you like to proceed? y/N "
+                    f"Proceeding would result in deletion of directory tree. "
+                    f"Would you like to proceed? y/N "
                 )
                 if already_exists_prompt.strip().lower() != "y":
                     import sys
