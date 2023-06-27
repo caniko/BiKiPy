@@ -1,5 +1,4 @@
 import string
-from collections import defaultdict
 from functools import cached_property
 from itertools import chain, permutations
 from logging import getLogger
@@ -45,7 +44,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
     tracking_labels_for_radial_arm_confinement: OrderedSet[str] = ...
 
-    minimum_seconds_for_entry: float = 0.5
+    minimum_seconds_for_entry: float = 0
 
     @classmethod
     @property
@@ -128,7 +127,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         Do not change the order of the perimeters, this will break the alternation sequence,
         which uses it as inferior to superior sequence for `detect_multi_node_sequential_perimeter_presence`
         """
-        return *self.arms, self.center
+        return self.center, *self.arms
 
     @cached_property
     def arm_len(self):
@@ -143,6 +142,10 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         result, overlap_boolean_index = detect_multi_node_sequential_perimeter_presence(
             self.confinement_coordinates, self.perimeter_set
         )
+
+        # When it is nowhere it must be on center
+        result[result == 0] = 1
+
         inspect_sequential_confinement(
             self.inspect_arg,
             self.video,
@@ -162,8 +165,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
                 self.alternation_sequence_with_center, round(self.video.fps * self.minimum_seconds_for_entry)
             )
         )
-        # return result[result > self.center.int_id]
-        return result[np.logical_and(result != 0, result != self.center.int_id)]
+        return result[result != self.center.int_id]
 
     @cached_property
     def sum_of_entries(self) -> int:

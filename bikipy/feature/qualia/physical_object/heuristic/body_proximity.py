@@ -39,9 +39,9 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
 
         return ComputeProximity(
             perimeter=self.perimeter,
-            perimeter_border_normal_pixels=self.maximum_distance_pixels,
-            should_be_inside_perimeter_border=self.reader[self.center_ear_label],
-            should_be_outside_perimeter_border=self.reader[self.torso_label] if self.perimeter.impenetrable else None,
+            maximum_distance=self.maximum_distance_pixels,
+            inside_perimeter_border=self.reader[self.center_ear_label],
+            outside_perimeter_border=self.reader[self.center_ear_label] if self.perimeter.impenetrable else None,
             label="Center ear",
             manual_video=self.video,
         )
@@ -56,9 +56,9 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
 
         return ComputeProximity(
             perimeter=self.perimeter,
-            perimeter_border_normal_pixels=self.maximum_distance_pixels,
-            should_be_inside_perimeter_border=self.reader[self.torso_label],
-            should_be_outside_perimeter_border=self.reader[self.torso_label] if self.perimeter.impenetrable else None,
+            maximum_distance=self.maximum_distance_pixels,
+            inside_perimeter_border=self.reader[self.torso_label],
+            outside_perimeter_border=self.reader[self.torso_label] if self.perimeter.impenetrable else None,
             label="Torso",
             manual_video=self.video,
         )
@@ -73,9 +73,9 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
 
         return ComputeProximity(
             perimeter=self.perimeter,
-            perimeter_border_normal_pixels=self.maximum_distance_pixels,
-            should_be_inside_perimeter_border=self.reader[self.tail_base_label],
-            should_be_outside_perimeter_border=self.reader[self.torso_label] if self.perimeter.impenetrable else None,
+            maximum_distance=self.maximum_distance_pixels,
+            inside_perimeter_border=self.reader[self.tail_base_label],
+            outside_perimeter_border=self.reader[self.tail_base_label] if self.perimeter.impenetrable else None,
             label="Tail base",
             manual_video=self.video,
         )

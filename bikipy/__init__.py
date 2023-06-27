@@ -25,6 +25,7 @@ class BikipyRuntimeSettings(BaseSettings, SchemanticProjectMixin):
 
     matplotlib_scatter_alpha: float = 0.60
     matplotlib_invert_y_axis: bool = True
+    matplotlib_dpi: int = 300
 
     minimum_seconds_tolerance: float = 1.0 / 3.0
     maximum_seconds_distraction: float = 2.0 / 3.0

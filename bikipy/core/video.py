@@ -245,35 +245,9 @@ class VideoMetadata(_VideoMetadataBase):
             recording_resolution=new_frame.shape[0:2:][::-1],
         )
 
-    def ax_ticks_metric_to_pixel(self, ax: Axes, number_of_ticks: int = 5) -> None:
-        ax.set_xticks(
-            ticks=np.linspace(0, self.horizontal_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
-            labels=np.round(
-                np.linspace(0, self.metric_horizontal_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
-                decimals=2,
-            ),
-            fontsize=self.plotting_default_font_size,
-        )
-        ax.set_yticks(
-            ticks=np.linspace(0, self.vertical_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
-            # Notice that we are inverting the y-axis at the label level to make the metric axes have the same direction
-            labels=np.round(
-                np.linspace(self.metric_vertical_resolution * _TICK_END_OFFSET_RATIO, 0, number_of_ticks), decimals=2
-            ),
-            fontsize=self.plotting_default_font_size,
-        )
-
     @cached_property
     def plotting_mean_side_length(self) -> float:
         return np.sum(self.center_pixel)
-
-    @cached_property
-    def plotting_default_font_size(self) -> float:
-        return self.plotting_mean_side_length / 10.0  # sum(center) == mean
-
-    @cached_property
-    def plotting_title_font_size(self) -> float:
-        return self.plotting_default_font_size * 1.25
 
     @cached_property
     def plotting_line_thickness(self) -> float:
@@ -282,6 +256,22 @@ class VideoMetadata(_VideoMetadataBase):
     @cached_property
     def coordinates_need_to_be_scaled_for_plot(self) -> bool:
         return self.frame is not None
+
+    def ax_ticks_metric_to_pixel(self, ax: Axes, number_of_ticks: int = 5) -> None:
+        ax.set_xticks(
+            ticks=np.linspace(0, self.horizontal_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
+            labels=np.round(
+                np.linspace(0, self.metric_horizontal_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
+                decimals=2,
+            ),
+        )
+        ax.set_yticks(
+            ticks=np.linspace(0, self.vertical_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
+            # Notice that we are inverting the y-axis at the label level to make the metric axes have the same direction
+            labels=np.round(
+                np.linspace(self.metric_vertical_resolution * _TICK_END_OFFSET_RATIO, 0, number_of_ticks), decimals=2
+            ),
+        )
 
     def subplots(
         self,
@@ -296,12 +286,27 @@ class VideoMetadata(_VideoMetadataBase):
         fig, axes = plt.subplots(
             nrows,
             ncols,
+            sharey=True,
             figsize=(
-                self.upscaled_video.horizontal_resolution * min(0.1, ncols / nrows),
-                self.upscaled_video.vertical_resolution * min(0.1, nrows / ncols),
+                self.upscaled_video.horizontal_resolution / runtime_settings.matplotlib_dpi * ncols,
+                self.upscaled_video.vertical_resolution / runtime_settings.matplotlib_dpi * nrows,
             ),
+            dpi=runtime_settings.matplotlib_dpi,
             **kwargs,
         )
+
+        # based on subplot height
+        base_font_size = ncols * self.upscaled_video.vertical_resolution / runtime_settings.matplotlib_dpi * 0.1
+
+        # Update font sizes
+        fig.rc("font", size=base_font_size)
+        fig.rc("axes", titlesize=base_font_size)
+        fig.rc("axes", labelsize=base_font_size)
+        fig.rc("xtick", labelsize=base_font_size)
+        fig.rc("ytick", labelsize=base_font_size)
+        fig.rc("legend", fontsize=base_font_size)
+        fig.rc("figure", titlesize=base_font_size)
+
         if self.frame is None:
             logger.debug("Video object was used to make subplot, but no frame was defined. Figure got no background.")
             return fig, axes

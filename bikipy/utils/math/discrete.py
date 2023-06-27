@@ -1,5 +1,5 @@
 from itertools import groupby
-from typing import TypeVar, Sequence
+from typing import Sequence, TypeVar
 
 import numpy as np
 from numba import njit
@@ -117,7 +117,7 @@ T = TypeVar("T")
 def reduce_repeating_sequences(repeating_sequence: Sequence[T], minimum_repeating: int) -> list[T]:
     reduced_seq = []
     for key, group in groupby(repeating_sequence):
-        if len(tuple(group)) >= minimum_repeating and (not reduced_seq or reduced_seq[-1] != key):
+        if len(tuple(group)) >= minimum_repeating:
             reduced_seq.append(key)
 
     return reduced_seq

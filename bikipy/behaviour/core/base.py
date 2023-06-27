@@ -1,11 +1,10 @@
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from functools import cached_property, lru_cache
-from itertools import chain
 from logging import getLogger
 from operator import attrgetter
 from time import sleep
-from typing import Any, ClassVar, Hashable, Literal, Optional, Type, TypeVar, Iterable
+from typing import Any, ClassVar, Hashable, Iterable, Literal, Optional, Type, TypeVar
 
 import numpy as np
 import pandas as pd

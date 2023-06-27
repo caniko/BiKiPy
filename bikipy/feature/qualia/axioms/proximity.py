@@ -2,12 +2,13 @@ from functools import cached_property
 from logging import getLogger
 from typing import Optional
 
+import numpy as np
 from matplotlib.axes import Axes
 from pydantic import validate_arguments
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import runtime_settings
-from bikipy.core.compute import AbstractComputeBooleanIndex
+from bikipy.core.compute import AbstractComputeBooleanIndex, T
 from bikipy.core.video import VideoMetadata
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import SinglePerimeter
@@ -16,49 +17,36 @@ from bikipy.utils.plot.color import make_color_map
 logger = getLogger(__name__)
 
 
+def _update_result_array(
+    result: np.ndarray[bool, bool] | None, new_array: np.ndarray[bool, bool], all_or_none: bool
+) -> np.ndarray[bool, bool]:
+    if result is None:
+        return new_array
+
+    return result & new_array if all_or_none else result | new_array
+
+
 class ComputeProximity(AbstractComputeBooleanIndex):
     perimeter: SinglePerimeter
-    perimeter_border_normal_pixels: float | NDArrayFp64
-    should_be_inside_perimeter_border: NDArrayFp64
-    should_be_outside_perimeter_border: Optional[NDArrayFp64]
-    outside_perimeter: Optional[NDArrayBool]
+    maximum_distance: float | NDArrayFp64
 
-    @cached_property
-    def result(self):
-        self.perimeter_border = self.perimeter.expand(self.perimeter_border_normal_pixels)
-        self.inside_perimeter_border = self.perimeter_border.compute_confinement_boolean_index(
-            coordinates=self.should_be_inside_perimeter_border, potential_label="proximity_inside_border"
-        )
-        result = self.inside_perimeter_border
+    inside_perimeter: Optional[NDArrayFp64]
+    outside_perimeter: Optional[NDArrayFp64]
+    inside_perimeter_border: Optional[NDArrayFp64]
+    outside_perimeter_border: Optional[NDArrayFp64]
 
-        if self.perimeter.impenetrable:
-            self.outside_impenetrable_bi = ~self.perimeter.compute_confinement_boolean_index(
-                coordinates=self.inside_perimeter_border, potential_label="proximity_outside_impenetrable"
-            )
-            result = result & self.outside_impenetrable_bi
-
-        if self.should_be_outside_perimeter_border is not None:
-            self.outside_perimeter_border_bi = ~self.perimeter_border.compute_confinement_boolean_index(
-                self.should_be_outside_perimeter_border, potential_label="proximity_outside_border"
-            )
-            result = result & self.outside_perimeter_border_bi
-
-        if self.outside_perimeter is not None:
-            self.outside_perimeter_bi = ~self.perimeter.compute_confinement_boolean_index(
-                self.should_be_outside_perimeter_border, potential_label="proximity_outside_perimeter"
-            )
-            result = result & self.outside_perimeter_bi
-
-        if self.tolerance_modelling:
-            result = single_node_tolerance_model(result, self.video.fps)
-
-        return result
+    heuristic_data_sources = (
+        "inside_perimeter",
+        "outside_perimeter",
+        "inside_perimeter_border",
+        "outside_perimeter_border",
+    )
 
     @validate_arguments(config={"arbitrary_types_allowed": True})
     def plot(self, ax: Axes, video: Optional[VideoMetadata] = None, inspect_pixels: bool = False) -> None:
         assert self.result is not None
 
-        inside_perimeter_border_plot_scaled = self.should_be_inside_perimeter_border
+        inside_perimeter_border_plot_scaled = self.inside_perimeter_border
 
         if video:
             inside_perimeter_border_plot_scaled = video.prepare_coordinates_for_plotting(
@@ -71,9 +59,7 @@ class ComputeProximity(AbstractComputeBooleanIndex):
         self.perimeter_border.plot(ax=ax, inspect_pixels=inspect_pixels)
 
         color_count = 1
-        if self.perimeter.impenetrable:
-            color_count += 1
-        if self.should_be_outside_perimeter_border is not None:
+        if self.outside_perimeter_border is not None:
             color_count += 1
         if self.outside_perimeter is not None:
             color_count += 1
@@ -88,15 +74,7 @@ class ComputeProximity(AbstractComputeBooleanIndex):
         )
 
         not_result = ~self.result
-        if self.perimeter.impenetrable:
-            ax.scatter(
-                *inside_perimeter_border_plot_scaled[self.outside_impenetrable_bi & not_result].T,
-                marker="x",
-                alpha=runtime_settings.matplotlib_scatter_alpha,
-                label="Only outside impenetrable object",
-                color=next(color_map_iter),
-            )
-        if self.should_be_outside_perimeter_border is not None:
+        if self.outside_perimeter_border is not None:
             ax.scatter(
                 *inside_perimeter_border_plot_scaled[self.outside_perimeter_border_bi & not_result].T,
                 marker="x",
@@ -114,3 +92,32 @@ class ComputeProximity(AbstractComputeBooleanIndex):
             )
 
         self.plot_finalization(ax, video)
+
+    @cached_property
+    def result(self) -> T:
+        result = None
+
+        if self.inside_perimeter is not None:
+            result = _update_result_array(
+                result, self.perimeter.compute_confinement_boolean_index(self.inside_perimeter), False
+            )
+        if self.outside_perimeter is not None:
+            result = _update_result_array(
+                result, ~self.perimeter.compute_confinement_boolean_index(self.outside_perimeter), True
+            )
+        if self.inside_perimeter_border is not None:
+            result = _update_result_array(
+                result, self.perimeter_border.compute_confinement_boolean_index(self.inside_perimeter_border), False
+            )
+        if self.outside_perimeter_border is not None:
+            result = _update_result_array(
+                result, ~self.perimeter_border.compute_confinement_boolean_index(self.outside_perimeter_border), True
+            )
+
+        assert isinstance(result, np.ndarray)
+
+        return result
+
+    @cached_property
+    def perimeter_border(self) -> SinglePerimeter:
+        return self.perimeter.expand(self.maximum_distance)

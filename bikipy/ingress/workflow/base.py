@@ -8,7 +8,6 @@ from functools import cached_property
 from itertools import chain
 from logging import getLogger
 from pathlib import Path
-from shutil import rmtree
 from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 
 import numpy as np

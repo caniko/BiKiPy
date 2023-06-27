@@ -1,10 +1,10 @@
 from bikipy.feature.qualia.physical_object.heuristic.body_proximity import (
     BodyProximityHeuristic,
 )
-from bikipy.feature.qualia.physical_object.heuristic.field_of_view import (
+from bikipy.feature.qualia.physical_object.heuristic.olfaction import OlfactionHeuristic
+from bikipy.feature.qualia.physical_object.heuristic.whiskers import (
     WhiskerInteractionHeuristic,
 )
-from bikipy.feature.qualia.physical_object.heuristic.olfaction import OlfactionHeuristic
 
 HEURISTICS = (BodyProximityHeuristic, WhiskerInteractionHeuristic, OlfactionHeuristic)
 

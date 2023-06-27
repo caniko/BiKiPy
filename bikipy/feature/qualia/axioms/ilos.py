@@ -5,7 +5,7 @@ from matplotlib.axes import Axes
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import runtime_settings
-from bikipy.core.compute import AbstractComputeBooleanIndex
+from bikipy.core.compute import AbstractComputeBooleanIndex, T
 from bikipy.core.video import VideoMetadata
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import SinglePerimeter
@@ -21,7 +21,7 @@ class ComputeInLineOfSight(AbstractComputeBooleanIndex):
     manual_ray_vectors: Optional[NDArrayFp64]
 
     @cached_property
-    def result(self):
+    def result(self) -> T:
         result = self.perimeter.ray_direction_filter(
             self.ray_start_point, self.ray_travel_direction_point, self.max_radians
         )

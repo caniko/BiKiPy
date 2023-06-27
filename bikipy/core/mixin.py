@@ -12,7 +12,6 @@ from bikipy import runtime_settings
 from bikipy.core.base import BikipyConfigModel, BikipyHashable
 from bikipy.utils.plot.inspect import (
     InspectArg,
-    generic_inspection_finalization,
     inspect_arg_description,
 )
 

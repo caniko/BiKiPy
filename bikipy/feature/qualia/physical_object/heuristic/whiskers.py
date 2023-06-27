@@ -49,8 +49,8 @@ class WhiskerInteractionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMi
             if self.manual_left_ear_proximity
             else ComputeProximity(
                 perimeter=self.perimeter,
-                perimeter_border_normal_pixels=self.maximum_distance_pixels,
-                should_be_inside_perimeter_border=self.reader[self.left_ear_label],
+                maximum_distance=self.maximum_distance_pixels,
+                inside_perimeter_border=self.reader[self.left_ear_label],
                 label="Left",
                 manual_video=self.video,
             )
@@ -78,8 +78,8 @@ class WhiskerInteractionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMi
             if self.manual_right_proximity
             else ComputeProximity(
                 perimeter=self.perimeter,
-                perimeter_border_normal_pixels=self.maximum_distance_pixels,
-                should_be_inside_perimeter_border=self.reader[self.right_ear_label],
+                maximum_distance=self.maximum_distance_pixels,
+                inside_perimeter_border=self.reader[self.right_ear_label],
                 label="Right",
                 manual_video=self.video,
             )

@@ -14,11 +14,10 @@ from bikipy.feature.qualia.physical_object.heuristic.abc import (
 
 
 class OlfactionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
-    maximum_distance_meters: float = 0.035
+    maximum_distance_meters = 0.05
     maximum_degrees = 45.0
 
     nose_label: str | None = "nose"
-    torso_label: str | None = "torso"
     center_ear_label: str = "center_ear"
 
     manual_nose: Optional[ComputeProximity]
@@ -43,9 +42,9 @@ class OlfactionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
 
         return ComputeProximity(
             perimeter=self.perimeter,
-            perimeter_border_normal_pixels=self.maximum_distance_pixels,
-            should_be_inside_perimeter_border=self.reader[self.nose_label],
-            should_be_outside_perimeter_border=self.reader[self.torso_label],
+            maximum_distance=self.maximum_distance_pixels,
+            inside_perimeter_border=self.reader[self.nose_label],
+            outside_perimeter_border=self.reader[self.torso_label],
             label="NoseProximity",
             manual_video=self.video,
         )

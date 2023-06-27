@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Generic, Optional, Type, TypeVar
+from typing import ClassVar, Generic, Optional, Type, TypeVar
 
 from matplotlib.axes import Axes
-from pydantic import Extra, validate_arguments
+from pydantic import Extra, root_validator, validate_arguments
 from pydantic.generics import GenericModel
 from pydantic_numpy import NDArrayBool
 
@@ -17,8 +17,21 @@ T = TypeVar("T")
 class AbstractCompute(GenericModel, Generic[T], BikipyModel, ABC):
     label: str = ...
 
+    heuristic_data_sources: ClassVar[tuple[str, ...]]
+
     class Config:
         extra = Extra.allow
+
+    @root_validator
+    def check_at_least_one_field(cls, values):
+        if not cls.heuristic_data_sources:
+            msg = f"Ask project authors to define heuristic_data_sources for the {cls.__name__} class"
+            raise AttributeError(msg)
+        if not any(field in values for field in cls.heuristic_data_sources):
+            msg = f"One of {cls.heuristic_data_sources} must be defined"
+            raise AttributeError(msg)
+
+        return values
 
     @property
     @abstractmethod
@@ -30,9 +43,8 @@ class AbstractCompute(GenericModel, Generic[T], BikipyModel, ABC):
         ...
 
     def plot_finalization(self, ax: Axes, video: Optional[VideoMetadata] = None) -> None:
-        font_size = video.upscaled_video.plotting_title_font_size if video else None
-        ax.set_title(self.label, fontsize=font_size)
-        ax.legend(**BOTTOM_LEGEND_KWARGS, fontsize=font_size)
+        ax.set_title(self.label)
+        ax.legend(**BOTTOM_LEGEND_KWARGS)
 
     @validate_arguments
     def save_fig(self, path: Path, video: VideoMetadata, **plot_kwargs) -> None:
