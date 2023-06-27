@@ -39,8 +39,8 @@ required = ["object_tracking_label_for_kinematics"]
 optional = ["cache_meters_augmented", "crop_from_end", "cropped_total_seconds", "df_is_timestamped", "df_read_kwargs", "export_timestamp_data_as_parquet", "fps", "frame", "future_scaling", "invert_y_axis", "manual_video", "meters_per_pixel", "midpoint_groups", "min_likelihood", "minimum_frame_length", "model", "model_displacement_by_std", "model_kwargs", "model_method", "recording_resolution", "required_tail_likelihood", "x_axis_crop_end_point", "y_axis_crop_end_point"]
 
 [reader.defined]
-midpoint_groups = { center_eye = ["left_ear", "right_ear"] }
-object_tracking_label_for_kinematics = "center_eye"
+midpoint_groups = { center_ear = ["left_ear", "right_ear"] }
+object_tracking_label_for_kinematics = "center_ear"
 
 [field]
 animal_profile = "string(default: rodent)"

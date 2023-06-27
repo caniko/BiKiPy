@@ -17,11 +17,11 @@ from bikipy.feature.tolerance.single import single_node_tolerance_model
 class WhiskerInteractionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
     maximum_distance_meters = 0.035
 
-    center_eye_label: str = "center_eye"
-    left_eye_label: str = "left_ear"
-    right_eye_label: str = "right_ear"
+    center_ear_label: str = "center_ear"
+    left_ear_label: str = "left_ear"
+    right_ear_label: str = "right_ear"
 
-    manual_left_eye_proximity: Optional[ComputeProximity]
+    manual_left_ear_proximity: Optional[ComputeProximity]
     manual_leftward_observation: Optional[ComputeInLineOfSight]
     manual_right_proximity: Optional[ComputeProximity]
     manual_rightward_observation: Optional[ComputeInLineOfSight]
@@ -34,7 +34,7 @@ class WhiskerInteractionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMi
         result = super().schemantic_fields_to_exclude_from_config_schema
         result.update(
             (
-                "manual_left_eye_proximity",
+                "manual_left_ear_proximity",
                 "manual_leftward_observation",
                 "manual_right_proximity",
                 "manual_rightward_observation",
@@ -45,12 +45,12 @@ class WhiskerInteractionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMi
     @cached_property
     def left_proximity(self) -> ComputeProximity:
         return (
-            self.manual_left_eye_proximity
-            if self.manual_left_eye_proximity
+            self.manual_left_ear_proximity
+            if self.manual_left_ear_proximity
             else ComputeProximity(
                 perimeter=self.perimeter,
                 perimeter_border_normal_pixels=self.maximum_distance_pixels,
-                should_be_inside_perimeter_border=self.reader[self.left_eye_label],
+                should_be_inside_perimeter_border=self.reader[self.left_ear_label],
                 label="Left",
                 manual_video=self.video,
             )
@@ -63,8 +63,8 @@ class WhiskerInteractionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMi
             if self.manual_leftward_observation
             else ComputeInLineOfSight(
                 perimeter=self.perimeter,
-                ray_start_point=self.reader[self.center_eye_label],
-                ray_travel_direction_point=self.reader[self.left_eye_label],
+                ray_start_point=self.reader[self.center_ear_label],
+                ray_travel_direction_point=self.reader[self.left_ear_label],
                 max_radians=self.maximum_radians,
                 label="Left",
                 manual_video=self.video,
@@ -79,7 +79,7 @@ class WhiskerInteractionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMi
             else ComputeProximity(
                 perimeter=self.perimeter,
                 perimeter_border_normal_pixels=self.maximum_distance_pixels,
-                should_be_inside_perimeter_border=self.reader[self.right_eye_label],
+                should_be_inside_perimeter_border=self.reader[self.right_ear_label],
                 label="Right",
                 manual_video=self.video,
             )
@@ -92,8 +92,8 @@ class WhiskerInteractionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMi
             if self.manual_rightward_observation
             else ComputeInLineOfSight(
                 perimeter=self.perimeter,
-                ray_start_point=self.reader[self.center_eye_label],
-                ray_travel_direction_point=self.reader[self.right_eye_label],
+                ray_start_point=self.reader[self.center_ear_label],
+                ray_travel_direction_point=self.reader[self.right_ear_label],
                 max_radians=self.maximum_radians,
                 label="Right",
                 manual_video=self.video,
@@ -127,13 +127,13 @@ class WhiskerInteractionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMi
 
     @property
     def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
-        return {self.left_eye_label: self.left_proximity, self.right_eye_label: self.right_proximity}
+        return {self.left_ear_label: self.left_proximity.result, self.right_ear_label: self.right_proximity.result}
 
     @property
     def label_to_ray_vector_direction_points(self) -> dict[str, np.ndarray[float, np.dtype[np.float64]]]:
         return {
-            self.left_eye_label: self.reader[self.left_eye_label],
-            self.right_eye_label: self.reader[self.right_eye_label],
+            self.left_ear_label: self.reader[self.left_ear_label],
+            self.right_ear_label: self.reader[self.right_ear_label],
         }
 
     def plot(self) -> None:
@@ -145,13 +145,13 @@ class WhiskerInteractionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMi
         self.leftward_observation.plot(axes[0][1], self.video)
 
         axes[0][2].set_title("LeftwardProximalFOV")
-        self.reader.plot_boolean_index(self.left_result, axes[0][2], self.left_eye_label)
+        self.reader.plot_boolean_index(self.left_result, axes[0][2], self.left_ear_label)
 
         # Right
         self.right_proximity.plot(axes[1][0], self.video)
         self.rightward_observation.plot(axes[1][1], self.video)
 
         axes[1][2].set_title("RightwardProximalFOV")
-        self.reader.plot_boolean_index(self.right_result, axes[1][2], self.right_eye_label)
+        self.reader.plot_boolean_index(self.right_result, axes[1][2], self.right_ear_label)
 
-        self.plot_result(axes[2][1], self.center_eye_label)
+        self.plot_result(axes[2][1], self.center_ear_label)

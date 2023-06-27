@@ -96,7 +96,12 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
     @classmethod
     @property
     def _center_arm_labels(cls) -> tuple[str, ...]:
-        return *cls.arm_labels, "Center"
+        """
+        Notice that the order is reversed compared to cls.perimeters, that is because the indices are sorted
+        for the data structures mirrored by these labels
+        :return:
+        """
+        return "Center", *cls.arm_labels
 
     @classmethod
     @property
@@ -157,11 +162,14 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
                 self.alternation_sequence_with_center, round(self.video.fps * self.minimum_seconds_for_entry)
             )
         )
-        return result[np.logical_or(result != 0, result != self.center.int_id)]
+        # return result[result > self.center.int_id]
+        return result[np.logical_and(result != 0, result != self.center.int_id)]
 
     @cached_property
     def sum_of_entries(self) -> int:
-        return len(self.reduced_arm_alternation_sequence) - 1
+        result = len(self.reduced_arm_alternation_sequence)
+        assert sum(self.arm_to_entries.values()) == result
+        return result
 
     @cached_property
     def area_to_confinement_boolean_index(self) -> dict[str, NDArrayBool]:
@@ -184,14 +192,14 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         }
 
     @property
-    def sum_of_seconds_in_arms_and_center(self) -> float:
-        return sum(iter(self.area_to_seconds_spent.values()))
-
-    @property
     def sum_of_seconds_in_arms(self) -> float:
         return sum(self.area_to_seconds_spent[arm_id] for arm_id in self._arm_int_ids)
 
     @property
+    def sum_of_seconds_in_arms_and_center(self) -> float:
+        return sum(self.area_to_seconds_spent.values())
+
+    @cached_property
     def arm_to_entries(self) -> dict[str, int]:
         """
         The number of alternations to every arm and center
@@ -200,23 +208,13 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         -------
         dict, arm label vs alternations to arm
         """
-        result = {k: int(v) for k, v in unique_with_counts_zipped(self.reduced_arm_alternation_sequence)}
-
-        start_loc = self.reduced_arm_alternation_sequence[0]
-        assert result[start_loc] > 0
-        result[start_loc] -= 1
-
-        if any(arm not in result for arm in self._arm_int_ids):
-            missing = set(result).difference(self.int_ids_to_labels)
-            logger.warning(
-                f"{self.label}: Are missing some of the arms in the arm_to_entries dataset: "
-                f"{', '.join(self.int_ids_to_labels[int(int_id)] for int_id in missing)}"
-            )
-
-        return dict(sorted(result.items()))
+        result = {arm: 0 for arm in self._arm_int_ids}
+        for arm, count in unique_with_counts_zipped(self.reduced_arm_alternation_sequence):
+            result[arm] = count
+        return result
 
     @cached_property
-    def permutation_alternation_distribution(self) -> dict:
+    def permutation_alternation_distribution(self) -> dict[int, int]:
         """
         Define the permutation alternation distribution.
 
@@ -228,8 +226,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         -------
         dict, permutation vs number of occurrences.
         """
-        distribution = defaultdict(lambda: 0)
-        # distribution = {arm: 0 for arm in self._arm_int_id_permutations}      # Switch if error
+        distribution = {arm: 0 for arm in self._arm_int_id_permutations}  # Switch if error
         for i in range(self.sum_of_entries):
             current_permutation = self.reduced_arm_alternation_sequence[i : i + self.arm_len]
             if all(arm.int_id in current_permutation for arm in self.arms):
@@ -239,7 +236,9 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
     @property
     def sum_of_permutation_alternation_distribution(self) -> int:
-        return sum(iter(self.permutation_alternation_distribution.values()))
+        result = sum(iter(self.permutation_alternation_distribution.values()))
+        assert sum(self.permutation_alternation_distribution.values()) == result
+        return result
 
     @property
     def spontaneous_alternations(self) -> float:

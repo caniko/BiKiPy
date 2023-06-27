@@ -26,7 +26,7 @@ Solving the iLOS problem for polygons with more than three sides has no general 
 
 We need two points of reference to define the direction of the rays. One of the points is always the origin of interest; however, the second point must be defined at the discretion of the designer and is arbitrary.
 
-Considering top-down recordings, the second point for a rodents nose was set to the center of the eyes; creating a ray that goes through the snout and exiting through the nose.
+Considering top-down recordings, the second point for a rodents nose was set to the center of the ears; creating a ray that goes through the snout and exiting through the nose.
 
 
 Open field

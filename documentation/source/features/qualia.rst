@@ -17,9 +17,9 @@ Qualia heuristics are pre-defined, and must be assigned to a project through the
 
 Proximal field of view profile (pFOV)
 -------------------------------------
-The animal eyes are tracked separately, and we apply two axioms to each:
+The animal ears are tracked separately, and we apply two axioms to each:
 
-- The eye has to have a certain proximity to the object
+- The ear has to have a certain proximity to the object
 - Rays cast within certain radial range must collide with the physical object
 
 After applying this axioms, and merging them into one sequence with logical AND, we reduce the resulting sequence with logical OR to get our final observation boolean index, pFOV.

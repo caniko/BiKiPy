@@ -19,7 +19,7 @@ class OlfactionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
 
     nose_label: str | None = "nose"
     torso_label: str | None = "torso"
-    center_eye_label: str = "center_eye"
+    center_ear_label: str = "center_ear"
 
     manual_nose: Optional[ComputeProximity]
     manual_nose_olfaction_rays: Optional[ComputeInLineOfSight]
@@ -57,7 +57,7 @@ class OlfactionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
             if self.manual_nose_olfaction_rays
             else ComputeInLineOfSight(
                 perimeter=self.perimeter,
-                ray_start_point=self.reader[self.center_eye_label],
+                ray_start_point=self.reader[self.center_ear_label],
                 ray_travel_direction_point=self.reader[self.nose_label],
                 max_radians=self.maximum_radians,
                 label="SnoutTowardsObject",
@@ -79,7 +79,7 @@ class OlfactionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
 
     @property
     def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
-        return {self.nose_label: self.nose_proximity}
+        return {self.nose_label: self.nose_proximity.result}
 
     @property
     def label_to_ray_vector_direction_points(self) -> dict[str, np.ndarray[float, np.dtype[np.float64]]]:

@@ -1,6 +1,7 @@
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from functools import cached_property, lru_cache
+from itertools import chain
 from logging import getLogger
 from operator import attrgetter
 from time import sleep
@@ -245,7 +246,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
 
     @staticmethod
     def _dev_debug_merge_indices_with_values(indices: Iterable[K], values: Iterable[V]) -> dict[K, V]:
-        return dict(zip(chain()))
+        return dict(zip(indices, values))
 
     def _post_feature_collection_flush(self) -> None:
         self.reader.flush_reads()
@@ -486,9 +487,10 @@ class BaseExperiment(Behaviour):
         )
         try:
             result = trial_class(**self.trial_keyword_arguments(trial_id))
-            if cached_instance := result.load_self_from_cache():
-                # We replace the new instance with the cached instances, saving compute
-                result = cached_instance
+            # TODO: Pydantic v2
+            # if cached_instance := result.load_self_from_cache():
+            #     # We replace the new instance with the cached instances, saving compute
+            #     result = cached_instance
 
             self._trial_objects.append(result)
             self._trial_id_to_trial_object[trial_id] = result
@@ -531,7 +533,7 @@ class BaseExperiment(Behaviour):
         return self._trial_id_to_trial_object
 
     @cached_property
-    def trial_class_to_trial_objects(self) -> dict[str, Trial]:
+    def trial_class_to_trial_objects(self) -> dict[TrialCLS, list[Trial]]:
         assert not self.skip_habituation or (self.skip_habituation and self.first_trial_is_habituation), (
             "skip_habituation is True, but the experiment has no habituation trial set. Possible mistakes:\n"
             "  - skip_habituation was set to True by mistake.\n"
@@ -542,7 +544,7 @@ class BaseExperiment(Behaviour):
         )
 
         if not self.has_stages:
-            return {self.trial_class_names[0]: self.trial_objects}
+            return {self.trial_classes[0]: self.trial_objects}
 
         return {
             self.trial_class_name_to_trial_class[trial_class_name]: [

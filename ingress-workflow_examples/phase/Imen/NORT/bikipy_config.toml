@@ -1,7 +1,7 @@
 [manual.jit_init]
 ingress_method = "phase"
 experiment_name = "nort"
-qualia_heuristic = ["OlfactionHeuristic", "WhiskerInteraction"]
+qualia_heuristic = ["BodyProximity", "Olfaction", "WhiskerInteraction"]
 
 [ingress]
 required = ["dataset_directory", "definition_meters_per_pixel", "project_kit_config"]
@@ -110,22 +110,22 @@ optional = ["cache_meters_augmented", "crop_from_end", "cropped_total_seconds", 
 object_tracking_label_for_kinematics = "torso"
 
 [reader.defined.midpoint_groups]
-center_eye = ["left_ear", "right_ear"]
-torso = ["center_eye", "tail"]
+center_ear = ["left_ear", "right_ear"]
+torso = ["center_ear", "tail"]
 [qualia_heuristics.common]
-optional = ["center_eye_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution"]
+optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution"]
 
 [qualia_heuristics.common.defined]
 
 [qualia_heuristics.OlfactionHeuristic]
 class_name = "OlfactionHeuristic"
-optional = ["center_eye_label", "filter_in_sequence", "fps", "frame", "manual_nose_olfaction_rays", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "nose_label", "recording_resolution", "torso_label"]
+optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_nose_olfaction_rays", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "nose_label", "recording_resolution", "torso_label"]
 
 [qualia_heuristics.OlfactionHeuristic.defined]
 
 [qualia_heuristics.WhiskerInteractionHeuristic]
 class_name = "WhiskerInteractionHeuristic"
-optional = ["center_eye_label", "filter_in_sequence", "fps", "frame", "left_eye_label", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "right_eye_label"]
+optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "left_ear_label", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "right_ear_label"]
 
 [qualia_heuristics.WhiskerInteractionHeuristic.defined]
 
@@ -133,7 +133,7 @@ optional = ["center_eye_label", "filter_in_sequence", "fps", "frame", "left_eye_
 analysis_series_cache_format = "string(default: .lz4)"
 animal_profile = "string(default: rodent)"
 cache_meters_augmented = "boolean(default: True)"
-center_eye_label = "string(default: center_eye)"
+center_ear_label = "string(default: center_ear)"
 center_periphery_tolerance_model = "boolean(default: False)"
 center_rectangle_dimensions_to_spatial_resolution_ratio = "number"
 compressed_pickle_suffix = "string(default: .lz4)"
@@ -175,7 +175,7 @@ invert_y_axis = "boolean(default: False)"
 label_prefix = "string"
 label_suffix = "string"
 label_to_plot_prepped_coordinates = "object"
-left_eye_label = "string(default: left_ear)"
+left_ear_label = "string(default: left_ear)"
 length_meters_of_meters_per_pixel_source = "number"
 manual_center_pixels = "np.ndarray[name='manual_center_pixels_0' type=int required=True]"
 manual_center_rectangle_dimensions_meters = "np.ndarray[name='manual_center_rectangle_dimensions_meters_0' type=float required=True]"
@@ -215,7 +215,7 @@ alias_to_qualia_heuristics_combination_equations = "array"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=int required=True]"
 rectangle_2d_bin = "array(default: (2, 2))"
 required_tail_likelihood = "number(default: 0.8)"
-right_eye_label = "string(default: right_ear)"
+right_ear_label = "string(default: right_ear)"
 skip_habituation = "boolean(default: False)"
 stage = "string"
 torso_label = "string(default: torso)"

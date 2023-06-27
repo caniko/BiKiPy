@@ -76,11 +76,11 @@ class _VideoMetadataBase(BikipyModel):
 
     def video_read_frames(self) -> Generator[np.ndarray[int, np.dtype[np.uint8]], None, None]:
         if not self.video_path:
-            logger.error(
+            msg = (
                 f"Tried to read frames of video, but the {self.__class__.__name__} "
                 f"does not have a video path defined"
             )
-            return
+            raise AttributeError(msg)
 
         cap = cv2.VideoCapture(self.video_path)
 
@@ -151,7 +151,9 @@ class VideoMetadata(_VideoMetadataBase):
     @classmethod
     def from_path(cls, video_path: FilePath, **kwargs) -> "VideoMetadata":
         info = extract_video(path_to_video=video_path)
-        return cls(recording_resolution=info.resolution, fps=info.fps, frame=info.image, **kwargs)
+        return cls(
+            recording_resolution=info.resolution, fps=info.fps, frame=info.image, video_path=video_path, **kwargs
+        )
 
     @classmethod
     def from_mextractor(cls, mextractor_dir: DirectoryPath, **kwargs) -> "VideoMetadata":

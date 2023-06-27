@@ -678,6 +678,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             df.to_parquet(parquet_dir / f"{trial_label}.parquet", **TO_PARQUET_KWARGS)
 
     def create_analysis_videos(self, trial_ids: Iterable[Label], **trial_video_kwargs) -> None:
+        self.model_post_init()
         for trial_id in trial_ids:
             self.experiment.get_trial_object(trial_id).generate_inspection_video(**trial_video_kwargs)
 

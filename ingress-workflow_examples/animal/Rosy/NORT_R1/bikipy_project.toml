@@ -38,8 +38,8 @@ object_tracking_label_for_kinematics = "nose"
 model = false
 
 [manual_reader_kwargs.defined.midpoint_groups]
-center_eye = ["left_ear", "right_ear"]
-torso = ["center_eye", "tail_base"]
+center_ear = ["left_ear", "right_ear"]
+torso = ["center_ear", "tail_base"]
 
 [manual_reader_kwargs.required]
 object_tracking_label_for_kinematics = "string"

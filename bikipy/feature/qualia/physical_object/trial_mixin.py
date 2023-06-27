@@ -134,9 +134,9 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     ) -> None:
         super().generate_inspection_video(output_directory, codec)
         for heuristic_alias, physical_objects in self.alias_to_heuristic_physical_objects.items():
-            perimeter_to_boolean_index = self.reader.confinement_index_defaultdict
-            label_to_boolean_index = self.reader.confinement_index_defaultdict
-            label_to_quiver_rays = self.reader.coordinate_sequence_defaultdict
+            perimeter_to_boolean_index = self.reader.confinement_index_defaultdict()
+            label_to_boolean_index = self.reader.confinement_index_defaultdict()
+            label_to_quiver_rays = self.reader.coordinate_sequence_defaultdict()
 
             for physical_object in physical_objects:
                 perimeter_to_boolean_index[physical_object.perimeter] = (

@@ -12,7 +12,7 @@ Proximity filter
 The filter has two rules (logical AND) that signify the specimen being close enough to the object for observation:
 
 #. The nose has to be in the vicinity of the object defined by a maximum normal distance. The maximum normal distance is defined by the user.
-#. The eye center has to be outside of the confines of the object.
+#. The ear center has to be outside of the confines of the object.
 
 Gaze filter
 -----------

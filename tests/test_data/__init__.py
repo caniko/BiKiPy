@@ -3,11 +3,11 @@ from pathlib import Path
 path_to_this_directory = Path(__file__).parent
 
 EXPERIMENT_KWARGS = {
-    "ray_start_point_label": "center_eye",
+    "ray_start_point_label": "center_ear",
     "ray_travel_direction_point_label": "nose",
-    "object_tracking_label_for_kinematics": "center_eye",
+    "object_tracking_label_for_kinematics": "center_ear",
     "perimeter_border_normal_meters": 0.02,
-    "manual_reader_kwargs": {"init_from": "parquet", "midpoint_groups": {"center_eye": ["left_ear", "right_ear"]}},
+    "manual_reader_kwargs": {"init_from": "parquet", "midpoint_groups": {"center_ear": ["left_ear", "right_ear"]}},
     "trial_id_to_keyword_arguments": {
         1: {
             "framewise_coordinates_path": path_to_this_directory / "test_tracking.csv",

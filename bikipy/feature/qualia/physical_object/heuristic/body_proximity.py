@@ -12,11 +12,11 @@ from bikipy.feature.qualia.physical_object.heuristic.abc import (
 
 
 class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
-    center_eye_label: str | None = "center_eye"
+    center_ear_label: str | None = "center_ear"
     torso_label: str | None = "torso"
     tail_base_label: str | None = "tail_base"
 
-    manual_center_eye: Optional[ComputeProximity]
+    manual_center_ear: Optional[ComputeProximity]
     manual_torso: Optional[ComputeProximity]
     manual_tail_base: Optional[ComputeProximity]
 
@@ -26,23 +26,23 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
         result = super().schemantic_fields_to_exclude_from_config_schema
-        result.update(("manual_center_eye", "manual_torso", "manual_tail_base"))
+        result.update(("manual_center_ear", "manual_torso", "manual_tail_base"))
         return result
 
     @cached_property
-    def center_eye_proximity(self) -> ComputeProximity | None:
-        if self.manual_center_eye is not None:
-            return self.manual_center_eye
+    def center_ear_proximity(self) -> ComputeProximity | None:
+        if self.manual_center_ear is not None:
+            return self.manual_center_ear
 
-        if not self.center_eye_label:
+        if not self.center_ear_label:
             return None
 
         return ComputeProximity(
             perimeter=self.perimeter,
             perimeter_border_normal_pixels=self.maximum_distance_pixels,
-            should_be_inside_perimeter_border=self.reader[self.center_eye_label],
+            should_be_inside_perimeter_border=self.reader[self.center_ear_label],
             should_be_outside_perimeter_border=self.reader[self.torso_label] if self.perimeter.impenetrable else None,
-            label="Center eye",
+            label="Center ear",
             manual_video=self.video,
         )
 
@@ -82,25 +82,24 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
 
     @cached_property
     def result(self) -> np.ndarray[bool, bool]:
-        nodes = [
-            node.result
-            for node in (self.center_eye_proximity, self.torso_proximity, self.tail_base_proximity)
-            if node is not None
-        ]
-
-        return np.logical_or.reduce(nodes)
+        return np.logical_or.reduce(
+            [node.result for node in (self.center_ear_proximity, self.tail_base_proximity) if node is not None]
+        )
 
     @property
     def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
-        return {self.nose_label: self.nose_proximity}
+        return {
+            self.center_ear_label: self.center_ear_proximity.result,
+            self.tail_base_label: self.tail_base_proximity.result,
+        }
 
     @property
     def summary_series(self) -> pd.Series:
         data = {}
         label = self.perimeter.label.capitalize()
 
-        if self.center_eye_proximity:
-            data[f"ObservingSecCenterEyeProximity{label}"] = self.center_eye_proximity.result_seconds
+        if self.center_ear_proximity:
+            data[f"ObservingSecCenterEarProximity{label}"] = self.center_ear_proximity.result_seconds
 
         if self.torso_proximity:
             data[f"ObservingSecTorsoProximity{label}"] = self.torso_proximity.result_seconds
@@ -114,16 +113,16 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
 
     def plot(self) -> None:
         fig, axes = self.video.subplots(
-            ncols=sum((bool(self.center_eye_proximity), bool(self.torso_proximity), bool(self.tail_base_proximity)))
+            ncols=sum((bool(self.center_ear_proximity), bool(self.torso_proximity), bool(self.tail_base_proximity)))
             + 1,
             nrows=1,
         )
 
         ax_idx = 0
 
-        if self.center_eye_proximity:
-            axes[ax_idx].set_title("Center eye")
-            self.center_eye_proximity.plot(axes[ax_idx], self.video)
+        if self.center_ear_proximity:
+            axes[ax_idx].set_title("Center ear")
+            self.center_ear_proximity.plot(axes[ax_idx], self.video)
             ax_idx += 1
 
         if self.torso_proximity:
@@ -136,4 +135,4 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
             self.tail_base_proximity.plot(axes[ax_idx], self.video)
             ax_idx += 1
 
-        self.plot_result(axes[ax_idx], self.torso_label or self.center_eye_label or self.tail_base_label)
+        self.plot_result(axes[ax_idx], self.torso_label or self.center_ear_label or self.tail_base_label)
