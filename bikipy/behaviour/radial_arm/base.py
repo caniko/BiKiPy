@@ -7,10 +7,11 @@ from typing import ClassVar, Optional
 import numpy as np
 import pandas as pd
 from ordered_set import OrderedSet
-from pydantic import PositiveInt, validator
+from pydantic import PositiveInt, validator, DirectoryPath
 from pydantic_numpy.dtype import NDArrayBool
 
 from bikipy._constant import INSPECT_SIMPLE_FIG_FILE_FORMAT
+from bikipy.analysis.video import make_inspection_video
 from bikipy.behaviour.core.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import feature_2d_multi_indexer, unique_with_counts_zipped
 from bikipy.core.base import BikipyHashable
@@ -161,13 +162,19 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         return self.alternation_sequence_with_center[self.alternation_sequence_with_center != 0]
 
     @cached_property
-    def reduced_arm_alternation_sequence(self) -> ConfinementSequence:
+    def reduced_arm_center_alternation_sequence(self) -> ConfinementSequence:
         result = np.array(
             reduce_repeating_sequences(
                 self.cleaned_arm_alternation_sequence, round(self.video.fps * self.minimum_seconds_for_entry)
             )
         )
         return result[result != self.center.int_id]
+
+    @cached_property
+    def reduced_arm_alternation_sequence(self) -> ConfinementSequence:
+        return self.reduced_arm_center_alternation_sequence[
+            self.reduced_arm_center_alternation_sequence != self.center.int_id
+        ]
 
     @cached_property
     def sum_of_entries(self) -> int:
@@ -278,6 +285,23 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
     def confinement_coordinates(self) -> tuple[np.ndarray[float, np.dtype[np.float64]], ...]:
         return tuple(self.reader[node_label] for node_label in self.tracking_labels_for_radial_arm_confinement)
 
+    def generate_inspection_video(
+        self, output_directory: Optional[DirectoryPath] = None, codec: Optional[str] = None
+    ) -> None:
+        if not self.minimum_seconds_for_entry:
+            return make_inspection_video(
+                video_frames=self.video.video_read_frames(),
+                reader=self.reader,
+                perimeter_to_boolean_index={
+                    perimeter: self.alternation_sequence_with_center == perimeter.int_id
+                    for perimeter in self.cleaned_arm_alternation_sequence
+                },
+                output_file_path=self._video_file_name(output_directory, context_label="radial_arm"),
+                codec=codec,
+            )
+
+        raise NotImplementedError()
+
     @property
     def _arm_permutation_to_zero(self):
         return
@@ -302,7 +326,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
             *chain.from_iterable(self.area_to_motion.values()),
         )
         indices = [
-            ("SpontaneousAlternations", ""),
+            a("SpontaneousAlternations", ""),
             *feature_2d_multi_indexer("ArmEntries", self.arm_labels),
             ("ArmEntries", "Sum"),
             *feature_2d_multi_indexer("PermutationAlternation", self._arm_label_permutations_as_string),
