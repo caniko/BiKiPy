@@ -10,7 +10,7 @@ from bikipy.ingress.plugin.core.base import BasePlugin
 
 
 class PluginVideo(BasePlugin):
-    flip_frame: bool = True
+    flip_frame: bool = False
 
     data_path: FilePath | DirectoryPath
 

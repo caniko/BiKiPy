@@ -294,7 +294,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
                 reader=self.reader,
                 perimeter_to_boolean_index={
                     perimeter: self.alternation_sequence_with_center == perimeter.int_id
-                    for perimeter in self.cleaned_arm_alternation_sequence
+                    for perimeter in self.perimeters
                 },
                 output_file_path=self._video_file_name(output_directory, context_label="radial_arm"),
                 codec=codec,

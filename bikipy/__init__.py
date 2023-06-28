@@ -24,7 +24,7 @@ class BikipyRuntimeSettings(BaseSettings, SchemanticProjectMixin):
     ignore_pre_existing_inspection_directory: bool = False
 
     matplotlib_scatter_alpha: float = 0.60
-    matplotlib_invert_y_axis: bool = True
+    matplotlib_invert_y_axis: bool = False
     matplotlib_dpi: int = 300
 
     minimum_seconds_tolerance: float = 1.0 / 3.0

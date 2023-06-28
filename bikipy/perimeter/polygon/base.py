@@ -256,12 +256,24 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         return self
 
     def plot_perimeter_on_ax(
-        self, ax: Axes, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs
+        self,
+        ax: Axes,
+        inspect_pixels: bool = False,
+        manual_resize_multiplier: Optional[float] = None,
+        x_offset: float = 0.0,
+        y_offset: float = 0.0,
+        **plot_kwargs,
     ) -> None:
-        vertices = self.vertices_in_pixels if inspect_pixels else self.vertices_in_meters
-
-        if inspect_pixels:
-            vertices = vertices * (manual_resize_multiplier or self.video.image_resize_multiplier)
+        if x_offset or y_offset:
+            vertices = self.vertices_in_pixels + np.array([x_offset, y_offset])
+            if not inspect_pixels:
+                vertices *= self.video.meters_per_pixel
+        elif inspect_pixels:
+            vertices = self.vertices_in_pixels * (manual_resize_multiplier or self.video.image_resize_multiplier)
+        elif not inspect_pixels:
+            vertices = self.vertices_in_meters
+        else:
+            raise RuntimeError
 
         for index in range(len(vertices)):
             following_index = 0 if index + 1 == len(vertices) else index + 1

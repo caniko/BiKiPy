@@ -410,12 +410,17 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         plt.legend(**BOTTOM_LEGEND_KWARGS)
 
     def plot_skeleton_in_frame(
-        self, frame_idx: int, ax: Axes, labels_to_exclude: Optional[Iterable[str]] = None
+        self, frame_idx: int, ax: Axes, labels_to_exclude: Optional[Iterable[str]] = None, revert_crop: bool = False
     ) -> None:
         for label in self.all_tracked_labels:
             if labels_to_exclude and label in labels_to_exclude:
                 continue
-            ax.scatter(self.coordinates_for_plot(label)[frame_idx], c=self.label_to_plot_color[label], label=label)
+
+            coordinates = self.coordinates_for_plot(label)[frame_idx]
+            if revert_crop:
+                coordinates = coordinates - np.array([self.x_axis_crop_end_point, self.y_axis_crop_end_point])
+
+            ax.scatter(*coordinates.T, c=self.label_to_plot_color[label], label=label)
 
         ax.legend(bbox_to_anchor=(1.01, 0.5), loc="center left")
 

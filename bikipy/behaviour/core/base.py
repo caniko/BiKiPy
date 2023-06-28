@@ -32,7 +32,7 @@ from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.core.base import BikipyHashable
 from bikipy.core.mixin import AbstractFeatureCollectorMixin, InspectPlotMixin
 from bikipy.core.typing import Label
-from bikipy.core.video import VideoMetadataMixin
+from bikipy.core.video import VideoMetadataMixin, VideoMetadata
 from bikipy.feature.motion import Motion, motion_analysis_indexer
 from bikipy.feature.qualia.physical_object.trial_mixin import PhysicalObjectTrialMixin
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
@@ -690,7 +690,7 @@ class BaseExperiment(Behaviour):
         )
         from bikipy.ingress.plugin.perimeter.radial_maze import PluginRadial
 
-        result = self.video.dict(exclude_unset=True)
+        result = {}
 
         if self.common_trial_keyword_arguments:
             dict_deep_update(result, self.common_trial_keyword_arguments)
@@ -740,6 +740,15 @@ class BaseExperiment(Behaviour):
             else:
                 msg = f"Unsupported type for PluginChangeReference: {type(val)}"
                 raise AttributeError(msg)
+
+        if "manual_video" in result:
+            result.update(
+                VideoMetadata.join(result.pop("manual_video"), self.video, ignore_incongruity=True).dict(
+                    exclude_unset=True
+                )
+            )
+        else:
+            result.update(self.video.dict(exclude_unset=True))
 
         return result
 

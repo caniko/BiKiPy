@@ -90,13 +90,22 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         return ray_direction_filter_circle_triangle(self, ray_travel_direction_point, ray_start_point, max_radians)
 
     def plot_perimeter_on_ax(
-        self, ax: Axes, inspect_pixels: bool = False, manual_resize_multiplier: Optional[float] = None, **plot_kwargs
-    ) -> Axes:
+        self,
+        ax: Axes,
+        inspect_pixels: bool = False,
+        manual_resize_multiplier: Optional[float] = None,
+        x_offset: float = 0.0,
+        y_offset: float = 0.0,
+        **plot_kwargs,
+    ) -> None:
         center, radius = (
             (self.center_pixels, self.radius_length_pixels)
             if inspect_pixels
             else (self.center_meters, self.radius_length_meters)
         )
+
+        center[0] += x_offset
+        center[1] += y_offset
 
         if inspect_pixels:
             image_resize_multiplier = manual_resize_multiplier or self.video.image_resize_multiplier
@@ -106,7 +115,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         if isinstance(radius, np.ndarray):
             radius = tuple(radius)
 
-        return plot_ellipse(tuple(center), radius, ax=ax, **plot_kwargs)
+        plot_ellipse(tuple(center), radius, ax=ax, **plot_kwargs)
 
     @classmethod
     @property

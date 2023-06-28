@@ -82,7 +82,7 @@ class _VideoMetadataBase(BikipyModel):
             )
             raise AttributeError(msg)
 
-        cap = cv2.VideoCapture(self.video_path)
+        cap = cv2.VideoCapture(str(self.video_path))
 
         if not cap.isOpened():
             msg = f"Error opening video file: {self.video_path}"
@@ -118,34 +118,35 @@ class VideoMetadata(_VideoMetadataBase):
     @classmethod
     def join(
         cls,
-        master: "VideoMetadata",
-        slave: "VideoMetadata",
+        superior: "VideoMetadata",
+        inferior: "VideoMetadata",
         ignore_incongruity: bool = False,
-        use_slave_meters_per_pixel: bool = False,
+        use_inferior_meters_per_pixel: bool = False,
         meters_per_pixel_mean: bool = False,
     ) -> "VideoMetadata":
-        if not (master & slave) and not ignore_incongruity:
+        if not (superior & inferior) and not ignore_incongruity:
             msg = "VideoMetadata are incongruent"
             raise AttributeError(msg)
 
         meters_per_pixel: float | None = None
 
-        if meters_per_pixel_mean and "meters_per_pixel" in slave and "meters_per_pixel" in master:
+        if meters_per_pixel_mean and "meters_per_pixel" in inferior and "meters_per_pixel" in superior:
             assert not meters_per_pixel_mean, "Multiple meters per pixel sources defined"
-            meters_per_pixel = float(np.mean([slave.meters_per_pixel, master.meters_per_pixel], axis=0))
-        elif use_slave_meters_per_pixel and slave.meters_per_pixel:
-            assert not use_slave_meters_per_pixel, "Multiple meters per pixel sources defined"
-            meters_per_pixel = slave.meters_per_pixel
-        elif master.meters_per_pixel:
-            meters_per_pixel = master.meters_per_pixel
+            meters_per_pixel = float(np.mean([inferior.meters_per_pixel, superior.meters_per_pixel], axis=0))
+        elif use_inferior_meters_per_pixel and inferior.meters_per_pixel:
+            assert not use_inferior_meters_per_pixel, "Multiple meters per pixel sources defined"
+            meters_per_pixel = inferior.meters_per_pixel
+        elif superior.meters_per_pixel:
+            meters_per_pixel = superior.meters_per_pixel
 
         return cls(
             meters_per_pixel=meters_per_pixel,
-            recording_resolution=master.recording_resolution
-            if master.recording_resolution is not None
-            else slave.recording_resolution,
-            fps=master.fps or slave.fps,
-            frame=master.frame if master.frame is not None else slave.frame,
+            recording_resolution=superior.recording_resolution
+            if superior.recording_resolution is not None
+            else inferior.recording_resolution,
+            fps=superior.fps or inferior.fps,
+            frame=superior.frame if superior.frame is not None else inferior.frame,
+            video_path=superior.video_path if superior.video_path else inferior.video_path,
         )
 
     @classmethod
@@ -380,6 +381,7 @@ class VideoMetadataMixin(_VideoMetadataBase):
             fps=self.fps,
             recording_resolution=self.resolution,
             frame=self.frame,
+            video_path=self.video_path,
         )
         if self.manual_video:
             video = VideoMetadata.join(self.manual_video, video, ignore_incongruity=True)
