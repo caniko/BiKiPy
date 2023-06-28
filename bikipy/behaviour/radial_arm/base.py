@@ -326,7 +326,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
             *chain.from_iterable(self.area_to_motion.values()),
         )
         indices = [
-            a("SpontaneousAlternations", ""),
+            ("SpontaneousAlternations", ""),
             *feature_2d_multi_indexer("ArmEntries", self.arm_labels),
             ("ArmEntries", "Sum"),
             *feature_2d_multi_indexer("PermutationAlternation", self._arm_label_permutations_as_string),
