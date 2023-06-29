@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import ClassVar, Type, TypeVar
+from typing import ClassVar, Optional, TypeVar, Type
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +10,7 @@ from pydantic_numpy import NDArrayBool
 from schemantic.model.project import SchemanticProjectMixin
 
 from bikipy.core.video import VideoMetadataMixin
+from bikipy.feature.qualia.physical_object.heuristic.mixin import SingleComponentMixin
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.reader.base import Reader
 from bikipy.utils.math.cached import cached_deg2rad, meters2pixels
@@ -27,6 +28,10 @@ class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
 
     heuristic_alias: ClassVar[str]
 
+    @abstractmethod
+    def plot(self) -> None:
+        ...
+
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -34,6 +39,22 @@ class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
         result.update(("perimeter", "reader"))
         return result
 
+    @property
+    def physical_object_label(self) -> str:
+        return self.perimeter.label
+
+    def plot_result(self, ax: Axes, label_to_plot: Optional[str] = None) -> None:
+        self.perimeter.plot(ax=ax, coordinates_as_pixels=False)
+        self.reader.plot_boolean_index(self.result, ax, label_to_plot)
+
+        plt.tight_layout(**TIGHT_LAYOUT_KWARGS)
+
+
+HeuristicCLS = Type[AbstractHeuristic]
+Heuristic = TypeVar("Heuristic", bound=AbstractHeuristic)
+
+
+class StandaloneHeuristic(AbstractHeuristic):
     @property
     @abstractmethod
     def result(self) -> np.ndarray[bool, bool]:
@@ -43,51 +64,11 @@ class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
     def summary_series(self) -> pd.Series:
         return pd.Series([self.result], index=[self.heuristic_alias])
 
-    @property
-    def physical_object_label(self) -> str:
-        return self.perimeter.label
-
-    def plot_result(self, ax: Axes, label_to_plot: str) -> None:
-        ax.set_title("Combined")
-        self.perimeter.plot(ax=ax, coordinates_as_pixels=False)
-        self.reader.plot_boolean_index(self.result, ax, label_to_plot)
-
-        plt.tight_layout(**TIGHT_LAYOUT_KWARGS)
+    def plot_result(self, ax: Axes, label_to_plot: Optional[str] = None) -> None:
+        ax.set_title("Combined result")
+        super().plot_result(ax, label_to_plot)
 
 
-class CombinedQualiaHeuristic(AbstractHeuristic):
+class CombinedHeuristic(SingleComponentMixin, AbstractHeuristic):
     label: str
-    combined_result: NDArrayBool
-
-    @property
-    def result(self) -> np.ndarray[bool, bool]:
-        return self.combined_result
-
-    def plot(self) -> None:
-        pass
-
-
-class ProximityMixin(BaseModel):
-    maximum_distance_meters: float = 0.05
-
-    @property
-    def maximum_distance_pixels(self) -> float:
-        return meters2pixels(self.maximum_distance_meters, self.video.pixels_per_meter)
-
-    @property
-    @abstractmethod
-    def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
-        ...
-
-
-class RayMixin(BaseModel):
-    maximum_degrees: float = 45.0
-
-    @property
-    def maximum_radians(self) -> float:
-        return cached_deg2rad(self.maximum_degrees)
-
-    @property
-    @abstractmethod
-    def label_to_ray_vector_direction_points(self) -> dict[str, np.ndarray[float, np.dtype[np.float64]]]:
-        ...
+    result: NDArrayBool

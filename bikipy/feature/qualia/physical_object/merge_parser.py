@@ -56,7 +56,7 @@ class HeuristicMergeVisitor(NodeVisitor):
 
 def parse_heuristic_merge_equation(
     formula: str, alias_to_heuristic_result: dict[str, np.ndarray[bool, bool]]
-) -> list[np.ndarray[bool, bool]]:
+) -> np.ndarray[bool, bool]:
     visitor = HeuristicMergeVisitor(alias_to_heuristic_result)
     tree = _heuristic_merge_grammar.parse(formula)
     return visitor.visit(tree)

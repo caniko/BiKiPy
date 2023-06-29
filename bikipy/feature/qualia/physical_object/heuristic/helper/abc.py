@@ -1,11 +1,17 @@
 from abc import ABC
-from typing import TypeVar
+from typing import Optional, TypeVar
 
-from bikipy.feature.qualia.physical_object.heuristic.abc import AbstractHeuristic
+from matplotlib.axes import Axes
+
+from bikipy.feature.qualia.physical_object.heuristic.abc import StandaloneHeuristic
 
 
-class AbstractQualiaHelperHeuristic(AbstractHeuristic, ABC):
+class AbstractQualiaHelperHeuristic(StandaloneHeuristic, ABC):
     heuristics_to_apply_to: tuple[str, ...] = ...
+
+    def plot_result(self, ax: Axes, label_to_plot: Optional[str] = None) -> None:
+        ax.set_title(self.heuristic_alias)
+        super().plot_result(ax, label_to_plot)
 
 
 HelperHeuristic = TypeVar("HelperHeuristic", bound=AbstractQualiaHelperHeuristic)

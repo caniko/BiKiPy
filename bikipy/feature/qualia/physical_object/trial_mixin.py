@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from functools import cached_property
+from functools import cached_property, partial
 from typing import Optional
 
 import numpy as np
@@ -14,13 +14,14 @@ from bikipy.feature.qualia.physical_object.analysis.mapping import (
     PO_NUMBER_TO_ANALYSIS_MODEL,
 )
 from bikipy.feature.qualia.physical_object.heuristic.abc import (
-    ProximityMixin,
-    RayMixin,
+    CombinedHeuristic,
+    Heuristic,
 )
 from bikipy.feature.qualia.physical_object.heuristic.mapping import (
-    ALIAS_TO_HEURISTIC_CLS,
+    alias_to_heuristics_cls,
+    alias_to_helper_heuristic,
 )
-from bikipy.feature.qualia.physical_object.heuristic.solo.abc import SoloHeuristic
+from bikipy.feature.qualia.physical_object.heuristic.mixin import RayMixin, ProximityMixin
 from bikipy.feature.qualia.physical_object.merge_parser import (
     parse_heuristic_merge_equation,
 )
@@ -48,25 +49,48 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         return tuple(self.physical_object_perimeters)
 
     @cached_property
-    def alias_to_heuristic_physical_objects(self) -> dict[str, list[SoloHeuristic]]:
-        """
-        Note that the values being lists are bijective counterparts to
-        self.physical_object_perimeters sequence of perimeters.
-
-        :return:
-        """
+    def alias_to_heuristic_physical_objects(self) -> dict[str, list[Heuristic]]:
         result = {}
 
+        helper_heuristics = []
         for heuristic_alias, heuristic_config in self.project_kit_config[PHYSICAL_OBJECT_MAP_NAME].items():
-            result[heuristic_alias] = [
-                ALIAS_TO_HEURISTIC_CLS[heuristic_alias](
-                    perimeter=perimeter, reader=self.reader, manual_video=self.video, **heuristic_config
+            if heuristic_alias in alias_to_helper_heuristic:
+                helper_heuristics.append(
+                    partial(
+                        alias_to_heuristics_cls[heuristic_alias],
+                        reader=self.reader,
+                        manual_video=self.video,
+                        **heuristic_config,
+                    )
                 )
-                for perimeter in self.physical_object_perimeters
-            ]
+        perimeter_sequenced_reduced_helper_heuristics = []
+        for perimeter in self.perimeters:
+            perimeter_sequenced_reduced_helper_heuristics.append(
+                np.logical_or.reduce([helper_heuristic(perimeter=perimeter) for helper_heuristic in helper_heuristics])
+            )
+        del helper_heuristics
+
+        result[heuristic_alias] = [
+            alias_to_heuristics_cls[heuristic_alias](
+                perimeter=perimeter,
+                reader=self.reader,
+                manual_video=self.video,
+                helper_heuristics=reduced_helper_heuristics,
+                **heuristic_config,
+            )
+            for perimeter, reduced_helper_heuristics in zip(
+                self.physical_object_perimeters, perimeter_sequenced_reduced_helper_heuristics
+            )
+        ]
+        for heuristic_alias, heuristic_config in self.project_kit_config[PHYSICAL_OBJECT_MAP_NAME].items():
+            pass
 
         for heuristic_alias, heuristic_equation in self.alias_to_heuristics_combination_equations.items():
-            result[heuristic_alias] = parse_heuristic_merge_equation(heuristic_equation, result)
+            result[heuristic_alias] = CombinedHeuristic(
+                label=heuristic_alias,
+                result=parse_heuristic_merge_equation(heuristic_equation, result),
+                manual_video=self.video,
+            )
 
         if self.inspect_arg:
             for heuristic_alias, physical_objects_heuristic in result.items():
@@ -142,12 +166,12 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                 perimeter_to_boolean_index[physical_object.perimeter] = (
                     perimeter_to_boolean_index[physical_object.perimeter] | physical_object.result
                 )
-                if issubclass(ALIAS_TO_HEURISTIC_CLS[heuristic_alias], ProximityMixin):
+                if issubclass(alias_to_heuristics_cls[heuristic_alias], ProximityMixin):
                     for label, proximity_boolean_index in physical_object.label_to_proximity_boolean.items():
                         label_to_confinement_boolean_index[label] = (
                             label_to_confinement_boolean_index[label] | proximity_boolean_index
                         )
-                if issubclass(ALIAS_TO_HEURISTIC_CLS[heuristic_alias], RayMixin):
+                if issubclass(alias_to_heuristics_cls[heuristic_alias], RayMixin):
                     for label, ray_direction_points in physical_object.label_to_ray_vector_direction_points.items():
                         label_to_quiver_rays[label][physical_object.result] = ray_direction_points[
                             physical_object.result

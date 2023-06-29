@@ -24,7 +24,7 @@ from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTri
 from bikipy.behaviour.mapping import experiment_name_to_class
 from bikipy.behaviour.radial_arm.base import BaseRadialMazeExperiment
 from bikipy.feature.qualia.physical_object.heuristic.mapping import (
-    ALIAS_TO_HEURISTIC_CLS,
+    alias_to_heuristics_cls,
 )
 from bikipy.ingress.plugin.perimeter.enclosure import PluginEnclosure
 from bikipy.ingress.workflow.animal import AnimalIngressWorkflow
@@ -148,11 +148,11 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
                 models = set()
                 for heuristic in qualia_heuristic:
                     try:
-                        models.add(ALIAS_TO_HEURISTIC_CLS[heuristic])
+                        models.add(alias_to_heuristics_cls[heuristic])
                     except KeyError:
                         msg = (
                             f"The defined heuristic key, {heuristic}, is not defined. "
-                            f"Choose from the following: {', '.join(tuple(ALIAS_TO_HEURISTIC_CLS))}"
+                            f"Choose from the following: {', '.join(tuple(alias_to_heuristics_cls))}"
                         )
                         raise KeyError(msg)
 
