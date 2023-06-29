@@ -18,16 +18,19 @@ class AbstractCompute(GenericModel, Generic[T], BikipyModel, ABC):
     label: str = ...
 
     heuristic_data_sources: ClassVar[tuple[str, ...]]
+    heuristic_data_sources_all_required: ClassVar[bool] = False
 
     class Config:
         extra = Extra.allow
 
     @root_validator
     def check_at_least_one_field(cls, values):
-        if not cls.heuristic_data_sources:
+        if not hasattr(cls, "heuristic_data_sources"):
             msg = f"Ask project authors to define heuristic_data_sources for the {cls.__name__} class"
             raise AttributeError(msg)
-        if not any(field in values for field in cls.heuristic_data_sources):
+
+        method = all if cls.heuristic_data_sources_all_required else any
+        if not method(field in values for field in cls.heuristic_data_sources):
             msg = f"One of {cls.heuristic_data_sources} must be defined"
             raise AttributeError(msg)
 

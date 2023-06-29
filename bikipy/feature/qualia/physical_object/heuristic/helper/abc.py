@@ -7,8 +7,6 @@ from bikipy.feature.qualia.physical_object.heuristic.abc import StandaloneHeuris
 
 
 class AbstractQualiaHelperHeuristic(StandaloneHeuristic, ABC):
-    heuristics_to_apply_to: tuple[str, ...] = ...
-
     def plot_result(self, ax: Axes, label_to_plot: Optional[str] = None) -> None:
         ax.set_title(self.heuristic_alias)
         super().plot_result(ax, label_to_plot)

@@ -28,7 +28,7 @@ def map_alias_to_heuristic(heuristics: tuple[HeuristicCLS, ...]) -> dict[str, He
 
 
 alias_to_solo_heuristic = map_alias_to_heuristic(SOLO_HEURISTICS)
-alias_to_helper_heuristic = map_alias_to_heuristic(SOLO_HEURISTICS)
+alias_to_helper_heuristic = map_alias_to_heuristic(HELPER_HEURISTICS)
 
 label_to_heuristics = {**alias_to_solo_heuristic, **alias_to_helper_heuristic}
 alias_to_heuristics_cls = {**label_to_heuristics, **HEURISTIC_NAME_TO_HEURISTIC}

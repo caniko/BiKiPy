@@ -263,9 +263,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
         location_sequence_center_periphery = np.zeros_like(self.center_boolean_index, dtype=np.uint8)
         location_sequence_center_periphery[self.center_boolean_index] = 1
         location_sequence_center_periphery[self.periphery_boolean_index] = 2
-        return np.array(
-            reduce_repeating_sequences(location_sequence_center_periphery, frame_tolerance=self._frame_tolerance)
-        )
+        return np.array(reduce_repeating_sequences(location_sequence_center_periphery, self._frame_tolerance))
 
     @property
     def center_entries(self) -> int:

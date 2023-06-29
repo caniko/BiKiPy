@@ -16,7 +16,7 @@ class OutsideObjectPerimeterHeuristic(SingleComponentMixin, ProximityMixin, Abst
 
     manual_torso: Optional[ComputeProximity]
 
-    heuristic_alias = "TorsoOutsideObjectPerimeter"
+    heuristic_alias = "OutsideObjectPerimeter"
 
     @cached_property
     def result(self) -> np.ndarray[bool, bool]:
@@ -27,6 +27,7 @@ class OutsideObjectPerimeterHeuristic(SingleComponentMixin, ProximityMixin, Abst
             return None
 
         return ComputeProximity(
+            label=self.heuristic_alias,
             perimeter=self.perimeter,
             maximum_distance=self.maximum_distance_pixels,
             inside_perimeter_border=self.reader[self.torso_label],

@@ -359,7 +359,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
         ax.set_title(self.label)
 
-        self.plot_perimeter_on_ax(manual_ax=ax, **perimeter_plot_kwargs)
+        self.plot_perimeter_on_ax(ax, **perimeter_plot_kwargs)
 
 
 SinglePerimeter = TypeVar("SinglePerimeter", bound=BaseSinglePerimeter)

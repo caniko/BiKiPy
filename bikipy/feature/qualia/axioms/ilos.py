@@ -20,6 +20,9 @@ class ComputeInLineOfSight(AbstractComputeBooleanIndex):
 
     manual_ray_vectors: Optional[NDArrayFp64]
 
+    heuristic_data_sources = ("ray_start_point", "ray_travel_direction_point", "max_radians")
+    heuristic_data_sources_all_required = True
+
     @cached_property
     def result(self) -> T:
         result = self.perimeter.ray_direction_filter(

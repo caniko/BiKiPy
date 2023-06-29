@@ -52,45 +52,52 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     def alias_to_heuristic_physical_objects(self) -> dict[str, list[Heuristic]]:
         result = {}
 
-        helper_heuristics = []
+        partial_helper_heuristics = []
+        alias_to_solo_heuristics = {}
         for heuristic_alias, heuristic_config in self.project_kit_config[PHYSICAL_OBJECT_MAP_NAME].items():
+            partial_heuristic_class = partial(
+                alias_to_heuristics_cls[heuristic_alias],
+                reader=self.reader,
+                manual_video=self.video,
+                **heuristic_config,
+            )
             if heuristic_alias in alias_to_helper_heuristic:
-                helper_heuristics.append(
-                    partial(
-                        alias_to_heuristics_cls[heuristic_alias],
-                        reader=self.reader,
-                        manual_video=self.video,
-                        **heuristic_config,
-                    )
-                )
+                partial_helper_heuristics.append(partial_heuristic_class)
+            else:
+                alias_to_solo_heuristics[heuristic_alias] = partial_heuristic_class
+
         perimeter_sequenced_reduced_helper_heuristics = []
         for perimeter in self.perimeters:
             perimeter_sequenced_reduced_helper_heuristics.append(
-                np.logical_or.reduce([helper_heuristic(perimeter=perimeter) for helper_heuristic in helper_heuristics])
+                np.logical_or.reduce(
+                    [
+                        partial_heuristic_class(perimeter=perimeter)
+                        for partial_heuristic_class in partial_helper_heuristics
+                    ]
+                )
             )
-        del helper_heuristics
+        del partial_helper_heuristics
 
-        result[heuristic_alias] = [
-            alias_to_heuristics_cls[heuristic_alias](
-                perimeter=perimeter,
-                reader=self.reader,
-                manual_video=self.video,
-                helper_heuristics=reduced_helper_heuristics,
-                **heuristic_config,
-            )
-            for perimeter, reduced_helper_heuristics in zip(
-                self.physical_object_perimeters, perimeter_sequenced_reduced_helper_heuristics
-            )
-        ]
-        for heuristic_alias, heuristic_config in self.project_kit_config[PHYSICAL_OBJECT_MAP_NAME].items():
-            pass
+        for heuristic_alias, partial_heuristic_class in alias_to_solo_heuristics.items():
+            result[heuristic_alias] = [
+                partial_heuristic_class(perimeter=perimeter)
+                for perimeter, reduced_helper_heuristics in zip(
+                    self.physical_object_perimeters, perimeter_sequenced_reduced_helper_heuristics
+                )
+            ]
 
         for heuristic_alias, heuristic_equation in self.alias_to_heuristics_combination_equations.items():
-            result[heuristic_alias] = CombinedHeuristic(
-                label=heuristic_alias,
-                result=parse_heuristic_merge_equation(heuristic_equation, result),
-                manual_video=self.video,
-            )
+            heuristic_results = parse_heuristic_merge_equation(heuristic_equation, result)
+            result[heuristic_alias] = [
+                CombinedHeuristic(
+                    perimeter=perimeter,
+                    reader=self.reader,
+                    label=heuristic_alias,
+                    result=heuristic_result,
+                    manual_video=self.video,
+                )
+                for perimeter, heuristic_result in zip(self.physical_object_perimeters, heuristic_results)
+            ]
 
         if self.inspect_arg:
             for heuristic_alias, physical_objects_heuristic in result.items():

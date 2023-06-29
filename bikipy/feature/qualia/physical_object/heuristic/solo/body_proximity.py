@@ -5,10 +5,8 @@ import numpy as np
 import pandas as pd
 
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
-from bikipy.feature.qualia.physical_object.heuristic.abc import (
-    AbstractSoloHeuristic,
-    ProximityMixin,
-)
+from bikipy.feature.qualia.physical_object.heuristic.mixin import ProximityMixin
+from bikipy.feature.qualia.physical_object.heuristic.solo.abc import AbstractSoloHeuristic
 
 
 class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
@@ -59,8 +57,8 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
             manual_video=self.video,
         )
 
-    @cached_property
-    def result(self) -> np.ndarray[bool, bool]:
+    @property
+    def solo_result(self) -> np.ndarray[bool, bool]:
         return np.logical_or.reduce(
             [node.result for node in (self.center_ear_proximity, self.tail_base_proximity) if node is not None]
         )

@@ -109,6 +109,6 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
             e != 0
             for e in reduce_repeating_sequences(
                 self.po_observation_sequence,
-                frame_tolerance=self.video.minimum_frames_tolerance,
+                minimum_repeating=self.video.minimum_frames_tolerance,
             )
         )

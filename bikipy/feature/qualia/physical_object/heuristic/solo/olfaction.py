@@ -6,11 +6,8 @@ import pandas as pd
 
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
-from bikipy.feature.qualia.physical_object.heuristic.abc import (
-    AbstractSoloHeuristic,
-    ProximityMixin,
-    RayMixin,
-)
+from bikipy.feature.qualia.physical_object.heuristic.mixin import ProximityMixin, RayMixin
+from bikipy.feature.qualia.physical_object.heuristic.solo.abc import AbstractSoloHeuristic
 
 
 class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
@@ -44,7 +41,6 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
             perimeter=self.perimeter,
             maximum_distance=self.maximum_distance_pixels,
             inside_perimeter_border=self.reader[self.nose_label],
-            outside_perimeter_border=self.reader[self.torso_label],
             label="NoseProximity",
             manual_video=self.video,
         )
@@ -64,8 +60,8 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
             )
         )
 
-    @cached_property
-    def result(self) -> np.ndarray[bool, bool]:
+    @property
+    def solo_result(self) -> np.ndarray[bool, bool]:
         return self.nose_proximity.result & self.snout_towards_object_rays.result
 
     @property

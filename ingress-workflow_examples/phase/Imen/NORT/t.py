@@ -3,7 +3,9 @@ from bikipy.ingress.projectkit import ProjectKitJITBikipyConfiguration
 projectkit_jit = ProjectKitJITBikipyConfiguration()
 
 config = projectkit_jit.jit_config(
-    ingress_method="phase", experiment_name="nort", qualia_heuristic=["OlfactionHeuristic", "WhiskerInteraction"]
+    ingress_method="phase",
+    experiment_name="nort",
+    qualia_heuristic=["BodyProximity", "Olfaction", "WhiskerInteraction", "OutsideObjectPerimeter"],
 )
 
 # config.initialize()

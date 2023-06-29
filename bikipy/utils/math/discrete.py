@@ -69,13 +69,13 @@ def tolerance_modeled_boolean_index_truth_sequence_start_end_length(
     A simple merge would make the computation of speed and acceleration wrong.
     """
     if np.sum(boolean_index) < fps:
-        return [], boolean_index
+        return [(x, x, x) for x in range(0)], boolean_index
 
     minimum_frames_attention, distraction_tolerance, length = common_preparation(
         minimum_seconds_attention, maximum_seconds_distraction, fps, boolean_index
     )
 
-    new_boolean_index = np.zeros_like(boolean_index, dtype=bool)
+    new_boolean_index = np.zeros_like(boolean_index, dtype=np.bool_)
     data = []
     i, true_counter, distraction_counter, start = 0, 0, 0, 0
     while i < length:

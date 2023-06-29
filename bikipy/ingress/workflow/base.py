@@ -777,7 +777,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         return plugin_model(plugin_scope=plugin_scope, ingress=self, **additional_field_args, **field_kwargs)
 
     def _trial_class_from_stage_index(self, stage_index: Label) -> "TrialCLS":
-        return self.experiment_class.stage_index_to_trial_class_name[stage_index]
+        return self.experiment_class.stage_index_to_trial_class[stage_index]
 
     def _trialwise_plugins_for_trial_id(
         self, trial_id: Label, trial_directory: DirectoryPath, trial_id_plugin_glob_format_string: str

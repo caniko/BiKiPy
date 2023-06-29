@@ -6,11 +6,8 @@ import pandas as pd
 
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
-from bikipy.feature.qualia.physical_object.heuristic.abc import (
-    AbstractSoloHeuristic,
-    ProximityMixin,
-    RayMixin,
-)
+from bikipy.feature.qualia.physical_object.heuristic.mixin import ProximityMixin, RayMixin
+from bikipy.feature.qualia.physical_object.heuristic.solo.abc import AbstractSoloHeuristic
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 
 
@@ -110,8 +107,8 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
         result = self.right_proximity.result & self.rightward_observation.result
         return result if self.filter_in_sequence else single_node_tolerance_model(result, self.video.fps)
 
-    @cached_property
-    def result(self) -> np.ndarray[bool, bool]:
+    @property
+    def solo_result(self) -> np.ndarray[bool, bool]:
         return self.left_result | self.right_result
 
     @property

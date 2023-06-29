@@ -29,7 +29,7 @@ optional = ["fps", "frame", "inspect_arg", "inspect_image_path", "manual_inspect
 [trial.ObjectsInUpdatingLocationsTrainingTrial]
 class_name = "ObjectsInUpdatingLocationsTrainingTrial"
 required = ["project_kit_config"]
-optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "alias_to_qualia_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
+optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "alias_to_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
 
 [trial.ObjectsInUpdatingLocationsTrainingTrial.defined]
 manual_reader_kwargs = {crop_target_trial_length_seconds = 900}
@@ -37,7 +37,7 @@ manual_reader_kwargs = {crop_target_trial_length_seconds = 900}
 [trial.ObjectsInUpdatingLocationsUpdateTrial]
 class_name = "ObjectsInUpdatingLocationsUpdateTrial"
 required = ["project_kit_config"]
-optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "alias_to_qualia_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
+optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "alias_to_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
 
 [trial.ObjectsInUpdatingLocationsUpdateTrial.defined]
 manual_reader_kwargs = {crop_target_trial_length_seconds = 300}
@@ -45,18 +45,18 @@ manual_reader_kwargs = {crop_target_trial_length_seconds = 300}
 [trial.ObjectsInUpdatingLocationsTestTrial]
 class_name = "ObjectsInUpdatingLocationsTestTrial"
 required = ["project_kit_config"]
-optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "alias_to_qualia_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
+optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "alias_to_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
 
 [trial.ObjectsInUpdatingLocationsTestTrial.defined]
 manual_reader_kwargs = {crop_target_trial_length_seconds = 300}
 
 [trial.common]
 required = ["project_kit_config"]
-optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "alias_to_qualia_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
+optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "alias_to_heuristics_combination_equations", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
 
 [trial.common.defined]
 manual_center_rectangle_dimensions_meters = [0.35, 0.35]
-alias_to_qualia_heuristics_combination_equations = {body_olfaction="BodyProximityHeuristic | OlfactionHeuristic"}
+alias_to_heuristics_combination_equations = {body_olfaction="BodyProximityHeuristic | OlfactionHeuristic"}
 
 [enclosure.RectanglePerimeter]
 class_name = "RectanglePerimeter"
@@ -240,7 +240,7 @@ object_tracking_label_for_kinematics = "string"
 only_one_instance_of_trial_class = "boolean(default: False)"
 only_physical_cores = "boolean(default: False)"
 project_kit_config = "object"
-alias_to_qualia_heuristics_combination_equations = "array"
+alias_to_heuristics_combination_equations = "array"
 recording_resolution = "np.ndarray[name='recording_resolution_0' type=int required=True]"
 rectangle_2d_bin = "array(default: (2, 2))"
 required_tail_likelihood = "number(default: 0.8)"
