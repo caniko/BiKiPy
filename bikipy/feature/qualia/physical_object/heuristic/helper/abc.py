@@ -1,8 +1,11 @@
 from abc import ABC
-from typing import ClassVar
+from typing import TypeVar
 
-from bikipy.feature.qualia.physical_object.heuristic.abc import AbstractQualiaHeuristic
+from bikipy.feature.qualia.physical_object.heuristic.abc import AbstractHeuristic
 
 
-class AbstractQualiaHelperHeuristic(AbstractQualiaHeuristic, ABC):
-    must_be_true: ClassVar[bool] = ...
+class AbstractQualiaHelperHeuristic(AbstractHeuristic, ABC):
+    heuristics_to_apply_to: tuple[str, ...] = ...
+
+
+HelperHeuristic = TypeVar("HelperHeuristic", bound=AbstractQualiaHelperHeuristic)

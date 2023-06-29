@@ -85,7 +85,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
         self.plot_perimeter_on_ax(
             ax,
-            inspect_pixels=video.coordinates_need_to_be_scaled_for_plot,
+            coordinates_as_pixels=video.coordinates_need_to_be_scaled_for_plot,
             manual_resize_multiplier=video.image_resize_multiplier,
         )
 
@@ -103,13 +103,12 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         return manual_video.subplots(**plot_kwargs) if manual_video else self.video.subplots(**plot_kwargs)
 
     def plot_perimeter(self, manual_video: Optional[VideoMetadata] = None, manual_ax=None, **plot_kwargs):
-        video = manual_video or self.video
         if manual_ax:
             ax = manual_ax
         else:
-            fig, ax = video.subplot()
+            fig, ax = (manual_video or self.video).subplot()
 
-        return self.plot_perimeter_on_ax(ax, inspect_pixels=video.coordinates_need_to_be_scaled_for_plot, **plot_kwargs)
+        self.plot_perimeter_on_ax(ax, **plot_kwargs)
 
     @abstractmethod
     def compute_confinement_boolean_index(
@@ -121,10 +120,10 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
     def plot_perimeter_on_ax(
         self,
         ax: Axes,
-        inspect_pixels: bool = False,
+        coordinates_as_pixels: bool = False,
         manual_resize_multiplier: Optional[float] = None,
-        x_offset: float = 0.0,
-        y_offset: float = 0.0,
+        x_pixel_offset: float = 0.0,
+        y_pixel_offset: float = 0.0,
         **plot_kwargs,
     ) -> None:
         ...
@@ -332,7 +331,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         self,
         ax: Axes = None,
         coordinates: Optional[NDArrayFp64] = None,
-        inspect_pixels: bool = False,
+        coordinates_as_pixels: bool = False,
         **perimeter_plot_kwargs,
     ):
         """
@@ -356,11 +355,11 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
             ax.set_title(self.label)
 
         if coordinates is not None:
-            plot_coordinates(coordinates, ax, inspect_pixels, self.video)
+            plot_coordinates(ax, coordinates, coordinates_as_pixels, self.video)
 
         ax.set_title(self.label)
 
-        return self.plot_perimeter(manual_ax=ax, **perimeter_plot_kwargs)
+        self.plot_perimeter_on_ax(manual_ax=ax, **perimeter_plot_kwargs)
 
 
 SinglePerimeter = TypeVar("SinglePerimeter", bound=BaseSinglePerimeter)
@@ -553,22 +552,22 @@ class PerimeterSet(BasePerimeter):
     def plot_perimeter_on_ax(
         self,
         ax: Axes,
-        inspect_pixels: bool = False,
+        coordinates_as_pixels: bool = False,
         manual_resize_multiplier: Optional[float] = None,
-        x_offset: float = 0.0,
-        y_offset: float = 0.0,
+        x_pixel_offset: float = 0.0,
+        y_pixel_offset: float = 0.0,
         **plot_kwargs,
     ) -> None:
         for perimeter in self.all_perimeters:
             perimeter.plot_perimeter_on_ax(
-                ax, inspect_pixels, manual_resize_multiplier, x_offset, y_offset, **plot_kwargs
+                ax, coordinates_as_pixels, manual_resize_multiplier, x_pixel_offset, y_pixel_offset, **plot_kwargs
             )
 
     def plot(
         self,
         manual_ax: Axes = None,
         coordinates: Optional[NDArrayFp64] = None,
-        inspect_pixels: bool = False,
+        coordinates_as_pixels: bool = False,
         **perimeter_plot_kwargs,
     ):
         if manual_ax is None:
@@ -578,15 +577,10 @@ class PerimeterSet(BasePerimeter):
 
         with sb.color_palette("cubehelix", n_colors=self.number_of_vertices):
             for perimeter in self.all_perimeters:
-                perimeter.plot_perimeter(manual_ax=ax, inspect_pixels=inspect_pixels, **perimeter_plot_kwargs)
+                perimeter.plot_perimeter_on_ax(ax, coordinates_as_pixels=coordinates_as_pixels, **perimeter_plot_kwargs)
 
             if coordinates is not None:
-                plot_coordinates(coordinates, ax, inspect_pixels, self.video)
-
-        if not manual_ax:
-            generic_inspection_finalization(self.class_inspect_arg, f"0-{self.label}{INSPECT_SIMPLE_FIG_FILE_FORMAT}")
-
-        return ax
+                plot_coordinates(ax, coordinates, coordinates_as_pixels, self.video)
 
 
 @validate_arguments

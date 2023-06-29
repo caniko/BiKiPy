@@ -12,7 +12,6 @@ lazy_dev_mode = true
 dataset_directory = "/home/can/data/nort_mextracted/"
 first_stage_is_habituation = true
 only_one_instance_of_trial_class = true
-#no_cache = true
 definition_meters_per_pixel = ["global"]
 definition_single_perimeter = ["metadata"]
 definition_change_reference = ["metadata"]

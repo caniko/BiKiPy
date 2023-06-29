@@ -2,7 +2,6 @@ from functools import cached_property
 from typing import Optional
 
 import numpy as np
-import pandas as pd
 
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.physical_object.heuristic.abc import ProximityMixin
@@ -11,12 +10,11 @@ from bikipy.feature.qualia.physical_object.heuristic.helper.abc import (
 )
 
 
-class TorsoOutsideObjectPerimeterHeuristic(AbstractQualiaHelperHeuristic, ProximityMixin):
+class OutsideObjectPerimeterHeuristic(AbstractQualiaHelperHeuristic, ProximityMixin):
     torso_label: str | None = "torso"
 
     manual_torso: Optional[ComputeProximity]
 
-    must_be_true = False
     heuristic_alias = "TorsoOutsideObjectPerimeter"
 
     @cached_property
@@ -36,12 +34,5 @@ class TorsoOutsideObjectPerimeterHeuristic(AbstractQualiaHelperHeuristic, Proxim
         )
 
     @property
-    def summary_series(self) -> pd.Series:
-        pass
-
-    def plot(self) -> None:
-        pass
-
-    @property
     def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
-        pass
+        return {self.torso_label: self.result}

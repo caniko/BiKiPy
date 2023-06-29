@@ -7,13 +7,13 @@ import pandas as pd
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.physical_object.heuristic.abc import (
-    AbstractQualiaHeuristic,
+    AbstractSoloHeuristic,
     ProximityMixin,
     RayMixin,
 )
 
 
-class OlfactionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
+class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
     maximum_distance_meters = 0.05
     maximum_degrees = 45.0
 

@@ -16,7 +16,7 @@ from bikipy.utils.math.cached import cached_deg2rad, meters2pixels
 from bikipy.utils.plot import TIGHT_LAYOUT_KWARGS
 
 
-class AbstractQualiaHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
+class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
     perimeter: SinglePerimeter = ...
     reader: Reader = ...
     filter_in_sequence: bool = Field(
@@ -40,41 +40,28 @@ class AbstractQualiaHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
         ...
 
     @property
-    @abstractmethod
     def summary_series(self) -> pd.Series:
-        ...
-
-    @abstractmethod
-    def plot(self) -> None:
-        ...
+        return pd.Series([self.result], index=[self.heuristic_alias])
 
     @property
     def physical_object_label(self) -> str:
         return self.perimeter.label
 
-    def plot_result(self, ax: Axes, label_to_plot: str):
+    def plot_result(self, ax: Axes, label_to_plot: str) -> None:
         ax.set_title("Combined")
-        self.perimeter.plot(ax=ax, inspect_pixels=False)
+        self.perimeter.plot(ax=ax, coordinates_as_pixels=False)
         self.reader.plot_boolean_index(self.result, ax, label_to_plot)
 
         plt.tight_layout(**TIGHT_LAYOUT_KWARGS)
 
 
-QualiaHeuristicCLS = Type[AbstractQualiaHeuristic]
-QualiaHeuristic = TypeVar("QualiaHeuristic", bound=AbstractQualiaHeuristic)
-
-
-class CombinedQualiaHeuristic(AbstractQualiaHeuristic):
+class CombinedQualiaHeuristic(AbstractHeuristic):
     label: str
     combined_result: NDArrayBool
 
     @property
     def result(self) -> np.ndarray[bool, bool]:
         return self.combined_result
-
-    @property
-    def summary_series(self) -> pd.Series:
-        return pd.Series([self.combined_result], index=self.label)
 
     def plot(self) -> None:
         pass

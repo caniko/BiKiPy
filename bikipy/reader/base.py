@@ -155,11 +155,11 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
     @cached_property
     def fps_from_timestamped_index(self) -> float | None:
-        if (tstamps := self.find_timestamp_index) is None:
+        if self.df_is_timestamped or self.find_timestamp_index is None:
             return None
 
         # We convert timestamps to time difference, i.e. delta(seconds)
-        time_deltas = np.diff(tstamps)
+        time_deltas = np.diff(self.find_timestamp_index)
 
         per_second_counts = []
         count = 0
@@ -179,14 +179,14 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         return self[self.object_tracking_label_for_kinematics]
 
     @cached_property
-    def plot_prepared_kinematic_coordinates(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def kinematic_coordinates_prepared_for_plotting(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.video.prepare_coordinates_for_plotting(self.kinematic_coordinates)
 
     @cached_property
     def physically_tracked_labels(self) -> set[str]:
         return set(self.raw_df.columns.levels[0])
 
-    @property
+    @cached_property
     def tracked_midpoint_labels(self) -> set[str]:
         result = self._post_read_midpoints.copy()
         if self.midpoint_groups:
@@ -287,11 +287,12 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
         if self.invert_y_axis:
             result.loc[:, pd.IndexSlice[:, "y"]] = self.video.vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
+            self.y_axis_crop_end_point = -self.y_axis_crop_end_point
 
         if self.x_axis_crop_end_point:
             result.loc[:, pd.IndexSlice[:, "x"]] = self.x_axis_crop_end_point + result.loc[:, pd.IndexSlice[:, "x"]]
         if self.y_axis_crop_end_point:
-            result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] - self.y_axis_crop_end_point
+            result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] + self.y_axis_crop_end_point
 
         # convert to meters
         if isinstance(self.video.meters_per_pixel, float):

@@ -7,14 +7,14 @@ import pandas as pd
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.physical_object.heuristic.abc import (
-    AbstractQualiaHeuristic,
+    AbstractSoloHeuristic,
     ProximityMixin,
     RayMixin,
 )
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 
 
-class WhiskerInteractionHeuristic(AbstractQualiaHeuristic, ProximityMixin, RayMixin):
+class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
     maximum_distance_meters = 0.035
 
     center_ear_label: str = "center_ear"

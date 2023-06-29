@@ -21,6 +21,7 @@ from bikipy import runtime_settings
 from bikipy._constant import (
     ANALYSIS_CACHE_STEM_ID,
     AUGMENTED_COORDINATE_CACHED_FILE_LABEL,
+    BIKIPY_ANALYSIS_VIDEO_PREFIX,
     READER_MAP_NAME,
 )
 from bikipy.core.base import BikipyModel
@@ -685,7 +686,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         for trial_objects in self.experiment.trial_class_to_trial_objects.values():
             trial_objects[0].generate_inspection_video(**trial_video_kwargs)
 
-    def purge_cached_reads(self, override_pattern: Optional[str] = None) -> None:
+    def purge_cached_reads(self, override_pattern: Optional[str] = None, auto: bool = False) -> None:
         pattern = override_pattern or AUGMENTED_COORDINATE_CACHED_FILE_LABEL
         to_delete = [
             f
@@ -701,7 +702,8 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         readable_to_delete = "\n".join((str(f.relative_to(self.dataset_directory)) for f in to_delete))
         if (
-            input(
+            auto
+            or input(
                 f"Pattern: {pattern}\n"
                 f"{readable_to_delete}\n===================\nPURGING CACHED DATA\n===================\n"
                 f"Will be deleted, are you sure? y/N "
@@ -710,7 +712,10 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         ):
             for f in to_delete:
                 logger.debug(f"Deleting: {f}")
-                os.remove(f)
+                try:
+                    os.remove(f)
+                except FileNotFoundError:
+                    pass
 
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
 
@@ -804,6 +809,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             if file.is_file()
             and ANALYSIS_CACHE_STEM_ID not in file.stem
             and AUGMENTED_COORDINATE_CACHED_FILE_LABEL not in file.stem
+            and BIKIPY_ANALYSIS_VIDEO_PREFIX not in file.stem
             and "~lock" not in file.stem
         }
 

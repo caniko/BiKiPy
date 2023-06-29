@@ -62,6 +62,7 @@ optional = ["cache_meters_augmented", "crop_from_end", "cropped_total_seconds", 
 object_tracking_label_for_kinematics = "torso"
 x_axis_crop_end_point = 95.0
 y_axis_crop_end_point = 75.0
+crop_target_trial_length_seconds = 350
 midpoint_groups = { center_ear = ["left_ear", "right_ear"], torso = ["center_ear", "base_tail"] }
 
 [field]

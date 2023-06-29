@@ -7,7 +7,7 @@ from typing import ClassVar, Optional
 import numpy as np
 import pandas as pd
 from ordered_set import OrderedSet
-from pydantic import PositiveInt, validator, DirectoryPath
+from pydantic import DirectoryPath, PositiveInt, validator
 from pydantic_numpy.dtype import NDArrayBool
 
 from bikipy._constant import INSPECT_SIMPLE_FIG_FILE_FORMAT
@@ -25,6 +25,7 @@ from bikipy.perimeter.utils.multi_node_confinement import (
 )
 from bikipy.utils.math.discrete import reduce_repeating_sequences
 from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
+from bikipy.utils.plot.inspect import generic_inspection_finalization
 
 logger = getLogger(__name__)
 
@@ -141,14 +142,29 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
     @cached_property
     def alternation_sequence_with_center(self) -> np.ndarray[int, np.dtype[np.uint8]]:
         result, overlap_boolean_index = detect_multi_node_sequential_perimeter_presence(
-            self.confinement_coordinates, self.perimeter_set, (False, True, True, True)
+            self.confinement_coordinates,
+            self.perimeter_set,
+            (False, True, True, True),
+            tolerance_filter=True,
+            tolerance_fps=self.video.fps,
+        )
+
+        # TODO: Pydantic v2, put this in model_post_init
+        fig, ax = self.video.subplot()
+        ax.scatter(*self.reader.kinematic_coordinates_prepared_for_plotting.T)
+        self.perimeter_set.plot(ax, coordinates_as_pixels=True)
+        generic_inspection_finalization(
+            self.inspect_arg,
+            potential_dir="radial_arm",
+            potential_label=self.label,
+            inspect_fig_file_format=INSPECT_SIMPLE_FIG_FILE_FORMAT,
         )
 
         inspect_sequential_confinement(
             self.inspect_arg,
             self.video,
             self.perimeter_set,
-            self.reader.plot_prepared_kinematic_coordinates,
+            self.reader.kinematic_coordinates_prepared_for_plotting,
             result,
             overlap_boolean_index,
             potential_dir="alternation_sequence_with_center",
@@ -281,7 +297,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
         return 100.0 * alternations / (self.sum_of_entries - 2)
 
-    @cached_property
+    @property
     def confinement_coordinates(self) -> tuple[np.ndarray[float, np.dtype[np.float64]], ...]:
         return tuple(self.reader[node_label] for node_label in self.tracking_labels_for_radial_arm_confinement)
 

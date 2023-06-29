@@ -13,40 +13,62 @@ def test_parse_heuristic_merge_equation():
         "C": np.array([False, True, True, False]),
     }
 
-    # Test 1: Simple AND operation
+    # Simple AND operation
     assert np.array_equal(
         parse_heuristic_merge_equation("A and B", alias_to_qualia_analysis), np.array([True, False, False, False])
     )
 
-    # Test 2: Simple OR operation
+    # Simple OR operation
     assert np.array_equal(
         parse_heuristic_merge_equation("A or B", alias_to_qualia_analysis), np.array([True, True, True, False])
     )
 
-    # Test 3: Simple NOT operation
+    # Simple NOT operation
     assert np.array_equal(
         parse_heuristic_merge_equation("not A", alias_to_qualia_analysis), np.array([False, True, False, True])
     )
 
-    # Test 4: Testing OR operation with "|"
+    # Testing OR operation with "|"
     assert np.array_equal(
         parse_heuristic_merge_equation("A | B", alias_to_qualia_analysis), np.array([True, True, True, False])
     )
 
-    # Test 5: Testing AND operation with "&"
+    # Testing AND operation with "&"
     assert np.array_equal(
         parse_heuristic_merge_equation("A & B", alias_to_qualia_analysis), np.array([True, False, False, False])
     )
 
-    # Test 6: Testing NOT operation with "~"
+    # Testing NOT operation with "~"
     assert np.array_equal(
         parse_heuristic_merge_equation("~A", alias_to_qualia_analysis), np.array([False, True, False, True])
     )
 
-    # Test 7: Invalid variable name
+    # Testing OR with more than 2 components
+    assert np.array_equal(
+        parse_heuristic_merge_equation("A or B or C", alias_to_qualia_analysis), np.array([True, True, True, False])
+    )
+
+    # Testing AND with more than 2 components
+    assert np.array_equal(
+        parse_heuristic_merge_equation("A and B and C", alias_to_qualia_analysis),
+        np.array([False, False, False, False]),
+    )
+
+    # Testing OR with more than 2 components, NOT in mid
+    assert np.array_equal(
+        parse_heuristic_merge_equation("A or ~B or C", alias_to_qualia_analysis), np.array([True, True, True, True])
+    )
+
+    # Testing AND with more than 2 components, NOT in mid
+    assert np.array_equal(
+        parse_heuristic_merge_equation("A and ~B and C", alias_to_qualia_analysis),
+        np.array([False, False, True, False]),
+    )
+
+    # Invalid variable name
     with pytest.raises(Exception):
         parse_heuristic_merge_equation("D and B", alias_to_qualia_analysis)
 
-    # Test 8: Invalid syntax
+    # Invalid syntax
     with pytest.raises(Exception):
         parse_heuristic_merge_equation("A andor B", alias_to_qualia_analysis)

@@ -1,12 +1,24 @@
-from bikipy.feature.qualia.physical_object.heuristic.body_proximity import (
+from bikipy.feature.qualia.physical_object.heuristic.helper.outside_object_perimeter import (
+    OutsideObjectPerimeterHeuristic,
+)
+from bikipy.feature.qualia.physical_object.heuristic.solo.body_proximity import (
     BodyProximityHeuristic,
 )
-from bikipy.feature.qualia.physical_object.heuristic.olfaction import OlfactionHeuristic
-from bikipy.feature.qualia.physical_object.heuristic.whiskers import (
+from bikipy.feature.qualia.physical_object.heuristic.solo.olfaction import (
+    OlfactionHeuristic,
+)
+from bikipy.feature.qualia.physical_object.heuristic.solo.whiskers import (
     WhiskerInteractionHeuristic,
 )
 
-HEURISTICS = (BodyProximityHeuristic, WhiskerInteractionHeuristic, OlfactionHeuristic)
+HEURISTICS = (
+    # Solo
+    BodyProximityHeuristic,
+    WhiskerInteractionHeuristic,
+    OlfactionHeuristic,
+    # Helper
+    OutsideObjectPerimeterHeuristic,
+)
 
 LABEL_TO_HEURISTIC = {heuristic.heuristic_alias: heuristic for heuristic in HEURISTICS}
 HEURISTIC_NAME_TO_HEURISTIC = {heuristic.__name__: heuristic for heuristic in HEURISTICS}

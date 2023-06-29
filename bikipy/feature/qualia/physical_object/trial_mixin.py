@@ -15,12 +15,12 @@ from bikipy.feature.qualia.physical_object.analysis.mapping import (
 )
 from bikipy.feature.qualia.physical_object.heuristic.abc import (
     ProximityMixin,
-    QualiaHeuristic,
     RayMixin,
 )
 from bikipy.feature.qualia.physical_object.heuristic.mapping import (
     ALIAS_TO_HEURISTIC_CLS,
 )
+from bikipy.feature.qualia.physical_object.heuristic.solo.abc import SoloHeuristic
 from bikipy.feature.qualia.physical_object.merge_parser import (
     parse_heuristic_merge_equation,
 )
@@ -31,7 +31,7 @@ from bikipy.utils.plot.inspect import InspectArg, generic_inspection_finalizatio
 
 
 class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
-    alias_to_qualia_heuristics_combination_equations: dict[str, str] = Field(
+    alias_to_heuristics_combination_equations: dict[str, str] = Field(
         default_factory=dict,
         description="Performs analysis by combining qualia heuristic result with respect to "
         "the defined logical method AND/OR using & or | respectively.",
@@ -48,7 +48,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         return tuple(self.physical_object_perimeters)
 
     @cached_property
-    def alias_to_heuristic_physical_objects(self) -> dict[str, list[QualiaHeuristic]]:
+    def alias_to_heuristic_physical_objects(self) -> dict[str, list[SoloHeuristic]]:
         """
         Note that the values being lists are bijective counterparts to
         self.physical_object_perimeters sequence of perimeters.
@@ -65,7 +65,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                 for perimeter in self.physical_object_perimeters
             ]
 
-        for heuristic_alias, heuristic_equation in self.alias_to_qualia_heuristics_combination_equations.items():
+        for heuristic_alias, heuristic_equation in self.alias_to_heuristics_combination_equations.items():
             result[heuristic_alias] = parse_heuristic_merge_equation(heuristic_equation, result)
 
         if self.inspect_arg:
@@ -135,7 +135,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         super().generate_inspection_video(output_directory, codec)
         for heuristic_alias, physical_objects in self.alias_to_heuristic_physical_objects.items():
             perimeter_to_boolean_index = self.reader.confinement_index_defaultdict()
-            label_to_boolean_index = self.reader.confinement_index_defaultdict()
+            label_to_confinement_boolean_index = self.reader.confinement_index_defaultdict()
             label_to_quiver_rays = self.reader.coordinate_sequence_defaultdict()
 
             for physical_object in physical_objects:
@@ -144,7 +144,9 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                 )
                 if issubclass(ALIAS_TO_HEURISTIC_CLS[heuristic_alias], ProximityMixin):
                     for label, proximity_boolean_index in physical_object.label_to_proximity_boolean.items():
-                        label_to_boolean_index[label] = label_to_boolean_index[label] | proximity_boolean_index
+                        label_to_confinement_boolean_index[label] = (
+                            label_to_confinement_boolean_index[label] | proximity_boolean_index
+                        )
                 if issubclass(ALIAS_TO_HEURISTIC_CLS[heuristic_alias], RayMixin):
                     for label, ray_direction_points in physical_object.label_to_ray_vector_direction_points.items():
                         label_to_quiver_rays[label][physical_object.result] = ray_direction_points[
@@ -155,7 +157,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                 video_frames=self.video.video_read_frames(),
                 reader=self.reader,
                 perimeter_to_boolean_index={po.perimeter: po.result for po in physical_objects},
-                label_to_boolean_index=label_to_boolean_index,
+                label_to_confinement_boolean_index=label_to_confinement_boolean_index,
                 label_to_quiver_rays=label_to_quiver_rays,
                 output_file_path=self._video_file_name(output_directory, context_label=heuristic_alias),
                 codec=codec,

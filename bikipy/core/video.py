@@ -296,17 +296,17 @@ class VideoMetadata(_VideoMetadataBase):
             **kwargs,
         )
 
-        # based on subplot height
-        base_font_size = ncols * self.upscaled_video.vertical_resolution / runtime_settings.matplotlib_dpi * 0.1
-
-        # Update font sizes
-        plt.rc("font", size=base_font_size)
-        plt.rc("axes", titlesize=base_font_size)
-        plt.rc("axes", labelsize=base_font_size)
-        plt.rc("xtick", labelsize=base_font_size)
-        plt.rc("ytick", labelsize=base_font_size)
-        plt.rc("legend", fontsize=base_font_size)
-        plt.rc("figure", titlesize=base_font_size)
+        # # based on subplot height
+        # base_font_size = ncols * self.upscaled_video.vertical_resolution / runtime_settings.matplotlib_dpi * 0.1
+        #
+        # # Update font sizes
+        # plt.rc("font", size=base_font_size)
+        # plt.rc("axes", titlesize=base_font_size)
+        # plt.rc("axes", labelsize=base_font_size)
+        # plt.rc("xtick", labelsize=base_font_size)
+        # plt.rc("ytick", labelsize=base_font_size)
+        # plt.rc("legend", fontsize=base_font_size)
+        # plt.rc("figure", titlesize=base_font_size)
 
         if self.frame is None:
             logger.debug("Video object was used to make subplot, but no frame was defined. Figure got no background.")
@@ -335,9 +335,9 @@ class VideoMetadata(_VideoMetadataBase):
         return fig, ax
 
     def prepare_coordinates_for_plotting(
-        self, data: NDArray | float, manual_inspect_pixels: bool = False
+        self, data: NDArray | float, manual_coordinates_as_pixels: bool = False
     ) -> np.ndarray[float, np.dtype[np.float64]] | float:
-        if manual_inspect_pixels or self.coordinates_need_to_be_scaled_for_plot:
+        if manual_coordinates_as_pixels or self.coordinates_need_to_be_scaled_for_plot:
             return data * self.pixels_per_meter * self.image_resize_multiplier
         return data
 

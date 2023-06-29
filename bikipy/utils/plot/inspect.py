@@ -39,6 +39,7 @@ def generic_inspection_finalization(
         else:  # Treated as directory
             if potential_dir:
                 inspect_arg = inspect_arg / potential_dir
+
             logger.debug(f"Creating directory {inspect_arg} for inspection figures")
             os.makedirs(inspect_arg, exist_ok=True)
 

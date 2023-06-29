@@ -29,20 +29,22 @@ class ComputeInLineOfSight(AbstractComputeBooleanIndex):
             result = single_node_tolerance_model(result, self.video.fps)
         return result
 
-    def plot(self, ax: Axes, video: Optional[VideoMetadata] = None, inspect_pixels: bool = False) -> None:
+    def plot(self, ax: Axes, video: Optional[VideoMetadata] = None, coordinates_as_pixels: bool = False) -> None:
         ray_travel_direction_point = (
-            video.prepare_coordinates_for_plotting(self.ray_travel_direction_point, inspect_pixels)
+            video.prepare_coordinates_for_plotting(self.ray_travel_direction_point, coordinates_as_pixels)
             if video
             else self.ray_travel_direction_point
         )
         ray_vectors = self.manual_ray_vectors or (ray_travel_direction_point - self.ray_start_point)
 
         if video:
-            ray_vectors = video.prepare_coordinates_for_plotting(unit_vector(ray_vectors), inspect_pixels) * 0.025
-            if inspect_pixels:
+            ray_vectors = (
+                video.prepare_coordinates_for_plotting(unit_vector(ray_vectors), coordinates_as_pixels) * 0.025
+            )
+            if coordinates_as_pixels:
                 video.upscaled_video.ax_ticks_metric_to_pixel(ax)
 
-        self.perimeter.plot(inspect_pixels=inspect_pixels, ax=ax)
+        self.perimeter.plot(coordinates_as_pixels=coordinates_as_pixels, ax=ax)
 
         quiver_kwargs = {
             "angles": "xy",

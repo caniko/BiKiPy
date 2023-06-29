@@ -6,18 +6,16 @@ import pandas as pd
 
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.physical_object.heuristic.abc import (
-    AbstractQualiaHeuristic,
+    AbstractSoloHeuristic,
     ProximityMixin,
 )
 
 
-class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
+class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
     center_ear_label: str | None = "center_ear"
-    torso_label: str | None = "torso"
     tail_base_label: str | None = "tail_base"
 
     manual_center_ear: Optional[ComputeProximity]
-    manual_torso: Optional[ComputeProximity]
     manual_tail_base: Optional[ComputeProximity]
 
     heuristic_alias = "BodyProximity"
@@ -41,25 +39,7 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
             perimeter=self.perimeter,
             maximum_distance=self.maximum_distance_pixels,
             inside_perimeter_border=self.reader[self.center_ear_label],
-            outside_perimeter_border=self.reader[self.center_ear_label] if self.perimeter.impenetrable else None,
             label="Center ear",
-            manual_video=self.video,
-        )
-
-    @cached_property
-    def torso_proximity(self) -> ComputeProximity | None:
-        if self.manual_torso is not None:
-            return self.manual_torso
-
-        if not self.torso_label:
-            return None
-
-        return ComputeProximity(
-            perimeter=self.perimeter,
-            maximum_distance=self.maximum_distance_pixels,
-            inside_perimeter_border=self.reader[self.torso_label],
-            outside_perimeter_border=self.reader[self.torso_label] if self.perimeter.impenetrable else None,
-            label="Torso",
             manual_video=self.video,
         )
 
@@ -75,7 +55,6 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
             perimeter=self.perimeter,
             maximum_distance=self.maximum_distance_pixels,
             inside_perimeter_border=self.reader[self.tail_base_label],
-            outside_perimeter_border=self.reader[self.tail_base_label] if self.perimeter.impenetrable else None,
             label="Tail base",
             manual_video=self.video,
         )
@@ -101,9 +80,6 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
         if self.center_ear_proximity:
             data[f"ObservingSecCenterEarProximity{label}"] = self.center_ear_proximity.result_seconds
 
-        if self.torso_proximity:
-            data[f"ObservingSecTorsoProximity{label}"] = self.torso_proximity.result_seconds
-
         if self.tail_base_proximity:
             data[f"ObservingSecBaseTailProximity{label}"] = self.tail_base_proximity.result_seconds
 
@@ -113,8 +89,7 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
 
     def plot(self) -> None:
         fig, axes = self.video.subplots(
-            ncols=sum((bool(self.center_ear_proximity), bool(self.torso_proximity), bool(self.tail_base_proximity)))
-            + 1,
+            ncols=sum((bool(self.center_ear_proximity), bool(self.tail_base_proximity))) + 1,
             nrows=1,
         )
 
@@ -125,14 +100,9 @@ class BodyProximityHeuristic(AbstractQualiaHeuristic, ProximityMixin):
             self.center_ear_proximity.plot(axes[ax_idx], self.video)
             ax_idx += 1
 
-        if self.torso_proximity:
-            axes[ax_idx].set_title("Torso")
-            self.torso_proximity.plot(axes[ax_idx], self.video)
-            ax_idx += 1
-
         if self.tail_base_proximity:
             axes[ax_idx].set_title("Tail base")
             self.tail_base_proximity.plot(axes[ax_idx], self.video)
             ax_idx += 1
 
-        self.plot_result(axes[ax_idx], self.torso_label or self.center_ear_label or self.tail_base_label)
+        self.plot_result(axes[ax_idx], self.center_ear_label or self.tail_base_label)

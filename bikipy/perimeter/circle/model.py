@@ -92,22 +92,22 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
     def plot_perimeter_on_ax(
         self,
         ax: Axes,
-        inspect_pixels: bool = False,
+        coordinates_as_pixels: bool = False,
         manual_resize_multiplier: Optional[float] = None,
-        x_offset: float = 0.0,
-        y_offset: float = 0.0,
+        x_pixel_offset: float = 0.0,
+        y_pixel_offset: float = 0.0,
         **plot_kwargs,
     ) -> None:
         center, radius = (
             (self.center_pixels, self.radius_length_pixels)
-            if inspect_pixels
+            if coordinates_as_pixels
             else (self.center_meters, self.radius_length_meters)
         )
 
-        center[0] += x_offset
-        center[1] += y_offset
+        center[0] += x_pixel_offset
+        center[1] += y_pixel_offset
 
-        if inspect_pixels:
+        if coordinates_as_pixels:
             image_resize_multiplier = manual_resize_multiplier or self.video.image_resize_multiplier
             center = center * image_resize_multiplier
             radius = radius * image_resize_multiplier
@@ -115,7 +115,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         if isinstance(radius, np.ndarray):
             radius = tuple(radius)
 
-        plot_ellipse(tuple(center), radius, ax=ax, **plot_kwargs)
+        plot_ellipse(ax, tuple(center), radius, **plot_kwargs)
 
     @classmethod
     @property

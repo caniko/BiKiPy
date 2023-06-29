@@ -27,12 +27,13 @@ from yaspin import yaspin
 from yaspin.spinners import Spinners
 
 from bikipy import runtime_settings
+from bikipy._constant import BIKIPY_ANALYSIS_VIDEO_PREFIX
 from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
 from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.core.base import BikipyHashable
 from bikipy.core.mixin import AbstractFeatureCollectorMixin, InspectPlotMixin
 from bikipy.core.typing import Label
-from bikipy.core.video import VideoMetadataMixin, VideoMetadata
+from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_analysis_indexer
 from bikipy.feature.qualia.physical_object.trial_mixin import PhysicalObjectTrialMixin
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
@@ -225,10 +226,16 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
         self, output_directory: Optional[DirectoryPath] = None, context_label: Optional[str] = None
     ) -> FilePath:
         output_directory = output_directory or self.framewise_coordinates_path.parent
-        stem = f"{self.experiment_stage}_{self.label}"
+
+        stem_components = [BIKIPY_ANALYSIS_VIDEO_PREFIX]
+        if self.experiment_stage:
+            stem_components.append(self.experiment_stage.value)
+        if self.label:
+            stem_components.append(self.label)
         if context_label:
-            stem = f"{stem}_{context_label}"
-        return output_directory / f"{stem}.mp4"
+            stem_components.append(context_label)
+
+        return output_directory / f"{'_'.join(stem_components)}.mp4"
 
     # Miscellaneous
     @property

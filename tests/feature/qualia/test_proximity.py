@@ -54,20 +54,20 @@ class ComputeProximity(AbstractComputeBooleanIndex):
         return result
 
     @validate_arguments(config={"arbitrary_types_allowed": True})
-    def plot(self, ax: Axes, video: VideoMetadata, inspect_pixels: bool = False) -> None:
+    def plot(self, ax: Axes, video: VideoMetadata, coordinates_as_pixels: bool = False) -> None:
         assert self.result is not None
 
         inside_perimeter_border_plot_scaled = video.prepare_coordinates_for_plotting(
-            self.inside_perimeter_border, inspect_pixels
+            self.inside_perimeter_border, coordinates_as_pixels
         )
 
-        if inspect_pixels:
+        if coordinates_as_pixels:
             video.upscaled_video.ax_ticks_metric_to_pixel(ax)
 
         ax.set_title(self.label)
 
-        self.perimeter.plot(ax=ax, inspect_pixels=inspect_pixels)
-        self.perimeter_border.plot(ax=ax, inspect_pixels=inspect_pixels)
+        self.perimeter.plot(ax=ax, coordinates_as_pixels=coordinates_as_pixels)
+        self.perimeter_border.plot(ax=ax, coordinates_as_pixels=coordinates_as_pixels)
 
         color_count = 1
         if self.perimeter.impenetrable:

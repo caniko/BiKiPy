@@ -258,19 +258,19 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
     def plot_perimeter_on_ax(
         self,
         ax: Axes,
-        inspect_pixels: bool = False,
+        coordinates_as_pixels: bool = False,
         manual_resize_multiplier: Optional[float] = None,
-        x_offset: float = 0.0,
-        y_offset: float = 0.0,
+        x_pixel_offset: float = 0.0,
+        y_pixel_offset: float = 0.0,
         **plot_kwargs,
     ) -> None:
-        if x_offset or y_offset:
-            vertices = self.vertices_in_pixels + np.array([x_offset, y_offset])
-            if not inspect_pixels:
+        if x_pixel_offset or y_pixel_offset:
+            vertices = self.vertices_in_pixels + np.array([x_pixel_offset, y_pixel_offset])
+            if not coordinates_as_pixels:
                 vertices *= self.video.meters_per_pixel
-        elif inspect_pixels:
+        elif coordinates_as_pixels:
             vertices = self.vertices_in_pixels * (manual_resize_multiplier or self.video.image_resize_multiplier)
-        elif not inspect_pixels:
+        elif not coordinates_as_pixels:
             vertices = self.vertices_in_meters
         else:
             raise RuntimeError

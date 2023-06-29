@@ -108,7 +108,7 @@ def inspect_annotations(annotation_path: FilePath, image_directory: Optional[Dir
 
     for ax, (image_name, perimeter_set) in zip(axes, image_name_to_perimeter_set.items()):
         axis_frame_imshow(ax, read_image_from_path(image_directory / image_name))
-        perimeter_set.plot(manual_ax=ax, inspect_pixels=True)
+        perimeter_set.plot(manual_ax=ax, coordinates_as_pixels=True)
 
     plt.show()
 
