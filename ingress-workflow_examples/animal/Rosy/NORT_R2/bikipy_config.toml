@@ -103,28 +103,28 @@ optional = ["cache_meters_augmented", "crop_seconds_from_end", "crop_seconds_fro
 midpoint_groups = {center_ear = ["left_ear", "right_ear"], torso = ["center_ear", "tail_base"]}
 object_tracking_label_for_kinematics = "torso"
 
-[qualia_heuristics.BodyProximityHeuristic]
+[heuristics.BodyProximityHeuristic]
 class_name = "BodyProximityHeuristic"
 optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "tail_base_label", "torso_label", "video_path"]
 
-[qualia_heuristics.BodyProximityHeuristic.defined]
+[heuristics.BodyProximityHeuristic.defined]
 
-[qualia_heuristics.OlfactionHeuristic]
+[heuristics.OlfactionHeuristic]
 class_name = "OlfactionHeuristic"
 optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_nose_olfaction_rays", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "nose_label", "recording_resolution", "torso_label", "video_path"]
 
-[qualia_heuristics.OlfactionHeuristic.defined]
+[heuristics.OlfactionHeuristic.defined]
 
-[qualia_heuristics.WhiskerInteractionHeuristic]
+[heuristics.WhiskerInteractionHeuristic]
 class_name = "WhiskerInteractionHeuristic"
 optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "left_ear_label", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "right_ear_label", "video_path"]
 
-[qualia_heuristics.WhiskerInteractionHeuristic.defined]
+[heuristics.WhiskerInteractionHeuristic.defined]
 
-[qualia_heuristics.common]
+[heuristics.common]
 optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "video_path"]
 
-[qualia_heuristics.common.defined]
+[heuristics.common.defined]
 
 [field]
 alias_to_heuristics_combination_equations = "object"

@@ -65,9 +65,12 @@ class DataWithLikelihoodReader(BaseReader[Enclosure], Generic[Enclosure]):
             axis=1,
         )
 
-    def _isolate_coordinates(self, item) -> np.ndarray[float, np.dtype[np.float64]]:
+    @staticmethod
+    def isolate_coordinates_from_native_df(
+        df: pd.DataFrame, key: Iterable[str] | str
+    ) -> np.ndarray[float, np.dtype[np.float64]]:
         # remove likelihood column
-        return np.delete(self.df[item].values, 2, 1)
+        return np.delete(df[key].values, 2, 1)
 
     @cached_property
     def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:

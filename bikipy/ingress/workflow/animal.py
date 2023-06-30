@@ -54,7 +54,9 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
                     ] = data_object
 
                 if self.experiment_class.has_stages:
-                    self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(stage_index)
+                    self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(
+                        stage_index
+                    ).__name__
 
                 self._trial_id_to_keyword_arguments[trial_id] = {
                     "label": trial_id,

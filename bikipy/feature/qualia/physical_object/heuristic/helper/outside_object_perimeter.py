@@ -32,7 +32,7 @@ class OutsideObjectPerimeterHeuristic(SingleComponentMixin, ProximityMixin, Abst
             maximum_distance=self.maximum_distance_pixels,
             inside_perimeter_border=self.reader[self.torso_label],
             manual_video=self.video,
-        )
+        ).result
 
     @property
     def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:

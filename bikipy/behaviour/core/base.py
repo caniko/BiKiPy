@@ -182,15 +182,15 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
             return self.manual_center_meters - self.video.center_meters
 
     @property
-    def _reader_kwargs(self) -> dict:
-        return {
-            "df_path": self.framewise_coordinates_path,
-            "timestamp_index": self.coordinate_timestamp_index,
-            "label": self.framewise_coordinates_path.stem,
-            "manual_video": self.video,
-            "enclosure": self.enclosure,
+    def _reader_kwargs(self) -> dict[str, Any]:
+        return dict(
+            df_path=self.framewise_coordinates_path,
+            manual_timestamp_index=self.coordinate_timestamp_index,
+            label=self.framewise_coordinates_path.stem,
+            manual_video=self.video,
+            enclosure=self.enclosure,
             **self.manual_reader_kwargs,
-        }
+        )
 
     @cached_property
     def reader(self) -> Reader:
@@ -292,14 +292,6 @@ class BaseExperiment(Behaviour):
 
     # "Sequence of trial classes designed for the experiment class"
     trial_sequence: ClassVar[tuple[TrialCLS, ...]]
-
-    @validator("trial_id_to_trial_class_name")
-    def sort_trial_id_to_trial_class_name_ascending(cls, value):
-        return dict(sorted(value.items()))
-
-    @validator("trial_id_to_trial_class_name")
-    def sort_trial_id_to_keyword_arguments_ascending(cls, value):
-        return dict(sorted(value.items()))
 
     def __getitem__(self, item: int):
         return self.trial_id_to_trial_object[item]

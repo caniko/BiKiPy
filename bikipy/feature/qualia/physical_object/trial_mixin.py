@@ -80,14 +80,17 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
 
         for heuristic_alias, partial_heuristic_class in alias_to_solo_heuristics.items():
             result[heuristic_alias] = [
-                partial_heuristic_class(perimeter=perimeter)
+                partial_heuristic_class(perimeter=perimeter, combined_helper_heuristic=reduced_helper_heuristics)
                 for perimeter, reduced_helper_heuristics in zip(
                     self.physical_object_perimeters, perimeter_sequenced_reduced_helper_heuristics
                 )
             ]
 
+        solo_heuristic_alias_to_results = {
+            alias: [heuristic.result for heuristic in pos_heuristic] for alias, pos_heuristic in result.items()
+        }
         for heuristic_alias, heuristic_equation in self.alias_to_heuristics_combination_equations.items():
-            heuristic_results = parse_heuristic_merge_equation(heuristic_equation, result)
+            heuristic_results = parse_heuristic_merge_equation(heuristic_equation, solo_heuristic_alias_to_results)
             result[heuristic_alias] = [
                 CombinedHeuristic(
                     perimeter=perimeter,

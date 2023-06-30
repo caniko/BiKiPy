@@ -83,7 +83,7 @@ def make_inspection_video(
                     color=color,
                 )
             else:
-                ax.scatter(reader.coordinates_for_plot(label)[next_frame_idx], c=color, label=label)
+                ax.scatter(*reader.coordinates_for_plot(label)[next_frame_idx], c=color, label=label)
 
         for perimeter, confinement_boolean_index in perimeter_to_boolean_index.items():
             perimeter.plot_perimeter_on_ax(

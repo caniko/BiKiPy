@@ -39,7 +39,7 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
 
         return ComputeProximity(
             perimeter=self.perimeter,
-            maximum_distance=self.maximum_distance_pixels,
+            maximum_distance=self.maximum_distance_meters,
             inside_perimeter_border=self.reader[self.nose_label],
             label="NoseProximity",
             manual_video=self.video,
@@ -78,7 +78,7 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
 
     @property
     def label_to_ray_vector_direction_points(self) -> dict[str, np.ndarray[float, np.dtype[np.float64]]]:
-        return {self.nose_label: self.reader[self.nose_label]}
+        return {self.nose_label: self.reader[self.nose_label] - self.reader[self.center_ear_label]}
 
     def plot(self) -> None:
         fig, axes = self.video.subplots(nrows=3)

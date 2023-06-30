@@ -117,28 +117,28 @@ optional = ["compressed_pickle_suffix", "debug", "disable_numba", "disable_proce
 [runtime_settings.defined]
 #disable_process_pooling = true
 
-[qualia_heuristics.BodyProximityHeuristic]
+[heuristics.BodyProximityHeuristic]
 class_name = "BodyProximityHeuristic"
 optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "tail_base_label", "torso_label", "video_path"]
 
-[qualia_heuristics.BodyProximityHeuristic.defined]
+[heuristics.BodyProximityHeuristic.defined]
 
-[qualia_heuristics.WhiskerInteractionHeuristic]
+[heuristics.WhiskerInteractionHeuristic]
 class_name = "WhiskerInteractionHeuristic"
 optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "left_ear_label", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "right_ear_label", "video_path"]
 
-[qualia_heuristics.WhiskerInteractionHeuristic.defined]
+[heuristics.WhiskerInteractionHeuristic.defined]
 
-[qualia_heuristics.OlfactionHeuristic]
+[heuristics.OlfactionHeuristic]
 class_name = "OlfactionHeuristic"
 optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_nose_olfaction_rays", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "nose_label", "recording_resolution", "torso_label", "video_path"]
 
-[qualia_heuristics.OlfactionHeuristic.defined]
+[heuristics.OlfactionHeuristic.defined]
 
-[qualia_heuristics.common]
+[heuristics.common]
 optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "video_path"]
 
-[qualia_heuristics.common.defined]
+[heuristics.common.defined]
 
 [habituation]
 required = ["project_kit_config"]

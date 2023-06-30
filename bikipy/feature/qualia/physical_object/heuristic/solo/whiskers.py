@@ -129,8 +129,8 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
     @property
     def label_to_ray_vector_direction_points(self) -> dict[str, np.ndarray[float, np.dtype[np.float64]]]:
         return {
-            self.left_ear_label: self.reader[self.left_ear_label],
-            self.right_ear_label: self.reader[self.right_ear_label],
+            self.left_ear_label: self.reader[self.left_ear_label] - self.reader[self.center_ear_label],
+            self.right_ear_label: self.reader[self.right_ear_label] - self.reader[self.center_ear_label],
         }
 
     def plot(self) -> None:

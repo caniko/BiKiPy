@@ -141,7 +141,8 @@ def frozen_frames(
 
 class Motion(BikipyModel):
     coordinate_sequence: NDArrayFp64 = ...
-    fps: float = ...
+    timestamp_sequence: Optional[NDArrayFp64]
+    fps: Optional[float]
     weight: Optional[int] = Field(
         description="The weight of the Motion instance defines relative weight to related Motion instances"
     )
@@ -156,6 +157,11 @@ class Motion(BikipyModel):
 
     @cached_property
     def meters_per_second(self) -> np.ndarray[float, np.dtype[np.float64]]:
+        if self.timestamp_sequence is not None:
+            return [
+                np.nansum(self.meters_per_frame[i : i + self.int_fps])
+                for i in range(0, self.meters_per_frame.size, self.int_fps)
+            ]
         return [
             np.nansum(self.meters_per_frame[i : i + self.int_fps])
             for i in range(0, self.meters_per_frame.size, self.int_fps)

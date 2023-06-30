@@ -60,14 +60,16 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         0.8, description="The pd.DataFrame will be cropped to this combined likelihood score"
     )
 
-    future_scaling: bool = Field(
-        None,
-        description="Scales the coordinates with respect to their min and max. " "True requires x_max and y_max",
+    skeleton_edges: tuple[tuple[str, str], ...] = Field(default_factory=tuple)
+    skeleton_max_velocity: Optional[float]
+    skeleton_max_acceleration: Optional[float]
+    skeleton_acceleration_rigidity_filter: bool = Field(
+        True, description="When True, consider filter based on acceleration"
     )
 
     cache_meters_augmented: bool = True
 
-    timestamp_index: Optional[NDArrayFp64] = timestamp_index_field
+    manual_timestamp_index: Optional[NDArrayFp64] = timestamp_index_field
     df_is_timestamped: bool = Field(
         False, description="When True, the reader will interpret the DataFrame index as timestamps in seconds"
     )
@@ -131,48 +133,23 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
         result = super().schemantic_fields_to_exclude_from_config_schema
-        result.update(("df_path", "trial_enclosure", "timestamp_index", "_using_bikipy_ingress"))
+        result.update(("df_path", "trial_enclosure", "manual_timestamp_index", "_using_bikipy_ingress"))
         return result
 
-    @abstractmethod
-    def _isolate_coordinates(self, key: Iterable[Hashable] | Hashable) -> pd.DataFrame:
-        ...
+    def _isolate_coordinates(self, key: Iterable[str] | str) -> np.ndarray[float, np.dtype[np.float64]]:
+        return self.isolate_coordinates_from_native_df(self.df, key)
 
     @property
     @abstractmethod
     def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:
         ...
 
-    @property
-    def find_timestamp_index(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
-        if self.timestamp_index is not None:
-            return self.timestamp_index
-
-        assert not self.augmented.empty
-
-        if self.df_is_timestamped:
-            return self.augmented.index.values
-
-    @cached_property
-    def fps_from_timestamped_index(self) -> float | None:
-        if self.df_is_timestamped or self.find_timestamp_index is None:
-            return None
-
-        # We convert timestamps to time difference, i.e. delta(seconds)
-        time_deltas = np.diff(self.find_timestamp_index)
-
-        per_second_counts = []
-        count = 0
-        cum_sum = 0.0
-        for time_delta in time_deltas:
-            cum_sum += time_delta
-            count += 1
-            if cum_sum >= 1.0:
-                per_second_counts.append(count)
-                count = 1
-                cum_sum = cum_sum - 1.0
-
-        return float(np.mean(per_second_counts))
+    @staticmethod
+    @abstractmethod
+    def isolate_coordinates_from_native_df(
+        df: pd.DataFrame, key: Iterable[str] | str
+    ) -> np.ndarray[float, np.dtype[np.float64]]:
+        ...
 
     @property
     def kinematic_coordinates(self) -> pd.DataFrame:
@@ -232,7 +209,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             )
         return result
 
-    @cached_property
+    @property
     def crop_frames_from_end(self) -> int:
         result = round(self.crop_seconds_from_end / self.video.fps)
         if self.df_is_timestamped and self.crop_target_trial_length_frames:
@@ -244,6 +221,13 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
                 )[0][0]
             )
         return result
+
+    @cached_property
+    def crop_frames_slice(self) -> slice | None:
+        start = self.crop_frames_from_start
+        stop = self.crop_frames_from_end
+
+        return slice(start, -stop if stop else None) if start or stop else None
 
     @cached_property
     def augmented(self) -> pd.DataFrame:
@@ -280,10 +264,8 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             logger.debug(f"Filtering {self.df_path.stem} with the {self.model_method} method")
             result = model_data(result, self.model_method, **self.model_kwargs)
 
-        if self.crop_frames_from_start:
-            result = result.iloc[self.crop_frames_from_start :]
-        if self.crop_frames_from_end:
-            result = result.iloc[: -self.crop_frames_from_end]
+        if self.crop_frames_slice:
+            result = result.iloc[self.crop_frames_slice]
 
         if self.invert_y_axis:
             result.loc[:, pd.IndexSlice[:, "y"]] = self.video.vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
@@ -327,6 +309,13 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
                     )
                     raise ValueError(msg)
 
+        if self.skeleton_edges:
+            for node_name_a, node_name_b in self.skeleton_edges:
+                distances = self.isolate_coordinates_from_native_df(
+                    result, node_name_a
+                ) - self.isolate_coordinates_from_native_df(result, node_name_b)
+                speed = np.diff(distances)
+
         if self.cache_meters_augmented:
             self._cache_augmented(result)
 
@@ -335,6 +324,51 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     @property
     def df(self) -> pd.DataFrame:
         return self.augmented
+
+    @cached_property
+    def timestamp_index(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
+        assert not self.raw_df.empty
+        if not self.df_is_timestamped:
+            return None
+
+        result = self.raw_df.index.values
+        if self.crop_frames_slice:
+            result = result.iloc[self.crop_frames_slice]
+
+        return result
+
+    @cached_property
+    def full_second_index(self) -> np.ndarray[int, np.dtype[np.uint32]]:
+        result = [0]
+        last_idx = 0
+        next_second = 1
+        for idx, elapsed_seconds in enumerate(np.cumsum(self.timestamp_index - self.timestamp_index[0])):
+            if elapsed_seconds >= next_second:
+                result.append((last_idx, idx))
+                last_idx = idx
+
+        return np.array(result, dtype=np.uint64)
+
+    @cached_property
+    def fps_from_timestamped_index(self) -> float | None:
+        if self.timestamp_index is None:
+            return None
+
+        # We convert timestamps to time difference, i.e. delta(seconds)
+        time_deltas = np.diff(self.timestamp_index)
+
+        per_second_counts = []
+        count = 0
+        cum_sum = 0.0
+        for time_delta in time_deltas:
+            cum_sum += time_delta
+            count += 1
+            if cum_sum >= 1.0:
+                per_second_counts.append(count)
+                count = 1
+                cum_sum = cum_sum - 1.0
+
+        return float(np.mean(per_second_counts))
 
     @property
     def raw_frames(self) -> int:
@@ -346,7 +380,11 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
     @property
     def duration_seconds(self) -> float:
-        return self.number_of_frames / self.video.fps if self.timestamp_index is None else self.timestamp_index[-1]
+        return (
+            self.number_of_frames / self.video.fps
+            if self.manual_timestamp_index is None
+            else self.manual_timestamp_index[-1]
+        )
 
     @property
     def info(self) -> pd.Series:
@@ -377,8 +415,8 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         if "timestamped" in self.df_path.stem:
             self.df_is_timestamped = True
 
-        if self.timestamp_index is not None:
-            df.set_index(self.timestamp_index, inplace=True)
+        if self.manual_timestamp_index is not None:
+            df.set_index(self.manual_timestamp_index, inplace=True)
             self.df_is_timestamped = True
 
         if isinstance(df.index, (np.timedelta64, pd.TimedeltaIndex)):

@@ -1,5 +1,5 @@
 Python_version = "3.11.3"
-schema_snapshot = ["manual", "qualia_heuristics", "enclosure", "runtime_settings", "plugin", "habituation", "perimeter", "ingress", "trial", "reader", "experiment", "field"]
+schema_snapshot = ["manual", "heuristics", "enclosure", "runtime_settings", "plugin", "habituation", "perimeter", "ingress", "trial", "reader", "experiment", "field"]
 
 [ProjectKit]
 format = ".toml"

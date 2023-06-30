@@ -60,15 +60,19 @@ class StandaloneHeuristic(AbstractHeuristic):
     def result(self) -> np.ndarray[bool, bool]:
         ...
 
-    @property
-    def summary_series(self) -> pd.Series:
-        return pd.Series([self.result], index=[self.heuristic_alias])
-
     def plot_result(self, ax: Axes, label_to_plot: Optional[str] = None) -> None:
         ax.set_title("Combined result")
         super().plot_result(ax, label_to_plot)
 
+    @property
+    def summary_series(self) -> pd.Series:
+        return pd.Series([self.result], index=[self.heuristic_alias])
+
 
 class CombinedHeuristic(SingleComponentMixin, AbstractHeuristic):
-    label: str
-    result: NDArrayBool
+    label: str = ...
+    result: NDArrayBool = ...
+
+    @property
+    def summary_series(self) -> pd.Series:
+        return pd.Series([self.result], index=[self.label])

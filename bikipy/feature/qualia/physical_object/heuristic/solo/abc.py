@@ -23,7 +23,7 @@ class AbstractSoloHeuristic(StandaloneHeuristic, ABC):
         return self._apply_helper_heuristics(self.solo_result)
 
     def _apply_helper_heuristics(self, target: np.ndarray[bool, bool]) -> np.ndarray[bool, bool]:
-        if hasattr(self, "combined_helper_heuristic"):
+        if self.combined_helper_heuristic:
             return target & self.combined_helper_heuristic
         return target
 
