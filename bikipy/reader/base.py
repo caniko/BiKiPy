@@ -431,13 +431,23 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         return np.multiply.reduce(self.raw_df.loc[:, pd.IndexSlice[:, "likelihood"]], axis=1)
 
     label_to_plot_prepped_coordinates: dict[str, NDArrayFp64] | None = Field(default_factory=dict)
+    label_to_plot_without_resized_coordinates: dict[str, NDArrayFp64] | None = Field(default_factory=dict)
 
-    def coordinates_for_plot(self, label_to_plot: str) -> np.ndarray[float, np.dtype[np.float64]]:
+    def coordinates_for_plot(
+        self, label_to_plot: str, with_resize: bool = True
+    ) -> np.ndarray[float, np.dtype[np.float64]]:
+        if with_resize:
+            try:
+                return self.label_to_plot_prepped_coordinates[label_to_plot]
+            except KeyError:
+                result = self.video.prepare_coordinates_for_plotting(self[label_to_plot])
+                self.label_to_plot_prepped_coordinates[label_to_plot] = result
+                return result
         try:
-            return self.label_to_plot_prepped_coordinates[label_to_plot]
+            return self.label_to_plot_without_resized_coordinates[label_to_plot]
         except KeyError:
-            result = self.video.prepare_coordinates_for_plotting(self[label_to_plot])
-            self.label_to_plot_prepped_coordinates[label_to_plot] = result
+            result = self.video.prepare_coordinates_for_plotting(self[label_to_plot], with_resize=False)
+            self.label_to_plot_without_resized_coordinates[label_to_plot] = result
             return result
 
     @validate_arguments(config={"arbitrary_types_allowed": True})
@@ -455,7 +465,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             if labels_to_exclude and label in labels_to_exclude:
                 continue
 
-            coordinates = self.coordinates_for_plot(label)[frame_idx]
+            coordinates = self.coordinates_for_plot(label, with_resize=False)[frame_idx]
             if revert_crop:
                 coordinates = coordinates - np.array([self.x_axis_crop_end_point, self.y_axis_crop_end_point])
 

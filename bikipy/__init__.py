@@ -27,8 +27,8 @@ class BikipyRuntimeSettings(BaseSettings, SchemanticProjectMixin):
     matplotlib_invert_y_axis: bool = False
     matplotlib_dpi: int = 300
 
-    minimum_seconds_tolerance: float = 1.0 / 3.0
-    maximum_seconds_distraction: float = 2.0 / 3.0
+    minimum_seconds_tolerance: float = 0.5
+    maximum_seconds_distraction: float = 1 / 3
 
     testing: bool = False
     debug: bool = False

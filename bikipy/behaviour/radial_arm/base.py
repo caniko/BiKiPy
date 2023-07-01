@@ -319,10 +319,6 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         raise NotImplementedError()
 
     @property
-    def _arm_permutation_to_zero(self):
-        return
-
-    @property
     def _arm_center_int_ids(self):
         return self.perimeter_set.perimeter_to_int_id
 

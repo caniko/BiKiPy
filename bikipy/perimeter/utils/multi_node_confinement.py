@@ -6,6 +6,7 @@ import seaborn as sb
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
+from bikipy import runtime_settings
 from bikipy.core.typing import ConfinementSequence
 from bikipy.core.video import VideoMetadata
 from bikipy.feature.tolerance.single import single_node_tolerance_model
@@ -23,18 +24,9 @@ def detect_multi_node_sequential_perimeter_presence(
     all_or_false: bool | tuple[bool, ...] = True,
     tolerance_filter: bool = False,
     tolerance_fps: Optional[float] = None,
-    tolerance_kwargs: Optional[dict] = None,
+    tolerance_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
+    tolerance_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
 ) -> ConfinementSequence:
-    """
-
-    :param coordinate_set:
-    :param inferior2superior_perimeter_set:
-    :param all_or_false:
-    :return:
-    """
-    if tolerance_filter:
-        tolerance_kwargs = tolerance_kwargs or {}
-
     presence = np.zeros(
         coordinate_set[0].shape[0],
         dtype=inferior2superior_perimeter_set.size_respective_dtype,
@@ -61,8 +53,8 @@ def detect_multi_node_sequential_perimeter_presence(
                     single_node_tolerance_model(
                         specific_confinement_boolean_index,
                         fps=tolerance_fps,
-                        minimum_seconds_attention=0.5,
-                        maximum_seconds_distraction=1 / 3,
+                        minimum_seconds_attention=tolerance_seconds_attention,
+                        maximum_seconds_distraction=tolerance_seconds_distraction,
                     )
                 )
             else:

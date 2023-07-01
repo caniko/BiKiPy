@@ -77,13 +77,13 @@ def make_inspection_video(
             if label in label_to_quiver_rays:
                 # We draw arrows only when confinement
                 ax.quiver(
-                    *reader.coordinates_for_plot(label)[next_frame_idx],
+                    *reader.coordinates_for_plot(label, with_resize=False)[next_frame_idx],
                     *label_to_quiver_rays[label][next_frame_idx],
                     label=label,
                     color=color,
                 )
             else:
-                ax.scatter(*reader.coordinates_for_plot(label)[next_frame_idx], c=color, label=label)
+                ax.scatter(*reader.coordinates_for_plot(label, with_resize=False)[next_frame_idx], c=color, label=label)
 
         for perimeter, confinement_boolean_index in perimeter_to_boolean_index.items():
             perimeter.plot_perimeter_on_ax(

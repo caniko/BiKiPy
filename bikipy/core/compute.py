@@ -64,6 +64,9 @@ class AbstractComputeBooleanIndex(AbstractCompute[NDArrayBool], VideoMetadataMix
     def result_seconds(self) -> float:
         return self.video.boolean_array_to_seconds(self.result)
 
+    @property
+    def video_gen_perimeter_to_boolean_index(self) -> :
+
 
 ComputeBooleanIndexCLS = Type[AbstractComputeBooleanIndex]
 ComputeBooleanIndex = TypeVar("ComputeBooleanIndex", bound=AbstractComputeBooleanIndex)
