@@ -200,23 +200,29 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     @cached_property
     def crop_frames_from_start(self) -> int:
         result = round(self.crop_seconds_from_start / self.video.fps)
-        if self.df_is_timestamped and self.crop_target_trial_length_frames:
-            result += (
-                self.raw_frames - np.where(self.raw_df.index.values >= self.crop_target_trial_length_seconds)[0][0]
-            )
+        if self.crop_target_trial_length_frames and not self.crop_target_from_end:
+            if self.df_is_timestamped:
+                result += (
+                    self.raw_frames - np.where(self.raw_df.index.values >= self.crop_target_trial_length_seconds)[0][0]
+                )
+            else:
+                result += round(self.raw_frames - self.crop_target_trial_length_seconds * self.video.fps)
         return result
 
     @property
     def crop_frames_from_end(self) -> int:
         result = round(self.crop_seconds_from_end / self.video.fps)
-        if self.df_is_timestamped and self.crop_target_trial_length_frames:
-            result += (
-                self.raw_frames
-                - np.where(
-                    self.raw_df.index.values[::-1]
-                    <= self.raw_df.index.values[-1] - self.crop_target_trial_length_seconds
-                )[0][0]
-            )
+        if self.crop_target_trial_length_frames and self.crop_target_from_end:
+            if self.df_is_timestamped:
+                result += (
+                    self.raw_frames
+                    - np.where(
+                        self.raw_df.index.values[::-1]
+                        <= self.raw_df.index.values[-1] - self.crop_target_trial_length_seconds
+                    )[0][0]
+                )
+            else:
+                result += round(self.raw_frames - self.crop_target_trial_length_seconds * self.video.fps)
         return result
 
     @cached_property
@@ -225,6 +231,15 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         stop = self.crop_frames_from_end
 
         return slice(start, -stop if stop else None) if start or stop else None
+
+    @property
+    def video_start_frame_index(self) -> int:
+        return self.start_end_idx_capped_likelihood[0] + self.crop_frames_from_start
+
+    @cached_property
+    def start_end_idx_capped_likelihood(self) -> tuple[int, int]:
+        tail_likelihood_capped_boolean_idx = np.where(self.combined_raw_likelihood >= self.required_tail_likelihood)[0]
+        return tail_likelihood_capped_boolean_idx[0], tail_likelihood_capped_boolean_idx[-1]
 
     @cached_property
     def augmented(self) -> pd.DataFrame:
@@ -238,8 +253,8 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         result = self.raw_df.copy()
 
         # Remove warm up tail with low likelihoods
-        tail_likelihood_capped_boolean_idx = np.where(self.combined_raw_likelihood >= self.required_tail_likelihood)[0]
-        start_idx, end_idx = tail_likelihood_capped_boolean_idx[0], tail_likelihood_capped_boolean_idx[-1]
+        start_idx, end_idx = self.start_end_idx_capped_likelihood
+
         logger.debug(
             f"Likelihood filtering (>={self.required_tail_likelihood}): " f"Slicing [{start_idx}:] from coordinates"
         )

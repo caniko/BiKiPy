@@ -45,8 +45,8 @@ def make_inspection_video(
         msg = "label_to_confinement_boolean_index must be defined for use of label_to_quiver_rays"
         raise ValueError(msg)
 
-    if reader.crop_frames_from_start:
-        for _ in range(reader.crop_frames_from_start):
+    if reader.video_start_frame_index:
+        for _ in range(reader.video_start_frame_index):
             next(video_frames)
 
     if not label_to_confinement_boolean_index:
