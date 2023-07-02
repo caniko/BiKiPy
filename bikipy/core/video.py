@@ -121,7 +121,6 @@ class VideoMetadata(_VideoMetadataBase):
         superior: "VideoMetadata",
         inferior: "VideoMetadata",
         ignore_incongruity: bool = False,
-        use_inferior_meters_per_pixel: bool = False,
         meters_per_pixel_mean: bool = False,
     ) -> "VideoMetadata":
         if not (superior & inferior) and not ignore_incongruity:
@@ -131,13 +130,11 @@ class VideoMetadata(_VideoMetadataBase):
         meters_per_pixel: float | None = None
 
         if meters_per_pixel_mean and "meters_per_pixel" in inferior and "meters_per_pixel" in superior:
-            assert not meters_per_pixel_mean, "Multiple meters per pixel sources defined"
             meters_per_pixel = float(np.mean([inferior.meters_per_pixel, superior.meters_per_pixel], axis=0))
-        elif use_inferior_meters_per_pixel and inferior.meters_per_pixel:
-            assert not use_inferior_meters_per_pixel, "Multiple meters per pixel sources defined"
-            meters_per_pixel = inferior.meters_per_pixel
-        elif superior.meters_per_pixel:
+        elif hasattr(superior, "meters_per_pixel") and superior.meters_per_pixel:
             meters_per_pixel = superior.meters_per_pixel
+        elif hasattr(inferior, "meters_per_pixel") and inferior.meters_per_pixel:
+            meters_per_pixel = inferior.meters_per_pixel
 
         return cls(
             meters_per_pixel=meters_per_pixel,

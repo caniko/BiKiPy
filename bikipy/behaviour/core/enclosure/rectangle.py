@@ -1,6 +1,6 @@
 from functools import cached_property, lru_cache
 from logging import getLogger
-from typing import Optional
+from typing import Optional, ClassVar
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -322,8 +322,8 @@ class RectangleEnclosedTrial(EnclosedTrial):
         return upstream_list
 
 
-class RectangleEnclosedHabituationTrial(HabituationTrialMixin, RectangleEnclosedTrial):
-    experiment_stage = ExperimentStage.HABITUATION
+class RectangleEnclosedHabituationTrial(RectangleEnclosedTrial, HabituationTrialMixin):
+    pass
 
 
 class BlanketRectangleEnclosedTrial(RectangleEnclosedTrial):

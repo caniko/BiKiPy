@@ -10,6 +10,7 @@ optional = ["create_inspection_plots", "custom_trial_sequence", "definition_cent
 [ingress.defined]
 #lazy_dev_mode = true
 #only_one_instance_of_trial_class = true
+#trial_ids_to_analyse = ["A1_1"]
 
 dataset_directory = "/home/can/data/nort_mextracted/"
 first_stage_is_habituation = true

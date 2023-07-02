@@ -82,7 +82,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         description="When troubleshooting a runtime, avoid ingesting all data, "
         "and only focus on one of each trial class",
     )
-    trial_ids_to_analyse: Optional[Iterable[Label]] = Field(default_factory=frozenset)
+    trial_ids_to_analyse: Optional[frozenset[Label]] = Field(default_factory=frozenset)
 
     no_cache: bool = False
 
@@ -526,6 +526,9 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             }
 
             for trial_id, row in self.metadata_plugin_to_correct_sheet(plugin_model).iterrows():
+                if self._to_skip_trial_id(trial_id):
+                    continue
+
                 if plugin_model.human_readable_index in row:
                     trial_id_plugin_label = row[plugin_model.human_readable_index]
                     if isinstance(trial_id_plugin_label, float) and np.isnan(trial_id_plugin_label):
@@ -567,6 +570,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         self._dataset_reader()
 
+        self._trial_id_to_keyword_arguments = dict(sorted(self._trial_id_to_keyword_arguments.items()))
         self._experiment_data_defined = True
 
     def trial_id_exists(self, trial_id: Label) -> bool:

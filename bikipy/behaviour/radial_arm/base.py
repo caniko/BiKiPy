@@ -48,6 +48,18 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
     minimum_seconds_for_entry: float = 0
 
+    @validator("center")
+    def center_has_1_as_int_id(cls, value):
+        value.int_id = 1
+        return value
+
+    @validator("arms", pre=True)
+    def clockwise_sort_and_incremental_arm_int_ids(cls, value):
+        value = clockwise_sort_perimeter_centroids(value)
+        for i, arm in enumerate(value):
+            arm.int_id = cls._arm_int_ids[i]
+        return tuple(value)
+
     @classmethod
     @property
     def _arm_int_ids(cls) -> list[PositiveInt]:
@@ -110,18 +122,6 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         result = super().schemantic_fields_to_exclude_from_config_schema
         result.update(("arms", "center"))
         return result
-
-    @validator("center")
-    def center_has_1_as_int_id(cls, value):
-        value.int_id = 1
-        return value
-
-    @validator("arms", pre=True)
-    def clockwise_sort_and_incremental_arm_int_ids(cls, value):
-        value = clockwise_sort_perimeter_centroids(value)
-        for i, arm in enumerate(value):
-            arm.int_id = cls._arm_int_ids[i]
-        return tuple(value)
 
     @property
     def perimeters(self):

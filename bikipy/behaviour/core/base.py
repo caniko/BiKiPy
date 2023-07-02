@@ -263,7 +263,7 @@ Trial = TypeVar("Trial", bound=BaseTrial)
 
 
 class HabituationTrialMixin(BaseModel):
-    experiment_stage = ExperimentStage.HABITUATION
+    experiment_stage: ClassVar[ExperimentStage] = ExperimentStage.HABITUATION
 
 
 class BaseExperiment(Behaviour):
@@ -741,9 +741,11 @@ class BaseExperiment(Behaviour):
 
         if "manual_video" in result:
             result.update(
-                VideoMetadata.join(result.pop("manual_video"), self.video, ignore_incongruity=True).dict(
-                    exclude_unset=True
-                )
+                VideoMetadata.join(
+                    VideoMetadata.join(result.pop("manual_video"), VideoMetadata(**result), ignore_incongruity=True),
+                    self.video,
+                    ignore_incongruity=True,
+                ).dict(exclude_unset=True)
             )
         else:
             result.update(self.video.dict(exclude_unset=True))
