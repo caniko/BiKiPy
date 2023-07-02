@@ -93,7 +93,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         self,
         ax: Axes,
         coordinates_as_pixels: bool = False,
-        manual_resize_multiplier: Optional[float] = None,
+        with_resize: bool = True,
         x_pixel_offset: float = 0.0,
         y_pixel_offset: float = 0.0,
         **plot_kwargs,
@@ -107,10 +107,9 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         center[0] += x_pixel_offset
         center[1] += y_pixel_offset
 
-        if coordinates_as_pixels:
-            image_resize_multiplier = manual_resize_multiplier or self.video.image_resize_multiplier
-            center = center * image_resize_multiplier
-            radius = radius * image_resize_multiplier
+        if coordinates_as_pixels and with_resize:
+            center *= self.video.image_resize_multiplier
+            radius *= self.video.image_resize_multiplier
 
         if isinstance(radius, np.ndarray):
             radius = tuple(radius)

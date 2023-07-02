@@ -1,4 +1,5 @@
 from logging import getLogger
+from pathlib import Path
 from typing import Optional, Sequence
 
 import numpy as np
@@ -13,7 +14,7 @@ from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import PerimeterSet
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.generic import plot_coordinates
-from bikipy.utils.plot.inspect import InspectArg, generic_inspection_finalization
+from bikipy.utils.plot.inspect import generic_inspection_finalization
 
 logger = getLogger(__file__)
 
@@ -71,7 +72,7 @@ def detect_multi_node_sequential_perimeter_presence(
 
 
 def inspect_sequential_confinement(
-    inspect_arg: InspectArg,
+    inspection_fig_output_path: Optional[Path],
     video: VideoMetadata,
     perimeter_set: PerimeterSet,
     coordinates: NDArrayFp64,
@@ -79,7 +80,7 @@ def inspect_sequential_confinement(
     overlap_boolean_index: NDArrayBool,
     **inspect_kwargs,
 ):
-    if not inspect_arg:
+    if not inspection_fig_output_path:
         return
 
     fig, ax = video.subplot()
@@ -102,4 +103,4 @@ def inspect_sequential_confinement(
     ax.legend(**BOTTOM_LEGEND_KWARGS)
     fig.tight_layout()
 
-    generic_inspection_finalization(inspect_arg, **inspect_kwargs)
+    generic_inspection_finalization(inspection_fig_output_path, **inspect_kwargs)

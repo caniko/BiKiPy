@@ -259,7 +259,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         self,
         ax: Axes,
         coordinates_as_pixels: bool = False,
-        manual_resize_multiplier: Optional[float] = None,
+        with_resize: bool = True,
         x_pixel_offset: float = 0.0,
         y_pixel_offset: float = 0.0,
         **plot_kwargs,
@@ -269,11 +269,14 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             if not coordinates_as_pixels:
                 vertices *= self.video.meters_per_pixel
         elif coordinates_as_pixels:
-            vertices = self.vertices_in_pixels * (manual_resize_multiplier or self.video.image_resize_multiplier)
+            vertices = self.vertices_in_pixels
         elif not coordinates_as_pixels:
             vertices = self.vertices_in_meters
         else:
             raise RuntimeError
+
+        if coordinates_as_pixels and with_resize:
+            vertices *= self.video.image_resize_multiplier
 
         for index in range(len(vertices)):
             following_index = 0 if index + 1 == len(vertices) else index + 1

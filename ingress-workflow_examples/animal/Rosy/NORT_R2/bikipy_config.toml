@@ -38,7 +38,7 @@ required = ["project_kit_config"]
 optional = ["alias_to_heuristics_combination_equations", "analysis_series_cache_file_path", "analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
 
 [trial.common.defined]
-alias_to_heuristics_combination_equations = {body_olfaction="BodyProximityHeuristic | OlfactionHeuristic"}
+alias_to_heuristics_combination_equations = {BodyOlfaction="BodyProximityHeuristic | OlfactionHeuristic"}
 
 [enclosure.RectanglePerimeter]
 class_name = "RectanglePerimeter"

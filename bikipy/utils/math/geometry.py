@@ -1,7 +1,8 @@
 import math
 from functools import lru_cache
 from math import sqrt
-from typing import TYPE_CHECKING, Sequence
+from pathlib import Path
+from typing import TYPE_CHECKING, Sequence, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +11,7 @@ from pydantic import validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.feature.angle import clockwise_angel_2d
+from bikipy.utils.plot.inspect import generic_inspection_finalization
 
 if TYPE_CHECKING:
     from bikipy.perimeter.base import Perimeter
@@ -116,18 +118,13 @@ def expand_bikipy_perimeter(perimeter, *args, **kwargs):
 
 def expand_rectangle(
     perimeter_vertices: Sequence,
-    offset: Sequence[float] | float,
+    x_offset: float = 0,
+    y_offset: float = 0,
     y_inverted: bool = False,
-    inspect: bool = False,
-    as_array: bool = False,
-):
-    if isinstance(offset, float):
-        x_offset = offset = float(offset)
-        y_offset = -offset if y_inverted else offset
-    else:
-        x_offset, y_offset = offset
-        if y_inverted:
-            y_offset = -y_offset
+    inspection_fig_output_path: Optional[Path] = None,
+) -> np.ndarray:
+    if y_inverted and y_offset:
+        y_offset = -y_offset
 
     up_right, down_right, down_left, up_left = clockwise_sort_points(perimeter_vertices)
 
@@ -136,7 +133,7 @@ def expand_rectangle(
     off_up_right = (up_right[0] + x_offset, up_right[1] + y_offset)
     off_up_left = (up_left[0] - x_offset, up_left[1] + y_offset)
 
-    if inspect:
+    if inspection_fig_output_path:
         fig, axes = plt.subplots(2, 1)
 
         fig.suptitle("Rectangle expansion")
@@ -218,7 +215,8 @@ def expand_rectangle(
             loc="center left",
         )
 
-        plt.show()
+        generic_inspection_finalization(inspection_fig_output_path, potential_dir="rectangle_expansion")
 
     result = (off_down_left, off_down_right, off_up_right, off_up_left)
-    return np.array(result) if as_array else result
+
+    return np.array(result)

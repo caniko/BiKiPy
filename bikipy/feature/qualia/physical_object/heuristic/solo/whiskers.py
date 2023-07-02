@@ -4,11 +4,18 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
+from bikipy.core.compute import video_gen_merge_perimeter_to_boolean_index_from_dict
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
-from bikipy.feature.qualia.physical_object.heuristic.mixin import ProximityMixin, RayMixin
-from bikipy.feature.qualia.physical_object.heuristic.solo.abc import AbstractSoloHeuristic
+from bikipy.feature.qualia.physical_object.heuristic.mixin import (
+    ProximityMixin,
+    RayMixin,
+)
+from bikipy.feature.qualia.physical_object.heuristic.solo.abc import (
+    AbstractSoloHeuristic,
+)
 from bikipy.feature.tolerance.single import single_node_tolerance_model
+from bikipy.perimeter.base import Perimeter
 
 
 class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
@@ -112,17 +119,6 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
         return self.left_result | self.right_result
 
     @property
-    def summary_series(self) -> pd.Series:
-        label = self.perimeter.label.capitalize()
-        return pd.Series(
-            {
-                f"ObservingSecLeftwardProxFOV{label}": self.video.boolean_array_to_seconds(self.left_result),
-                f"ObservingSecRightwardProxFOV{label}": self.video.boolean_array_to_seconds(self.right_result),
-                f"ObservingSecCombinedProxFOV{label}": self.video.boolean_array_to_seconds(self.result),
-            }
-        )
-
-    @property
     def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
         return {self.left_ear_label: self.left_proximity.result, self.right_ear_label: self.right_proximity.result}
 
@@ -132,6 +128,29 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
             self.left_ear_label: self.reader[self.left_ear_label] - self.reader[self.center_ear_label],
             self.right_ear_label: self.reader[self.right_ear_label] - self.reader[self.center_ear_label],
         }
+
+    @property
+    def perimeter_to_boolean_index(self) -> dict[Perimeter, np.ndarray[bool, bool]]:
+        return video_gen_merge_perimeter_to_boolean_index_from_dict(
+            self.left_proximity.video_gen_merge_perimeter_to_boolean_index(
+                self.leftward_observation, both_or_false=True
+            ),
+            self.right_proximity.video_gen_merge_perimeter_to_boolean_index(
+                self.rightward_observation, both_or_false=True
+            ),
+        )
+
+    @property
+    def summary_series(self) -> pd.Series:
+        label = self.perimeter.label.capitalize()
+        return pd.Series(
+            (
+                self.video.boolean_array_to_seconds(self.left_result),
+                self.video.boolean_array_to_seconds(self.right_result),
+                self.video.boolean_array_to_seconds(self.result),
+            ),
+            index=[f"{label}LeftwardProxFOV", f"{label}RightwardProxFOV", f"{label}{self.heuristic_alias}Result"],
+        )
 
     def plot(self) -> None:
         fig, axes = self.video.subplots(ncols=3, nrows=3, exclude_imaging_from_rc_coord=((0, 2), (2, 2)))

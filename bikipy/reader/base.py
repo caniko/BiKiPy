@@ -314,7 +314,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
                 distances = self.isolate_coordinates_from_native_df(
                     result, node_name_a
                 ) - self.isolate_coordinates_from_native_df(result, node_name_b)
-                speed = np.diff(distances)
+                np.diff(distances)
 
         if self.cache_meters_augmented:
             self._cache_augmented(result)

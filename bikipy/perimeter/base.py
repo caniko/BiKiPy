@@ -71,7 +71,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         ax: Axes = None,
         **inspect_kwargs,
     ):
-        if not self.inspect_arg:
+        if not self.inspection_fig_output_path:
             return
 
         ax, inspection_coordinates, video = self._manual_video_metadata_derived_inspection_preparation(
@@ -83,17 +83,13 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         if isinstance(ax, list):
             ax = ax[0]
 
-        self.plot_perimeter_on_ax(
-            ax,
-            coordinates_as_pixels=video.coordinates_need_to_be_scaled_for_plot,
-            manual_resize_multiplier=video.image_resize_multiplier,
-        )
+        self.plot_perimeter_on_ax(ax, coordinates_as_pixels=video.coordinates_need_to_be_scaled_for_plot)
 
         if coordinates is not None:
             ax_plot_coordinate_with_boolean_index(ax, boolean_index, inspection_coordinates)
 
         generic_inspection_finalization(
-            self.inspect_arg,
+            self.inspection_fig_output_path,
             potential_dir=f"{self.perimeter_label}_confinement",
             inspect_fig_file_format=INSPECT_SIMPLE_FIG_FILE_FORMAT,
             **inspect_kwargs,
@@ -121,7 +117,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         self,
         ax: Axes,
         coordinates_as_pixels: bool = False,
-        manual_resize_multiplier: Optional[float] = None,
+        with_resize: bool = True,
         x_pixel_offset: float = 0.0,
         y_pixel_offset: float = 0.0,
         **plot_kwargs,
@@ -553,15 +549,13 @@ class PerimeterSet(BasePerimeter):
         self,
         ax: Axes,
         coordinates_as_pixels: bool = False,
-        manual_resize_multiplier: Optional[float] = None,
+        with_resize: bool = True,
         x_pixel_offset: float = 0.0,
         y_pixel_offset: float = 0.0,
         **plot_kwargs,
     ) -> None:
         for perimeter in self.all_perimeters:
-            perimeter.plot_perimeter_on_ax(
-                ax, coordinates_as_pixels, manual_resize_multiplier, x_pixel_offset, y_pixel_offset, **plot_kwargs
-            )
+            perimeter.plot_perimeter_on_ax(ax, coordinates_as_pixels, x_pixel_offset, y_pixel_offset, **plot_kwargs)
 
     def plot(
         self,

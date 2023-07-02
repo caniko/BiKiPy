@@ -7,7 +7,7 @@ from pydantic import validate_arguments
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
 
 from bikipy import runtime_settings
-from bikipy.core.compute import AbstractComputeBooleanIndex
+from bikipy.core.compute import AbstractComputePerimeterBooleanIndex
 from bikipy.core.video import VideoMetadata
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import SinglePerimeter
@@ -17,7 +17,7 @@ from bikipy.utils.plot.color import make_color_map
 logger = getLogger(__name__)
 
 
-class ComputeProximity(AbstractComputeBooleanIndex):
+class ComputeProximity(AbstractComputePerimeterBooleanIndex):
     perimeter: SinglePerimeter
     maximum_distance: float | NDArrayFp64
     inside_perimeter_border: NDArrayFp64

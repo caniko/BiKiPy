@@ -4,11 +4,13 @@ from typing import Optional
 import numpy as np
 
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
-from bikipy.feature.qualia.physical_object.heuristic.mixin import ProximityMixin
 from bikipy.feature.qualia.physical_object.heuristic.helper.abc import (
     AbstractQualiaHelperHeuristic,
 )
-from bikipy.feature.qualia.physical_object.heuristic.mixin import SingleComponentMixin
+from bikipy.feature.qualia.physical_object.heuristic.mixin import (
+    ProximityMixin,
+    SingleComponentMixin,
+)
 
 
 class OutsideObjectPerimeterHeuristic(SingleComponentMixin, ProximityMixin, AbstractQualiaHelperHeuristic):

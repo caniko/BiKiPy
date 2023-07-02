@@ -16,7 +16,6 @@ from pydantic import (
     Field,
     FilePath,
     ValidationError,
-    validator,
 )
 from pydantic.fields import FieldInfo
 from pydantic_numpy import NDArray
@@ -218,7 +217,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
         )
 
     def generate_inspection_video(
-        self, output_directory: Optional[DirectoryPath] = None, codec: Optional[str] = None
+        self, output_directory: Optional[DirectoryPath] = None, *, codec: Optional[str] = None, **kwargs
     ) -> None:
         ...
 
@@ -715,7 +714,7 @@ class BaseExperiment(Behaviour):
         if "animal_id" not in result:
             result["animal_id"] = trial_id
 
-        result["inspect_arg"] = self.inspect_arg
+        result["inspection_fig_output_path"] = self.inspection_fig_output_path
 
         if "label_to_perimeter" in result:
             dict_deep_update(result, result.pop("label_to_perimeter"))

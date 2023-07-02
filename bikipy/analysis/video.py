@@ -90,6 +90,7 @@ def make_inspection_video(
                 ax,
                 color="b" if confinement_boolean_index[next_frame_idx] else "r",
                 coordinates_as_pixels=True,
+                with_resize=False,
                 # x_pixel_offset=-reader.x_axis_crop_end_point,
                 # y_pixel_offset=-reader.y_axis_crop_end_point,
             )

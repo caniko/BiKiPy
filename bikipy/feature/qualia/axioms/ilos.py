@@ -1,19 +1,19 @@
 from functools import cached_property
 from typing import Optional
 
+import numpy as np
 from matplotlib.axes import Axes
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import runtime_settings
-from bikipy.core.compute import AbstractComputeBooleanIndex, T
+from bikipy.core.compute import AbstractComputePerimeterBooleanIndex
 from bikipy.core.video import VideoMetadata
 from bikipy.feature.tolerance.single import single_node_tolerance_model
-from bikipy.perimeter.base import SinglePerimeter
+from bikipy.perimeter.base import Perimeter
 from bikipy.utils.math.vector import unit_vector
 
 
-class ComputeInLineOfSight(AbstractComputeBooleanIndex):
-    perimeter: SinglePerimeter = ...
+class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
     ray_start_point: NDArrayFp64 = ...
     ray_travel_direction_point: NDArrayFp64 = ...
     max_radians: float = ...
@@ -24,13 +24,17 @@ class ComputeInLineOfSight(AbstractComputeBooleanIndex):
     heuristic_data_sources_all_required = True
 
     @cached_property
-    def result(self) -> T:
+    def result(self):
         result = self.perimeter.ray_direction_filter(
             self.ray_start_point, self.ray_travel_direction_point, self.max_radians
         )
         if self.tolerance_modelling:
             result = single_node_tolerance_model(result, self.video.fps)
         return result
+
+    @property
+    def perimeter_to_boolean_index(self) -> dict[Perimeter, np.ndarray[bool, bool]]:
+        return {self.perimeter: self.result}
 
     def plot(self, ax: Axes, video: Optional[VideoMetadata] = None, coordinates_as_pixels: bool = False) -> None:
         ray_travel_direction_point = (

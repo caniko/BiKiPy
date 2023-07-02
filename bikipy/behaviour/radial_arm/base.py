@@ -154,14 +154,14 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         ax.scatter(*self.reader.kinematic_coordinates_prepared_for_plotting.T)
         self.perimeter_set.plot(ax, coordinates_as_pixels=True)
         generic_inspection_finalization(
-            self.inspect_arg,
+            self.inspection_fig_output_path,
             potential_dir="radial_arm",
             potential_label=self.label,
             inspect_fig_file_format=INSPECT_SIMPLE_FIG_FILE_FORMAT,
         )
 
         inspect_sequential_confinement(
-            self.inspect_arg,
+            self.inspection_fig_output_path,
             self.video,
             self.perimeter_set,
             self.reader.kinematic_coordinates_prepared_for_plotting,
@@ -302,7 +302,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         return tuple(self.reader[node_label] for node_label in self.tracking_labels_for_radial_arm_confinement)
 
     def generate_inspection_video(
-        self, output_directory: Optional[DirectoryPath] = None, codec: Optional[str] = None
+        self, output_directory: Optional[DirectoryPath] = None, *, codec: Optional[str] = None, **kwargs
     ) -> None:
         if not self.minimum_seconds_for_entry:
             return make_inspection_video(

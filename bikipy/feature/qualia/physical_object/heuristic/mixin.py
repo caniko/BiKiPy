@@ -1,8 +1,9 @@
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 
 import numpy as np
 from pydantic import BaseModel
 
+from bikipy.perimeter.base import Perimeter
 from bikipy.utils.math.cached import cached_deg2rad, meters2pixels
 
 

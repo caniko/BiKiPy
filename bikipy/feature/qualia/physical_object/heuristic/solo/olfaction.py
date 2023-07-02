@@ -6,8 +6,14 @@ import pandas as pd
 
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
-from bikipy.feature.qualia.physical_object.heuristic.mixin import ProximityMixin, RayMixin
-from bikipy.feature.qualia.physical_object.heuristic.solo.abc import AbstractSoloHeuristic
+from bikipy.feature.qualia.physical_object.heuristic.mixin import (
+    ProximityMixin,
+    RayMixin,
+)
+from bikipy.feature.qualia.physical_object.heuristic.solo.abc import (
+    AbstractSoloHeuristic,
+)
+from bikipy.perimeter.base import Perimeter
 
 
 class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
@@ -39,7 +45,7 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
 
         return ComputeProximity(
             perimeter=self.perimeter,
-            maximum_distance=self.maximum_distance_meters,
+            maximum_distance=self.maximum_distance_pixels,
             inside_perimeter_border=self.reader[self.nose_label],
             label="NoseProximity",
             manual_video=self.video,
@@ -65,20 +71,26 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
         return self.nose_proximity.result & self.snout_towards_object_rays.result
 
     @property
-    def summary_series(self) -> pd.Series:
-        label = self.perimeter.label.capitalize()
-        return pd.Series(
-            [self.nose_proximity.result_seconds, self.snout_towards_object_rays.result_seconds],
-            index=[f"ObservingSecNoseProximity{label}", ""],
-        )
-
-    @property
     def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
         return {self.nose_label: self.nose_proximity.result}
 
     @property
     def label_to_ray_vector_direction_points(self) -> dict[str, np.ndarray[float, np.dtype[np.float64]]]:
         return {self.nose_label: self.reader[self.nose_label] - self.reader[self.center_ear_label]}
+
+    @property
+    def perimeter_to_boolean_index(self) -> dict[Perimeter, np.ndarray[bool, bool]]:
+        return self.nose_proximity.video_gen_merge_perimeter_to_boolean_index(
+            self.snout_towards_object_rays, both_or_false=True
+        )
+
+    @property
+    def summary_series(self) -> pd.Series:
+        label = self.perimeter.label.capitalize()
+        return pd.Series(
+            [self.nose_proximity.result_seconds, self.snout_towards_object_rays.result_seconds, self.result],
+            index=[f"{label}NoseProximity", f"{label}NoseToObjectRay", f"{label}{self.heuristic_alias}Result"],
+        )
 
     def plot(self) -> None:
         fig, axes = self.video.subplots(nrows=3)

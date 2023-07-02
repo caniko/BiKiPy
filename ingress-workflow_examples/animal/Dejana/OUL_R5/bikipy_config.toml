@@ -56,7 +56,7 @@ optional = ["analysis_series_cache_format", "animal_profile", "center_periphery_
 
 [trial.common.defined]
 manual_center_rectangle_dimensions_meters = [0.35, 0.35]
-alias_to_heuristics_combination_equations = {body_olfaction="BodyProximityHeuristic | OlfactionHeuristic"}
+alias_to_heuristics_combination_equations = {BodyOlfaction="BodyProximityHeuristic | OlfactionHeuristic"}
 
 [enclosure.RectanglePerimeter]
 class_name = "RectanglePerimeter"

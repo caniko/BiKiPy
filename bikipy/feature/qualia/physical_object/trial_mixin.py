@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import cached_property, partial
+from itertools import chain
 from typing import Optional
 
 import numpy as np
@@ -16,19 +17,23 @@ from bikipy.feature.qualia.physical_object.analysis.mapping import (
 from bikipy.feature.qualia.physical_object.heuristic.abc import (
     CombinedHeuristic,
     Heuristic,
+    StandaloneHeuristic,
 )
 from bikipy.feature.qualia.physical_object.heuristic.mapping import (
-    alias_to_heuristics_cls,
     alias_to_helper_heuristic,
+    alias_to_heuristics_cls,
 )
-from bikipy.feature.qualia.physical_object.heuristic.mixin import RayMixin, ProximityMixin
+from bikipy.feature.qualia.physical_object.heuristic.mixin import (
+    ProximityMixin,
+    RayMixin,
+)
 from bikipy.feature.qualia.physical_object.merge_parser import (
     parse_heuristic_merge_equation,
 )
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.perimeter.trial_mixin import TrialWithPerimeterMixin
 from bikipy.utils.math.discrete import reduce_repeating_sequences
-from bikipy.utils.plot.inspect import InspectArg, generic_inspection_finalization
+from bikipy.utils.plot.inspect import generic_inspection_finalization
 
 
 class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
@@ -49,7 +54,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         return tuple(self.physical_object_perimeters)
 
     @cached_property
-    def alias_to_heuristic_physical_objects(self) -> dict[str, list[Heuristic]]:
+    def alias_to_standalone_heuristic(self) -> dict[str, list[StandaloneHeuristic]]:
         result = {}
 
         partial_helper_heuristics = []
@@ -86,9 +91,33 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                 )
             ]
 
+        if self.inspection_fig_output_path:
+            for heuristic_alias, physical_objects_heuristic in result.items():
+                self.inspection_fig_output_path: Optional[Path]
+                heuristic_inspect_arg = (
+                    self.inspection_fig_output_path
+                    if isinstance(self.inspection_fig_output_path, bool)
+                    else self.inspection_fig_output_path / heuristic_alias
+                )
+
+                for physical_object_heuristic in physical_objects_heuristic:
+                    physical_object_heuristic.plot()
+                    generic_inspection_finalization(
+                        heuristic_inspect_arg,
+                        potential_label=f"{self.label}_{physical_object_heuristic.physical_object_label}_{heuristic_alias}",
+                        inspect_fig_file_format=INSPECT_FIG_FILE_FORMAT,
+                    )
+
+        return result
+
+    @cached_property
+    def alias_to_combined_heuristic(self) -> dict[str, list[CombinedHeuristic]]:
         solo_heuristic_alias_to_results = {
-            alias: [heuristic.result for heuristic in pos_heuristic] for alias, pos_heuristic in result.items()
+            alias: [heuristic.result for heuristic in pos_heuristic]
+            for alias, pos_heuristic in self.alias_to_standalone_heuristic.items()
         }
+
+        result = {}
         for heuristic_alias, heuristic_equation in self.alias_to_heuristics_combination_equations.items():
             heuristic_results = parse_heuristic_merge_equation(heuristic_equation, solo_heuristic_alias_to_results)
             result[heuristic_alias] = [
@@ -102,29 +131,18 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                 for perimeter, heuristic_result in zip(self.physical_object_perimeters, heuristic_results)
             ]
 
-        if self.inspect_arg:
-            for heuristic_alias, physical_objects_heuristic in result.items():
-                self.inspect_arg: InspectArg
-                heuristic_inspect_arg = (
-                    self.inspect_arg if isinstance(self.inspect_arg, bool) else self.inspect_arg / heuristic_alias
-                )
-
-                for physical_object_heuristic in physical_objects_heuristic:
-                    physical_object_heuristic.plot()
-                    generic_inspection_finalization(
-                        heuristic_inspect_arg,
-                        potential_label=f"{self.label}_{physical_object_heuristic.physical_object_label}_{heuristic_alias}",
-                        inspect_fig_file_format=INSPECT_FIG_FILE_FORMAT,
-                    )
-
         return result
+
+    @property
+    def alias_to_heuristic(self) -> dict[str, Heuristic]:
+        return chain(self.alias_to_standalone_heuristic.items(), self.alias_to_combined_heuristic.items())
 
     @property
     def physical_object_analysers(self) -> dict[str, QualiaAnalysis]:
         analysis_model = PO_NUMBER_TO_ANALYSIS_MODEL[len(self.physical_object_perimeters)]
 
         result = {}
-        for heuristic_alias, physical_objects_heuristic in self.alias_to_heuristic_physical_objects.items():
+        for heuristic_alias, physical_objects_heuristic in self.alias_to_standalone_heuristic.items():
             result[heuristic_alias] = analysis_model(
                 manual_video=self.video,
                 po_label_to_qualia_boolean_index={
@@ -137,7 +155,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     @property
     def all_summary_series(self) -> list[pd.Series]:
         result = []
-        for physical_objects_heuristics in self.alias_to_heuristic_physical_objects.values():
+        for physical_objects_heuristics in self.alias_to_standalone_heuristic.values():
             for physical_objects_heuristic in physical_objects_heuristics:
                 result.append(physical_objects_heuristic.summary_series)
         return result
@@ -145,7 +163,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     @cached_property
     def heuristic_to_object_alternation_sequence(self) -> dict[str, ConfinementSequence]:
         result = self.reader.confinement_sequence_defaultdict()
-        for heuristic, heuristic_results in self.alias_to_heuristic_physical_objects.items():
+        for heuristic, heuristic_results in self.alias_to_standalone_heuristic.items():
             for perimeter_idx, po_qualia_heuristic in enumerate(heuristic_results, start=1):
                 result[heuristic][po_qualia_heuristic.result] = perimeter_idx
 
@@ -164,33 +182,52 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         return result
 
     def generate_inspection_video(
-        self, output_directory: Optional[DirectoryPath] = None, codec: Optional[str] = None
+        self,
+        output_directory: Optional[DirectoryPath] = None,
+        *,
+        codec: Optional[str] = None,
+        heuristics_to_use: Optional[list[str]] = None,
+        **kwargs,
     ) -> None:
-        super().generate_inspection_video(output_directory, codec)
-        for heuristic_alias, physical_objects in self.alias_to_heuristic_physical_objects.items():
-            perimeter_to_boolean_index = self.reader.confinement_index_defaultdict()
-            label_to_confinement_boolean_index = self.reader.confinement_index_defaultdict()
-            label_to_quiver_rays = self.reader.coordinate_sequence_defaultdict()
+        super().generate_inspection_video(output_directory, codec=codec, **kwargs)
 
-            for physical_object in physical_objects:
-                perimeter_to_boolean_index[physical_object.perimeter] = (
-                    perimeter_to_boolean_index[physical_object.perimeter] | physical_object.result
-                )
-                if issubclass(alias_to_heuristics_cls[heuristic_alias], ProximityMixin):
-                    for label, proximity_boolean_index in physical_object.label_to_proximity_boolean.items():
-                        label_to_confinement_boolean_index[label] = (
-                            label_to_confinement_boolean_index[label] | proximity_boolean_index
-                        )
-                if issubclass(alias_to_heuristics_cls[heuristic_alias], RayMixin):
-                    for label, ray_direction_points in physical_object.label_to_ray_vector_direction_points.items():
-                        label_to_quiver_rays[label][physical_object.result] = ray_direction_points[
-                            physical_object.result
-                        ]
+        for heuristic_alias, heuristics in self.alias_to_combined_heuristic.items():
+            if heuristics_to_use and heuristic_alias not in heuristics_to_use:
+                continue
 
             make_inspection_video(
                 video_frames=self.video.video_read_frames(),
                 reader=self.reader,
-                perimeter_to_boolean_index={po.perimeter: po.result for po in physical_objects},
+                perimeter_to_boolean_index={po.perimeter: po.result for po in heuristics},
+                output_file_path=self._video_file_name(output_directory, context_label=heuristic_alias),
+                codec=codec,
+            )
+
+        for heuristic_alias, heuristics in self.alias_to_standalone_heuristic.items():
+            if heuristics_to_use and heuristic_alias not in heuristics_to_use:
+                continue
+
+            perimeter_to_boolean_index = {}
+            label_to_confinement_boolean_index = self.reader.confinement_index_defaultdict()
+            label_to_quiver_rays = self.reader.coordinate_sequence_defaultdict()
+
+            for heuristic in heuristics:
+                perimeter_to_boolean_index.update(heuristic.perimeter_to_boolean_index)
+
+                if issubclass(alias_to_heuristics_cls[heuristic_alias], ProximityMixin):
+                    for label, proximity_boolean_index in heuristic.label_to_proximity_boolean.items():
+                        label_to_confinement_boolean_index[label] = (
+                            label_to_confinement_boolean_index[label] | proximity_boolean_index
+                        )
+
+                if issubclass(alias_to_heuristics_cls[heuristic_alias], RayMixin):
+                    for label, ray_direction_points in heuristic.label_to_ray_vector_direction_points.items():
+                        label_to_quiver_rays[label][heuristic.result] = ray_direction_points[heuristic.result]
+
+            make_inspection_video(
+                video_frames=self.video.video_read_frames(),
+                reader=self.reader,
+                perimeter_to_boolean_index=perimeter_to_boolean_index,
                 label_to_confinement_boolean_index=label_to_confinement_boolean_index,
                 label_to_quiver_rays=label_to_quiver_rays,
                 output_file_path=self._video_file_name(output_directory, context_label=heuristic_alias),

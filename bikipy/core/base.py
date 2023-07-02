@@ -9,6 +9,7 @@ from bikipy.core.typing import Label
 
 class BikipyConfigModel(BaseModel):
     class Config:
+        arbitrary_types_allowed = True
         underscore_attrs_are_private = True
         keep_untouched = (cached_property,)
 

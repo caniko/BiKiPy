@@ -11,7 +11,6 @@ from bikipy.utils.misc import int_file_stem_incrementor
 
 logger = getLogger(__file__)
 
-InspectArg = Path | bool
 inspect_arg_description = (
     "When path to a directory it is used to define the save directory of figures that will be used for inspection"
 )
@@ -19,14 +18,14 @@ inspect_arg_description = (
 
 @validate_arguments
 def generic_inspection_finalization(
-    inspect_arg: InspectArg,
+    inspection_fig_output_path: Optional[Path],
     potential_dir: Optional[str] = None,
     potential_label: Optional[str] = None,
     inspect_fig_file_format: Literal[".svgz", ".jpg"] = INSPECT_FIG_FILE_FORMAT,
 ) -> None:
-    if isinstance(inspect_arg, Path):
-        if inspect_arg.suffix:
-            file_path = inspect_arg / potential_label if potential_label else inspect_arg
+    if isinstance(inspection_fig_output_path, Path):
+        if inspection_fig_output_path.suffix:
+            file_path = inspection_fig_output_path / potential_label if potential_label else inspection_fig_output_path
 
             logger.debug(f"Ensuring that {file_path.parent} directory exists")
             os.makedirs(file_path.parent, exist_ok=True)
@@ -38,20 +37,22 @@ def generic_inspection_finalization(
 
         else:  # Treated as directory
             if potential_dir:
-                inspect_arg = inspect_arg / potential_dir
+                inspection_fig_output_path = inspection_fig_output_path / potential_dir
 
-            logger.debug(f"Creating directory {inspect_arg} for inspection figures")
-            os.makedirs(inspect_arg, exist_ok=True)
+            logger.debug(f"Creating directory {inspection_fig_output_path} for inspection figures")
+            os.makedirs(inspection_fig_output_path, exist_ok=True)
 
             stem = f"1-{potential_label}" if potential_label else "1"
-            file_path = int_file_stem_incrementor((inspect_arg / stem).with_suffix(inspect_fig_file_format))
+            file_path = int_file_stem_incrementor(
+                (inspection_fig_output_path / stem).with_suffix(inspect_fig_file_format)
+            )
 
         logger.debug(f"Saving inspection figure, file path: {file_path}")
         plt.savefig(file_path)
 
     else:
-        # inspect_arg is most likely a boolean
-        if inspect_arg:
+        # inspection_fig_output_path is most likely a boolean
+        if inspection_fig_output_path:
             plt.show()
 
     plt.close()

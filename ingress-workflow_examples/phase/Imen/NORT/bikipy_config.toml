@@ -22,7 +22,8 @@ definition_video = ["trialwise"]
 optional = ["fps", "frame", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_trial_ids", "manual_video", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "skip_habituation", "stage", "trial_init_error_out_dir", "video_path"]
 
 [experiment.defined]
-skip_habituation = true
+#skip_habituation = true
+
 [trial.NORTTrainingTrial]
 class_name = "NORTTrainingTrial"
 required = ["project_kit_config"]
@@ -42,9 +43,9 @@ required = ["project_kit_config"]
 optional = ["alias_to_heuristics_combination_equations", "analysis_series_cache_file_path", "analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
 
 [trial.common.defined]
-cropped_total_seconds = 10
 manual_center_rectangle_dimensions_meters = [0.2, 0.2]
-alias_to_heuristics_combination_equations = {body_olfaction="BodyProximityHeuristic | OlfactionHeuristic", sensation="BodyProximityHeuristic | OlfactionHeuristic | WhiskerInteractionHeuristic"}
+alias_to_heuristics_combination_equations = {BodyOlfaction="BodyProximityHeuristic | OlfactionHeuristic", Sensation="BodyProximityHeuristic | OlfactionHeuristic | WhiskerInteractionHeuristic"}
+manual_reader_kwargs = {crop_target_trial_length_seconds=350}
 
 [enclosure.RectanglePerimeter]
 class_name = "RectanglePerimeter"
@@ -102,6 +103,7 @@ optional = ["analysis_series_cache_file_path", "analysis_series_cache_format", "
 
 [habituation.defined]
 manual_center_rectangle_dimensions_meters = [0.2, 0.2]
+manual_reader_kwargs = {crop_target_trial_length_seconds=280}
 
 [reader]
 required = ["object_tracking_label_for_kinematics"]

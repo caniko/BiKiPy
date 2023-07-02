@@ -31,7 +31,7 @@ class AbstractPerimeterPlugin(BasePluginFile, HasReferenceMixin, IngressRequired
             self.manual_shape or self.stem_info.shape,  # single -> stem_info.shape
             meters_per_pixel=self.ingress.get_meter_per_pixel(trial_id),
             reference_point_array=self.reference_point,
-            inspect_arg=self.ingress.inspect_directory_path,
+            inspection_fig_output_path=self.ingress.inspect_directory_path,
             **perimeter_model_field_kwargs,
         )
 

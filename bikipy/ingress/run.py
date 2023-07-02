@@ -29,7 +29,8 @@ def generate_inspection_videos(
     project_directory: Optional[DirectoryPath] = None,
     output_directory: Optional[DirectoryPath] = None,
     codec: Optional[str] = None,
+    **kwargs,
 ) -> None:
     get_ingress(here_or_there(project_directory)).create_analysis_videos(
-        trial_ids, output_directory=output_directory, codec=codec
+        trial_ids, output_directory=output_directory, codec=codec, **kwargs
     )

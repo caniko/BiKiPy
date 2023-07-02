@@ -10,7 +10,7 @@ from pydantic_numpy.dtype import NDArrayUint8
 
 from bikipy import runtime_settings
 from bikipy.core.base import BikipyConfigModel, BikipyHashable
-from bikipy.utils.plot.inspect import InspectArg, inspect_arg_description
+from bikipy.utils.plot.inspect import inspect_arg_description
 
 
 class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
@@ -60,7 +60,7 @@ class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
 
 
 class InspectPlotMixin(BikipyConfigModel):
-    inspect_arg: InspectArg = Field(False, description=inspect_arg_description)
+    inspection_fig_output_path: Optional[Path] = Field(False, description=inspect_arg_description)
     manual_inspect_image: Optional[NDArrayUint8] = Field(
         description="Image to use as background in the plots for visualising the analysis data",
     )
@@ -70,17 +70,17 @@ class InspectPlotMixin(BikipyConfigModel):
 
     @validate_arguments
     def inspect_subdir_or_bool(self, subdir_name: str) -> DirectoryPath | bool:
-        if isinstance(self.inspect_arg, Path):
-            return self.inspect_arg / subdir_name
-        assert isinstance(self.inspect_arg, bool)
-        return self.inspect_arg
+        if isinstance(self.inspection_fig_output_path, Path):
+            return self.inspection_fig_output_path / subdir_name
+        assert isinstance(self.inspection_fig_output_path, bool)
+        return self.inspection_fig_output_path
 
     @validate_arguments
     def save(self, manual_save_path: Optional[DirectoryPath] = None) -> None:
         if manual_save_path:
             save_directory_path = manual_save_path
-        elif isinstance(self.inspect_arg, Path):
-            save_directory_path = self.inspect_arg
+        elif isinstance(self.inspection_fig_output_path, Path):
+            save_directory_path = self.inspection_fig_output_path
         else:
             msg = "No path provided to save method"
             raise ValueError(msg)

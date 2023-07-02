@@ -7,6 +7,7 @@ import pandas as pd
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.physical_object.heuristic.mixin import ProximityMixin
 from bikipy.feature.qualia.physical_object.heuristic.solo.abc import AbstractSoloHeuristic
+from bikipy.perimeter.base import Perimeter
 
 
 class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
@@ -71,17 +72,21 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
         }
 
     @property
+    def perimeter_to_boolean_index(self) -> dict[Perimeter, np.ndarray[bool, bool]]:
+        return self.center_ear_proximity.video_gen_merge_perimeter_to_boolean_index(self.tail_base_proximity)
+
+    @property
     def summary_series(self) -> pd.Series:
         data = {}
         label = self.perimeter.label.capitalize()
 
         if self.center_ear_proximity:
-            data[f"ObservingSecCenterEarProximity{label}"] = self.center_ear_proximity.result_seconds
+            data[f"{label}CenterEarProximity{label}"] = self.center_ear_proximity.result_seconds
 
         if self.tail_base_proximity:
-            data[f"ObservingSecBaseTailProximity{label}"] = self.tail_base_proximity.result_seconds
+            data[f"{label}BaseTailProximity"] = self.tail_base_proximity.result_seconds
 
-        data[f"ObservingSec{self.heuristic_alias}Total{label}"] = self.video.boolean_array_to_seconds(self.result)
+        data[f"{label}{self.heuristic_alias}Result"] = self.video.boolean_array_to_seconds(self.result)
 
         return pd.Series(data)
 

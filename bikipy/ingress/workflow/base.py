@@ -596,7 +596,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             **additional_kwargs,
             common_trial_keyword_arguments=self.common_trial_keyword_arguments,
             trial_id_to_keyword_arguments=self.trial_id_to_keyword_arguments,
-            inspect_arg=self.inspect_directory_path if self.create_inspection_plots else False,
+            inspection_fig_output_path=self.inspect_directory_path if self.create_inspection_plots else False,
             trial_init_error_out_dir=self.result_directory_path,
         )
 

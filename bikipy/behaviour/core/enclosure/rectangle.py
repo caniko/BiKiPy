@@ -52,13 +52,13 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @cached_property
     def _inspect_center_periphery_directory(self):
-        result = self.inspect_arg / "center_periphery"
+        result = self.inspection_fig_output_path / "center_periphery"
         result.mkdir(exist_ok=True)
         return result
 
     @cached_property
     def _inspect_quadrant_directory(self):
-        result = self.inspect_arg / "quadrant"
+        result = self.inspection_fig_output_path / "quadrant"
         result.mkdir(exist_ok=True)
         return result
 
@@ -125,7 +125,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             )
             for quadrant_index, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items()
         }
-        if self.inspect_arg:
+        if self.inspection_fig_output_path:
             fig, ax = self.video.subplot()
             ax.set_title(f"Quadrants_Trial_#{self.label}")
 
@@ -196,7 +196,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
     def _center_boolean_index_motion_island(self) -> tuple[TruthIslandMetadata, np.ndarray[bool, bool]]:
         raw_center_boolean_index = self.center_rectangle.confinement_coordinate_boolean_index(
             self.reader.kinematic_coordinates,
-            inspect_arg=self.inspect_arg,
+            inspection_fig_output_path=self.inspection_fig_output_path,
             potential_dir="rectangle_enclosure_confinement",
             potential_label=self.label,
             inspect_fig_file_format=INSPECT_SIMPLE_FIG_FILE_FORMAT,

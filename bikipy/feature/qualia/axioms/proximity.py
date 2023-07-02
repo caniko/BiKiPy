@@ -4,13 +4,13 @@ from typing import Optional
 
 import numpy as np
 from matplotlib.axes import Axes
-from pydantic import validate_arguments
+from pydantic import Field, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import runtime_settings
-from bikipy.core.compute import AbstractComputeBooleanIndex, T
+from bikipy.core.compute import AbstractComputePerimeterBooleanIndex, T
 from bikipy.core.video import VideoMetadata
-from bikipy.perimeter.base import SinglePerimeter
+from bikipy.perimeter.base import Perimeter, SinglePerimeter
 from bikipy.utils.plot.color import make_color_map
 
 logger = getLogger(__name__)
@@ -25,8 +25,7 @@ def _update_result_array(
     return result & new_array if all_or_none else result | new_array
 
 
-class ComputeProximity(AbstractComputeBooleanIndex):
-    perimeter: SinglePerimeter
+class ComputeProximity(AbstractComputePerimeterBooleanIndex):
     maximum_distance: float | NDArrayFp64
 
     inside_perimeter: Optional[NDArrayFp64]
@@ -40,6 +39,62 @@ class ComputeProximity(AbstractComputeBooleanIndex):
         "inside_perimeter_border",
         "outside_perimeter_border",
     )
+
+    @cached_property
+    def perimeter_border(self) -> SinglePerimeter:
+        return self.perimeter.expand(self.maximum_distance)
+
+    my_perimeter_to_boolean_index: dict[Perimeter, np.ndarray[bool, bool]] = Field(default_factory=dict)
+
+    @cached_property
+    def result(self) -> T:
+        """
+        Collecting data for my_perimeter_to_boolean_index along the way.
+
+        TODO: post_init method
+        :return:
+        """
+        result = None
+
+        perimeter_boolean_index = None
+        if self.inside_perimeter is not None:
+            perimeter_boolean_index = self.perimeter.compute_confinement_boolean_index(self.inside_perimeter)
+            result = _update_result_array(result, perimeter_boolean_index, False)
+
+        if self.outside_perimeter is not None:
+            outside_perimeter_boolean_index = ~self.perimeter.compute_confinement_boolean_index(self.outside_perimeter)
+            if self.inside_perimeter is not None:
+                perimeter_boolean_index = perimeter_boolean_index & outside_perimeter_boolean_index
+            result = _update_result_array(result, outside_perimeter_boolean_index, True)
+
+        perimeter_border_boolean_index = None
+        if self.inside_perimeter_border is not None:
+            perimeter_border_boolean_index = self.perimeter_border.compute_confinement_boolean_index(
+                self.inside_perimeter_border
+            )
+            result = _update_result_array(result, perimeter_border_boolean_index, False)
+
+        if self.outside_perimeter_border is not None:
+            outside_perimeter_border_boolean_index = ~self.perimeter_border.compute_confinement_boolean_index(
+                self.outside_perimeter_border
+            )
+            if self.inside_perimeter_border is not None:
+                perimeter_border_boolean_index = perimeter_border_boolean_index & outside_perimeter_border_boolean_index
+            result = _update_result_array(result, outside_perimeter_border_boolean_index, True)
+
+        assert isinstance(result, np.ndarray)
+
+        if perimeter_boolean_index is not None:
+            self.my_perimeter_to_boolean_index[self.perimeter] = perimeter_boolean_index
+        if perimeter_border_boolean_index is not None:
+            self.my_perimeter_to_boolean_index[self.perimeter_border] = perimeter_border_boolean_index
+
+        return result
+
+    @property
+    def perimeter_to_boolean_index(self) -> dict[Perimeter, np.ndarray[bool, bool]]:
+        assert self.result is not None
+        return self.my_perimeter_to_boolean_index
 
     @validate_arguments(config={"arbitrary_types_allowed": True})
     def plot(self, ax: Axes, video: Optional[VideoMetadata] = None, coordinates_as_pixels: bool = False) -> None:
@@ -91,32 +146,3 @@ class ComputeProximity(AbstractComputeBooleanIndex):
             )
 
         self.plot_finalization(ax, video)
-
-    @cached_property
-    def result(self) -> T:
-        result = None
-
-        if self.inside_perimeter is not None:
-            result = _update_result_array(
-                result, self.perimeter.compute_confinement_boolean_index(self.inside_perimeter), False
-            )
-        if self.outside_perimeter is not None:
-            result = _update_result_array(
-                result, ~self.perimeter.compute_confinement_boolean_index(self.outside_perimeter), True
-            )
-        if self.inside_perimeter_border is not None:
-            result = _update_result_array(
-                result, self.perimeter_border.compute_confinement_boolean_index(self.inside_perimeter_border), False
-            )
-        if self.outside_perimeter_border is not None:
-            result = _update_result_array(
-                result, ~self.perimeter_border.compute_confinement_boolean_index(self.outside_perimeter_border), True
-            )
-
-        assert isinstance(result, np.ndarray)
-
-        return result
-
-    @cached_property
-    def perimeter_border(self) -> SinglePerimeter:
-        return self.perimeter.expand(self.maximum_distance)

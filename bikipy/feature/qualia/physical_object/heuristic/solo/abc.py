@@ -7,7 +7,7 @@ from matplotlib.axes import Axes
 from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.qualia.physical_object.heuristic.abc import StandaloneHeuristic
-from bikipy.feature.qualia.physical_object.heuristic.helper.abc import HelperHeuristic
+from bikipy.perimeter.base import Perimeter
 
 
 class AbstractSoloHeuristic(StandaloneHeuristic, ABC):

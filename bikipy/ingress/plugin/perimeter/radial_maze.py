@@ -61,7 +61,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
                     reference_point_array=self.reference_point,
                     group_label="center",
                     derived_meters_per_pixel_source="side",
-                    inspect_arg=self.ingress.inspect_directory_path,
+                    inspection_fig_output_path=self.ingress.inspect_directory_path,
                 )
             ).get_only_perimeter
 
@@ -88,7 +88,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
                 reference_point_array=self.reference_point,
                 recording_resolution=np.array((index_data["x_res"], index_data["y_res"]), dtype=float),
                 group_label="arms",
-                inspect_arg=self.ingress.inspect_directory_path,
+                inspection_fig_output_path=self.ingress.inspect_directory_path,
             )
             arm_perimeter.meters_per_pixel = meter_per_pixel_from_diagonal(
                 arm_perimeter.vertices_in_pixels[0],
