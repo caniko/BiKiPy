@@ -88,7 +88,11 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
     def summary_series(self) -> pd.Series:
         label = self.perimeter.label.capitalize()
         return pd.Series(
-            [self.nose_proximity.result_seconds, self.snout_towards_object_rays.result_seconds, self.result],
+            [
+                self.nose_proximity.result_seconds,
+                self.snout_towards_object_rays.result_seconds,
+                self.video.boolean_array_to_seconds(self.result),
+            ],
             index=[f"{label}NoseProximity", f"{label}NoseToObjectRay", f"{label}{self.heuristic_alias}Result"],
         )
 

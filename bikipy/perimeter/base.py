@@ -42,55 +42,29 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
     perimeter_label: ClassVar[str]
 
-    def _manual_video_metadata_derived_inspection_preparation(
-        self,
-        manual_video: Optional[VideoMetadata] = None,
-        coordinates: Optional[NDArrayFp64] = None,
-        ax: Axes = None,
-        **plot_kwargs,
-    ) -> tuple[Any, NDArrayFp64, VideoMetadata]:
-        if ax:
-            if manual_video:
-                msg = "manual_video and ax should defined mutually exclusively, contact developers please"
-                raise ValueError(msg)
-            return ax, coordinates, self.video
-
-        _, ax = self.subplot(manual_video, **plot_kwargs)
-
-        video: VideoMetadata = manual_video or self.video
-        if coordinates is not None:
-            coordinates: NDArrayFp64 = video.prepare_coordinates_for_plotting(coordinates)
-
-        return ax, coordinates, video
-
     def post_confinement_analysis_inspect_plot(
         self,
         boolean_index: NDArrayBool,
         coordinates: Optional[NDArrayFp64] = None,
-        manual_video: Optional[VideoMetadata] = None,
         ax: Axes = None,
+        inspection_fig_output_path: Path | None = None,
         **inspect_kwargs,
     ):
-        if not self.inspection_fig_output_path:
+        if not inspection_fig_output_path:
             return
 
-        ax, inspection_coordinates, video = self._manual_video_metadata_derived_inspection_preparation(
-            manual_video, coordinates, ax
-        )
+        if ax is None:
+            fig, ax = self.video.subplot()
 
-        # _manual_video_metadata_derived_inspection_preparation -> video.subplot makes sure the axes is in a list,
-        # we need to revert that action.
-        if isinstance(ax, list):
-            ax = ax[0]
-
-        self.plot_perimeter_on_ax(ax, coordinates_as_pixels=video.coordinates_need_to_be_scaled_for_plot)
+        self.plot_perimeter_on_ax(ax)
 
         if coordinates is not None:
-            ax_plot_coordinate_with_boolean_index(ax, boolean_index, inspection_coordinates)
+            coordinates = self.video.prepare_coordinates_for_plotting(coordinates)
+            ax_plot_coordinate_with_boolean_index(ax, boolean_index, coordinates)
 
         generic_inspection_finalization(
-            self.inspection_fig_output_path,
-            potential_dir=f"{self.perimeter_label}_confinement",
+            inspection_fig_output_path,
+            potential_dir=f"{self.perimeter_label}_{self.label}_confinement",
             inspect_fig_file_format=INSPECT_SIMPLE_FIG_FILE_FORMAT,
             **inspect_kwargs,
         )
@@ -456,7 +430,7 @@ class PerimeterSet(BasePerimeter):
     ) -> np.ndarray[bool, bool]:
         result = self.combined_framewise_confinement_coordinates(coordinates)
 
-        self.post_confinement_analysis_inspect_plot(result, coordinates, manual_video, ax, **inspect_kwargs)
+        self.post_confinement_analysis_inspect_plot(result, coordinates, ax, **inspect_kwargs)
 
         return result
 
@@ -555,7 +529,9 @@ class PerimeterSet(BasePerimeter):
         **plot_kwargs,
     ) -> None:
         for perimeter in self.all_perimeters:
-            perimeter.plot_perimeter_on_ax(ax, coordinates_as_pixels, x_pixel_offset, y_pixel_offset, **plot_kwargs)
+            perimeter.plot_perimeter_on_ax(
+                ax, coordinates_as_pixels, with_resize, x_pixel_offset, y_pixel_offset, **plot_kwargs
+            )
 
     def plot(
         self,

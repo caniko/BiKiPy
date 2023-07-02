@@ -46,7 +46,7 @@ def make_inspection_video(
         raise ValueError(msg)
 
     if reader.crop_frames_from_start:
-        for i in range(reader.crop_frames_from_start):
+        for _ in range(reader.crop_frames_from_start):
             next(video_frames)
 
     if not label_to_confinement_boolean_index:
@@ -91,8 +91,8 @@ def make_inspection_video(
                 color="b" if confinement_boolean_index[next_frame_idx] else "r",
                 coordinates_as_pixels=True,
                 with_resize=False,
-                # x_pixel_offset=-reader.x_axis_crop_end_point,
-                # y_pixel_offset=-reader.y_axis_crop_end_point,
+                x_pixel_offset=-reader.x_axis_crop_end_point,
+                y_pixel_offset=-reader.y_axis_crop_end_point,
             )
 
         # Place the legend outside the plot on the right

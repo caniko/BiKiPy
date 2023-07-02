@@ -170,7 +170,7 @@ class VideoMetadata(_VideoMetadataBase):
         return np.round(self.resolution * self.image_resize_multiplier).astype(np.int16)
 
     @cached_property
-    def center_pixel(self) -> np.ndarray[int, np.int16]:
+    def center_pixels(self) -> np.ndarray[int, np.int16]:
         return np.round(self.resolution / 2.0)
 
     @property
@@ -191,7 +191,7 @@ class VideoMetadata(_VideoMetadataBase):
 
     @property
     def center_for_plot(self) -> np.ndarray[float, np.dtype[np.float64]]:
-        return self.center_pixel if self.coordinates_need_to_be_scaled_for_plot else self.center_meters
+        return self.center_pixels if self.coordinates_need_to_be_scaled_for_plot else self.center_meters
 
     @property
     def metric_horizontal_resolution(self) -> int:
@@ -245,7 +245,7 @@ class VideoMetadata(_VideoMetadataBase):
 
     @cached_property
     def plotting_mean_side_length(self) -> float:
-        return np.sum(self.center_pixel)
+        return np.sum(self.center_pixels)
 
     @cached_property
     def plotting_line_thickness(self) -> float:

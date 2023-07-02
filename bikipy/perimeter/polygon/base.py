@@ -167,7 +167,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
     ) -> np.ndarray[bool, bool]:
         result = parallel_point_inside_polygon(coordinates, self.metric_graph.linked_vertices, merge_ends=False)
 
-        self.post_confinement_analysis_inspect_plot(result, coordinates, manual_video, ax, **inspect_kwargs)
+        self.post_confinement_analysis_inspect_plot(result, coordinates, ax, **inspect_kwargs)
 
         return result
 

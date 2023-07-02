@@ -197,10 +197,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
         raw_center_boolean_index = self.center_rectangle.confinement_coordinate_boolean_index(
             self.reader.kinematic_coordinates,
             inspection_fig_output_path=self.inspection_fig_output_path,
-            potential_dir="rectangle_enclosure_confinement",
             potential_label=self.label,
-            inspect_fig_file_format=INSPECT_SIMPLE_FIG_FILE_FORMAT,
-            video=self.video,
         )
         return tolerance_modeled_boolean_index_truth_sequence_start_end_length(raw_center_boolean_index, self.video.fps)
 
@@ -244,9 +241,15 @@ class RectangleEnclosedTrial(EnclosedTrial):
             )
             raise AttributeError(msg)
 
-        center_point_to_center_rectangle_side_normal_lengths = self.center_rectangle_dimensions_meters / 2.0
+        center_point_to_center_rectangle_side_normal_lengths = (
+            self.center_rectangle_dimensions_meters * self.video.pixels_per_meter / 2.0
+        )
 
-        center = self.video.center_meters if self.manual_center_meters is None else self.manual_center_meters
+        center = (
+            self.video.center_pixels
+            if self.manual_center_meters is None
+            else self.manual_center_meters * self.video.pixels_per_meter
+        )
 
         # The Y-axis is max at the image origin, hence the inversion WRT the X-axis:
         x_long, y_short = center + center_point_to_center_rectangle_side_normal_lengths
@@ -255,6 +258,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
         return RectanglePerimeter(
             vertices_in_pixels=np.array(((x_short, y_short), (x_short, y_long), (x_long, y_long), (x_long, y_short))),
             manual_video=self.video,
+            label="center",
         )
 
     @cached_property

@@ -65,7 +65,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         else:
             raise RuntimeError
 
-        self.post_confinement_analysis_inspect_plot(result, coordinates, manual_video, ax, **inspect_kwargs)
+        self.post_confinement_analysis_inspect_plot(result, coordinates, ax, **inspect_kwargs)
 
         return result
 

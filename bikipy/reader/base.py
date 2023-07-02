@@ -70,9 +70,6 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     cache_meters_augmented: bool = True
 
     manual_timestamp_index: Optional[NDArrayFp64] = timestamp_index_field
-    df_is_timestamped: bool = Field(
-        False, description="When True, the reader will interpret the DataFrame index as timestamps in seconds"
-    )
 
     x_axis_crop_end_point: float = Field(0.0, description="x component of the raw video crop of video")
     y_axis_crop_end_point: float = Field(0.0, description="y component of the raw video crop of video")
@@ -401,6 +398,8 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     def _read_parquet(path: FilePath) -> pd.DataFrame:
         return pd.read_parquet(path)
 
+    _df_is_timestamped: bool = False
+
     @cached_property
     def raw_df(self) -> pd.DataFrame:
         match self.df_path.suffix:
@@ -413,18 +412,28 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
                 raise ValueError(msg)
 
         if "timestamped" in self.df_path.stem:
-            self.df_is_timestamped = True
+            self._df_is_timestamped = True
 
         if self.manual_timestamp_index is not None:
             df.set_index(self.manual_timestamp_index, inplace=True)
-            self.df_is_timestamped = True
+            self._df_is_timestamped = True
 
         if isinstance(df.index, (np.timedelta64, pd.TimedeltaIndex)):
             # Converting the timestamps to nanoseconds and then to seconds.
             df.index = df.index.values.astype(float) / 10.0**9.0
-            self.df_is_timestamped = True
+            self._df_is_timestamped = True
 
         return df
+
+    @cached_property
+    def df_is_timestamped(self) -> bool:
+        """
+        When True, the reader will interpret the DataFrame index as timestamps in seconds
+
+        :return:
+        """
+        assert not self.raw_df.empty
+        return self._df_is_timestamped
 
     @property
     def combined_raw_likelihood(self) -> np.ndarray[float, np.dtype[np.float64]]:
