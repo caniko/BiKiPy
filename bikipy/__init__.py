@@ -33,6 +33,7 @@ class BikipyRuntimeSettings(BaseSettings, SchemanticProjectMixin):
     testing: bool = False
     debug: bool = False
 
+    @computed_field
     @property
     def max_workers_in_process_pool(self) -> int:
         if self.only_physical_cores:

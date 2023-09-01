@@ -2,7 +2,7 @@ from functools import cached_property, lru_cache
 from logging import getLogger
 
 import numpy as np
-from pydantic import DirectoryPath, FilePath, validator
+from pydantic import DirectoryPath, FilePath, computed_field, validator
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.typing import Label
@@ -46,6 +46,7 @@ class PluginMeterPerPixel(BasePluginFile):
                 raise AttributeError(msg)
         return value
 
+    @computed_field
     @cached_property
     def ratio(self) -> float:
         match self.stem_info.annotation_method:
@@ -63,6 +64,7 @@ class PluginMeterPerPixel(BasePluginFile):
         self._assert_correct_scope_trialwise_metadata()
         return self.ratio
 
+    @computed_field
     @property
     def globally_defined(self) -> float:
         self._assert_correct_scope_global()

@@ -2,7 +2,7 @@ import math
 from functools import lru_cache
 from math import sqrt
 from pathlib import Path
-from typing import TYPE_CHECKING, Sequence, Optional
+from typing import TYPE_CHECKING, Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np

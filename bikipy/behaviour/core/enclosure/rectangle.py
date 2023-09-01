@@ -1,14 +1,15 @@
 from functools import cached_property, lru_cache
 from logging import getLogger
-from typing import Optional, ClassVar
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as nt
 import pandas as pd
+from pydantic import computed_field
 from pydantic_numpy.dtype import NDArrayFp64
 
-from bikipy._constant import INSPECT_FIG_FILE_FORMAT, INSPECT_SIMPLE_FIG_FILE_FORMAT
+from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.behaviour.core.base import HabituationTrialMixin
 from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
@@ -43,6 +44,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
     center_rectangle_dimensions_to_spatial_resolution_ratio: Optional[float]
     center_periphery_tolerance_model: bool = False
 
+    @computed_field
     @cached_property
     def _center_periphery_is_defined(self) -> bool:
         return (
@@ -50,18 +52,21 @@ class RectangleEnclosedTrial(EnclosedTrial):
             or self.center_rectangle_dimensions_to_spatial_resolution_ratio
         )
 
+    @computed_field
     @cached_property
     def _inspect_center_periphery_directory(self):
         result = self.inspection_fig_output_path / "center_periphery"
         result.mkdir(exist_ok=True)
         return result
 
+    @computed_field
     @cached_property
     def _inspect_quadrant_directory(self):
         result = self.inspection_fig_output_path / "quadrant"
         result.mkdir(exist_ok=True)
         return result
 
+    @computed_field
     @cached_property
     def quadrant_grid_coordinate_to_vertices(
         self,
@@ -92,10 +97,12 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
         return result
 
+    @computed_field
     @cached_property
     def quadrant_grid_coordinates(self) -> tuple[tuple[int, int], ...]:
         return tuple(self.quadrant_grid_coordinate_to_vertices)
 
+    @computed_field
     @cached_property
     def quadrant_index_to_quadrant_grid_coordinate(self) -> dict[int, quadrant_grid_typing]:
         return {
@@ -103,6 +110,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             for i, quadrant_grid_coordinate in enumerate(self.quadrant_grid_coordinate_to_vertices, start=1)
         }
 
+    @computed_field
     @cached_property
     def quadrant_grid_coordinate_to_quadrant_index(self) -> dict[quadrant_grid_typing, int]:
         return {
@@ -110,6 +118,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             for i, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items()
         }
 
+    @computed_field
     @cached_property
     def quadrant_grid_coordinate_to_quadrant(self) -> dict[quadrant_grid_typing, Quadrant]:
         """
@@ -164,6 +173,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
         return result
 
+    @computed_field
     @cached_property
     def location_sequence_quadrant(self) -> np.ndarray[float, np.dtype[np.float64]]:
         raw_location_sequence_quadrant = np.zeros(self.number_of_frames, dtype=np.uint8)
@@ -177,6 +187,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
         return np.array(reduce_repeating_sequences(raw_location_sequence_quadrant, round(self.video.fps * 0.35)))
 
+    @computed_field
     @cached_property
     def quadrant_grid_coordinate_to_entries(self) -> dict[quadrant_grid_typing, int]:
         result = {}
@@ -184,6 +195,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             result[quadrant_grid_coordinate] = np.sum(self.location_sequence_quadrant == quadrant_index)
         return result
 
+    @computed_field
     @cached_property
     def quadrant_grid_coordinate_to_seconds_present(self) -> dict[quadrant_grid_typing, float]:
         return {
@@ -201,20 +213,24 @@ class RectangleEnclosedTrial(EnclosedTrial):
         )
         return tolerance_modeled_boolean_index_truth_sequence_start_end_length(raw_center_boolean_index, self.video.fps)
 
+    @computed_field
     @property
     def center_boolean_index(self) -> np.ndarray[bool, bool]:
         return self._center_boolean_index_motion_island[1]
 
+    @computed_field
     @property
     def motion_center(self) -> dict[str, float]:
         return merge_motion_island_data(
             self._center_boolean_index_motion_island[0], self.reader.kinematic_coordinates, self.video.fps
         )
 
+    @computed_field
     @cached_property
     def periphery_boolean_index(self) -> np.ndarray[bool, bool]:
         return ~self.center_boolean_index
 
+    @computed_field
     @property
     def motion_periphery(self) -> dict[str, float]:
         return merge_motion_island_data(
@@ -223,6 +239,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             self.video.fps,
         )
 
+    @computed_field
     @cached_property
     def center_rectangle_dimensions_meters(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
         if self._center_periphery_is_defined is None:
@@ -232,6 +249,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
         if self.center_rectangle_dimensions_to_spatial_resolution_ratio is not None:
             return self.video.metric_resolution / self.center_rectangle_dimensions_to_spatial_resolution_ratio
 
+    @computed_field
     @cached_property
     def center_rectangle(self) -> RectanglePerimeter:
         if not self._center_periphery_is_defined:
@@ -261,6 +279,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             label="center",
         )
 
+    @computed_field
     @cached_property
     def location_sequence_center_periphery(self) -> nt.NDArray:
         # 1 is center, 2 is periphery, 0 is unknown
@@ -269,22 +288,27 @@ class RectangleEnclosedTrial(EnclosedTrial):
         location_sequence_center_periphery[self.periphery_boolean_index] = 2
         return np.array(reduce_repeating_sequences(location_sequence_center_periphery, self._frame_tolerance))
 
+    @computed_field
     @property
     def center_entries(self) -> int:
         return np_sum_int(self.location_sequence_center_periphery == 1)
 
+    @computed_field
     @property
     def periphery_entries(self) -> int:
         return np_sum_int(self.location_sequence_center_periphery == 2)
 
+    @computed_field
     @property
     def seconds_on_center(self) -> int:
         return np.sum(self.center_boolean_index) / self.video.fps
 
+    @computed_field
     @property
     def seconds_on_periphery(self) -> int:
         return np.sum(self.periphery_boolean_index) / self.video.fps
 
+    @computed_field
     @property
     def _analysis_series_list(self) -> list[pd.Series]:
         upstream_list = super()._analysis_series_list

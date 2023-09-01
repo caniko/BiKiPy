@@ -1,7 +1,7 @@
 from typing import ClassVar, Literal
 
 import numpy as np
-from pydantic import Field, PositiveInt
+from pydantic import Field, PositiveInt, computed_field
 
 # 0: Use the x coordinate(s) as the perimeter
 # 1: Use the y coordinate(s) as the perimeter
@@ -39,6 +39,7 @@ class LinePerimeter(BikipyHashable, VideoMetadataMixin):
 
     perimeter_label = "circle"
 
+    @computed_field
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -46,11 +47,13 @@ class LinePerimeter(BikipyHashable, VideoMetadataMixin):
         result.update(("location", "orientation", "logic"))
         return result
 
+    @computed_field
     @property
     def feat_border(self):
         """Feature magnitude perimeter location"""
         return self.location / self.video.metric_resolution[self.orientation]
 
+    @computed_field
     @property
     def orientation_label(self):
         """Given name of orientation"""

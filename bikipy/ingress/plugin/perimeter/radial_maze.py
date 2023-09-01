@@ -3,6 +3,7 @@ from glob import iglob
 
 import numpy as np
 import pandas as pd
+from pydantic import computed_field
 
 from bikipy import runtime_settings
 from bikipy.core.typing import Label
@@ -36,6 +37,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
 
     _center: SinglePerimeter | None = None
 
+    @computed_field
     @cached_property
     def line_data(self) -> pd.DataFrame:
         raw_line_data = read_makesense_line(
@@ -48,10 +50,12 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
 
         return raw_line_data.iloc[clockwise_argsort, :]
 
+    @computed_field
     @property
     def lines(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return get_all_lines_from_makesense_line_df(self.line_data)
 
+    @computed_field
     @property
     def center(self) -> SinglePerimeter:
         if not self._center:
@@ -67,6 +71,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
 
         return self._center
 
+    @computed_field
     @cached_property
     def arms(self) -> list[RectanglePerimeter]:
         center_vertex_pair = np.array(
@@ -105,6 +110,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
 
         return arm_perimeters
 
+    @computed_field
     @cached_property
     def grouped_radial_maze_perimeters(self) -> dict[str, tuple[SinglePerimeter, ...]]:
         perimeter_set = PerimeterSet(perimeters=[*self.arms, self.center])
@@ -120,6 +126,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
         self._assert_correct_scope_trialwise_metadata()
         return self.grouped_radial_maze_perimeters
 
+    @computed_field
     @property
     def globally_defined(self) -> dict[str, tuple[SinglePerimeter, ...]]:
         self._assert_correct_scope_global()

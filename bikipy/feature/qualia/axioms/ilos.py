@@ -3,6 +3,7 @@ from typing import Optional
 
 import numpy as np
 from matplotlib.axes import Axes
+from pydantic import computed_field
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import runtime_settings
@@ -23,6 +24,7 @@ class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
     heuristic_data_sources = ("ray_start_point", "ray_travel_direction_point", "max_radians")
     heuristic_data_sources_all_required = True
 
+    @computed_field
     @cached_property
     def result(self):
         result = self.perimeter.ray_direction_filter(
@@ -32,6 +34,7 @@ class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
             result = single_node_tolerance_model(result, self.video.fps)
         return result
 
+    @computed_field
     @property
     def perimeter_to_boolean_index(self) -> dict[Perimeter, np.ndarray[bool, bool]]:
         return {self.perimeter: self.result}

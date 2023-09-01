@@ -1,7 +1,7 @@
 from functools import cached_property
 
 import numpy as np
-from pydantic import DirectoryPath, FilePath, validate_arguments
+from pydantic import DirectoryPath, FilePath, computed_field, validate_arguments
 
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.core.base import BasePluginFile
@@ -14,6 +14,7 @@ class PluginCenter(BasePluginFile):
     default_trial_argument_key = "manual_center_pixels"
     human_readable_index = "Center"
 
+    @computed_field
     @cached_property
     def only_center(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return get_only_point_from_makesense(self.data_path)
@@ -22,6 +23,7 @@ class PluginCenter(BasePluginFile):
         self._assert_correct_scope_trialwise_metadata()
         return self.only_center
 
+    @computed_field
     @property
     def globally_defined(self) -> np.ndarray[float, np.dtype[np.float64]]:
         self._assert_correct_scope_global()

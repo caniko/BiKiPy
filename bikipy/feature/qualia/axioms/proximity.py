@@ -4,7 +4,7 @@ from typing import Optional
 
 import numpy as np
 from matplotlib.axes import Axes
-from pydantic import Field, validate_arguments
+from pydantic import Field, computed_field, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy import runtime_settings
@@ -40,12 +40,14 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
         "outside_perimeter_border",
     )
 
+    @computed_field
     @cached_property
     def perimeter_border(self) -> SinglePerimeter:
         return self.perimeter.expand(self.maximum_distance)
 
     my_perimeter_to_boolean_index: dict[Perimeter, np.ndarray[bool, bool]] = Field(default_factory=dict)
 
+    @computed_field
     @cached_property
     def result(self) -> T:
         """
@@ -91,6 +93,7 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
 
         return result
 
+    @computed_field
     @property
     def perimeter_to_boolean_index(self) -> dict[Perimeter, np.ndarray[bool, bool]]:
         assert self.result is not None

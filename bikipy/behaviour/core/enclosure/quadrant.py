@@ -1,6 +1,7 @@
 from functools import cached_property
 
 import numpy as np
+from pydantic import computed_field
 from pydantic_numpy import NDArrayFp64
 
 from bikipy.core.base import BikipyModel
@@ -20,6 +21,7 @@ class Quadrant(BikipyModel):
     fps: float
     quadrant_index: int
 
+    @computed_field
     @cached_property
     def _motion_island_confinement_boolean_index(self) -> tuple[TruthIslandMetadata, np.ndarray[bool, bool]]:
         return tolerance_modeled_boolean_index_truth_sequence_start_end_length(
@@ -30,14 +32,17 @@ class Quadrant(BikipyModel):
     def plot_vertices(self, video: VideoMetadata) -> np.ndarray[float, np.dtype[np.float64]]:
         return video.prepare_coordinates_for_plotting(self.vertices_in_meters)
 
+    @computed_field
     @property
     def confinement_boolean_index(self) -> np.ndarray[bool, bool]:
         return self._motion_island_confinement_boolean_index[1]
 
+    @computed_field
     @cached_property
     def seconds_present(self) -> float:
         return np.sum(self.confinement_boolean_index) / self.fps
 
+    @computed_field
     @property
     def motion(self) -> dict[str, float]:
         return merge_motion_island_data(

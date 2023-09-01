@@ -3,7 +3,7 @@ from functools import cached_property
 from logging import getLogger
 from typing import Generic, Literal, Optional, TypeVarTuple
 
-from pydantic import Field, PositiveInt
+from pydantic import Field, PositiveInt, computed_field
 from pydantic.generics import GenericModel
 
 from bikipy.core.base import BikipyModel
@@ -37,6 +37,7 @@ class TrialWithPerimeterMixin(GenericModel, Generic[Perimeter, *PerimeterInstanc
     def perimeters(self) -> tuple[Perimeter, *PerimeterInstances]:
         ...
 
+    @computed_field
     @property
     def perimeter_to_derive_meters_per_pixel(self) -> Perimeter:
         if self.manual_perimeter_to_derive_meters_per_pixel:
@@ -59,16 +60,19 @@ class TrialWithPerimeterMixin(GenericModel, Generic[Perimeter, *PerimeterInstanc
             msg = "perimeters is not defined as an object variable, " "which is required for _int_id_to_perimeter"
             raise AttributeError(msg)
 
+    @computed_field
     @cached_property
     def _int_id_to_perimeter(self) -> dict[PositiveInt, Perimeter]:
         self._validate_perimeters_object()
         return {perimeter.int_id: perimeter for perimeter in self.perimeters}
 
+    @computed_field
     @cached_property
     def _label_to_perimeter(self) -> dict[Label, Perimeter]:
         self._validate_perimeters_object()
         return {perimeter.label: perimeter for perimeter in self.perimeters}
 
+    @computed_field
     @property
     def _video(self) -> VideoMetadata:
         video = super()._video

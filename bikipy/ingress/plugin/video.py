@@ -2,7 +2,7 @@ from functools import cached_property
 
 import cv2
 from mextractor import constants
-from pydantic import DirectoryPath, FilePath
+from pydantic import DirectoryPath, FilePath, computed_field
 
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadata
@@ -19,6 +19,7 @@ class PluginVideo(BasePlugin):
     default_trial_argument_key = "manual_video"
     human_readable_index = "Video"
 
+    @computed_field
     @cached_property
     def video(self) -> VideoMetadata:
         result = (
@@ -34,6 +35,7 @@ class PluginVideo(BasePlugin):
         self._assert_correct_scope_trialwise_metadata()
         return self.video
 
+    @computed_field
     @property
     def globally_defined(self) -> VideoMetadata:
         self._assert_correct_scope_global()

@@ -3,10 +3,13 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+from pydantic import computed_field
 
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.physical_object.heuristic.mixin import ProximityMixin
-from bikipy.feature.qualia.physical_object.heuristic.solo.abc import AbstractSoloHeuristic
+from bikipy.feature.qualia.physical_object.heuristic.solo.abc import (
+    AbstractSoloHeuristic,
+)
 from bikipy.perimeter.base import Perimeter
 
 
@@ -19,6 +22,7 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
 
     heuristic_alias = "BodyProximity"
 
+    @computed_field
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -26,6 +30,7 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
         result.update(("manual_center_ear", "manual_torso", "manual_tail_base"))
         return result
 
+    @computed_field
     @cached_property
     def center_ear_proximity(self) -> ComputeProximity | None:
         if self.manual_center_ear is not None:
@@ -42,6 +47,7 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
             manual_video=self.video,
         )
 
+    @computed_field
     @cached_property
     def tail_base_proximity(self) -> ComputeProximity | None:
         if self.manual_tail_base is not None:
@@ -58,12 +64,14 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
             manual_video=self.video,
         )
 
+    @computed_field
     @property
     def solo_result(self) -> np.ndarray[bool, bool]:
         return np.logical_or.reduce(
             [node.result for node in (self.center_ear_proximity, self.tail_base_proximity) if node is not None]
         )
 
+    @computed_field
     @property
     def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
         return {
@@ -71,10 +79,12 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
             self.tail_base_label: self.tail_base_proximity.result,
         }
 
+    @computed_field
     @property
     def perimeter_to_boolean_index(self) -> dict[Perimeter, np.ndarray[bool, bool]]:
         return self.center_ear_proximity.video_gen_merge_perimeter_to_boolean_index(self.tail_base_proximity)
 
+    @computed_field
     @property
     def summary_series(self) -> pd.Series:
         data = {}

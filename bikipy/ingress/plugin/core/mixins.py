@@ -2,7 +2,7 @@ from functools import cached_property
 from typing import Optional
 
 import pandas as pd
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.base import BikipyModel
@@ -21,6 +21,7 @@ class HasReferenceMixin(BikipyModel):
         description="Override the perimeter detection with values defined outside model"
     )
 
+    @computed_field
     @cached_property
     def reference_point(self) -> pd.DataFrame | None:
         if self.manual_reference is not None:

@@ -5,6 +5,7 @@ from typing import ClassVar, Generic, TypeVar
 
 import numpy as np
 import pandas as pd
+from pydantic import computed_field
 from pydantic.generics import GenericModel
 
 from bikipy.behaviour.core.constant import ExperimentStage
@@ -28,6 +29,7 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
 
     perimeter_labels: ClassVar[str] = {"start_perimeter", "reward_perimeter"}
 
+    @computed_field
     @cached_property
     def _start_frame_idx(self) -> int:
         confinement_bool = self.start_perimeter.compute_confinement_boolean_index(
@@ -50,6 +52,7 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
         logger.debug(f"Subject {self.label} never left, or was never was in start area")
         return np.nan
 
+    @computed_field
     @cached_property
     def _reward_arrival_idx(self) -> int:
         """
@@ -61,10 +64,12 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
                 return idx
         return np.nan
 
+    @computed_field
     @cached_property
     def either_start_or_reward_undetected(self) -> bool:
         return np.any(np.isnan((self._start_frame_idx, self._reward_arrival_idx)))
 
+    @computed_field
     @cached_property
     def reward_boolean(self) -> np.ndarray[bool, bool]:
         confinement_bool = self.reward_perimeter.compute_confinement_boolean_index(
@@ -75,6 +80,7 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
 
         return confinement_bool
 
+    @computed_field
     @property
     def start_to_reward_motion(self) -> tuple:
         return (
@@ -86,6 +92,7 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
             ).as_tuple
         )
 
+    @computed_field
     @property
     def seconds_to_find_reward(self) -> float:
         """
@@ -96,10 +103,12 @@ class RewardTraceTrialMixin(GenericModel, Generic[StartPerimeter, RewardPerimete
             return np.nan
         return (self._reward_arrival_idx - self._start_frame_idx) / self.video.fps
 
+    @computed_field
     @property
     def seconds_spent_in_reward_area(self) -> float:
         return np.sum(self.reward_boolean) / self.video.fps
 
+    @computed_field
     @property
     def _analysis_series_list(self) -> list[pd.Series]:
         upstream_list = super()._analysis_series_list

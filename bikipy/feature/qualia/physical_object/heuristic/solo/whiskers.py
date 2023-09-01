@@ -3,6 +3,7 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+from pydantic import computed_field
 
 from bikipy.core.compute import video_gen_merge_perimeter_to_boolean_index_from_dict
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
@@ -32,6 +33,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
 
     heuristic_alias = "WhiskerInteraction"
 
+    @computed_field
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -46,6 +48,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
         )
         return result
 
+    @computed_field
     @cached_property
     def left_proximity(self) -> ComputeProximity:
         return (
@@ -60,6 +63,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
             )
         )
 
+    @computed_field
     @cached_property
     def leftward_observation(self) -> ComputeInLineOfSight:
         return (
@@ -75,6 +79,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
             )
         )
 
+    @computed_field
     @cached_property
     def right_proximity(self) -> ComputeProximity:
         return (
@@ -89,6 +94,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
             )
         )
 
+    @computed_field
     @cached_property
     def rightward_observation(self) -> ComputeInLineOfSight:
         return (
@@ -104,24 +110,29 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
             )
         )
 
+    @computed_field
     @cached_property
     def left_result(self) -> np.ndarray[bool, bool]:
         result = self.left_proximity.result & self.leftward_observation.result
         return result if self.filter_in_sequence else single_node_tolerance_model(result, self.video.fps)
 
+    @computed_field
     @cached_property
     def right_result(self) -> np.ndarray[bool, bool]:
         result = self.right_proximity.result & self.rightward_observation.result
         return result if self.filter_in_sequence else single_node_tolerance_model(result, self.video.fps)
 
+    @computed_field
     @property
     def solo_result(self) -> np.ndarray[bool, bool]:
         return self.left_result | self.right_result
 
+    @computed_field
     @property
     def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
         return {self.left_ear_label: self.left_proximity.result, self.right_ear_label: self.right_proximity.result}
 
+    @computed_field
     @property
     def label_to_ray_vector_direction_points(self) -> dict[str, np.ndarray[float, np.dtype[np.float64]]]:
         return {
@@ -129,6 +140,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
             self.right_ear_label: self.reader[self.right_ear_label] - self.reader[self.center_ear_label],
         }
 
+    @computed_field
     @property
     def perimeter_to_boolean_index(self) -> dict[Perimeter, np.ndarray[bool, bool]]:
         return video_gen_merge_perimeter_to_boolean_index_from_dict(
@@ -140,6 +152,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
             ),
         )
 
+    @computed_field
     @property
     def summary_series(self) -> pd.Series:
         label = self.perimeter.label.capitalize()

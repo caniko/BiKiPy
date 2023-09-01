@@ -3,13 +3,20 @@ from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Literal, Optional, Type, TypeVar
 
 import numpy as np
 import seaborn as sb
 from matplotlib.axes import Axes
 from numpy import unsignedinteger
-from pydantic import DirectoryPath, Field, FilePath, root_validator, validate_arguments
+from pydantic import (
+    DirectoryPath,
+    Field,
+    FilePath,
+    computed_field,
+    root_validator,
+    validate_arguments,
+)
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
 
 from bikipy._constant import INSPECT_SIMPLE_FIG_FILE_FORMAT
@@ -148,6 +155,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
     required_video_metadata_fields = {"recording_resolution"}
 
+    @computed_field
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -163,12 +171,14 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         )
         return result
 
+    @computed_field
     @property
     def _to_hash(self) -> list:
         result = super()._to_hash
         result.append(self.int_id)
         return result
 
+    @computed_field
     @property
     def _video(self) -> VideoMetadata:
         upstream_video = super()._video
@@ -189,6 +199,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
         return upstream_video
 
+    @computed_field
     @property
     def derived_meters_per_pixel(self) -> float | None:
         return
@@ -232,6 +243,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
         # if self.moving_field_name == "reference_point_array":
 
+    @computed_field
     @property
     def reference_point(self):
         if self.reference_point_array is None and not self.reference_point_coco_path:
@@ -340,6 +352,7 @@ class PerimeterSet(BasePerimeter):
     perimeters: list[SinglePerimeter]
     restricting_perimeters: Optional[list[SinglePerimeter]]
 
+    @computed_field
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -347,6 +360,7 @@ class PerimeterSet(BasePerimeter):
         result.update(("perimeters", "restricting_perimeters"))
         return result
 
+    @computed_field
     @property
     def _to_hash(self) -> list:
         result = super()._to_hash
@@ -379,6 +393,7 @@ class PerimeterSet(BasePerimeter):
                 return perimeter
         raise KeyError(f"Item was not found, {item} amongst {self.all_perimeters}")
 
+    @computed_field
     @cached_property
     def video(self) -> VideoMetadata:
         result = self.all_perimeters[0].video
@@ -386,6 +401,7 @@ class PerimeterSet(BasePerimeter):
             result = VideoMetadata.join(result, p.video)
         return result
 
+    @computed_field
     @cached_property
     def mean_meters_per_pixel(self) -> float:
         if self.number_of_perimeters == 1:
@@ -407,6 +423,7 @@ class PerimeterSet(BasePerimeter):
 
         return dict(grouped)
 
+    @computed_field
     @cached_property
     def centroid_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
         """
@@ -447,22 +464,27 @@ class PerimeterSet(BasePerimeter):
             else None,
         )
 
+    @computed_field
     @property
     def perimeter_to_int_id(self) -> dict[Perimeter, int]:
         return {perimeter: perimeter.int_id for perimeter in self.all_perimeters}
 
+    @computed_field
     @property
     def int_id_to_perimeter(self) -> dict[int, Perimeter]:
         return {perimeter.int_id: perimeter for perimeter in self.all_perimeters}
 
+    @computed_field
     @property
     def label_to_perimeter(self) -> dict[str, Perimeter]:
         return {perimeter.label: perimeter for perimeter in self.all_perimeters}
 
+    @computed_field
     @property
     def int_id_to_label(self) -> dict[int, str]:
         return {perimeter.int_id: perimeter.label for perimeter in self.all_perimeters}
 
+    @computed_field
     @property
     def reference_point(self) -> np.ndarray[float, np.dtype[np.float64]]:
         expected_reference_point = self.all_perimeters[0].reference_point
@@ -474,36 +496,43 @@ class PerimeterSet(BasePerimeter):
             return None
         return expected_reference_point
 
+    @computed_field
     @property
     def inspect_image(self) -> np.ndarray[int, np.dtype[np.uint8]]:
         result = self.all_perimeters[0].inspect_image
         assert all(result == perimeter.inspect_image for perimeter in self.all_perimeters)
         return result
 
+    @computed_field
     @property
     def inspect_image_path(self) -> Path:
         result = self.all_perimeters[0].inspect_image_path
         assert all(result == perimeter.inspect_image_path for perimeter in self.all_perimeters)
         return result
 
+    @computed_field
     @property
     def all_perimeters(self) -> tuple[SinglePerimeter, ...]:
         if not self.restricting_perimeters:
             return tuple(self.perimeters)
         return *self.perimeters, *self.restricting_perimeters
 
+    @computed_field
     @property
     def labels(self) -> tuple[str, ...]:
         return tuple(perimeter.label for perimeter in self.all_perimeters)
 
+    @computed_field
     @cached_property
     def number_of_perimeters(self) -> int:
         return len(self.all_perimeters)
 
+    @computed_field
     @cached_property
     def size_respective_dtype(self) -> Type[unsignedinteger]:
         return np.uint8 if self.number_of_perimeters <= 255 else np.uint16
 
+    @computed_field
     @cached_property
     def number_of_vertices(self) -> int:
         vertex_numbers = []
@@ -514,6 +543,7 @@ class PerimeterSet(BasePerimeter):
                 vertex_numbers.append(1)
         return sum(vertex_numbers)
 
+    @computed_field
     @property
     def get_only_perimeter(self) -> SinglePerimeter:
         assert self.number_of_perimeters == 1

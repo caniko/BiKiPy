@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import Any, ClassVar, Optional, Type, TypeVar
 
-from pydantic import DirectoryPath, FilePath
+from pydantic import DirectoryPath, FilePath, computed_field
 from schemantic.model.project import SchemanticProjectMixin
 
 from bikipy.core.base import BikipyModel
@@ -40,6 +40,7 @@ class BasePlugin(BikipyModel, SchemanticProjectMixin, ABC):
     def _assert_correct_scope_global(self) -> None:
         assert self.plugin_scope == PluginScope.GLOBAL
 
+    @computed_field
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -47,6 +48,7 @@ class BasePlugin(BikipyModel, SchemanticProjectMixin, ABC):
         result.update(("ingress", "data_path", "plugin_scope"))
         return result
 
+    @computed_field
     @cached_property
     def stem_info(self):
         try:
@@ -59,14 +61,17 @@ class BasePlugin(BikipyModel, SchemanticProjectMixin, ABC):
     def _parse_plugin_settings(settings_dict: dict) -> dict[str, Any]:
         return {field: value for field, value in settings_dict.items() if value != ""}
 
+    @computed_field
     @property
     def trial_argument_key(self) -> str:
         return self.manual_trial_argument_key or self.default_trial_argument_key
 
+    @computed_field
     @property
     def plugin_name(self) -> str:
         return self._plugin_identifier[-1]
 
+    @computed_field
     @cached_property
     def sequence_index(self) -> int | None:
         if len(self._plugin_identifier) == 2:

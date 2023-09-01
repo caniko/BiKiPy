@@ -1,7 +1,7 @@
 from functools import cached_property
 
 import cv2
-from pydantic import DirectoryPath, FilePath
+from pydantic import DirectoryPath, FilePath, computed_field
 
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadata
@@ -16,6 +16,7 @@ class PluginFrame(BasePlugin):
     default_trial_argument_key = "frame"
     human_readable_index = "Frame"
 
+    @computed_field
     @cached_property
     def frame(self) -> VideoMetadata:
         return cv2.imread(str(self.data_path))
@@ -24,6 +25,7 @@ class PluginFrame(BasePlugin):
         self._assert_correct_scope_trialwise_metadata()
         return self.frame
 
+    @computed_field
     @property
     def globally_defined(self) -> VideoMetadata:
         self._assert_correct_scope_global()

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as nt
 from matplotlib.axes import Axes
-from pydantic import validator
+from pydantic import computed_field, validator
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.video import VideoMetadata
@@ -37,6 +37,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
     polygon_order: ClassVar[Optional[int]]
 
+    @computed_field
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -44,6 +45,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         result.update(("vertices_in_pixels", "derived_meters_per_pixel_source"))
         return result
 
+    @computed_field
     @property
     def _to_hash(self) -> list:
         result = super()._to_hash
@@ -66,6 +68,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
     def __repr__(self):
         return super().__repr__() + f"\n\tvertices_in_pixels={self.vertices_in_meters}"
 
+    @computed_field
     @property
     def derived_meters_per_pixel(self) -> float:
         if self.derived_meters_per_pixel_source == "side":
@@ -76,22 +79,27 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
             return self.derived_meters_per_pixel_source_metric_length / first_side
 
+    @computed_field
     @property
     def centroid_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.metric_graph.centroid
 
+    @computed_field
     @cached_property
     def vertices_in_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.vertices_in_pixels * self.video.meters_per_pixel
 
+    @computed_field
     @cached_property
     def metric_graph(self) -> Graph:
         return Graph(vertices=self.vertices_in_meters)
 
+    @computed_field
     @cached_property
     def pixel_graph(self) -> Graph:
         return Graph(vertices=self.vertices_in_pixels)
 
+    @computed_field
     @cached_property
     def equilateral(self) -> bool:
         return np.all(
@@ -101,6 +109,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             axis=1,
         )
 
+    @computed_field
     @cached_property
     def circle(self):
         return CircleFixedRadiusPerimeter(

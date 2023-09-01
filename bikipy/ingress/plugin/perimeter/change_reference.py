@@ -1,6 +1,7 @@
 from functools import cached_property
 from typing import ClassVar
 
+from pydantic import computed_field
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.typing import Label
@@ -24,6 +25,7 @@ class ChangeReferencePluginFileStemParse(PluginFileStemParse):
         except IndexError:
             self._new_label = None
 
+    @computed_field
     @property
     def new_label(self):
         if not self._new_label:
@@ -42,6 +44,7 @@ class PluginChangeReference(BasePluginFile, IngressRequiredMixin):
     human_readable_index = "ChangeReference"
     name_human_readable_index: ClassVar[str] = "ChangeReferenceImageName"
 
+    @computed_field
     @cached_property
     def image_name_to_re_referencing_point(self) -> dict[str, NDArrayFp64]:
         return image_name_to_point_from_makesense(self.data_path, only_point=False)
@@ -80,6 +83,7 @@ class PluginChangeReference(BasePluginFile, IngressRequiredMixin):
 
         return result
 
+    @computed_field
     @property
     def globally_defined(self) -> Perimeter:
         self._assert_correct_scope_global()

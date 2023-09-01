@@ -3,7 +3,7 @@ from typing import Optional, Type, TypeVar
 
 import numpy as np
 from matplotlib.axes import Axes
-from pydantic import validator
+from pydantic import computed_field, validator
 from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16
 
 from bikipy.core.video import VideoMetadata
@@ -32,10 +32,12 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
             raise ValueError(msg)
         return value.astype(float)
 
+    @computed_field
     @property
     def centroid_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.center_meters
 
+    @computed_field
     @cached_property
     def center_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.center_pixels * self.video.meters_per_pixel
@@ -116,6 +118,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
 
         plot_ellipse(ax, tuple(center), radius, **plot_kwargs)
 
+    @computed_field
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -123,6 +126,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         result.add("center_pixels")
         return result
 
+    @computed_field
     @property
     def _to_hash(self) -> list:
         result = super()._to_hash
@@ -137,10 +141,12 @@ CirclePerimeter = TypeVar("CirclePerimeter", bound=BaseCirclePerimeter)
 class CircleVariableRadiusPerimeter(BaseCirclePerimeter):
     radius_length_meters: float
 
+    @computed_field
     @property
     def radius_length_pixels(self) -> float:
         return meters2pixels(self.radius_length_meters, self.video.pixels_per_meter)
 
+    @computed_field
     @property
     def _to_hash(self) -> list:
         result = super()._to_hash
@@ -151,14 +157,17 @@ class CircleVariableRadiusPerimeter(BaseCirclePerimeter):
 class CircleFixedRadiusPerimeter(BaseCirclePerimeter):
     radius_length_pixels: float
 
+    @computed_field
     @property
     def derived_meters_per_pixel(self) -> float:
         return self.derived_meters_per_pixel_source_metric_length / self.radius_length_pixels
 
+    @computed_field
     @cached_property
     def radius_length_meters(self) -> float:
         return np.mean(self.radius_length_pixels * self.video.meters_per_pixel)
 
+    @computed_field
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -166,6 +175,7 @@ class CircleFixedRadiusPerimeter(BaseCirclePerimeter):
         result.add("radius_length_pixels")
         return result
 
+    @computed_field
     @property
     def _to_hash(self) -> list:
         result = super()._to_hash

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 import matplotlib.pyplot as plt
-from pydantic import DirectoryPath, FilePath, validate_arguments
+from pydantic import DirectoryPath, FilePath, computed_field, validate_arguments
 
 from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
@@ -40,6 +40,7 @@ class PluginSinglePerimeter(AbstractPerimeterPlugin):
     default_trial_argument_key = "label_to_perimeter"
     human_readable_index = "Perimeter"
 
+    @computed_field
     @cached_property
     def image_name(self):
         return first_image_name_from_makesense(self.data_path, SHAPE_TO_MAKESENSE_TYPE[self.stem_info.shape])
@@ -71,6 +72,7 @@ class PluginSinglePerimeter(AbstractPerimeterPlugin):
             return next(iter(result.values()))
         return result
 
+    @computed_field
     @property
     def globally_defined(self) -> dict[str, SinglePerimeter]:
         self._assert_correct_scope_global()

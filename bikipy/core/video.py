@@ -18,7 +18,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from mextractor.base import load
 from mextractor.extractors import extract_video
-from pydantic import DirectoryPath, Field, FilePath, validator
+from pydantic import DirectoryPath, Field, FilePath, computed_field, validator
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayBool, NDArrayInt16, NDArrayUint8
 
@@ -64,6 +64,7 @@ class _VideoMetadataBase(BikipyModel):
     def make_sure_frame_is_read(cls, value: Frame) -> np.ndarray[int, np.dtype[np.uint8]]:
         return read_image_from_path(value) if isinstance(value, Path) else value
 
+    @computed_field
     @cached_property
     def resolution(self) -> np.ndarray[int, np.int16] | None:
         if self.recording_resolution is not None:
@@ -158,57 +159,70 @@ class VideoMetadata(_VideoMetadataBase):
         info = load(mextractor_dir)
         return cls(recording_resolution=info.resolution, fps=info.fps, frame=info.image, **kwargs)
 
+    @computed_field
     @cached_property
     def pixels_per_meter(self) -> MetersPerPixel | None:
         if self.meters_per_pixel is not None:
             return 1.0 / self.meters_per_pixel
 
+    @computed_field
     @cached_property
     def multiplied_resolution(self) -> np.ndarray[int, np.int16]:
         if self.image_resize_multiplier == 1:
             return self.recording_resolution
         return np.round(self.resolution * self.image_resize_multiplier).astype(np.int16)
 
+    @computed_field
     @cached_property
     def center_pixels(self) -> np.ndarray[int, np.int16]:
         return np.round(self.resolution / 2.0)
 
+    @computed_field
     @property
     def horizontal_resolution(self) -> int:
         return self.resolution[0]
 
+    @computed_field
     @property
     def vertical_resolution(self) -> int:
         return self.resolution[1]
 
+    @computed_field
     @cached_property
     def metric_resolution(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.resolution * self.meters_per_pixel
 
+    @computed_field
     @cached_property
     def center_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.metric_resolution / 2.0
 
+    @computed_field
     @property
     def center_for_plot(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.center_pixels if self.coordinates_need_to_be_scaled_for_plot else self.center_meters
 
+    @computed_field
     @property
     def metric_horizontal_resolution(self) -> int:
         return self.metric_resolution[0]
 
+    @computed_field
     @property
     def metric_vertical_resolution(self) -> int:
         return self.metric_resolution[1]
 
+    @computed_field
     @cached_property
     def minimum_frames_tolerance(self) -> int:
         return round(self.fps * runtime_settings.minimum_seconds_tolerance)
 
+    @computed_field
     @cached_property
     def maximum_frames_distraction(self) -> int:
         return round(self.fps * runtime_settings.maximum_seconds_distraction)
 
+    @computed_field
     @cached_property
     def image_resize_multiplier(self) -> float:
         if self.minimum_frame_length and self.frame is not None:
@@ -217,6 +231,7 @@ class VideoMetadata(_VideoMetadataBase):
                 return self.minimum_frame_length / shortest_side_size
         return 1.0
 
+    @computed_field
     @cached_property
     def greyscale_frame(self) -> np.ndarray[int, np.dtype[np.uint8]]:
         if len(self.frame.shape) == 3 and self.frame.shape[2] == 3:
@@ -226,6 +241,7 @@ class VideoMetadata(_VideoMetadataBase):
         msg = f"The frame has an unsupported shape, {self.frame.shape}"
         raise AttributeError(msg)
 
+    @computed_field
     @cached_property
     def upscaled_video(self) -> "VideoMetadata":
         if self.image_resize_multiplier == 1:
@@ -243,14 +259,17 @@ class VideoMetadata(_VideoMetadataBase):
             recording_resolution=new_frame.shape[0:2:][::-1],
         )
 
+    @computed_field
     @cached_property
     def plotting_mean_side_length(self) -> float:
         return np.sum(self.center_pixels)
 
+    @computed_field
     @cached_property
     def plotting_line_thickness(self) -> float:
         return self.plotting_default_font_size / 10.0
 
+    @computed_field
     @cached_property
     def coordinates_need_to_be_scaled_for_plot(self) -> bool:
         return self.frame is not None
@@ -346,6 +365,7 @@ class VideoMetadataMixin(_VideoMetadataBase):
 
     required_video_metadata_fields: ClassVar[set[str]] = set()
 
+    @computed_field
     @property
     def video(self) -> VideoMetadata:
         if self.required_video_metadata_fields and (
@@ -358,10 +378,12 @@ class VideoMetadataMixin(_VideoMetadataBase):
             raise AttributeError(msg)
         return self._video
 
+    @computed_field
     @property
     def video_metadata(self):
         return self.video.dict(exclude_unset=True)
 
+    @computed_field
     @property
     def _video(self):
         video = VideoMetadata(

@@ -24,6 +24,7 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
     outside_perimeter_border: Optional[NDArrayFp64]
     outside_perimeter: Optional[NDArrayBool]
 
+    @computed_field
     @cached_property
     def result(self) -> np.ndarray[bool, bool]:
         self.perimeter_border = self.perimeter.expand(self.maximum_distance)

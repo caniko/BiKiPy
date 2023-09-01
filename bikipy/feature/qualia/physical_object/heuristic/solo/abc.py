@@ -4,10 +4,10 @@ from typing import Iterable, Optional
 
 import numpy as np
 from matplotlib.axes import Axes
+from pydantic import computed_field
 from pydantic_numpy import NDArrayBool
 
 from bikipy.feature.qualia.physical_object.heuristic.abc import StandaloneHeuristic
-from bikipy.perimeter.base import Perimeter
 
 
 class AbstractSoloHeuristic(StandaloneHeuristic, ABC):
@@ -18,6 +18,7 @@ class AbstractSoloHeuristic(StandaloneHeuristic, ABC):
     def solo_result(self) -> np.ndarray[bool, bool]:
         ...
 
+    @computed_field
     @cached_property
     def result(self) -> np.ndarray[bool, bool]:
         return self._apply_helper_heuristics(self.solo_result)

@@ -14,6 +14,8 @@ Test hypothesis:
 TG: Equal
 WT: 4 > 3 > 2 >~ 1
 """
+from pydantic import computed_field
+
 from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.behaviour.core.enclosure.rectangle import (
     RectangleEnclosedExperiment,
@@ -34,6 +36,7 @@ class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTri
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     experiment_stage = ExperimentStage.TRAINING
 
+    @computed_field
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -41,6 +44,7 @@ class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTri
         result.update(("object_1", "object_2"))
         return result
 
+    @computed_field
     @property
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.object_1, self.object_2
@@ -55,6 +59,7 @@ class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     experiment_stage = ExperimentStage.UPDATE
 
+    @computed_field
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -62,6 +67,7 @@ class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial
         result.update(("object_1", "object_3"))
         return result
 
+    @computed_field
     @property
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.object_1, self.object_3
@@ -78,6 +84,7 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     experiment_stage = ExperimentStage.TEST
 
+    @computed_field
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -85,6 +92,7 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
         result.update(("object_1", "object_2", "object_3", "object_4"))
         return result
 
+    @computed_field
     @property
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.object_1, self.object_2, self.object_3, self.object_4

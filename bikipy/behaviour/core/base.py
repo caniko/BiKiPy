@@ -10,14 +10,8 @@ import numpy as np
 import pandas as pd
 from ordered_set import OrderedSet
 from projectkit.model.project import ProjectKitModelMixin
-from pydantic import (
-    BaseModel,
-    DirectoryPath,
-    Field,
-    FilePath,
-    ValidationError,
-)
-from pydantic.fields import FieldInfo
+from pydantic import BaseModel, DirectoryPath, Field, FilePath, ValidationError
+from pydantic.fields import FieldInfo, computed_field
 from pydantic_numpy import NDArray
 from pydantic_numpy.dtype import NDArrayInt16
 from tqdm import tqdm
@@ -94,6 +88,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
 
     second_tolerance: ClassVar[float] = 0.15
 
+    @computed_field
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -109,6 +104,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
         )
         return result
 
+    @computed_field
     @classmethod
     @property
     def experiment_class(cls) -> "ExperimentCLS":
@@ -116,6 +112,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
 
         return experiment_name_to_class[cls.experiment_class_name]
 
+    @computed_field
     @classmethod
     @property
     def has_perimeter(cls) -> bool:
@@ -123,11 +120,13 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
 
         return is_generic_type(cls) or issubclass(cls, (TrialWithPerimeterMixin, BaseRadialMazeTrial))
 
+    @computed_field
     @classmethod
     @property
     def has_physical_object(cls) -> bool:
         return issubclass(cls, PhysicalObjectTrialMixin)
 
+    @computed_field
     @classmethod
     @property
     def perimeter_field_name_to_perimeter_class(cls) -> dict | None:
@@ -149,6 +148,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
 
             return result
 
+    @computed_field
     @classmethod
     @property
     def reader_class(cls) -> ReaderCLS:
@@ -161,6 +161,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
             )
             raise AttributeError(msg) from e
 
+    @computed_field
     @classmethod
     @property
     def excel_sheet_name(cls) -> str:
@@ -170,16 +171,19 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
             else cls.experiment_stage.value.capitalize()
         )
 
+    @computed_field
     @cached_property
     def manual_center_meters(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
         if self.manual_center_pixels is not None:
             return self.manual_center_pixels * self.video.meters_per_pixel
 
+    @computed_field
     @cached_property
     def center_meter_translation(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
         if self.manual_center_meters is not None:
             return self.manual_center_meters - self.video.center_meters
 
+    @computed_field
     @property
     def _reader_kwargs(self) -> dict[str, Any]:
         return dict(
@@ -191,6 +195,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
             **self.manual_reader_kwargs,
         )
 
+    @computed_field
     @cached_property
     def reader(self) -> Reader:
         result = self.reader_class(**self._reader_kwargs)
@@ -201,14 +206,17 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
 
         return result
 
+    @computed_field
     @property
     def number_of_frames(self) -> int:
         return self.reader.frames
 
+    @computed_field
     @cached_property
     def experiment_seconds(self) -> int:
         return self.reader.kinematic_coordinates.shape[0] / self.video.fps
 
+    @computed_field
     @cached_property
     def motion(self) -> Motion:
         return Motion(
@@ -241,10 +249,12 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
     def _analysis_series_list(self) -> list[pd.Series]:
         return [self.reader.info, pd.Series(self.motion.as_tuple, index=motion_analysis_indexer("All", 2))]
 
+    @computed_field
     @cached_property
     def _uint_zeros_based_on_frame_length(self) -> np.ndarray[int, np.dtype[np.uint8]]:
         return np.zeros(self.number_of_frames, dtype=np.uint8)
 
+    @computed_field
     @cached_property
     def _frame_tolerance(self) -> int:
         return round(self.second_tolerance * self.video.fps)
@@ -295,6 +305,7 @@ class BaseExperiment(Behaviour):
     def __getitem__(self, item: int):
         return self.trial_id_to_trial_object[item]
 
+    @computed_field
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -310,6 +321,7 @@ class BaseExperiment(Behaviour):
         )
         return result
 
+    @computed_field
     @classmethod
     @property
     def trial_classes(cls) -> OrderedSet[TrialCLS]:
@@ -352,16 +364,19 @@ class BaseExperiment(Behaviour):
         cls.trial_sequence = tuple(new_sequence)
         return cls
 
+    @computed_field
     @classmethod
     @property
     def at_least_one_trial_has_perimeter(cls) -> bool:
         return any(trial_class.has_perimeter for trial_class in cls.trial_classes)
 
+    @computed_field
     @classmethod
     @property
     def at_least_one_trial_has_physical_object(cls) -> bool:
         return any(trial_class.has_physical_object for trial_class in cls.trial_classes)
 
+    @computed_field
     @classmethod
     @property
     def trial_perimeter_label_to_perimeter_class(cls) -> dict[str, PerimeterCLS]:
@@ -378,37 +393,44 @@ class BaseExperiment(Behaviour):
 
         return result
 
+    @computed_field
     @classmethod
     @property
     def trial_class_name_to_stage_index(cls) -> dict[str, int]:
         return {trial_class.__name__: i for i, trial_class in enumerate(cls.trial_sequence)}
 
+    @computed_field
     @classmethod
     @property
     def trial_sequence_length(cls) -> int:
         return len(cls.trial_sequence)
 
+    @computed_field
     @classmethod
     @property
     def has_stages(cls) -> bool:
         return cls.trial_sequence_length != 1
 
+    @computed_field
     @classmethod
     @property
     def trial_class_names(cls) -> tuple[str, ...]:
         return tuple(trial_class.__name__ for trial_class in cls.trial_sequence)
 
+    @computed_field
     @classmethod
     @property
     def trial_class_labels(cls) -> tuple[str, ...]:
         return tuple(trial_class.experiment_stage for trial_class in cls.trial_sequence)
 
+    @computed_field
     @classmethod
     @property
     def trial_class_name_to_label(cls) -> dict:
         return dict(zip(cls.trial_class_names, cls.trial_class_labels))
         # return {name: label for name, label in zip(cls.trial_class_names, cls.trial_class_labels)}
 
+    @computed_field
     @classmethod
     @property
     def trial_class(cls) -> Trial:
@@ -417,11 +439,13 @@ class BaseExperiment(Behaviour):
             raise AttributeError(msg)
         return cls.trial_sequence[0]
 
+    @computed_field
     @classmethod
     @property
     def habituation_trial_class_name(cls) -> str:
         return cls.habituation_trial_class.__name__
 
+    @computed_field
     @classmethod
     @property
     def stage_index_to_trial_class(cls) -> dict[int, TrialCLS]:
@@ -438,6 +462,7 @@ class BaseExperiment(Behaviour):
             )
             raise AttributeError(msg)
 
+    @computed_field
     @classmethod
     @property
     def stage_index_to_trial_class_name(cls) -> dict[int, TrialCLS]:
@@ -449,6 +474,7 @@ class BaseExperiment(Behaviour):
             raise AttributeError(msg)
         return {i: trial_class.__name__ for i, trial_class in cls.stage_index_to_trial_class.items()}
 
+    @computed_field
     @classmethod
     @property
     def trial_class_name_to_trial_class(cls) -> dict[str, TrialCLS]:
@@ -498,6 +524,7 @@ class BaseExperiment(Behaviour):
         finally:
             self.__analysed_trials.add(trial_id)
 
+    @computed_field
     @cached_property
     def trial_objects(self) -> list[Trial]:
         for trial_id in self.trial_id_set.difference(self.__analysed_trials):
@@ -518,17 +545,20 @@ class BaseExperiment(Behaviour):
 
         return self._trial_objects
 
+    @computed_field
     @cached_property
     def trial_class_name_to_trial_ids(self) -> dict[str, Trial]:
         return {
             trial_class.__name__: trial_ids for trial_class, trial_ids in self._trial_class_name_to_trial_ids.items()
         }
 
+    @computed_field
     @cached_property
     def trial_id_to_trial_object(self) -> dict[Label, Trial]:
         assert self.trial_objects
         return self._trial_id_to_trial_object
 
+    @computed_field
     @cached_property
     def trial_class_to_trial_objects(self) -> dict[TrialCLS, list[Trial]]:
         assert not self.skip_habituation or (self.skip_habituation and self.first_trial_is_habituation), (
@@ -552,6 +582,7 @@ class BaseExperiment(Behaviour):
             or (self.skip_habituation and trial_class_name != self.habituation_trial_class_name)
         }
 
+    @computed_field
     @cached_property
     def animal_id_to_trial_objects(self) -> dict[Hashable, Trial]:
         result = {}
@@ -564,6 +595,7 @@ class BaseExperiment(Behaviour):
             trials.sort(key=lambda t: t.label)
         return dict(sorted(result.items()))
 
+    @computed_field
     @cached_property
     def animal_id_to_trial_ids(self) -> dict[Label, list[Label]]:
         return {
@@ -571,11 +603,13 @@ class BaseExperiment(Behaviour):
             for animal_id, trial_objects in self.animal_id_to_trial_objects.items()
         }
 
+    @computed_field
     @cached_property
     def trial_id_to_animal_id(self) -> dict[Label, Label]:
         result = {trial_id: kwargs["animal_id"] for trial_id, kwargs in self.trial_id_to_keyword_arguments.items()}
         return dict(sorted(result.items(), key=lambda item: item[1]))
 
+    @computed_field
     @cached_property
     def trial_ids(self) -> tuple:
         if self.manual_trial_ids:
@@ -601,18 +635,22 @@ class BaseExperiment(Behaviour):
 
         return result
 
+    @computed_field
     @cached_property
     def trial_id_set(self) -> frozenset[Label]:
         return frozenset(self.trial_ids)
 
+    @computed_field
     @cached_property
     def animals_ids(self) -> set:
         return set(self.animal_id_to_trial_objects)
 
+    @computed_field
     @cached_property
     def number_of_trials(self) -> int:
         return len(self.trial_ids)
 
+    @computed_field
     @property
     def _animal_id_to_sequential_features_list(self) -> list[pd.DataFrame]:
         """
@@ -632,7 +670,7 @@ class BaseExperiment(Behaviour):
         assert self.trial_class_to_trial_analysis_series
 
     # DataFrame methods =========================================
-
+    @computed_field
     @cached_property
     def trial_class_to_trial_analysis_series(self):
         result = defaultdict(dict)
@@ -661,12 +699,14 @@ class BaseExperiment(Behaviour):
 
         return dict(result)
 
+    @computed_field
     @cached_property
     def _animal_id_to_sequential_features(self) -> pd.DataFrame | None:
         if self._animal_id_to_sequential_features_list:
             # Concatenate and reverse the order
             return pd.concat(self._animal_id_to_sequential_features_list[::-1], axis=0)
 
+    @computed_field
     @cached_property
     def trial_label_to_df(self) -> dict[Label, pd.DataFrame]:
         result = {}
@@ -752,6 +792,7 @@ class BaseExperiment(Behaviour):
 
         return result
 
+    @computed_field
     @cached_property
     def animal_id_indexed_feature_df(self) -> pd.DataFrame:
         @lru_cache(self.trial_sequence_length)
@@ -781,7 +822,7 @@ class BaseExperiment(Behaviour):
         return result
 
     # Helper methods =====================================
-
+    @computed_field
     @cached_property
     def _trial_class_name_to_trial_ids(self) -> dict:
         if not self.trial_id_to_trial_class_name:
@@ -798,6 +839,7 @@ class BaseExperiment(Behaviour):
 
         return result
 
+    @computed_field
     @cached_property
     def _class_labels(self):
         return tuple(trial_class.experiment_stage for trial_class in self.trial_sequence)

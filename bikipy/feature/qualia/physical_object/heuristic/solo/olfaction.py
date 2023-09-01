@@ -3,6 +3,7 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+from pydantic import computed_field
 
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
@@ -28,6 +29,7 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
 
     heuristic_alias = "Olfaction"
 
+    @computed_field
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -35,6 +37,7 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
         result.update(("manual_nose", "manual_torso", "manual_tail_base"))
         return result
 
+    @computed_field
     @cached_property
     def nose_proximity(self) -> ComputeProximity | None:
         if self.manual_nose is not None:
@@ -51,6 +54,7 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
             manual_video=self.video,
         )
 
+    @computed_field
     @cached_property
     def snout_towards_object_rays(self) -> ComputeInLineOfSight:
         return (
@@ -66,24 +70,29 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
             )
         )
 
+    @computed_field
     @property
     def solo_result(self) -> np.ndarray[bool, bool]:
         return self.nose_proximity.result & self.snout_towards_object_rays.result
 
+    @computed_field
     @property
     def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
         return {self.nose_label: self.nose_proximity.result}
 
+    @computed_field
     @property
     def label_to_ray_vector_direction_points(self) -> dict[str, np.ndarray[float, np.dtype[np.float64]]]:
         return {self.nose_label: self.reader[self.nose_label] - self.reader[self.center_ear_label]}
 
+    @computed_field
     @property
     def perimeter_to_boolean_index(self) -> dict[Perimeter, np.ndarray[bool, bool]]:
         return self.nose_proximity.video_gen_merge_perimeter_to_boolean_index(
             self.snout_towards_object_rays, both_or_false=True
         )
 
+    @computed_field
     @property
     def summary_series(self) -> pd.Series:
         label = self.perimeter.label.capitalize()

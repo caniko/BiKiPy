@@ -4,7 +4,7 @@ from typing import ClassVar, Generic, Optional, TypeVar
 
 import numpy as np
 from matplotlib.axes import Axes
-from pydantic import Extra, root_validator, validate_arguments
+from pydantic import Extra, computed_field, root_validator, validate_arguments
 from pydantic.generics import GenericModel
 from pydantic_numpy import NDArrayBool
 
@@ -63,6 +63,7 @@ class AbstractComputePerimeterBooleanIndex(AbstractCompute[NDArrayBool], VideoMe
     perimeter: SinglePerimeter = ...
     tolerance_modelling: bool = True
 
+    @computed_field
     @property
     def result_seconds(self) -> float:
         return self.video.boolean_array_to_seconds(self.result)

@@ -5,7 +5,7 @@ from typing import ClassVar, Optional
 
 import pandas as pd
 from compress_pickle import compress_pickle
-from pydantic import DirectoryPath, Field, FilePath, validate_arguments
+from pydantic import DirectoryPath, Field, FilePath, computed_field, validate_arguments
 from pydantic_numpy.dtype import NDArrayUint8
 
 from bikipy import runtime_settings
@@ -25,6 +25,7 @@ class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
     def _analysis_series_list(self) -> list[pd.Series]:
         ...
 
+    @computed_field
     @cached_property
     def analysis_series_cache_path(self) -> FilePath:
         if self.analysis_series_cache_file_path:
@@ -32,6 +33,7 @@ class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
         if self.analysis_series_cache_directory_path:
             return self.analysis_series_cache_directory_path / f"{self.label}{self.analysis_series_cache_format}"
 
+    @computed_field
     @property
     def analysis_series(self) -> pd.Series:
         if self.analysis_series_cache_path and self.analysis_series_cache_path.exists():

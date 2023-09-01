@@ -5,7 +5,7 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath, Field
+from pydantic import DirectoryPath, Field, computed_field
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT, PHYSICAL_OBJECT_MAP_NAME
 from bikipy.analysis.video import make_inspection_video
@@ -48,11 +48,13 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         ...
 
+    @computed_field
     @cached_property
     def perimeters(self):
         # Inherit and append non-physical-object perimeters to the list
         return tuple(self.physical_object_perimeters)
 
+    @computed_field
     @cached_property
     def alias_to_standalone_heuristic(self) -> dict[str, list[StandaloneHeuristic]]:
         result = {}
@@ -110,6 +112,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
 
         return result
 
+    @computed_field
     @cached_property
     def alias_to_combined_heuristic(self) -> dict[str, list[CombinedHeuristic]]:
         solo_heuristic_alias_to_results = {
@@ -133,10 +136,12 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
 
         return result
 
+    @computed_field
     @property
     def alias_to_heuristic(self) -> dict[str, Heuristic]:
         return chain(self.alias_to_standalone_heuristic.items(), self.alias_to_combined_heuristic.items())
 
+    @computed_field
     @property
     def physical_object_analysers(self) -> dict[str, QualiaAnalysis]:
         analysis_model = PO_NUMBER_TO_ANALYSIS_MODEL[len(self.physical_object_perimeters)]
@@ -152,6 +157,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
 
         return result
 
+    @computed_field
     @property
     def all_summary_series(self) -> list[pd.Series]:
         result = []
@@ -160,6 +166,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                 result.append(physical_objects_heuristic.summary_series)
         return result
 
+    @computed_field
     @cached_property
     def heuristic_to_object_alternation_sequence(self) -> dict[str, ConfinementSequence]:
         result = self.reader.confinement_sequence_defaultdict()
@@ -169,6 +176,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
 
         return dict(result)
 
+    @computed_field
     @cached_property
     def reduced_alternation_sequence(self) -> dict[str, ConfinementSequence]:
         result = {}
@@ -234,6 +242,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                 codec=codec,
             )
 
+    @computed_field
     @property
     def _analysis_series_list(self) -> list[pd.Series]:
         result = super()._analysis_series_list

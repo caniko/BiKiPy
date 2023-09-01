@@ -2,6 +2,8 @@ import datetime
 from logging import getLogger
 from math import floor
 
+from pydantic import computed_field
+
 from bikipy.behaviour.core.base import BaseTrial
 from bikipy.behaviour.live import LiveTrial
 from bikipy.perimeter.base import SinglePerimeter
@@ -72,6 +74,7 @@ class InfinityMaze(BaseTrial, LiveTrial):
         self._last_loop = None
         self._received_reward = False
 
+    @computed_field
     @property
     def state_string(self):
         return super().state_string + f"; Regressed: {self.regressed}"

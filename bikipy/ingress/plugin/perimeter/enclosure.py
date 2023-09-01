@@ -1,3 +1,5 @@
+from pydantic import computed_field
+
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.perimeter.base import AbstractPerimeterPlugin
 
@@ -8,6 +10,7 @@ class PluginEnclosure(AbstractPerimeterPlugin):
     default_trial_argument_key = "label_to_perimeter"
     human_readable_index = "Perimeter"
 
+    @computed_field
     @property
     def globally_defined(self):
         self._assert_correct_scope_global()

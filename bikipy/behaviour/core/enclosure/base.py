@@ -2,7 +2,7 @@ from functools import cached_property, lru_cache
 from typing import ClassVar, Optional
 
 import numpy as np
-from pydantic import validate_arguments, validator
+from pydantic import computed_field, validate_arguments, validator
 from pydantic_numpy import NDArrayInt16
 from skg import ngauss_fit
 
@@ -32,15 +32,18 @@ class EnclosedTrial(BaseTrial):
             raise AttributeError(msg)
         return value
 
+    @computed_field
     @classmethod
     @property
     def reader_class(cls) -> ReaderCLS:
         return super().reader_class[cls.trial_perimeter_enclosure_class]
 
+    @computed_field
     @property
     def _reader_kwargs(self) -> dict:
         return {**super()._reader_kwargs, "trial_enclosure": self.enclosure}
 
+    @computed_field
     @cached_property
     def enclosure(self) -> Perimeter:
         enclosures = []
@@ -65,6 +68,7 @@ class EnclosedTrial(BaseTrial):
 
         return PerimeterSet(perimeters=enclosures)
 
+    @computed_field
     @cached_property
     def gaussian_center_to_periphery_score(self) -> float:
         func = gaussian_scoring_field(
@@ -81,6 +85,7 @@ class EnclosedHabituationTrial(HabituationTrialMixin, EnclosedTrial):
 
 
 class EnclosedExperiment(BaseExperiment):
+    @computed_field
     @classmethod
     @property
     def trial_perimeter_enclosure_classes(cls) -> dict[str, PerimeterCLS]:

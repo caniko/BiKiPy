@@ -4,7 +4,7 @@ from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import Field, validate_arguments
+from pydantic import Field, computed_field, validate_arguments
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.core.base import BikipyModel
@@ -147,14 +147,17 @@ class Motion(BikipyModel):
         description="The weight of the Motion instance defines relative weight to related Motion instances"
     )
 
+    @computed_field
     @cached_property
     def int_fps(self) -> int:
         return round(self.fps)
 
+    @computed_field
     @cached_property
     def meters_per_frame(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return displacement_by_frame(self.coordinate_sequence)
 
+    @computed_field
     @cached_property
     def meters_per_second(self) -> np.ndarray[float, np.dtype[np.float64]]:
         if self.timestamp_sequence is not None:
@@ -167,40 +170,47 @@ class Motion(BikipyModel):
             for i in range(0, self.meters_per_frame.size, self.int_fps)
         ]
 
+    @computed_field
     @cached_property
     def total_displacement(self) -> float:
         return np.nansum(self.meters_per_frame)
 
+    @computed_field
     @cached_property
     def median_speed(self) -> float:
         if not self.total_displacement:
             return np.nan
         return np.nanmedian(self.meters_per_second)
 
+    @computed_field
     @cached_property
     def frozen_boolean_index(self) -> np.ndarray[bool, bool]:
         if not self.total_displacement:
             return np.nan
         return frozen_frames(self.fps, (self.meters_per_frame,))
 
+    @computed_field
     @cached_property
     def freezing_time(self) -> float:
         if not self.total_displacement:
             return np.nan
         return np.nansum(self.frozen_boolean_index) / self.fps
 
+    @computed_field
     @cached_property
     def acceleration(self) -> np.ndarray[float, np.dtype[np.float64]]:
         if not self.total_displacement:
             return np.nan
         return np_abs_diff(self.meters_per_second)
 
+    @computed_field
     @cached_property
     def median_acceleration(self) -> float:
         if not self.total_displacement:
             return np.nan
         return np.nanmedian(self.acceleration)
 
+    @computed_field
     @property
     def as_tuple(self) -> tuple:
         if self.weight:

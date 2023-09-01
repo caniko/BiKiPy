@@ -3,6 +3,7 @@ from typing import Literal
 
 import numpy as np
 from matplotlib.axes import Axes
+from pydantic import computed_field
 from pydantic_numpy.dtype import NDArrayFp64
 
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
@@ -18,6 +19,7 @@ class RectanglePerimeter(BasePolygonPerimeter):
 
     perimeter_label = "rectangle"
 
+    @computed_field
     @property
     def derived_meters_per_pixel(self) -> float:
         if result := super().derived_meters_per_pixel:

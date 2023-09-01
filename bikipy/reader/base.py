@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
-from pydantic import Field, FilePath, validate_arguments
+from pydantic import Field, FilePath, computed_field, validate_arguments
 from pydantic.generics import GenericModel
 from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayUint8
 from typing_extensions import Literal
@@ -126,6 +126,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
                 raise AttributeError(msg)
             return self._isolate_coordinates(query)
 
+    @computed_field
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -148,18 +149,22 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     ) -> np.ndarray[float, np.dtype[np.float64]]:
         ...
 
+    @computed_field
     @property
     def kinematic_coordinates(self) -> pd.DataFrame:
         return self[self.object_tracking_label_for_kinematics]
 
+    @computed_field
     @cached_property
     def kinematic_coordinates_prepared_for_plotting(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return self.video.prepare_coordinates_for_plotting(self.kinematic_coordinates)
 
+    @computed_field
     @cached_property
     def physically_tracked_labels(self) -> set[str]:
         return set(self.raw_df.columns.levels[0])
 
+    @computed_field
     @cached_property
     def tracked_midpoint_labels(self) -> set[str]:
         result = self._post_read_midpoints.copy()
@@ -167,16 +172,19 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             result.update(self.midpoint_groups.keys())
         return result
 
+    @computed_field
     @cached_property
     def all_tracked_labels(self) -> set[str]:
         return self.physically_tracked_labels | self.tracked_midpoint_labels
 
+    @computed_field
     @cached_property
     def label_to_plot_color(self) -> dict[str, matplotlib.colors.ListedColormap]:
         return {
             label: color for label, color in zip(self.all_tracked_labels, make_color_map(len(self.all_tracked_labels)))
         }
 
+    @computed_field
     @property
     def required_video_metadata_fields(self) -> set:
         base = {"meters_per_pixel", "recording_resolution"}
@@ -184,19 +192,23 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             base.add("fps")
         return base
 
+    @computed_field
     @property
     def augmented_file_name(self) -> str:
         stem = self.df_path.stem.replace("coordinates-", f"coordinates-{AUGMENTED_COORDINATE_CACHED_FILE_LABEL}-")
         return f"{stem}.parquet"
 
+    @computed_field
     @property
     def cached_augmented_df_path(self) -> FilePath:
         return self.df_path.with_name(self.augmented_file_name)
 
+    @computed_field
     @cached_property
     def crop_target_trial_length_frames(self) -> int:
         return min(round(self.crop_target_trial_length_seconds * self.video.fps), self.raw_frames)
 
+    @computed_field
     @cached_property
     def crop_frames_from_start(self) -> int:
         result = round(self.crop_seconds_from_start / self.video.fps)
@@ -209,6 +221,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
                 result += round(self.raw_frames - self.crop_target_trial_length_seconds * self.video.fps)
         return result
 
+    @computed_field
     @property
     def crop_frames_from_end(self) -> int:
         result = round(self.crop_seconds_from_end / self.video.fps)
@@ -225,6 +238,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
                 result += round(self.raw_frames - self.crop_target_trial_length_seconds * self.video.fps)
         return result
 
+    @computed_field
     @cached_property
     def crop_frames_slice(self) -> slice | None:
         start = self.crop_frames_from_start
@@ -232,15 +246,18 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
         return slice(start, -stop if stop else None) if start or stop else None
 
+    @computed_field
     @property
     def video_start_frame_index(self) -> int:
         return self.start_end_idx_capped_likelihood[0] + self.crop_frames_from_start
 
+    @computed_field
     @cached_property
     def start_end_idx_capped_likelihood(self) -> tuple[int, int]:
         tail_likelihood_capped_boolean_idx = np.where(self.combined_raw_likelihood >= self.required_tail_likelihood)[0]
         return tail_likelihood_capped_boolean_idx[0], tail_likelihood_capped_boolean_idx[-1]
 
+    @computed_field
     @cached_property
     def augmented(self) -> pd.DataFrame:
         """
@@ -333,10 +350,12 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
         return result
 
+    @computed_field
     @property
     def df(self) -> pd.DataFrame:
         return self.augmented
 
+    @computed_field
     @cached_property
     def timestamp_index(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
         assert not self.raw_df.empty
@@ -349,6 +368,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
         return result
 
+    @computed_field
     @cached_property
     def full_second_index(self) -> np.ndarray[int, np.dtype[np.uint32]]:
         result = [0]
@@ -361,6 +381,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
         return np.array(result, dtype=np.uint64)
 
+    @computed_field
     @cached_property
     def fps_from_timestamped_index(self) -> float | None:
         if self.timestamp_index is None:
@@ -382,14 +403,17 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
         return float(np.mean(per_second_counts))
 
+    @computed_field
     @property
     def raw_frames(self) -> int:
         return len(self.raw_df)
 
+    @computed_field
     @property
     def number_of_frames(self) -> int:
         return len(self.df)
 
+    @computed_field
     @property
     def duration_seconds(self) -> float:
         return (
@@ -398,6 +422,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             else self.manual_timestamp_index[-1]
         )
 
+    @computed_field
     @property
     def info(self) -> pd.Series:
         return pd.Series(
@@ -415,6 +440,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
     _df_is_timestamped: bool = False
 
+    @computed_field
     @cached_property
     def raw_df(self) -> pd.DataFrame:
         match self.df_path.suffix:
@@ -440,6 +466,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
         return df
 
+    @computed_field
     @cached_property
     def df_is_timestamped(self) -> bool:
         """
@@ -450,6 +477,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         assert not self.raw_df.empty
         return self._df_is_timestamped
 
+    @computed_field
     @property
     def combined_raw_likelihood(self) -> np.ndarray[float, np.dtype[np.float64]]:
         return np.multiply.reduce(self.raw_df.loc[:, pd.IndexSlice[:, "likelihood"]], axis=1)

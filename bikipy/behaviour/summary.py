@@ -3,7 +3,7 @@ from functools import cached_property
 
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath, validator
+from pydantic import DirectoryPath, computed_field, validator
 
 from bikipy.core.base import BikipyModel
 
@@ -74,10 +74,12 @@ class StatisticalAnalysis(BikipyModel):
                 result.append(tukey_df)
         return pd.concat(result)
 
+    @computed_field
     @cached_property
     def merged_df(self):
         pd.concat((self.analysis_df.sort_index(), self.metadata_df.sort_index()), axis=1)
 
+    @computed_field
     @cached_property
     def unique_category_values(self):
         result = {}
@@ -86,6 +88,7 @@ class StatisticalAnalysis(BikipyModel):
             result[column] = np.unique(self.metadata_df[column])
         return result
 
+    @computed_field
     @cached_property
     def categorized_dataframes(self) -> dict:
         result = {}
@@ -100,6 +103,7 @@ class StatisticalAnalysis(BikipyModel):
             result[column] = pd.concat(dataframe_set)
         return result
 
+    @computed_field
     @property
     def analysis_path(self):
         os.makedirs(
@@ -108,6 +112,7 @@ class StatisticalAnalysis(BikipyModel):
         )
         return result
 
+    @computed_field
     @property
     def figure_path(self):
         os.makedirs((result := self.analysis_path / "figures"), exist_ok=True)
