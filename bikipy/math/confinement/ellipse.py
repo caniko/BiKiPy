@@ -1,5 +1,5 @@
 from numba import njit
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
 
 from bikipy import runtime_settings
 

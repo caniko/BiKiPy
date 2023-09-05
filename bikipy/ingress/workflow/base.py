@@ -13,9 +13,9 @@ from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 import numpy as np
 import pandas as pd
 from inflection import underscore
-from projectkit.model.project import ProjectKitModelMixin
 from pydantic import DirectoryPath, Field, FilePath, computed_field, validate_call
-from schemantic import SchemanticProjectMixin
+from pydantic_numpy import NpNDArrayFp64
+from schemantic import SchemanticProjectModelMixin
 
 from bikipy import runtime_settings
 from bikipy._constant import (
@@ -50,7 +50,7 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 
 
-class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMixin, ABC):
+class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
     """
     This model stores methods to ingest data for bikipy-based analysis. The workflow differs slightly between daughter
     classes. The commonality are the levels in which data is introduced, which is quite similar to the bikipy experiment
@@ -67,9 +67,9 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     analysis is to run analyze_and_save(), a function at the bottom of this file, through the BiKiPy CLI.
     """
 
-    project_directory: DirectoryPath = ...
-    dataset_directory: DirectoryPath = ...
-    experiment_class_name: str = ...
+    project_directory: DirectoryPath
+    dataset_directory: DirectoryPath
+    experiment_class_name: str
 
     create_inspection_plots: bool = True
 
@@ -87,14 +87,14 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
     no_cache: bool = False
 
     definition_meters_per_pixel: frozenset[PluginScope]
-    definition_single_perimeter: Optional[frozenset[PluginScope]]
-    definition_enclosure: Optional[frozenset[PluginScope]]
-    definition_radial: Optional[frozenset[PluginScope]]
-    definition_change_reference: Optional[frozenset[PluginScope]]
-    definition_frame: Optional[frozenset[PluginScope]]
-    definition_video: Optional[frozenset[PluginScope]]
-    definition_timestamp: Optional[frozenset[PluginScope]]
-    definition_center: Optional[frozenset[PluginScope]]
+    definition_single_perimeter: Optional[frozenset[PluginScope]] = None
+    definition_enclosure: Optional[frozenset[PluginScope]] = None
+    definition_radial: Optional[frozenset[PluginScope]] = None
+    definition_change_reference: Optional[frozenset[PluginScope]] = None
+    definition_frame: Optional[frozenset[PluginScope]] = None
+    definition_video: Optional[frozenset[PluginScope]] = None
+    definition_timestamp: Optional[frozenset[PluginScope]] = None
+    definition_center: Optional[frozenset[PluginScope]] = None
 
     ingress_defined_perimeters: dict[str, Perimeter] = {}
 
@@ -118,9 +118,6 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
     _coordinate_file_index_delimiter: ClassVar[str] = "."
 
-    class Config:
-        keep_untouched = (cached_property,)
-
     @abstractmethod
     def _dataset_reader(self) -> None:
         """
@@ -130,15 +127,15 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         """
         ...
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
         result.update(("project_directory", "experiment_class_name"))
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def experiment_class(self) -> "ExperimentCLS":
         from bikipy.behaviour.mapping import experiment_name_to_class
@@ -170,7 +167,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         return experiment
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def ingress_defined_fields(self) -> dict[str, set]:
         result = {
@@ -188,21 +185,21 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def trial_id_to_trial_class_name(self):
         if not self._experiment_data_defined:
             self.model_post_init()
         return self._trial_id_to_trial_class_name
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def common_trial_keyword_arguments(self):
         if not self._experiment_data_defined:
             self.model_post_init()
         return self._common_trial_keyword_arguments
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def trial_id_to_keyword_arguments(self):
         self._define_experiment_data_if_not_defined()
@@ -213,13 +210,13 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         return dict(self._trial_id_to_keyword_arguments)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def trial_class_name_to_keyword_arguments(self):
         self._define_experiment_data_if_not_defined()
         return self._trial_class_name_to_keyword_arguments
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def metadata_index_to_trial_id(self):
         if not self._experiment_data_defined:
@@ -227,12 +224,12 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         return self._metadata_index_to_trial_id
 
     # I/O ============================
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def metadata_sheet_names(self) -> list[str]:
         return sheet_names_from_path(self.metadata_path)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def ranged_metadata(self) -> pd.DataFrame | None:
         if "ranged" in self.metadata_sheet_names:
@@ -240,7 +237,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             if "Phase" in column_names:
                 return pd.read_excel(self.metadata_path, sheet_name="ranged", index_col=[0, 1, 2])
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def animal_metadata(self) -> pd.DataFrame | None:
         if "animal" in self.metadata_sheet_names:
@@ -252,7 +249,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             animal_df.columns.names = ["Animal"]
             return animal_df
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def metadata(self) -> pd.DataFrame:
         def join_trial_df_with_animal_metadata(df: pd.DataFrame) -> pd.DataFrame:
@@ -384,7 +381,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         return trial_id_df
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def metadata_perimeter_label_sheet(self) -> pd.DataFrame | None:
         """
@@ -404,22 +401,22 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         return self.metadata
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def settings_path(self) -> FilePath:
         return get_project_settings_path(self.project_directory)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def metadata_path(self) -> FilePath:
         return infer_metadata_path(self.project_directory)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def plugin_directory_path(self) -> DirectoryPath:
         return get_plugin_directory_path(self.project_directory)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def inspect_directory_path(self) -> DirectoryPath:
         result = get_inspect_directory_path(self.project_directory)
@@ -445,19 +442,19 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         result.mkdir(exist_ok=True)
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def result_directory_path(self) -> DirectoryPath:
         return result_directory_path(self.project_directory)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def cache_directory_path(self) -> DirectoryPath:
         os.makedirs(result := self.project_directory / "bikipy_ingress_cache", exist_ok=True)
         return result
 
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def _plugin_definitions(self) -> dict[str, frozenset[PluginScope]]:
         result = {
@@ -481,7 +478,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def _global_plugins(self) -> list["PluginType"]:
         from bikipy.ingress.plugin.map import ingress_key_to_model
@@ -492,7 +489,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             if PluginScope.GLOBAL in strategy
         ]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def _plugins_metadata(self) -> list["PluginType"]:
         from bikipy.ingress.plugin.map import ingress_key_to_model
@@ -503,7 +500,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
             if PluginScope.METADATA in strategy
         ]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def _trialwise_plugins(self) -> list["PluginType"]:
         from bikipy.ingress.plugin.map import ingress_key_to_model
@@ -605,7 +602,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         return False
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def experiment(self) -> "Experiment":
         additional_kwargs = {}
@@ -627,7 +624,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         )
 
     # Motion <-> Feature fitting ===================================
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def animal_metadata_fit_to_combined_feature_motion_df(self) -> pd.DataFrame:
         if self.animal_metadata.columns.nlevels >= self.experiment.combined_feature_motion_df.columns.nlevels:
@@ -642,7 +639,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         return copycat_assumes_levels_of_icon(self.metadata, self.experiment.combined_feature_motion_df, "Global")
 
     # Client-side functions ===============================
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def trial_label_to_df(self) -> dict[Label, pd.DataFrame]:
         if self.metadata_trial_ids_are_higher_level:
@@ -664,7 +661,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def animal_analysis_df(self) -> pd.DataFrame:
         df = pd.concat(
@@ -781,7 +778,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         raise AttributeError(f"Could not find meters_per_pixel for trial {trial_id}")
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def metadata_plugin_to_label_to_path(self) -> dict[str, dict[str, FilePath]]:
         result = defaultdict(dict)

@@ -3,7 +3,8 @@ from typing import Optional
 
 import pandas as pd
 from pydantic import computed_field
-from pydantic_numpy import NpNDArrayBool
+from pydantic_numpy import NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArrayBool
 
 from bikipy.core.compute import video_gen_merge_perimeter_to_boolean_index_from_dict
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
@@ -26,18 +27,18 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
     left_ear_label: str = "left_ear"
     right_ear_label: str = "right_ear"
 
-    manual_left_ear_proximity: Optional[ComputeProximity]
-    manual_leftward_observation: Optional[ComputeInLineOfSight]
-    manual_right_proximity: Optional[ComputeProximity]
-    manual_rightward_observation: Optional[ComputeInLineOfSight]
+    manual_left_ear_proximity: Optional[ComputeProximity] = None
+    manual_leftward_observation: Optional[ComputeInLineOfSight] = None
+    manual_right_proximity: Optional[ComputeProximity] = None
+    manual_rightward_observation: Optional[ComputeInLineOfSight] = None
 
     heuristic_alias = "WhiskerInteraction"
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
         result.update(
             (
                 "manual_left_ear_proximity",
@@ -48,7 +49,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
         )
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def left_proximity(self) -> ComputeProximity:
         return (
@@ -63,7 +64,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
             )
         )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def leftward_observation(self) -> ComputeInLineOfSight:
         return (
@@ -79,7 +80,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
             )
         )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def right_proximity(self) -> ComputeProximity:
         return (
@@ -94,7 +95,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
             )
         )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def rightward_observation(self) -> ComputeInLineOfSight:
         return (
@@ -110,29 +111,29 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
             )
         )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def left_result(self) -> NpNDArrayBool:
         result = self.left_proximity.result & self.leftward_observation.result
         return result if self.filter_in_sequence else single_node_tolerance_model(result, self.video.fps)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def right_result(self) -> NpNDArrayBool:
         result = self.right_proximity.result & self.rightward_observation.result
         return result if self.filter_in_sequence else single_node_tolerance_model(result, self.video.fps)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def solo_result(self) -> NpNDArrayBool:
         return self.left_result | self.right_result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def label_to_proximity_boolean(self) -> dict[str, NpNDArrayBool]:
         return {self.left_ear_label: self.left_proximity.result, self.right_ear_label: self.right_proximity.result}
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def label_to_ray_vector_direction_points(self) -> dict[str, NpNDArrayFp64]:
         return {
@@ -140,7 +141,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
             self.right_ear_label: self.reader[self.right_ear_label] - self.reader[self.center_ear_label],
         }
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
         return video_gen_merge_perimeter_to_boolean_index_from_dict(
@@ -152,7 +153,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
             ),
         )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def summary_series(self) -> pd.Series:
         label = self.perimeter.label.capitalize()

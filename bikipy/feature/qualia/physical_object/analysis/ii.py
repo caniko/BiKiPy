@@ -6,6 +6,7 @@ from typing import ClassVar
 import numpy as np
 import pandas as pd
 from pydantic import computed_field
+from pydantic_numpy import NpNDArrayUint8
 
 from bikipy.feature.qualia.physical_object.analysis.i import (
     OnePhysicalObjectSetQualiaAnalysis,
@@ -18,7 +19,7 @@ logger = getLogger(__name__)
 class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
     overlapping_frame_to_total_frame_warning_ratio: ClassVar[float] = 0.05
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def _analysis_series_list(self) -> list[pd.Series]:
         result = super()._analysis_series_list
@@ -46,7 +47,7 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
         )
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def pair_to_absolute_object_discrimination(self) -> dict[tuple[str, str], float]:
         return {
@@ -56,7 +57,7 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
             for perm_a, perm_b in permutations(self.po_label_to_seconds_observing, 2)
         }
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def relative_object_bias_score(self) -> dict[str, float]:
         if not self.po_total_seconds_observing:
@@ -66,7 +67,7 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
             for physical_object_label, frames_observing in self.po_label_to_frames_observing.items()
         }
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def object_bias_score(self) -> dict[str, float]:
         """
@@ -75,7 +76,7 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
         """
         return self.relative_object_bias_score
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def absolute_object_bias_score(self) -> dict[str, float]:
         if not self.po_total_seconds_observing:
@@ -85,7 +86,7 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
             for physical_object_label, frames_observing in self.po_label_to_frames_observing.items()
         }
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def po_observation_sequence(self) -> NpNDArrayUint8:
         overlapping_frames = 0
@@ -110,7 +111,7 @@ class TwoPhysicalObjectSetQualiaAnalysis(OnePhysicalObjectSetQualiaAnalysis):
 
         return observation_sequence
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def po_sum_of_observation_instances(self) -> int:
         return sum(

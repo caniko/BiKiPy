@@ -3,6 +3,7 @@ from typing import Optional
 
 import pandas as pd
 from pydantic import computed_field
+from pydantic_numpy import NpNDArrayBool, NpNDArrayFp64
 
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
@@ -23,20 +24,20 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
     nose_label: str | None = "nose"
     center_ear_label: str = "center_ear"
 
-    manual_nose: Optional[ComputeProximity]
-    manual_nose_olfaction_rays: Optional[ComputeInLineOfSight]
+    manual_nose: Optional[ComputeProximity] = None
+    manual_nose_olfaction_rays: Optional[ComputeInLineOfSight] = None
 
     heuristic_alias = "Olfaction"
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
         result.update(("manual_nose", "manual_torso", "manual_tail_base"))
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def nose_proximity(self) -> ComputeProximity | None:
         if self.manual_nose is not None:
@@ -53,7 +54,7 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
             manual_video=self.video,
         )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def snout_towards_object_rays(self) -> ComputeInLineOfSight:
         return (
@@ -69,29 +70,29 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
             )
         )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def solo_result(self) -> NpNDArrayBool:
         return self.nose_proximity.result & self.snout_towards_object_rays.result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def label_to_proximity_boolean(self) -> dict[str, NpNDArrayBool]:
         return {self.nose_label: self.nose_proximity.result}
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def label_to_ray_vector_direction_points(self) -> dict[str, NpNDArrayFp64]:
         return {self.nose_label: self.reader[self.nose_label] - self.reader[self.center_ear_label]}
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
         return self.nose_proximity.video_gen_merge_perimeter_to_boolean_index(
             self.snout_towards_object_rays, both_or_false=True
         )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def summary_series(self) -> pd.Series:
         label = self.perimeter.label.capitalize()

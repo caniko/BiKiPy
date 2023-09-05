@@ -1,6 +1,7 @@
 from typing import Optional, Sequence
 
 import numpy as np
+from pydantic_numpy.typing import NpNDArrayFp64
 
 
 def feature_scale(

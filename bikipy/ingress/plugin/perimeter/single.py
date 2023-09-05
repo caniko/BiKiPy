@@ -30,8 +30,8 @@ class SinglePerimeterPluginFileStemParse(PluginFileStemParseLastIsLabel):
 
 # TODO: Manual radius readings from settings.yaml read.
 class PluginSinglePerimeter(AbstractPerimeterPlugin):
-    label_prefix: Optional[str]
-    label_suffix: Optional[str]
+    label_prefix: Optional[str] = None
+    label_suffix: Optional[str] = None
 
     plugin_file_stem_parser = SinglePerimeterPluginFileStemParse
 
@@ -40,7 +40,7 @@ class PluginSinglePerimeter(AbstractPerimeterPlugin):
     default_trial_argument_key = "label_to_perimeter"
     human_readable_index = "Perimeter"
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def image_name(self):
         return first_image_name_from_makesense(self.data_path, SHAPE_TO_MAKESENSE_TYPE[self.stem_info.shape])
@@ -72,7 +72,7 @@ class PluginSinglePerimeter(AbstractPerimeterPlugin):
             return next(iter(result.values()))
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def globally_defined(self) -> dict[str, SinglePerimeter]:
         self._assert_correct_scope_global()

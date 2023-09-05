@@ -3,8 +3,7 @@ from typing import Any, Iterable
 
 import numpy as np
 from pydantic import validate_call
-from pydantic_numpy import NpNDArrayBool, NpNDArrayFp64
-from pydantic_numpy.typing import NpNDArray, NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArray, NpNDArrayBool, NpNDArrayFp64
 
 from bikipy.feature.angle import angle_from_a_to_b
 from bikipy.perimeter.base import SinglePerimeter

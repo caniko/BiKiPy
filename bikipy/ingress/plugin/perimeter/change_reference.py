@@ -25,7 +25,7 @@ class ChangeReferencePluginFileStemParse(PluginFileStemParse):
         except IndexError:
             self._new_label = None
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def new_label(self):
         if not self._new_label:
@@ -44,7 +44,7 @@ class PluginChangeReference(BasePluginFile, IngressRequiredMixin):
     human_readable_index = "ChangeReference"
     name_human_readable_index: ClassVar[str] = "ChangeReferenceImageName"
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def image_name_to_re_referencing_point(self) -> dict[str, NpNDArrayFp64]:
         return image_name_to_point_from_makesense(self.data_path, only_point=False)
@@ -83,7 +83,7 @@ class PluginChangeReference(BasePluginFile, IngressRequiredMixin):
 
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def globally_defined(self) -> Perimeter:
         self._assert_correct_scope_global()

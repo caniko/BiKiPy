@@ -10,9 +10,11 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from pydantic import Field, FilePath, computed_field, validate_call
-from pydantic.generics import GenericModel
-from pydantic_numpy import NpNDArrayUint32
-from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64, NpNDArrayUint8
+from pydantic_numpy.typing import (
+    NpNDArrayBool,
+    NpNDArrayFp64,
+    NpNDArrayUint32,
+)
 from typing_extensions import Literal
 
 from bikipy import runtime_settings
@@ -38,8 +40,8 @@ logger = getLogger(__name__)
 Enclosure = TypeVar("Enclosure", bound=BasePerimeter)
 
 
-class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadataMixin, ABC):
-    df_path: FilePath = Field(..., description="Path to kinematic data, that will be " "converted to pd.DataFrame")
+class BaseReader(Generic[Enclosure], BikipyHashable, VideoMetadataMixin, ABC):
+    df_path: FilePath = Field(description="Path to kinematic data, that will be " "converted to pd.DataFrame")
     df_read_kwargs: Optional[dict] = Field(
         default_factory=dict, description="Keyword arguments to pass to the padnas dataframe reader"
     )
@@ -62,8 +64,8 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     )
 
     skeleton_edges: tuple[tuple[str, str], ...] = Field(default_factory=tuple)
-    skeleton_max_velocity: Optional[float]
-    skeleton_max_acceleration: Optional[float]
+    skeleton_max_velocity: Optional[float] = None
+    skeleton_max_acceleration: Optional[float] = None
     skeleton_acceleration_rigidity_filter: bool = Field(
         True, description="When True, consider filter based on acceleration"
     )
@@ -107,16 +109,15 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         False, description="When timestamp index is defined, export re-indexed df as parquet"
     )
 
-    _using_bikipy_ingress: bool = Field(
+    # TODO: Convert back to private
+    using_bikipy_ingress: bool = Field(
         False,
         description="This is a flagg used by the developer to signal the use of bikipy ingress to the class. "
         "Currently, it only affects augmented df caching",
     )
 
-    _post_read_midpoints: set = set()
-    _time_index_derived_fps: float | None
-    _region_of_interest_to_fused_neighbouring_points: dict[str, NpNDArrayUint8] = Field(default_factory=dict)
-    _cached_augmented_df: pd.DataFrame | None
+    # TODO: Convert back to private
+    post_read_midpoints: set = set()
 
     def __getitem__(self, query: Iterable[Hashable] | Hashable) -> pd.DataFrame:
         if not isinstance(query, str) and isinstance(query, abc.Iterable):
@@ -127,12 +128,12 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
                 raise AttributeError(msg)
             return self._isolate_coordinates(query)
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
-        result.update(("df_path", "trial_enclosure", "manual_timestamp_index", "_using_bikipy_ingress"))
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
+        result.update(("df_path", "trial_enclosure", "manual_timestamp_index", "using_bikipy_ingress"))
         return result
 
     def _isolate_coordinates(self, key: Iterable[str] | str) -> NpNDArrayFp64:
@@ -148,42 +149,42 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
     def isolate_coordinates_from_native_df(df: pd.DataFrame, key: Iterable[str] | str) -> NpNDArrayFp64:
         ...
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def kinematic_coordinates(self) -> pd.DataFrame:
         return self[self.object_tracking_label_for_kinematics]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def kinematic_coordinates_prepared_for_plotting(self) -> NpNDArrayFp64:
         return self.video.prepare_coordinates_for_plotting(self.kinematic_coordinates)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def physically_tracked_labels(self) -> set[str]:
         return set(self.raw_df.columns.levels[0])
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def tracked_midpoint_labels(self) -> set[str]:
-        result = self._post_read_midpoints.copy()
+        result = self.post_read_midpoints.copy()
         if self.midpoint_groups:
             result.update(self.midpoint_groups.keys())
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def all_tracked_labels(self) -> set[str]:
         return self.physically_tracked_labels | self.tracked_midpoint_labels
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def label_to_plot_color(self) -> dict[str, matplotlib.colors.ListedColormap]:
         return {
             label: color for label, color in zip(self.all_tracked_labels, make_color_map(len(self.all_tracked_labels)))
         }
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def required_video_metadata_fields(self) -> set:
         base = {"meters_per_pixel", "recording_resolution"}
@@ -191,23 +192,23 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             base.add("fps")
         return base
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def augmented_file_name(self) -> str:
         stem = self.df_path.stem.replace("coordinates-", f"coordinates-{AUGMENTED_COORDINATE_CACHED_FILE_LABEL}-")
         return f"{stem}.parquet"
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def cached_augmented_df_path(self) -> FilePath:
         return self.df_path.with_name(self.augmented_file_name)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def crop_target_trial_length_frames(self) -> int:
         return min(round(self.crop_target_trial_length_seconds * self.video.fps), self.raw_frames)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def crop_frames_from_start(self) -> int:
         result = round(self.crop_seconds_from_start / self.video.fps)
@@ -220,7 +221,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
                 result += round(self.raw_frames - self.crop_target_trial_length_seconds * self.video.fps)
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def crop_frames_from_end(self) -> int:
         result = round(self.crop_seconds_from_end / self.video.fps)
@@ -237,7 +238,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
                 result += round(self.raw_frames - self.crop_target_trial_length_seconds * self.video.fps)
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def crop_frames_slice(self) -> slice | None:
         start = self.crop_frames_from_start
@@ -245,18 +246,18 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
         return slice(start, -stop if stop else None) if start or stop else None
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def video_start_frame_index(self) -> int:
         return self.start_end_idx_capped_likelihood[0] + self.crop_frames_from_start
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def start_end_idx_capped_likelihood(self) -> tuple[int, int]:
         tail_likelihood_capped_boolean_idx = np.where(self.combined_raw_likelihood >= self.required_tail_likelihood)[0]
         return tail_likelihood_capped_boolean_idx[0], tail_likelihood_capped_boolean_idx[-1]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def augmented(self) -> pd.DataFrame:
         """
@@ -349,12 +350,12 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def df(self) -> pd.DataFrame:
         return self.augmented
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def timestamp_index(self) -> NpNDArrayFp64 | None:
         assert not self.raw_df.empty
@@ -367,7 +368,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def full_second_index(self) -> NpNDArrayUint32:
         result = [0]
@@ -380,7 +381,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
         return np.array(result, dtype=np.uint64)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def fps_from_timestamped_index(self) -> float | None:
         if self.timestamp_index is None:
@@ -402,17 +403,17 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
         return float(np.mean(per_second_counts))
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def raw_frames(self) -> int:
         return len(self.raw_df)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def number_of_frames(self) -> int:
         return len(self.df)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def duration_seconds(self) -> float:
         return (
@@ -421,7 +422,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             else self.manual_timestamp_index[-1]
         )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def info(self) -> pd.Series:
         return pd.Series(
@@ -439,7 +440,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
     _df_is_timestamped: bool = False
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def raw_df(self) -> pd.DataFrame:
         match self.df_path.suffix:
@@ -465,7 +466,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
         return df
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def df_is_timestamped(self) -> bool:
         """
@@ -476,7 +477,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         assert not self.raw_df.empty
         return self._df_is_timestamped
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def combined_raw_likelihood(self) -> NpNDArrayFp64:
         return np.multiply.reduce(self.raw_df.loc[:, pd.IndexSlice[:, "likelihood"]], axis=1)

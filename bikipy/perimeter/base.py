@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, Literal, Optional, Type, TypeVar
 
 import numpy as np
+import pandas as pd
 import seaborn as sb
 from matplotlib.axes import Axes
 from numpy import unsignedinteger
@@ -14,10 +15,15 @@ from pydantic import (
     Field,
     FilePath,
     computed_field,
-    root_validator,
+    model_validator,
     validate_call,
 )
-from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64, NpNDArrayInt16
+from pydantic_numpy.typing import (
+    NpNDArrayBool,
+    NpNDArrayFp64,
+    NpNDArrayInt16,
+    NpNDArrayUint8,
+)
 
 from bikipy._constant import INSPECT_SIMPLE_FIG_FILE_FORMAT
 from bikipy.core.base import BikipyHashable
@@ -123,10 +129,9 @@ PerimeterCLS = Type[BasePerimeter]
 Perimeter = TypeVar("Perimeter", bound=BasePerimeter)
 
 
-# ruff ignore E402
-from bikipy.reader.base import BaseReader
+from bikipy.reader.base import BaseReader  # ruff ignore E402
 
-BaseReader.update_forward_refs(Perimeter=Perimeter)
+BaseReader.model_rebuild()
 
 
 class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
@@ -143,27 +148,28 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     )
     derived_meters_per_pixel_source: Optional[str]
     derived_meters_per_pixel_source_metric_length: Optional[float] = Field(
+        None,
         description="Metric length of the pre-determined component, see derived pixels per pixel from perimeter in "
         "the documentation.",
     )
 
-    int_id: Optional[int] = Field(description="For multi-perimeter trials where sequential confinement is used")
-    group_label: Optional[str]
+    int_id: Optional[int] = Field(None, description="For multi-perimeter trials where sequential confinement is used")
+    group_label: Optional[str] = None
 
-    makesense_image_name: Optional[str]
+    makesense_image_name: Optional[str] = None
 
-    reference_point_coco_path: Optional[FilePath]
-    reference_point_array: Optional[NpNDArrayInt16]
+    reference_point_coco_path: Optional[FilePath] = None
+    reference_point_array: Optional[NpNDArrayInt16] = None
 
-    moving_field_name: Optional[str]
+    moving_field_name: Optional[str] = None
 
     required_video_metadata_fields = {"recording_resolution"}
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
         result.update(
             {
                 "int_id",
@@ -175,14 +181,14 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         )
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def _to_hash(self) -> list:
         result = super()._to_hash
         result.append(self.int_id)
         return result
 
-    @computed_field
+    @computed_field(return_type=VideoMetadata)  # type: ignore[misc]
     @property
     def _video(self) -> VideoMetadata:
         upstream_video = super()._video
@@ -203,7 +209,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
         return upstream_video
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def derived_meters_per_pixel(self) -> float | None:
         return
@@ -226,7 +232,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     ) -> NpNDArrayBool:
         ...
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     def mutually_exclusive(cls, values):
         if all(key in values and values[key] for key in ("reference_point_coco_path", "reference_point_array")):
             msg = "reference_point_coco_path and reference_point_array must be " "defined mutually exclusive"
@@ -247,9 +253,9 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
         # if self.moving_field_name == "reference_point_array":
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
-    def reference_point(self):
+    def reference_point(self) -> pd.DataFrame | None:
         if self.reference_point_array is None and not self.reference_point_coco_path:
             return None
         return (
@@ -259,7 +265,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         )
 
     @reference_point.setter
-    def reference_point(self, value):
+    def reference_point(self, value) -> None:
         self.reference_point_array = np.ascontiguousarray(value)
 
     def change_reference_with_coco(
@@ -356,15 +362,15 @@ class PerimeterSet(BasePerimeter):
     perimeters: list[SinglePerimeter]
     restricting_perimeters: Optional[list[SinglePerimeter]]
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
         result.update(("perimeters", "restricting_perimeters"))
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def _to_hash(self) -> list:
         result = super()._to_hash
@@ -397,7 +403,7 @@ class PerimeterSet(BasePerimeter):
                 return perimeter
         raise KeyError(f"Item was not found, {item} amongst {self.all_perimeters}")
 
-    @computed_field
+    @computed_field(return_type=VideoMetadata)  # type: ignore[misc]
     @cached_property
     def video(self) -> VideoMetadata:
         result = self.all_perimeters[0].video
@@ -405,7 +411,7 @@ class PerimeterSet(BasePerimeter):
             result = VideoMetadata.join(result, p.video)
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def mean_meters_per_pixel(self) -> float:
         if self.number_of_perimeters == 1:
@@ -427,7 +433,7 @@ class PerimeterSet(BasePerimeter):
 
         return dict(grouped)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def centroid_meters(self) -> NpNDArrayFp64:
         """
@@ -472,27 +478,27 @@ class PerimeterSet(BasePerimeter):
             else None,
         )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def perimeter_to_int_id(self) -> dict[Perimeter, int]:
         return {perimeter: perimeter.int_id for perimeter in self.all_perimeters}
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def int_id_to_perimeter(self) -> dict[int, Perimeter]:
         return {perimeter.int_id: perimeter for perimeter in self.all_perimeters}
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def label_to_perimeter(self) -> dict[str, Perimeter]:
         return {perimeter.label: perimeter for perimeter in self.all_perimeters}
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def int_id_to_label(self) -> dict[int, str]:
         return {perimeter.int_id: perimeter.label for perimeter in self.all_perimeters}
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def reference_point(self) -> NpNDArrayFp64:
         expected_reference_point = self.all_perimeters[0].reference_point
@@ -504,43 +510,43 @@ class PerimeterSet(BasePerimeter):
             return None
         return expected_reference_point
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def inspect_image(self) -> NpNDArrayUint8:
         result = self.all_perimeters[0].inspect_image
         assert all(result == perimeter.inspect_image for perimeter in self.all_perimeters)
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def inspect_image_path(self) -> Path:
         result = self.all_perimeters[0].inspect_image_path
         assert all(result == perimeter.inspect_image_path for perimeter in self.all_perimeters)
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def all_perimeters(self) -> tuple[SinglePerimeter, ...]:
         if not self.restricting_perimeters:
             return tuple(self.perimeters)
         return *self.perimeters, *self.restricting_perimeters
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def labels(self) -> tuple[str, ...]:
         return tuple(perimeter.label for perimeter in self.all_perimeters)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def number_of_perimeters(self) -> int:
         return len(self.all_perimeters)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def size_respective_dtype(self) -> Type[unsignedinteger]:
         return np.uint8 if self.number_of_perimeters <= 255 else np.uint16
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def number_of_vertices(self) -> int:
         vertex_numbers = []
@@ -551,7 +557,7 @@ class PerimeterSet(BasePerimeter):
                 vertex_numbers.append(1)
         return sum(vertex_numbers)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def get_only_perimeter(self) -> SinglePerimeter:
         assert self.number_of_perimeters == 1

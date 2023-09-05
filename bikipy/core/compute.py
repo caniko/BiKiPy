@@ -4,9 +4,8 @@ from typing import ClassVar, Generic, Optional, TypeVar
 
 import numpy as np
 from matplotlib.axes import Axes
-from pydantic import Extra, computed_field, root_validator, validate_call
-from pydantic.generics import GenericModel
-from pydantic_numpy import NpNDArrayBool
+from pydantic import Extra, computed_field, model_validator, validate_call
+from pydantic_numpy.typing import NpNDArrayBool
 
 from bikipy.core.base import BikipyModel
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
@@ -16,16 +15,13 @@ from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 T = TypeVar("T")
 
 
-class AbstractCompute(GenericModel, Generic[T], BikipyModel, ABC):
-    label: str = ...
+class AbstractCompute(Generic[T], BikipyModel, ABC, extra=Extra.allow):
+    label: str
 
     heuristic_data_sources: ClassVar[tuple[str, ...]]
     heuristic_data_sources_all_required: ClassVar[bool] = False
 
-    class Config:
-        extra = Extra.allow
-
-    @root_validator
+    @model_validator(mode="before")
     def check_at_least_one_field(cls, values):
         if not hasattr(cls, "heuristic_data_sources"):
             msg = f"Ask project authors to define heuristic_data_sources for the {cls.__name__} class"
@@ -60,10 +56,10 @@ class AbstractCompute(GenericModel, Generic[T], BikipyModel, ABC):
 
 
 class AbstractComputePerimeterBooleanIndex(AbstractCompute[NpNDArrayBool], VideoMetadataMixin, ABC):
-    perimeter: SinglePerimeter = ...
+    perimeter: SinglePerimeter
     tolerance_modelling: bool = True
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def result_seconds(self) -> float:
         return self.video.boolean_array_to_seconds(self.result)

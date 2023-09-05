@@ -33,10 +33,10 @@ def read_image(image: FilePath | NpNDArrayUint8, imread_flagg: Optional[list] = 
     return image
 
 
-@validate_call
 @lru_cache
-def read_image_from_path(image_path: FilePath, imread_flagg: Optional[list] = None) -> NpNDArrayUint8:
-    return cv2.imread(str(image_path))
+@validate_call
+def read_image_from_path(image_path: FilePath, imread_flagg: int = 0) -> NpNDArrayUint8:
+    return cv2.imread(str(image_path), flags=imread_flagg)
 
 
 def axis_frame_imshow(ax: Axes, image: NpNDArray):

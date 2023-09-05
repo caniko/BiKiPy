@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from pydantic import BaseModel, computed_field
+from pydantic_numpy import NpNDArrayBool, NpNDArrayFp64
 
 from bikipy.math.cached import cached_deg2rad, meters2pixels
 
@@ -13,7 +14,7 @@ class ProximityMixin(BaseModel, ABC):
     def label_to_proximity_boolean(self) -> dict[str, NpNDArrayBool]:
         ...
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def maximum_distance_pixels(self) -> float:
         return meters2pixels(self.maximum_distance_meters, self.video.pixels_per_meter)
@@ -22,7 +23,7 @@ class ProximityMixin(BaseModel, ABC):
 class RayMixin(BaseModel, ABC):
     maximum_degrees: float = 45.0
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def maximum_radians(self) -> float:
         return cached_deg2rad(self.maximum_degrees)

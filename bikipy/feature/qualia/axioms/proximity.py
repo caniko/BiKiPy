@@ -5,6 +5,7 @@ from typing import Optional
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import Field, computed_field, validate_call
+from pydantic_numpy import NpNDArrayBool
 from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy import runtime_settings
@@ -26,10 +27,10 @@ def _update_result_array(result: NpNDArrayBool | None, new_array: NpNDArrayBool,
 class ComputeProximity(AbstractComputePerimeterBooleanIndex):
     maximum_distance: float | NpNDArrayFp64
 
-    inside_perimeter: Optional[NpNDArrayFp64]
-    outside_perimeter: Optional[NpNDArrayFp64]
-    inside_perimeter_border: Optional[NpNDArrayFp64]
-    outside_perimeter_border: Optional[NpNDArrayFp64]
+    inside_perimeter: Optional[NpNDArrayFp64] = None
+    outside_perimeter: Optional[NpNDArrayFp64] = None
+    inside_perimeter_border: Optional[NpNDArrayFp64] = None
+    outside_perimeter_border: Optional[NpNDArrayFp64] = None
 
     heuristic_data_sources = (
         "inside_perimeter",
@@ -38,14 +39,14 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
         "outside_perimeter_border",
     )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def perimeter_border(self) -> SinglePerimeter:
         return self.perimeter.expand(self.maximum_distance)
 
     my_perimeter_to_boolean_index: dict[Perimeter, NpNDArrayBool] = Field(default_factory=dict)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def result(self) -> T:
         """
@@ -91,7 +92,7 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
 
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
         assert self.result is not None

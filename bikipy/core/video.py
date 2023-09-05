@@ -9,7 +9,7 @@ from collections.abc import Iterable
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import ClassVar, Generator, Optional, Sequence
+from typing import Any, ClassVar, Generator, Optional, Sequence
 
 import cv2
 import matplotlib.pyplot as plt
@@ -19,6 +19,7 @@ from matplotlib.figure import Figure
 from mextractor.base import load
 from mextractor.extractors import extract_video
 from pydantic import DirectoryPath, Field, FilePath, computed_field, field_validator
+from pydantic_numpy import NpNDArrayFp64
 from pydantic_numpy.typing import (
     NpNDArray,
     NpNDArrayBool,
@@ -61,16 +62,25 @@ class _VideoMetadataBase(BikipyModel):
 
     category = "video_metadata"
 
-    class Config:
-        keep_untouched = (cached_property,)
-
     @field_validator("frame")
     def make_sure_frame_is_read(cls, value: Frame) -> NpNDArrayUint8:
         return read_image_from_path(value) if isinstance(value, Path) else value
 
     @computed_field
+    @property
+    def metadata(self) -> dict[str, Any]:
+        result = {}
+        if self.meters_per_pixel is not None:
+            result["meters_per_pixel"] = self.meters_per_pixel
+        if self.recording_resolution is not None:
+            result["recording_resolution"] = self.recording_resolution
+        if self.fps:
+            result["fps"] = self.fps
+        return result
+
+    @computed_field  # type: ignore[misc]
     @cached_property
-    def resolution(self) -> np.ndarray[int, np.int16] | None:
+    def resolution(self) -> NpNDArrayInt16 | None:
         if self.recording_resolution is not None:
             return self.recording_resolution
         if self.frame is not None:
@@ -105,17 +115,20 @@ class _VideoMetadataBase(BikipyModel):
 
 class VideoMetadata(_VideoMetadataBase):
     def __and__(self, other: "VideoMetadata") -> bool:
-        for key in set(self.model_dump(exclude_unset=True)).intersection(other.model_dump(exclude_unset=True)):
-            if np.any(self.model_dump(exclude_unset=True)[key] != other.model_dump(exclude_unset=True)[key]):
+        for key in set(self.metadata).intersection(other.metadata):
+            if np.any(self.metadata[key] != other.metadata[key]):
                 logger.debug(
-                    f"self and other are incongruent on {key}: "
-                    f"{self.model_dump(exclude_unset=True)[key]} != {other.model_dump(exclude_unset=True)[key]}"
+                    f"self and other are incongruent on {key}: " f"{self.metadata[key]} != {other.metadata[key]}"
                 )
                 return False
         return True
 
     def __eq__(self, other: "VideoMetadata") -> bool:
-        return set(self.model_dump(exclude_unset=True)) == set(other.model_dump(exclude_unset=True))
+        if not isinstance(other, self.__class__):
+            return False
+        if self.video_path and other.video_path and self.video_path == other.video_path:
+            return True
+        return self.metadata == other.metadata
 
     def __add__(self, other: "VideoMetadata") -> "VideoMetadata":
         return self.join(self, other)
@@ -136,9 +149,9 @@ class VideoMetadata(_VideoMetadataBase):
 
         if meters_per_pixel_mean and "meters_per_pixel" in inferior and "meters_per_pixel" in superior:
             meters_per_pixel = float(np.mean([inferior.meters_per_pixel, superior.meters_per_pixel], axis=0))
-        elif hasattr(superior, "meters_per_pixel") and superior.meters_per_pixel:
+        elif hasattr(superior, "meters_per_pixel") and superior.meters_per_pixel is not None:
             meters_per_pixel = superior.meters_per_pixel
-        elif hasattr(inferior, "meters_per_pixel") and inferior.meters_per_pixel:
+        elif hasattr(inferior, "meters_per_pixel") and inferior.meters_per_pixel is not None:
             meters_per_pixel = inferior.meters_per_pixel
 
         return cls(
@@ -163,70 +176,70 @@ class VideoMetadata(_VideoMetadataBase):
         info = load(mextractor_dir)
         return cls(recording_resolution=info.resolution, fps=info.fps, frame=info.image, **kwargs)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def pixels_per_meter(self) -> MetersPerPixel | None:
         if self.meters_per_pixel is not None:
             return 1.0 / self.meters_per_pixel
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
-    def multiplied_resolution(self) -> np.ndarray[int, np.int16]:
+    def multiplied_resolution(self) -> NpNDArrayInt16:
         if self.image_resize_multiplier == 1:
             return self.recording_resolution
         return np.round(self.resolution * self.image_resize_multiplier).astype(np.int16)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
-    def center_pixels(self) -> np.ndarray[int, np.int16]:
+    def center_pixels(self) -> NpNDArrayInt16:
         return np.round(self.resolution / 2.0)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def horizontal_resolution(self) -> int:
         return self.resolution[0]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def vertical_resolution(self) -> int:
         return self.resolution[1]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def metric_resolution(self) -> NpNDArrayFp64:
         return self.resolution * self.meters_per_pixel
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def center_meters(self) -> NpNDArrayFp64:
         return self.metric_resolution / 2.0
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def center_for_plot(self) -> NpNDArrayFp64:
         return self.center_pixels if self.coordinates_need_to_be_scaled_for_plot else self.center_meters
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def metric_horizontal_resolution(self) -> int:
         return self.metric_resolution[0]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def metric_vertical_resolution(self) -> int:
         return self.metric_resolution[1]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def minimum_frames_tolerance(self) -> int:
         return round(self.fps * runtime_settings.minimum_seconds_tolerance)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def maximum_frames_distraction(self) -> int:
         return round(self.fps * runtime_settings.maximum_seconds_distraction)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def image_resize_multiplier(self) -> float:
         if self.minimum_frame_length and self.frame is not None:
@@ -235,7 +248,7 @@ class VideoMetadata(_VideoMetadataBase):
                 return self.minimum_frame_length / shortest_side_size
         return 1.0
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def greyscale_frame(self) -> NpNDArrayUint8:
         if len(self.frame.shape) == 3 and self.frame.shape[2] == 3:
@@ -245,7 +258,7 @@ class VideoMetadata(_VideoMetadataBase):
         msg = f"The frame has an unsupported shape, {self.frame.shape}"
         raise AttributeError(msg)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def upscaled_video(self) -> "VideoMetadata":
         if self.image_resize_multiplier == 1:
@@ -263,17 +276,17 @@ class VideoMetadata(_VideoMetadataBase):
             recording_resolution=new_frame.shape[0:2:][::-1],
         )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def plotting_mean_side_length(self) -> float:
         return np.sum(self.center_pixels)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def plotting_line_thickness(self) -> float:
         return self.plotting_default_font_size / 10.0
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def coordinates_need_to_be_scaled_for_plot(self) -> bool:
         return self.frame is not None
@@ -364,7 +377,7 @@ class VideoMetadata(_VideoMetadataBase):
 
 class VideoMetadataMixin(_VideoMetadataBase):
     manual_video: Optional[VideoMetadata] = Field(
-        description="Video metadata defined from another video metadata object"
+        None, description="Video metadata defined from another video metadata object"
     )
 
     required_video_metadata_fields: ClassVar[set[str]] = set()
@@ -373,7 +386,7 @@ class VideoMetadataMixin(_VideoMetadataBase):
     @property
     def video(self) -> VideoMetadata:
         if self.required_video_metadata_fields and (
-            missing_fields := self.required_video_metadata_fields.difference(self._video.model_dump(exclude_unset=True))
+            missing_fields := self.required_video_metadata_fields.difference(self._video.metadata)
         ):
             msg = (
                 f"{self.__class__.__name__} requires {self.required_video_metadata_fields}, "

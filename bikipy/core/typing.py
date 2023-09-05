@@ -1,6 +1,6 @@
 import numpy as np
 from pydantic import PositiveInt
-from pydantic_numpy import NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArrayFp64
 
 MetersPerPixel = float | NpNDArrayFp64
 Label = str | PositiveInt

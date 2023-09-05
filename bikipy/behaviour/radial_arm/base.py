@@ -8,7 +8,8 @@ import numpy as np
 import pandas as pd
 from ordered_set import OrderedSet
 from pydantic import DirectoryPath, PositiveInt, computed_field, field_validator
-from pydantic_numpy.typing import NpNDArrayBool
+from pydantic_numpy import NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayUint8
 
 from bikipy._constant import INSPECT_SIMPLE_FIG_FILE_FORMAT
 from bikipy.analysis.video import make_inspection_video
@@ -16,8 +17,8 @@ from bikipy.behaviour.core.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import feature_2d_multi_indexer, unique_with_counts_zipped
 from bikipy.core.base import BikipyHashable
 from bikipy.feature.motion import Motion, bulk_motion_analysis_indexer
-from bikipy.math import clockwise_sort_perimeter_centroids
 from bikipy.math.discrete import reduce_repeating_sequences
+from bikipy.math.geometry import clockwise_sort_perimeter_centroids
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.perimeter.trial_mixin import TrialWithPerimeterMixin
 from bikipy.perimeter.utils.multi_node_confinement import (
@@ -39,12 +40,12 @@ class BaseRadialMazeExperiment(RadialMazeBase, BaseExperiment):
 
 
 class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
-    center: SinglePerimeter = ...
-    arms: tuple[SinglePerimeter, ...] = ...
+    center: SinglePerimeter
+    arms: tuple[SinglePerimeter, ...]
 
-    number_of_arms: ClassVar[Optional[int]]
+    number_of_arms: ClassVar[Optional[int]] = None
 
-    tracking_labels_for_radial_arm_confinement: OrderedSet[str] = ...
+    tracking_labels_for_radial_arm_confinement: OrderedSet[str]
 
     minimum_seconds_for_entry: float = 0
 
@@ -53,14 +54,14 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         value.int_id = 1
         return value
 
-    @field_validator("arms", pre=True)
+    @field_validator("arms", mode="before")
     def clockwise_sort_and_incremental_arm_int_ids(cls, value):
         value = clockwise_sort_perimeter_centroids(value)
         for i, arm in enumerate(value):
             arm.int_id = cls._arm_int_ids[i]
         return tuple(value)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def _arm_int_ids(cls) -> list[PositiveInt]:
@@ -74,20 +75,20 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
             )
             raise AttributeError(msg) from e
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def _center_arm_int_ids(cls) -> tuple[PositiveInt, ...]:
         # The center always has int ID 1, and the arms have int IDs starting from 2 in clock-wise order
         return 1, *cls._arm_int_ids
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def arm_labels(cls) -> list:
         return list(string.ascii_uppercase[: cls.number_of_arms])
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def int_ids_to_labels(cls) -> dict[int, str]:
@@ -95,25 +96,25 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         result[1] = "Center"
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def _arm_int_id_permutations(cls):
         return permutations(cls._arm_int_ids)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def _arm_label_permutations(cls):
         return permutations(cls.arm_labels)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def _arm_label_permutations_as_string(cls):
         return map("".join, cls._arm_label_permutations)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def _center_arm_labels(cls) -> tuple[str, ...]:
@@ -124,15 +125,15 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         """
         return "Center", *cls.arm_labels
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
         result.update(("arms", "center"))
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def perimeters(self):
         """
@@ -141,17 +142,17 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         """
         return self.center, *self.arms
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def arm_len(self):
         return len(self.arms)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def perimeter_set(self):
         return PerimeterSet(perimeters=self.perimeters)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def alternation_sequence_with_center(self) -> NpNDArrayUint8:
         result, overlap_boolean_index = detect_multi_node_sequential_perimeter_presence(
@@ -185,13 +186,13 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         )
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def cleaned_arm_alternation_sequence(self) -> ConfinementSequence:
         # When it is nowhere it must be on center; we can safely remove undefined instances
         return self.alternation_sequence_with_center[self.alternation_sequence_with_center != 0]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def reduced_arm_center_alternation_sequence(self) -> ConfinementSequence:
         result = np.array(
@@ -201,26 +202,26 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         )
         return result[result != self.center.int_id]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def reduced_arm_alternation_sequence(self) -> ConfinementSequence:
         return self.reduced_arm_center_alternation_sequence[
             self.reduced_arm_center_alternation_sequence != self.center.int_id
         ]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def sum_of_entries(self) -> int:
         result = len(self.reduced_arm_alternation_sequence)
         assert sum(self.arm_to_entries.values()) == result
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def area_to_confinement_boolean_index(self) -> dict[str, NpNDArrayBool]:
         return {label: self.alternation_sequence_with_center == label for label in self._center_arm_int_ids}
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def area_to_motion(self) -> dict[str, Motion]:
         return {
@@ -230,7 +231,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
             for label, confinement_boolean_index in self.area_to_confinement_boolean_index.items()
         }
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def area_to_seconds_spent(self) -> dict[str, int]:
         return {
@@ -238,17 +239,17 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
             for label, confinement_boolean_index in self.area_to_confinement_boolean_index.items()
         }
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def sum_of_seconds_in_arms(self) -> float:
         return sum(self.area_to_seconds_spent[arm_id] for arm_id in self._arm_int_ids)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def sum_of_seconds_in_arms_and_center(self) -> float:
         return sum(self.area_to_seconds_spent.values())
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def arm_to_entries(self) -> dict[str, int]:
         """
@@ -263,7 +264,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
             result[arm] = count
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def permutation_alternation_distribution(self) -> dict[int, int]:
         """
@@ -285,14 +286,14 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
         return distribution
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def sum_of_permutation_alternation_distribution(self) -> int:
         result = sum(iter(self.permutation_alternation_distribution.values()))
         assert sum(self.permutation_alternation_distribution.values()) == result
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def spontaneous_alternations(self) -> float:
         """
@@ -323,7 +324,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
         return 100.0 * alternations / (self.sum_of_entries - 2)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def confinement_coordinates(self) -> tuple[NpNDArrayFp64, ...]:
         return tuple(self.reader[node_label] for node_label in self.tracking_labels_for_radial_arm_confinement)
@@ -345,12 +346,12 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
         raise NotImplementedError()
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def _arm_center_int_ids(self):
         return self.perimeter_set.perimeter_to_int_id
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def _analysis_series_list(self) -> list[pd.Series]:
         upstream_list = super()._analysis_series_list

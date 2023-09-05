@@ -74,7 +74,7 @@ class InfinityMaze(BaseTrial, LiveTrial):
         self._last_loop = None
         self._received_reward = False
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def state_string(self):
         return super().state_string + f"; Regressed: {self.regressed}"

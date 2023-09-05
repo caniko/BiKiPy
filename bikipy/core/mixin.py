@@ -14,8 +14,8 @@ from bikipy.utils.plot.inspect import inspect_arg_description
 
 
 class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
-    analysis_series_cache_directory_path: Optional[DirectoryPath]
-    analysis_series_cache_file_path: Optional[Path]
+    analysis_series_cache_directory_path: Optional[DirectoryPath] = None
+    analysis_series_cache_file_path: Optional[Path] = None
     analysis_series_cache_format: str = ".lz4"
 
     feature_collection_cache: ClassVar[bool] = False  # TODO: Add feat
@@ -25,7 +25,7 @@ class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
     def _analysis_series_list(self) -> list[pd.Series]:
         ...
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def analysis_series_cache_path(self) -> FilePath:
         if self.analysis_series_cache_file_path:
@@ -33,7 +33,7 @@ class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
         if self.analysis_series_cache_directory_path:
             return self.analysis_series_cache_directory_path / f"{self.label}{self.analysis_series_cache_format}"
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def analysis_series(self) -> pd.Series:
         if self.analysis_series_cache_path and self.analysis_series_cache_path.exists():
@@ -64,9 +64,11 @@ class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
 class InspectPlotMixin(BikipyConfigModel):
     inspection_fig_output_path: Optional[Path] = Field(False, description=inspect_arg_description)
     manual_inspect_image: Optional[NpNDArrayUint8] = Field(
+        None,
         description="Image to use as background in the plots for visualising the analysis data",
     )
     inspect_image_path: Optional[FilePath] = Field(
+        None,
         description="Path to image to use as background in the plots for visualising the analysis data",
     )
 

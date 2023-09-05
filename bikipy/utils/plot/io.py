@@ -1,4 +1,4 @@
-from pydantic_numpy import NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArrayFp64
 
 
 def ax_imshow_gray(ax, image: NpNDArrayFp64) -> None:

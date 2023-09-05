@@ -5,7 +5,7 @@ from typing import Iterator, Optional
 import matplotlib.pyplot as plt
 from moviepy.video.io.bindings import mplfig_to_npimage
 from moviepy.video.VideoClip import VideoClip
-from pydantic_numpy import NpNDArrayBool, NpNDArrayFp64, NpNDArrayUint8
+from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64, NpNDArrayUint8
 
 from bikipy.perimeter.base import Perimeter
 from bikipy.reader.base import Reader

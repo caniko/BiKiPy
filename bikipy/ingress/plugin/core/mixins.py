@@ -21,7 +21,7 @@ class HasReferenceMixin(BikipyModel):
         description="Override the perimeter detection with values defined outside model"
     )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def reference_point(self) -> pd.DataFrame | None:
         if self.manual_reference is not None:

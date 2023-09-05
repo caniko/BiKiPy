@@ -16,7 +16,7 @@ class PluginFrame(BasePlugin):
     default_trial_argument_key = "frame"
     human_readable_index = "Frame"
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def frame(self) -> VideoMetadata:
         return cv2.imread(str(self.data_path))
@@ -25,7 +25,7 @@ class PluginFrame(BasePlugin):
         self._assert_correct_scope_trialwise_metadata()
         return self.frame
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def globally_defined(self) -> VideoMetadata:
         self._assert_correct_scope_global()

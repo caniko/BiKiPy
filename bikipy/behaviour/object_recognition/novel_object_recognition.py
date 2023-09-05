@@ -20,8 +20,8 @@ logger = getLogger(__name__)
 
 
 class NORTTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
-    variable: SinglePerimeter = ...
-    familiar: SinglePerimeter = ...
+    variable: SinglePerimeter
+    familiar: SinglePerimeter
 
     perimeter_labels = {"variable", "familiar"}
 
@@ -29,23 +29,23 @@ class NORTTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
     experiment_stage = ExperimentStage.TRAINING
     trial_label = "Familiarization"
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
         result.update(("variable", "familiar"))
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.variable, self.familiar
 
 
 class NORTNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
-    novel: SinglePerimeter = ...
-    familiar: SinglePerimeter = ...
+    novel: SinglePerimeter
+    familiar: SinglePerimeter
 
     perimeter_labels = {"novel", "familiar"}
 
@@ -53,15 +53,15 @@ class NORTNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
     experiment_stage = ExperimentStage.TEST
     trial_label = "Novelty"
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
         result.update(("novel", "familiar"))
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def _trial_physical_object_feature_series_list(self) -> list[pd.Series]:
         upstream_list = super()._trial_physical_object_feature_series_list
@@ -81,17 +81,17 @@ class NORTNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
         )
         return upstream_list
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.novel, self.familiar
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def discrimination_index(self):
         return self.nort_absolute_discrimination / self.physical_object_set.po_total_seconds_observing
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def novelty_preference(self):
         return (
@@ -100,7 +100,7 @@ class NORTNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
             / self.physical_object_set.po_total_seconds_observing
         )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def nort_absolute_discrimination(self) -> float:
         """

@@ -1,6 +1,8 @@
-from bikipy.utils.collection_utils import generic_multi_indexer
+from bikipy.utils.pandas import generic_multi_indexer
 
 
 def test_generic_multi_indexer():
-    generic_multi_indexer("Displacement", "Median_speed")("MyTest", 5)
-    1
+    assert generic_multi_indexer("Displacement", "Median_speed")("MyTest", 5) == [
+        ("MyTest", "Displacement", "", "", ""),
+        ("MyTest", "Median_speed", "", "", ""),
+    ]

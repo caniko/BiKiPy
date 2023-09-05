@@ -7,18 +7,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArray, NpNDArrayBool, NpNDArrayFp64
 
 from bikipy.core.video import VideoMetadata
-from bikipy.math import (
-    clockwise_sort_points,
+from bikipy.math.confinement.polygon import parallel_point_inside_polygon
+from bikipy.math.geometry import clockwise_sort_points
+from bikipy.math.graph import Graph
+from bikipy.math.vector import (
     nearest_point_on_line_segment_to_coordinates,
-    parallel_point_inside_polygon,
     ray_and_line_segment_intersection,
     rotate_vectors_with_angle,
     unit_vector,
 )
-from bikipy.math.graph import Graph
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.perimeter.circle.model import CircleFixedRadiusPerimeter
 from bikipy.utils.collection_utils import (
@@ -31,20 +31,20 @@ logger = getLogger(__name__)
 
 
 class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
-    vertices_in_pixels: NpNDArrayFp64 = ...
+    vertices_in_pixels: NpNDArrayFp64
     derived_meters_per_pixel_source: Optional[Literal["side"]]
 
     polygon_order: ClassVar[Optional[int]]
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
         result.update(("vertices_in_pixels", "derived_meters_per_pixel_source"))
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def _to_hash(self) -> list:
         result = super()._to_hash
@@ -67,7 +67,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
     def __repr__(self):
         return super().__repr__() + f"\n\tvertices_in_pixels={self.vertices_in_meters}"
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def derived_meters_per_pixel(self) -> float:
         if self.derived_meters_per_pixel_source == "side":
@@ -78,27 +78,27 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
             return self.derived_meters_per_pixel_source_metric_length / first_side
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def centroid_meters(self) -> NpNDArrayFp64:
         return self.metric_graph.centroid
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def vertices_in_meters(self) -> NpNDArrayFp64:
         return self.vertices_in_pixels * self.video.meters_per_pixel
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def metric_graph(self) -> Graph:
         return Graph(vertices=self.vertices_in_meters)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def pixel_graph(self) -> Graph:
         return Graph(vertices=self.vertices_in_pixels)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def equilateral(self) -> bool:
         return np.all(
@@ -108,12 +108,12 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             axis=1,
         )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
-    def circle(self):
+    def circle(self) -> CircleFixedRadiusPerimeter:
         return CircleFixedRadiusPerimeter(
             center_pixels=self.pixel_graph.centroid,
-            radius_pixels=np.mean(self.pixel_graph.vertex_midpoint_distances_to_centroid),
+            radius_length_pixels=np.mean(self.pixel_graph.vertex_midpoint_distances_to_centroid),
             manual_video=self.video,
         )
 

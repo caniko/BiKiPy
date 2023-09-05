@@ -1,6 +1,6 @@
 from typing import Iterable, Optional
 
-from projectkit.utils.misc import here_or_there
+from project_kit.utils.misc import here_or_there
 from pydantic import DirectoryPath
 
 from bikipy import set_bikipy_settings_from_dict

@@ -10,7 +10,7 @@ class PluginEnclosure(AbstractPerimeterPlugin):
     default_trial_argument_key = "label_to_perimeter"
     human_readable_index = "Perimeter"
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def globally_defined(self):
         self._assert_correct_scope_global()

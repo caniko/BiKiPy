@@ -3,7 +3,7 @@ from typing import Optional
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
 
 from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
@@ -14,17 +14,17 @@ class TrianglePerimeter(BasePolygonPerimeter):
 
     perimeter_label = "triangle"
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def base_a(self):
         return self.vertices_in_meters[0]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def base_b(self):
         return self.vertices_in_meters[1]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def apex(self):
         return self.vertices_in_meters[2]

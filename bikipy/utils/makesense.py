@@ -6,6 +6,8 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 from pydantic import FilePath
+from pydantic_numpy import NpNDArrayInt16
+from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy import runtime_settings
 
@@ -95,7 +97,7 @@ def get_only_point_from_makesense(data_path: FilePath) -> NpNDArrayFp64:
     return get_point_from_makesense_row(df.iloc[0])
 
 
-def recording_resolution_from_makesense_row(row: pd.Series) -> np.ndarray[int, np.int16]:
+def recording_resolution_from_makesense_row(row: pd.Series) -> NpNDArrayInt16:
     return np.array((row["x_res"], row["y_res"]), dtype=np.int16)
 
 

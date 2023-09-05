@@ -2,8 +2,7 @@ import numba
 import numpy as np
 from numba import njit
 from pydantic import validate_call
-from pydantic_numpy import NpNDArrayBool
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
 
 from bikipy import runtime_settings
 
@@ -23,6 +22,8 @@ def parallel_point_inside_polygon(
 
 def is_inside_sm(point: NpNDArrayFp64, polygon: NpNDArrayFp64):
     """
+    Does not work when the intersection is on (0, 0); very rare case
+
     https://stackoverflow.com/a/66189882
     https://github.com/sasamil/PointInPolygon_Py/blob/master/pointInside.py
     """

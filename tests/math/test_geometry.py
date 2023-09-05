@@ -1,4 +1,4 @@
-from bikipy.math import expand_rectangle
+from bikipy.math.geometry import expand_rectangle
 
 
 def test_expand_rectangle():

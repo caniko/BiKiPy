@@ -3,7 +3,7 @@ from typing import Sequence, TypeVar
 
 import numpy as np
 from numba import njit
-from pydantic_numpy import NpNDArrayBool
+from pydantic_numpy.typing import NpNDArrayBool
 
 from bikipy import runtime_settings
 from bikipy.feature.tolerance.common import common_preparation

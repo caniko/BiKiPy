@@ -1,36 +1,32 @@
-from functools import cached_property
 from typing import ClassVar, Optional, TypeVar
 
-from pydantic import BaseModel, PositiveInt, computed_field
-from schemantic import SchemanticProjectMixin
+from pydantic import BaseModel, NonNegativeInt, computed_field
+from schemantic import SchemanticProjectModelMixin
 
 from bikipy.core.typing import Label
 
 
-class BikipyConfigModel(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-        underscore_attrs_are_private = True
-        keep_untouched = (cached_property,)
+class BikipyConfigModel(BaseModel, arbitrary_types_allowed=True):
+    pass
 
 
 class BikipyModel(BikipyConfigModel):
     category: ClassVar[str]
 
 
-class BikipyHashable(BikipyModel, SchemanticProjectMixin):
-    label: Optional[Label]
-    int_id: Optional[PositiveInt]
+class BikipyHashable(BikipyModel, SchemanticProjectModelMixin):
+    label: Optional[Label] = None
+    int_id: Optional[NonNegativeInt] = None
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
         result.update(("label", "int_id"))
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def _to_hash(self) -> list:
         return [self.__class__.__name__, self.category, self.int_id, self.label]

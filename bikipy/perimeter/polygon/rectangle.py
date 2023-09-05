@@ -1,25 +1,25 @@
 from logging import getLogger
-from typing import Literal
+from typing import Literal, Optional
 
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field
 from pydantic_numpy.typing import NpNDArrayFp64
 
-from bikipy.math import expand_rectangle
+from bikipy.math.geometry import expand_rectangle
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 
 logger = getLogger(__name__)
 
 
 class RectanglePerimeter(BasePolygonPerimeter):
-    derived_meters_per_pixel_source: Literal["diagonal", "side", None] = None
+    derived_meters_per_pixel_source: Optional[Literal["diagonal", "side"]] = None
 
     polygon_order = 4
 
     perimeter_label = "rectangle"
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def derived_meters_per_pixel(self) -> float:
         if result := super().derived_meters_per_pixel:

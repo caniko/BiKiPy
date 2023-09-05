@@ -74,12 +74,12 @@ class StatisticalAnalysis(BikipyModel):
                 result.append(tukey_df)
         return pd.concat(result)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def merged_df(self):
         pd.concat((self.analysis_df.sort_index(), self.metadata_df.sort_index()), axis=1)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def unique_category_values(self):
         result = {}
@@ -88,7 +88,7 @@ class StatisticalAnalysis(BikipyModel):
             result[column] = np.unique(self.metadata_df[column])
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def categorized_dataframes(self) -> dict:
         result = {}
@@ -103,7 +103,7 @@ class StatisticalAnalysis(BikipyModel):
             result[column] = pd.concat(dataframe_set)
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def analysis_path(self):
         os.makedirs(
@@ -112,7 +112,7 @@ class StatisticalAnalysis(BikipyModel):
         )
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def figure_path(self):
         os.makedirs((result := self.analysis_path / "figures"), exist_ok=True)

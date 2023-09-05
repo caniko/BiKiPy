@@ -3,7 +3,7 @@ from typing import ClassVar, Optional
 
 import numpy as np
 from pydantic import computed_field, field_validator, validate_call
-from pydantic_numpy import NpNDArrayInt16
+from pydantic_numpy.typing import NpNDArrayInt16
 from skg import ngauss_fit
 
 from bikipy._dev_utils.fields import enclosure_field
@@ -24,7 +24,7 @@ class EnclosedTrial(BaseTrial):
     @field_validator("manual_enclosure")
     def manual_enclosure_is_instance_of_trial_perimeter_enclosure_class(cls, value: Perimeter):
         """
-        This could be enforced through GenericModel, but GenericModel types are reserved for inter-trial perimeters,
+        This could be enforced through but GenericModel types are reserved for inter-trial perimeters,
         and not trial enclosures
         """
         if not isinstance(value, cls.trial_perimeter_enclosure_class):
@@ -32,18 +32,18 @@ class EnclosedTrial(BaseTrial):
             raise AttributeError(msg)
         return value
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def reader_class(cls) -> ReaderCLS:
         return super().reader_class[cls.trial_perimeter_enclosure_class]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def _reader_kwargs(self) -> dict:
         return {**super()._reader_kwargs, "trial_enclosure": self.enclosure}
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def enclosure(self) -> Perimeter:
         enclosures = []
@@ -68,7 +68,7 @@ class EnclosedTrial(BaseTrial):
 
         return PerimeterSet(perimeters=enclosures)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def gaussian_center_to_periphery_score(self) -> float:
         func = gaussian_scoring_field(
@@ -85,7 +85,7 @@ class EnclosedHabituationTrial(HabituationTrialMixin, EnclosedTrial):
 
 
 class EnclosedExperiment(BaseExperiment):
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def trial_perimeter_enclosure_classes(cls) -> dict[str, PerimeterCLS]:
@@ -96,8 +96,8 @@ class EnclosedExperiment(BaseExperiment):
         }
 
 
-@validate_call
 @lru_cache
+@validate_call
 def gaussian_scoring_field(resolution: NpNDArrayInt16, scale: int = 1, gaussian_dividend_multiplayer: int = 1):
     resolution *= scale
 

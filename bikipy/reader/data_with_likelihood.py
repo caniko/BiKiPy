@@ -7,7 +7,7 @@ from typing import Generic, Hashable, Iterable, Optional
 import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath, computed_field
-from pydantic_numpy.typing import NpNDArrayBool
+from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
 
 from bikipy.reader.base import BaseReader, Enclosure
 from bikipy.reader.utils import compute_midpoint_label
@@ -70,12 +70,12 @@ class DataWithLikelihoodReader(BaseReader[Enclosure], Generic[Enclosure]):
         # remove likelihood column
         return np.delete(df[key].values, 2, 1)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def region_of_interest_to_boolean_index(self) -> dict[str, NpNDArrayBool]:
         return {roi: self.df[(roi, "likelihood")].values >= self.min_likelihood for roi in self.all_tracked_labels}
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def frames(self) -> int:
         return self.df.shape[0]

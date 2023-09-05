@@ -8,7 +8,7 @@ from pydantic_numpy.typing import NpNDArrayFp64
 from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParse
 from bikipy.ingress.plugin.core.base import BasePluginFile
-from bikipy.math import meter_per_pixel_from_diagonal
+from bikipy.math.geometry import meter_per_pixel_from_diagonal
 from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.makesense import read_first_makesense_line
 
@@ -46,7 +46,7 @@ class PluginMeterPerPixel(BasePluginFile):
                 raise AttributeError(msg)
         return value
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def ratio(self) -> float:
         match self.stem_info.annotation_method:
@@ -64,7 +64,7 @@ class PluginMeterPerPixel(BasePluginFile):
         self._assert_correct_scope_trialwise_metadata()
         return self.ratio
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def globally_defined(self) -> float:
         self._assert_correct_scope_global()

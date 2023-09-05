@@ -3,7 +3,7 @@ from functools import cached_property
 from typing import Any, ClassVar, Optional, Type, TypeVar
 
 from pydantic import DirectoryPath, FilePath, computed_field
-from schemantic import SchemanticProjectMixin
+from schemantic import SchemanticProjectModelMixin
 
 from bikipy.core.base import BikipyModel
 from bikipy.core.typing import Label
@@ -11,9 +11,9 @@ from bikipy.ingress.name_parser import PluginFileStemParse
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 
 
-class BasePlugin(BikipyModel, SchemanticProjectMixin, ABC):
-    plugin_scope: Optional[PluginScope]
-    manual_trial_argument_key: Optional[str]
+class BasePlugin(BikipyModel, SchemanticProjectModelMixin, ABC):
+    plugin_scope: Optional[PluginScope] = None
+    manual_trial_argument_key: Optional[str] = None
 
     plugin_file_stem_parser: ClassVar[Type[PluginFileStemParse]] = PluginFileStemParse
 
@@ -40,15 +40,15 @@ class BasePlugin(BikipyModel, SchemanticProjectMixin, ABC):
     def _assert_correct_scope_global(self) -> None:
         assert self.plugin_scope == PluginScope.GLOBAL
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
         result.update(("ingress", "data_path", "plugin_scope"))
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def stem_info(self):
         try:
@@ -61,17 +61,17 @@ class BasePlugin(BikipyModel, SchemanticProjectMixin, ABC):
     def _parse_plugin_settings(settings_dict: dict) -> dict[str, Any]:
         return {field: value for field, value in settings_dict.items() if value != ""}
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def trial_argument_key(self) -> str:
         return self.manual_trial_argument_key or self.default_trial_argument_key
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def plugin_name(self) -> str:
         return self._plugin_identifier[-1]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def sequence_index(self) -> int | None:
         if len(self._plugin_identifier) == 2:

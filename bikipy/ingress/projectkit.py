@@ -1,8 +1,8 @@
 from logging import getLogger
 from typing import Optional
 
-from projectkit.model.jit import ProjectKitJITConfiguration
-from projectkit.utils.misc import here_or_there
+from project_kit.model.jit import ProjectKitJITConfiguration
+from project_kit.utils.misc import here_or_there
 from pydantic import DirectoryPath
 from schemantic.model.schema import GroupSchema, SingleSchema
 

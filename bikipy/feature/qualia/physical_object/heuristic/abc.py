@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.axes import Axes
 from pydantic import Field, computed_field
-from pydantic_numpy import NpNDArrayBool
-from schemantic import SchemanticProjectMixin
+from pydantic_numpy.typing import NpNDArrayBool
+from schemantic import SchemanticProjectModelMixin
 
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.qualia.physical_object.heuristic.mixin import SingleComponentMixin
@@ -15,9 +15,9 @@ from bikipy.reader.base import Reader
 from bikipy.utils.plot import TIGHT_LAYOUT_KWARGS
 
 
-class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
-    perimeter: SinglePerimeter = ...
-    reader: Reader = ...
+class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectModelMixin, ABC):
+    perimeter: SinglePerimeter
+    reader: Reader
 
     filter_in_sequence: bool = Field(
         False,
@@ -27,11 +27,11 @@ class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
 
     heuristic_alias: ClassVar[str]
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
         result.update(("perimeter", "reader"))
         return result
 
@@ -39,12 +39,12 @@ class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
     def plot(self) -> None:
         ...
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
         return {self.perimeter: self.result}
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def physical_object_label(self) -> str:
         return self.perimeter.label
@@ -70,7 +70,7 @@ class StandaloneHeuristic(AbstractHeuristic):
         ax.set_title("Combined result")
         super().plot_result(ax, label_to_plot)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def summary_series(self) -> pd.Series:
         return pd.Series(
@@ -80,10 +80,10 @@ class StandaloneHeuristic(AbstractHeuristic):
 
 
 class CombinedHeuristic(SingleComponentMixin, AbstractHeuristic):
-    label: str = ...
-    result: NpNDArrayBool = ...
+    label: str
+    result: NpNDArrayBool
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def summary_series(self) -> pd.Series:
         return pd.Series([self.video.boolean_array_to_seconds(self.result)], index=[self.label])

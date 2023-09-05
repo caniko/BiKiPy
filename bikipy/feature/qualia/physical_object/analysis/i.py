@@ -55,7 +55,7 @@ class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMet
             }
         )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def _analysis_series_list(self) -> list[pd.Series]:
         return [
@@ -70,34 +70,34 @@ class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMet
             )
         ]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def _po_label_to_zero(self) -> dict:
         return {physical_object_label: 0.0 for physical_object_label in self.po_label_to_qualia_boolean_index}
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def frames(self) -> int:
         return len(tuple(self.po_label_to_qualia_boolean_index.values())[0])
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def po_observing_per_frame(self) -> NpNDArrayBool:
         return np.logical_or.reduce(
             [observation_boolean_index for observation_boolean_index in self.po_label_to_qualia_boolean_index.values()]
         )
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def frames_observing(self) -> int:
         return np_sum_int(self.po_observing_per_frame)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def po_total_seconds_observing(self) -> float:
         return self.frames_observing / self.video.fps
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def po_label_to_frames_observing(self) -> dict[str, int]:
         return {
@@ -105,7 +105,7 @@ class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMet
             for physical_object_label, observation_boolean_index in self.po_label_to_qualia_boolean_index.items()
         }
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def po_label_to_seconds_observing(self) -> dict[str, int]:
         return {

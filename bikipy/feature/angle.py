@@ -6,7 +6,7 @@ from numba import njit
 from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy import runtime_settings
-from bikipy.math import dot_axis_1_1d, unit_vector
+from bikipy.math.vector import dot_axis_1_1d, unit_vector
 
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}
 
@@ -87,29 +87,27 @@ def inner_angle(vector_set_1: NpNDArrayFp64, vector_set_2: NpNDArrayFp64):
     """Returns the angle in radians between given vectors"""
     # TODO: https://github.com/numba/numba/pull/7785
 
-    def inner_angle_func():
-        index_is_undefined = np.isnan(v1_magnitudes) | np.isnan(v2_magnitudes)
-
-        result = np.zeros_like(index_is_undefined, dtype=float)
-        for i in range(len(vector_set_1)):
-            if index_is_undefined[i]:
-                result[i] = np.nan
-                continue
-
-            minor = np.linalg.det(np.stack((vector_set_1[i], vector_set_2[i])))
-            sign = 1 if minor == 0 else -np.sign(minor)
-
-            dot_p = np.dot(vector_set_1[i], vector_set_2[i])
-            dot_p = min(max(dot_p, -1.0), 1.0)
-
-            result[i] = sign * np.arccos(dot_p)
-
-        return result
-
     v1_magnitudes = np.linalg.norm(vector_set_1, axis=1)
     v2_magnitudes = np.linalg.norm(vector_set_2, axis=1)
 
-    return inner_angle_func() if runtime_settings.disable_numba else njit(parallel=True, cache=True)(inner_angle_func)()
+    return inner_angle_func_numba(vector_set_1, v1_magnitudes, vector_set_2, v2_magnitudes)
+
+
+def inner_angle_func_numba(
+    vector_set_1: NpNDArrayFp64, v1_magnitudes: NpNDArrayFp64, vector_set_2: NpNDArrayFp64, v2_magnitudes: NpNDArrayFp64
+) -> NpNDArrayFp64:
+    result = np.zeros_like(v1_magnitudes, dtype=float)
+    # Iterate through indices where both v1 and v2 magnitudes are defined
+    for i in np.where(~(np.isnan(v1_magnitudes) | np.isnan(v2_magnitudes))):
+        minor = np.linalg.det(np.stack((vector_set_1[i], vector_set_2[i])))
+        sign = 1 if minor == 0 else -np.sign(minor)
+
+        dot_p = np.dot(vector_set_1[i], vector_set_2[i])
+        dot_p = min(max(dot_p, -1.0), 1.0)
+
+        result[i] = sign * np.arccos(dot_p)
+
+    return result
 
 
 def compute_angles_from_points_abc(
@@ -195,5 +193,5 @@ ANGLE_METHOD_TO_FUNC = {
 
 
 if not runtime_settings.disable_numba:
-    pass
+    inner_angle_func_numba = njit(cache=True)(inner_angle_func_numba)
     # angle_from_a_to_b = njit(cache=True)(angle_from_a_to_b)

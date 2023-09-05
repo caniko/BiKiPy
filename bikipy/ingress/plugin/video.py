@@ -19,7 +19,7 @@ class PluginVideo(BasePlugin):
     default_trial_argument_key = "manual_video"
     human_readable_index = "Video"
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def video(self) -> VideoMetadata:
         result = (
@@ -35,7 +35,7 @@ class PluginVideo(BasePlugin):
         self._assert_correct_scope_trialwise_metadata()
         return self.video
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def globally_defined(self) -> VideoMetadata:
         self._assert_correct_scope_global()

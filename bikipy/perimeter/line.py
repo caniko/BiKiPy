@@ -39,21 +39,21 @@ class LinePerimeter(BikipyHashable, VideoMetadataMixin):
 
     perimeter_label = "circle"
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
         result.update(("location", "orientation", "logic"))
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def feat_border(self):
         """Feature magnitude perimeter location"""
         return self.location / self.video.metric_resolution[self.orientation]
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def orientation_label(self):
         """Given name of orientation"""

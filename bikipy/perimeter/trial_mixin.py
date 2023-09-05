@@ -4,7 +4,6 @@ from logging import getLogger
 from typing import Generic, Literal, Optional, TypeVarTuple
 
 from pydantic import Field, PositiveInt, computed_field
-from pydantic.generics import GenericModel
 
 from bikipy.core.base import BikipyModel
 from bikipy.core.typing import Label
@@ -17,7 +16,7 @@ logger = getLogger(__name__)
 PerimeterInstances = TypeVarTuple("PerimeterInstances")
 
 
-class TrialWithPerimeterMixin(GenericModel, Generic[Perimeter, *PerimeterInstances], BikipyModel, ABC):
+class TrialWithPerimeterMixin(Generic[Perimeter, *PerimeterInstances], BikipyModel, ABC):
     # Derive meters per pixel from perimeter
     # TODO: Put this logic in the backend by prioritizing preferred sources
     meters_per_pixel_from_perimeter_source: Literal["side", "diagonal", "diameter", "radius", None] = Field(
@@ -37,7 +36,7 @@ class TrialWithPerimeterMixin(GenericModel, Generic[Perimeter, *PerimeterInstanc
     def perimeters(self) -> tuple[Perimeter, *PerimeterInstances]:
         ...
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def perimeter_to_derive_meters_per_pixel(self) -> Perimeter:
         if self.manual_perimeter_to_derive_meters_per_pixel:
@@ -60,19 +59,19 @@ class TrialWithPerimeterMixin(GenericModel, Generic[Perimeter, *PerimeterInstanc
             msg = "perimeters is not defined as an object variable, " "which is required for _int_id_to_perimeter"
             raise AttributeError(msg)
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def _int_id_to_perimeter(self) -> dict[PositiveInt, Perimeter]:
         self._validate_perimeters_object()
         return {perimeter.int_id: perimeter for perimeter in self.perimeters}
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @cached_property
     def _label_to_perimeter(self) -> dict[Label, Perimeter]:
         self._validate_perimeters_object()
         return {perimeter.label: perimeter for perimeter in self.perimeters}
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def _video(self) -> VideoMetadata:
         video = super()._video

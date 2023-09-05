@@ -28,71 +28,71 @@ from bikipy.perimeter.base import SinglePerimeter
 
 
 class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
-    object_1: SinglePerimeter = ...
-    object_2: SinglePerimeter = ...
+    object_1: SinglePerimeter
+    object_2: SinglePerimeter
 
     perimeter_labels = {"object_1", "object_2"}
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     experiment_stage = ExperimentStage.TRAINING
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
         result.update(("object_1", "object_2"))
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.object_1, self.object_2
 
 
 class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial):
-    object_1: SinglePerimeter = ...
-    object_3: SinglePerimeter = ...
+    object_1: SinglePerimeter
+    object_3: SinglePerimeter
 
     perimeter_labels = {"object_1", "object_3"}
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     experiment_stage = ExperimentStage.UPDATE
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
         result.update(("object_1", "object_3"))
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.object_1, self.object_3
 
 
 class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
-    object_1: SinglePerimeter = ...
-    object_2: SinglePerimeter = ...
-    object_3: SinglePerimeter = ...
-    object_4: SinglePerimeter = ...
+    object_1: SinglePerimeter
+    object_2: SinglePerimeter
+    object_3: SinglePerimeter
+    object_4: SinglePerimeter
 
     perimeter_labels = {"object_1", "object_2", "object_3", "object_4"}
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     experiment_stage = ExperimentStage.TEST
 
-    @computed_field(return_type=set[str])
+    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
-    def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
-        result = super().schemantic_fields_to_exclude_from_config_schema
+    def fields_to_exclude_from_single_schema(cls) -> set[str]:
+        result = super().fields_to_exclude_from_single_schema
         result.update(("object_1", "object_2", "object_3", "object_4"))
         return result
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
         return self.object_1, self.object_2, self.object_3, self.object_4

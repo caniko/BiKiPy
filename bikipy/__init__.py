@@ -6,12 +6,12 @@ import matplotlib
 from psutil import cpu_count
 from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings
-from schemantic import SchemanticProjectMixin
+from schemantic import SchemanticProjectModelMixin
 
 logger = logging.getLogger(__file__)
 
 
-class BikipyRuntimeSettings(BaseSettings, SchemanticProjectMixin):
+class BikipyRuntimeSettings(BaseSettings, SchemanticProjectModelMixin):
     disable_process_pooling: bool = Field(
         False,
         description="initialize each DeepLabCutReader object with multiprocessing. "
@@ -34,7 +34,7 @@ class BikipyRuntimeSettings(BaseSettings, SchemanticProjectMixin):
     testing: bool = False
     debug: bool = False
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def max_workers_in_process_pool(self) -> int:
         if self.only_physical_cores:
