@@ -4,7 +4,7 @@ from typing import Callable, Iterable, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath, validate_arguments
+from pydantic import DirectoryPath, validate_call
 
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 
@@ -21,7 +21,7 @@ def read_bonsai_timestamps(file_path):
     return (datetime_array - datetime_array[0]).astype(float) / 10**6
 
 
-@validate_arguments
+@validate_call
 def merge_timestamps_with_dlc(
     dataset_dir: DirectoryPath,
     timestamp_reader: Callable = read_bonsai_timestamps,

@@ -1,7 +1,7 @@
 import numpy as np
 from numba import njit
-from pydantic import validate_arguments
-from pydantic_numpy.dtype import NDArrayBool
+from pydantic import validate_call
+from pydantic_numpy.typing import NpNDArrayBool
 
 from bikipy import runtime_settings
 from bikipy.feature.tolerance.common import (
@@ -10,24 +10,24 @@ from bikipy.feature.tolerance.common import (
 )
 
 
-@validate_arguments
+@validate_call
 def single_node_tolerance_model(
-    boolean_index: NDArrayBool,
+    boolean_index: NpNDArrayBool,
     fps: float,
     minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
     maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
-) -> np.ndarray[bool, bool] | None:
+) -> NpNDArrayBool | None:
     return tolerance_model_warning_wrapper(
         _filter, len(boolean_index), boolean_index, fps, minimum_seconds_attention, maximum_seconds_distraction
     )
 
 
 def _filter(
-    boolean_index: NDArrayBool,
+    boolean_index: NpNDArrayBool,
     fps: float,
     minimum_seconds_attention: float,
     maximum_seconds_distraction: float,
-) -> np.ndarray[bool, bool] | None:
+) -> NpNDArrayBool | None:
     """
     MinFA and MaxFD are used to tolerance model the provided binary sequence as follows:
 
@@ -50,11 +50,11 @@ def _filter(
     :param minimum_seconds_attention: Minimum number of seconds that the sequence has to be True
     for it to be defined as an attention sequence. Filtered sequences will be converted to False.
     :param maximum_seconds_distraction:
-    :type boolean_index: NDArrayFp64
+    :type boolean_index: NpNDArrayFp64
     :type fps: float
     :type minimum_seconds_attention: float
     :return: Boolean index filtered with respect to attention
-    :rtype NDArrayFp64
+    :rtype NpNDArrayFp64
     """
     if np.sum(boolean_index) < fps:
         return None

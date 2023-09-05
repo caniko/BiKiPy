@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 import numpy as np
-from pydantic import FilePath, validate_arguments
+from pydantic import FilePath, validate_call
 
 from bikipy.perimeter.base import (
     PerimeterSet,
@@ -33,7 +33,7 @@ def circle_from_makesense_point(data_path: FilePath, **perimeter_kwargs) -> dict
     return perimeter_set_from_image_name_to_perimeters(result)
 
 
-@validate_arguments
+@validate_call
 def circle_from_makesense_line(data_path: FilePath, **perimeter_kwargs) -> dict[str, PerimeterSet]:
     result = defaultdict(dict)
     for _, row in read_makesense_line(data_path).iterrows():

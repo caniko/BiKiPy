@@ -4,9 +4,9 @@ from typing import ClassVar, Generic, Optional, TypeVar
 
 import numpy as np
 from matplotlib.axes import Axes
-from pydantic import Extra, computed_field, root_validator, validate_arguments
+from pydantic import Extra, computed_field, root_validator, validate_call
 from pydantic.generics import GenericModel
-from pydantic_numpy import NDArrayBool
+from pydantic_numpy import NpNDArrayBool
 
 from bikipy.core.base import BikipyModel
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
@@ -51,7 +51,7 @@ class AbstractCompute(GenericModel, Generic[T], BikipyModel, ABC):
         ax.set_title(self.label)
         ax.legend(**BOTTOM_LEGEND_KWARGS)
 
-    @validate_arguments
+    @validate_call
     def save_fig(self, path: Path, video: VideoMetadata, **plot_kwargs) -> None:
         fig, ax = video.subplot()
         self.plot(ax, **plot_kwargs)
@@ -59,7 +59,7 @@ class AbstractCompute(GenericModel, Generic[T], BikipyModel, ABC):
         fig.savefig(path)
 
 
-class AbstractComputePerimeterBooleanIndex(AbstractCompute[NDArrayBool], VideoMetadataMixin, ABC):
+class AbstractComputePerimeterBooleanIndex(AbstractCompute[NpNDArrayBool], VideoMetadataMixin, ABC):
     perimeter: SinglePerimeter = ...
     tolerance_modelling: bool = True
 
@@ -70,12 +70,12 @@ class AbstractComputePerimeterBooleanIndex(AbstractCompute[NDArrayBool], VideoMe
 
     @property
     @abstractmethod
-    def perimeter_to_boolean_index(self) -> dict[Perimeter, np.ndarray[bool, bool]]:
+    def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
         ...
 
     def video_gen_merge_perimeter_to_boolean_index(
         self, other: "AbstractComputePerimeterBooleanIndex", both_or_false: bool = False
-    ) -> dict[Perimeter, np.ndarray[bool, bool]]:
+    ) -> dict[Perimeter, NpNDArrayBool]:
         return video_gen_merge_perimeter_to_boolean_index_from_dict(
             self.perimeter_to_boolean_index, other.perimeter_to_boolean_index, both_or_false
         )
@@ -83,9 +83,9 @@ class AbstractComputePerimeterBooleanIndex(AbstractCompute[NDArrayBool], VideoMe
 
 def video_gen_merge_perimeter_to_boolean_index_from_dict(
     a_perimeter_to_boolean_index,
-    b_perimeter_to_boolean_index: dict[Perimeter, np.ndarray[bool, bool]],
+    b_perimeter_to_boolean_index: dict[Perimeter, NpNDArrayBool],
     both_or_false: bool = False,
-) -> dict[Perimeter, np.ndarray[bool, bool]]:
+) -> dict[Perimeter, NpNDArrayBool]:
     result = {**a_perimeter_to_boolean_index, **b_perimeter_to_boolean_index}
 
     logical_method = np.logical_and if both_or_false else np.logical_or

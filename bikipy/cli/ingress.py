@@ -1,7 +1,7 @@
 from typing import Optional
 
 import click
-from pydantic import DirectoryPath, validate_arguments
+from pydantic import DirectoryPath, validate_call
 
 from bikipy.behaviour.mapping import experiment_name_to_class
 from bikipy.cli import cli_root
@@ -26,7 +26,7 @@ def ingress():
     help="Path to the sequence formatted project directory, uses current directory on omition",
 )
 @click.option("-d", "--dry_run", is_flag=True)
-@validate_arguments
+@validate_call
 def init(
     ingress_method: str,
     experiment_name: str,
@@ -45,7 +45,7 @@ def init(
 
 @ingress.command()
 @click.argument("project_directory")
-@validate_arguments
+@validate_call
 def analyze(project_directory: Optional[DirectoryPath]) -> None:
     analyze_and_save(current_path_or_arg_path(project_directory))
 
@@ -54,7 +54,7 @@ def analyze(project_directory: Optional[DirectoryPath]) -> None:
 @click.option("-p", "project_directory")
 @click.option("-x", "--delete_outdated", help="Outdated field will be removed", is_flag=True)
 @click.option("-d", "--dry_run", is_flag=True)
-@validate_arguments
+@validate_call
 def update(project_directory: Optional[DirectoryPath], delete_outdated: bool = False, dry_run: bool = False) -> None:
     update_settings(project_directory, delete_outdated=delete_outdated)
 
@@ -62,14 +62,14 @@ def update(project_directory: Optional[DirectoryPath], delete_outdated: bool = F
 @ingress.command()
 @click.option("-p", "project_directory")
 @click.option("-o", "override_pattern")
-@validate_arguments
+@validate_call
 def purge_cache(project_directory: Optional[DirectoryPath], override_pattern: Optional[str] = None) -> None:
     auto_define_ingress_object(current_path_or_arg_path(project_directory)).purge_cached_reads()
 
 
 @ingress.command()
 @click.option("-p", "project_directory")
-@validate_arguments
+@validate_call
 def merge_coords_bonsai_timestamps(project_directory: Optional[DirectoryPath]) -> None:
     ingress = auto_define_ingress_object(current_path_or_arg_path(project_directory))
     merge_timestamps_with_dlc(ingress.dataset_directory, coordinate_file_lookup_expression="*.h5")

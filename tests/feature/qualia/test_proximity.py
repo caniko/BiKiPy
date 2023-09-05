@@ -3,8 +3,8 @@ from logging import getLogger
 from typing import Optional
 
 from matplotlib.axes import Axes
-from pydantic import validate_arguments
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+from pydantic import computed_field, validate_call
+from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
 
 from bikipy import runtime_settings
 from bikipy.core.compute import AbstractComputePerimeterBooleanIndex
@@ -19,14 +19,14 @@ logger = getLogger(__name__)
 
 class ComputeProximity(AbstractComputePerimeterBooleanIndex):
     perimeter: SinglePerimeter
-    maximum_distance: float | NDArrayFp64
-    inside_perimeter_border: NDArrayFp64
-    outside_perimeter_border: Optional[NDArrayFp64]
-    outside_perimeter: Optional[NDArrayBool]
+    maximum_distance: float | NpNDArrayFp64
+    inside_perimeter_border: NpNDArrayFp64
+    outside_perimeter_border: Optional[NpNDArrayFp64]
+    outside_perimeter: Optional[NpNDArrayBool]
 
     @computed_field
     @cached_property
-    def result(self) -> np.ndarray[bool, bool]:
+    def result(self) -> NpNDArrayBool:
         self.perimeter_border = self.perimeter.expand(self.maximum_distance)
         self.inside_perimeter_border = self.perimeter_border.compute_confinement_boolean_index(
             coordinates=self.inside_perimeter_border
@@ -54,7 +54,7 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
 
         return result
 
-    @validate_arguments(config={"arbitrary_types_allowed": True})
+    @validate_call(config={"arbitrary_types_allowed": True})
     def plot(self, ax: Axes, video: VideoMetadata, coordinates_as_pixels: bool = False) -> None:
         assert self.result is not None
 

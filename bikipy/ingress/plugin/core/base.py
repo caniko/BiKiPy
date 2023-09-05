@@ -3,7 +3,7 @@ from functools import cached_property
 from typing import Any, ClassVar, Optional, Type, TypeVar
 
 from pydantic import DirectoryPath, FilePath, computed_field
-from schemantic.model.project import SchemanticProjectMixin
+from schemantic import SchemanticProjectMixin
 
 from bikipy.core.base import BikipyModel
 from bikipy.core.typing import Label
@@ -40,7 +40,7 @@ class BasePlugin(BikipyModel, SchemanticProjectMixin, ABC):
     def _assert_correct_scope_global(self) -> None:
         assert self.plugin_scope == PluginScope.GLOBAL
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:

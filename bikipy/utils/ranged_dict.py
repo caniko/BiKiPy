@@ -2,7 +2,7 @@ from collections import UserDict
 from functools import lru_cache
 from typing import Any
 
-from pydantic import Field, validate_arguments
+from pydantic import Field, validate_call
 
 
 def translate_keys(store: dict, translation: dict) -> dict:
@@ -24,7 +24,7 @@ class RangeDict(UserDict):
     Useful when working with data that is generalised for a given range of values.
     """
 
-    @validate_arguments
+    @validate_call
     def __init__(
         self,
         class_dict: dict = Field(default_factory=dict),

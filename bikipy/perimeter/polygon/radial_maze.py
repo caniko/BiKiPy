@@ -6,13 +6,13 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pydantic import FilePath
 
+from bikipy.math import clockwise_argsort_points
 from bikipy.perimeter.base import PerimeterSet
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 from bikipy.perimeter.polygon.triangle import TrianglePerimeter
 from bikipy.utils.makesense import read_makesense_point
-from bikipy.utils.math.geometry import clockwise_argsort_points
 
 logger = getLogger(__name__)
 

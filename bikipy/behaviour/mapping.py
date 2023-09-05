@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from pydantic import validate_arguments
+from pydantic import validate_call
 
 from bikipy.behaviour.core.base import ExperimentCLS, TrialCLS
 from bikipy.behaviour.core.enclosure.circle import BlanketCircleEnclosedExperiment
@@ -39,7 +39,7 @@ for experiment in EXPERIMENTS:
             ] = trial_cls
 
 
-@validate_arguments
+@validate_call
 def resolve_trial(resolver: TrialCLS | str, experiment_name: str) -> TrialCLS:
     assert experiment_name in experiment_name_to_experiment_stage_to_trial_class
 

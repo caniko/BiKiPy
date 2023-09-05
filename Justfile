@@ -7,4 +7,4 @@ format:
 	@echo "Formatting complete 🎉"
 
 mypy:
-	mypy -p bikipy
+	poetry run mypy -p bikipy

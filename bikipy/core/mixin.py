@@ -5,8 +5,8 @@ from typing import ClassVar, Optional
 
 import pandas as pd
 from compress_pickle import compress_pickle
-from pydantic import DirectoryPath, Field, FilePath, computed_field, validate_arguments
-from pydantic_numpy.dtype import NDArrayUint8
+from pydantic import DirectoryPath, Field, FilePath, computed_field, validate_call
+from pydantic_numpy.typing import NpNDArrayUint8
 
 from bikipy import runtime_settings
 from bikipy.core.base import BikipyConfigModel, BikipyHashable
@@ -63,21 +63,21 @@ class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
 
 class InspectPlotMixin(BikipyConfigModel):
     inspection_fig_output_path: Optional[Path] = Field(False, description=inspect_arg_description)
-    manual_inspect_image: Optional[NDArrayUint8] = Field(
+    manual_inspect_image: Optional[NpNDArrayUint8] = Field(
         description="Image to use as background in the plots for visualising the analysis data",
     )
     inspect_image_path: Optional[FilePath] = Field(
         description="Path to image to use as background in the plots for visualising the analysis data",
     )
 
-    @validate_arguments
+    @validate_call
     def inspect_subdir_or_bool(self, subdir_name: str) -> DirectoryPath | bool:
         if isinstance(self.inspection_fig_output_path, Path):
             return self.inspection_fig_output_path / subdir_name
         assert isinstance(self.inspection_fig_output_path, bool)
         return self.inspection_fig_output_path
 
-    @validate_arguments
+    @validate_call
     def save(self, manual_save_path: Optional[DirectoryPath] = None) -> None:
         if manual_save_path:
             save_directory_path = manual_save_path

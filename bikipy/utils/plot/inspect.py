@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 from matplotlib import pyplot as plt
-from pydantic import validate_arguments
+from pydantic import validate_call
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.utils.misc import int_file_stem_incrementor
@@ -16,7 +16,7 @@ inspect_arg_description = (
 )
 
 
-@validate_arguments
+@validate_call
 def generic_inspection_finalization(
     inspection_fig_output_path: Path,
     potential_dir: Optional[str] = None,

@@ -48,7 +48,7 @@ def read_first_makesense_line(data_path: FilePath) -> tuple:
     return get_line_endpoints_from_makesense_row(read_makesense_line(data_path).iloc[0])
 
 
-def get_all_lines_from_makesense_line_df(line_df: pd.DataFrame) -> np.ndarray[float, np.dtype[np.float64]]:
+def get_all_lines_from_makesense_line_df(line_df: pd.DataFrame) -> NpNDArrayFp64:
     return np.array([np.array_split(line, 2) for _, line in line_df.iloc[:, 1:5].iterrows()])
 
 
@@ -65,12 +65,12 @@ def read_makesense_point(
     return result
 
 
-def get_point_from_makesense_row(row: pd.Series) -> np.ndarray[float, np.dtype[np.float64]]:
+def get_point_from_makesense_row(row: pd.Series) -> NpNDArrayFp64:
     return row.values[1:3]
 
 
 # Use get_only_point_from_makesense instead!
-# def read_first_makesense_point(*args, **kwargs) -> np.ndarray[float, np.dtype[np.float64]]:
+# def read_first_makesense_point(*args, **kwargs) -> NpNDArrayFp64:
 #     return get_point_from_makesense_row(read_makesense_point(*args, **kwargs).iloc[0])
 
 
@@ -85,7 +85,7 @@ def image_name_to_point_from_makesense(data_path: FilePath, only_point: bool = T
     return result
 
 
-def get_only_point_from_makesense(data_path: FilePath) -> np.ndarray[float, np.dtype[np.float64]]:
+def get_only_point_from_makesense(data_path: FilePath) -> NpNDArrayFp64:
     df = read_makesense_point(data_path)
 
     if np.any(df["image_name"].duplicated(keep=False)):

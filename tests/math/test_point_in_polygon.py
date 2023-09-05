@@ -1,6 +1,6 @@
 import numpy as np
 
-from bikipy.utils.math import points_in_rectangle
+from bikipy.math import points_in_rectangle
 
 
 def test_points_in_rectangle():

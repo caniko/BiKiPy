@@ -14,8 +14,8 @@ import numpy as np
 import pandas as pd
 from inflection import underscore
 from projectkit.model.project import ProjectKitModelMixin
-from pydantic import DirectoryPath, Field, FilePath, computed_field, validate_arguments
-from schemantic.model.project import SchemanticProjectMixin
+from pydantic import DirectoryPath, Field, FilePath, computed_field, validate_call
+from schemantic import SchemanticProjectMixin
 
 from bikipy import runtime_settings
 from bikipy._constant import (
@@ -130,7 +130,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
         """
         ...
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -746,7 +746,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
 
-    def get_meter_per_pixel(self, trial_id: Optional[Label] = None) -> np.ndarray[float, np.dtype[np.float64]]:
+    def get_meter_per_pixel(self, trial_id: Optional[Label] = None) -> NpNDArrayFp64:
         from bikipy.ingress.plugin.meters_per_pixel import (
             PluginMeterPerPixel,
             detect_meters_per_pixel_in_perimeter_directory,
@@ -829,7 +829,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         return result
 
-    @validate_arguments
+    @validate_call
     def _coordinate_files_in_directory(self, directory_path: DirectoryPath) -> list[FilePath]:
         available_indices = {
             int(file.stem.split(self._coordinate_file_index_delimiter)[0])
@@ -869,7 +869,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         return result
 
-    @validate_arguments
+    @validate_call
     def _gather_coordinates_and_potential_timestamp_data(self, coordinate_path: FilePath) -> dict[str, FilePath]:
         timestamp_stem = coordinate_path.stem.replace("coordinates", "timestamps").split("-")[0]
         potential_timestamp_set_path_finder = tuple(
@@ -883,7 +883,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectMixin, ProjectKitModelMi
 
         return result
 
-    @validate_arguments
+    @validate_call
     def _to_skip_trial_id(self, trial_id: Label) -> bool:
         return (
             self.trial_ids_to_analyse

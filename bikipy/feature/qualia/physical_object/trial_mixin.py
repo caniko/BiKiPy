@@ -30,9 +30,9 @@ from bikipy.feature.qualia.physical_object.heuristic.mixin import (
 from bikipy.feature.qualia.physical_object.merge_parser import (
     parse_heuristic_merge_equation,
 )
+from bikipy.math.discrete import reduce_repeating_sequences
 from bikipy.perimeter.base import SinglePerimeter
 from bikipy.perimeter.trial_mixin import TrialWithPerimeterMixin
-from bikipy.utils.math.discrete import reduce_repeating_sequences
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 
 

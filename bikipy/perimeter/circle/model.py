@@ -3,23 +3,23 @@ from typing import Optional, Type, TypeVar
 
 import numpy as np
 from matplotlib.axes import Axes
-from pydantic import computed_field, validator
-from pydantic_numpy.dtype import NDArrayFp64, NDArrayInt16
+from pydantic import computed_field, field_validator
+from pydantic_numpy.typing import NpNDArrayFp64, NpNDArrayInt16
 
 from bikipy.core.video import VideoMetadata
+from bikipy.math import unit_vector
+from bikipy.math.cached import meters2pixels
+from bikipy.math.confinement.ellipse import point_inside_ellipse
 from bikipy.perimeter.base import BaseSinglePerimeter
-from bikipy.utils.math.cached import meters2pixels
-from bikipy.utils.math.confinement.ellipse import point_inside_ellipse
-from bikipy.utils.math.vector import unit_vector
 from bikipy.utils.plot.generic import plot_ellipse
 
 
 class BaseCirclePerimeter(BaseSinglePerimeter):
-    center_pixels: NDArrayInt16
+    center_pixels: NpNDArrayInt16
 
     perimeter_label = "circle"
 
-    @validator("center_pixels")
+    @field_validator("center_pixels")
     def center_vector_is_2d(cls, value):
         if value.shape == (2,):
             pass
@@ -34,15 +34,15 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
 
     @computed_field
     @property
-    def centroid_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def centroid_meters(self) -> NpNDArrayFp64:
         return self.center_meters
 
     @computed_field
     @cached_property
-    def center_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def center_meters(self) -> NpNDArrayFp64:
         return self.center_pixels * self.video.meters_per_pixel
 
-    def change_reference(self, new_reference: NDArrayFp64, makesense_image_name: Optional[str] = None):
+    def change_reference(self, new_reference: NpNDArrayFp64, makesense_image_name: Optional[str] = None):
         return self.copy(
             update={
                 "center_meters": self.center_meters + new_reference - self.reference_point_array,
@@ -51,13 +51,17 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
             }
         )
 
-    def expand(self, perimeter_border_normal_pixels: float | NDArrayFp64) -> "BaseCirclePerimeter":
-        kwargs = self.dict()
+    def expand(self, perimeter_border_normal_pixels: float | NpNDArrayFp64) -> "BaseCirclePerimeter":
+        kwargs = self.model_dump()
         kwargs["radius_length_pixels"] += perimeter_border_normal_pixels
         return self.__class__(**kwargs)
 
     def compute_confinement_boolean_index(
-        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
+        self,
+        coordinates: NpNDArrayFp64,
+        manual_video: Optional[VideoMetadata] = None,
+        ax: Axes = None,
+        **inspect_kwargs,
     ):
         if isinstance(self.radius_length_meters, float):
             distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
@@ -71,12 +75,12 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
 
         return result
 
-    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
+    def closest_point_on_edge_to_coordinates(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64:
         return self.center_meters + self.radius_length_meters * unit_vector(
             self.vector_to_closest_point_on_edge(coordinates)
         )
 
-    def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
+    def vector_to_closest_point_on_edge(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64:
         """
         Strictly for circles, these vectors are the closest normals from the circle
         :param coordinates:
@@ -85,8 +89,8 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         return unit_vector(self.center_meters - coordinates)
 
     def ray_direction_filter(
-        self, ray_start_point: NDArrayFp64, ray_travel_direction_point: NDArrayFp64, max_radians: float, **kwargs
-    ) -> np.ndarray[bool, bool]:
+        self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, **kwargs
+    ) -> NpNDArrayBool:
         from bikipy.behaviour.utils import ray_direction_filter_circle_triangle
 
         return ray_direction_filter_circle_triangle(self, ray_travel_direction_point, ray_start_point, max_radians)
@@ -118,7 +122,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
 
         plot_ellipse(ax, tuple(center), radius, **plot_kwargs)
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -167,7 +171,7 @@ class CircleFixedRadiusPerimeter(BaseCirclePerimeter):
     def radius_length_meters(self) -> float:
         return np.mean(self.radius_length_pixels * self.video.meters_per_pixel)
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:

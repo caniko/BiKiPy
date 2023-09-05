@@ -25,14 +25,14 @@ class HeuristicMergeVisitor(NodeVisitor):
         return children[0]
 
     def visit_or_expr(self, node, children):
-        lhs: list[np.ndarray[bool, bool]]
-        rhs: list[np.ndarray[bool, bool]]
+        lhs: list[NpNDArrayBool]
+        rhs: list[NpNDArrayBool]
         lhs, _, _, _, rhs = children
         return [np.logical_or(po_lhs, po_rhs) for po_lhs, po_rhs in zip(lhs, rhs)]
 
     def visit_and_expr(self, node, children):
-        lhs: list[np.ndarray[bool, bool]]
-        rhs: list[np.ndarray[bool, bool]]
+        lhs: list[NpNDArrayBool]
+        rhs: list[NpNDArrayBool]
         lhs, _, _, _, rhs = children
         return [np.logical_and(po_lhs, po_rhs) for po_lhs, po_rhs in zip(lhs, rhs)]
 
@@ -40,7 +40,7 @@ class HeuristicMergeVisitor(NodeVisitor):
         return children[0]
 
     def visit_not_var(self, node, children):
-        var_atom: list[np.ndarray[bool, bool]]
+        var_atom: list[NpNDArrayBool]
         _, _, var_atom = children
         return [np.logical_not(po_var_atom) for po_var_atom in var_atom]
 
@@ -54,9 +54,7 @@ class HeuristicMergeVisitor(NodeVisitor):
         return children or node
 
 
-def parse_heuristic_merge_equation(
-    formula: str, alias_to_heuristic_result: dict[str, np.ndarray[bool, bool]]
-) -> np.ndarray[bool, bool]:
+def parse_heuristic_merge_equation(formula: str, alias_to_heuristic_result: dict[str, NpNDArrayBool]) -> NpNDArrayBool:
     visitor = HeuristicMergeVisitor(alias_to_heuristic_result)
     tree = _heuristic_merge_grammar.parse(formula)
     return visitor.visit(tree)

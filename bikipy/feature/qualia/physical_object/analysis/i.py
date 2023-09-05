@@ -5,11 +5,11 @@ from typing import Type, TypeVar
 import numpy as np
 import pandas as pd
 from pydantic import computed_field
-from pydantic_numpy.dtype import NDArrayBool
+from pydantic_numpy.typing import NpNDArrayBool
 
 from bikipy.core.mixin import AbstractFeatureCollectorMixin
 from bikipy.core.video import VideoMetadataMixin
-from bikipy.utils.math.shortcut import np_sum_int
+from bikipy.math.shortcut import np_sum_int
 
 logger = getLogger(__name__)
 
@@ -19,7 +19,7 @@ AND_OR_HEURISTIC_INCONGRUENCE_ERROR_MSG = (
 
 
 class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMetadataMixin):
-    po_label_to_qualia_boolean_index: dict[str, NDArrayBool]
+    po_label_to_qualia_boolean_index: dict[str, NpNDArrayBool]
 
     def __and__(self, other: "QualiaAnalysis") -> "QualiaAnalysis":
         assert self.__class__ == other.__class__
@@ -82,7 +82,7 @@ class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMet
 
     @computed_field
     @cached_property
-    def po_observing_per_frame(self) -> np.ndarray[bool, bool]:
+    def po_observing_per_frame(self) -> NpNDArrayBool:
         return np.logical_or.reduce(
             [observation_boolean_index for observation_boolean_index in self.po_label_to_qualia_boolean_index.values()]
         )

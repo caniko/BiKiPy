@@ -2,9 +2,9 @@ from logging import getLogger
 from typing import Any, Iterable
 
 import numpy as np
-from pydantic import validate_arguments
-from pydantic_numpy import NDArray
-from pydantic_numpy.dtype import NDArrayFp64
+from pydantic import validate_call
+from pydantic_numpy import NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArray, NpNDArrayFp64
 
 from bikipy.feature.angle import angle_from_a_to_b
 from bikipy.perimeter.base import SinglePerimeter
@@ -14,10 +14,10 @@ logger = getLogger(__name__)
 
 def ray_direction_filter_circle_triangle(
     perimeter: SinglePerimeter,
-    ray_travel_direction_point: NDArrayFp64,
-    ray_start_point: NDArrayFp64,
+    ray_travel_direction_point: NpNDArrayFp64,
+    ray_start_point: NpNDArrayFp64,
     max_radians: float,
-) -> np.ndarray[bool, bool]:
+) -> NpNDArrayBool:
     ray_vectors = ray_travel_direction_point - ray_start_point
 
     closest_points_on_edges = perimeter.closest_point_on_edge_to_coordinates(ray_travel_direction_point)
@@ -34,12 +34,12 @@ def ray_direction_filter_circle_triangle(
     return result
 
 
-def unique_with_counts_zipped(array: NDArray):
+def unique_with_counts_zipped(array: NpNDArray):
     return zip(*np.unique(array, return_counts=True))
 
 
-@validate_arguments
-def exclude_value_from_sequence(sequence: NDArrayFp64, exclude: Any):
+@validate_call
+def exclude_value_from_sequence(sequence: NpNDArrayFp64, exclude: Any):
     return sequence[sequence != exclude]
 
 

@@ -44,15 +44,18 @@ tqdm = "*"
 yaspin = "*"
 
 compress-pickle = {extras = ["lz4"], version = "*"}
+pydantic-settings = "^2.0.3"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
+mypy = "*"
 pytest = "^7.1.2"
+snakeviz = "*"
+mextractor = "*"    # owned by author
 
+[tool.poetry.group.doc.dependencies]
 Sphinx = "*"
 sphinx-material = "*"
 sphinx-autoapi = "*"
-
-snakeviz = "*"
 
 [tool.poetry.extras]
 live = ["pyzmq"]
@@ -60,6 +63,8 @@ jupyter = ["jupyter", "jupyterthemes"]
 
 [tool.poetry.scripts]
 bkpy = "bikipy.cli:cli_root"
+
+
 
 [tool.pytest.ini_options]
 env = {"TESTING" = "1"}

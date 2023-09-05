@@ -2,8 +2,8 @@ from functools import cached_property, lru_cache
 from typing import ClassVar, Optional
 
 import numpy as np
-from pydantic import computed_field, validate_arguments, validator
-from pydantic_numpy import NDArrayInt16
+from pydantic import computed_field, field_validator, validate_call
+from pydantic_numpy import NpNDArrayInt16
 from skg import ngauss_fit
 
 from bikipy._dev_utils.fields import enclosure_field
@@ -21,7 +21,7 @@ class EnclosedTrial(BaseTrial):
 
     gaussian_dividend_multiplayer: ClassVar[int] = 1
 
-    @validator("manual_enclosure")
+    @field_validator("manual_enclosure")
     def manual_enclosure_is_instance_of_trial_perimeter_enclosure_class(cls, value: Perimeter):
         """
         This could be enforced through GenericModel, but GenericModel types are reserved for inter-trial perimeters,
@@ -96,9 +96,9 @@ class EnclosedExperiment(BaseExperiment):
         }
 
 
-@validate_arguments
+@validate_call
 @lru_cache
-def gaussian_scoring_field(resolution: NDArrayInt16, scale: int = 1, gaussian_dividend_multiplayer: int = 1):
+def gaussian_scoring_field(resolution: NpNDArrayInt16, scale: int = 1, gaussian_dividend_multiplayer: int = 1):
     resolution *= scale
 
     model = ngauss_fit.model(

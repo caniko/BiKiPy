@@ -2,7 +2,7 @@ from functools import cached_property
 from typing import ClassVar, Optional, TypeVar
 
 from pydantic import BaseModel, PositiveInt, computed_field
-from schemantic.model.project import SchemanticProjectMixin
+from schemantic import SchemanticProjectMixin
 
 from bikipy.core.typing import Label
 
@@ -22,7 +22,7 @@ class BikipyHashable(BikipyModel, SchemanticProjectMixin):
     label: Optional[Label]
     int_id: Optional[PositiveInt]
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:

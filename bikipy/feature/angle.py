@@ -3,15 +3,15 @@ from warnings import warn
 
 import numpy as np
 from numba import njit
-from pydantic_numpy.dtype import NDArrayFp64
+from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy import runtime_settings
-from bikipy.utils.math.vector import dot_axis_1_1d, unit_vector
+from bikipy.math import dot_axis_1_1d, unit_vector
 
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}
 
 
-def _find_median_vector(row_vectors: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
+def _find_median_vector(row_vectors: NpNDArrayFp64) -> NpNDArrayFp64:
     """
     Computes the median point from a row vectors
 
@@ -19,29 +19,29 @@ def _find_median_vector(row_vectors: NDArrayFp64) -> np.ndarray[float, np.dtype[
 
     Parameters
     ----------
-    row_vectors: NDArrayFp64
+    row_vectors: NpNDArrayFp64
         Array of row vectors
 
     Returns
     -------
-    NDArrayFp64
+    NpNDArrayFp64
     """
     return np.array([np.median(component) for component in row_vectors.T])
 
 
 def clockwise_angel_2d(
-    start_vector: NDArrayFp64,
-    end_vector: NDArrayFp64,
-) -> np.ndarray[float, np.dtype[np.float64]]:
+    start_vector: NpNDArrayFp64,
+    end_vector: NpNDArrayFp64,
+) -> NpNDArrayFp64:
     """
     Computes the counterclockwise angle, [0, 2pi], from start to end in radians
 
     :param start_vector: Array of row vectors in which "the clock starts turning", counterclockwise
     :param end_vector: Array of row vectors in which the clock stops
-    :type start_vector: NDArrayFp64
-    :type end_vector: NDArrayFp64
+    :type start_vector: NpNDArrayFp64
+    :type end_vector: NpNDArrayFp64
     :return: counterclockwise angle between start and end vector per frame
-    :rtype: NDArrayFp64
+    :rtype: NpNDArrayFp64
 
     >>> clockwise_angel_2d((1, 0), (0, 1))
     1.5707963267948966      # pi / 2.
@@ -83,7 +83,7 @@ def clockwise_angel_2d(
     return angles
 
 
-def inner_angle(vector_set_1: NDArrayFp64, vector_set_2: NDArrayFp64):
+def inner_angle(vector_set_1: NpNDArrayFp64, vector_set_2: NpNDArrayFp64):
     """Returns the angle in radians between given vectors"""
     # TODO: https://github.com/numba/numba/pull/7785
 
@@ -113,13 +113,13 @@ def inner_angle(vector_set_1: NDArrayFp64, vector_set_2: NDArrayFp64):
 
 
 def compute_angles_from_points_abc(
-    row_vectors_point_a: NDArrayFp64,
-    row_vectors_point_b: NDArrayFp64,
-    row_vectors_point_c: NDArrayFp64,
+    row_vectors_point_a: NpNDArrayFp64,
+    row_vectors_point_b: NpNDArrayFp64,
+    row_vectors_point_c: NpNDArrayFp64,
     median_points: Optional[Sequence[str] | str] = None,
     method: str = "inner",
     degrees: bool = False,
-) -> np.ndarray[float, np.dtype[np.float64]]:
+) -> NpNDArrayFp64:
     """
     Computes the angle between three groups of vectors
 
@@ -130,14 +130,14 @@ def compute_angles_from_points_abc(
                             computation in _find_median_vector()
     :param method: The method for computing angle, supported methods are inner; counterclockwise.
     :param degrees: If True, convert resulting angle data to degrees
-    :type row_vectors_point_a: NDArrayFp64
-    :type row_vectors_point_b: NDArrayFp64
-    :type row_vectors_point_c: NDArrayFp64
+    :type row_vectors_point_a: NpNDArrayFp64
+    :type row_vectors_point_b: NpNDArrayFp64
+    :type row_vectors_point_c: NpNDArrayFp64
     :type median_points: Iterable, str
     :type method: str
     :type degrees: bool
     :return: Angle per frame
-    :rtype: NDArrayFp64
+    :rtype: NpNDArrayFp64
     """
 
     points = [
@@ -178,7 +178,7 @@ def compute_angles_from_points_abc(
     return computation
 
 
-def angle_from_a_to_b(vector_a: NDArrayFp64, vector_b: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
+def angle_from_a_to_b(vector_a: NpNDArrayFp64, vector_b: NpNDArrayFp64) -> NpNDArrayFp64:
     b_x, b_y = vector_b.T
     vector_p = np.array([-b_y, b_x]).T
 

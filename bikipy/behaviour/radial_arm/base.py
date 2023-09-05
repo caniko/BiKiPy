@@ -7,8 +7,8 @@ from typing import ClassVar, Optional
 import numpy as np
 import pandas as pd
 from ordered_set import OrderedSet
-from pydantic import DirectoryPath, PositiveInt, computed_field, validator
-from pydantic_numpy.dtype import NDArrayBool
+from pydantic import DirectoryPath, PositiveInt, computed_field, field_validator
+from pydantic_numpy.typing import NpNDArrayBool
 
 from bikipy._constant import INSPECT_SIMPLE_FIG_FILE_FORMAT
 from bikipy.analysis.video import make_inspection_video
@@ -16,6 +16,8 @@ from bikipy.behaviour.core.base import BaseExperiment, BaseTrial
 from bikipy.behaviour.utils import feature_2d_multi_indexer, unique_with_counts_zipped
 from bikipy.core.base import BikipyHashable
 from bikipy.feature.motion import Motion, bulk_motion_analysis_indexer
+from bikipy.math import clockwise_sort_perimeter_centroids
+from bikipy.math.discrete import reduce_repeating_sequences
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.perimeter.trial_mixin import TrialWithPerimeterMixin
 from bikipy.perimeter.utils.multi_node_confinement import (
@@ -23,8 +25,6 @@ from bikipy.perimeter.utils.multi_node_confinement import (
     detect_multi_node_sequential_perimeter_presence,
     inspect_sequential_confinement,
 )
-from bikipy.utils.math.discrete import reduce_repeating_sequences
-from bikipy.utils.math.geometry import clockwise_sort_perimeter_centroids
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 
 logger = getLogger(__name__)
@@ -48,12 +48,12 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
     minimum_seconds_for_entry: float = 0
 
-    @validator("center")
+    @field_validator("center")
     def center_has_1_as_int_id(cls, value):
         value.int_id = 1
         return value
 
-    @validator("arms", pre=True)
+    @field_validator("arms", pre=True)
     def clockwise_sort_and_incremental_arm_int_ids(cls, value):
         value = clockwise_sort_perimeter_centroids(value)
         for i, arm in enumerate(value):
@@ -124,7 +124,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         """
         return "Center", *cls.arm_labels
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -153,7 +153,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
     @computed_field
     @cached_property
-    def alternation_sequence_with_center(self) -> np.ndarray[int, np.dtype[np.uint8]]:
+    def alternation_sequence_with_center(self) -> NpNDArrayUint8:
         result, overlap_boolean_index = detect_multi_node_sequential_perimeter_presence(
             self.confinement_coordinates,
             self.perimeter_set,
@@ -217,7 +217,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
     @computed_field
     @cached_property
-    def area_to_confinement_boolean_index(self) -> dict[str, NDArrayBool]:
+    def area_to_confinement_boolean_index(self) -> dict[str, NpNDArrayBool]:
         return {label: self.alternation_sequence_with_center == label for label in self._center_arm_int_ids}
 
     @computed_field
@@ -325,7 +325,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
     @computed_field
     @property
-    def confinement_coordinates(self) -> tuple[np.ndarray[float, np.dtype[np.float64]], ...]:
+    def confinement_coordinates(self) -> tuple[NpNDArrayFp64, ...]:
         return tuple(self.reader[node_label] for node_label in self.tracking_labels_for_radial_arm_confinement)
 
     def generate_inspection_video(

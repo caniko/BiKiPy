@@ -5,10 +5,10 @@ import numpy as np
 from matplotlib import colors, patches
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
-from pydantic import validate_arguments
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+from pydantic import validate_call
+from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
 
-from bikipy.utils.math.discrete import boolean_index_truth_sequence_start_end
+from bikipy.math.discrete import boolean_index_truth_sequence_start_end
 
 if TYPE_CHECKING:
     from bikipy.core.video import VideoMetadata
@@ -19,8 +19,8 @@ logger = getLogger(__file__)
 
 def ax_plot_coordinate_with_boolean_index(
     ax,
-    boolean_index: NDArrayBool,
-    coordinates: NDArrayFp64,
+    boolean_index: NpNDArrayBool,
+    coordinates: NpNDArrayFp64,
     plot_non_confinement: bool = False,
     plot_line: bool = False,
 ) -> None:
@@ -52,7 +52,7 @@ def ax_plot_coordinate_with_boolean_index(
 
 def plot_coordinates(
     ax: Axes,
-    coordinates: NDArrayFp64,
+    coordinates: NpNDArrayFp64,
     coordinates_as_pixels: bool = False,
     video: Optional["VideoMetadata"] = None,
     color: Any = None,
@@ -63,7 +63,7 @@ def plot_coordinates(
     ax.plot(*coordinates.T, color=color, **plot_kwargs)
 
 
-@validate_arguments(config={"arbitrary_types_allowed": True})
+@validate_call(config={"arbitrary_types_allowed": True})
 def plot_ellipse(ax: Axes, center: tuple[float, float], radius: tuple[float, float] | float, color: Any = None) -> None:
     if isinstance(radius, tuple) and np.isclose(radius[0], radius[1]):
         radius = radius[0]

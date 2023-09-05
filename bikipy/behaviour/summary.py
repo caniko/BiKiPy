@@ -3,7 +3,7 @@ from functools import cached_property
 
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath, computed_field, validator
+from pydantic import DirectoryPath, computed_field, field_validator
 
 from bikipy.core.base import BikipyModel
 
@@ -22,7 +22,7 @@ class StatisticalAnalysis(BikipyModel):
     identifier: str
     project_directory: DirectoryPath
 
-    @validator("metadata_df")
+    @field_validator("metadata_df")
     def ensure_metadata_df_is_clean(cls, value):
         return value.applymap(lambda x: x.strip() if isinstance(x, str) else x)
 

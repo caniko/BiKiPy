@@ -4,8 +4,7 @@ from typing import Optional, Sequence
 
 import numpy as np
 import seaborn as sb
-from pydantic_numpy import NDArray
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64
+from pydantic_numpy.typing import NpNDArray, NpNDArrayBool, NpNDArrayFp64
 
 from bikipy import runtime_settings
 from bikipy.core.typing import ConfinementSequence
@@ -20,7 +19,7 @@ logger = getLogger(__file__)
 
 
 def detect_multi_node_sequential_perimeter_presence(
-    coordinate_set: Sequence[NDArrayFp64],
+    coordinate_set: Sequence[NpNDArrayFp64],
     inferior2superior_perimeter_set: PerimeterSet,
     all_or_false: bool | tuple[bool, ...] = True,
     tolerance_filter: bool = False,
@@ -75,9 +74,9 @@ def inspect_sequential_confinement(
     inspection_fig_output_path: Optional[Path],
     video: VideoMetadata,
     perimeter_set: PerimeterSet,
-    coordinates: NDArrayFp64,
-    presence: NDArray,
-    overlap_boolean_index: NDArrayBool,
+    coordinates: NpNDArrayFp64,
+    presence: NpNDArray,
+    overlap_boolean_index: NpNDArrayBool,
     **inspect_kwargs,
 ):
     if not inspection_fig_output_path:

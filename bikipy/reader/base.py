@@ -9,9 +9,10 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
-from pydantic import Field, FilePath, computed_field, validate_arguments
+from pydantic import Field, FilePath, computed_field, validate_call
 from pydantic.generics import GenericModel
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayUint8
+from pydantic_numpy import NpNDArrayUint32
+from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64, NpNDArrayUint8
 from typing_extensions import Literal
 
 from bikipy import runtime_settings
@@ -69,7 +70,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
     cache_meters_augmented: bool = True
 
-    manual_timestamp_index: Optional[NDArrayFp64] = timestamp_index_field
+    manual_timestamp_index: Optional[NpNDArrayFp64] = timestamp_index_field
 
     x_axis_crop_end_point: float = Field(0.0, description="x component of the raw video crop of video")
     y_axis_crop_end_point: float = Field(0.0, description="y component of the raw video crop of video")
@@ -114,7 +115,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
     _post_read_midpoints: set = set()
     _time_index_derived_fps: float | None
-    _region_of_interest_to_fused_neighbouring_points: dict[str, NDArrayUint8] = Field(default_factory=dict)
+    _region_of_interest_to_fused_neighbouring_points: dict[str, NpNDArrayUint8] = Field(default_factory=dict)
     _cached_augmented_df: pd.DataFrame | None
 
     def __getitem__(self, query: Iterable[Hashable] | Hashable) -> pd.DataFrame:
@@ -126,7 +127,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
                 raise AttributeError(msg)
             return self._isolate_coordinates(query)
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -134,19 +135,17 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
         result.update(("df_path", "trial_enclosure", "manual_timestamp_index", "_using_bikipy_ingress"))
         return result
 
-    def _isolate_coordinates(self, key: Iterable[str] | str) -> np.ndarray[float, np.dtype[np.float64]]:
+    def _isolate_coordinates(self, key: Iterable[str] | str) -> NpNDArrayFp64:
         return self.isolate_coordinates_from_native_df(self.df, key)
 
     @property
     @abstractmethod
-    def region_of_interest_to_boolean_index(self) -> dict[str, NDArrayBool]:
+    def region_of_interest_to_boolean_index(self) -> dict[str, NpNDArrayBool]:
         ...
 
     @staticmethod
     @abstractmethod
-    def isolate_coordinates_from_native_df(
-        df: pd.DataFrame, key: Iterable[str] | str
-    ) -> np.ndarray[float, np.dtype[np.float64]]:
+    def isolate_coordinates_from_native_df(df: pd.DataFrame, key: Iterable[str] | str) -> NpNDArrayFp64:
         ...
 
     @computed_field
@@ -156,7 +155,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
     @computed_field
     @cached_property
-    def kinematic_coordinates_prepared_for_plotting(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def kinematic_coordinates_prepared_for_plotting(self) -> NpNDArrayFp64:
         return self.video.prepare_coordinates_for_plotting(self.kinematic_coordinates)
 
     @computed_field
@@ -357,7 +356,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
     @computed_field
     @cached_property
-    def timestamp_index(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
+    def timestamp_index(self) -> NpNDArrayFp64 | None:
         assert not self.raw_df.empty
         if not self.df_is_timestamped:
             return None
@@ -370,7 +369,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
     @computed_field
     @cached_property
-    def full_second_index(self) -> np.ndarray[int, np.dtype[np.uint32]]:
+    def full_second_index(self) -> NpNDArrayUint32:
         result = [0]
         last_idx = 0
         next_second = 1
@@ -479,15 +478,13 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
     @computed_field
     @property
-    def combined_raw_likelihood(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def combined_raw_likelihood(self) -> NpNDArrayFp64:
         return np.multiply.reduce(self.raw_df.loc[:, pd.IndexSlice[:, "likelihood"]], axis=1)
 
-    label_to_plot_prepped_coordinates: dict[str, NDArrayFp64] | None = Field(default_factory=dict)
-    label_to_plot_without_resized_coordinates: dict[str, NDArrayFp64] | None = Field(default_factory=dict)
+    label_to_plot_prepped_coordinates: dict[str, NpNDArrayFp64] | None = Field(default_factory=dict)
+    label_to_plot_without_resized_coordinates: dict[str, NpNDArrayFp64] | None = Field(default_factory=dict)
 
-    def coordinates_for_plot(
-        self, label_to_plot: str, with_resize: bool = True
-    ) -> np.ndarray[float, np.dtype[np.float64]]:
+    def coordinates_for_plot(self, label_to_plot: str, with_resize: bool = True) -> NpNDArrayFp64:
         if with_resize:
             try:
                 return self.label_to_plot_prepped_coordinates[label_to_plot]
@@ -502,8 +499,8 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
             self.label_to_plot_without_resized_coordinates[label_to_plot] = result
             return result
 
-    @validate_arguments(config={"arbitrary_types_allowed": True})
-    def plot_boolean_index(self, boolean_index: NDArrayBool, ax: Axes, label_to_plot: Optional[str] = None) -> None:
+    @validate_call(config={"arbitrary_types_allowed": True})
+    def plot_boolean_index(self, boolean_index: NpNDArrayBool, ax: Axes, label_to_plot: Optional[str] = None) -> None:
         coordinates_for_plot = self.coordinates_for_plot(label_to_plot or self.object_tracking_label_for_kinematics)
         ax_plot_coordinate_with_boolean_index(
             ax, boolean_index, coordinates_for_plot, plot_line=True, plot_non_confinement=False
@@ -525,7 +522,7 @@ class BaseReader(GenericModel, Generic[Enclosure], BikipyHashable, VideoMetadata
 
         ax.legend(bbox_to_anchor=(1.01, 0.5), loc="center left")
 
-    def confinement_index_defaultdict(self) -> defaultdict[np.ndarray[bool, bool]]:
+    def confinement_index_defaultdict(self) -> defaultdict[NpNDArrayBool]:
         return defaultdict(lambda: np.zeros(len(self.augmented), dtype=bool))
 
     def confinement_sequence_defaultdict(self, more_than_254: bool = False) -> defaultdict[ConfinementSequence]:

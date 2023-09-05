@@ -1,6 +1,6 @@
 import numpy as np
 
-from bikipy.utils.math.vector import (
+from bikipy.math import (
     dot_axis_1_1d,
     intersection_between_two_lines,
     orthogonal_unit_vector,

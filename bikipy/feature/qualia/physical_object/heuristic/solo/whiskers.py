@@ -1,9 +1,9 @@
 from functools import cached_property
 from typing import Optional
 
-import numpy as np
 import pandas as pd
 from pydantic import computed_field
+from pydantic_numpy import NpNDArrayBool
 
 from bikipy.core.compute import video_gen_merge_perimeter_to_boolean_index_from_dict
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
@@ -33,7 +33,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
 
     heuristic_alias = "WhiskerInteraction"
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -112,29 +112,29 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
 
     @computed_field
     @cached_property
-    def left_result(self) -> np.ndarray[bool, bool]:
+    def left_result(self) -> NpNDArrayBool:
         result = self.left_proximity.result & self.leftward_observation.result
         return result if self.filter_in_sequence else single_node_tolerance_model(result, self.video.fps)
 
     @computed_field
     @cached_property
-    def right_result(self) -> np.ndarray[bool, bool]:
+    def right_result(self) -> NpNDArrayBool:
         result = self.right_proximity.result & self.rightward_observation.result
         return result if self.filter_in_sequence else single_node_tolerance_model(result, self.video.fps)
 
     @computed_field
     @property
-    def solo_result(self) -> np.ndarray[bool, bool]:
+    def solo_result(self) -> NpNDArrayBool:
         return self.left_result | self.right_result
 
     @computed_field
     @property
-    def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
+    def label_to_proximity_boolean(self) -> dict[str, NpNDArrayBool]:
         return {self.left_ear_label: self.left_proximity.result, self.right_ear_label: self.right_proximity.result}
 
     @computed_field
     @property
-    def label_to_ray_vector_direction_points(self) -> dict[str, np.ndarray[float, np.dtype[np.float64]]]:
+    def label_to_ray_vector_direction_points(self) -> dict[str, NpNDArrayFp64]:
         return {
             self.left_ear_label: self.reader[self.left_ear_label] - self.reader[self.center_ear_label],
             self.right_ear_label: self.reader[self.right_ear_label] - self.reader[self.center_ear_label],
@@ -142,7 +142,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
 
     @computed_field
     @property
-    def perimeter_to_boolean_index(self) -> dict[Perimeter, np.ndarray[bool, bool]]:
+    def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
         return video_gen_merge_perimeter_to_boolean_index_from_dict(
             self.left_proximity.video_gen_merge_perimeter_to_boolean_index(
                 self.leftward_observation, both_or_false=True

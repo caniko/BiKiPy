@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from pydantic import DirectoryPath, FilePath
-from pydantic_numpy.dtype import NDArrayFp64
+from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy import runtime_settings
 from bikipy.utils.image import read_image_from_path
@@ -25,7 +25,7 @@ def init_polygon_from_makesense_coco_polygon(
     data_path: FilePath,
     image_root: Optional[DirectoryPath] = None,
     reference_point_csv_path: Optional[FilePath] = None,
-    reference_point_array: Optional[NDArrayFp64] = None,
+    reference_point_array: Optional[NpNDArrayFp64] = None,
     invert_y_axis: bool = runtime_settings.matplotlib_invert_y_axis,
     **perimeter_kwargs,
 ) -> dict[str, "PerimeterSet"]:

@@ -4,8 +4,8 @@ from typing import Optional
 
 import numpy as np
 from matplotlib.axes import Axes
-from pydantic import Field, computed_field, validate_arguments
-from pydantic_numpy.dtype import NDArrayFp64
+from pydantic import Field, computed_field, validate_call
+from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy import runtime_settings
 from bikipy.core.compute import AbstractComputePerimeterBooleanIndex, T
@@ -16,9 +16,7 @@ from bikipy.utils.plot.color import make_color_map
 logger = getLogger(__name__)
 
 
-def _update_result_array(
-    result: np.ndarray[bool, bool] | None, new_array: np.ndarray[bool, bool], all_or_none: bool
-) -> np.ndarray[bool, bool]:
+def _update_result_array(result: NpNDArrayBool | None, new_array: NpNDArrayBool, all_or_none: bool) -> NpNDArrayBool:
     if result is None:
         return new_array
 
@@ -26,12 +24,12 @@ def _update_result_array(
 
 
 class ComputeProximity(AbstractComputePerimeterBooleanIndex):
-    maximum_distance: float | NDArrayFp64
+    maximum_distance: float | NpNDArrayFp64
 
-    inside_perimeter: Optional[NDArrayFp64]
-    outside_perimeter: Optional[NDArrayFp64]
-    inside_perimeter_border: Optional[NDArrayFp64]
-    outside_perimeter_border: Optional[NDArrayFp64]
+    inside_perimeter: Optional[NpNDArrayFp64]
+    outside_perimeter: Optional[NpNDArrayFp64]
+    inside_perimeter_border: Optional[NpNDArrayFp64]
+    outside_perimeter_border: Optional[NpNDArrayFp64]
 
     heuristic_data_sources = (
         "inside_perimeter",
@@ -45,7 +43,7 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
     def perimeter_border(self) -> SinglePerimeter:
         return self.perimeter.expand(self.maximum_distance)
 
-    my_perimeter_to_boolean_index: dict[Perimeter, np.ndarray[bool, bool]] = Field(default_factory=dict)
+    my_perimeter_to_boolean_index: dict[Perimeter, NpNDArrayBool] = Field(default_factory=dict)
 
     @computed_field
     @cached_property
@@ -95,11 +93,11 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
 
     @computed_field
     @property
-    def perimeter_to_boolean_index(self) -> dict[Perimeter, np.ndarray[bool, bool]]:
+    def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
         assert self.result is not None
         return self.my_perimeter_to_boolean_index
 
-    @validate_arguments(config={"arbitrary_types_allowed": True})
+    @validate_call(config={"arbitrary_types_allowed": True})
     def plot(self, ax: Axes, video: Optional[VideoMetadata] = None, coordinates_as_pixels: bool = False) -> None:
         assert self.result is not None
 

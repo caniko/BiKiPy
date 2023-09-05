@@ -2,12 +2,11 @@ from abc import ABC, abstractmethod
 from typing import ClassVar, Optional, Type, TypeVar
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
 from pydantic import Field, computed_field
-from pydantic_numpy import NDArrayBool
-from schemantic.model.project import SchemanticProjectMixin
+from pydantic_numpy import NpNDArrayBool
+from schemantic import SchemanticProjectMixin
 
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.qualia.physical_object.heuristic.mixin import SingleComponentMixin
@@ -28,7 +27,7 @@ class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
 
     heuristic_alias: ClassVar[str]
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -42,7 +41,7 @@ class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectMixin, ABC):
 
     @computed_field
     @property
-    def perimeter_to_boolean_index(self) -> dict[Perimeter, np.ndarray[bool, bool]]:
+    def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
         return {self.perimeter: self.result}
 
     @computed_field
@@ -64,7 +63,7 @@ Heuristic = TypeVar("Heuristic", bound=AbstractHeuristic)
 class StandaloneHeuristic(AbstractHeuristic):
     @property
     @abstractmethod
-    def result(self) -> np.ndarray[bool, bool]:
+    def result(self) -> NpNDArrayBool:
         ...
 
     def plot_result(self, ax: Axes, label_to_plot: Optional[str] = None) -> None:
@@ -82,7 +81,7 @@ class StandaloneHeuristic(AbstractHeuristic):
 
 class CombinedHeuristic(SingleComponentMixin, AbstractHeuristic):
     label: str = ...
-    result: NDArrayBool = ...
+    result: NpNDArrayBool = ...
 
     @computed_field
     @property

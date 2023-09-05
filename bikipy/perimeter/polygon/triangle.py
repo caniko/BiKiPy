@@ -3,7 +3,7 @@ from typing import Optional
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field
-from pydantic_numpy.dtype import NDArrayFp64
+from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
@@ -29,12 +29,16 @@ class TrianglePerimeter(BasePolygonPerimeter):
     def apex(self):
         return self.vertices_in_meters[2]
 
-    def expand(self, perimeter_border_normal_meters: float | NDArrayFp64):
+    def expand(self, perimeter_border_normal_meters: float | NpNDArrayFp64):
         raise NotImplementedError()
 
     def compute_confinement_boolean_index(
-        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
-    ) -> np.ndarray[bool, bool]:
+        self,
+        coordinates: NpNDArrayFp64,
+        manual_video: Optional[VideoMetadata] = None,
+        ax: Axes = None,
+        **inspect_kwargs,
+    ) -> NpNDArrayBool:
         """
         indices of the coordinates that are inside the respective perimeter
 
@@ -45,7 +49,7 @@ class TrianglePerimeter(BasePolygonPerimeter):
 
         Returns
         -------
-        NDArrayFp64 of all the indices
+        NpNDArrayFp64 of all the indices
         """
         coord_x_comp, coord_y_comp = np.asarray(coordinates).T
 
@@ -65,8 +69,8 @@ class TrianglePerimeter(BasePolygonPerimeter):
         )
 
     def ray_direction_filter(
-        self, ray_start_point: NDArrayFp64, ray_travel_direction_point: NDArrayFp64, max_radians: float, **kwargs
-    ) -> np.ndarray[bool, bool]:
+        self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, **kwargs
+    ) -> NpNDArrayBool:
         if self.equilateral:
             return self.circle.ray_direction_filter_circle_triangle(
                 ray_travel_direction_point=ray_travel_direction_point,

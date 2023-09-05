@@ -22,7 +22,7 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
 
     heuristic_alias = "BodyProximity"
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -66,14 +66,14 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
 
     @computed_field
     @property
-    def solo_result(self) -> np.ndarray[bool, bool]:
+    def solo_result(self) -> NpNDArrayBool:
         return np.logical_or.reduce(
             [node.result for node in (self.center_ear_proximity, self.tail_base_proximity) if node is not None]
         )
 
     @computed_field
     @property
-    def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
+    def label_to_proximity_boolean(self) -> dict[str, NpNDArrayBool]:
         return {
             self.center_ear_label: self.center_ear_proximity.result,
             self.tail_base_label: self.tail_base_proximity.result,
@@ -81,7 +81,7 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
 
     @computed_field
     @property
-    def perimeter_to_boolean_index(self) -> dict[Perimeter, np.ndarray[bool, bool]]:
+    def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
         return self.center_ear_proximity.video_gen_merge_perimeter_to_boolean_index(self.tail_base_proximity)
 
     @computed_field

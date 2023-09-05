@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 import matplotlib.pyplot as plt
-from pydantic import DirectoryPath, FilePath, computed_field, validate_arguments
+from pydantic import DirectoryPath, FilePath, computed_field, validate_call
 
 from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
@@ -92,7 +92,7 @@ class PluginSinglePerimeter(AbstractPerimeterPlugin):
         return result
 
 
-@validate_arguments
+@validate_call
 def inspect_annotations(annotation_path: FilePath, image_directory: Optional[DirectoryPath] = None) -> None:
     _, shape, annotation_label = annotation_path.stem.split("-")
     image_name_to_perimeter_set = perimeter_set_from_makesense(annotation_path, shape)

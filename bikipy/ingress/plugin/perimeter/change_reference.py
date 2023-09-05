@@ -2,7 +2,7 @@ from functools import cached_property
 from typing import ClassVar
 
 from pydantic import computed_field
-from pydantic_numpy.dtype import NDArrayFp64
+from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParse
@@ -46,7 +46,7 @@ class PluginChangeReference(BasePluginFile, IngressRequiredMixin):
 
     @computed_field
     @cached_property
-    def image_name_to_re_referencing_point(self) -> dict[str, NDArrayFp64]:
+    def image_name_to_re_referencing_point(self) -> dict[str, NpNDArrayFp64]:
         return image_name_to_point_from_makesense(self.data_path, only_point=False)
 
     def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> Perimeter | dict:

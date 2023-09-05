@@ -10,6 +10,7 @@ from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
 from bikipy.ingress.plugin.core.base import BasePluginDirectory
 from bikipy.ingress.plugin.core.mixins import HasReferenceMixin, IngressRequiredMixin
+from bikipy.math import clockwise_argsort_points, meter_per_pixel_from_diagonal
 from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
@@ -17,10 +18,6 @@ from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.makesense import (
     get_all_lines_from_makesense_line_df,
     read_makesense_line,
-)
-from bikipy.utils.math.geometry import (
-    clockwise_argsort_points,
-    meter_per_pixel_from_diagonal,
 )
 
 
@@ -52,7 +49,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
 
     @computed_field
     @property
-    def lines(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def lines(self) -> NpNDArrayFp64:
         return get_all_lines_from_makesense_line_df(self.line_data)
 
     @computed_field

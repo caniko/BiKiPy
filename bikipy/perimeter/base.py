@@ -15,9 +15,9 @@ from pydantic import (
     FilePath,
     computed_field,
     root_validator,
-    validate_arguments,
+    validate_call,
 )
-from pydantic_numpy.dtype import NDArrayBool, NDArrayFp64, NDArrayInt16
+from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64, NpNDArrayInt16
 
 from bikipy._constant import INSPECT_SIMPLE_FIG_FILE_FORMAT
 from bikipy.core.base import BikipyHashable
@@ -51,8 +51,8 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
     def post_confinement_analysis_inspect_plot(
         self,
-        boolean_index: NDArrayBool,
-        coordinates: Optional[NDArrayFp64] = None,
+        boolean_index: NpNDArrayBool,
+        coordinates: Optional[NpNDArrayFp64] = None,
         ax: Axes = None,
         inspection_fig_output_path: Path | None = None,
         **inspect_kwargs,
@@ -89,8 +89,12 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
     @abstractmethod
     def compute_confinement_boolean_index(
-        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
-    ) -> np.ndarray[bool, bool]:
+        self,
+        coordinates: NpNDArrayFp64,
+        manual_video: Optional[VideoMetadata] = None,
+        ax: Axes = None,
+        **inspect_kwargs,
+    ) -> NpNDArrayBool:
         ...
 
     @abstractmethod
@@ -106,12 +110,12 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         ...
 
     @abstractmethod
-    def change_reference(self, new_reference: NDArrayFp64, makesense_image_name: Optional[str] = None):
+    def change_reference(self, new_reference: NpNDArrayFp64, makesense_image_name: Optional[str] = None):
         ...
 
     @property
     @abstractmethod
-    def centroid_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def centroid_meters(self) -> NpNDArrayFp64:
         ...
 
 
@@ -149,13 +153,13 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     makesense_image_name: Optional[str]
 
     reference_point_coco_path: Optional[FilePath]
-    reference_point_array: Optional[NDArrayInt16]
+    reference_point_array: Optional[NpNDArrayInt16]
 
     moving_field_name: Optional[str]
 
     required_video_metadata_fields = {"recording_resolution"}
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -205,21 +209,21 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         return
 
     @abstractmethod
-    def expand(self, perimeter_border_normal_meters: float | NDArrayFp64):
+    def expand(self, perimeter_border_normal_meters: float | NpNDArrayFp64):
         ...
 
     @abstractmethod
-    def closest_point_on_edge_to_coordinates(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
+    def closest_point_on_edge_to_coordinates(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64:
         ...
 
     @abstractmethod
-    def vector_to_closest_point_on_edge(self, coordinates: NDArrayFp64) -> np.ndarray[float, np.dtype[np.float64]]:
+    def vector_to_closest_point_on_edge(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64:
         ...
 
     @abstractmethod
     def ray_direction_filter(
-        self, ray_start_point: NDArrayFp64, ray_travel_direction_point: NDArrayFp64, max_radians: float, **kwargs
-    ) -> np.ndarray[bool, bool]:
+        self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, **kwargs
+    ) -> NpNDArrayBool:
         ...
 
     @root_validator(pre=True)
@@ -230,8 +234,8 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         return values
 
     def confinement_coordinate_boolean_index(
-        self, coordinates: NDArrayFp64, reader: Optional["Reader"] = None, **inspect_kwargs
-    ) -> np.ndarray[bool, bool]:
+        self, coordinates: NpNDArrayFp64, reader: Optional["Reader"] = None, **inspect_kwargs
+    ) -> NpNDArrayBool:
         """
         This function integrates moving perimeter routine into the static perimeter workflow
         """
@@ -261,7 +265,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     def change_reference_with_coco(
         self,
         metadata_path: Optional[FilePath],
-        coco_array: Optional[NDArrayFp64],
+        coco_array: Optional[NpNDArrayFp64],
         **kwargs,
     ):
         coco_array = get_coco_array_from_path_or_array(metadata_path, coco_array)
@@ -278,7 +282,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     def change_reference_with_coco_with_plural_references(
         self,
         metadata_path: Optional[FilePath],
-        coco_array: Optional[NDArrayFp64],
+        coco_array: Optional[NpNDArrayFp64],
         image_root: Optional[DirectoryPath],
         map_to_image_names: bool = True,
     ):
@@ -312,7 +316,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     def plot(
         self,
         ax: Axes = None,
-        coordinates: Optional[NDArrayFp64] = None,
+        coordinates: Optional[NpNDArrayFp64] = None,
         coordinates_as_pixels: bool = False,
         **perimeter_plot_kwargs,
     ):
@@ -352,7 +356,7 @@ class PerimeterSet(BasePerimeter):
     perimeters: list[SinglePerimeter]
     restricting_perimeters: Optional[list[SinglePerimeter]]
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -425,13 +429,13 @@ class PerimeterSet(BasePerimeter):
 
     @computed_field
     @cached_property
-    def centroid_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def centroid_meters(self) -> NpNDArrayFp64:
         """
         :return: The mean of all perimeter centroids in the set
         """
         return np.mean([perimeter.centroid_meters for perimeter in self.all_perimeters], axis=0)
 
-    def combined_framewise_confinement_coordinates(self, coordinates: NDArrayFp64) -> np.ndarray[bool, bool]:
+    def combined_framewise_confinement_coordinates(self, coordinates: NpNDArrayFp64) -> NpNDArrayBool:
         present = np.any([perimeter.confinement_coordinate_boolean_index(coordinates) for perimeter in self.perimeters])
         if self.restricting_perimeters:
             present = present & ~np.any(
@@ -443,8 +447,12 @@ class PerimeterSet(BasePerimeter):
         return present
 
     def compute_confinement_boolean_index(
-        self, coordinates: NDArrayFp64, manual_video: Optional[VideoMetadata] = None, ax: Axes = None, **inspect_kwargs
-    ) -> np.ndarray[bool, bool]:
+        self,
+        coordinates: NpNDArrayFp64,
+        manual_video: Optional[VideoMetadata] = None,
+        ax: Axes = None,
+        **inspect_kwargs,
+    ) -> NpNDArrayBool:
         result = self.combined_framewise_confinement_coordinates(coordinates)
 
         self.post_confinement_analysis_inspect_plot(result, coordinates, ax, **inspect_kwargs)
@@ -486,7 +494,7 @@ class PerimeterSet(BasePerimeter):
 
     @computed_field
     @property
-    def reference_point(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def reference_point(self) -> NpNDArrayFp64:
         expected_reference_point = self.all_perimeters[0].reference_point
         if equality := np.all(
             expected_reference_point == perimeter.reference_point for perimeter in self.all_perimeters
@@ -498,7 +506,7 @@ class PerimeterSet(BasePerimeter):
 
     @computed_field
     @property
-    def inspect_image(self) -> np.ndarray[int, np.dtype[np.uint8]]:
+    def inspect_image(self) -> NpNDArrayUint8:
         result = self.all_perimeters[0].inspect_image
         assert all(result == perimeter.inspect_image for perimeter in self.all_perimeters)
         return result
@@ -566,7 +574,7 @@ class PerimeterSet(BasePerimeter):
     def plot(
         self,
         manual_ax: Axes = None,
-        coordinates: Optional[NDArrayFp64] = None,
+        coordinates: Optional[NpNDArrayFp64] = None,
         coordinates_as_pixels: bool = False,
         **perimeter_plot_kwargs,
     ):
@@ -583,7 +591,7 @@ class PerimeterSet(BasePerimeter):
                 plot_coordinates(ax, coordinates, coordinates_as_pixels, self.video)
 
 
-@validate_arguments
+@validate_call
 def perimeter_set_from_makesense(
     perimeter_path: FilePath, shape: StringPerimeterShapes, **perimeter_kwargs
 ) -> dict[str, PerimeterSet]:

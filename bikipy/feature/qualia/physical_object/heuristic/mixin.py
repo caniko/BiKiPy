@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
 
-import numpy as np
 from pydantic import BaseModel, computed_field
 
-from bikipy.utils.math.cached import cached_deg2rad, meters2pixels
+from bikipy.math.cached import cached_deg2rad, meters2pixels
 
 
 class ProximityMixin(BaseModel, ABC):
@@ -11,7 +10,7 @@ class ProximityMixin(BaseModel, ABC):
 
     @property
     @abstractmethod
-    def label_to_proximity_boolean(self) -> dict[str, np.ndarray[bool, bool]]:
+    def label_to_proximity_boolean(self) -> dict[str, NpNDArrayBool]:
         ...
 
     @computed_field
@@ -30,7 +29,7 @@ class RayMixin(BaseModel, ABC):
 
     @property
     @abstractmethod
-    def label_to_ray_vector_direction_points(self) -> dict[str, np.ndarray[float, np.dtype[np.float64]]]:
+    def label_to_ray_vector_direction_points(self) -> dict[str, NpNDArrayFp64]:
         ...
 
 

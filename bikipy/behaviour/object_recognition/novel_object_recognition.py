@@ -29,7 +29,7 @@ class NORTTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
     experiment_stage = ExperimentStage.TRAINING
     trial_label = "Familiarization"
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -53,7 +53,7 @@ class NORTNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
     experiment_stage = ExperimentStage.TEST
     trial_label = "Novelty"
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:

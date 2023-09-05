@@ -3,20 +3,20 @@ from pathlib import Path
 from typing import Iterator, Optional
 
 import matplotlib.pyplot as plt
-import numpy as np
 from moviepy.video.io.bindings import mplfig_to_npimage
 from moviepy.video.VideoClip import VideoClip
+from pydantic_numpy import NpNDArrayBool, NpNDArrayFp64, NpNDArrayUint8
 
 from bikipy.perimeter.base import Perimeter
 from bikipy.reader.base import Reader
 
 
 def make_inspection_video(
-    video_frames: Iterator[np.ndarray[int, np.dtype[np.uint8]]],
+    video_frames: Iterator[NpNDArrayUint8],
     reader: Reader,
-    perimeter_to_boolean_index: Optional[dict[Perimeter, np.ndarray[bool, bool]]] = None,
-    label_to_confinement_boolean_index: Optional[dict[str, np.ndarray[bool, bool]]] = None,
-    label_to_quiver_rays: Optional[dict[str, np.ndarray[float, np.dtype[np.float64]]]] = None,
+    perimeter_to_boolean_index: Optional[dict[Perimeter, NpNDArrayBool]] = None,
+    label_to_confinement_boolean_index: Optional[dict[str, NpNDArrayBool]] = None,
+    label_to_quiver_rays: Optional[dict[str, NpNDArrayFp64]] = None,
     revert_crop: bool = False,
     output_file_path: Optional[Path] = None,
     frames_on_the_fly: bool = True,
@@ -57,7 +57,7 @@ def make_inspection_video(
     labels_to_exclude = frozenset(label_to_confinement_boolean_index if label_to_confinement_boolean_index else ())
 
     _current_frame_idx: int = 0
-    _current_frame: np.ndarray[int, np.dtype[np.uint8]] | None = None
+    _current_frame: NpNDArrayUint8 | None = None
 
     def make_frame(next_frame_idx: int):
         nonlocal _current_frame_idx, _current_frame

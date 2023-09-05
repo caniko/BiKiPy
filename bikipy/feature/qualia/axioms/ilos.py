@@ -1,25 +1,24 @@
 from functools import cached_property
 from typing import Optional
 
-import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field
-from pydantic_numpy.dtype import NDArrayFp64
+from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy import runtime_settings
 from bikipy.core.compute import AbstractComputePerimeterBooleanIndex
 from bikipy.core.video import VideoMetadata
 from bikipy.feature.tolerance.single import single_node_tolerance_model
+from bikipy.math import unit_vector
 from bikipy.perimeter.base import Perimeter
-from bikipy.utils.math.vector import unit_vector
 
 
 class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
-    ray_start_point: NDArrayFp64 = ...
-    ray_travel_direction_point: NDArrayFp64 = ...
+    ray_start_point: NpNDArrayFp64 = ...
+    ray_travel_direction_point: NpNDArrayFp64 = ...
     max_radians: float = ...
 
-    manual_ray_vectors: Optional[NDArrayFp64]
+    manual_ray_vectors: Optional[NpNDArrayFp64]
 
     heuristic_data_sources = ("ray_start_point", "ray_travel_direction_point", "max_radians")
     heuristic_data_sources_all_required = True
@@ -36,7 +35,7 @@ class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
 
     @computed_field
     @property
-    def perimeter_to_boolean_index(self) -> dict[Perimeter, np.ndarray[bool, bool]]:
+    def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
         return {self.perimeter: self.result}
 
     def plot(self, ax: Axes, video: Optional[VideoMetadata] = None, coordinates_as_pixels: bool = False) -> None:

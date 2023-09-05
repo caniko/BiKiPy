@@ -2,15 +2,15 @@ from functools import cached_property, lru_cache
 from logging import getLogger
 
 import numpy as np
-from pydantic import DirectoryPath, FilePath, computed_field, validator
-from pydantic_numpy.dtype import NDArrayFp64
+from pydantic import DirectoryPath, FilePath, computed_field, field_validator
+from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParse
 from bikipy.ingress.plugin.core.base import BasePluginFile
+from bikipy.math import meter_per_pixel_from_diagonal
 from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.makesense import read_first_makesense_line
-from bikipy.utils.math.geometry import meter_per_pixel_from_diagonal
 
 logger = getLogger(__file__)
 
@@ -32,7 +32,7 @@ class PluginMeterPerPixel(BasePluginFile):
     default_trial_argument_key = "meters_per_pixel"
     human_readable_index = "MetersPerPixel"
 
-    @validator("data_path")
+    @field_validator("data_path")
     def is_meter_per_pixel_file(cls, value: FilePath):
         match value.stem.split("-")[0].split(".")[-1]:
             case "meter_pixel_ratio":
@@ -72,7 +72,7 @@ class PluginMeterPerPixel(BasePluginFile):
 
 
 @lru_cache
-def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath) -> dict[str, NDArrayFp64]:
+def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath) -> dict[str, NpNDArrayFp64]:
     return {
         (mpp := PluginMeterPerPixel(data_path=meters_per_pixel_file_path)).stem_info.label or i: mpp.ratio
         for i, meters_per_pixel_file_path in enumerate(perimeter_dir.glob("meters_per_pixel-*.csv"))

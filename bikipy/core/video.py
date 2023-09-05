@@ -18,9 +18,13 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from mextractor.base import load
 from mextractor.extractors import extract_video
-from pydantic import DirectoryPath, Field, FilePath, computed_field, validator
-from pydantic_numpy import NDArray
-from pydantic_numpy.dtype import NDArrayBool, NDArrayInt16, NDArrayUint8
+from pydantic import DirectoryPath, Field, FilePath, computed_field, field_validator
+from pydantic_numpy.typing import (
+    NpNDArray,
+    NpNDArrayBool,
+    NpNDArrayInt16,
+    NpNDArrayUint8,
+)
 
 from bikipy import runtime_settings
 from bikipy.core.base import BikipyModel
@@ -28,7 +32,7 @@ from bikipy.core.typing import MetersPerPixel
 from bikipy.utils.image import read_image_from_path
 from bikipy.utils.plot.io import ax_imshow_gray
 
-Frame = FilePath | NDArrayUint8
+Frame = FilePath | NpNDArrayUint8
 
 logger = getLogger(__name__)
 
@@ -39,16 +43,16 @@ _can_only_be_set_manually = {"meters_per_pixel", "image_resize_multiplier"}
 
 class _VideoMetadataBase(BikipyModel):
     meters_per_pixel: Optional[MetersPerPixel] = Field(
-        description="Float or 1D array defining the meter to pixel ratio"
+        None, description="Float or 1D array defining the meter to pixel ratio"
     )
-    recording_resolution: Optional[NDArrayInt16] = Field(
-        description="1D array defining the resolution of the recording"
+    recording_resolution: Optional[NpNDArrayInt16] = Field(
+        None, description="1D array defining the resolution of the recording"
     )
-    fps: Optional[float] = Field(description="Frames per second of the recording")
+    fps: Optional[float] = Field(None, description="Frames per second of the recording")
     frame: Optional[Frame] = Field(
-        description="Frame from the video stored in numpy array, use read_image_from_path to read from file paths"
+        None, description="Frame from the video stored in numpy array, use read_image_from_path to read from file paths"
     )
-    video_path: Optional[FilePath] = Field(description="Path to the video file")
+    video_path: Optional[FilePath] = Field(None, description="Path to the video file")
     minimum_frame_length: Optional[int] = Field(
         600,
         description="Must be defined in case the original frame has been resized. "
@@ -60,8 +64,8 @@ class _VideoMetadataBase(BikipyModel):
     class Config:
         keep_untouched = (cached_property,)
 
-    @validator("frame")
-    def make_sure_frame_is_read(cls, value: Frame) -> np.ndarray[int, np.dtype[np.uint8]]:
+    @field_validator("frame")
+    def make_sure_frame_is_read(cls, value: Frame) -> NpNDArrayUint8:
         return read_image_from_path(value) if isinstance(value, Path) else value
 
     @computed_field
@@ -72,10 +76,10 @@ class _VideoMetadataBase(BikipyModel):
         if self.frame is not None:
             return np.array([self.frame.shape[1], self.frame.shape[0]], dtype=np.int16)
 
-    def boolean_array_to_seconds(self, boolean_array: NDArrayBool) -> float:
+    def boolean_array_to_seconds(self, boolean_array: NpNDArrayBool) -> float:
         return np.sum(boolean_array) / self.fps
 
-    def video_read_frames(self) -> Generator[np.ndarray[int, np.dtype[np.uint8]], None, None]:
+    def video_read_frames(self) -> Generator[NpNDArrayUint8, None, None]:
         if not self.video_path:
             msg = (
                 f"Tried to read frames of video, but the {self.__class__.__name__} "
@@ -101,17 +105,17 @@ class _VideoMetadataBase(BikipyModel):
 
 class VideoMetadata(_VideoMetadataBase):
     def __and__(self, other: "VideoMetadata") -> bool:
-        for key in set(self.dict(exclude_unset=True)).intersection(other.dict(exclude_unset=True)):
-            if np.any(self.dict(exclude_unset=True)[key] != other.dict(exclude_unset=True)[key]):
+        for key in set(self.model_dump(exclude_unset=True)).intersection(other.model_dump(exclude_unset=True)):
+            if np.any(self.model_dump(exclude_unset=True)[key] != other.model_dump(exclude_unset=True)[key]):
                 logger.debug(
                     f"self and other are incongruent on {key}: "
-                    f"{self.dict(exclude_unset=True)[key]} != {other.dict(exclude_unset=True)[key]}"
+                    f"{self.model_dump(exclude_unset=True)[key]} != {other.model_dump(exclude_unset=True)[key]}"
                 )
                 return False
         return True
 
     def __eq__(self, other: "VideoMetadata") -> bool:
-        return set(self.dict(exclude_unset=True)) == set(other.dict(exclude_unset=True))
+        return set(self.model_dump(exclude_unset=True)) == set(other.model_dump(exclude_unset=True))
 
     def __add__(self, other: "VideoMetadata") -> "VideoMetadata":
         return self.join(self, other)
@@ -189,17 +193,17 @@ class VideoMetadata(_VideoMetadataBase):
 
     @computed_field
     @cached_property
-    def metric_resolution(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def metric_resolution(self) -> NpNDArrayFp64:
         return self.resolution * self.meters_per_pixel
 
     @computed_field
     @cached_property
-    def center_meters(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def center_meters(self) -> NpNDArrayFp64:
         return self.metric_resolution / 2.0
 
     @computed_field
     @property
-    def center_for_plot(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def center_for_plot(self) -> NpNDArrayFp64:
         return self.center_pixels if self.coordinates_need_to_be_scaled_for_plot else self.center_meters
 
     @computed_field
@@ -233,7 +237,7 @@ class VideoMetadata(_VideoMetadataBase):
 
     @computed_field
     @cached_property
-    def greyscale_frame(self) -> np.ndarray[int, np.dtype[np.uint8]]:
+    def greyscale_frame(self) -> NpNDArrayUint8:
         if len(self.frame.shape) == 3 and self.frame.shape[2] == 3:
             return cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         if len(self.frame.shape) == 2:
@@ -254,7 +258,7 @@ class VideoMetadata(_VideoMetadataBase):
             interpolation=cv2.INTER_CUBIC,
         )
         return self.__class__(
-            **self.dict(exclude={"frame", "recording_resolution"}, exclude_unset=True),
+            **self.model_dump(exclude={"frame", "recording_resolution"}, exclude_unset=True),
             frame=new_frame,
             recording_resolution=new_frame.shape[0:2:][::-1],
         )
@@ -339,8 +343,8 @@ class VideoMetadata(_VideoMetadataBase):
         return fig, ax
 
     def prepare_coordinates_for_plotting(
-        self, data: NDArray | float, manual_coordinates_as_pixels: bool = False, with_resize: bool = True
-    ) -> np.ndarray[float, np.dtype[np.float64]] | float:
+        self, data: NpNDArray | float, manual_coordinates_as_pixels: bool = False, with_resize: bool = True
+    ) -> NpNDArrayFp64 | float:
         if manual_coordinates_as_pixels or self.coordinates_need_to_be_scaled_for_plot:
             result = data * self.pixels_per_meter
             if with_resize:
@@ -365,11 +369,11 @@ class VideoMetadataMixin(_VideoMetadataBase):
 
     required_video_metadata_fields: ClassVar[set[str]] = set()
 
-    @computed_field
+    @computed_field(return_type=VideoMetadata)
     @property
     def video(self) -> VideoMetadata:
         if self.required_video_metadata_fields and (
-            missing_fields := self.required_video_metadata_fields.difference(self._video.dict(exclude_unset=True))
+            missing_fields := self.required_video_metadata_fields.difference(self._video.model_dump(exclude_unset=True))
         ):
             msg = (
                 f"{self.__class__.__name__} requires {self.required_video_metadata_fields}, "
@@ -378,12 +382,7 @@ class VideoMetadataMixin(_VideoMetadataBase):
             raise AttributeError(msg)
         return self._video
 
-    @computed_field
-    @property
-    def video_metadata(self):
-        return self.video.dict(exclude_unset=True)
-
-    @computed_field
+    @computed_field(return_type=VideoMetadata)
     @property
     def _video(self):
         video = VideoMetadata(
@@ -398,7 +397,7 @@ class VideoMetadataMixin(_VideoMetadataBase):
         return video
 
 
-def inspect_video_is_none_during_inspection(inspect_video: VideoMetadata | None):
+def inspect_video_is_none_during_inspection(inspect_video: VideoMetadata | None) -> None:
     if inspect_video is None:
         msg = (
             "inspect_video is required to map the result from pixels to meters; "

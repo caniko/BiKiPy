@@ -12,8 +12,7 @@ from ordered_set import OrderedSet
 from projectkit.model.project import ProjectKitModelMixin
 from pydantic import BaseModel, DirectoryPath, Field, FilePath, ValidationError
 from pydantic.fields import FieldInfo, computed_field
-from pydantic_numpy import NDArray
-from pydantic_numpy.dtype import NDArrayInt16
+from pydantic_numpy.typing import NpNDArray, NpNDArrayInt16
 from tqdm import tqdm
 from typing_inspect import is_generic_type
 from yaspin import yaspin
@@ -64,8 +63,8 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
     )
     animal_id: Label = Field(..., description="The ID of the animal in the trial")
     animal_profile: Literal["rodent"] = "rodent"
-    coordinate_timestamp_index: Optional[NDArray] = timestamp_index_field
-    manual_center_pixels: Optional[NDArrayInt16]
+    coordinate_timestamp_index: Optional[NpNDArray] = timestamp_index_field
+    manual_center_pixels: Optional[NpNDArrayInt16]
     enclosure: Optional[Perimeter] = enclosure_field
 
     # Class variables
@@ -88,7 +87,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
 
     second_tolerance: ClassVar[float] = 0.15
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -173,13 +172,13 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
 
     @computed_field
     @cached_property
-    def manual_center_meters(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
+    def manual_center_meters(self) -> NpNDArrayFp64 | None:
         if self.manual_center_pixels is not None:
             return self.manual_center_pixels * self.video.meters_per_pixel
 
     @computed_field
     @cached_property
-    def center_meter_translation(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
+    def center_meter_translation(self) -> NpNDArrayFp64 | None:
         if self.manual_center_meters is not None:
             return self.manual_center_meters - self.video.center_meters
 
@@ -251,7 +250,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin, ProjectKitModelMixin):
 
     @computed_field
     @cached_property
-    def _uint_zeros_based_on_frame_length(self) -> np.ndarray[int, np.dtype[np.uint8]]:
+    def _uint_zeros_based_on_frame_length(self) -> NpNDArrayUint8:
         return np.zeros(self.number_of_frames, dtype=np.uint8)
 
     @computed_field
@@ -305,7 +304,7 @@ class BaseExperiment(Behaviour):
     def __getitem__(self, item: int):
         return self.trial_id_to_trial_object[item]
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -785,10 +784,10 @@ class BaseExperiment(Behaviour):
                     VideoMetadata.join(result.pop("manual_video"), VideoMetadata(**result), ignore_incongruity=True),
                     self.video,
                     ignore_incongruity=True,
-                ).dict(exclude_unset=True)
+                ).model_dump(exclude_unset=True)
             )
         else:
-            result.update(self.video.dict(exclude_unset=True))
+            result.update(self.video.model_dump(exclude_unset=True))
 
         return result
 

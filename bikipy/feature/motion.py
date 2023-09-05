@@ -4,13 +4,14 @@ from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import Field, computed_field, validate_arguments
-from pydantic_numpy.dtype import NDArrayFp64
+from pydantic import Field, computed_field, validate_call
+from pydantic_numpy import NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy.core.base import BikipyModel
-from bikipy.utils.math.calculus import np_abs_diff
-from bikipy.utils.math.discrete import TruthIslandMetadata
-from bikipy.utils.math.statistics import nan_average
+from bikipy.math import nan_average
+from bikipy.math.calculus import np_abs_diff
+from bikipy.math.discrete import TruthIslandMetadata
 from bikipy.utils.pandas import generic_multi_indexer
 
 logger = getLogger(__name__)
@@ -25,10 +26,10 @@ _zero_return = {feature: 0.0 for feature in summary_motion_features}
 
 
 def displacement_by_frame(
-    coordinate_sequence: NDArrayFp64,
+    coordinate_sequence: NpNDArrayFp64,
     interpolation_method: str = "akima",
     remove_tails: bool = False,
-) -> np.ndarray[float, np.dtype[np.float64]]:
+) -> NpNDArrayFp64:
     """
     Compute the absolute displacement of the given point from its coordinates across frames.
     The values on the tails are removed if they are undefined or "not a number" (NaN). The
@@ -53,10 +54,10 @@ def displacement_by_frame(
 
 def frozen_frames(
     fps: float,
-    rigid_body_node_displacements: Iterable[NDArrayFp64],
+    rigid_body_node_displacements: Iterable[NpNDArrayFp64],
     second_threshold: float = 1.0,
     metric_displacement_threshold: float = 0.005,
-) -> np.ndarray[float, np.dtype[np.float64]]:
+) -> NpNDArrayFp64:
     """
     Compute the time the rigid body has been frozen or "stood still" throughout
     the trial. The acceleration at these frames should be close to zero.
@@ -81,11 +82,11 @@ def frozen_frames(
     :param second_threshold:
     :param metric_displacement_threshold:
     :type fps: float
-    :type rigid_body_node_displacements: NDArrayFp64
+    :type rigid_body_node_displacements: NpNDArrayFp64
     :type second_threshold: float
     :type metric_displacement_threshold: float
     :return: Boolean index storing the freezing state of the animal across frames
-    :rtype: NDArrayFp64
+    :rtype: NpNDArrayFp64
     """
     frame_threshold = round(second_threshold * fps)
 
@@ -140,8 +141,8 @@ def frozen_frames(
 
 
 class Motion(BikipyModel):
-    coordinate_sequence: NDArrayFp64 = ...
-    timestamp_sequence: Optional[NDArrayFp64]
+    coordinate_sequence: NpNDArrayFp64 = ...
+    timestamp_sequence: Optional[NpNDArrayFp64]
     fps: Optional[float]
     weight: Optional[int] = Field(
         description="The weight of the Motion instance defines relative weight to related Motion instances"
@@ -154,12 +155,12 @@ class Motion(BikipyModel):
 
     @computed_field
     @cached_property
-    def meters_per_frame(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def meters_per_frame(self) -> NpNDArrayFp64:
         return displacement_by_frame(self.coordinate_sequence)
 
     @computed_field
     @cached_property
-    def meters_per_second(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def meters_per_second(self) -> NpNDArrayFp64:
         if self.timestamp_sequence is not None:
             return [
                 np.nansum(self.meters_per_frame[i : i + self.int_fps])
@@ -184,7 +185,7 @@ class Motion(BikipyModel):
 
     @computed_field
     @cached_property
-    def frozen_boolean_index(self) -> np.ndarray[bool, bool]:
+    def frozen_boolean_index(self) -> NpNDArrayBool:
         if not self.total_displacement:
             return np.nan
         return frozen_frames(self.fps, (self.meters_per_frame,))
@@ -198,7 +199,7 @@ class Motion(BikipyModel):
 
     @computed_field
     @cached_property
-    def acceleration(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def acceleration(self) -> NpNDArrayFp64:
         if not self.total_displacement:
             return np.nan
         return np_abs_diff(self.meters_per_second)
@@ -232,14 +233,14 @@ EMPTY_MOTION = np.full(4, np.nan)
 EMPTY_MOTION_WEIGHT = np.full(5, np.nan)
 
 
-@validate_arguments
+@validate_call
 @lru_cache
 def motion_analysis_indexer(category: str, level: int):
     assert level >= 2, "Must be at least 2 levels"
     return generic_multi_indexer("Displacement", "MedianSpeed", "MedianAcceleration", "FreezingTime")(category, level)
 
 
-@validate_arguments
+@validate_call
 @lru_cache
 def bulk_motion_analysis_indexer(categories: tuple[str, ...], level: int):
     result = []
@@ -248,7 +249,7 @@ def bulk_motion_analysis_indexer(categories: tuple[str, ...], level: int):
     return result
 
 
-def merge_motion_island_data(motion_islands: TruthIslandMetadata, coordinate_sequence: NDArrayFp64, fps: float):
+def merge_motion_island_data(motion_islands: TruthIslandMetadata, coordinate_sequence: NpNDArrayFp64, fps: float):
     """
     The purpose of this function is to deal with islands of data that need to be aggregated for analysis. These islands
     of data have to be merged arbitrarily.

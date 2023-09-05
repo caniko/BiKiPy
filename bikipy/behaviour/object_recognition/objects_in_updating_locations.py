@@ -36,7 +36,7 @@ class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTri
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     experiment_stage = ExperimentStage.TRAINING
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -59,7 +59,7 @@ class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     experiment_stage = ExperimentStage.UPDATE
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:
@@ -84,7 +84,7 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     experiment_stage = ExperimentStage.TEST
 
-    @computed_field
+    @computed_field(return_type=set[str])
     @classmethod
     @property
     def schemantic_fields_to_exclude_from_config_schema(cls) -> set[str]:

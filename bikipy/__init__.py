@@ -4,8 +4,9 @@ from typing import Any
 
 import matplotlib
 from psutil import cpu_count
-from pydantic import BaseSettings, Field
-from schemantic.model.project import SchemanticProjectMixin
+from pydantic import Field, computed_field
+from pydantic_settings import BaseSettings
+from schemantic import SchemanticProjectMixin
 
 logger = logging.getLogger(__file__)
 

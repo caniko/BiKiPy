@@ -4,10 +4,10 @@ from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as nt
 import pandas as pd
 from pydantic import computed_field
-from pydantic_numpy.dtype import NDArrayFp64
+from pydantic_numpy import NpNDArray, NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.behaviour.core.base import HabituationTrialMixin
@@ -16,13 +16,13 @@ from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTri
 from bikipy.behaviour.core.enclosure.quadrant import Quadrant
 from bikipy.behaviour.utils import blanket_enclosed_experiment_label_generator
 from bikipy.feature.motion import TruthIslandMetadata, merge_motion_island_data
-from bikipy.perimeter import RectanglePerimeter
-from bikipy.utils.math.discrete import (
+from bikipy.math.discrete import (
     boolean_index_truth_sequence_start_end_length,
     reduce_repeating_sequences,
     tolerance_modeled_boolean_index_truth_sequence_start_end_length,
 )
-from bikipy.utils.math.shortcut import np_sum_int
+from bikipy.math.shortcut import np_sum_int
+from bikipy.perimeter import RectanglePerimeter
 from bikipy.utils.pandas import motion_analysis_indexer_for_subsection
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.inspect import generic_inspection_finalization
@@ -40,7 +40,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     trial_perimeter_enclosure_class = RectanglePerimeter
 
-    manual_center_rectangle_dimensions_meters: Optional[NDArrayFp64]
+    manual_center_rectangle_dimensions_meters: Optional[NpNDArrayFp64]
     center_rectangle_dimensions_to_spatial_resolution_ratio: Optional[float]
     center_periphery_tolerance_model: bool = False
 
@@ -70,7 +70,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
     @cached_property
     def quadrant_grid_coordinate_to_vertices(
         self,
-    ) -> dict[quadrant_grid_typing, np.ndarray[float, np.dtype[np.float64]]]:
+    ) -> dict[quadrant_grid_typing, NpNDArrayFp64]:
         horizontal_uniform_distance = self.video.metric_horizontal_resolution / self.rectangle_2d_bin[0]
         vertical_uniform_distance = self.video.metric_vertical_resolution / self.rectangle_2d_bin[1]
         result = {}
@@ -175,7 +175,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @computed_field
     @cached_property
-    def location_sequence_quadrant(self) -> np.ndarray[float, np.dtype[np.float64]]:
+    def location_sequence_quadrant(self) -> NpNDArrayFp64:
         raw_location_sequence_quadrant = np.zeros(self.number_of_frames, dtype=np.uint8)
         for quadrant_index, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items():
             quadrant = self.quadrant_grid_coordinate_to_quadrant[quadrant_grid_coordinate]
@@ -205,7 +205,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     # Center vs Periphery ==============================================================
     @cached_property
-    def _center_boolean_index_motion_island(self) -> tuple[TruthIslandMetadata, np.ndarray[bool, bool]]:
+    def _center_boolean_index_motion_island(self) -> tuple[TruthIslandMetadata, NpNDArrayBool]:
         raw_center_boolean_index = self.center_rectangle.confinement_coordinate_boolean_index(
             self.reader.kinematic_coordinates,
             inspection_fig_output_path=self.inspection_fig_output_path,
@@ -215,7 +215,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @computed_field
     @property
-    def center_boolean_index(self) -> np.ndarray[bool, bool]:
+    def center_boolean_index(self) -> NpNDArrayBool:
         return self._center_boolean_index_motion_island[1]
 
     @computed_field
@@ -227,7 +227,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @computed_field
     @cached_property
-    def periphery_boolean_index(self) -> np.ndarray[bool, bool]:
+    def periphery_boolean_index(self) -> NpNDArrayBool:
         return ~self.center_boolean_index
 
     @computed_field
@@ -241,7 +241,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @computed_field
     @cached_property
-    def center_rectangle_dimensions_meters(self) -> np.ndarray[float, np.dtype[np.float64]] | None:
+    def center_rectangle_dimensions_meters(self) -> NpNDArrayFp64 | None:
         if self._center_periphery_is_defined is None:
             return None
         if self.manual_center_rectangle_dimensions_meters is not None:
@@ -281,7 +281,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @computed_field
     @cached_property
-    def location_sequence_center_periphery(self) -> nt.NDArray:
+    def location_sequence_center_periphery(self) -> NpNDArray:
         # 1 is center, 2 is periphery, 0 is unknown
         location_sequence_center_periphery = np.zeros_like(self.center_boolean_index, dtype=np.uint8)
         location_sequence_center_periphery[self.center_boolean_index] = 1
