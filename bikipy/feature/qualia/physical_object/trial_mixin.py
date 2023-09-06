@@ -32,7 +32,7 @@ from bikipy.feature.qualia.physical_object.merge_parser import (
     parse_heuristic_merge_equation,
 )
 from bikipy.math.discrete import reduce_repeating_sequences
-from bikipy.perimeter.base import SinglePerimeter
+from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.perimeter.trial_mixin import TrialWithPerimeterMixin
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 
@@ -46,12 +46,12 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
 
     @property
     @abstractmethod
-    def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
+    def physical_object_perimeters(self) -> tuple[BaseSinglePerimeter, ...]:
         ...
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def perimeters(self):
+    def perimeters(self) -> tuple[BaseSinglePerimeter, ...]:
         # Inherit and append non-physical-object perimeters to the list
         return tuple(self.physical_object_perimeters)
 

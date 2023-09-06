@@ -4,7 +4,7 @@ from collections import deque
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 
 
-class PluginFileStemParse(ABC):
+class PluginFileStemParser(ABC):
     def __init__(self, stem: str, plugin_scope: PluginScope):
         self.stage: str | None
 
@@ -32,6 +32,6 @@ class PluginFileStemParse(ABC):
         ...
 
 
-class PluginFileStemParseLastIsLabel(PluginFileStemParse):
+class PluginFileStemParseLastIsLabel(PluginFileStemParser):
     def __pop_split_till_empty__(self) -> None:
         self.label = self.split.pop()

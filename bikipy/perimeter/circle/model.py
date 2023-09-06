@@ -123,7 +123,6 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
 
         plot_ellipse(ax, tuple(center), radius, **plot_kwargs)
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -172,7 +171,6 @@ class CircleFixedRadiusPerimeter(BaseCirclePerimeter):
     def radius_length_meters(self) -> float:
         return np.mean(self.radius_length_pixels * self.video.meters_per_pixel)
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:

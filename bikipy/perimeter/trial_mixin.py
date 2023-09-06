@@ -22,7 +22,7 @@ class TrialWithPerimeterMixin(Generic[Perimeter, *PerimeterInstances], BikipyMod
     meters_per_pixel_from_perimeter_source: Literal["side", "diagonal", "diameter", "radius", None] = Field(
         None,
         description="The perimeter attribute that will be used to derive meters_per_pixel. Supported sources with "
-        "respect to SinglePerimeter type:\n"
+        "respect to BaseSinglePerimeter type:\n"
         "Polygon: To be decided\n"
         "Regular polygon (every side has equal length): side\n"
         "Rectangle: diagonal\n"

@@ -6,13 +6,13 @@ from pydantic import validate_call
 from pydantic_numpy.typing import NpNDArray, NpNDArrayBool, NpNDArrayFp64
 
 from bikipy.feature.angle import angle_from_a_to_b
-from bikipy.perimeter.base import SinglePerimeter
+from bikipy.perimeter.base import BaseSinglePerimeter
 
 logger = getLogger(__name__)
 
 
 def ray_direction_filter_circle_triangle(
-    perimeter: SinglePerimeter,
+    perimeter: BaseSinglePerimeter,
     ray_travel_direction_point: NpNDArrayFp64,
     ray_start_point: NpNDArrayFp64,
     max_radians: float,

@@ -37,15 +37,15 @@ from bikipy.ingress.utils.io import (
     infer_metadata_path,
     result_directory_path,
 )
-from bikipy.perimeter.base import Perimeter
+from bikipy.perimeter.base import BasePerimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 from bikipy.utils.misc import sheet_names_from_path
 from bikipy.utils.pandas import copycat_assumes_levels_of_icon
 
 if TYPE_CHECKING:
-    from bikipy.behaviour.core.base import Experiment, ExperimentCLS, TrialCLS
-    from bikipy.ingress.plugin.core.base import Plugin, PluginType
+    from bikipy.behaviour.core.base import BaseExperiment, ExperimentCLS, TrialCLS
+    from bikipy.ingress.plugin.core.base import BasePlugin, PluginType
 
 logger = getLogger(__name__)
 
@@ -96,7 +96,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
     definition_timestamp: Optional[frozenset[PluginScope]] = None
     definition_center: Optional[frozenset[PluginScope]] = None
 
-    ingress_defined_perimeters: dict[str, Perimeter] = {}
+    ingress_defined_perimeters: dict[str, BasePerimeter] = {}
 
     lazy_dev_mode: bool = Field(
         False,
@@ -127,7 +127,6 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
         """
         ...
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -174,7 +173,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
             "common_trial_keyword_arguments": set(self.common_trial_keyword_arguments),
             "trial_id_to_keyword_arguments": set(get_first_value_in_dict(self.trial_id_to_keyword_arguments)),
         }
-        if self.experiment_class.has_stages:
+        if self.experiment_class().has_stages:
             trial_class_name_to_keyword_arguments_fields = []
 
             for trial_class_keyword_arguments in self.trial_class_name_to_keyword_arguments.values():
@@ -202,8 +201,6 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
     @computed_field  # type: ignore[misc]
     @property
     def trial_id_to_keyword_arguments(self):
-        self._define_experiment_data_if_not_defined()
-
         for trial_id in tuple(self._trial_id_to_keyword_arguments):
             if self._to_skip_trial_id(trial_id):
                 del self._trial_id_to_keyword_arguments[trial_id]
@@ -213,7 +210,6 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
     @computed_field  # type: ignore[misc]
     @property
     def trial_class_name_to_keyword_arguments(self):
-        self._define_experiment_data_if_not_defined()
         return self._trial_class_name_to_keyword_arguments
 
     @computed_field  # type: ignore[misc]
@@ -357,13 +353,13 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
             else:
                 de_indexed_animal_metadata = self.animal_metadata.reset_index()
                 trial_id_df = pd.concat(
-                    [de_indexed_animal_metadata for _ in range(self.experiment_class.trial_sequence_length)], axis=0
+                    [de_indexed_animal_metadata for _ in range(self.experiment_class().trial_sequence_length)], axis=0
                 )
                 trial_id_df.sort_index(inplace=True)
 
                 new_index = []
                 for animal_id in self.animal_metadata.index.values:
-                    for sequence_idx in range(self.experiment_class.trial_sequence_length):
+                    for sequence_idx in range(self.experiment_class().trial_sequence_length):
                         new_index.append(f"{animal_id}_{sequence_idx}")
 
                 trial_id_df.index = new_index
@@ -513,13 +509,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
 
     # Backend functions =================================
 
-    def _define_experiment_data_if_not_defined(self):
-        if not self._experiment_data_defined:
-            self.model_post_init()
-
     def model_post_init(self) -> None:
-        # Alias: define_experiment_data
-
         self._common_trial_keyword_arguments["project_kit_config"] = self.project_kit_config
 
         if not self.no_cache:
@@ -576,9 +566,9 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
                     )
                     raise ValueError(msg)
 
-        if self.experiment_class.has_stages:
+        if self.experiment_class().has_stages:
             for trial_class_name, kwargs in self.project_kit_config["trial"].items():
-                assert trial_class_name in self.experiment_class.trial_class_names
+                assert trial_class_name in self.experiment_class().trial_class_names
                 self._trial_class_name_to_keyword_arguments[trial_class_name] = kwargs
         else:
             self._common_trial_keyword_arguments.update(self.project_kit_config["trial"])
@@ -604,17 +594,17 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def experiment(self) -> "Experiment":
+    def experiment(self) -> "BaseExperiment":
         additional_kwargs = {}
 
-        if self.experiment_class.has_stages:
+        if self.experiment_class().has_stages:
             assert self.trial_id_to_trial_class_name, "Trial ID to trial class map must be defined"
             # assert self.trial_class_name_to_keyword_arguments
 
             additional_kwargs["trial_id_to_trial_class_name"] = self.trial_id_to_trial_class_name
             additional_kwargs["trial_class_name_to_keyword_arguments"] = self.trial_class_name_to_keyword_arguments
 
-        return self.experiment_class(
+        return self.experiment_class()(
             **self.project_kit_config["experiment"],
             **additional_kwargs,
             common_trial_keyword_arguments=self.common_trial_keyword_arguments,
@@ -670,7 +660,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
         )
         df.columns.names = (
             ["Stage", "Feature", "Location/Category"]
-            if self.experiment_class.has_stages
+            if self.experiment_class().has_stages
             else ["Feature", "Location/Category"]
         )
         df.index.names = ["Animal"]
@@ -794,7 +784,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
 
     # Private methods ===============================
 
-    def _define_plugin(self, plugin_model: "PluginType", plugin_scope: PluginScope, **field_kwargs) -> "Plugin":
+    def _define_plugin(self, plugin_model: "PluginType", plugin_scope: PluginScope, **field_kwargs) -> "BasePlugin":
         additional_field_args = {}
         if "plugin" in self.project_kit_config and plugin_model.__name__ in self.project_kit_config["plugin"]:
             additional_field_args.update(self.project_kit_config["plugin"][plugin_model.__name__])
@@ -802,7 +792,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
         return plugin_model(plugin_scope=plugin_scope, ingress=self, **additional_field_args, **field_kwargs)
 
     def _trial_class_from_stage_index(self, stage_index: Label) -> "TrialCLS":
-        return self.experiment_class.stage_index_to_trial_class[stage_index]
+        return self.experiment_class().stage_index_to_trial_class[stage_index]
 
     def _trialwise_plugins_for_trial_id(
         self, trial_id: Label, trial_directory: DirectoryPath, trial_id_plugin_glob_format_string: str

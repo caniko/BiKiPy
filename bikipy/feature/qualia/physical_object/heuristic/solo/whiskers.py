@@ -17,11 +17,11 @@ from bikipy.feature.qualia.physical_object.heuristic.solo.abc import (
     AbstractSoloHeuristic,
 )
 from bikipy.feature.tolerance.single import single_node_tolerance_model
-from bikipy.perimeter.base import Perimeter
+from bikipy.perimeter.base import BasePerimeter
 
 
 class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
-    maximum_distance_meters = 0.035
+    maximum_distance_meters: float = 0.035
 
     center_ear_label: str = "center_ear"
     left_ear_label: str = "left_ear"
@@ -34,7 +34,6 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
 
     heuristic_alias = "WhiskerInteraction"
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -143,7 +142,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
 
     @computed_field  # type: ignore[misc]
     @property
-    def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
+    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, NpNDArrayBool]:
         return video_gen_merge_perimeter_to_boolean_index_from_dict(
             self.left_proximity.video_gen_merge_perimeter_to_boolean_index(
                 self.leftward_observation, both_or_false=True

@@ -7,14 +7,14 @@ from moviepy.video.io.bindings import mplfig_to_npimage
 from moviepy.video.VideoClip import VideoClip
 from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64, NpNDArrayUint8
 
-from bikipy.perimeter.base import Perimeter
-from bikipy.reader.base import Reader
+from bikipy.perimeter.base import BasePerimeter
+from bikipy.reader.base import BaseReader
 
 
 def make_inspection_video(
     video_frames: Iterator[NpNDArrayUint8],
-    reader: Reader,
-    perimeter_to_boolean_index: Optional[dict[Perimeter, NpNDArrayBool]] = None,
+    reader: BaseReader,
+    perimeter_to_boolean_index: Optional[dict[BasePerimeter, NpNDArrayBool]] = None,
     label_to_confinement_boolean_index: Optional[dict[str, NpNDArrayBool]] = None,
     label_to_quiver_rays: Optional[dict[str, NpNDArrayFp64]] = None,
     revert_crop: bool = False,

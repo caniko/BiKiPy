@@ -8,7 +8,7 @@ class PluginEnclosure(AbstractPerimeterPlugin):
     ingress_key = "enclosure"
     code_key = "enclosure"
     default_trial_argument_key = "label_to_perimeter"
-    human_readable_index = "Perimeter"
+    human_readable_index = "BasePerimeter"
 
     @computed_field  # type: ignore[misc]
     @property

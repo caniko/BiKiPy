@@ -81,17 +81,6 @@ class RangeDict(UserDict):
         super().__setitem__(key, value)
 
     @classmethod
-    def __modify_schema__(cls, field_schema):
-        field_schema.update(
-            type="RangedDict",
-            examples=[{5: "foo", 20: "bar"}],
-        )
-
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
     def validate(cls, v):
         if not isinstance(v, cls):
             msg = f"type {type(v)} is not {cls.__name__}"

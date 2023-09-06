@@ -9,12 +9,12 @@ from skg import ngauss_fit
 from bikipy._dev_utils.fields import enclosure_field
 from bikipy._dev_utils.message import report_to_github
 from bikipy.behaviour.core.base import BaseExperiment, BaseTrial, HabituationTrialMixin
-from bikipy.perimeter.base import Perimeter, PerimeterCLS, PerimeterSet
+from bikipy.perimeter.base import BasePerimeter, PerimeterCLS, PerimeterSet
 from bikipy.reader.base import ReaderCLS
 
 
 class EnclosedTrial(BaseTrial):
-    manual_enclosure: Optional[Perimeter] = enclosure_field
+    manual_enclosure: Optional[BasePerimeter] = enclosure_field
 
     trial_perimeter_enclosure_class: ClassVar[PerimeterCLS]
     enclosure_perimeter_object_attribute_names: ClassVar[set[str]] = set()
@@ -22,7 +22,7 @@ class EnclosedTrial(BaseTrial):
     gaussian_dividend_multiplayer: ClassVar[int] = 1
 
     @field_validator("manual_enclosure")
-    def manual_enclosure_is_instance_of_trial_perimeter_enclosure_class(cls, value: Perimeter):
+    def manual_enclosure_is_instance_of_trial_perimeter_enclosure_class(cls, value: BasePerimeter):
         """
         This could be enforced through but GenericModel types are reserved for inter-trial perimeters,
         and not trial enclosures
@@ -32,7 +32,6 @@ class EnclosedTrial(BaseTrial):
             raise AttributeError(msg)
         return value
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def reader_class(cls) -> ReaderCLS:
@@ -45,7 +44,7 @@ class EnclosedTrial(BaseTrial):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def enclosure(self) -> Perimeter:
+    def enclosure(self) -> BasePerimeter:
         enclosures = []
         for name in self.enclosure_perimeter_object_attribute_names:
             try:
@@ -85,7 +84,6 @@ class EnclosedHabituationTrial(HabituationTrialMixin, EnclosedTrial):
 
 
 class EnclosedExperiment(BaseExperiment):
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def trial_perimeter_enclosure_classes(cls) -> dict[str, PerimeterCLS]:

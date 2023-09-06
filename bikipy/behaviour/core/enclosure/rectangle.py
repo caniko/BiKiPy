@@ -5,7 +5,7 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pydantic import computed_field
+from pydantic import computed_field, DirectoryPath
 from pydantic_numpy.typing import NpNDArray, NpNDArrayBool, NpNDArrayFp64
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT
@@ -53,14 +53,14 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def _inspect_center_periphery_directory(self):
+    def _inspect_center_periphery_directory(self) -> DirectoryPath:
         result = self.inspection_fig_output_path / "center_periphery"
         result.mkdir(exist_ok=True)
         return result
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def _inspect_quadrant_directory(self):
+    def _inspect_quadrant_directory(self) -> DirectoryPath:
         result = self.inspection_fig_output_path / "quadrant"
         result.mkdir(exist_ok=True)
         return result

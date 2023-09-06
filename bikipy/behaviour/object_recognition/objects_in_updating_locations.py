@@ -24,19 +24,18 @@ from bikipy.behaviour.core.enclosure.rectangle import (
 from bikipy.behaviour.object_recognition.generic import (
     RectangleEnclosedPhysicalObjectTrial,
 )
-from bikipy.perimeter.base import SinglePerimeter
+from bikipy.perimeter.base import BaseSinglePerimeter
 
 
 class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
-    object_1: SinglePerimeter
-    object_2: SinglePerimeter
+    object_1: BaseSinglePerimeter
+    object_2: BaseSinglePerimeter
 
     perimeter_labels = {"object_1", "object_2"}
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     experiment_stage = ExperimentStage.TRAINING
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -46,20 +45,19 @@ class ObjectsInUpdatingLocationsTrainingTrial(RectangleEnclosedPhysicalObjectTri
 
     @computed_field  # type: ignore[misc]
     @property
-    def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
+    def physical_object_perimeters(self) -> tuple[BaseSinglePerimeter, ...]:
         return self.object_1, self.object_2
 
 
 class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial):
-    object_1: SinglePerimeter
-    object_3: SinglePerimeter
+    object_1: BaseSinglePerimeter
+    object_3: BaseSinglePerimeter
 
     perimeter_labels = {"object_1", "object_3"}
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     experiment_stage = ExperimentStage.UPDATE
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -69,22 +67,21 @@ class ObjectsInUpdatingLocationsUpdateTrial(RectangleEnclosedPhysicalObjectTrial
 
     @computed_field  # type: ignore[misc]
     @property
-    def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
+    def physical_object_perimeters(self) -> tuple[BaseSinglePerimeter, ...]:
         return self.object_1, self.object_3
 
 
 class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
-    object_1: SinglePerimeter
-    object_2: SinglePerimeter
-    object_3: SinglePerimeter
-    object_4: SinglePerimeter
+    object_1: BaseSinglePerimeter
+    object_2: BaseSinglePerimeter
+    object_3: BaseSinglePerimeter
+    object_4: BaseSinglePerimeter
 
     perimeter_labels = {"object_1", "object_2", "object_3", "object_4"}
 
     experiment_class_name = "ObjectsInUpdatingLocationsExperiment"
     experiment_stage = ExperimentStage.TEST
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -94,7 +91,7 @@ class ObjectsInUpdatingLocationsTestTrial(RectangleEnclosedPhysicalObjectTrial):
 
     @computed_field  # type: ignore[misc]
     @property
-    def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
+    def physical_object_perimeters(self) -> tuple[BaseSinglePerimeter, ...]:
         return self.object_1, self.object_2, self.object_3, self.object_4
 
     # @cached_property

@@ -31,14 +31,14 @@ from bikipy.feature.qualia.physical_object.trial_mixin import PhysicalObjectTria
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
 from bikipy.perimeter.base import (
     BaseSinglePerimeter,
-    Perimeter,
+    BasePerimeter,
     PerimeterCLS,
     PerimeterSet,
-    SinglePerimeter,
+    BaseSinglePerimeter,
 )
 from bikipy.perimeter.trial_mixin import TrialWithPerimeterMixin
 from bikipy.reader import READER_CLASS_LABEL_TO_CLASS
-from bikipy.reader.base import Reader, ReaderCLS
+from bikipy.reader.base import ReaderCLS, BaseReader
 from bikipy.reader.data_with_likelihood import DeepLabCutReader
 from bikipy.utils.collection_utils import dict_deep_update
 from bikipy.utils.memory import wait_for_more_physical_memory
@@ -65,13 +65,13 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
     animal_profile: Literal["rodent"] = "rodent"
     coordinate_timestamp_index: Optional[NpNDArray] = timestamp_index_field
     manual_center_pixels: Optional[NpNDArrayInt16] = None
-    enclosure: Optional[Perimeter] = enclosure_field
+    # enclosure: Optional[BasePerimeter] = enclosure_field
 
     # Class variables
     category = "trial"
 
     perimeter_labels: ClassVar[set[str]] = set()
-    _label_to_perimeter: ClassVar[dict[str, SinglePerimeter] | None]
+    _label_to_perimeter: ClassVar[dict[str, BaseSinglePerimeter] | None]
 
     # Variables for trials with zones, see doc for more info.
     trial_start_perimeter: Optional[str] = None
@@ -87,7 +87,6 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
 
     second_tolerance: ClassVar[float] = 0.15
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -103,33 +102,26 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
         )
         return result
 
-    @computed_field  # type: ignore[misc]
     @classmethod
-    @property
     def experiment_class(cls) -> "ExperimentCLS":
         from bikipy.behaviour.mapping import experiment_name_to_class
 
         return experiment_name_to_class[cls.experiment_class_name]
 
-    @computed_field  # type: ignore[misc]
     @classmethod
-    @property
     def has_perimeter(cls) -> bool:
         from bikipy.behaviour.radial_arm.base import BaseRadialMazeTrial
 
         return is_generic_type(cls) or issubclass(cls, (TrialWithPerimeterMixin, BaseRadialMazeTrial))
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def has_physical_object(cls) -> bool:
         return issubclass(cls, PhysicalObjectTrialMixin)
 
-    @computed_field  # type: ignore[misc]
     @classmethod
-    @property
     def perimeter_field_name_to_perimeter_class(cls) -> dict | None:
-        if cls.has_perimeter:
+        if cls.has_perimeter():
             result = {}
             schema = cls.schema()["properties"]
             for perimeter_label in cls.perimeter_labels:
@@ -147,7 +139,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
 
             return result
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(return_type=ReaderCLS)  # type: ignore[misc]
     @classmethod
     @property
     def reader_class(cls) -> ReaderCLS:
@@ -160,7 +152,6 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
             )
             raise AttributeError(msg) from e
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def excel_sheet_name(cls) -> str:
@@ -170,13 +161,13 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
             else cls.experiment_stage.value.capitalize()
         )
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(return_type=NpNDArrayFp64 | None)  # type: ignore[misc]
     @cached_property
     def manual_center_meters(self) -> NpNDArrayFp64 | None:
         if self.manual_center_pixels is not None:
             return self.manual_center_pixels * self.video.meters_per_pixel
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(return_type=NpNDArrayFp64 | None)  # type: ignore[misc]
     @cached_property
     def center_meter_translation(self) -> NpNDArrayFp64 | None:
         if self.manual_center_meters is not None:
@@ -194,9 +185,9 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
             **self.manual_reader_kwargs,
         )
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(return_type=BaseReader)  # type: ignore[misc]
     @cached_property
-    def reader(self) -> Reader:
+    def reader(self) -> BaseReader:
         result = self.reader_class(**self._reader_kwargs)
 
         # In case the reader finds no time index, see fps property in reader
@@ -268,7 +259,6 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
 
 
 TrialCLS = Type[BaseTrial]
-Trial = TypeVar("Trial", bound=BaseTrial)
 
 
 class HabituationTrialMixin(BaseModel):
@@ -276,7 +266,7 @@ class HabituationTrialMixin(BaseModel):
 
 
 class BaseExperiment(Behaviour):
-    manual_trial_ids: Optional[tuple]
+    manual_trial_ids: Optional[tuple] = None
     trial_id_to_trial_class_name: Optional[dict] = Field(default_factory=dict)
     trial_id_to_keyword_arguments: Optional[dict] = Field(default_factory=dict)
     trial_class_name_to_keyword_arguments: Optional[dict] = Field(default_factory=dict)
@@ -304,7 +294,6 @@ class BaseExperiment(Behaviour):
     def __getitem__(self, item: int):
         return self.trial_id_to_trial_object[item]
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -320,7 +309,6 @@ class BaseExperiment(Behaviour):
         )
         return result
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def trial_classes(cls) -> OrderedSet[TrialCLS]:
@@ -363,28 +351,25 @@ class BaseExperiment(Behaviour):
         cls.trial_sequence = tuple(new_sequence)
         return cls
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def at_least_one_trial_has_perimeter(cls) -> bool:
-        return any(trial_class.has_perimeter for trial_class in cls.trial_classes)
+        return any(trial_class.has_perimeter() for trial_class in cls.trial_classes)
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def at_least_one_trial_has_physical_object(cls) -> bool:
         return any(trial_class.has_physical_object for trial_class in cls.trial_classes)
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def trial_perimeter_label_to_perimeter_class(cls) -> dict[str, PerimeterCLS]:
         result = {}
         for trial_class in cls.trial_classes:
-            if not trial_class.perimeter_field_name_to_perimeter_class:
+            if not trial_class.perimeter_field_name_to_perimeter_class():
                 continue
 
-            for label, perimeter_class in trial_class.perimeter_field_name_to_perimeter_class.items():
+            for label, perimeter_class in trial_class.perimeter_field_name_to_perimeter_class().items():
                 if label in result:
                     assert result[label] == perimeter_class
                     continue
@@ -392,59 +377,50 @@ class BaseExperiment(Behaviour):
 
         return result
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def trial_class_name_to_stage_index(cls) -> dict[str, int]:
         return {trial_class.__name__: i for i, trial_class in enumerate(cls.trial_sequence)}
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def trial_sequence_length(cls) -> int:
         return len(cls.trial_sequence)
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def has_stages(cls) -> bool:
         return cls.trial_sequence_length != 1
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def trial_class_names(cls) -> tuple[str, ...]:
         return tuple(trial_class.__name__ for trial_class in cls.trial_sequence)
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def trial_class_labels(cls) -> tuple[str, ...]:
         return tuple(trial_class.experiment_stage for trial_class in cls.trial_sequence)
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def trial_class_name_to_label(cls) -> dict:
         return dict(zip(cls.trial_class_names, cls.trial_class_labels))
         # return {name: label for name, label in zip(cls.trial_class_names, cls.trial_class_labels)}
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
-    def trial_class(cls) -> Trial:
+    def trial_class(cls) -> BaseTrial:
         if cls.has_stages:
             msg = f"{cls.__name__}: trial_class attribute can only be utilized when there is only one Trial class"
             raise AttributeError(msg)
         return cls.trial_sequence[0]
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def habituation_trial_class_name(cls) -> str:
         return cls.habituation_trial_class.__name__
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def stage_index_to_trial_class(cls) -> dict[int, TrialCLS]:
@@ -461,7 +437,6 @@ class BaseExperiment(Behaviour):
             )
             raise AttributeError(msg)
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def stage_index_to_trial_class_name(cls) -> dict[int, TrialCLS]:
@@ -473,7 +448,6 @@ class BaseExperiment(Behaviour):
             raise AttributeError(msg)
         return {i: trial_class.__name__ for i, trial_class in cls.stage_index_to_trial_class.items()}
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def trial_class_name_to_trial_class(cls) -> dict[str, TrialCLS]:
@@ -493,12 +467,12 @@ class BaseExperiment(Behaviour):
             )
             raise AttributeError(msg)
 
-    _trial_objects: list[Trial] = []
-    _trial_id_to_trial_object: dict[Label, Trial] = {}
+    _trial_objects: list[BaseTrial] = []
+    _trial_id_to_trial_object: dict[Label, BaseTrial] = {}
     _bad_trial_ids_to_error_msg: dict[Label, str] = {}
     __analysed_trials: set[Label] = set()
 
-    def get_trial_object(self, trial_id: Label) -> Trial:
+    def get_trial_object(self, trial_id: Label) -> BaseTrial:
         if trial_id in self.__analysed_trials:
             return self._trial_id_to_trial_object[trial_id]
 
@@ -525,7 +499,7 @@ class BaseExperiment(Behaviour):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def trial_objects(self) -> list[Trial]:
+    def trial_objects(self) -> list[BaseTrial]:
         for trial_id in self.trial_id_set.difference(self.__analysed_trials):
             self.get_trial_object(trial_id)
 
@@ -546,20 +520,20 @@ class BaseExperiment(Behaviour):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def trial_class_name_to_trial_ids(self) -> dict[str, Trial]:
+    def trial_class_name_to_trial_ids(self) -> dict[str, BaseTrial]:
         return {
             trial_class.__name__: trial_ids for trial_class, trial_ids in self._trial_class_name_to_trial_ids.items()
         }
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def trial_id_to_trial_object(self) -> dict[Label, Trial]:
+    def trial_id_to_trial_object(self) -> dict[Label, BaseTrial]:
         assert self.trial_objects
         return self._trial_id_to_trial_object
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def trial_class_to_trial_objects(self) -> dict[TrialCLS, list[Trial]]:
+    def trial_class_to_trial_objects(self) -> dict[TrialCLS, list[BaseTrial]]:
         assert not self.skip_habituation or (self.skip_habituation and self.first_trial_is_habituation), (
             "skip_habituation is True, but the experiment has no habituation trial set. Possible mistakes:\n"
             "  - skip_habituation was set to True by mistake.\n"
@@ -583,7 +557,7 @@ class BaseExperiment(Behaviour):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def animal_id_to_trial_objects(self) -> dict[Hashable, Trial]:
+    def animal_id_to_trial_objects(self) -> dict[Hashable, BaseTrial]:
         result = {}
         for trial in self.trial_objects:
             if trial.animal_id in result:
@@ -671,7 +645,7 @@ class BaseExperiment(Behaviour):
     # DataFrame methods =========================================
     @computed_field  # type: ignore[misc]
     @cached_property
-    def trial_class_to_trial_analysis_series(self):
+    def trial_class_to_trial_analysis_series(self) -> dict:
         result = defaultdict(dict)
         if runtime_settings.disable_process_pooling:
             for trial_class, trial_objects in tqdm(
@@ -840,7 +814,7 @@ class BaseExperiment(Behaviour):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def _class_labels(self):
+    def _class_labels(self) -> tuple[ExperimentStage, ...]:
         return tuple(trial_class.experiment_stage for trial_class in self.trial_sequence)
 
     def save(self, **kwargs):
@@ -849,4 +823,3 @@ class BaseExperiment(Behaviour):
 
 
 ExperimentCLS = Type[BaseExperiment]
-Experiment = TypeVar("Experiment", bound=BaseExperiment)

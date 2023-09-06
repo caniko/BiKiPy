@@ -19,7 +19,7 @@ from bikipy.core.base import BikipyHashable
 from bikipy.feature.motion import Motion, bulk_motion_analysis_indexer
 from bikipy.math.discrete import reduce_repeating_sequences
 from bikipy.math.geometry import clockwise_sort_perimeter_centroids
-from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
+from bikipy.perimeter.base import PerimeterSet, BaseSinglePerimeter, BasePerimeter
 from bikipy.perimeter.trial_mixin import TrialWithPerimeterMixin
 from bikipy.perimeter.utils.multi_node_confinement import (
     ConfinementSequence,
@@ -40,8 +40,8 @@ class BaseRadialMazeExperiment(RadialMazeBase, BaseExperiment):
 
 
 class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
-    center: SinglePerimeter
-    arms: tuple[SinglePerimeter, ...]
+    center: BaseSinglePerimeter
+    arms: tuple[BaseSinglePerimeter, ...]
 
     number_of_arms: ClassVar[Optional[int]] = None
 
@@ -61,7 +61,6 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
             arm.int_id = cls._arm_int_ids[i]
         return tuple(value)
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def _arm_int_ids(cls) -> list[PositiveInt]:
@@ -75,20 +74,17 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
             )
             raise AttributeError(msg) from e
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def _center_arm_int_ids(cls) -> tuple[PositiveInt, ...]:
         # The center always has int ID 1, and the arms have int IDs starting from 2 in clock-wise order
         return 1, *cls._arm_int_ids
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def arm_labels(cls) -> list:
         return list(string.ascii_uppercase[: cls.number_of_arms])
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def int_ids_to_labels(cls) -> dict[int, str]:
@@ -96,25 +92,21 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         result[1] = "Center"
         return result
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def _arm_int_id_permutations(cls):
         return permutations(cls._arm_int_ids)
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def _arm_label_permutations(cls):
         return permutations(cls.arm_labels)
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def _arm_label_permutations_as_string(cls):
         return map("".join, cls._arm_label_permutations)
 
-    @computed_field  # type: ignore[misc]
     @classmethod
     @property
     def _center_arm_labels(cls) -> tuple[str, ...]:
@@ -125,7 +117,6 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         """
         return "Center", *cls.arm_labels
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -135,7 +126,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
     @computed_field  # type: ignore[misc]
     @property
-    def perimeters(self):
+    def perimeters(self) -> tuple[BasePerimeter, ...]:
         """
         Do not change the order of the perimeters, this will break the alternation sequence,
         which uses it as inferior to superior sequence for `detect_multi_node_sequential_perimeter_presence`
@@ -144,12 +135,12 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def arm_len(self):
+    def arm_len(self) -> int:
         return len(self.arms)
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def perimeter_set(self):
+    def perimeter_set(self) -> PerimeterSet:
         return PerimeterSet(perimeters=self.perimeters)
 
     @computed_field  # type: ignore[misc]
@@ -348,7 +339,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
     @computed_field  # type: ignore[misc]
     @property
-    def _arm_center_int_ids(self):
+    def _arm_center_int_ids(self) -> dict[BasePerimeter, int]:
         return self.perimeter_set.perimeter_to_int_id
 
     @computed_field  # type: ignore[misc]

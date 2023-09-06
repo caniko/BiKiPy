@@ -14,14 +14,14 @@ from bikipy.behaviour.object_recognition.generic import (
     RectangleEnclosedPhysicalObjectTrial,
 )
 from bikipy.core.typing import Label
-from bikipy.perimeter.base import SinglePerimeter
+from bikipy.perimeter.base import BaseSinglePerimeter
 
 logger = getLogger(__name__)
 
 
 class NORTTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
-    variable: SinglePerimeter
-    familiar: SinglePerimeter
+    variable: BaseSinglePerimeter
+    familiar: BaseSinglePerimeter
 
     perimeter_labels = {"variable", "familiar"}
 
@@ -29,7 +29,6 @@ class NORTTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
     experiment_stage = ExperimentStage.TRAINING
     trial_label = "Familiarization"
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -39,13 +38,13 @@ class NORTTrainingTrial(RectangleEnclosedPhysicalObjectTrial):
 
     @computed_field  # type: ignore[misc]
     @property
-    def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
+    def physical_object_perimeters(self) -> tuple[BaseSinglePerimeter, ...]:
         return self.variable, self.familiar
 
 
 class NORTNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
-    novel: SinglePerimeter
-    familiar: SinglePerimeter
+    novel: BaseSinglePerimeter
+    familiar: BaseSinglePerimeter
 
     perimeter_labels = {"novel", "familiar"}
 
@@ -53,7 +52,6 @@ class NORTNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
     experiment_stage = ExperimentStage.TEST
     trial_label = "Novelty"
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -83,17 +81,17 @@ class NORTNoveltyTrial(RectangleEnclosedPhysicalObjectTrial):
 
     @computed_field  # type: ignore[misc]
     @property
-    def physical_object_perimeters(self) -> tuple[SinglePerimeter, ...]:
+    def physical_object_perimeters(self) -> tuple[BaseSinglePerimeter, ...]:
         return self.novel, self.familiar
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def discrimination_index(self):
+    def discrimination_index(self) -> float:
         return self.nort_absolute_discrimination / self.physical_object_set.po_total_seconds_observing
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def novelty_preference(self):
+    def novelty_preference(self) -> float:
         return (
             100.0
             * self.physical_object_set["novel"].attention_filtered_seconds_observing

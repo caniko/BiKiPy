@@ -1,10 +1,11 @@
 from logging import getLogger
 from typing import Optional
 
-from project_kit.model.jit import ProjectKitRootClassJITConfigurator
+from ordered_set import OrderedSet
+from project_kit.model.jit import ProjectKitRootClassJITConfigurator, JITConfigMetadata
 from project_kit.utils.misc import here_or_there
 from pydantic import DirectoryPath
-from schemantic import SingleSchema, GroupSchema
+from schemantic import SingleSchema, GroupSchema, CultureSchema
 
 from bikipy import BikipyRuntimeSettings
 from bikipy._constant import (
@@ -42,9 +43,7 @@ INGRESS_METHOD_NAME_TO_INGRESS_CLASS = {
 
 
 class ProjectKitJITBikipyConfiguration(ProjectKitRootClassJITConfigurator):
-    config_key_order = PROJECTKIT_CONFIG_KEY_ORDER
-
-    project_name = "bikipy"
+    mapping_key_order = PROJECTKIT_CONFIG_KEY_ORDER
 
     root_class_mapping_key = INGRESS_MAP_NAME
     root_class_alias_to_class = {
@@ -57,7 +56,7 @@ class ProjectKitJITBikipyConfiguration(ProjectKitRootClassJITConfigurator):
         experiment_name: str,
         project_directory: Optional[DirectoryPath] = None,
         qualia_heuristic: Optional[list[str]] = None,
-    ) -> dict:
+    ) -> JITConfigMetadata:
         from bikipy.ingress.plugin.perimeter.radial_maze import PluginRadial
         from bikipy.ingress.plugin.perimeter.single import PluginSinglePerimeter
 
@@ -76,7 +75,7 @@ class ProjectKitJITBikipyConfiguration(ProjectKitRootClassJITConfigurator):
         logger.info(f"Generating experiment configuration at {project_directory}")
 
         experiment_class = experiment_name_to_class[experiment_name]
-        cds_single = {
+        schemas = OrderedSet({
             SingleSchema(
                 schema_alias=self.root_class_config_key,
                 origin=self.root_class_name_to_class[ingress_method],
@@ -86,23 +85,20 @@ class ProjectKitJITBikipyConfiguration(ProjectKitRootClassJITConfigurator):
                 schema_alias=READER_MAP_NAME, origin=DeepLabCutReader
             ),  # TODO: Cleo option to change reader
             SingleSchema(schema_alias=EXPERIMENT_MAP_NAME, origin=experiment_class),
-        }
+        })
         if experiment_class.habituation_trial_class:
-            cds_single.add(
+            schemas.add(
                 SingleSchema(
                     schema_alias=HABITUATION_TRIAL_MAP_NAME, origin=experiment_class.habituation_trial_class
                 )
             )
 
-        cds_homologs = set()
-        cds_hierarchical = set()
-
         plugin_models = set()
 
         if len(experiment_class.trial_classes) == 1:
-            cds_single.add(SingleSchema(schema_alias=TRIAL_MAP_NAME, origin=experiment_class.trial_classes.pop()))
+            schemas.add(SingleSchema(schema_alias=TRIAL_MAP_NAME, origin=experiment_class.trial_classes.pop()))
         else:
-            cds_hierarchical.add(
+            schemas.add(
                 GroupSchema.from_models(mapping_name=TRIAL_MAP_NAME, models=experiment_class.trial_classes)
             )
 
@@ -116,14 +112,14 @@ class ProjectKitJITBikipyConfiguration(ProjectKitRootClassJITConfigurator):
                 trial_class_to_perimeter_enclosure
             ), f"{experiment_class.__name__}, is an enclosed experiment, but has no class"
             if len(trial_class_to_perimeter_enclosure) == 1:
-                cds_single.add(
+                schemas.add(
                     SingleSchema(
                         schema_alias=ENCLOSURE_MAP_NAME,
                         origin=trial_class_to_perimeter_enclosure.pop(tuple(trial_class_to_perimeter_enclosure)[0]),
                     )
                 )
             else:
-                cds_hierarchical.add(
+                schemas.add(
                     GroupSchema.from_models(
                         mapping_name=ENCLOSURE_MAP_NAME,
                         instance_names=set({c.__name__ for c in trial_class_to_perimeter_enclosure}),
@@ -133,7 +129,7 @@ class ProjectKitJITBikipyConfiguration(ProjectKitRootClassJITConfigurator):
             plugin_models.add(PluginEnclosure)
 
         if experiment_class.at_least_one_trial_has_perimeter:
-            cds_hierarchical.add(
+            schemas.add(
                 GroupSchema.from_models(
                     mapping_name=PERIMETER_MAP_NAME,
                     models=experiment_class.trial_perimeter_label_to_perimeter_class,
@@ -156,14 +152,9 @@ class ProjectKitJITBikipyConfiguration(ProjectKitRootClassJITConfigurator):
                         )
                         raise KeyError(msg)
 
-                cds_hierarchical.add(GroupSchema.from_models(models=models, mapping_name=PHYSICAL_OBJECT_MAP_NAME))
+                schemas.add(GroupSchema.from_models(models=models, mapping_name=PHYSICAL_OBJECT_MAP_NAME))
 
         if plugin_models:
-            cds_hierarchical.add(GroupSchema.from_models(mapping_name=PLUGIN_MAP_NAME, models=plugin_models))
+            schemas.add(GroupSchema.from_models(mapping_name=PLUGIN_MAP_NAME, models=plugin_models))
 
-        return dict(
-            project_directory=project_directory,
-            cds_singles=cds_single,
-            cds_homologs=cds_homologs,
-            cds_groups=cds_hierarchical,
-        )
+        return JITConfigMetadata(culture_schema=CultureSchema(source_schemas=schemas))

@@ -11,7 +11,7 @@ from bikipy.feature.qualia.physical_object.heuristic.mixin import ProximityMixin
 from bikipy.feature.qualia.physical_object.heuristic.solo.abc import (
     AbstractSoloHeuristic,
 )
-from bikipy.perimeter.base import Perimeter
+from bikipy.perimeter.base import BasePerimeter
 
 
 class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
@@ -23,7 +23,6 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
 
     heuristic_alias = "BodyProximity"
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -82,7 +81,7 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
 
     @computed_field  # type: ignore[misc]
     @property
-    def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
+    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, NpNDArrayBool]:
         return self.center_ear_proximity.video_gen_merge_perimeter_to_boolean_index(self.tail_base_proximity)
 
     @computed_field  # type: ignore[misc]

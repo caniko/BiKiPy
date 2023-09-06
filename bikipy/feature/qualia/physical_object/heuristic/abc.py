@@ -10,14 +10,14 @@ from schemantic import SchemanticProjectModelMixin
 
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.qualia.physical_object.heuristic.mixin import SingleComponentMixin
-from bikipy.perimeter.base import Perimeter, SinglePerimeter
-from bikipy.reader.base import Reader
+from bikipy.perimeter.base import BasePerimeter, BaseSinglePerimeter
+from bikipy.reader.base import BaseReader
 from bikipy.utils.plot import TIGHT_LAYOUT_KWARGS
 
 
 class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectModelMixin, ABC):
-    perimeter: SinglePerimeter
-    reader: Reader
+    perimeter: BaseSinglePerimeter
+    reader: BaseReader
 
     filter_in_sequence: bool = Field(
         False,
@@ -27,7 +27,6 @@ class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectModelMixin, ABC):
 
     heuristic_alias: ClassVar[str]
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -41,7 +40,7 @@ class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectModelMixin, ABC):
 
     @computed_field  # type: ignore[misc]
     @property
-    def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
+    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, NpNDArrayBool]:
         return {self.perimeter: self.result}
 
     @computed_field  # type: ignore[misc]

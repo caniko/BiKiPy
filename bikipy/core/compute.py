@@ -9,7 +9,7 @@ from pydantic_numpy.typing import NpNDArrayBool
 
 from bikipy.core.base import BikipyModel
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
-from bikipy.perimeter.base import Perimeter, SinglePerimeter
+from bikipy.perimeter.base import BasePerimeter, BaseSinglePerimeter
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 
 T = TypeVar("T")
@@ -56,7 +56,7 @@ class AbstractCompute(Generic[T], BikipyModel, ABC, extra=Extra.allow):
 
 
 class AbstractComputePerimeterBooleanIndex(AbstractCompute[NpNDArrayBool], VideoMetadataMixin, ABC):
-    perimeter: SinglePerimeter
+    perimeter: BaseSinglePerimeter
     tolerance_modelling: bool = True
 
     @computed_field  # type: ignore[misc]
@@ -66,12 +66,12 @@ class AbstractComputePerimeterBooleanIndex(AbstractCompute[NpNDArrayBool], Video
 
     @property
     @abstractmethod
-    def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
+    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, NpNDArrayBool]:
         ...
 
     def video_gen_merge_perimeter_to_boolean_index(
         self, other: "AbstractComputePerimeterBooleanIndex", both_or_false: bool = False
-    ) -> dict[Perimeter, NpNDArrayBool]:
+    ) -> dict[BasePerimeter, NpNDArrayBool]:
         return video_gen_merge_perimeter_to_boolean_index_from_dict(
             self.perimeter_to_boolean_index, other.perimeter_to_boolean_index, both_or_false
         )
@@ -79,9 +79,9 @@ class AbstractComputePerimeterBooleanIndex(AbstractCompute[NpNDArrayBool], Video
 
 def video_gen_merge_perimeter_to_boolean_index_from_dict(
     a_perimeter_to_boolean_index,
-    b_perimeter_to_boolean_index: dict[Perimeter, NpNDArrayBool],
+    b_perimeter_to_boolean_index: dict[BasePerimeter, NpNDArrayBool],
     both_or_false: bool = False,
-) -> dict[Perimeter, NpNDArrayBool]:
+) -> dict[BasePerimeter, NpNDArrayBool]:
     result = {**a_perimeter_to_boolean_index, **b_perimeter_to_boolean_index}
 
     logical_method = np.logical_and if both_or_false else np.logical_or

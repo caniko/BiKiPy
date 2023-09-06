@@ -12,7 +12,7 @@ from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
 from bikipy.ingress.plugin.core.base import BasePluginDirectory
 from bikipy.ingress.plugin.core.mixins import HasReferenceMixin, IngressRequiredMixin
 from bikipy.math.geometry import clockwise_argsort_points, meter_per_pixel_from_diagonal
-from bikipy.perimeter.base import PerimeterSet, SinglePerimeter
+from bikipy.perimeter.base import PerimeterSet, BaseSinglePerimeter
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
@@ -33,7 +33,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
     default_trial_argument_key = "radial"
     human_readable_index = "Radial"
 
-    _center: SinglePerimeter | None = None
+    _center: BaseSinglePerimeter | None = None
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -55,7 +55,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
 
     @computed_field  # type: ignore[misc]
     @property
-    def center(self) -> SinglePerimeter:
+    def center(self) -> BaseSinglePerimeter:
         if not self._center:
             self._center = get_first_value_in_dict(
                 init_polygon_from_makesense_coco_polygon(
@@ -110,7 +110,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def grouped_radial_maze_perimeters(self) -> dict[str, tuple[SinglePerimeter, ...]]:
+    def grouped_radial_maze_perimeters(self) -> dict[str, tuple[BaseSinglePerimeter, ...]]:
         perimeter_set = PerimeterSet(perimeters=[*self.arms, self.center])
 
         # perimeter_set.plot(with_midpoints=True)
@@ -120,12 +120,12 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
         self.ingress.ingress_defined_perimeters[self.stem_info.label] = grouped
         return grouped
 
-    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> dict[str, tuple[SinglePerimeter, ...]]:
+    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> dict[str, tuple[BaseSinglePerimeter, ...]]:
         self._assert_correct_scope_trialwise_metadata()
         return self.grouped_radial_maze_perimeters
 
     @computed_field  # type: ignore[misc]
     @property
-    def globally_defined(self) -> dict[str, tuple[SinglePerimeter, ...]]:
+    def globally_defined(self) -> dict[str, tuple[BaseSinglePerimeter, ...]]:
         self._assert_correct_scope_global()
         return self.grouped_radial_maze_perimeters

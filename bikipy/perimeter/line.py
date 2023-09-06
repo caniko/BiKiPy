@@ -39,7 +39,6 @@ class LinePerimeter(BikipyHashable, VideoMetadataMixin):
 
     perimeter_label = "circle"
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:

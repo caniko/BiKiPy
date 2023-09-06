@@ -10,7 +10,7 @@ from bikipy import runtime_settings
 from bikipy.core.compute import AbstractComputePerimeterBooleanIndex
 from bikipy.core.video import VideoMetadata
 from bikipy.feature.tolerance.single import single_node_tolerance_model
-from bikipy.perimeter.base import SinglePerimeter
+from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.color import make_color_map
 
@@ -18,7 +18,7 @@ logger = getLogger(__name__)
 
 
 class ComputeProximity(AbstractComputePerimeterBooleanIndex):
-    perimeter: SinglePerimeter
+    perimeter: BaseSinglePerimeter
     maximum_distance: float | NpNDArrayFp64
     inside_perimeter_border: NpNDArrayFp64
     outside_perimeter_border: Optional[NpNDArrayFp64] = None

@@ -13,7 +13,7 @@ from bikipy.feature.angle import clockwise_angel_2d
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 
 if TYPE_CHECKING:
-    from bikipy.perimeter.base import Perimeter
+    from bikipy.perimeter.base import BasePerimeter
 
 
 def normalize_hypotenuse_to_origin(hypotenuse_start: NpNDArrayFp64, hypotenuse_end: NpNDArrayFp64):
@@ -106,7 +106,7 @@ def clockwise_sort_points(points: NpNDArrayFp64, inspect: bool = False) -> NpNDA
 
 
 @lru_cache
-def clockwise_sort_perimeter_centroids(perimeters: Sequence["Perimeter"]):
+def clockwise_sort_perimeter_centroids(perimeters: Sequence["BasePerimeter"]):
     return [perimeters[i] for i in clockwise_argsort_points([perimeter.centroid_meters for perimeter in perimeters])]
 
 

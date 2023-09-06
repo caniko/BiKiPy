@@ -11,7 +11,7 @@ from bikipy.core.compute import AbstractComputePerimeterBooleanIndex
 from bikipy.core.video import VideoMetadata
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.math.vector import unit_vector
-from bikipy.perimeter.base import Perimeter
+from bikipy.perimeter.base import BasePerimeter
 
 
 class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
@@ -36,7 +36,7 @@ class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
 
     @computed_field  # type: ignore[misc]
     @property
-    def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
+    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, NpNDArrayBool]:
         return {self.perimeter: self.result}
 
     def plot(self, ax: Axes, video: Optional[VideoMetadata] = None, coordinates_as_pixels: bool = False) -> None:

@@ -11,7 +11,7 @@ from pydantic_numpy.typing import NpNDArrayFp64
 from bikipy import runtime_settings
 from bikipy.core.compute import AbstractComputePerimeterBooleanIndex, T
 from bikipy.core.video import VideoMetadata
-from bikipy.perimeter.base import Perimeter, SinglePerimeter
+from bikipy.perimeter.base import BasePerimeter, BaseSinglePerimeter
 from bikipy.utils.plot.color import make_color_map
 
 logger = getLogger(__name__)
@@ -41,10 +41,10 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def perimeter_border(self) -> SinglePerimeter:
+    def perimeter_border(self) -> BaseSinglePerimeter:
         return self.perimeter.expand(self.maximum_distance)
 
-    my_perimeter_to_boolean_index: dict[Perimeter, NpNDArrayBool] = Field(default_factory=dict)
+    my_perimeter_to_boolean_index: dict[BasePerimeter, NpNDArrayBool] = Field(default_factory=dict)
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -94,7 +94,7 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
 
     @computed_field  # type: ignore[misc]
     @property
-    def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
+    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, NpNDArrayBool]:
         assert self.result is not None
         return self.my_perimeter_to_boolean_index
 

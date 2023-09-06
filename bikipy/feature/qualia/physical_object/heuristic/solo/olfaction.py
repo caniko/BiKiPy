@@ -14,12 +14,12 @@ from bikipy.feature.qualia.physical_object.heuristic.mixin import (
 from bikipy.feature.qualia.physical_object.heuristic.solo.abc import (
     AbstractSoloHeuristic,
 )
-from bikipy.perimeter.base import Perimeter
+from bikipy.perimeter.base import BasePerimeter
 
 
 class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
-    maximum_distance_meters = 0.05
-    maximum_degrees = 45.0
+    maximum_distance_meters: float = 0.05
+    maximum_degrees: float = 45.0
 
     nose_label: str | None = "nose"
     center_ear_label: str = "center_ear"
@@ -29,7 +29,6 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
 
     heuristic_alias = "Olfaction"
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -87,7 +86,7 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
 
     @computed_field  # type: ignore[misc]
     @property
-    def perimeter_to_boolean_index(self) -> dict[Perimeter, NpNDArrayBool]:
+    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, NpNDArrayBool]:
         return self.nose_proximity.video_gen_merge_perimeter_to_boolean_index(
             self.snout_towards_object_rays, both_or_false=True
         )

@@ -18,7 +18,6 @@ class BikipyHashable(BikipyModel, SchemanticProjectModelMixin):
     label: Optional[Label] = None
     int_id: Optional[NonNegativeInt] = None
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -34,14 +33,12 @@ class BikipyHashable(BikipyModel, SchemanticProjectModelMixin):
     def __hash__(self) -> int:
         return hash(tuple(self._to_hash))
 
-    def __eq__(self, other: "BikipyHashableModel") -> bool:
+    def __eq__(self, other) -> bool:
         try:
             return self._to_hash == other._to_hash
         except AttributeError:
             return False
 
-    def __ne__(self, other: "BikipyHashableModel") -> bool:
+    def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
-
-BikipyHashableModel = TypeVar("BikipyHashableModel", bound=BikipyHashable)

@@ -28,7 +28,7 @@ class PhaseIngressWorkflow(BaseIngressWorkflow):
                 if self._to_skip_trial_id(trial_id):
                     continue
 
-                if self.experiment_class.has_stages:
+                if self.experiment_class().has_stages:
                     stage_index = self.metadata.loc[trial_id, "Stage"]
                     class_name = self._trial_class_from_stage_index(stage_index).__name__
                     self._trial_id_to_trial_class_name[trial_id] = class_name
@@ -46,8 +46,8 @@ class PhaseIngressWorkflow(BaseIngressWorkflow):
                 if self.only_one_instance_of_trial_class:
                     observed_classes_to_trial_id[class_name] = trial_id
                     if (
-                        not self.experiment_class.has_stages
-                        or frozenset(observed_classes_to_trial_id) == self.experiment_class.trial_classes
+                        not self.experiment_class().has_stages
+                        or frozenset(observed_classes_to_trial_id) == self.experiment_class().trial_classes
                     ):
                         for trial_id in tuple(self._trial_id_to_keyword_arguments):
                             if trial_id not in observed_classes_to_trial_id.values():

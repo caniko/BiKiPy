@@ -43,7 +43,7 @@ from bikipy.utils.plot.generic import (
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 
 if TYPE_CHECKING:
-    from bikipy.reader.base import Reader
+    from bikipy.reader.base import BaseReader
 
 logger = getLogger(__name__)
 
@@ -165,7 +165,6 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
     required_video_metadata_fields = {"recording_resolution"}
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -240,7 +239,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         return values
 
     def confinement_coordinate_boolean_index(
-        self, coordinates: NpNDArrayFp64, reader: Optional["Reader"] = None, **inspect_kwargs
+        self, coordinates: NpNDArrayFp64, reader: Optional["BaseReader"] = None, **inspect_kwargs
     ) -> NpNDArrayBool:
         """
         This function integrates moving perimeter routine into the static perimeter workflow
@@ -248,7 +247,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         if not self.moving_field_name:
             return self.compute_confinement_boolean_index(coordinates, **inspect_kwargs)
         if not reader:
-            msg = "reader must be passed to Perimeter when moving field name is utilized"
+            msg = "reader must be passed to BasePerimeter when moving field name is utilized"
             raise AttributeError(msg)
 
         # if self.moving_field_name == "reference_point_array":
@@ -354,15 +353,11 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         self.plot_perimeter_on_ax(ax, **perimeter_plot_kwargs)
 
 
-SinglePerimeter = TypeVar("SinglePerimeter", bound=BaseSinglePerimeter)
-
-
-# TODO: Variadic generics Pydantic V2.1
+# TODO: Variadic generic
 class PerimeterSet(BasePerimeter):
-    perimeters: list[SinglePerimeter]
-    restricting_perimeters: Optional[list[SinglePerimeter]]
+    perimeters: list[BaseSinglePerimeter]
+    restricting_perimeters: Optional[list[BaseSinglePerimeter]]
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -383,21 +378,21 @@ class PerimeterSet(BasePerimeter):
             restricting_perimeters=self.restricting_perimeters + other.restricting_perimeters,
         )
 
-    def __add__(self, other: SinglePerimeter) -> "PerimeterSet":
+    def __add__(self, other: BaseSinglePerimeter) -> "PerimeterSet":
         # Subtraction includes the area in the PerimeterSet
         return PerimeterSet(
             perimeters=self.perimeters + other,
             restricting_perimeters=self.restricting_perimeters,
         )
 
-    def __sub__(self, other: SinglePerimeter) -> "PerimeterSet":
+    def __sub__(self, other: BaseSinglePerimeter) -> "PerimeterSet":
         # Subtraction excludes the area from the PerimeterSet
         return PerimeterSet(
             perimeters=self.perimeters,
             restricting_perimeters=self.restricting_perimeters + other,
         )
 
-    def __getitem__(self, item: Label) -> SinglePerimeter:
+    def __getitem__(self, item: Label) -> BaseSinglePerimeter:
         for perimeter in self.all_perimeters:
             if perimeter.label == item or perimeter.int_id == item:
                 return perimeter
@@ -419,7 +414,7 @@ class PerimeterSet(BasePerimeter):
         join_func = partial(VideoMetadata.join, meters_per_pixel_mean=True, ignore_incongruity=True)
         return reduce(join_func, (perimeter.video for perimeter in self.perimeters)).meters_per_pixel
 
-    def group(self, pop_single_element_groups: bool = True) -> dict[str, tuple[SinglePerimeter, ...] | SinglePerimeter]:
+    def group(self, pop_single_element_groups: bool = True) -> dict[str, tuple[BaseSinglePerimeter, ...] | BaseSinglePerimeter]:
         grouped = defaultdict(list)
         for perimeter in self.all_perimeters:
             grouped[perimeter.group_label].append(perimeter)
@@ -480,17 +475,17 @@ class PerimeterSet(BasePerimeter):
 
     @computed_field  # type: ignore[misc]
     @property
-    def perimeter_to_int_id(self) -> dict[Perimeter, int]:
+    def perimeter_to_int_id(self) -> dict[BasePerimeter, int]:
         return {perimeter: perimeter.int_id for perimeter in self.all_perimeters}
 
     @computed_field  # type: ignore[misc]
     @property
-    def int_id_to_perimeter(self) -> dict[int, Perimeter]:
+    def int_id_to_perimeter(self) -> dict[int, BasePerimeter]:
         return {perimeter.int_id: perimeter for perimeter in self.all_perimeters}
 
     @computed_field  # type: ignore[misc]
     @property
-    def label_to_perimeter(self) -> dict[str, Perimeter]:
+    def label_to_perimeter(self) -> dict[str, BasePerimeter]:
         return {perimeter.label: perimeter for perimeter in self.all_perimeters}
 
     @computed_field  # type: ignore[misc]
@@ -526,7 +521,7 @@ class PerimeterSet(BasePerimeter):
 
     @computed_field  # type: ignore[misc]
     @property
-    def all_perimeters(self) -> tuple[SinglePerimeter, ...]:
+    def all_perimeters(self) -> tuple[BaseSinglePerimeter, ...]:
         if not self.restricting_perimeters:
             return tuple(self.perimeters)
         return *self.perimeters, *self.restricting_perimeters
@@ -559,7 +554,7 @@ class PerimeterSet(BasePerimeter):
 
     @computed_field  # type: ignore[misc]
     @property
-    def get_only_perimeter(self) -> SinglePerimeter:
+    def get_only_perimeter(self) -> BaseSinglePerimeter:
         assert self.number_of_perimeters == 1
         return self.all_perimeters[0]
 
@@ -629,7 +624,7 @@ def perimeter_set_from_makesense(
             raise ValueError(unsupported_msg)
 
 
-def perimeter_set_from_image_name_to_perimeters(image_name_to_perimeters: dict[str, "SinglePerimeter"]):
+def perimeter_set_from_image_name_to_perimeters(image_name_to_perimeters: dict[str, "BaseSinglePerimeter"]):
     result = {}
     for image_name, perimeters in image_name_to_perimeters.items():
         filtered_perimeters, restricting_perimeters = [], []

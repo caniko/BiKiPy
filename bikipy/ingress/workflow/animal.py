@@ -53,7 +53,7 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
                         plugin_model.default_trial_argument_key or data_object.default_trial_argument_key
                     ] = data_object
 
-                if self.experiment_class.has_stages:
+                if self.experiment_class().has_stages:
                     self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(
                         stage_index
                     ).__name__

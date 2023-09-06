@@ -11,7 +11,7 @@ from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 from bikipy.ingress.plugin.perimeter.base import AbstractPerimeterPlugin
 from bikipy.ingress.plugin.perimeter.constant import LABEL_TO_TRIAL_SHEET_NAME
-from bikipy.perimeter.base import SinglePerimeter, perimeter_set_from_makesense
+from bikipy.perimeter.base import BaseSinglePerimeter, perimeter_set_from_makesense
 from bikipy.utils.collection_utils import get_first_key_in_dict
 from bikipy.utils.image import axis_frame_imshow, read_image_from_path
 from bikipy.utils.makesense import (
@@ -38,7 +38,7 @@ class PluginSinglePerimeter(AbstractPerimeterPlugin):
     ingress_key = "perimeter"
     code_key = "perimeter"
     default_trial_argument_key = "label_to_perimeter"
-    human_readable_index = "Perimeter"
+    human_readable_index = "BasePerimeter"
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -47,7 +47,7 @@ class PluginSinglePerimeter(AbstractPerimeterPlugin):
 
     def trialwise_and_metadata(
         self, trial_id: Label, naive: bool = False
-    ) -> dict[str, SinglePerimeter] | SinglePerimeter:
+    ) -> dict[str, BaseSinglePerimeter] | BaseSinglePerimeter:
         self._assert_correct_scope_trialwise_metadata()
 
         result = {}
@@ -74,7 +74,7 @@ class PluginSinglePerimeter(AbstractPerimeterPlugin):
 
     @computed_field  # type: ignore[misc]
     @property
-    def globally_defined(self) -> dict[str, SinglePerimeter]:
+    def globally_defined(self) -> dict[str, BaseSinglePerimeter]:
         self._assert_correct_scope_global()
 
         result = {}
@@ -116,7 +116,7 @@ def inspect_annotations(annotation_path: FilePath, image_directory: Optional[Dir
 
 
 @lru_cache
-def _perimeter_with_label(perimeter: SinglePerimeter, new_label: str) -> SinglePerimeter:
+def _perimeter_with_label(perimeter: BaseSinglePerimeter, new_label: str) -> BaseSinglePerimeter:
     if new_label == perimeter.label:
         return perimeter
     return perimeter.copy(update={"label": new_label})

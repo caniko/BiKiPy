@@ -11,7 +11,7 @@ from bikipy.ingress.plugin.perimeter.single import PluginSinglePerimeter
 from bikipy.ingress.plugin.video import PluginVideo
 
 if TYPE_CHECKING:
-    from bikipy.ingress.plugin.core.base import Plugin
+    from bikipy.ingress.plugin.core.base import BasePlugin
 
 ALL_PLUGINS = (
     PluginMeterPerPixel,
@@ -26,4 +26,4 @@ ALL_PLUGINS = (
 )
 
 plugin_code_key_to_model = {plugin.code_key: plugin for plugin in ALL_PLUGINS}
-ingress_key_to_model: dict[str, "Plugin"] = {model.ingress_key: model for model in plugin_code_key_to_model.values()}
+ingress_key_to_model: dict[str, "BasePlugin"] = {model.ingress_key: model for model in plugin_code_key_to_model.values()}

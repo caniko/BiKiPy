@@ -7,7 +7,7 @@ from schemantic import SchemanticProjectModelMixin
 
 from bikipy.core.base import BikipyModel
 from bikipy.core.typing import Label
-from bikipy.ingress.name_parser import PluginFileStemParse
+from bikipy.ingress.name_parser import PluginFileStemParser
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 
 
@@ -15,7 +15,7 @@ class BasePlugin(BikipyModel, SchemanticProjectModelMixin, ABC):
     plugin_scope: Optional[PluginScope] = None
     manual_trial_argument_key: Optional[str] = None
 
-    plugin_file_stem_parser: ClassVar[Type[PluginFileStemParse]] = PluginFileStemParse
+    plugin_file_stem_parser: ClassVar[Type[PluginFileStemParser]] = PluginFileStemParser
 
     required: ClassVar[bool] = False
     plural_entries: ClassVar[bool] = False
@@ -40,7 +40,6 @@ class BasePlugin(BikipyModel, SchemanticProjectModelMixin, ABC):
     def _assert_correct_scope_global(self) -> None:
         assert self.plugin_scope == PluginScope.GLOBAL
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -50,7 +49,7 @@ class BasePlugin(BikipyModel, SchemanticProjectModelMixin, ABC):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def stem_info(self):
+    def stem_info(self) -> PluginFileStemParser:
         try:
             return self.plugin_file_stem_parser(self.data_path.stem, self.plugin_scope)
         except Exception as e:
@@ -80,7 +79,6 @@ class BasePlugin(BikipyModel, SchemanticProjectModelMixin, ABC):
 
 
 PluginType = Type[BasePlugin]
-Plugin = TypeVar("Plugin", bound=BasePlugin)
 
 
 class BasePluginFile(BasePlugin, ABC):

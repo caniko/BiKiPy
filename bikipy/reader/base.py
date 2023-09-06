@@ -124,7 +124,6 @@ class BaseReader(Generic[Enclosure], BikipyHashable, VideoMetadataMixin, ABC):
                 raise AttributeError(msg)
             return self._isolate_coordinates(query)
 
-    @computed_field(return_type=set[str])  # type: ignore[misc]
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -553,4 +552,3 @@ class BaseReader(Generic[Enclosure], BikipyHashable, VideoMetadataMixin, ABC):
 
 
 ReaderCLS = Type[BaseReader]
-Reader = TypeVar("Reader", bound=BaseReader)

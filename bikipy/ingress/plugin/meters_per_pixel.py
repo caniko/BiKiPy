@@ -6,7 +6,7 @@ from pydantic import DirectoryPath, FilePath, computed_field, field_validator
 from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy.core.typing import Label
-from bikipy.ingress.name_parser import PluginFileStemParse
+from bikipy.ingress.name_parser import PluginFileStemParser
 from bikipy.ingress.plugin.core.base import BasePluginFile
 from bikipy.math.geometry import meter_per_pixel_from_diagonal
 from bikipy.utils.collection_utils import get_first_value_in_dict
@@ -15,7 +15,7 @@ from bikipy.utils.makesense import read_first_makesense_line
 logger = getLogger(__file__)
 
 
-class MeterPerPixelPluginFileStemParse(PluginFileStemParse):
+class MeterPerPixelPluginFileStemParse(PluginFileStemParser):
     def __pop_split_till_empty__(self) -> None:
         self.annotation_method = self.split.popleft()
         self.length_meters = float(self.split.popleft())

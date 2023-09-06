@@ -5,10 +5,10 @@ from pydantic import computed_field
 from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy.core.typing import Label
-from bikipy.ingress.name_parser import PluginFileStemParse
+from bikipy.ingress.name_parser import PluginFileStemParser
 from bikipy.ingress.plugin.core.base import BasePluginFile
 from bikipy.ingress.plugin.core.mixins import IngressRequiredMixin
-from bikipy.perimeter.base import BasePerimeter, Perimeter
+from bikipy.perimeter.base import BasePerimeter, BasePerimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.makesense import (
     get_point_from_makesense_row,
@@ -16,7 +16,7 @@ from bikipy.utils.makesense import (
 )
 
 
-class ChangeReferencePluginFileStemParse(PluginFileStemParse):
+class ChangeReferencePluginFileStemParse(PluginFileStemParser):
     def __pop_split_till_empty__(self) -> None:
         self.label = self.split.popleft()
 
@@ -49,7 +49,7 @@ class PluginChangeReference(BasePluginFile, IngressRequiredMixin):
     def image_name_to_re_referencing_point(self) -> dict[str, NpNDArrayFp64]:
         return image_name_to_point_from_makesense(self.data_path, only_point=False)
 
-    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> Perimeter | dict:
+    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> BasePerimeter | dict:
         self._assert_correct_scope_trialwise_metadata()
 
         trial_id_image_name = self.ingress.metadata.loc[trial_id, self.name_human_readable_index]
@@ -85,7 +85,7 @@ class PluginChangeReference(BasePluginFile, IngressRequiredMixin):
 
     @computed_field  # type: ignore[misc]
     @property
-    def globally_defined(self) -> Perimeter:
+    def globally_defined(self) -> BasePerimeter:
         self._assert_correct_scope_global()
         assert (
             len(self.image_name_to_re_referencing_point) == 1
