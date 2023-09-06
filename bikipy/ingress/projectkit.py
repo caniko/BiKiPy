@@ -1,10 +1,10 @@
 from logging import getLogger
 from typing import Optional
 
-from project_kit.model.jit import ProjectKitJITConfiguration
+from project_kit.model.jit import ProjectKitRootClassJITConfigurator
 from project_kit.utils.misc import here_or_there
 from pydantic import DirectoryPath
-from schemantic.model.schema import GroupSchema, SingleSchema
+from schemantic import SingleSchema, GroupSchema
 
 from bikipy import BikipyRuntimeSettings
 from bikipy._constant import (
@@ -41,13 +41,13 @@ INGRESS_METHOD_NAME_TO_INGRESS_CLASS = {
 }
 
 
-class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
+class ProjectKitJITBikipyConfiguration(ProjectKitRootClassJITConfigurator):
     config_key_order = PROJECTKIT_CONFIG_KEY_ORDER
 
     project_name = "bikipy"
 
-    root_class_config_key = INGRESS_MAP_NAME
-    root_class_name_to_class = {
+    root_class_mapping_key = INGRESS_MAP_NAME
+    root_class_alias_to_class = {
         cls.__name__: cls for cls in (AnimalIngressWorkflow, AnimalDayIngressWorkflow, PhaseIngressWorkflow)
     }
 
@@ -78,19 +78,19 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
         experiment_class = experiment_name_to_class[experiment_name]
         cds_single = {
             SingleSchema(
-                manual_mapping_name=self.root_class_config_key,
-                model=self.root_class_name_to_class[ingress_method],
+                schema_alias=self.root_class_config_key,
+                origin=self.root_class_name_to_class[ingress_method],
             ),
-            SingleSchema(manual_mapping_name=RUNTIME_SETTINGS_MAP_NAME, model=BikipyRuntimeSettings),
+            SingleSchema(schema_alias=RUNTIME_SETTINGS_MAP_NAME, origin=BikipyRuntimeSettings),
             SingleSchema(
-                manual_mapping_name=READER_MAP_NAME, model=DeepLabCutReader
+                schema_alias=READER_MAP_NAME, origin=DeepLabCutReader
             ),  # TODO: Cleo option to change reader
-            SingleSchema(manual_mapping_name=EXPERIMENT_MAP_NAME, model=experiment_class),
+            SingleSchema(schema_alias=EXPERIMENT_MAP_NAME, origin=experiment_class),
         }
         if experiment_class.habituation_trial_class:
             cds_single.add(
                 SingleSchema(
-                    manual_mapping_name=HABITUATION_TRIAL_MAP_NAME, model=experiment_class.habituation_trial_class
+                    schema_alias=HABITUATION_TRIAL_MAP_NAME, origin=experiment_class.habituation_trial_class
                 )
             )
 
@@ -100,7 +100,7 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
         plugin_models = set()
 
         if len(experiment_class.trial_classes) == 1:
-            cds_single.add(SingleSchema(manual_mapping_name=TRIAL_MAP_NAME, model=experiment_class.trial_classes.pop()))
+            cds_single.add(SingleSchema(schema_alias=TRIAL_MAP_NAME, origin=experiment_class.trial_classes.pop()))
         else:
             cds_hierarchical.add(
                 GroupSchema.from_models(mapping_name=TRIAL_MAP_NAME, models=experiment_class.trial_classes)
@@ -118,8 +118,8 @@ class ProjectKitJITBikipyConfiguration(ProjectKitJITConfiguration):
             if len(trial_class_to_perimeter_enclosure) == 1:
                 cds_single.add(
                     SingleSchema(
-                        manual_mapping_name=ENCLOSURE_MAP_NAME,
-                        model=trial_class_to_perimeter_enclosure.pop(tuple(trial_class_to_perimeter_enclosure)[0]),
+                        schema_alias=ENCLOSURE_MAP_NAME,
+                        origin=trial_class_to_perimeter_enclosure.pop(tuple(trial_class_to_perimeter_enclosure)[0]),
                     )
                 )
             else:
