@@ -304,7 +304,7 @@ def rotate_vectors_with_angle(vectors: NpNDArrayFp64, angle: NpNDArrayFp64) -> N
 if not runtime_settings.disable_numba:
     # rotation_matrix_from_radians = njit(cache=True)(rotation_matrix_from_radians)
     # dot_axis_1_1d = njit(cache=True)(dot_axis_1_1d)   https://github.com/numba/numba/issues/1269
-    orthogonal_unit_vector = njit(cache=True)(orthogonal_unit_vector)
+    # orthogonal_unit_vector = njit(cache=True)(orthogonal_unit_vector)
 
     @njit(parallel=True, nogil=True, cache=True)
     def rotate_vectors_with_rotation_matrix(vectors: NpNDArrayFp64, rotation_matrices: NpNDArrayFp64) -> NpNDArrayFp64:

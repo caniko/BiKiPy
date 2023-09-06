@@ -10,11 +10,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from pydantic import Field, FilePath, computed_field, validate_call
-from pydantic_numpy.typing import (
-    NpNDArrayBool,
-    NpNDArrayFp64,
-    NpNDArrayUint32,
-)
+from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64, NpNDArrayUint32
 from typing_extensions import Literal
 
 from bikipy import runtime_settings
