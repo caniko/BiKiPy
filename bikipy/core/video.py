@@ -123,13 +123,6 @@ class VideoMetadata(_VideoMetadataBase):
                 return False
         return True
 
-    def __eq__(self, other: "VideoMetadata") -> bool:
-        if not isinstance(other, self.__class__):
-            return False
-        if self.video_path and other.video_path and self.video_path == other.video_path:
-            return True
-        return self.metadata == other.metadata
-
     def __add__(self, other: "VideoMetadata") -> "VideoMetadata":
         return self.join(self, other)
 

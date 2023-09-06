@@ -12,7 +12,7 @@ def test_unit_vector():
     single_vector = np.array((0, 10))
 
     np.testing.assert_almost_equal((0, 1), unit_vector(single_vector))
-    np.testing.assert_almost_equal(((0, 1),), unit_vector(single_vector, force_1_dim=True))
+    np.testing.assert_almost_equal(((0, 1),), unit_vector(single_vector, force_1d=True))
 
     multiple_vectors = np.array(((0, 10), (10, 0)))
     unit_of_multiple = np.array(((0, 1), (1, 0)))

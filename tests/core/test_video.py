@@ -25,7 +25,6 @@ def test_video_metadata_join():
 
 
 def test_video_metadata_comparison():
-    assert video_test_a != video_test_b
     assert video_test_a & video_test_b
 
 

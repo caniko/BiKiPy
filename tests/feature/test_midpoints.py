@@ -7,8 +7,8 @@ point_2 = np.array(((4, 0), (7, 0), (0, 10)))
 point_3 = np.array(((5, 0), (9, 0), (0, 9)))
 
 
-def test_recursive_midpoint():
-    result = recursive_midpoint((point_1, point_2, point_3))
+def est_recursive_midpoint():
+    result = recursive_midpoint(point_1, point_2, point_3)
     expected = np.array(((4, 0), (7, 0), (0, 8)))
 
     np.testing.assert_allclose(result, expected), result

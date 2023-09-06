@@ -17,12 +17,12 @@ from bikipy.utils.collection_utils import (
 
 
 @validate_call
-def unit_vector(row_vectors: NpNDArrayFp64, force_1_dim: bool = False) -> NpNDArrayFp64:
+def unit_vector(row_vectors: NpNDArrayFp64, force_1d: bool = False) -> NpNDArrayFp64:
     """
     Computes unit vector, i.e. vector/<norm of the vector>
 
     :param row_vectors: Array of row vector(s)
-    :param force_1_dim: If True, make sure that the results are sent back as a NpNDArrayFp64 within an array
+    :param force_1d: If True, make sure that the results are sent back as a NpNDArrayFp64 within an array
         important when working with single vectors within functions that expect
         a NpNDArrayFp64 of vectors
     :return: All unit vectors along the rows of row_vectors
@@ -31,7 +31,7 @@ def unit_vector(row_vectors: NpNDArrayFp64, force_1_dim: bool = False) -> NpNDAr
         # Single vector
         result = row_vectors / np.linalg.norm(row_vectors)
 
-        if force_1_dim:
+        if force_1d:
             return np.expand_dims(result, axis=0)
 
         return result

@@ -2,7 +2,8 @@ from typing import Optional, Sequence
 from warnings import warn
 
 import numpy as np
-from numba import njit
+from numba import njit, prange
+from pydantic_numpy import NpNDArrayBool
 from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy import runtime_settings
@@ -50,8 +51,8 @@ def clockwise_angel_2d(
     >>> clockwise_angel_2d((1, 0), (-1, 0))
     3.141592653589793       # pi"""
 
-    start_vector = unit_vector(start_vector, force_1_dim=True)
-    end_vector = unit_vector(end_vector, force_1_dim=True)
+    start_vector = unit_vector(start_vector, force_1d=True)
+    end_vector = unit_vector(end_vector, force_1d=True)
 
     length_start = len(start_vector)
     length_end = len(end_vector)
@@ -83,31 +84,37 @@ def clockwise_angel_2d(
     return angles
 
 
-def inner_angle(vector_set_1: NpNDArrayFp64, vector_set_2: NpNDArrayFp64):
-    """Returns the angle in radians between given vectors"""
-    # TODO: https://github.com/numba/numba/pull/7785
+def inner_angle(vector_set_a: NpNDArrayFp64, vector_set_b: NpNDArrayFp64):
+    # Skip where either vector has NaN
+    to_skip = np.any(np.isnan(vector_set_a), axis=1) | np.any(np.isnan(vector_set_b), axis=1)
+    if runtime_settings.disable_numba:
+        result = np.zeros(len(to_skip), dtype=np.float64)
+        for i in np.where(~to_skip):
+            result[i] = _inner_angle_compute(vector_set_a[i], vector_set_b[i])
+        return result
+    else:
+        return _numba_inner_angle_loop(vector_set_a, vector_set_b, to_skip)
 
-    v1_magnitudes = np.linalg.norm(vector_set_1, axis=1)
-    v2_magnitudes = np.linalg.norm(vector_set_2, axis=1)
 
-    return inner_angle_func_numba(vector_set_1, v1_magnitudes, vector_set_2, v2_magnitudes)
-
-
-def inner_angle_func_numba(
-    vector_set_1: NpNDArrayFp64, v1_magnitudes: NpNDArrayFp64, vector_set_2: NpNDArrayFp64, v2_magnitudes: NpNDArrayFp64
-) -> NpNDArrayFp64:
-    result = np.zeros_like(v1_magnitudes, dtype=float)
-    # Iterate through indices where both v1 and v2 magnitudes are defined
-    for i in np.where(~(np.isnan(v1_magnitudes) | np.isnan(v2_magnitudes))):
-        minor = np.linalg.det(np.stack((vector_set_1[i], vector_set_2[i])))
-        sign = 1 if minor == 0 else -np.sign(minor)
-
-        dot_p = np.dot(vector_set_1[i], vector_set_2[i])
-        dot_p = min(max(dot_p, -1.0), 1.0)
-
-        result[i] = sign * np.arccos(dot_p)
-
+@njit(cache=True, parallel=True)
+def _numba_inner_angle_loop(vector_set_a: NpNDArrayFp64, vector_set_b: NpNDArrayFp64, to_skip: NpNDArrayBool):
+    result = np.zeros(len(vector_set_a), dtype=np.float64)
+    for i in prange(len(vector_set_a)):
+        if to_skip[i]:
+            result[i] = np.nan
+            continue
+        result[i] = _inner_angle_compute(vector_set_a[i], vector_set_b[i])
     return result
+
+
+def _inner_angle_compute(vector_a: NpNDArrayFp64, vector_b: NpNDArrayFp64) -> NpNDArrayFp64:
+    minor = np.linalg.det(np.stack((vector_a, vector_b)))
+    sign = 1 if minor == 0 else -np.sign(minor)
+
+    dot_p = np.dot(vector_a, vector_b)
+    dot_p = min(max(dot_p, -1.0), 1.0)
+
+    return sign * np.arccos(dot_p)
 
 
 def compute_angles_from_points_abc(
@@ -193,5 +200,5 @@ ANGLE_METHOD_TO_FUNC = {
 
 
 if not runtime_settings.disable_numba:
-    inner_angle_func_numba = njit(cache=True)(inner_angle_func_numba)
+    _inner_angle_compute = njit(cache=True)(_inner_angle_compute)
     # angle_from_a_to_b = njit(cache=True)(angle_from_a_to_b)
