@@ -1871,7 +1871,7 @@ description = "Settings file interface for Python function and classes"
 optional = false
 python-versions = ">=3.10,<4.0"
 files = []
-develop = false
+develop = true
 
 [package.dependencies]
 cleo = "^2.0.1"
@@ -3481,4 +3481,4 @@ live = []
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11.0,<3.12"
-content-hash = "61c9c304c542242de72865355f8ff1056a0e09dd9000d3bd3a53b9047e6945a0"
+content-hash = "8f8a206941e773cf72656c0676c41d0dc0f6fdbbefe01ff90408831ead7eb74a"

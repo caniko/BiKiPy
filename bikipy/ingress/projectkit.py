@@ -43,6 +43,8 @@ INGRESS_METHOD_NAME_TO_INGRESS_CLASS = {
 
 
 class ProjectKitJITBikipyConfiguration(ProjectKitRootClassJITConfigurator):
+    project_name = "bikipy"
+
     mapping_key_order = PROJECTKIT_CONFIG_KEY_ORDER
 
     root_class_mapping_key = INGRESS_MAP_NAME
@@ -77,8 +79,8 @@ class ProjectKitJITBikipyConfiguration(ProjectKitRootClassJITConfigurator):
         experiment_class = experiment_name_to_class[experiment_name]
         schemas = OrderedSet({
             SingleSchema(
-                schema_alias=self.root_class_config_key,
-                origin=self.root_class_name_to_class[ingress_method],
+                schema_alias=self.root_class_mapping_key,
+                origin=self.root_class_alias_to_class[ingress_method],
             ),
             SingleSchema(schema_alias=RUNTIME_SETTINGS_MAP_NAME, origin=BikipyRuntimeSettings),
             SingleSchema(
@@ -99,7 +101,7 @@ class ProjectKitJITBikipyConfiguration(ProjectKitRootClassJITConfigurator):
             schemas.add(SingleSchema(schema_alias=TRIAL_MAP_NAME, origin=experiment_class.trial_classes.pop()))
         else:
             schemas.add(
-                GroupSchema.from_models(mapping_name=TRIAL_MAP_NAME, models=experiment_class.trial_classes)
+                GroupSchema.from_originating_types(origins=experiment_class.trial_classes, mapping_name=TRIAL_MAP_NAME)
             )
 
         if issubclass(experiment_class, EnclosedExperiment):
@@ -120,19 +122,18 @@ class ProjectKitJITBikipyConfiguration(ProjectKitRootClassJITConfigurator):
                 )
             else:
                 schemas.add(
-                    GroupSchema.from_models(
+                    GroupSchema.from_originating_types(
                         mapping_name=ENCLOSURE_MAP_NAME,
-                        instance_names=set({c.__name__ for c in trial_class_to_perimeter_enclosure}),
-                        models=set(trial_class_to_perimeter_enclosure.values()),
+                        origins=set(trial_class_to_perimeter_enclosure.values()),
                     )
                 )
             plugin_models.add(PluginEnclosure)
 
         if experiment_class.at_least_one_trial_has_perimeter:
             schemas.add(
-                GroupSchema.from_models(
+                GroupSchema.from_originating_types(
                     mapping_name=PERIMETER_MAP_NAME,
-                    models=experiment_class.trial_perimeter_label_to_perimeter_class,
+                    origins=experiment_class.trial_perimeter_label_to_perimeter_class,
                 )
             )
             plugin_models.add(PluginSinglePerimeter)
@@ -152,9 +153,9 @@ class ProjectKitJITBikipyConfiguration(ProjectKitRootClassJITConfigurator):
                         )
                         raise KeyError(msg)
 
-                schemas.add(GroupSchema.from_models(models=models, mapping_name=PHYSICAL_OBJECT_MAP_NAME))
+                schemas.add(GroupSchema.from_originating_types(origins=models, mapping_name=PHYSICAL_OBJECT_MAP_NAME))
 
         if plugin_models:
-            schemas.add(GroupSchema.from_models(mapping_name=PLUGIN_MAP_NAME, models=plugin_models))
+            schemas.add(GroupSchema.from_originating_types(origins=plugin_models, mapping_name=PLUGIN_MAP_NAME))
 
         return JITConfigMetadata(culture_schema=CultureSchema(source_schemas=schemas))
