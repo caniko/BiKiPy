@@ -5,7 +5,7 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pydantic import computed_field, DirectoryPath
+from pydantic import DirectoryPath, computed_field
 from pydantic_numpy.typing import NpNDArray, NpNDArrayBool, NpNDArrayFp64
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT

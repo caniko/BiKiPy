@@ -30,15 +30,14 @@ from bikipy.feature.motion import Motion, motion_analysis_indexer
 from bikipy.feature.qualia.physical_object.trial_mixin import PhysicalObjectTrialMixin
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
 from bikipy.perimeter.base import (
-    BaseSinglePerimeter,
     BasePerimeter,
+    BaseSinglePerimeter,
     PerimeterCLS,
     PerimeterSet,
-    BaseSinglePerimeter,
 )
 from bikipy.perimeter.trial_mixin import TrialWithPerimeterMixin
 from bikipy.reader import READER_CLASS_LABEL_TO_CLASS
-from bikipy.reader.base import ReaderCLS, BaseReader
+from bikipy.reader.base import BaseReader, ReaderCLS
 from bikipy.reader.data_with_likelihood import DeepLabCutReader
 from bikipy.utils.collection_utils import dict_deep_update
 from bikipy.utils.memory import wait_for_more_physical_memory
@@ -258,7 +257,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
         self.video.flush()
 
 
-TrialCLS = Type[BaseTrial]
+TrialCLS = type[BaseTrial]
 
 
 class HabituationTrialMixin(BaseModel):
@@ -822,4 +821,8 @@ class BaseExperiment(Behaviour):
         super().save(**kwargs)
 
 
-ExperimentCLS = Type[BaseExperiment]
+ExperimentCLS = type[BaseExperiment]
+
+from bikipy.ingress.workflow.base import BaseIngressWorkflow
+
+BaseIngressWorkflow.model_rebuild()

@@ -12,7 +12,7 @@ from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
 from bikipy.ingress.plugin.core.base import BasePluginDirectory
 from bikipy.ingress.plugin.core.mixins import HasReferenceMixin, IngressRequiredMixin
 from bikipy.math.geometry import clockwise_argsort_points, meter_per_pixel_from_diagonal
-from bikipy.perimeter.base import PerimeterSet, BaseSinglePerimeter
+from bikipy.perimeter.base import BaseSinglePerimeter, PerimeterSet
 from bikipy.perimeter.polygon.makesense import init_polygon_from_makesense_coco_polygon
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
@@ -120,7 +120,9 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
         self.ingress.ingress_defined_perimeters[self.stem_info.label] = grouped
         return grouped
 
-    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> dict[str, tuple[BaseSinglePerimeter, ...]]:
+    def trialwise_and_metadata(
+        self, trial_id: Label, naive: bool = False
+    ) -> dict[str, tuple[BaseSinglePerimeter, ...]]:
         self._assert_correct_scope_trialwise_metadata()
         return self.grouped_radial_maze_perimeters
 

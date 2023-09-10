@@ -551,4 +551,4 @@ class BaseReader(Generic[Enclosure], BikipyHashable, VideoMetadataMixin, ABC):
         df.to_parquet(self.cached_augmented_df_path, **TO_PARQUET_KWARGS)
 
 
-ReaderCLS = Type[BaseReader]
+ReaderCLS = type[BaseReader]

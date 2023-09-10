@@ -114,5 +114,5 @@ class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMet
         }
 
 
-QualiaAnalysisType = Type[OnePhysicalObjectSetQualiaAnalysis]
+QualiaAnalysisType = type[OnePhysicalObjectSetQualiaAnalysis]
 QualiaAnalysis = TypeVar("QualiaAnalysis", bound=OnePhysicalObjectSetQualiaAnalysis)

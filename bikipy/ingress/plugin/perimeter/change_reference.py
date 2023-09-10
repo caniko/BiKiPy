@@ -8,7 +8,7 @@ from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParser
 from bikipy.ingress.plugin.core.base import BasePluginFile
 from bikipy.ingress.plugin.core.mixins import IngressRequiredMixin
-from bikipy.perimeter.base import BasePerimeter, BasePerimeter
+from bikipy.perimeter.base import BasePerimeter
 from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.makesense import (
     get_point_from_makesense_row,

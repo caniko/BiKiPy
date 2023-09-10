@@ -125,7 +125,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         ...
 
 
-PerimeterCLS = Type[BasePerimeter]
+PerimeterCLS = type[BasePerimeter]
 Perimeter = TypeVar("Perimeter", bound=BasePerimeter)
 
 
@@ -414,7 +414,9 @@ class PerimeterSet(BasePerimeter):
         join_func = partial(VideoMetadata.join, meters_per_pixel_mean=True, ignore_incongruity=True)
         return reduce(join_func, (perimeter.video for perimeter in self.perimeters)).meters_per_pixel
 
-    def group(self, pop_single_element_groups: bool = True) -> dict[str, tuple[BaseSinglePerimeter, ...] | BaseSinglePerimeter]:
+    def group(
+        self, pop_single_element_groups: bool = True
+    ) -> dict[str, tuple[BaseSinglePerimeter, ...] | BaseSinglePerimeter]:
         grouped = defaultdict(list)
         for perimeter in self.all_perimeters:
             grouped[perimeter.group_label].append(perimeter)
@@ -538,7 +540,7 @@ class PerimeterSet(BasePerimeter):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def size_respective_dtype(self) -> Type[unsignedinteger]:
+    def size_respective_dtype(self) -> type[unsignedinteger]:
         return np.uint8 if self.number_of_perimeters <= 255 else np.uint16
 
     @computed_field  # type: ignore[misc]

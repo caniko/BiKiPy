@@ -26,4 +26,6 @@ ALL_PLUGINS = (
 )
 
 plugin_code_key_to_model = {plugin.code_key: plugin for plugin in ALL_PLUGINS}
-ingress_key_to_model: dict[str, "BasePlugin"] = {model.ingress_key: model for model in plugin_code_key_to_model.values()}
+ingress_key_to_model: dict[str, "BasePlugin"] = {
+    model.ingress_key: model for model in plugin_code_key_to_model.values()
+}

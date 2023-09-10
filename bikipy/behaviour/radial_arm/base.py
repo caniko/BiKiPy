@@ -19,7 +19,7 @@ from bikipy.core.base import BikipyHashable
 from bikipy.feature.motion import Motion, bulk_motion_analysis_indexer
 from bikipy.math.discrete import reduce_repeating_sequences
 from bikipy.math.geometry import clockwise_sort_perimeter_centroids
-from bikipy.perimeter.base import PerimeterSet, BaseSinglePerimeter, BasePerimeter
+from bikipy.perimeter.base import BasePerimeter, BaseSinglePerimeter, PerimeterSet
 from bikipy.perimeter.trial_mixin import TrialWithPerimeterMixin
 from bikipy.perimeter.utils.multi_node_confinement import (
     ConfinementSequence,

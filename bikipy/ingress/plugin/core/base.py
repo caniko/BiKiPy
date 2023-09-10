@@ -15,7 +15,7 @@ class BasePlugin(BikipyModel, SchemanticProjectModelMixin, ABC):
     plugin_scope: Optional[PluginScope] = None
     manual_trial_argument_key: Optional[str] = None
 
-    plugin_file_stem_parser: ClassVar[Type[PluginFileStemParser]] = PluginFileStemParser
+    plugin_file_stem_parser: ClassVar[type[PluginFileStemParser]] = PluginFileStemParser
 
     required: ClassVar[bool] = False
     plural_entries: ClassVar[bool] = False
@@ -78,7 +78,11 @@ class BasePlugin(BikipyModel, SchemanticProjectModelMixin, ABC):
             return int(self.plugin_name[0])
 
 
-PluginType = Type[BasePlugin]
+PluginType = type[BasePlugin]
+
+from bikipy.ingress.workflow.base import BaseIngressWorkflow
+
+BaseIngressWorkflow.model_rebuild()
 
 
 class BasePluginFile(BasePlugin, ABC):

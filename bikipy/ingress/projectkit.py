@@ -2,10 +2,10 @@ from logging import getLogger
 from typing import Optional
 
 from ordered_set import OrderedSet
-from project_kit.model.jit import ProjectKitRootClassJITConfigurator, JITConfigMetadata
+from project_kit.model.jit import JITConfigMetadata, ProjectKitRootClassJITConfigurator
 from project_kit.utils.misc import here_or_there
 from pydantic import DirectoryPath
-from schemantic import SingleSchema, GroupSchema, CultureSchema
+from schemantic import CultureSchema, GroupSchema, SingleSchema
 
 from bikipy import BikipyRuntimeSettings
 from bikipy._constant import (
@@ -77,22 +77,22 @@ class ProjectKitJITBikipyConfiguration(ProjectKitRootClassJITConfigurator):
         logger.info(f"Generating experiment configuration at {project_directory}")
 
         experiment_class = experiment_name_to_class[experiment_name]
-        schemas = OrderedSet({
-            SingleSchema(
-                schema_alias=self.root_class_mapping_key,
-                origin=self.root_class_alias_to_class[ingress_method],
-            ),
-            SingleSchema(schema_alias=RUNTIME_SETTINGS_MAP_NAME, origin=BikipyRuntimeSettings),
-            SingleSchema(
-                schema_alias=READER_MAP_NAME, origin=DeepLabCutReader
-            ),  # TODO: Cleo option to change reader
-            SingleSchema(schema_alias=EXPERIMENT_MAP_NAME, origin=experiment_class),
-        })
+        schemas = OrderedSet(
+            {
+                SingleSchema(
+                    schema_alias=self.root_class_mapping_key,
+                    origin=self.root_class_alias_to_class[ingress_method],
+                ),
+                SingleSchema(schema_alias=RUNTIME_SETTINGS_MAP_NAME, origin=BikipyRuntimeSettings),
+                SingleSchema(
+                    schema_alias=READER_MAP_NAME, origin=DeepLabCutReader
+                ),  # TODO: Cleo option to change reader
+                SingleSchema(schema_alias=EXPERIMENT_MAP_NAME, origin=experiment_class),
+            }
+        )
         if experiment_class.habituation_trial_class:
             schemas.add(
-                SingleSchema(
-                    schema_alias=HABITUATION_TRIAL_MAP_NAME, origin=experiment_class.habituation_trial_class
-                )
+                SingleSchema(schema_alias=HABITUATION_TRIAL_MAP_NAME, origin=experiment_class.habituation_trial_class)
             )
 
         plugin_models = set()

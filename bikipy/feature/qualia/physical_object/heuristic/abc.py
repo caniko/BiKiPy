@@ -55,7 +55,7 @@ class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectModelMixin, ABC):
         plt.tight_layout(**TIGHT_LAYOUT_KWARGS)
 
 
-HeuristicCLS = Type[AbstractHeuristic]
+HeuristicCLS = type[AbstractHeuristic]
 Heuristic = TypeVar("Heuristic", bound=AbstractHeuristic)
 
 

@@ -134,7 +134,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
         result.update(("project_directory", "experiment_class_name"))
         return result
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(return_type=type)  # type: ignore[misc]
     @cached_property
     def experiment_class(self) -> "ExperimentCLS":
         from bikipy.behaviour.mapping import experiment_name_to_class
@@ -186,35 +186,35 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
 
     @computed_field  # type: ignore[misc]
     @property
-    def trial_id_to_trial_class_name(self):
+    def trial_id_to_trial_class_name(self) -> dict[int, str]:
         if not self._experiment_data_defined:
             self.model_post_init()
         return self._trial_id_to_trial_class_name
 
     @computed_field  # type: ignore[misc]
     @property
-    def common_trial_keyword_arguments(self):
+    def common_trial_keyword_arguments(self) -> dict[str, Any]:
         if not self._experiment_data_defined:
             self.model_post_init()
         return self._common_trial_keyword_arguments
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(return_type=dict)  # type: ignore[misc]
     @property
-    def trial_id_to_keyword_arguments(self):
+    def trial_id_to_keyword_arguments(self) -> dict:
         for trial_id in tuple(self._trial_id_to_keyword_arguments):
             if self._to_skip_trial_id(trial_id):
                 del self._trial_id_to_keyword_arguments[trial_id]
 
         return dict(self._trial_id_to_keyword_arguments)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(return_type=dict)  # type: ignore[misc]
     @property
-    def trial_class_name_to_keyword_arguments(self):
+    def trial_class_name_to_keyword_arguments(self) -> dict:
         return self._trial_class_name_to_keyword_arguments
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(return_type=dict)  # type: ignore[misc]
     @property
-    def metadata_index_to_trial_id(self):
+    def metadata_index_to_trial_id(self) -> dict:
         if not self._experiment_data_defined:
             self.model_post_init()
         return self._metadata_index_to_trial_id
@@ -485,7 +485,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
             if PluginScope.GLOBAL in strategy
         ]
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(return_type=list)  # type: ignore[misc]
     @cached_property
     def _plugins_metadata(self) -> list["PluginType"]:
         from bikipy.ingress.plugin.map import ingress_key_to_model
@@ -496,7 +496,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
             if PluginScope.METADATA in strategy
         ]
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(return_type=list)  # type: ignore[misc]
     @cached_property
     def _trialwise_plugins(self) -> list["PluginType"]:
         from bikipy.ingress.plugin.map import ingress_key_to_model
@@ -604,7 +604,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
             additional_kwargs["trial_id_to_trial_class_name"] = self.trial_id_to_trial_class_name
             additional_kwargs["trial_class_name_to_keyword_arguments"] = self.trial_class_name_to_keyword_arguments
 
-        return self.experiment_class()(
+        return self.experiment_class(
             **self.project_kit_config["experiment"],
             **additional_kwargs,
             common_trial_keyword_arguments=self.common_trial_keyword_arguments,

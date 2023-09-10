@@ -138,7 +138,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         return result
 
 
-CirclePerimeterCLS = Type[BaseCirclePerimeter]
+CirclePerimeterCLS = type[BaseCirclePerimeter]
 CirclePerimeter = TypeVar("CirclePerimeter", bound=BaseCirclePerimeter)
 
 
