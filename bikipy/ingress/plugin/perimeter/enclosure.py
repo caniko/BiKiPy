@@ -2,6 +2,7 @@ from pydantic import computed_field
 
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.perimeter.base import AbstractPerimeterPlugin
+from bikipy.perimeter import BaseSinglePerimeter
 
 
 class PluginEnclosure(AbstractPerimeterPlugin):
@@ -12,7 +13,7 @@ class PluginEnclosure(AbstractPerimeterPlugin):
 
     @computed_field  # type: ignore[misc]
     @property
-    def globally_defined(self):
+    def globally_defined(self) -> dict[str, BaseSinglePerimeter]:
         self._assert_correct_scope_global()
         return self.perimeter_mapper()
 

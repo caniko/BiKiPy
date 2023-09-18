@@ -80,9 +80,10 @@ class BasePlugin(BikipyModel, SchemanticProjectModelMixin, ABC):
 
 PluginType = type[BasePlugin]
 
-from bikipy.ingress.workflow.base import BaseIngressWorkflow
+from bikipy.ingress.workflow.animal import AnimalIngressWorkflow
+from bikipy.behaviour.core.base import BaseExperiment
 
-BaseIngressWorkflow.model_rebuild()
+AnimalIngressWorkflow.model_rebuild()
 
 
 class BasePluginFile(BasePlugin, ABC):

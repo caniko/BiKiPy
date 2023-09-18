@@ -822,7 +822,3 @@ class BaseExperiment(Behaviour):
 
 
 ExperimentCLS = type[BaseExperiment]
-
-from bikipy.ingress.workflow.base import BaseIngressWorkflow
-
-BaseIngressWorkflow.model_rebuild()

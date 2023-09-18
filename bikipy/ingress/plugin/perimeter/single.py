@@ -42,7 +42,7 @@ class PluginSinglePerimeter(AbstractPerimeterPlugin):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def image_name(self):
+    def image_name(self) -> str:
         return first_image_name_from_makesense(self.data_path, SHAPE_TO_MAKESENSE_TYPE[self.stem_info.shape])
 
     def trialwise_and_metadata(
