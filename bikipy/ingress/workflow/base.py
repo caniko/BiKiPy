@@ -4,9 +4,8 @@ import shutil
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from cProfile import Profile
-from functools import cached_property
+from functools import cached_property, partial
 from itertools import chain
-from logging import getLogger
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 
@@ -42,12 +41,14 @@ from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 from bikipy.utils.misc import sheet_names_from_path
 from bikipy.utils.pandas import copycat_assumes_levels_of_icon
+from bikipy.utils.ranged_dict import RangeDict
 
 if TYPE_CHECKING:
     from bikipy.behaviour.core.base import BaseExperiment, ExperimentCLS, TrialCLS
     from bikipy.ingress.plugin.core.base import BasePlugin, PluginType
 
-logger = getLogger(__name__)
+
+defaultdict_dict = partial(defaultdict, dict)
 
 
 class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
@@ -69,20 +70,22 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
 
     project_directory: DirectoryPath
     dataset_directory: DirectoryPath
+
     experiment_class_name: str
+    project_kit_config: dict[str, Any]
 
     create_inspection_plots: bool = True
 
     first_stage_is_habituation: bool = False
     metadata_trial_ids_are_higher_level: bool = False
-    custom_trial_sequence: Optional[tuple[str, ...]] = Field(default_factory=tuple)
+    custom_trial_sequence: tuple[str, ...] = Field(default_factory=tuple)
     trial_sequence_loops: int = 1
     only_one_instance_of_trial_class: bool = Field(
         False,
         description="When troubleshooting a runtime, avoid ingesting all data, "
         "and only focus on one of each trial class",
     )
-    trial_ids_to_analyse: Optional[frozenset[Label]] = Field(default_factory=frozenset)
+    trial_ids_to_analyse: frozenset[Label] = Field(default_factory=frozenset)
 
     no_cache: bool = False
 
@@ -96,7 +99,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
     definition_timestamp: Optional[frozenset[PluginScope]] = None
     definition_center: Optional[frozenset[PluginScope]] = None
 
-    ingress_defined_perimeters: dict[str, BasePerimeter] = {}
+    ingress_defined_perimeters: dict[str, BasePerimeter] = Field(default_factory=dict)
 
     lazy_dev_mode: bool = Field(
         False,
@@ -104,19 +107,17 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
         "Currently changes the name of the inspection if there is an exception during analysis",
     )
 
-    _experiment_data_defined: bool = False
-    _trial_id_to_trial_class_name: dict[Label, str] = {}
-    _common_trial_keyword_arguments: dict[str, Any] = {}
-    _trial_id_to_keyword_arguments: dict[Label, dict[str, Any]] = defaultdict(dict)
-    _trial_class_name_to_keyword_arguments: dict[str, dict] = defaultdict(dict)
+    trial_id_to_trial_class_name: dict[Label, str] = Field(default_factory=dict)
+    common_trial_keyword_arguments: dict[str, Any] = Field(default_factory=dict)
+    trial_id_to_keyword_arguments: dict[Label, dict[str, Any]] = Field(default_factory=defaultdict_dict)
+    trial_class_name_to_keyword_arguments: dict[str, dict[str, Any]] = Field(default_factory=defaultdict_dict)
 
-    _trial_id_to_designator_id: dict[str, str] = {}
-    _designator_id_to_kwargs: dict[str, dict] = defaultdict(dict)
+    trial_id_to_designator_id: dict[str, str] = Field(default_factory=dict)
+    designator_id_to_kwargs: dict[str, dict] = Field(default_factory=defaultdict_dict)
 
-    profile_runtime: ClassVar[bool] = True
     ingress_method: ClassVar[str]
-
-    _coordinate_file_index_delimiter: ClassVar[str] = "."
+    coordinate_file_index_delimiter: ClassVar[str] = "."
+    profile_runtime: ClassVar[bool] = True
 
     @abstractmethod
     def _dataset_reader(self) -> None:
@@ -157,7 +158,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
             and self.project_kit_config["habituation"]
         ):
             experiment = experiment.set_first_trial_to_habituation()
-            self._trial_class_name_to_keyword_arguments[experiment.habituation_trial_class.__name__].update(
+            self.trial_class_name_to_keyword_arguments[experiment.habituation_trial_class.__name__].update(
                 self.project_kit_config["habituation"]
             )
 
@@ -183,41 +184,6 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
             result["trial_class_name_to_keyword_arguments"] = set(trial_class_name_to_keyword_arguments_fields)
 
         return result
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def trial_id_to_trial_class_name(self) -> dict[int, str]:
-        if not self._experiment_data_defined:
-            self.model_post_init()
-        return self._trial_id_to_trial_class_name
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def common_trial_keyword_arguments(self) -> dict[str, Any]:
-        if not self._experiment_data_defined:
-            self.model_post_init()
-        return self._common_trial_keyword_arguments
-
-    @computed_field(return_type=dict)  # type: ignore[misc]
-    @property
-    def trial_id_to_keyword_arguments(self) -> dict:
-        for trial_id in tuple(self._trial_id_to_keyword_arguments):
-            if self._to_skip_trial_id(trial_id):
-                del self._trial_id_to_keyword_arguments[trial_id]
-
-        return dict(self._trial_id_to_keyword_arguments)
-
-    @computed_field(return_type=dict)  # type: ignore[misc]
-    @property
-    def trial_class_name_to_keyword_arguments(self) -> dict:
-        return self._trial_class_name_to_keyword_arguments
-
-    @computed_field(return_type=dict)  # type: ignore[misc]
-    @property
-    def metadata_index_to_trial_id(self) -> dict:
-        if not self._experiment_data_defined:
-            self.model_post_init()
-        return self._metadata_index_to_trial_id
 
     # I/O ============================
     @computed_field  # type: ignore[misc]
@@ -430,7 +396,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
                 if already_exists_prompt.strip().lower() != "y":
                     import sys
 
-                    logger.info("Aborted by user, inspection directory already exists")
+                    print("Aborted by user, inspection directory already exists")
                     sys.exit(0)
 
             shutil.rmtree(result)
@@ -509,22 +475,22 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
 
     # Backend functions =================================
 
-    def model_post_init(self) -> None:
-        self._common_trial_keyword_arguments["project_kit_config"] = self.project_kit_config
+    def model_post_init(self, __context: Any) -> None:
+        self.common_trial_keyword_arguments["project_kit_config"] = self.project_kit_config
 
         if not self.no_cache:
-            self._common_trial_keyword_arguments["analysis_series_cache_directory_path"] = self.cache_directory_path
+            self.common_trial_keyword_arguments["analysis_series_cache_directory_path"] = self.cache_directory_path
 
         for plugin_model in self._global_plugins:
             first_file = next(self.plugin_directory_path.glob(f"{plugin_model.code_key}*"))
-            self._common_trial_keyword_arguments[plugin_model.default_trial_argument_key] = self._define_plugin(
+            self.common_trial_keyword_arguments[plugin_model.default_trial_argument_key] = self._define_plugin(
                 plugin_model, PluginScope.GLOBAL, data_path=first_file
             ).globally_defined
 
         metadata_trial_target_dict = (
-            self._designator_id_to_kwargs
+            self.designator_id_to_kwargs
             if self.metadata_trial_ids_are_higher_level
-            else self._trial_id_to_keyword_arguments
+            else self.trial_id_to_keyword_arguments
         )
 
         for plugin_model in self._plugins_metadata:
@@ -569,17 +535,16 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
         if self.experiment_class().has_stages:
             for trial_class_name, kwargs in self.project_kit_config["trial"].items():
                 assert trial_class_name in self.experiment_class().trial_class_names
-                self._trial_class_name_to_keyword_arguments[trial_class_name] = kwargs
+                self.trial_class_name_to_keyword_arguments[trial_class_name] = kwargs
         else:
-            self._common_trial_keyword_arguments.update(self.project_kit_config["trial"])
+            self.common_trial_keyword_arguments.update(self.project_kit_config["trial"])
 
         if READER_MAP_NAME in self.project_kit_config:
-            self._common_trial_keyword_arguments["manual_reader_kwargs"] = self.project_kit_config[READER_MAP_NAME]
+            self.common_trial_keyword_arguments["manual_reader_kwargs"] = self.project_kit_config[READER_MAP_NAME]
 
         self._dataset_reader()
 
-        self._trial_id_to_keyword_arguments = dict(sorted(self._trial_id_to_keyword_arguments.items()))
-        self._experiment_data_defined = True
+        self.trial_id_to_keyword_arguments = {k: v for k, v in sorted(self.trial_id_to_keyword_arguments.items(), key=lambda kv: kv[0]) if not self._to_skip_trial_id(k)}
 
     def trial_id_exists(self, trial_id: Label) -> bool:
         if trial_id in self.metadata.index:
@@ -587,12 +552,12 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
         if self.metadata_trial_ids_are_higher_level and isinstance(trial_id, str):
             for designator_id in self.metadata.index:
                 if f"{designator_id}_" in trial_id:
-                    self._trial_id_to_designator_id[trial_id] = designator_id
+                    self.trial_id_to_designator_id[trial_id] = designator_id
                     return True
 
         return False
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(repr=False)  # type: ignore[misc]
     @cached_property
     def experiment(self) -> "BaseExperiment":
         additional_kwargs = {}
@@ -610,7 +575,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
             common_trial_keyword_arguments=self.common_trial_keyword_arguments,
             trial_id_to_keyword_arguments=self.trial_id_to_keyword_arguments,
             inspection_fig_output_path=self.inspect_directory_path if self.create_inspection_plots else False,
-            trial_init_error_out_dir=self.result_directory_path,
+            trial_init_error_out_dir=self.project_directory,
         )
 
     # Motion <-> Feature fitting ===================================
@@ -629,7 +594,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
         return copycat_assumes_levels_of_icon(self.metadata, self.experiment.combined_feature_motion_df, "Global")
 
     # Client-side functions ===============================
-    @computed_field  # type: ignore[misc]
+    @computed_field(repr=False)  # type: ignore[misc]
     @cached_property
     def trial_label_to_df(self) -> dict[Label, pd.DataFrame]:
         if self.metadata_trial_ids_are_higher_level:
@@ -651,7 +616,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
 
         return result
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(repr=False)  # type: ignore[misc]
     @cached_property
     def animal_analysis_df(self) -> pd.DataFrame:
         df = pd.concat(
@@ -692,7 +657,6 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
             df.to_parquet(parquet_dir / f"{trial_label}.parquet", **TO_PARQUET_KWARGS)
 
     def create_analysis_videos(self, trial_ids: Iterable[Label], **trial_video_kwargs) -> None:
-        self.model_post_init()
         for trial_id in trial_ids:
             self.experiment.get_trial_object(trial_id).generate_inspection_video(**trial_video_kwargs)
 
@@ -725,7 +689,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
             == "y"
         ):
             for f in to_delete:
-                logger.debug(f"Deleting: {f}")
+                print(f"Deleting: {f}")
                 try:
                     os.remove(f)
                 except FileNotFoundError:
@@ -745,9 +709,9 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
                 from bikipy.ingress.plugin.perimeter.radial_maze import PluginRadial
 
                 return (
-                    self._common_trial_keyword_arguments[PluginRadial.default_trial_argument_key]
+                    self.common_trial_keyword_arguments[PluginRadial.default_trial_argument_key]
                     if PluginScope.GLOBAL in self.definition_radial
-                    else self._trial_id_to_keyword_arguments[trial_id][PluginRadial.default_trial_argument_key]
+                    else self.trial_id_to_keyword_arguments[trial_id][PluginRadial.default_trial_argument_key]
                 ).meters_per_pixel
 
         if PluginScope.TRIALWISE in self.definition_meters_per_pixel:
@@ -764,23 +728,9 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
                 pass
 
         if PluginScope.GLOBAL in self.definition_meters_per_pixel:
-            return self._common_trial_keyword_arguments[PluginMeterPerPixel.default_trial_argument_key]
+            return self.common_trial_keyword_arguments[PluginMeterPerPixel.default_trial_argument_key]
 
         raise AttributeError(f"Could not find meters_per_pixel for trial {trial_id}")
-
-    @computed_field  # type: ignore[misc]
-    @cached_property
-    def metadata_plugin_to_label_to_path(self) -> dict[str, dict[str, FilePath]]:
-        result = defaultdict(dict)
-        for plugin in self._plugins_metadata:
-            for metadata_file in self.plugin_directory_path.glob("*.*"):
-                if issubclass(plugin.plugin_file_stem_parser, PluginFileStemParseLastIsLabel):
-                    stem_info = plugin.plugin_file_stem_parser(metadata_file.stem, plugin_scope.METADATA)
-                    result[plugin.code_key][stem_info.label] = metadata_file
-                else:
-                    raise NotImplementedError
-
-        return dict(result)
 
     # Private methods ===============================
 
@@ -819,7 +769,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
     @validate_call
     def _coordinate_files_in_directory(self, directory_path: DirectoryPath) -> list[FilePath]:
         available_indices = {
-            int(file.stem.split(self._coordinate_file_index_delimiter)[0])
+            int(file.stem.split(self.coordinate_file_index_delimiter)[0])
             for file in directory_path.iterdir()
             if file.is_file()
             and ANALYSIS_CACHE_STEM_ID not in file.stem
@@ -831,7 +781,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
         result = []
         for index in available_indices:
             index_files = [
-                f for f in directory_path.glob(f"{index}{self._coordinate_file_index_delimiter}*") if f.is_file()
+                f for f in directory_path.glob(f"{index}{self.coordinate_file_index_delimiter}*") if f.is_file()
             ]
             if any((current_file := file).stem.endswith("timestamped") for file in index_files):
                 result.append(current_file)

@@ -265,17 +265,19 @@ class HabituationTrialMixin(BaseModel):
 
 
 class BaseExperiment(Behaviour):
+    trial_init_error_out_dir: DirectoryPath = Field(description="Directory to write Trial class init errors")
+
     manual_trial_ids: Optional[tuple] = None
+
     trial_id_to_trial_class_name: Optional[dict] = Field(default_factory=dict)
     trial_id_to_keyword_arguments: Optional[dict] = Field(default_factory=dict)
     trial_class_name_to_keyword_arguments: Optional[dict] = Field(default_factory=dict)
-    trial_id_range_to_keyword_arguments: Optional[RangeDict]
+    trial_id_range_to_keyword_arguments: Optional[RangeDict] = Field(default_factory=RangeDict)
     common_trial_keyword_arguments: Optional[dict] = Field(default_factory=dict)
-    stage: Optional[str] = Field(
-        description="Experiment stage label, if experiment object is in a sequence of experiment objects"
-    )
-    trial_init_error_out_dir: Optional[DirectoryPath] = Field(description="Directory to write Trial class init errors")
 
+    stage: Optional[str] = Field(
+        None, description="Experiment stage label, if experiment object is in a sequence of experiment objects"
+    )
     skip_habituation: bool = Field(
         False, description="Skip the habituation class during analysis, practically skipping the the habituation class"
     )

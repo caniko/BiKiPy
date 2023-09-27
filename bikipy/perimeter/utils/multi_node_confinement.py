@@ -15,8 +15,6 @@ from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.generic import plot_coordinates
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 
-logger = getLogger(__file__)
-
 
 def detect_multi_node_sequential_perimeter_presence(
     coordinate_set: Sequence[NpNDArrayFp64],

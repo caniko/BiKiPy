@@ -1,0 +1,9 @@
+python_version = "3.11.3"
+project_kit_version = "0.4.0"
+config_format = ".toml"
+schema_snapshot = ["jit_init", "heuristics", "enclosure", "runtime_settings", "plugin", "habituation", "perimeter", "ingress", "trial", "reader", "experiment", "field"]
+
+[define_new_kwargs]
+ingress_method = "animal"
+experiment_name = "oul"
+qualia_heuristic = ["BodyProximity", "Olfaction", "WhiskerInteraction"]

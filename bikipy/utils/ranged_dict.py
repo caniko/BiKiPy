@@ -16,7 +16,7 @@ def sort_dict_by_key_value(obj: dict):
     return dict(sorted(obj.items(), key=lambda item: item[0]))
 
 
-class RangeDict(UserDict):
+class RangeDict(UserDict[int, Any]):
     """
     Ranges are generated from left to right from keys as the following [left, right).
     Practically speaking, a key in range will return the key referred to as left.

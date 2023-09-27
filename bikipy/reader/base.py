@@ -49,11 +49,16 @@ class BaseReader(Generic[Enclosure], BikipyHashable, VideoMetadataMixin, ABC):
         description="labels that consist of groups that should have their midpoints computed in the DataFrame"
     )
 
-    model: bool = True
-    model_method: Literal["arima", "median", "spline"] = Field(
+    stat_model: bool = True
+    stat_model_method: Literal["arima", "median", "spline"] = Field(
         "arima", description="Post-hoc filtration method label for improving data accuracy, adapted from DeepLabCut"
     )
-    model_kwargs: dict = Field(default_factory=dict)
+    stat_model_kwargs: dict = Field(default_factory=dict)
+    stat_model_displacement_by_std: Optional[float] = Field(
+        2.0,
+        description="When set the maximum displacement by frame will have an upper "
+        "bound defined by the given scale of the STD",
+    )
 
     required_tail_likelihood: float = Field(
         0.8, description="The pd.DataFrame will be cropped to this combined likelihood score"
@@ -93,12 +98,6 @@ class BaseReader(Generic[Enclosure], BikipyHashable, VideoMetadataMixin, ABC):
         False,
         description="Evaluated when crop_target_trial_length_seconds is not 0. "
         "Will crop from start instead when set to False",
-    )
-
-    model_displacement_by_std: Optional[float] = Field(
-        2.0,
-        description="When set the maximum displacement by frame will have an upper "
-        "bound defined by the given scale of the STD",
     )
 
     export_timestamp_data_as_parquet: bool = Field(
@@ -284,9 +283,9 @@ class BaseReader(Generic[Enclosure], BikipyHashable, VideoMetadataMixin, ABC):
                     )
                 ] = BAD_COORDINATE
 
-        if self.model:
-            logger.debug(f"Filtering {self.df_path.stem} with the {self.model_method} method")
-            result = model_data(result, self.model_method, **self.model_kwargs)
+        if self.stat_model:
+            logger.debug(f"Filtering {self.df_path.stem} with the {self.stat_model_method} method")
+            result = model_data(result, self.stat_model_method, **self.stat_model_kwargs)
 
         if self.crop_frames_slice:
             result = result.iloc[self.crop_frames_slice]
