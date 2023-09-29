@@ -8,13 +8,15 @@ required = ["dataset_directory", "definition_meters_per_pixel", "project_kit_con
 optional = ["create_inspection_plots", "custom_trial_sequence", "definition_center", "definition_change_reference", "definition_enclosure", "definition_frame", "definition_radial", "definition_single_perimeter", "definition_timestamp", "definition_video", "first_stage_is_habituation", "ingress_defined_perimeters", "lazy_dev_mode", "metadata_trial_ids_are_higher_level", "no_cache", "only_one_instance_of_trial_class", "trial_ids_to_analyse", "trial_sequence_loops"]
 
 [ingress.defined]
-dataset_directory = "/home/can/Projects/bikipy/ingress-workflow_examples/animal/Dejana/OUL_R6/OUL_combined2_mextracted"
-definition_meters_per_pixel = ["metadata"]
-definition_single_perimeter = ["trialwise"]
-definition_center = ["metadata"]
-definition_enclosure = ["metadata"]
-definition_timestamp = ["trialwise"]
-definition_video = ["trialwise"]
+dataset_directory = "/data/canD/projects/bikipy/ingress-workflow_examples/animal/Dejana/OUL_R6/OUL_combined2_mextracted"
+
+[ingress.defined.plugin_definitions]
+meters_per_pixel = ["metadata"]
+single_perimeter = ["trialwise"]
+center = ["metadata"]
+enclosure = ["metadata"]
+timestamp = ["trialwise"]
+video = ["trialwise"]
 
 create_inspection_plots = true
 only_one_instance_of_trial_class = false

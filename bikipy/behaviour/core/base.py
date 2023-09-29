@@ -824,3 +824,4 @@ class BaseExperiment(Behaviour):
 
 
 ExperimentCLS = type[BaseExperiment]
+Experiment = TypeVar("Experiment", bound=BaseExperiment)

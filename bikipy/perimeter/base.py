@@ -516,13 +516,6 @@ class PerimeterSet(BasePerimeter):
 
     @computed_field  # type: ignore[misc]
     @property
-    def inspect_image_path(self) -> Path:
-        result = self.all_perimeters[0].inspect_image_path
-        assert all(result == perimeter.inspect_image_path for perimeter in self.all_perimeters)
-        return result
-
-    @computed_field  # type: ignore[misc]
-    @property
     def all_perimeters(self) -> tuple[BaseSinglePerimeter, ...]:
         if not self.restricting_perimeters:
             return tuple(self.perimeters)

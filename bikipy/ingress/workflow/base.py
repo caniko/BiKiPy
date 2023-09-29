@@ -7,12 +7,12 @@ from cProfile import Profile
 from functools import cached_property, partial
 from itertools import chain
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar, Generic
 
 import numpy as np
 import pandas as pd
 from inflection import underscore
-from pydantic import DirectoryPath, Field, FilePath, computed_field, validate_call
+from pydantic import DirectoryPath, Field, FilePath, computed_field, validate_call, BaseModel
 from pydantic_numpy import NpNDArrayFp64
 from schemantic import SchemanticProjectModelMixin
 
@@ -25,8 +25,6 @@ from bikipy._constant import (
 )
 from bikipy.core.base import BikipyModel
 from bikipy.core.typing import Label
-from bikipy.ingress.name_parser import PluginFileStemParseLastIsLabel
-from bikipy.ingress.plugin.core import plugin_scope
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 from bikipy.ingress.plugin.perimeter.constant import LABEL_TO_TRIAL_SHEET_NAME
 from bikipy.ingress.utils.io import (
@@ -41,14 +39,32 @@ from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 from bikipy.utils.misc import sheet_names_from_path
 from bikipy.utils.pandas import copycat_assumes_levels_of_icon
-from bikipy.utils.ranged_dict import RangeDict
+from bikipy.behaviour.core.base import ExperimentCLS, TrialCLS, BaseExperiment
 
 if TYPE_CHECKING:
-    from bikipy.behaviour.core.base import BaseExperiment, ExperimentCLS, TrialCLS
     from bikipy.ingress.plugin.core.base import BasePlugin, PluginType
 
 
 defaultdict_dict = partial(defaultdict, dict)
+
+
+class PluginDefinitions(BaseModel):
+    meters_per_pixel: frozenset[PluginScope]
+    single_perimeter: Optional[frozenset[PluginScope]] = None
+    enclosure: Optional[frozenset[PluginScope]] = None
+    radial: Optional[frozenset[PluginScope]] = None
+    change_reference: Optional[frozenset[PluginScope]] = None
+    frame: Optional[frozenset[PluginScope]] = None
+    video: Optional[frozenset[PluginScope]] = None
+    timestamp: Optional[frozenset[PluginScope]] = None
+    center: Optional[frozenset[PluginScope]] = None
+
+    def __iter__(self):
+        """So `dict(model)` works."""
+        yield from [(k, v) for (k, v) in self.__dict__.items() if v is not None and not k.startswith('_')]
+        extra = self.__pydantic_extra__
+        if extra:
+            yield from extra.items()
 
 
 class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
@@ -89,15 +105,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
 
     no_cache: bool = False
 
-    definition_meters_per_pixel: frozenset[PluginScope]
-    definition_single_perimeter: Optional[frozenset[PluginScope]] = None
-    definition_enclosure: Optional[frozenset[PluginScope]] = None
-    definition_radial: Optional[frozenset[PluginScope]] = None
-    definition_change_reference: Optional[frozenset[PluginScope]] = None
-    definition_frame: Optional[frozenset[PluginScope]] = None
-    definition_video: Optional[frozenset[PluginScope]] = None
-    definition_timestamp: Optional[frozenset[PluginScope]] = None
-    definition_center: Optional[frozenset[PluginScope]] = None
+    plugin_definitions: PluginDefinitions
 
     ingress_defined_perimeters: dict[str, BasePerimeter] = Field(default_factory=dict)
 
@@ -167,8 +175,6 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
 
         return experiment
 
-    @computed_field  # type: ignore[misc]
-    @property
     def ingress_defined_fields(self) -> dict[str, set]:
         result = {
             "common_trial_keyword_arguments": set(self.common_trial_keyword_arguments),
@@ -416,38 +422,15 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
         return result
 
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
-    @computed_field  # type: ignore[misc]
-    @cached_property
-    def _plugin_definitions(self) -> dict[str, frozenset[PluginScope]]:
-        result = {
-            "meters_per_pixel": self.definition_meters_per_pixel,
-            "perimeter": self.definition_single_perimeter,
-            "enclosure": self.definition_enclosure,
-            "radial": self.definition_radial,
-            "change_reference": self.definition_change_reference,
-            "frame": self.definition_frame,
-            "video": self.definition_video,
-            "timestamp": self.definition_timestamp,
-            "center": self.definition_center,
-        }
-
-        to_delete = []
-        for k in result:
-            if not result[k]:
-                to_delete.append(k)
-        for k in to_delete:
-            del result[k]
-
-        return result
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def _global_plugins(self) -> list["PluginType"]:
+    def _global_plugins(self) -> list["BasePlugin"]:
         from bikipy.ingress.plugin.map import ingress_key_to_model
 
         return [
             ingress_key_to_model[ingress_key]
-            for ingress_key, strategy in self._plugin_definitions.items()
+            for ingress_key, strategy in self.plugin_definitions
             if PluginScope.GLOBAL in strategy
         ]
 
@@ -458,7 +441,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
 
         return [
             ingress_key_to_model[ingress_key]
-            for ingress_key, strategy in self._plugin_definitions.items()
+            for ingress_key, strategy in self.plugin_definitions
             if PluginScope.METADATA in strategy
         ]
 
@@ -469,7 +452,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
 
         return [
             ingress_key_to_model[ingress_key]
-            for ingress_key, strategy in self._plugin_definitions.items()
+            for ingress_key, strategy in self.plugin_definitions
             if PluginScope.TRIALWISE in strategy
         ]
 
@@ -559,7 +542,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
 
     @computed_field(repr=False)  # type: ignore[misc]
     @cached_property
-    def experiment(self) -> "BaseExperiment":
+    def experiment(self) -> BaseExperiment:
         additional_kwargs = {}
 
         if self.experiment_class().has_stages:
