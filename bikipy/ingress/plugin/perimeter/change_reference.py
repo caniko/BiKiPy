@@ -83,7 +83,7 @@ class PluginChangeReference(BasePluginFile, IngressRequiredMixin):
 
         return result
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(repr=False)  # type: ignore[misc]
     @property
     def globally_defined(self) -> BasePerimeter:
         self._assert_correct_scope_global()

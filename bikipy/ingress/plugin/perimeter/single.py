@@ -72,7 +72,7 @@ class PluginSinglePerimeter(AbstractPerimeterPlugin):
             return next(iter(result.values()))
         return result
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(repr=False)  # type: ignore[misc]
     @property
     def globally_defined(self) -> dict[str, BaseSinglePerimeter]:
         self._assert_correct_scope_global()

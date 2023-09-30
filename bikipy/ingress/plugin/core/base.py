@@ -53,7 +53,7 @@ class BasePlugin(BikipyModel, SchemanticProjectModelMixin, ABC):
         try:
             return self.plugin_file_stem_parser(self.data_path.stem, self.plugin_scope)
         except Exception as e:
-            msg = f"There are issues with plugin on {self.data_path}"
+            msg = f"Stem parsing with {self.__class__.__name__}; data path: {self.data_path}"
             raise ValueError(msg) from e
 
     @staticmethod

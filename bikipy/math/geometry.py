@@ -16,13 +16,13 @@ if TYPE_CHECKING:
     from bikipy.perimeter.base import BasePerimeter
 
 
-def normalize_hypotenuse_to_origin(hypotenuse_start: NpNDArrayFp64, hypotenuse_end: NpNDArrayFp64):
-    return np.abs(hypotenuse_end - hypotenuse_start)
+def normalize_hypotenuse_to_origin(hypotenuse_start: NpNDArrayFp64, hypotenuse_end: NpNDArrayFp64) -> NpNDArrayFp64:
+    return np.abs(hypotenuse_end - hypotenuse_start).astype(float)
 
 
 @validate_call
 def cathetus_from_similar_triangle_with_hypotenuse_points_from_original_triangle_and_length_of_the_target_triangle(
-    cathetus_a: NpNDArrayFp64, cathetus_b: NpNDArrayFp64, similar_hypotenuse_length: float, inspect: bool = False
+    cathetus_a: float, cathetus_b: float, similar_hypotenuse_length: float, inspect: bool = False
 ):
     """
     We utilize the diagonal of rectangle to derive the components of the two axes on the 2D image.

@@ -11,7 +11,7 @@ class PluginEnclosure(AbstractPerimeterPlugin):
     default_trial_argument_key = "label_to_perimeter"
     human_readable_index = "BasePerimeter"
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(repr=False)  # type: ignore[misc]
     @property
     def globally_defined(self) -> dict[str, BaseSinglePerimeter]:
         self._assert_correct_scope_global()

@@ -23,7 +23,7 @@ class PluginCenter(BasePluginFile):
         self._assert_correct_scope_trialwise_metadata()
         return self.only_center
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(repr=False)  # type: ignore[misc]
     @property
     def globally_defined(self) -> NpNDArrayFp64:
         self._assert_correct_scope_global()

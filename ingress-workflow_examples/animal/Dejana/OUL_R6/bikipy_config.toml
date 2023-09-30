@@ -19,7 +19,6 @@ custom_trial_sequence = ["training", "training", "training", "update", "test"]
 meters_per_pixel = ["metadata"]
 single_perimeter = ["trialwise"]
 center = ["metadata"]
-enclosure = ["metadata"]
 timestamp = ["trialwise"]
 video = ["trialwise"]
 

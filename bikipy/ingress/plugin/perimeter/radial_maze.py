@@ -126,7 +126,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
         self._assert_correct_scope_trialwise_metadata()
         return self.grouped_radial_maze_perimeters
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(repr=False)  # type: ignore[misc]
     @property
     def globally_defined(self) -> dict[str, tuple[BaseSinglePerimeter, ...]]:
         self._assert_correct_scope_global()
