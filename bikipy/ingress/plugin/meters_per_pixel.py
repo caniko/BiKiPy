@@ -77,8 +77,3 @@ def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath)
         (mpp := PluginMeterPerPixel(data_path=meters_per_pixel_file_path)).stem_info.label or i: mpp.ratio
         for i, meters_per_pixel_file_path in enumerate(perimeter_dir.glob("meters_per_pixel-*.csv"))
     }
-
-
-@lru_cache
-def first_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath):
-    return get_first_value_in_dict(detect_meters_per_pixel_in_perimeter_directory(perimeter_dir))

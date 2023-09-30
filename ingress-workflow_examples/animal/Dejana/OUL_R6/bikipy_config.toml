@@ -9,6 +9,11 @@ optional = ["create_inspection_plots", "custom_trial_sequence", "definition_cent
 
 [ingress.defined]
 dataset_directory = "/data/canD/projects/bikipy/ingress-workflow_examples/animal/Dejana/OUL_R6/OUL_combined2_mextracted"
+create_inspection_plots = true
+only_one_instance_of_trial_class = false
+lazy_dev_mode = true
+custom_trial_sequence = ["training", "training", "training", "update", "test"]
+#trial_ids_to_analyse = [""]
 
 [ingress.defined.plugin_definitions]
 meters_per_pixel = ["metadata"]
@@ -17,12 +22,6 @@ center = ["metadata"]
 enclosure = ["metadata"]
 timestamp = ["trialwise"]
 video = ["trialwise"]
-
-create_inspection_plots = true
-only_one_instance_of_trial_class = false
-lazy_dev_mode = true
-custom_trial_sequence = ["training", "training", "training", "update", "test"]
-#trial_ids_to_analyse = [""]
 
 [experiment]
 optional = ["fps", "frame", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_trial_ids", "manual_video", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "skip_habituation", "stage", "trial_init_error_out_dir", "video_path"]

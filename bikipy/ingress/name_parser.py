@@ -1,7 +1,11 @@
+import re
 from abc import ABC, abstractmethod
 from collections import deque
 
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
+
+
+integer_finder = re.compile(r'^\d+')
 
 
 class PluginFileStemParser(ABC):
