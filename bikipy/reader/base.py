@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import abc, defaultdict
 from functools import cached_property
 from logging import getLogger
-from typing import Generic, Hashable, Iterable, Optional, TypeVar
+from typing import Generic, Hashable, Iterable, Optional, TypeVar, Any
 
 import matplotlib
 import numpy as np
@@ -33,18 +33,16 @@ BAD_COORDINATE = (np.nan, np.nan, 0.0)  # x, y, likelihood
 
 logger = getLogger(__name__)
 
-Enclosure = TypeVar("Enclosure", bound=BasePerimeter)
 
-
-class BaseReader(Generic[Enclosure], BikipyHashable, VideoMetadataMixin, ABC):
+class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     df_path: FilePath = Field(description="Path to kinematic data, that will be " "converted to pd.DataFrame")
     df_read_kwargs: Optional[dict] = Field(
         default_factory=dict, description="Keyword arguments to pass to the padnas dataframe reader"
     )
     object_tracking_label_for_kinematics: str = Field(
-        ..., description="Label of the node that will be used to track general animal movement"
+        description="Label of the node that will be used to track general animal movement"
     )
-    trial_enclosure: Optional[Enclosure] = enclosure_field
+    trial_enclosure: Optional[BasePerimeter] = enclosure_field
     midpoint_groups: Optional[dict[str, tuple]] = Field(
         description="labels that consist of groups that should have their midpoints computed in the DataFrame"
     )
@@ -112,7 +110,7 @@ class BaseReader(Generic[Enclosure], BikipyHashable, VideoMetadataMixin, ABC):
     )
 
     # TODO: Convert back to private
-    post_read_midpoints: set = set()
+    post_read_midpoints: set = Field(default_factory=set)
 
     def __getitem__(self, query: Iterable[Hashable] | Hashable) -> pd.DataFrame:
         if not isinstance(query, str) and isinstance(query, abc.Iterable):

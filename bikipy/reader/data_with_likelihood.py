@@ -2,14 +2,14 @@ import os
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Generic, Hashable, Iterable, Optional
+from typing import Hashable, Iterable, Optional
 
 import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath, computed_field
 from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
 
-from bikipy.reader.base import BaseReader, Enclosure
+from bikipy.reader.base import BaseReader
 from bikipy.reader.utils import compute_midpoint_label
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 
@@ -27,7 +27,7 @@ CROPPING_PARAMETERS_BASE = {"x1": None, "x2": None, "y1": None, "y2": None}
 logger = getLogger(__name__)
 
 
-class DataWithLikelihoodReader(BaseReader[Enclosure], Generic[Enclosure]):
+class DataWithLikelihoodReader(BaseReader):
     """
     Class that stores information about a given experiment conducted with DeepLabCut
     """
@@ -81,7 +81,7 @@ class DataWithLikelihoodReader(BaseReader[Enclosure], Generic[Enclosure]):
         return self.df.shape[0]
 
 
-class DeepLabCutReader(DataWithLikelihoodReader[Enclosure], Generic[Enclosure]):
+class DeepLabCutReader(DataWithLikelihoodReader):
     def _read_hdf(self, path: FilePath) -> pd.DataFrame:
         df = pd.read_hdf(path)
         df.columns = df.columns.droplevel()

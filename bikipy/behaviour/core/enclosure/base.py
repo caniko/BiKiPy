@@ -38,7 +38,12 @@ class EnclosedTrial(BaseTrial):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def enclosure(self) -> BasePerimeter:
+    def enclosure(self) -> BasePerimeter | None:
+        """
+        Will be defined as trial_enclosure in `reader` when passed onto reader from self._reader_kwargs
+
+        :return:
+        """
         enclosures = []
         for name in self.enclosure_perimeter_object_attribute_names:
             try:
@@ -53,11 +58,10 @@ class EnclosedTrial(BaseTrial):
             enclosures.append(self.manual_enclosure)
 
         if not enclosures:
-            msg = "No enclosure defined for EnclosureTrial"
-            AttributeError(msg)
+            return
 
         if len(enclosures) == 1:
-            return enclosures[0]
+            return enclosures.pop()
 
         return PerimeterSet(perimeters=enclosures)
 
