@@ -12,7 +12,14 @@ from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 import numpy as np
 import pandas as pd
 from inflection import underscore
-from pydantic import DirectoryPath, Field, FilePath, computed_field, validate_call, BaseModel
+from pydantic import (
+    BaseModel,
+    DirectoryPath,
+    Field,
+    FilePath,
+    computed_field,
+    validate_call,
+)
 from pydantic_numpy import NpNDArrayFp64
 from schemantic import SchemanticProjectModelMixin
 
@@ -690,31 +697,31 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
             detect_meters_per_pixel_in_perimeter_directory,
         )
 
-        if PluginScope.OTHER in self.definition_meters_per_pixel:
-            if self.definition_radial:
+        if PluginScope.OTHER in self.plugin_definitions.meters_per_pixel:
+            if self.plugin_definitions.radial:
                 # Radial defines the meters per pixel on the respective PerimeterSet
                 from bikipy.ingress.plugin.perimeter.radial_maze import PluginRadial
 
                 return (
                     self.common_trial_keyword_arguments[PluginRadial.default_trial_argument_key]
-                    if PluginScope.GLOBAL in self.definition_radial
+                    if PluginScope.GLOBAL in self.plugin_definitions.radial
                     else self.trial_id_to_keyword_arguments[trial_id][PluginRadial.default_trial_argument_key]
                 ).meters_per_pixel
 
-        if PluginScope.TRIALWISE in self.definition_meters_per_pixel:
+        if PluginScope.TRIALWISE in self.plugin_definitions.meters_per_pixel:
             try:
                 return self.trial_id_to_keyword_arguments[trial_id][PluginMeterPerPixel.default_trial_argument_key]
             except KeyError:
                 pass
 
-        if PluginScope.METADATA in self.definition_meters_per_pixel:
+        if PluginScope.METADATA in self.plugin_definitions.meters_per_pixel:
             try:
                 file_label = self.metadata[PluginMeterPerPixel.human_readable_index][trial_id]
                 return detect_meters_per_pixel_in_perimeter_directory(self.plugin_directory_path)[file_label]
             except KeyError:
                 pass
 
-        if PluginScope.GLOBAL in self.definition_meters_per_pixel:
+        if PluginScope.GLOBAL in self.plugin_definitions.meters_per_pixel:
             return self.common_trial_keyword_arguments[PluginMeterPerPixel.default_trial_argument_key]
 
         raise AttributeError(f"Could not find meters_per_pixel for trial {trial_id}")
@@ -723,8 +730,8 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
 
     def _define_plugin(self, plugin_model: "PluginType", plugin_scope: PluginScope, **field_kwargs) -> "BasePlugin":
         additional_field_args = {}
-        if "plugin" in self.project_kit_config and plugin_model.__name__ in self.project_kit_config["plugin"]:
-            additional_field_args.update(self.project_kit_config["plugin"][plugin_model.__name__])
+        if plugin_model.__name__ in self.project_kit_config:
+            additional_field_args.update(self.project_kit_config[plugin_model.__name__])
 
         return plugin_model(plugin_scope=plugin_scope, ingress=self, **additional_field_args, **field_kwargs)
 

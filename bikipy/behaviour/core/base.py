@@ -751,9 +751,9 @@ class BaseExperiment(Behaviour):
         if "manual_video" in result:
             result.update(
                 VideoMetadata.join(
-                    VideoMetadata.join(result.pop("manual_video"), VideoMetadata(**result), ignore_incongruity=True),
+                    result.pop("manual_video"),
                     self.video,
-                    ignore_incongruity=True,
+                    ignore_incongruity=True
                     # TODO: Replace after computed_field exclude method added to model_dump
                 ).metadata
             )

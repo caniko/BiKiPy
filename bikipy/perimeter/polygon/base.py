@@ -32,7 +32,7 @@ logger = getLogger(__name__)
 
 class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
     vertices_in_pixels: NpNDArrayFp64
-    derived_meters_per_pixel_source: Optional[Literal["side"]]
+    derived_meters_per_pixel_source: Optional[Literal["side"]] = None
 
     polygon_order: ClassVar[Optional[int]]
 

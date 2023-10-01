@@ -146,7 +146,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         description="Derive meters per pixel from perimeter. The ratio is derived from source defined in "
         "meters_per_pixel_from_perimeter_source",
     )
-    derived_meters_per_pixel_source: Optional[str]
+    derived_meters_per_pixel_source: Optional[str] = None
     derived_meters_per_pixel_source_metric_length: Optional[float] = Field(
         None,
         description="Metric length of the pre-determined component, see derived pixels per pixel from perimeter in "
@@ -356,7 +356,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 # TODO: Variadic generic
 class PerimeterSet(BasePerimeter):
     perimeters: list[BaseSinglePerimeter]
-    restricting_perimeters: Optional[list[BaseSinglePerimeter]]
+    restricting_perimeters: Optional[list[BaseSinglePerimeter]] = None
 
     @classmethod
     @property

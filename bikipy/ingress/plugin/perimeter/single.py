@@ -25,7 +25,7 @@ logger = getLogger(__name__)
 
 class SinglePerimeterPluginFileStemParse(PluginFileStemParseLastIsLabel):
     def __pop_split_till_empty__(self) -> None:
-        self.shape = self.split.pop().lower()
+        self.shape = self.split.popleft().lower()
         assert self.shape in MAKESENSE_SHAPES, f"{self.shape} is invalid; must be: {', '.join(MAKESENSE_SHAPES)}"
 
         super().__pop_split_till_empty__()
@@ -56,7 +56,7 @@ class PluginSinglePerimeter(AbstractPerimeterPlugin):
         result = {}
         for label, perimeter in self.perimeter_mapper(trial_id).items():
             if (
-                PluginScope.METADATA in self.ingress.definition_single_perimeter
+                PluginScope.METADATA in self.ingress.plugin_definitions.perimeter
                 and LABEL_TO_TRIAL_SHEET_NAME in self.ingress.metadata_sheet_names
             ):
                 label = self.ingress.metadata_perimeter_label_sheet.loc[trial_id, label]

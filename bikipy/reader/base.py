@@ -357,10 +357,8 @@ class BaseReader(Generic[Enclosure], BikipyHashable, VideoMetadataMixin, ABC):
             return None
 
         result = self.raw_df.index.values
-        if self.crop_frames_slice:
-            result = result.iloc[self.crop_frames_slice]
 
-        return result
+        return result[self.crop_frames_slice] if self.crop_frames_slice else result
 
     @computed_field  # type: ignore[misc]
     @cached_property
