@@ -31,7 +31,7 @@ class TestPluginBonsaiTimestamp(unittest.TestCase, PluginTestMixin):
             ingress_key=self.ingress_key,
             code_key=self.code_key,
             default_trial_argument_key=self.default_trial_argument_key,
-            human_readable_index=self.human_readable_index
+            human_readable_index=self.human_readable_index,
         )
 
     def test_read(self):
@@ -53,7 +53,7 @@ class TestPluginCenter(unittest.TestCase):
             ingress_key=self.ingress_key,
             code_key=self.code_key,
             default_trial_argument_key=self.default_trial_argument_key,
-            human_readable_index=self.human_readable_index
+            human_readable_index=self.human_readable_index,
         )
 
     def test_initialization(self):
@@ -79,7 +79,7 @@ class TestPluginMeterPerPixel(unittest.TestCase):
             ingress_key=self.ingress_key,
             code_key=self.code_key,
             default_trial_argument_key=self.default_trial_argument_key,
-            human_readable_index=self.human_readable_index
+            human_readable_index=self.human_readable_index,
         )
 
     def test_initialization(self):
@@ -104,7 +104,7 @@ class TestPluginVideo(unittest.TestCase):
             ingress_key=self.ingress_key,
             code_key=self.code_key,
             default_trial_argument_key=self.default_trial_argument_key,
-            human_readable_index=self.human_readable_index
+            human_readable_index=self.human_readable_index,
         )
 
     def test_initialization(self):

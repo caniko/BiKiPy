@@ -1,4 +1,4 @@
-from typing import ClassVar, Optional, TypeVar
+from typing import ClassVar, Optional
 
 from pydantic import BaseModel, NonNegativeInt, computed_field
 from schemantic import SchemanticProjectModelMixin

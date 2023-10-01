@@ -4,7 +4,7 @@ from functools import cached_property, lru_cache
 from logging import getLogger
 from operator import attrgetter
 from time import sleep
-from typing import Any, ClassVar, Hashable, Iterable, Literal, Optional, Type, TypeVar
+from typing import Any, ClassVar, Hashable, Iterable, Literal, Optional, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -20,7 +20,7 @@ from yaspin.spinners import Spinners
 
 from bikipy import runtime_settings
 from bikipy._constant import BIKIPY_ANALYSIS_VIDEO_PREFIX
-from bikipy._dev_utils.fields import enclosure_field, timestamp_index_field
+from bikipy._dev_utils.fields import timestamp_index_field
 from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.core.base import BikipyHashable
 from bikipy.core.mixin import AbstractFeatureCollectorMixin, InspectPlotMixin
@@ -29,12 +29,7 @@ from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_analysis_indexer
 from bikipy.feature.qualia.physical_object.trial_mixin import PhysicalObjectTrialMixin
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
-from bikipy.perimeter.base import (
-    BasePerimeter,
-    BaseSinglePerimeter,
-    PerimeterCLS,
-    PerimeterSet,
-)
+from bikipy.perimeter.base import BaseSinglePerimeter, PerimeterCLS, PerimeterSet
 from bikipy.perimeter.trial_mixin import TrialWithPerimeterMixin
 from bikipy.reader import READER_CLASS_LABEL_TO_CLASS
 from bikipy.reader.base import BaseReader, ReaderCLS
@@ -759,10 +754,12 @@ class BaseExperiment(Behaviour):
                     VideoMetadata.join(result.pop("manual_video"), VideoMetadata(**result), ignore_incongruity=True),
                     self.video,
                     ignore_incongruity=True,
-                ).model_dump(exclude_unset=True)
+                    # TODO: Replace after computed_field exclude method added to model_dump
+                ).metadata
             )
         else:
-            result.update(self.video.model_dump(exclude_unset=True))
+            # TODO: Replace after computed_field exclude method added to model_dump
+            result.update(self.video.metadata)
 
         return result
 

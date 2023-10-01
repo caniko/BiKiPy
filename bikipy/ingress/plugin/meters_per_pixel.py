@@ -9,7 +9,6 @@ from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParser
 from bikipy.ingress.plugin.core.base import BasePluginFile
 from bikipy.math.geometry import meter_per_pixel_from_diagonal
-from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.makesense import read_first_makesense_line
 
 logger = getLogger(__file__)

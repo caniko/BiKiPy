@@ -53,24 +53,24 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
                         plugin_model.default_trial_argument_key or data_object.default_trial_argument_key
                     ] = data_object
 
-                if self.experiment_class().has_stages:
-                    self._trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(
+                if self.experiment_class.has_stages:
+                    self.trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(
                         stage_index
                     ).__name__
 
-                self._trial_id_to_keyword_arguments[trial_id] = {
+                self.trial_id_to_keyword_arguments[trial_id] = {
                     "label": trial_id,
                     "animal_id": animal_id,
                     "framewise_coordinates_path": framewise_coordinates_path,
                     "analysis_series_cache_file_path": self.cache_directory_path
                     / analysis_cache_file_name_from_trial_id(trial_id),
-                    **self.trialwise_plugins_for_trial_id(trial_id, animal_dir),
-                    **self._trial_id_to_keyword_arguments[trial_id],
+                    **self.trialwise_plugins_for_trial_id(stage_index, animal_dir),
+                    **self.trial_id_to_keyword_arguments[trial_id],
                     **plugin_data,
                 }
 
             if self.only_one_instance_of_trial_class:
                 break
 
-    def trialwise_plugins_for_trial_id(self, trial_id: Label, trial_directory: DirectoryPath):
-        return self._trialwise_plugins_for_trial_id(trial_id, trial_directory, "{trial_id}.{plugin_code_key}*")
+    def trialwise_plugins_for_trial_id(self, stage: Label, trial_directory: DirectoryPath):
+        return self._trialwise_plugins_for_trial_id(stage, trial_directory, "{trial_id}.{plugin_code_key}*")

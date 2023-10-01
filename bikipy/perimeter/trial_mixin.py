@@ -28,8 +28,8 @@ class TrialWithPerimeterMixin(Generic[Perimeter, *PerimeterInstances], BikipyMod
         "Rectangle: diagonal\n"
         "Circle: diameter, radius\n",
     )
-    length_meters_of_meters_per_pixel_source: Optional[float]
-    manual_perimeter_to_derive_meters_per_pixel: Optional[str]
+    length_meters_of_meters_per_pixel_source: Optional[float] = None
+    manual_perimeter_to_derive_meters_per_pixel: Optional[str] = None
 
     @property
     @abstractmethod

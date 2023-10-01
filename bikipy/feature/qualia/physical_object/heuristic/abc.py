@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import ClassVar, Optional, Type, TypeVar
+from typing import ClassVar, Optional, TypeVar
 
 import matplotlib.pyplot as plt
 import pandas as pd

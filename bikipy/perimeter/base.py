@@ -3,7 +3,7 @@ from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar, Literal, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Literal, Optional, TypeVar
 
 import numpy as np
 import pandas as pd

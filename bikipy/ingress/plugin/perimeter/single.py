@@ -12,6 +12,7 @@ from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 from bikipy.ingress.plugin.perimeter.base import AbstractPerimeterPlugin
 from bikipy.ingress.plugin.perimeter.constant import LABEL_TO_TRIAL_SHEET_NAME
 from bikipy.perimeter.base import BaseSinglePerimeter, perimeter_set_from_makesense
+from bikipy.perimeter.utils.constant import MAKESENSE_SHAPES
 from bikipy.utils.collection_utils import get_first_key_in_dict
 from bikipy.utils.image import axis_frame_imshow, read_image_from_path
 from bikipy.utils.makesense import (
@@ -24,8 +25,10 @@ logger = getLogger(__name__)
 
 class SinglePerimeterPluginFileStemParse(PluginFileStemParseLastIsLabel):
     def __pop_split_till_empty__(self) -> None:
+        self.shape = self.split.pop().lower()
+        assert self.shape in MAKESENSE_SHAPES, f"{self.shape} is invalid; must be: {', '.join(MAKESENSE_SHAPES)}"
+
         super().__pop_split_till_empty__()
-        self.shape = self.split.pop()
 
 
 # TODO: Manual radius readings from settings.yaml read.

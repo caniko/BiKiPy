@@ -1,6 +1,6 @@
 from functools import cached_property
 
-from pydantic import DirectoryPath, FilePath, computed_field, validate_call
+from pydantic import computed_field
 from pydantic_numpy import NpNDArrayFp64
 
 from bikipy.core.typing import Label

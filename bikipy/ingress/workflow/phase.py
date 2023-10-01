@@ -28,30 +28,30 @@ class PhaseIngressWorkflow(BaseIngressWorkflow):
                 if self._to_skip_trial_id(trial_id):
                     continue
 
-                if self.experiment_class().has_stages:
+                if self.experiment_class.has_stages:
                     stage_index = self.metadata.loc[trial_id, "Stage"]
                     class_name = self._trial_class_from_stage_index(stage_index).__name__
-                    self._trial_id_to_trial_class_name[trial_id] = class_name
+                    self.trial_id_to_trial_class_name[trial_id] = class_name
 
                 trial_number = int(trial_id.split("_")[1])
 
-                self._trial_id_to_keyword_arguments[trial_id] = {
+                self.trial_id_to_keyword_arguments[trial_id] = {
                     "label": trial_id,
                     "animal_id": self.metadata.loc[trial_id, "Animal"],
                     "framewise_coordinates_path": framewise_coordinates_path,
                     **self.trialwise_plugins_for_trial_id(trial_number, phase_dir),
-                    **self._trial_id_to_keyword_arguments[trial_id],
+                    **self.trial_id_to_keyword_arguments[trial_id],
                 }
 
                 if self.only_one_instance_of_trial_class:
                     observed_classes_to_trial_id[class_name] = trial_id
                     if (
-                        not self.experiment_class().has_stages
-                        or frozenset(observed_classes_to_trial_id) == self.experiment_class().trial_classes
+                        not self.experiment_class.has_stages
+                        or frozenset(observed_classes_to_trial_id) == self.experiment_class.trial_classes
                     ):
-                        for trial_id in tuple(self._trial_id_to_keyword_arguments):
+                        for trial_id in tuple(self.trial_id_to_keyword_arguments):
                             if trial_id not in observed_classes_to_trial_id.values():
-                                del self._trial_id_to_keyword_arguments[trial_id]
+                                del self.trial_id_to_keyword_arguments[trial_id]
                         return
 
     def trialwise_plugins_for_trial_id(self, trial_id: Label, trial_directory: DirectoryPath):

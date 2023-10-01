@@ -5,20 +5,20 @@ import pandas as pd
 from pydantic import BaseModel, Field, computed_field
 from pydantic_numpy.typing import NpNDArrayFp64
 
-from bikipy.core.base import BikipyModel
+from bikipy.core.base import BikipyConfigModel
 from bikipy.ingress.workflow.base import BaseIngressWorkflow
 from bikipy.utils.makesense import get_only_point_from_makesense
 
 
 class IngressRequiredMixin(BaseModel):
     ingress: BaseIngressWorkflow = Field(
-        ..., description="Bikipy ingress object to access project metadata relevant for defining perimeter"
+        description="Bikipy ingress object to access project metadata relevant for defining perimeter"
     )
 
 
-class HasReferenceMixin(BikipyModel):
+class HasReferenceMixin(BikipyConfigModel):
     manual_reference: Optional[NpNDArrayFp64] = Field(
-        description="Override the perimeter detection with values defined outside model"
+        None, description="Override the perimeter detection with values defined outside model"
     )
 
     @computed_field  # type: ignore[misc]

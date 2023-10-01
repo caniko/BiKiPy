@@ -1,6 +1,6 @@
 from functools import cached_property
 from logging import getLogger
-from typing import Type, TypeVar
+from typing import TypeVar
 
 import numpy as np
 import pandas as pd

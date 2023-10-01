@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import abc, defaultdict
 from functools import cached_property
 from logging import getLogger
-from typing import Generic, Hashable, Iterable, Optional, Type, TypeVar
+from typing import Generic, Hashable, Iterable, Optional, TypeVar
 
 import matplotlib
 import numpy as np

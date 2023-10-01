@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Optional, Type, TypeVar
+from typing import Optional, TypeVar
 
 import numpy as np
 from matplotlib.axes import Axes

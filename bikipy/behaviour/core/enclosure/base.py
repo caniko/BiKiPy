@@ -10,7 +10,6 @@ from bikipy._dev_utils.fields import enclosure_field
 from bikipy._dev_utils.message import report_to_github
 from bikipy.behaviour.core.base import BaseExperiment, BaseTrial, HabituationTrialMixin
 from bikipy.perimeter.base import BasePerimeter, PerimeterCLS, PerimeterSet
-from bikipy.reader.base import ReaderCLS
 
 
 class EnclosedTrial(BaseTrial):

@@ -1,29 +1,29 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Any, ClassVar, Optional, Type, TypeVar
+from typing import Any, ClassVar, Optional
 
 from pydantic import DirectoryPath, FilePath, computed_field
 from schemantic import SchemanticProjectModelMixin
 
-from bikipy.core.base import BikipyModel
+from bikipy.core.base import BikipyConfigModel
 from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParser
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 
 
-class BasePlugin(BikipyModel, SchemanticProjectModelMixin, ABC):
+class BasePlugin(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
     plugin_scope: Optional[PluginScope] = None
     manual_trial_argument_key: Optional[str] = None
 
     plugin_file_stem_parser: ClassVar[type[PluginFileStemParser]] = PluginFileStemParser
 
-    required: ClassVar[bool] = False
-    plural_entries: ClassVar[bool] = False
-
     ingress_key: ClassVar[str]
     code_key: ClassVar[str]
     default_trial_argument_key: ClassVar[str]
     human_readable_index: ClassVar[str]
+
+    required: ClassVar[bool] = False
+    plural_entries: ClassVar[bool] = False
 
     @abstractmethod
     def trialwise_and_metadata(self, trial_id: Label, naive: bool = False):
@@ -53,8 +53,8 @@ class BasePlugin(BikipyModel, SchemanticProjectModelMixin, ABC):
         try:
             return self.plugin_file_stem_parser(self.data_path.stem, self.plugin_scope)
         except Exception as e:
-            msg = f"Stem parsing with {self.__class__.__name__}; data path: {self.data_path}"
-            raise ValueError(msg) from e
+            print(f"Stem parsing with {self.__class__.__name__}; data path: {self.data_path}")
+            raise e
 
     @staticmethod
     def _parse_plugin_settings(settings_dict: dict) -> dict[str, Any]:

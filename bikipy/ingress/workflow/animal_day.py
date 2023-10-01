@@ -57,18 +57,18 @@ class AnimalDayIngressWorkflow(BaseIngressWorkflow):
 
                     #  TODO: Must implement a versatile way of determining when singular trial_class
                     #        and many trial_classes across all ingress
-                    self._trial_id_to_trial_class_name[trial_id] = self.experiment_class().trial_class
+                    self.trial_id_to_trial_class_name[trial_id] = self.experiment_class.trial_class
 
-                    self._trial_id_to_keyword_arguments[trial_id] = {
+                    self.trial_id_to_keyword_arguments[trial_id] = {
                         "label": trial_id,
                         "animal_id": animal_id,
                         "framewise_coordinates_path": framewise_coordinates_path,
                         **self.trialwise_plugins_for_trial_id(trial_id, animal_dir),
-                        **self._trial_id_to_keyword_arguments[trial_id],
+                        **self.trial_id_to_keyword_arguments[trial_id],
                         **plugin_data,
                     }
                     if self._designator_id_to_kwargs:
-                        self._trial_id_to_keyword_arguments[trial_id].update(
+                        self.trial_id_to_keyword_arguments[trial_id].update(
                             self._designator_id_to_kwargs[self._trial_id_to_designator_id[trial_id]]
                         )
 

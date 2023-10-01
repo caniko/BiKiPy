@@ -66,7 +66,7 @@ class _VideoMetadataBase(BikipyModel):
     def make_sure_frame_is_read(cls, value: Frame) -> NpNDArrayUint8:
         return read_image_from_path(value) if isinstance(value, Path) else value
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def metadata(self) -> dict[str, Any]:
         result = {}
@@ -74,8 +74,14 @@ class _VideoMetadataBase(BikipyModel):
             result["meters_per_pixel"] = self.meters_per_pixel
         if self.recording_resolution is not None:
             result["recording_resolution"] = self.recording_resolution
-        if self.fps:
+        if self.fps is not None:
             result["fps"] = self.fps
+        if self.frame is not None:
+            result["frame"] = self.frame
+        if self.video_path:
+            result["video_path"] = self.video_path
+        if self.minimum_frame_length:
+            result["minimum_frame_length"] = self.minimum_frame_length
         return result
 
     @computed_field  # type: ignore[misc]
@@ -263,10 +269,17 @@ class VideoMetadata(_VideoMetadataBase):
             fy=self.image_resize_multiplier,
             interpolation=cv2.INTER_CUBIC,
         )
+
+        # TODO: Replace after computed_field exclude method added to model_dump
+        metadata = self.metadata
+        metadata["frame"] = new_frame
+        metadata["recording_resolution"] = new_frame.shape[0:2:][::-1]
+
         return self.__class__(
-            **self.model_dump(exclude={"frame", "recording_resolution"}, exclude_unset=True),
-            frame=new_frame,
-            recording_resolution=new_frame.shape[0:2:][::-1],
+            **metadata
+            # **self.model_dump(exclude={"frame", "recording_resolution"}, exclude_unset=True),
+            # frame=new_frame,
+            # recording_resolution=new_frame.shape[0:2:][::-1],
         )
 
     @computed_field  # type: ignore[misc]

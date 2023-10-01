@@ -7,7 +7,7 @@ from cProfile import Profile
 from functools import cached_property, partial
 from itertools import chain
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar, Generic
+from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -23,7 +23,8 @@ from bikipy._constant import (
     BIKIPY_ANALYSIS_VIDEO_PREFIX,
     READER_MAP_NAME,
 )
-from bikipy.core.base import BikipyModel
+from bikipy.behaviour.core.base import BaseExperiment, ExperimentCLS, TrialCLS
+from bikipy.core.base import BikipyConfigModel
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
 from bikipy.ingress.plugin.perimeter.constant import LABEL_TO_TRIAL_SHEET_NAME
@@ -39,7 +40,6 @@ from bikipy.utils.collection_utils import get_first_value_in_dict
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 from bikipy.utils.misc import sheet_names_from_path
 from bikipy.utils.pandas import copycat_assumes_levels_of_icon
-from bikipy.behaviour.core.base import ExperimentCLS, TrialCLS, BaseExperiment
 
 if TYPE_CHECKING:
     from bikipy.ingress.plugin.core.base import BasePlugin, PluginType
@@ -50,7 +50,7 @@ defaultdict_dict = partial(defaultdict, dict)
 
 class PluginDefinitions(BaseModel):
     meters_per_pixel: frozenset[PluginScope]
-    single_perimeter: Optional[frozenset[PluginScope]] = None
+    perimeter: Optional[frozenset[PluginScope]] = None
     enclosure: Optional[frozenset[PluginScope]] = None
     radial: Optional[frozenset[PluginScope]] = None
     change_reference: Optional[frozenset[PluginScope]] = None
@@ -61,13 +61,13 @@ class PluginDefinitions(BaseModel):
 
     def __iter__(self):
         """So `dict(model)` works."""
-        yield from [(k, v) for (k, v) in self.__dict__.items() if v is not None and not k.startswith('_')]
+        yield from [(k, v) for (k, v) in self.__dict__.items() if v is not None and not k.startswith("_")]
         extra = self.__pydantic_extra__
         if extra:
             yield from extra.items()
 
 
-class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
+class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
     """
     This model stores methods to ingest data for bikipy-based analysis. The workflow differs slightly between daughter
     classes. The commonality are the levels in which data is introduced, which is quite similar to the bikipy experiment
@@ -136,6 +136,81 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
         """
         ...
 
+    def model_post_init(self, __context: Any) -> None:
+        self.common_trial_keyword_arguments["project_kit_config"] = self.project_kit_config
+
+        if not self.no_cache:
+            self.common_trial_keyword_arguments["analysis_series_cache_directory_path"] = self.cache_directory_path
+
+        for plugin_model in self._global_plugins:
+            first_file = next(self.plugin_directory_path.glob(f"{plugin_model.code_key}*"))
+            self.common_trial_keyword_arguments[plugin_model.default_trial_argument_key] = self._define_plugin(
+                plugin_model, PluginScope.GLOBAL, data_path=first_file
+            ).globally_defined
+
+        metadata_trial_target_dict = (
+            self.designator_id_to_kwargs
+            if self.metadata_trial_ids_are_higher_level
+            else self.trial_id_to_keyword_arguments
+        )
+
+        for plugin_model in self._plugins_metadata:
+            label_to_file_path = {
+                file_path.stem.split("-")[-1]: file_path
+                for file_path in self.plugin_directory_path.glob(f"{plugin_model.code_key}*")
+            }
+
+            for trial_id, row in self.metadata_plugin_to_correct_sheet(plugin_model).iterrows():
+                if self._to_skip_trial_id(trial_id):
+                    continue
+
+                if plugin_model.human_readable_index in row:
+                    trial_id_plugin_label = row[plugin_model.human_readable_index]
+                    if isinstance(trial_id_plugin_label, float) and np.isnan(trial_id_plugin_label):
+                        continue
+
+                    metadata_trial_target_dict[trial_id][plugin_model.default_trial_argument_key] = self._define_plugin(
+                        plugin_model, PluginScope.METADATA, data_path=label_to_file_path[str(trial_id_plugin_label)]
+                    ).trialwise_and_metadata(trial_id)
+
+                elif plugin_model.plural_entries:
+                    for key, trial_id_plugin_label in row.items():
+                        if isinstance(trial_id_plugin_label, float) and np.isnan(trial_id_plugin_label):
+                            continue
+
+                        if plugin_model.human_readable_index in key:
+                            metadata_trial_target_dict[trial_id][underscore(key)] = self._define_plugin(
+                                plugin_model,
+                                PluginScope.METADATA,
+                                data_path=label_to_file_path[str(trial_id_plugin_label)],
+                                manual_trial_argument_key=underscore(key),
+                                ingress=self,
+                            ).trialwise_and_metadata(trial_id, naive=True)
+
+                else:
+                    msg = (
+                        f"{plugin_model.human_readable_index} is active in the settings, but is missing in the metadata"
+                    )
+                    raise ValueError(msg)
+
+        if self.experiment_class.has_stages:
+            for trial_class_name in self.experiment_class.trial_class_names:
+                assert trial_class_name in self.project_kit_config
+                self.trial_class_name_to_keyword_arguments[trial_class_name] = self.project_kit_config[trial_class_name]
+        else:
+            self.common_trial_keyword_arguments.update(self.project_kit_config["trial"])
+
+        if READER_MAP_NAME in self.project_kit_config:
+            self.common_trial_keyword_arguments["manual_reader_kwargs"] = self.project_kit_config[READER_MAP_NAME]
+
+        self._dataset_reader()
+
+        self.trial_id_to_keyword_arguments = {
+            k: v
+            for k, v in sorted(self.trial_id_to_keyword_arguments.items(), key=lambda kv: kv[0])
+            if not self._to_skip_trial_id(k)
+        }
+
     @classmethod
     @property
     def fields_to_exclude_from_single_schema(cls) -> set[str]:
@@ -180,7 +255,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
             "common_trial_keyword_arguments": set(self.common_trial_keyword_arguments),
             "trial_id_to_keyword_arguments": set(get_first_value_in_dict(self.trial_id_to_keyword_arguments)),
         }
-        if self.experiment_class().has_stages:
+        if self.experiment_class.has_stages:
             trial_class_name_to_keyword_arguments_fields = []
 
             for trial_class_keyword_arguments in self.trial_class_name_to_keyword_arguments.values():
@@ -325,13 +400,13 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
             else:
                 de_indexed_animal_metadata = self.animal_metadata.reset_index()
                 trial_id_df = pd.concat(
-                    [de_indexed_animal_metadata for _ in range(self.experiment_class().trial_sequence_length)], axis=0
+                    [de_indexed_animal_metadata for _ in range(self.experiment_class.trial_sequence_length)], axis=0
                 )
                 trial_id_df.sort_index(inplace=True)
 
                 new_index = []
                 for animal_id in self.animal_metadata.index.values:
-                    for sequence_idx in range(self.experiment_class().trial_sequence_length):
+                    for sequence_idx in range(self.experiment_class.trial_sequence_length):
                         new_index.append(f"{animal_id}_{sequence_idx}")
 
                 trial_id_df.index = new_index
@@ -425,7 +500,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def _global_plugins(self) -> list["BasePlugin"]:
+    def _global_plugins(self) -> list:
         from bikipy.ingress.plugin.map import ingress_key_to_model
 
         return [
@@ -436,7 +511,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
 
     @computed_field(return_type=list)  # type: ignore[misc]
     @cached_property
-    def _plugins_metadata(self) -> list["PluginType"]:
+    def _plugins_metadata(self) -> list:
         from bikipy.ingress.plugin.map import ingress_key_to_model
 
         return [
@@ -447,7 +522,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
 
     @computed_field(return_type=list)  # type: ignore[misc]
     @cached_property
-    def _trialwise_plugins(self) -> list["PluginType"]:
+    def _trialwise_plugins(self) -> list:
         from bikipy.ingress.plugin.map import ingress_key_to_model
 
         return [
@@ -456,78 +531,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
             if PluginScope.TRIALWISE in strategy
         ]
 
-    # Backend functions =================================
-
-    def model_post_init(self, __context: Any) -> None:
-        self.common_trial_keyword_arguments["project_kit_config"] = self.project_kit_config
-
-        if not self.no_cache:
-            self.common_trial_keyword_arguments["analysis_series_cache_directory_path"] = self.cache_directory_path
-
-        for plugin_model in self._global_plugins:
-            first_file = next(self.plugin_directory_path.glob(f"{plugin_model.code_key}*"))
-            self.common_trial_keyword_arguments[plugin_model.default_trial_argument_key] = self._define_plugin(
-                plugin_model, PluginScope.GLOBAL, data_path=first_file
-            ).globally_defined
-
-        metadata_trial_target_dict = (
-            self.designator_id_to_kwargs
-            if self.metadata_trial_ids_are_higher_level
-            else self.trial_id_to_keyword_arguments
-        )
-
-        for plugin_model in self._plugins_metadata:
-            label_to_file_path = {
-                file_path.stem.split("-")[-1]: file_path
-                for file_path in self.plugin_directory_path.glob(f"{plugin_model.code_key}*")
-            }
-
-            for trial_id, row in self.metadata_plugin_to_correct_sheet(plugin_model).iterrows():
-                if self._to_skip_trial_id(trial_id):
-                    continue
-
-                if plugin_model.human_readable_index in row:
-                    trial_id_plugin_label = row[plugin_model.human_readable_index]
-                    if isinstance(trial_id_plugin_label, float) and np.isnan(trial_id_plugin_label):
-                        continue
-
-                    metadata_trial_target_dict[trial_id][plugin_model.default_trial_argument_key] = self._define_plugin(
-                        plugin_model, PluginScope.METADATA, data_path=label_to_file_path[str(trial_id_plugin_label)]
-                    ).trialwise_and_metadata(trial_id)
-
-                elif plugin_model.plural_entries:
-                    for key, trial_id_plugin_label in row.items():
-                        if isinstance(trial_id_plugin_label, float) and np.isnan(trial_id_plugin_label):
-                            continue
-
-                        if plugin_model.human_readable_index in key:
-                            metadata_trial_target_dict[trial_id][underscore(key)] = self._define_plugin(
-                                plugin_model,
-                                PluginScope.METADATA,
-                                data_path=label_to_file_path[str(trial_id_plugin_label)],
-                                manual_trial_argument_key=underscore(key),
-                                ingress=self,
-                            ).trialwise_and_metadata(trial_id, naive=True)
-
-                else:
-                    msg = (
-                        f"{plugin_model.human_readable_index} is active in the settings, but is missing in the metadata"
-                    )
-                    raise ValueError(msg)
-
-        if self.experiment_class().has_stages:
-            for trial_class_name, kwargs in self.project_kit_config["trial"].items():
-                assert trial_class_name in self.experiment_class().trial_class_names
-                self.trial_class_name_to_keyword_arguments[trial_class_name] = kwargs
-        else:
-            self.common_trial_keyword_arguments.update(self.project_kit_config["trial"])
-
-        if READER_MAP_NAME in self.project_kit_config:
-            self.common_trial_keyword_arguments["manual_reader_kwargs"] = self.project_kit_config[READER_MAP_NAME]
-
-        self._dataset_reader()
-
-        self.trial_id_to_keyword_arguments = {k: v for k, v in sorted(self.trial_id_to_keyword_arguments.items(), key=lambda kv: kv[0]) if not self._to_skip_trial_id(k)}
+    # Backend methods =================================
 
     def trial_id_exists(self, trial_id: Label) -> bool:
         if trial_id in self.metadata.index:
@@ -543,22 +547,22 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
     @computed_field(repr=False)  # type: ignore[misc]
     @cached_property
     def experiment(self) -> BaseExperiment:
-        additional_kwargs = {}
+        situational_kwargs = {}
 
-        if self.experiment_class().has_stages:
+        if self.experiment_class.has_stages:
             assert self.trial_id_to_trial_class_name, "Trial ID to trial class map must be defined"
             # assert self.trial_class_name_to_keyword_arguments
 
-            additional_kwargs["trial_id_to_trial_class_name"] = self.trial_id_to_trial_class_name
-            additional_kwargs["trial_class_name_to_keyword_arguments"] = self.trial_class_name_to_keyword_arguments
+            situational_kwargs["trial_id_to_trial_class_name"] = self.trial_id_to_trial_class_name
+            situational_kwargs["trial_class_name_to_keyword_arguments"] = self.trial_class_name_to_keyword_arguments
 
         return self.experiment_class(
-            **self.project_kit_config["experiment"],
-            **additional_kwargs,
-            common_trial_keyword_arguments=self.common_trial_keyword_arguments,
-            trial_id_to_keyword_arguments=self.trial_id_to_keyword_arguments,
             inspection_fig_output_path=self.inspect_directory_path if self.create_inspection_plots else False,
             trial_init_error_out_dir=self.project_directory,
+            **self.project_kit_config["experiment"],
+            **situational_kwargs,
+            common_trial_keyword_arguments=self.common_trial_keyword_arguments,
+            trial_id_to_keyword_arguments=self.trial_id_to_keyword_arguments,
         )
 
     # Motion <-> Feature fitting ===================================
@@ -576,7 +580,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
             return self.metadata
         return copycat_assumes_levels_of_icon(self.metadata, self.experiment.combined_feature_motion_df, "Global")
 
-    # Client-side functions ===============================
+    # Client-side methods ===============================
     @computed_field(repr=False)  # type: ignore[misc]
     @cached_property
     def trial_label_to_df(self) -> dict[Label, pd.DataFrame]:
@@ -608,7 +612,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
         )
         df.columns.names = (
             ["Stage", "Feature", "Location/Category"]
-            if self.experiment_class().has_stages
+            if self.experiment_class.has_stages
             else ["Feature", "Location/Category"]
         )
         df.index.names = ["Animal"]
@@ -725,7 +729,7 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
         return plugin_model(plugin_scope=plugin_scope, ingress=self, **additional_field_args, **field_kwargs)
 
     def _trial_class_from_stage_index(self, stage_index: Label) -> "TrialCLS":
-        return self.experiment_class().stage_index_to_trial_class[stage_index]
+        return self.experiment_class.stage_index_to_trial_class[stage_index]
 
     def _trialwise_plugins_for_trial_id(
         self, trial_id: Label, trial_directory: DirectoryPath, trial_id_plugin_glob_format_string: str
@@ -736,16 +740,16 @@ class BaseIngressWorkflow(BikipyModel, SchemanticProjectModelMixin, ABC):
                 trial_id=trial_id, plugin_code_key=plugin_model.code_key
             )
             plugin_data_files = tuple(trial_directory.glob(glob_str))
+            if not plugin_data_files:
+                continue
+
             if len(plugin_data_files) > 1:
                 msg = f"Plugin {plugin_model.human_readable_index}: Only one file per trial"
                 raise ValueError(msg)
 
-            try:
-                result[plugin_model.default_trial_argument_key] = self._define_plugin(
-                    plugin_model, PluginScope.TRIALWISE, data_path=plugin_data_files[0]
-                ).trialwise_and_metadata(trial_id)
-            except IndexError:
-                pass
+            result[plugin_model.default_trial_argument_key] = self._define_plugin(
+                plugin_model, PluginScope.TRIALWISE, data_path=plugin_data_files[0]
+            ).trialwise_and_metadata(trial_id)
 
         return result
 
