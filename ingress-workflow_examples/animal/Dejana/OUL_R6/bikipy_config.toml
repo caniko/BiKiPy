@@ -13,7 +13,7 @@ create_inspection_plots = true
 only_one_instance_of_trial_class = false
 lazy_dev_mode = true
 custom_trial_sequence = ["training", "training", "training", "update", "test"]
-trial_ids_to_analyse = ["1033_0", "1033_1", "1033_2", "1033_3", "1033_4"]
+#trial_ids_to_analyse = ["1033_0", "1033_1", "1033_2", "1033_3", "1033_4"]
 
 [ingress.defined.plugin_definitions]
 meters_per_pixel = ["metadata"]
@@ -115,7 +115,7 @@ optional = ["manual_reference", "manual_shape", "manual_trial_argument_key"]
 optional = ["compressed_pickle_suffix", "debug", "disable_numba", "disable_process_pooling", "ignore_pre_existing_inspection_directory", "matplotlib_invert_y_axis", "matplotlib_scatter_alpha", "maximum_seconds_distraction", "minimum_seconds_tolerance", "only_physical_cores", "testing"]
 
 [runtime_settings.defined]
-disable_process_pooling = true
+#disable_process_pooling = true
 
 [heuristics.BodyProximityHeuristic]
 class_name = "BodyProximityHeuristic"
