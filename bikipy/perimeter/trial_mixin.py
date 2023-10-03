@@ -41,18 +41,18 @@ class TrialWithPerimeterMixin(Generic[Perimeter, *PerimeterInstances], BikipyMod
     def perimeter_to_derive_meters_per_pixel(self) -> Perimeter:
         if self.manual_perimeter_to_derive_meters_per_pixel:
             try:
-                return self._label_to_perimeter[self.manual_perimeter_to_derive_meters_per_pixel]
+                return self.label_to_perimeter[self.manual_perimeter_to_derive_meters_per_pixel]
             except TypeError:
-                # self._label_to_perimeter is None -> TypeError
+                # self.label_to_perimeter is None -> TypeError
                 msg = (
-                    f"The class, {self.__class__.__name__}, does not define _label_to_perimeter, "
+                    f"The class, {self.__class__.__name__}, does not define label_to_perimeter, "
                     f"which makes the mapping of manual_perimeter_to_derive_meters_per_pixel "
                     f"to a Perimeter object impossible"
                 )
                 raise AttributeError(msg)
 
     def __getitem__(self, item) -> Perimeter:
-        return self._label_to_perimeter[item]
+        return self.label_to_perimeter[item]
 
     def _validate_perimeters_object(self) -> None:
         if not self.perimeters:
@@ -67,7 +67,7 @@ class TrialWithPerimeterMixin(Generic[Perimeter, *PerimeterInstances], BikipyMod
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def _label_to_perimeter(self) -> dict[Label, Perimeter]:
+    def label_to_perimeter(self) -> dict[Label, Perimeter]:
         self._validate_perimeters_object()
         return {perimeter.label: perimeter for perimeter in self.perimeters}
 

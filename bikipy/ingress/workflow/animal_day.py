@@ -46,7 +46,10 @@ class AnimalDayIngressWorkflow(BaseIngressWorkflow):
 
                         try:
                             data_object = self._define_plugin(
-                                plugin_model, PluginScope.TRIALWISE, data_path=plugin_data_files[0]
+                                plugin_model,
+                                PluginScope.TRIALWISE,
+                                data_path=plugin_data_files[0],
+                                **self.get_plugin_config(plugin_model),
                             ).trialwise_and_metadata(trial_id=trial_id)
                         except IndexError:
                             continue

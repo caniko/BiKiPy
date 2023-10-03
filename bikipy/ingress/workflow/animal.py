@@ -15,9 +15,6 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
     ingress_method: ClassVar[str] = "animal"
 
     def _dataset_reader(self) -> None:
-        def define_trial_id():
-            return f"{animal_id}_{stage_index}"
-
         for animal_dir in self.dataset_directory.iterdir():
             if animal_dir.name.startswith(".") or animal_dir.is_file():
                 continue
@@ -27,7 +24,7 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
             for framewise_coordinates_path in self._coordinate_files_in_directory(animal_dir):
                 stage_index = int(self._get_id_from_path_stem(framewise_coordinates_path).split(".")[0])
 
-                trial_id = define_trial_id()
+                trial_id = f"{animal_id}_{stage_index}"
 
                 if self._to_skip_trial_id(trial_id):
                     continue
@@ -44,7 +41,10 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
 
                     try:
                         data_object = self._define_plugin(
-                            plugin_model, PluginScope.TRIALWISE, data_path=plugin_data_files[0]
+                            plugin_model,
+                            PluginScope.TRIALWISE,
+                            data_path=plugin_data_files[0],
+                            **self.get_plugin_config(plugin_model),
                         ).trialwise_and_metadata(trial_id=trial_id)
                     except IndexError:
                         continue
@@ -64,7 +64,7 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
                     "framewise_coordinates_path": framewise_coordinates_path,
                     "analysis_series_cache_file_path": self.cache_directory_path
                     / analysis_cache_file_name_from_trial_id(trial_id),
-                    **self.trialwise_plugins_for_trial_id(stage_index, animal_dir),
+                    **self.trialwise_plugins_for_trial_id(trial_id, animal_dir),
                     **self.trial_id_to_keyword_arguments[trial_id],
                     **plugin_data,
                 }
@@ -72,5 +72,5 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
             if self.only_one_instance_of_trial_class:
                 break
 
-    def trialwise_plugins_for_trial_id(self, stage: Label, trial_directory: DirectoryPath):
-        return self._trialwise_plugins_for_trial_id(stage, trial_directory, "{trial_id}.{plugin_code_key}*")
+    def trialwise_plugins_for_trial_id(self, trial_id: Label, trial_directory: DirectoryPath):
+        return self._trialwise_plugins_for_trial_id(trial_id, trial_directory, "{trial_id}.{plugin_code_key}*")

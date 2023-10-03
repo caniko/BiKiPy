@@ -29,6 +29,7 @@ from bikipy._constant import (
     AUGMENTED_COORDINATE_CACHED_FILE_LABEL,
     BIKIPY_ANALYSIS_VIDEO_PREFIX,
     READER_MAP_NAME,
+    TRIAL_MAP_NAME,
 )
 from bikipy.behaviour.core.base import BaseExperiment, ExperimentCLS, TrialCLS
 from bikipy.core.base import BikipyConfigModel
@@ -177,7 +178,10 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
                         continue
 
                     metadata_trial_target_dict[trial_id][plugin_model.default_trial_argument_key] = self._define_plugin(
-                        plugin_model, PluginScope.METADATA, data_path=label_to_file_path[str(trial_id_plugin_label)]
+                        plugin_model,
+                        PluginScope.METADATA,
+                        data_path=label_to_file_path[str(trial_id_plugin_label)],
+                        **self.get_plugin_config(plugin_model),
                     ).trialwise_and_metadata(trial_id)
 
                 elif plugin_model.plural_entries:
@@ -192,6 +196,7 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
                                 data_path=label_to_file_path[str(trial_id_plugin_label)],
                                 manual_trial_argument_key=underscore(key),
                                 ingress=self,
+                                **self.get_plugin_config(plugin_model),
                             ).trialwise_and_metadata(trial_id, naive=True)
 
                 else:
@@ -202,13 +207,19 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
 
         if self.experiment_class.has_stages:
             for trial_class_name in self.experiment_class.trial_class_names:
-                assert trial_class_name in self.project_kit_config
-                self.trial_class_name_to_keyword_arguments[trial_class_name] = self.project_kit_config[trial_class_name]
+                assert (
+                    trial_class_name in self.project_kit_config[TRIAL_MAP_NAME]
+                ), "Couldn't find trial class name in configuration file under trial"
+                self.trial_class_name_to_keyword_arguments[trial_class_name] = self.project_kit_config[TRIAL_MAP_NAME][
+                    trial_class_name
+                ]
         else:
-            self.common_trial_keyword_arguments.update(self.project_kit_config["trial"])
+            self.common_trial_keyword_arguments.update(self.project_kit_config[TRIAL_MAP_NAME])
 
         if READER_MAP_NAME in self.project_kit_config:
             self.common_trial_keyword_arguments["manual_reader_kwargs"] = self.project_kit_config[READER_MAP_NAME]
+
+        self.common_trial_keyword_arguments["project_kit_config"] = self.project_kit_config
 
         self._dataset_reader()
 
@@ -558,7 +569,6 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
 
         if self.experiment_class.has_stages:
             assert self.trial_id_to_trial_class_name, "Trial ID to trial class map must be defined"
-            # assert self.trial_class_name_to_keyword_arguments
 
             situational_kwargs["trial_id_to_trial_class_name"] = self.trial_id_to_trial_class_name
             situational_kwargs["trial_class_name_to_keyword_arguments"] = self.trial_class_name_to_keyword_arguments
@@ -566,10 +576,11 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
         return self.experiment_class(
             inspection_fig_output_path=self.inspect_directory_path if self.create_inspection_plots else False,
             trial_init_error_out_dir=self.project_directory,
-            **self.project_kit_config["experiment"],
-            **situational_kwargs,
             common_trial_keyword_arguments=self.common_trial_keyword_arguments,
             trial_id_to_keyword_arguments=self.trial_id_to_keyword_arguments,
+            project_kit_config=self.project_kit_config,
+            **self.project_kit_config["experiment"],
+            **situational_kwargs,
         )
 
     # Motion <-> Feature fitting ===================================
@@ -716,7 +727,7 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
 
         if PluginScope.METADATA in self.plugin_definitions.meters_per_pixel:
             try:
-                file_label = self.metadata[PluginMeterPerPixel.human_readable_index][trial_id]
+                file_label = self.metadata.loc[trial_id, PluginMeterPerPixel.human_readable_index]
                 return detect_meters_per_pixel_in_perimeter_directory(self.plugin_directory_path)[file_label]
             except KeyError:
                 pass
@@ -725,6 +736,9 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
             return self.common_trial_keyword_arguments[PluginMeterPerPixel.default_trial_argument_key]
 
         raise AttributeError(f"Could not find meters_per_pixel for trial {trial_id}")
+
+    def get_plugin_config(self, plugin_model: "BasePlugin") -> dict[str, Any]:
+        return self.project_kit_config["plugin"].get(plugin_model.__name__, {})
 
     # Private methods ===============================
 
@@ -755,7 +769,10 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
                 raise ValueError(msg)
 
             result[plugin_model.default_trial_argument_key] = self._define_plugin(
-                plugin_model, PluginScope.TRIALWISE, data_path=plugin_data_files[0]
+                plugin_model,
+                PluginScope.TRIALWISE,
+                data_path=plugin_data_files[0],
+                **self.get_plugin_config(plugin_model),
             ).trialwise_and_metadata(trial_id)
 
         return result

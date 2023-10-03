@@ -18,7 +18,7 @@ class PluginTestMixin:
 
 class TestPluginBonsaiTimestamp(unittest.TestCase, PluginTestMixin):
     def setUp(self):
-        self.data_path = Path(".").resolve() / "static" / "bonsai_timestamp.csv"
+        self.data_path = Path(__file__).resolve().parent / "static" / "bonsai_timestamp.csv"
         # Mocking other attributes, which may be necessary for the initialization
         self.ingress_key = "timestamp"
         self.code_key = "timestamp"
@@ -40,7 +40,7 @@ class TestPluginBonsaiTimestamp(unittest.TestCase, PluginTestMixin):
 
 class TestPluginCenter(unittest.TestCase):
     def setUp(self):
-        self.data_path = Path(".").resolve() / "static" / "center.csv"
+        self.data_path = Path(__file__).resolve().parent / "static" / "center.csv"
         # Mocking other attributes, which may be necessary for the initialization
         self.ingress_key = "center"
         self.code_key = "center"
@@ -66,7 +66,7 @@ class TestPluginCenter(unittest.TestCase):
 
 class TestPluginMeterPerPixel(unittest.TestCase):
     def setUp(self):
-        self.data_path = Path(".").resolve() / "static" / "meters_per_pixel-diagonal-0.707-721_0.csv"
+        self.data_path = Path(__file__).resolve().parent / "static" / "meters_per_pixel-diagonal-0.707-721_0.csv"
         # Mocking other attributes, which may be necessary for the initialization
         self.ingress_key = "meters_per_pixel"
         self.code_key = "meters_per_pixel"
@@ -92,7 +92,7 @@ class TestPluginMeterPerPixel(unittest.TestCase):
 
 class TestPluginVideo(unittest.TestCase):
     def setUp(self):
-        self.data_path = Path(".").resolve() / "static" / "0.video-721_0.mextractor"
+        self.data_path = Path(__file__).resolve().parent / "static" / "0.video-721_0.mextractor"
         self.ingress_key = "video"
         self.code_key = "video"
         self.default_trial_argument_key = "manual_video"

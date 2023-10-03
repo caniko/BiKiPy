@@ -1,10 +1,9 @@
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from functools import cached_property, lru_cache
-from logging import getLogger
 from operator import attrgetter
 from time import sleep
-from typing import Any, ClassVar, Hashable, Iterable, Literal, Optional, TypeVar
+from typing import Any, ClassVar, Hashable, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -33,17 +32,9 @@ from bikipy.perimeter.base import BaseSinglePerimeter, PerimeterCLS, PerimeterSe
 from bikipy.perimeter.trial_mixin import TrialWithPerimeterMixin
 from bikipy.reader import READER_CLASS_LABEL_TO_CLASS
 from bikipy.reader.base import BaseReader, ReaderCLS
-from bikipy.reader.data_with_likelihood import DeepLabCutReader
 from bikipy.utils.collection_utils import dict_deep_update
 from bikipy.utils.memory import wait_for_more_physical_memory
 from bikipy.utils.ranged_dict import RangeDict
-
-LABEL_to_DATA_READER = {"deeplabcut": DeepLabCutReader}
-
-logger = getLogger(__name__)
-
-K = TypeVar("K")
-V = TypeVar("V")
 
 
 class Behaviour(BikipyHashable, InspectPlotMixin, VideoMetadataMixin):
@@ -51,6 +42,8 @@ class Behaviour(BikipyHashable, InspectPlotMixin, VideoMetadataMixin):
 
 
 class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
+    project_kit_config: dict[str, Any]
+
     framewise_coordinates_path: FilePath = Field(description="Path to file storing coordinate data")
     manual_reader_kwargs: Optional[dict] = Field(
         default_factory=dict, description="Keyword arguments that will be passed on the reader objects on init"
@@ -65,7 +58,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
     category = "trial"
 
     perimeter_labels: ClassVar[set[str]] = set()
-    _label_to_perimeter: ClassVar[dict[str, BaseSinglePerimeter] | None]
+    label_to_perimeter: ClassVar[dict[str, BaseSinglePerimeter] | None]
 
     # Variables for trials with zones, see doc for more info.
     trial_start_perimeter: Optional[str] = None
@@ -243,10 +236,6 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
     def _frame_tolerance(self) -> int:
         return round(self.second_tolerance * self.video.fps)
 
-    @staticmethod
-    def _dev_debug_merge_indices_with_values(indices: Iterable[K], values: Iterable[V]) -> dict[K, V]:
-        return dict(zip(indices, values))
-
     def _post_feature_collection_flush(self) -> None:
         self.reader.flush_reads()
         self.video.flush()
@@ -276,6 +265,8 @@ class BaseExperiment(Behaviour):
     skip_habituation: bool = Field(
         False, description="Skip the habituation class during analysis, practically skipping the the habituation class"
     )
+
+    category = "experiment"
 
     experiment_labels: ClassVar[set[str]]
 
@@ -821,4 +812,3 @@ class BaseExperiment(Behaviour):
 
 
 ExperimentCLS = type[BaseExperiment]
-Experiment = TypeVar("Experiment", bound=BaseExperiment)

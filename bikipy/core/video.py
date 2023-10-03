@@ -289,11 +289,6 @@ class VideoMetadata(_VideoMetadataBase):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def plotting_line_thickness(self) -> float:
-        return self.plotting_default_font_size / 10.0
-
-    @computed_field  # type: ignore[misc]
-    @cached_property
     def coordinates_need_to_be_scaled_for_plot(self) -> bool:
         return self.frame is not None
 

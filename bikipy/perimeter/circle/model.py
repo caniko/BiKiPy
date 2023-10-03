@@ -163,8 +163,9 @@ class CircleFixedRadiusPerimeter(BaseCirclePerimeter):
 
     @computed_field  # type: ignore[misc]
     @property
-    def derived_meters_per_pixel(self) -> float:
-        return self.derived_meters_per_pixel_source_metric_length / self.radius_length_pixels
+    def derived_meters_per_pixel(self) -> float | None:
+        if self.derived_meters_per_pixel_source_metric_length is not None:
+            return self.derived_meters_per_pixel_source_metric_length / self.radius_length_pixels
 
     @computed_field  # type: ignore[misc]
     @cached_property

@@ -722,13 +722,13 @@ files = [
 
 [[package]]
 name = "imageio"
-version = "2.31.4"
+version = "2.31.5"
 description = "Library for reading and writing a wide range of image, video, scientific, and volumetric data formats."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "imageio-2.31.4-py3-none-any.whl", hash = "sha256:9a39577b482b9c9533b95b436b45540dc32fdf2868ba912d723d3490594fae22"},
-    {file = "imageio-2.31.4.tar.gz", hash = "sha256:8c18323d0f9d1bfce672bd9dcb18e85aa398039431bc73f70bd8bfba23c005d1"},
+    {file = "imageio-2.31.5-py3-none-any.whl", hash = "sha256:97f68e12ba676f2f4b541684ed81f7f3370dc347e8321bc68ee34d37b2dbac9f"},
+    {file = "imageio-2.31.5.tar.gz", hash = "sha256:d8e53f9cd4054880276a3dac0a28c85ba7874084856a55a0294a8ae6ed7f3a8e"},
 ]
 
 [package.dependencies]
@@ -1618,13 +1618,13 @@ dev = ["black", "mypy", "pytest"]
 
 [[package]]
 name = "packaging"
-version = "23.1"
+version = "23.2"
 description = "Core utilities for Python packages"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "packaging-23.1-py3-none-any.whl", hash = "sha256:994793af429502c4ea2ebf6bf664629d07c1a9fe974af92966e4b8d2df7edc61"},
-    {file = "packaging-23.1.tar.gz", hash = "sha256:a392980d2b6cffa644431898be54b0045151319d1e7ec34f0cfed48767dd334f"},
+    {file = "packaging-23.2-py3-none-any.whl", hash = "sha256:8c491190033a9af7e1d931d0b5dacc2ef47509b34dd0de67ed209b5203fc88c7"},
+    {file = "packaging-23.2.tar.gz", hash = "sha256:048fb0e9405036518eaaf48a55953c750c11e1a1b68e0dd1a9d62ed0c092cfc5"},
 ]
 
 [[package]]
@@ -2649,13 +2649,13 @@ files = [
 
 [[package]]
 name = "schemantic"
-version = "0.3.0"
+version = "1.0.0"
 description = "Manipulate model schemas utilizing homologous, grouped, or cultured paradigms"
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "schemantic-0.3.0-py3-none-any.whl", hash = "sha256:62eceb88dac5e8633906c5770854b026b7792fac7fe37f9bbf1ed536beed80d4"},
-    {file = "schemantic-0.3.0.tar.gz", hash = "sha256:bdf3c75e24dc3ad3804944834a99c6d0b0c5687d65c43cb4c7207ee85bb17c3a"},
+    {file = "schemantic-1.0.0-py3-none-any.whl", hash = "sha256:d6d72358dc5e20dfb198596c05ce84d0676ab9ad9b340d868b22e16334340868"},
+    {file = "schemantic-1.0.0.tar.gz", hash = "sha256:a3409295b6a590d4c42d9e25ff9114977552a773098a210f5030567f55d01f7d"},
 ]
 
 [package.dependencies]
@@ -2826,23 +2826,24 @@ testing-integration = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "jar
 
 [[package]]
 name = "setuptools-scm"
-version = "8.0.3"
+version = "8.0.4"
 description = "the blessed package to manage your versions by scm tags"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "setuptools-scm-8.0.3.tar.gz", hash = "sha256:0169fd70197efda2f8c4d0b2a7a3d614431b488116f37b79d031e9e7ec884d8c"},
-    {file = "setuptools_scm-8.0.3-py3-none-any.whl", hash = "sha256:813822234453438a13c78d05c8af29918fbc06f88efb33d38f065340bbb48c39"},
+    {file = "setuptools-scm-8.0.4.tar.gz", hash = "sha256:b5f43ff6800669595193fd09891564ee9d1d7dcb196cab4b2506d53a2e1c95c7"},
+    {file = "setuptools_scm-8.0.4-py3-none-any.whl", hash = "sha256:b47844cd2a84b83b3187a5782c71128c28b4c94cad8bfb871da2784a5cb54c4f"},
 ]
 
 [package.dependencies]
 packaging = ">=20"
 setuptools = "*"
+typing-extensions = "*"
 
 [package.extras]
 docs = ["entangled-cli[rich]", "mkdocs", "mkdocs-entangled-plugin", "mkdocs-material", "mkdocstrings[python]", "pygments"]
 rich = ["rich"]
-test = ["pytest", "rich", "virtualenv (>20)"]
+test = ["build", "pytest", "rich", "wheel"]
 
 [[package]]
 name = "six"
@@ -3313,13 +3314,13 @@ test = ["pytest", "pytest-cov"]
 
 [[package]]
 name = "xlsxwriter"
-version = "3.1.5"
+version = "3.1.6"
 description = "A Python module for creating Excel XLSX files."
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "XlsxWriter-3.1.5-py3-none-any.whl", hash = "sha256:a6d95556f96d6908885523554b3a468d74a711010d0a25b63d47e9ef4ba3bb94"},
-    {file = "XlsxWriter-3.1.5.tar.gz", hash = "sha256:27eba7b0f9a9ba2b091d5e77f0003a327e022a5fe3e24ee95a5fe5b75784cf45"},
+    {file = "XlsxWriter-3.1.6-py3-none-any.whl", hash = "sha256:fc3838232f9f50763c1e81a3b381c6ad559dcdcd0983ee239bf54556392b4f3f"},
+    {file = "XlsxWriter-3.1.6.tar.gz", hash = "sha256:2087abdaa4a5e981a3ae50b5c21ff1adae59c8fecb6157808585fc169a6bfcd9"},
 ]
 
 [[package]]
