@@ -33,13 +33,15 @@ class RewardTraceTrialMixin(Generic[StartPerimeter, RewardPerimeter], BikipyMode
     @cached_property
     def _start_frame_idx(self) -> int:
         confinement_bool = self.start_perimeter.compute_confinement_boolean_index(
-            self.reader.kinematic_coordinates, potential_label=f"{self.label}_start", manual_video=self.video
+            self.reader.kinematic_coordinates,
+            potential_label=f"{self.label}_start",
+            manual_video=self.video_for_computation(),
         )
         if not np.any(confinement_bool):
             return np.nan
 
         if self.tolerate_boolean_index:
-            confinement_bool = single_node_tolerance_model(confinement_bool, self.video.fps)
+            confinement_bool = single_node_tolerance_model(confinement_bool, self.video_for_computation().fps)
 
         was_confinement = False
         for i, b in enumerate(confinement_bool):
@@ -73,10 +75,12 @@ class RewardTraceTrialMixin(Generic[StartPerimeter, RewardPerimeter], BikipyMode
     @cached_property
     def reward_boolean(self) -> NpNDArrayBool:
         confinement_bool = self.reward_perimeter.compute_confinement_boolean_index(
-            self.reader.kinematic_coordinates, potential_label=f"{self.label}_reward", manual_video=self.video
+            self.reader.kinematic_coordinates,
+            potential_label=f"{self.label}_reward",
+            manual_video=self.video_for_computation(),
         )
         if self.tolerate_boolean_index:
-            confinement_bool = single_node_tolerance_model(confinement_bool, self.video.fps)
+            confinement_bool = single_node_tolerance_model(confinement_bool, self.video_for_computation().fps)
 
         return confinement_bool
 
@@ -88,7 +92,7 @@ class RewardTraceTrialMixin(Generic[StartPerimeter, RewardPerimeter], BikipyMode
             if self.either_start_or_reward_undetected
             else Motion(
                 coordinate_sequence=self.reader.kinematic_coordinates[self._start_frame_idx : self._reward_arrival_idx],
-                fps=self.video.fps,
+                fps=self.video_for_computation().fps,
             ).as_tuple
         )
 
@@ -101,12 +105,12 @@ class RewardTraceTrialMixin(Generic[StartPerimeter, RewardPerimeter], BikipyMode
         """
         if self.either_start_or_reward_undetected:
             return np.nan
-        return (self._reward_arrival_idx - self._start_frame_idx) / self.video.fps
+        return (self._reward_arrival_idx - self._start_frame_idx) / self.video_for_computation().fps
 
     @computed_field  # type: ignore[misc]
     @property
     def seconds_spent_in_reward_area(self) -> float:
-        return np.sum(self.reward_boolean) / self.video.fps
+        return np.sum(self.reward_boolean) / self.video_for_computation().fps
 
     @computed_field  # type: ignore[misc]
     @property

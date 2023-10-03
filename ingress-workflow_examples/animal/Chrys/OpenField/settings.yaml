@@ -38,7 +38,7 @@ perimeter:
       meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
       minimum_frame_length: number
       moving_field_name: string
-      recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
+      manual_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
 manual_reader_kwargs:
   defined:
     cache_meters_augmented: false
@@ -62,7 +62,7 @@ manual_reader_kwargs:
     midpoint_groups: object
     min_likelihood: number -> 0.8
     minimum_frame_length: number
-    recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
+    manual_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
     x_axis_crop_end_point: number -> 0.0
     y_axis_crop_end_point: number -> 0.0
 trial:
@@ -95,7 +95,7 @@ trial:
       meters_per_pixel_from_perimeter: boolean -> False
       meters_per_pixel_from_perimeter_source: string
       minimum_frame_length: number
-      recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
+      manual_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
       rectangle_2d_bin: array -> (2, 2)
       rigid_nodes_freezing: array
       trial_start_perimeter: string
@@ -119,7 +119,7 @@ experiment:
     manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
     meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
     minimum_frame_length: number
-    recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
+    manual_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
     skip_habituation: boolean -> False
     stage: string
     trial_init_error_out_dir: string

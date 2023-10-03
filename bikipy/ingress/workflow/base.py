@@ -818,20 +818,6 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
         return result
 
     @validate_call
-    def _gather_coordinates_and_potential_timestamp_data(self, coordinate_path: FilePath) -> dict[str, FilePath]:
-        timestamp_stem = coordinate_path.stem.replace("coordinates", "timestamps").split("-")[0]
-        potential_timestamp_set_path_finder = tuple(
-            coordinate_path.parent.glob(f"{timestamp_stem}*.{self.timestamp_file_suffix}")
-        )
-
-        result = {"framewise_coordinates_path": coordinate_path}
-        if potential_timestamp_set_path_finder:
-            assert len(potential_timestamp_set_path_finder) == 1
-            result["coordinate_timestamp_set_path"] = potential_timestamp_set_path_finder[0]
-
-        return result
-
-    @validate_call
     def _to_skip_trial_id(self, trial_id: Label) -> bool:
         return (
             self.trial_ids_to_analyse
@@ -845,11 +831,6 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
         if "-" in stem:
             stem = path.stem.split("-")[0]
         return int(stem) if stem.isdigit() else stem
-
-    @staticmethod
-    def _raise_unsupported_plugin_method(plugin_name: str, supported_methods: Iterable[str]) -> None:
-        msg = f"{plugin_name} only supports: {', '.join(supported_methods)}"
-        raise ValueError(msg)
 
 
 IngressWorkflow = TypeVar("IngressWorkflow", bound=BaseIngressWorkflow)

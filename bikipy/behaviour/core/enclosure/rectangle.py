@@ -70,8 +70,10 @@ class RectangleEnclosedTrial(EnclosedTrial):
     def quadrant_grid_coordinate_to_vertices(
         self,
     ) -> dict[quadrant_grid_typing, NpNDArrayFp64]:
-        horizontal_uniform_distance = self.video.metric_horizontal_resolution / self.rectangle_2d_bin[0]
-        vertical_uniform_distance = self.video.metric_vertical_resolution / self.rectangle_2d_bin[1]
+        horizontal_uniform_distance = (
+            self.video_for_computation().metric_horizontal_resolution / self.rectangle_2d_bin[0]
+        )
+        vertical_uniform_distance = self.video_for_computation().metric_vertical_resolution / self.rectangle_2d_bin[1]
         result = {}
         for h in range(1, self.rectangle_2d_bin[0] + 1):
             horizontal_coordinate_min = horizontal_uniform_distance * (h - 1)
@@ -128,23 +130,25 @@ class RectangleEnclosedTrial(EnclosedTrial):
             quadrant_grid_coordinate: Quadrant(
                 vertices_in_meters=self.quadrant_grid_coordinate_to_vertices[quadrant_grid_coordinate],
                 kinematic_coordinates=self.reader.kinematic_coordinates,
-                fps=self.video.fps,
+                fps=self.video_for_computation().fps,
                 quadrant_index=quadrant_index,
             )
             for quadrant_index, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items()
         }
         if self.inspection_fig_output_path:
-            fig, ax = self.video.subplot()
+            fig, ax = self.video_for_computation().subplot()
             ax.set_title(f"Quadrants_Trial_#{self.label}")
 
-            coordinates = self.video.prepare_coordinates_for_plotting(self.reader.kinematic_coordinates)
+            coordinates = self.video_for_computation().prepare_coordinates_for_plotting(
+                self.reader.kinematic_coordinates
+            )
 
             confinement = np.zeros(self.reader.frames, dtype=bool)
 
             colors = plt.cm.rainbow(np.linspace(0, 1, len(result) + 1))
             for color, (grid_coordinate, quadrant) in zip(colors, result.items()):
                 ax.plot(
-                    *quadrant.plot_vertices(self.video).T,
+                    *quadrant.plot_vertices(self.video_for_computation()).T,
                     label=f"({grid_coordinate[0]}, {grid_coordinate[1]})",
                     color=color,
                 )
@@ -153,12 +157,12 @@ class RectangleEnclosedTrial(EnclosedTrial):
                 confinement = confinement | quadrant.confinement_boolean_index
 
             ax.scatter(*coordinates[~confinement].T, color=colors[-1], label="Unconfinement")
-            ax.scatter(*self.video.center_for_plot.T, color="r", label="VideoCenter")
+            ax.scatter(*self.video_for_computation().center_for_plot.T, color="r", label="VideoCenter")
 
             if self.manual_center_meters is not None:
                 manual_center = self.manual_center_meters
-                if self.video.coordinates_need_to_be_scaled_for_plot:
-                    manual_center = manual_center * self.video.pixels_per_meter
+                if self.video_for_computation().coordinates_need_to_be_scaled_for_plot:
+                    manual_center = manual_center * self.video_for_computation().pixels_per_meter
 
                 ax.scatter(*manual_center.T, color="k", label="ManualCenter")
 
@@ -184,7 +188,9 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
             raw_location_sequence_quadrant[quadrant.confinement_boolean_index] = quadrant_index
 
-        return np.array(reduce_repeating_sequences(raw_location_sequence_quadrant, round(self.video.fps * 0.35)))
+        return np.array(
+            reduce_repeating_sequences(raw_location_sequence_quadrant, round(self.video_for_computation().fps * 0.35))
+        )
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -210,7 +216,9 @@ class RectangleEnclosedTrial(EnclosedTrial):
             inspection_fig_output_path=self.inspection_fig_output_path,
             potential_label=self.label,
         )
-        return tolerance_modeled_boolean_index_truth_sequence_start_end_length(raw_center_boolean_index, self.video.fps)
+        return tolerance_modeled_boolean_index_truth_sequence_start_end_length(
+            raw_center_boolean_index, self.video_for_computation().fps
+        )
 
     @computed_field  # type: ignore[misc]
     @property
@@ -221,7 +229,9 @@ class RectangleEnclosedTrial(EnclosedTrial):
     @property
     def motion_center(self) -> dict[str, float]:
         return merge_motion_island_data(
-            self._center_boolean_index_motion_island[0], self.reader.kinematic_coordinates, self.video.fps
+            self._center_boolean_index_motion_island[0],
+            self.reader.kinematic_coordinates,
+            self.video_for_computation().fps,
         )
 
     @computed_field  # type: ignore[misc]
@@ -235,7 +245,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
         return merge_motion_island_data(
             boolean_index_truth_sequence_start_end_length(self.periphery_boolean_index),
             self.reader.kinematic_coordinates,
-            self.video.fps,
+            self.video_for_computation().fps,
         )
 
     @computed_field  # type: ignore[misc]
@@ -246,7 +256,10 @@ class RectangleEnclosedTrial(EnclosedTrial):
         if self.manual_center_rectangle_dimensions_meters is not None:
             return self.manual_center_rectangle_dimensions_meters
         if self.center_rectangle_dimensions_to_spatial_resolution_ratio is not None:
-            return self.video.metric_resolution / self.center_rectangle_dimensions_to_spatial_resolution_ratio
+            return (
+                self.video_for_computation().metric_resolution
+                / self.center_rectangle_dimensions_to_spatial_resolution_ratio
+            )
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -259,13 +272,13 @@ class RectangleEnclosedTrial(EnclosedTrial):
             raise AttributeError(msg)
 
         center_point_to_center_rectangle_side_normal_lengths = (
-            self.center_rectangle_dimensions_meters * self.video.pixels_per_meter / 2.0
+            self.center_rectangle_dimensions_meters * self.video_for_computation().pixels_per_meter / 2.0
         )
 
         center = (
-            self.video.center_pixels
+            self.video_for_computation().center_pixels
             if self.manual_center_meters is None
-            else self.manual_center_meters * self.video.pixels_per_meter
+            else self.manual_center_meters * self.video_for_computation().pixels_per_meter
         )
 
         # The Y-axis is max at the image origin, hence the inversion WRT the X-axis:
@@ -274,7 +287,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
         return RectanglePerimeter(
             vertices_in_pixels=np.array(((x_short, y_short), (x_short, y_long), (x_long, y_long), (x_long, y_short))),
-            manual_video=self.video,
+            manual_video=self.video_for_computation(),
             label="center",
         )
 
@@ -300,18 +313,18 @@ class RectangleEnclosedTrial(EnclosedTrial):
     @computed_field  # type: ignore[misc]
     @property
     def seconds_on_center(self) -> int:
-        return np.sum(self.center_boolean_index) / self.video.fps
+        return np.sum(self.center_boolean_index) / self.video_for_computation().fps
 
     @computed_field  # type: ignore[misc]
     @property
     def seconds_on_periphery(self) -> int:
-        return np.sum(self.periphery_boolean_index) / self.video.fps
+        return np.sum(self.periphery_boolean_index) / self.video_for_computation().fps
 
     @computed_field  # type: ignore[misc]
     @property
     def _analysis_series_list(self) -> list[pd.Series]:
         upstream_list = super()._analysis_series_list
-        if self.video.resolution is None:
+        if self.video_for_computation().resolution is None:
             return upstream_list
 
         data = [

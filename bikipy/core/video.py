@@ -9,7 +9,7 @@ from collections.abc import Iterable
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, ClassVar, Generator, Optional, Sequence
+from typing import Any, ClassVar, Generator, Optional, Self, Sequence
 
 import cv2
 import matplotlib.pyplot as plt
@@ -46,7 +46,7 @@ class _VideoMetadataBase(BikipyModel):
     meters_per_pixel: Optional[MetersPerPixel] = Field(
         None, description="Float or 1D array defining the meter to pixel ratio"
     )
-    recording_resolution: Optional[NpNDArrayInt16] = Field(
+    manual_resolution: Optional[NpNDArrayInt16] = Field(
         None, description="1D array defining the resolution of the recording"
     )
     fps: Optional[float] = Field(None, description="Frames per second of the recording")
@@ -72,8 +72,8 @@ class _VideoMetadataBase(BikipyModel):
         result = {}
         if self.meters_per_pixel is not None:
             result["meters_per_pixel"] = self.meters_per_pixel
-        if self.recording_resolution is not None:
-            result["recording_resolution"] = self.recording_resolution
+        if self.manual_resolution is not None:
+            result["manual_resolution"] = self.manual_resolution
         if self.fps is not None:
             result["fps"] = self.fps
         if self.frame is not None:
@@ -87,8 +87,8 @@ class _VideoMetadataBase(BikipyModel):
     @computed_field  # type: ignore[misc]
     @cached_property
     def resolution(self) -> NpNDArrayInt16 | None:
-        if self.recording_resolution is not None:
-            return self.recording_resolution
+        if self.manual_resolution is not None:
+            return self.manual_resolution
         if self.frame is not None:
             return np.array([self.frame.shape[1], self.frame.shape[0]], dtype=np.int16)
 
@@ -139,7 +139,7 @@ class VideoMetadata(_VideoMetadataBase):
         inferior: "VideoMetadata",
         ignore_incongruity: bool = False,
         meters_per_pixel_mean: bool = False,
-    ) -> "VideoMetadata":
+    ) -> Self:
         if not (superior & inferior) and not ignore_incongruity:
             msg = "VideoMetadata are incongruent"
             raise AttributeError(msg)
@@ -155,25 +155,23 @@ class VideoMetadata(_VideoMetadataBase):
 
         return cls(
             meters_per_pixel=meters_per_pixel,
-            recording_resolution=superior.recording_resolution
-            if superior.recording_resolution is not None
-            else inferior.recording_resolution,
+            manual_resolution=superior.manual_resolution
+            if superior.manual_resolution is not None
+            else inferior.manual_resolution,
             fps=superior.fps or inferior.fps,
             frame=superior.frame if superior.frame is not None else inferior.frame,
             video_path=superior.video_path if superior.video_path else inferior.video_path,
         )
 
     @classmethod
-    def from_path(cls, video_path: FilePath, **kwargs) -> "VideoMetadata":
+    def from_path(cls, video_path: FilePath, **kwargs) -> Self:
         info = extract_video(path_to_video=video_path)
-        return cls(
-            recording_resolution=info.resolution, fps=info.fps, frame=info.image, video_path=video_path, **kwargs
-        )
+        return cls(manual_resolution=info.resolution, fps=info.fps, frame=info.image, video_path=video_path, **kwargs)
 
     @classmethod
-    def from_mextractor(cls, mextractor_dir: DirectoryPath, **kwargs) -> "VideoMetadata":
+    def from_mextractor(cls, mextractor_dir: DirectoryPath, **kwargs) -> Self:
         info = load(mextractor_dir)
-        return cls(recording_resolution=info.resolution, fps=info.fps, frame=info.image, **kwargs)
+        return cls(manual_resolution=info.resolution, fps=info.fps, frame=info.image, **kwargs)
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -185,7 +183,7 @@ class VideoMetadata(_VideoMetadataBase):
     @cached_property
     def multiplied_resolution(self) -> NpNDArrayInt16:
         if self.image_resize_multiplier == 1:
-            return self.recording_resolution
+            return self.resolution
         return np.round(self.resolution * self.image_resize_multiplier).astype(np.int16)
 
     @computed_field  # type: ignore[misc]
@@ -249,7 +247,10 @@ class VideoMetadata(_VideoMetadataBase):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def greyscale_frame(self) -> NpNDArrayUint8:
+    def greyscale_frame(self) -> NpNDArrayUint8 | None:
+        if self.frame is None:
+            return
+
         if len(self.frame.shape) == 3 and self.frame.shape[2] == 3:
             return cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         if len(self.frame.shape) == 2:
@@ -257,9 +258,9 @@ class VideoMetadata(_VideoMetadataBase):
         msg = f"The frame has an unsupported shape, {self.frame.shape}"
         raise AttributeError(msg)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(repr=False, return_type="VideoMetadata")  # type: ignore[misc]
     @cached_property
-    def upscaled_video(self) -> "VideoMetadata":
+    def upscaled_video(self) -> Self:
         if self.image_resize_multiplier == 1:
             return self
         new_frame = cv2.resize(
@@ -273,13 +274,13 @@ class VideoMetadata(_VideoMetadataBase):
         # TODO: Replace after computed_field exclude method added to model_dump
         metadata = self.metadata
         metadata["frame"] = new_frame
-        metadata["recording_resolution"] = new_frame.shape[0:2:][::-1]
+        metadata["manual_resolution"] = new_frame.shape[0:2:][::-1]
 
         return self.__class__(
             **metadata
-            # **self.model_dump(exclude={"frame", "recording_resolution"}, exclude_unset=True),
+            # **self.model_dump(exclude={"frame", "resolution"}, exclude_unset=True),
             # frame=new_frame,
-            # recording_resolution=new_frame.shape[0:2:][::-1],
+            # manual_resolution=new_frame.shape[0:2:][::-1],
         )
 
     @computed_field  # type: ignore[misc]
@@ -369,11 +370,10 @@ class VideoMetadata(_VideoMetadataBase):
     def flush(self) -> None:
         if self.frame is not None:
             self.frame = None
-            try:
-                del self.upscaled_video
-                del self.greyscale_frame
-            except AttributeError as e:
-                logger.debug(str(e))
+            del self.upscaled_video, self.greyscale_frame
+
+
+VideoMetadata.model_rebuild()
 
 
 class VideoMetadataMixin(_VideoMetadataBase):
@@ -386,28 +386,32 @@ class VideoMetadataMixin(_VideoMetadataBase):
     @computed_field(return_type=VideoMetadata)
     @property
     def video(self) -> VideoMetadata:
-        if self.required_video_metadata_fields and (
-            missing_fields := self.required_video_metadata_fields.difference(self._video.metadata)
-        ):
-            msg = (
-                f"{self.__class__.__name__} requires {self.required_video_metadata_fields}, "
-                f"but is missing {missing_fields}"
-            )
-            raise AttributeError(msg)
-        return self._video
-
-    @computed_field(return_type=VideoMetadata)
-    @property
-    def _video(self):
         video = VideoMetadata(
             meters_per_pixel=self.meters_per_pixel,
             fps=self.fps,
-            recording_resolution=self.resolution,
+            manual_resolution=self.resolution,
             frame=self.frame,
             video_path=self.video_path,
         )
         if self.manual_video:
             video = VideoMetadata.join(self.manual_video, video, ignore_incongruity=True)
+        return video
+
+    def video_for_computation(self) -> VideoMetadata:
+        video = self.video
+        if self.required_video_metadata_fields and (
+            missing_fields := self.required_video_metadata_fields.difference(video.metadata)
+        ):
+            if len(missing_fields) == 1 and "resolution" in missing_fields and video.resolution is not None:
+                # Resolution is derived from either frame or manual_resolution; there is no other OR logic
+                # Hence the hands-on implementation
+                return video
+
+            msg = (
+                f"{self.__class__.__name__} requires {self.required_video_metadata_fields}, "
+                f"but is missing {missing_fields}"
+            )
+            raise AttributeError(msg)
         return video
 
 

@@ -50,7 +50,7 @@ class LinePerimeter(BikipyHashable, VideoMetadataMixin):
     @property
     def feat_border(self):
         """Feature magnitude perimeter location"""
-        return self.location / self.video.metric_resolution[self.orientation]
+        return self.location / self.video_for_computation().metric_resolution[self.orientation]
 
     @computed_field  # type: ignore[misc]
     @property

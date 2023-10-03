@@ -111,8 +111,10 @@ def make_inspection_video(
 
     if frames_on_the_fly:
         return (
-            VideoClip(lambda t: make_frame(round(t * reader.video.fps)), duration=reader.duration_seconds)
-            .set_fps(reader.video.fps)
+            VideoClip(
+                lambda t: make_frame(round(t * reader.video_for_computation().fps)), duration=reader.duration_seconds
+            )
+            .set_fps(reader.video_for_computation().fps)
             .write_videofile(str(output_file_path), codec=codec)
         )
 
@@ -123,7 +125,7 @@ def make_inspection_video(
     #
     # try:
     #     ImageSequenceClip(
-    #         [frame_feature.result() for frame_feature in frame_features], fps=reader.video.fps
+    #         [frame_feature.result() for frame_feature in frame_features], fps=reader.video_for_computation().fps
     #     ).write_videofile(output_file_path, codec=codec)
     # except Exception as e:
     #     if output_file_path.exists():

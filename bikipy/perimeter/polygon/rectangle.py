@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Literal, Optional
+from typing import Literal, Optional, Self
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -29,9 +29,7 @@ class RectanglePerimeter(BasePolygonPerimeter):
                 self.vertices_in_pixels.edge_lengths[0] - self.vertices_in_pixels.edge_lengths[2]
             )
 
-    def expand(
-        self, perimeter_border_normal_pixels: float | NpNDArrayFp64, ax: Axes = None, **inspect_kwargs
-    ) -> "RectanglePerimeter":
+    def expand(self, perimeter_border_normal_pixels: float | NpNDArrayFp64, ax: Axes = None, **inspect_kwargs) -> Self:
         expanded_vertices = expand_rectangle(
             self.vertices_in_pixels,
             x_offset=perimeter_border_normal_pixels,
@@ -39,7 +37,9 @@ class RectanglePerimeter(BasePolygonPerimeter):
             inspection_fig_output_path=self.inspection_fig_output_path,
         )
 
-        if any(np.any(expanded_vertex > self.video.recording_resolution) for expanded_vertex in expanded_vertices):
+        if any(
+            np.any(expanded_vertex > self.video_for_computation().resolution) for expanded_vertex in expanded_vertices
+        ):
             msg = "The expanded vertex is out of bounds with respect to the video"
             raise ValueError(msg)
 

@@ -10,7 +10,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from pydantic import Field, FilePath, computed_field, validate_call
-from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64, NpNDArrayUint32
+from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
 from typing_extensions import Literal
 
 from bikipy import runtime_settings
@@ -149,7 +149,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @computed_field  # type: ignore[misc]
     @cached_property
     def kinematic_coordinates_prepared_for_plotting(self) -> NpNDArrayFp64:
-        return self.video.prepare_coordinates_for_plotting(self.kinematic_coordinates)
+        return self.video_for_computation().prepare_coordinates_for_plotting(self.kinematic_coordinates)
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -179,7 +179,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @computed_field  # type: ignore[misc]
     @property
     def required_video_metadata_fields(self) -> set:
-        base = {"meters_per_pixel", "recording_resolution"}
+        base = {"meters_per_pixel", "resolution"}
         if self.crop_seconds_from_start or self.crop_seconds_from_end or self.crop_target_trial_length_seconds:
             base.add("fps")
         return base
@@ -198,25 +198,27 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @computed_field  # type: ignore[misc]
     @cached_property
     def crop_target_trial_length_frames(self) -> int:
-        return min(round(self.crop_target_trial_length_seconds * self.video.fps), self.raw_frames)
+        return min(round(self.crop_target_trial_length_seconds * self.video_for_computation().fps), self.raw_frames)
 
     @computed_field  # type: ignore[misc]
     @cached_property
     def crop_frames_from_start(self) -> int:
-        result = round(self.crop_seconds_from_start / self.video.fps)
+        result = round(self.crop_seconds_from_start / self.video_for_computation().fps)
         if self.crop_target_trial_length_frames and not self.crop_target_from_end:
             if self.df_is_timestamped:
                 result += (
                     self.raw_frames - np.where(self.raw_df.index.values >= self.crop_target_trial_length_seconds)[0][0]
                 )
             else:
-                result += round(self.raw_frames - self.crop_target_trial_length_seconds * self.video.fps)
+                result += round(
+                    self.raw_frames - self.crop_target_trial_length_seconds * self.video_for_computation().fps
+                )
         return result
 
     @computed_field  # type: ignore[misc]
     @property
     def crop_frames_from_end(self) -> int:
-        result = round(self.crop_seconds_from_end / self.video.fps)
+        result = round(self.crop_seconds_from_end / self.video_for_computation().fps)
         if self.crop_target_trial_length_frames and self.crop_target_from_end:
             if self.df_is_timestamped:
                 result += (
@@ -227,7 +229,9 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
                     )[0][0]
                 )
             else:
-                result += round(self.raw_frames - self.crop_target_trial_length_seconds * self.video.fps)
+                result += round(
+                    self.raw_frames - self.crop_target_trial_length_seconds * self.video_for_computation().fps
+                )
         return result
 
     @computed_field  # type: ignore[misc]
@@ -289,7 +293,9 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             result = result.iloc[self.crop_frames_slice]
 
         if self.invert_y_axis:
-            result.loc[:, pd.IndexSlice[:, "y"]] = self.video.vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
+            result.loc[:, pd.IndexSlice[:, "y"]] = (
+                self.video_for_computation().vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
+            )
             self.y_axis_crop_end_point = -self.y_axis_crop_end_point
 
         if self.x_axis_crop_end_point:
@@ -298,15 +304,21 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] + self.y_axis_crop_end_point
 
         # convert to meters
-        if isinstance(self.video.meters_per_pixel, float):
+        if isinstance(self.video_for_computation().meters_per_pixel, float):
             result.loc[:, pd.IndexSlice[:, ("x", "y")]] = (
-                result.loc[:, pd.IndexSlice[:, ("x", "y")]] * self.video.meters_per_pixel
+                result.loc[:, pd.IndexSlice[:, ("x", "y")]] * self.video_for_computation().meters_per_pixel
             )
-        elif isinstance(self.video.meters_per_pixel, np.ndarray):
-            result.loc[:, pd.IndexSlice[:, "x"]] = result.loc[:, pd.IndexSlice[:, "x"]] * self.video.meters_per_pixel[0]
-            result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] * self.video.meters_per_pixel[1]
+        elif isinstance(self.video_for_computation().meters_per_pixel, np.ndarray):
+            result.loc[:, pd.IndexSlice[:, "x"]] = (
+                result.loc[:, pd.IndexSlice[:, "x"]] * self.video_for_computation().meters_per_pixel[0]
+            )
+            result.loc[:, pd.IndexSlice[:, "y"]] = (
+                result.loc[:, pd.IndexSlice[:, "y"]] * self.video_for_computation().meters_per_pixel[1]
+            )
         else:
-            raise TypeError(f"Could not match video.meters_per_pixel type: {type(self.video.meters_per_pixel)}")
+            raise TypeError(
+                f"Could not match video.meters_per_pixel type: {type(self.video_for_computation().meters_per_pixel)}"
+            )
 
         if self.midpoint_groups:
             generated_midpoints = set()
@@ -360,19 +372,6 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def full_second_index(self) -> NpNDArrayUint32:
-        result = [0]
-        last_idx = 0
-        next_second = 1
-        for idx, elapsed_seconds in enumerate(np.cumsum(self.timestamp_index - self.timestamp_index[0])):
-            if elapsed_seconds >= next_second:
-                result.append((last_idx, idx))
-                last_idx = idx
-
-        return np.array(result, dtype=np.uint64)
-
-    @computed_field  # type: ignore[misc]
-    @cached_property
     def fps_from_timestamped_index(self) -> float | None:
         if self.timestamp_index is None:
             return None
@@ -407,7 +406,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @property
     def duration_seconds(self) -> float:
         return (
-            self.number_of_frames / self.video.fps
+            self.number_of_frames / self.video_for_computation().fps
             if self.manual_timestamp_index is None
             else self.manual_timestamp_index[-1]
         )
@@ -480,13 +479,15 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             try:
                 return self.label_to_plot_prepped_coordinates[label_to_plot]
             except KeyError:
-                result = self.video.prepare_coordinates_for_plotting(self[label_to_plot])
+                result = self.video_for_computation().prepare_coordinates_for_plotting(self[label_to_plot])
                 self.label_to_plot_prepped_coordinates[label_to_plot] = result
                 return result
         try:
             return self.label_to_plot_without_resized_coordinates[label_to_plot]
         except KeyError:
-            result = self.video.prepare_coordinates_for_plotting(self[label_to_plot], with_resize=False)
+            result = self.video_for_computation().prepare_coordinates_for_plotting(
+                self[label_to_plot], with_resize=False
+            )
             self.label_to_plot_without_resized_coordinates[label_to_plot] = result
             return result
 

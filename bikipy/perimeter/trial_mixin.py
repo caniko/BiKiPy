@@ -73,8 +73,8 @@ class TrialWithPerimeterMixin(Generic[Perimeter, *PerimeterInstances], BikipyMod
 
     @computed_field  # type: ignore[misc]
     @property
-    def _video(self) -> VideoMetadata:
-        video = super()._video
+    def video(self) -> VideoMetadata:
+        video = super().video
 
         if self.perimeters:
             # Considered making this logic optional; going with user-side discretion instead

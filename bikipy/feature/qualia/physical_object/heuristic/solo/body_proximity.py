@@ -44,7 +44,7 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
             maximum_distance=self.maximum_distance_pixels,
             inside_perimeter_border=self.reader[self.center_ear_label],
             label="Center ear",
-            manual_video=self.video,
+            manual_video=self.video_for_computation(),
         )
 
     @computed_field  # type: ignore[misc]
@@ -61,7 +61,7 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
             maximum_distance=self.maximum_distance_pixels,
             inside_perimeter_border=self.reader[self.tail_base_label],
             label="Tail base",
-            manual_video=self.video,
+            manual_video=self.video_for_computation(),
         )
 
     @computed_field  # type: ignore[misc]
@@ -96,12 +96,14 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
         if self.tail_base_proximity:
             data[f"{label}BaseTailProximity"] = self.tail_base_proximity.result_seconds
 
-        data[f"{label}{self.heuristic_alias}Result"] = self.video.boolean_array_to_seconds(self.result)
+        data[f"{label}{self.heuristic_alias}Result"] = self.video_for_computation().boolean_array_to_seconds(
+            self.result
+        )
 
         return pd.Series(data)
 
     def plot(self) -> None:
-        fig, axes = self.video.subplots(
+        fig, axes = self.video_for_computation().subplots(
             ncols=sum((bool(self.center_ear_proximity), bool(self.tail_base_proximity))) + 1,
             nrows=1,
         )
@@ -110,12 +112,12 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
 
         if self.center_ear_proximity:
             axes[ax_idx].set_title("Center ear")
-            self.center_ear_proximity.plot(axes[ax_idx], self.video)
+            self.center_ear_proximity.plot(axes[ax_idx], self.video_for_computation())
             ax_idx += 1
 
         if self.tail_base_proximity:
             axes[ax_idx].set_title("Tail base")
-            self.tail_base_proximity.plot(axes[ax_idx], self.video)
+            self.tail_base_proximity.plot(axes[ax_idx], self.video_for_computation())
             ax_idx += 1
 
         self.plot_result(axes[ax_idx], self.center_ear_label or self.tail_base_label)

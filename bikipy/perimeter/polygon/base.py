@@ -85,7 +85,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
     @computed_field  # type: ignore[misc]
     @cached_property
     def vertices_in_meters(self) -> NpNDArrayFp64:
-        return self.vertices_in_pixels * self.video.meters_per_pixel
+        return self.vertices_in_pixels * self.video_for_computation().meters_per_pixel
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -113,7 +113,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         return CircleFixedRadiusPerimeter(
             center_pixels=self.pixel_graph.centroid,
             radius_length_pixels=np.mean(self.pixel_graph.vertex_midpoint_distances_to_centroid),
-            manual_video=self.video,
+            manual_video=self.video_for_computation(),
         )
 
     def closest_point_on_edge_to_coordinates(self, coordinates: NpNDArrayFp64, inspect: bool = False) -> NpNDArrayFp64:
@@ -137,7 +137,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             indexable_t = closest_edge_point_to_coordinates_matrix.transpose(1, 2, 0)
 
             for i in evenly_spaced_indices_from_sequence(coordinates, 9):
-                fig, ax = self.video.subplot()
+                fig, ax = self.video_for_computation().subplot()
                 to_skip = []
                 for y, point in enumerate(indexable_t[i].T):
                     if y in to_skip:
@@ -257,7 +257,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             return self.copy(
                 update={
                     "vertices_in_pixels": self.vertices_in_pixels + new_reference - self.reference_point,
-                    "manual_video": self.video,
+                    "manual_video": self.video_for_computation(),
                     "makesense_image_name": makesense_image_name,
                 }
             )
@@ -276,7 +276,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         if x_pixel_offset or y_pixel_offset:
             vertices = self.vertices_in_pixels + np.array([x_pixel_offset, y_pixel_offset])
             if not coordinates_as_pixels:
-                vertices *= self.video.meters_per_pixel
+                vertices *= self.video_for_computation().meters_per_pixel
         elif coordinates_as_pixels:
             vertices = self.vertices_in_pixels
         elif not coordinates_as_pixels:
@@ -285,7 +285,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             raise RuntimeError
 
         if coordinates_as_pixels and with_resize:
-            vertices *= self.video.image_resize_multiplier
+            vertices *= self.video_for_computation().image_resize_multiplier
 
         for index in range(len(vertices)):
             following_index = 0 if index + 1 == len(vertices) else index + 1

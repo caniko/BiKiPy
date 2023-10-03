@@ -10,7 +10,7 @@ CSV_PATH = EXAMPLES_ROOT / "test_tracking.csv"
 VIDEO_PATH = EXAMPLES_ROOT / "test_video.mp4"
 IMG_PATH = EXAMPLES_ROOT / "test.png"
 
-video = VideoMetadata(recording_resolution=(388, 442), fps=30, meters_per_pixel=[0.94, 1.0])
+video = VideoMetadata(manual_resolution=(388, 442), fps=30, meters_per_pixel=[0.94, 1.0])
 
 
 def test_deeplabcut_reader_from_csv():

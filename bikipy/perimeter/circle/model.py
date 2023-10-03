@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Optional, TypeVar
+from typing import Optional
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -41,7 +41,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
     @computed_field  # type: ignore[misc]
     @cached_property
     def center_meters(self) -> NpNDArrayFp64:
-        return self.center_pixels * self.video.meters_per_pixel
+        return self.center_pixels * self.video_for_computation().meters_per_pixel
 
     def change_reference(self, new_reference: NpNDArrayFp64, makesense_image_name: Optional[str] = None):
         return self.copy(
@@ -52,10 +52,12 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
             }
         )
 
-    def expand(self, perimeter_border_normal_pixels: float | NpNDArrayFp64) -> "BaseCirclePerimeter":
-        kwargs = self.model_dump()
-        kwargs["radius_length_pixels"] += perimeter_border_normal_pixels
-        return self.__class__(**kwargs)
+    def expand(self, perimeter_border_normal_pixels: float | NpNDArrayFp64) -> "CircleFixedRadiusPerimeter":
+        return CircleFixedRadiusPerimeter(
+            center_pixels=self.center_pixels,
+            radius_length_pixels=self.radius_length_pixels + perimeter_border_normal_pixels,
+            manual_video=self.video,
+        )
 
     def compute_confinement_boolean_index(
         self,
@@ -63,7 +65,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         manual_video: Optional[VideoMetadata] = None,
         ax: Axes = None,
         **inspect_kwargs,
-    ):
+    ) -> NpNDArrayBool:
         if isinstance(self.radius_length_meters, float):
             distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
             result = np.abs(distance_of_point_from_center) <= self.radius_length_meters
@@ -115,8 +117,8 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         center[1] += y_pixel_offset
 
         if coordinates_as_pixels and with_resize:
-            center *= self.video.image_resize_multiplier
-            radius *= self.video.image_resize_multiplier
+            center *= self.video_for_computation().image_resize_multiplier
+            radius *= self.video_for_computation().image_resize_multiplier
 
         if isinstance(radius, np.ndarray):
             radius = tuple(radius)
@@ -138,17 +140,13 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         return result
 
 
-CirclePerimeterCLS = type[BaseCirclePerimeter]
-CirclePerimeter = TypeVar("CirclePerimeter", bound=BaseCirclePerimeter)
-
-
 class CircleVariableRadiusPerimeter(BaseCirclePerimeter):
     radius_length_meters: float
 
     @computed_field  # type: ignore[misc]
     @property
     def radius_length_pixels(self) -> float:
-        return meters2pixels(self.radius_length_meters, self.video.pixels_per_meter)
+        return meters2pixels(self.radius_length_meters, self.video_for_computation().pixels_per_meter)
 
     @computed_field  # type: ignore[misc]
     @property
@@ -170,7 +168,7 @@ class CircleFixedRadiusPerimeter(BaseCirclePerimeter):
     @computed_field  # type: ignore[misc]
     @cached_property
     def radius_length_meters(self) -> float:
-        return np.mean(self.radius_length_pixels * self.video.meters_per_pixel)
+        return np.mean(self.radius_length_pixels * self.video_for_computation().meters_per_pixel)
 
     @classmethod
     @property
@@ -185,3 +183,6 @@ class CircleFixedRadiusPerimeter(BaseCirclePerimeter):
         result = super()._to_hash
         result.append(self.radius_length_pixels)
         return result
+
+
+BaseCirclePerimeter.model_rebuild()

@@ -50,7 +50,7 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
             result = result & self.outside_perimeter_bi
 
         if self.tolerance_modelling:
-            result = single_node_tolerance_model(result, self.video.fps)
+            result = single_node_tolerance_model(result, self.video_for_computation().fps)
 
         return result
 

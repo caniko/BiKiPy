@@ -12,10 +12,10 @@ from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.perimeter.base import BasePerimeter, BaseSinglePerimeter
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 
-T = TypeVar("T")
+ResultType = TypeVar("ResultType")
 
 
-class AbstractCompute(Generic[T], BikipyModel, ABC, extra=Extra.allow):
+class AbstractCompute(Generic[ResultType], BikipyModel, ABC, extra=Extra.allow):
     label: str
 
     heuristic_data_sources: ClassVar[tuple[str, ...]]
@@ -36,7 +36,7 @@ class AbstractCompute(Generic[T], BikipyModel, ABC, extra=Extra.allow):
 
     @property
     @abstractmethod
-    def result(self) -> T:
+    def result(self) -> ResultType:
         ...
 
     @abstractmethod
@@ -62,7 +62,7 @@ class AbstractComputePerimeterBooleanIndex(AbstractCompute[NpNDArrayBool], Video
     @computed_field  # type: ignore[misc]
     @property
     def result_seconds(self) -> float:
-        return self.video.boolean_array_to_seconds(self.result)
+        return self.video_for_computation().boolean_array_to_seconds(self.result)
 
     @property
     @abstractmethod

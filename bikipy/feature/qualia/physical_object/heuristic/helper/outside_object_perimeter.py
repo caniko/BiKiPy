@@ -35,7 +35,7 @@ class OutsideObjectPerimeterHeuristic(SingleComponentMixin, ProximityMixin, Abst
             perimeter=self.perimeter,
             maximum_distance=self.maximum_distance_pixels,
             inside_perimeter_border=self.reader[self.torso_label],
-            manual_video=self.video,
+            manual_video=self.video_for_computation(),
         ).result
 
     @computed_field  # type: ignore[misc]

@@ -9,67 +9,67 @@ optional = ["definition_center", "definition_change_reference", "definition_encl
 [ingress.defined]
 
 [experiment]
-optional = ["compute_first_two_feature_series_only", "fps", "frame", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_trial_ids", "manual_video", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "skip_habituation", "stage", "trial_init_error_out_dir"]
+optional = ["compute_first_two_feature_series_only", "fps", "frame", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_trial_ids", "manual_video", "meters_per_pixel", "minimum_frame_length", "manual_resolution", "skip_habituation", "stage", "trial_init_error_out_dir"]
 
 [experiment.defined]
 
 [trial]
 [trial.common]
-optional = ["animal_profile", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "physical_object_inspect", "reader_class_label", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter"]
+optional = ["animal_profile", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "physical_object_inspect", "reader_class_label", "manual_resolution", "rectangle_2d_bin", "trial_start_perimeter"]
 
 [trial.common.defined]
 
 [trial.ObjectsInUpdatingLocationsTestTrial]
 class_name = "ObjectsInUpdatingLocationsTestTrial"
-optional = ["animal_profile", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "physical_object_inspect", "reader_class_label", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter"]
+optional = ["animal_profile", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "physical_object_inspect", "reader_class_label", "manual_resolution", "rectangle_2d_bin", "trial_start_perimeter"]
 
 [trial.ObjectsInUpdatingLocationsTestTrial.defined]
 
 [trial.ObjectsInUpdatingLocationsTrainingTrial]
 class_name = "ObjectsInUpdatingLocationsTrainingTrial"
-optional = ["animal_profile", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "physical_object_inspect", "reader_class_label", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter"]
+optional = ["animal_profile", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "physical_object_inspect", "reader_class_label", "manual_resolution", "rectangle_2d_bin", "trial_start_perimeter"]
 
 [trial.ObjectsInUpdatingLocationsTrainingTrial.defined]
 
 [trial.ObjectsInUpdatingLocationsUpdateTrial]
 class_name = "ObjectsInUpdatingLocationsUpdateTrial"
-optional = ["animal_profile", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "physical_object_inspect", "reader_class_label", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter"]
+optional = ["animal_profile", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "crop_from_end", "cropped_total_seconds", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "physical_object_inspect", "reader_class_label", "manual_resolution", "rectangle_2d_bin", "trial_start_perimeter"]
 
 [trial.ObjectsInUpdatingLocationsUpdateTrial.defined]
 
 [enclosure.RectanglePerimeter]
 class_name = "RectanglePerimeter"
-optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "recording_resolution"]
+optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "manual_resolution"]
 
 [enclosure.RectanglePerimeter.defined]
 
 [perimeter]
 [perimeter.common]
-optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "recording_resolution"]
+optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "manual_resolution"]
 
 [perimeter.common.defined]
 
 [perimeter.object_1]
 class_name = "BaseSinglePerimeter"
-optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "recording_resolution"]
+optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "manual_resolution"]
 
 [perimeter.object_1.defined]
 
 [perimeter.object_3]
 class_name = "BaseSinglePerimeter"
-optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "recording_resolution"]
+optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "manual_resolution"]
 
 [perimeter.object_3.defined]
 
 [perimeter.object_4]
 class_name = "BaseSinglePerimeter"
-optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "recording_resolution"]
+optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "manual_resolution"]
 
 [perimeter.object_4.defined]
 
 [perimeter.object_2]
 class_name = "BaseSinglePerimeter"
-optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "recording_resolution"]
+optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "manual_resolution"]
 
 [perimeter.object_2.defined]
 
@@ -87,7 +87,7 @@ optional = ["debug", "disable_numba", "disable_process_pooling", "ignore_pre_exi
 
 [reader]
 required = ["object_tracking_label_for_kinematics"]
-optional = ["cache_meters_augmented", "crop_from_end", "cropped_total_seconds", "df_is_timestamped", "df_read_kwargs", "export_timestamp_data_as_parquet", "fps", "frame", "future_scaling", "invert_y_axis", "manual_video", "meters_per_pixel", "midpoint_groups", "min_likelihood", "minimum_frame_length", "model", "model_displacement_by_std", "model_kwargs", "model_method", "recording_resolution", "required_tail_likelihood", "x_axis_crop_end_point", "y_axis_crop_end_point"]
+optional = ["cache_meters_augmented", "crop_from_end", "cropped_total_seconds", "df_is_timestamped", "df_read_kwargs", "export_timestamp_data_as_parquet", "fps", "frame", "future_scaling", "invert_y_axis", "manual_video", "meters_per_pixel", "midpoint_groups", "min_likelihood", "minimum_frame_length", "model", "model_displacement_by_std", "model_kwargs", "model_method", "manual_resolution", "required_tail_likelihood", "x_axis_crop_end_point", "y_axis_crop_end_point"]
 
 [reader.defined]
 
@@ -165,7 +165,7 @@ only_physical_cores = "boolean(default: False)"
 physical_object_inspect = "boolean(default: False)"
 plural_entries = "boolean(default: True)"
 reader_class_label = "string(default: DeepLabCutReader)"
-recording_resolution = "np.ndarray[name='recording_resolution_0' type=int required=True]"
+manual_resolution = "np.ndarray[name='recording_resolution_0' type=int required=True]"
 rectangle_2d_bin = "array(default: (2, 2))"
 required_tail_likelihood = "number(default: 0.8)"
 skip_habituation = "boolean(default: False)"

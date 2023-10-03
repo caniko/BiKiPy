@@ -41,7 +41,7 @@ manual_reader_kwargs:
     midpoint_groups: object
     min_likelihood: number -> 0.8
     minimum_frame_length: integer -> 600
-    recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
+    manual_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
     required_tail_likelihood: number -> 0.8
     x_axis_crop_end_point: number -> 0.0
     y_axis_crop_end_point: number -> 0.0
@@ -78,7 +78,7 @@ trial:
       meters_per_pixel_from_perimeter: boolean -> False
       meters_per_pixel_from_perimeter_source: string
       minimum_frame_length: integer -> 600
-      recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
+      manual_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
       rigid_nodes_freezing: array
       tolerate_boolean_index: boolean -> True
       trial_start_perimeter: string
@@ -101,7 +101,7 @@ experiment:
     manual_video: '[{''$ref'': ''#/definitions/VideoMetadata''}]'
     meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
     minimum_frame_length: integer -> 600
-    recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
+    manual_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
     skip_habituation: boolean -> False
     stage: string
     trial_init_error_out_dir: string
@@ -131,7 +131,7 @@ perimeter:
       meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
       minimum_frame_length: integer -> 600
       moving_field_name: string
-      recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
+      manual_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
       outdated:
         outdated:
           outdated:
@@ -153,7 +153,7 @@ perimeter:
       meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
       minimum_frame_length: integer -> 600
       moving_field_name: string
-      recording_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
+      manual_resolution: np.ndarray[name='recording_resolution_0' type=short required=True]
       outdated:
         outdated:
           outdated:
@@ -183,5 +183,5 @@ perimeter:
               meters_per_pixel: '[{''type'': ''number''}, {''type'': ''dobble''}]'
               minimum_frame_length: number
               moving_field_name: string
-              recording_resolution: np.ndarray[name='recording_resolution_0' type=short
+              manual_resolution: np.ndarray[name='recording_resolution_0' type=short
                 required=True]

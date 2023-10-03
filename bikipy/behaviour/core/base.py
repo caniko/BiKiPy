@@ -66,7 +66,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
     # Label of the reader class to use for reading coordinate data
     reader_class_label: ClassVar[str] = "DeepLabCutReader"
 
-    required_video_metadata_fields = {"meters_per_pixel", "recording_resolution", "fps"}
+    required_video_metadata_fields = {"meters_per_pixel", "resolution", "fps"}
 
     experiment_class_name: ClassVar[str]
     experiment_stage: ClassVar[ExperimentStage]
@@ -152,13 +152,13 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
     @cached_property
     def manual_center_meters(self) -> NpNDArrayFp64 | None:
         if self.manual_center_pixels is not None:
-            return self.manual_center_pixels * self.video.meters_per_pixel
+            return self.manual_center_pixels * self.video_for_computation().meters_per_pixel
 
     @computed_field(return_type=NpNDArrayFp64 | None)  # type: ignore[misc]
     @cached_property
     def center_meter_translation(self) -> NpNDArrayFp64 | None:
         if self.manual_center_meters is not None:
-            return self.manual_center_meters - self.video.center_meters
+            return self.manual_center_meters - self.video_for_computation().center_meters
 
     @computed_field  # type: ignore[misc]
     @property
@@ -167,7 +167,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
             df_path=self.framewise_coordinates_path,
             manual_timestamp_index=self.coordinate_timestamp_index,
             label=self.framewise_coordinates_path.stem,
-            manual_video=self.video,
+            manual_video=self.video_for_computation(),
             enclosure=self.enclosure,
             **self.manual_reader_kwargs,
         )
@@ -179,7 +179,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
 
         # In case the reader finds no time index, see fps property in reader
         if result.fps_from_timestamped_index:
-            self.video.fps = result.fps_from_timestamped_index
+            self.video_for_computation().fps = result.fps_from_timestamped_index
 
         return result
 
@@ -191,14 +191,14 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
     @computed_field  # type: ignore[misc]
     @cached_property
     def experiment_seconds(self) -> int:
-        return self.reader.kinematic_coordinates.shape[0] / self.video.fps
+        return self.reader.kinematic_coordinates.shape[0] / self.video_for_computation().fps
 
     @computed_field  # type: ignore[misc]
     @cached_property
     def motion(self) -> Motion:
         return Motion(
             coordinate_sequence=self.reader.kinematic_coordinates,
-            fps=self.video.fps,
+            fps=self.video_for_computation().fps,
         )
 
     def generate_inspection_video(
@@ -234,11 +234,11 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
     @computed_field  # type: ignore[misc]
     @cached_property
     def _frame_tolerance(self) -> int:
-        return round(self.second_tolerance * self.video.fps)
+        return round(self.second_tolerance * self.video_for_computation().fps)
 
     def _post_feature_collection_flush(self) -> None:
         self.reader.flush_reads()
-        self.video.flush()
+        self.video_for_computation().flush()
 
 
 TrialCLS = type[BaseTrial]
@@ -743,14 +743,14 @@ class BaseExperiment(Behaviour):
             result.update(
                 VideoMetadata.join(
                     result.pop("manual_video"),
-                    self.video,
+                    self.video_for_computation(),
                     ignore_incongruity=True
                     # TODO: Replace after computed_field exclude method added to model_dump
                 ).metadata
             )
         else:
             # TODO: Replace after computed_field exclude method added to model_dump
-            result.update(self.video.metadata)
+            result.update(self.video_for_computation().metadata)
 
         return result
 

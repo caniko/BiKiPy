@@ -15,55 +15,55 @@ definition_video = ["trialwise"]
 lazy_dev_mode = true
 
 [experiment]
-optional = ["fps", "frame", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_trial_ids", "manual_video", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "skip_habituation", "stage", "trial_init_error_out_dir", "video_path"]
+optional = ["fps", "frame", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_trial_ids", "manual_video", "meters_per_pixel", "minimum_frame_length", "manual_resolution", "skip_habituation", "stage", "trial_init_error_out_dir", "video_path"]
 
 [experiment.defined]
 [trial.NORTNoveltyTrial]
 class_name = "NORTNoveltyTrial"
 required = ["project_kit_config"]
-optional = ["alias_to_heuristics_combination_equations", "analysis_series_cache_file_path", "analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
+optional = ["alias_to_heuristics_combination_equations", "analysis_series_cache_file_path", "analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "manual_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
 
 [trial.NORTNoveltyTrial.defined]
 
 [trial.NORTTrainingTrial]
 class_name = "NORTTrainingTrial"
 required = ["project_kit_config"]
-optional = ["alias_to_heuristics_combination_equations", "analysis_series_cache_file_path", "analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
+optional = ["alias_to_heuristics_combination_equations", "analysis_series_cache_file_path", "analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "manual_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
 
 [trial.NORTTrainingTrial.defined]
 
 [trial.common]
 required = ["project_kit_config"]
-optional = ["alias_to_heuristics_combination_equations", "analysis_series_cache_file_path", "analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
+optional = ["alias_to_heuristics_combination_equations", "analysis_series_cache_file_path", "analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "fps", "frame", "inspect_arg", "inspect_image_path", "length_meters_of_meters_per_pixel_source", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_perimeter_to_derive_meters_per_pixel", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "meters_per_pixel_from_perimeter_source", "minimum_frame_length", "manual_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
 
 [trial.common.defined]
 alias_to_heuristics_combination_equations = {BodyOlfaction="BodyProximityHeuristic | OlfactionHeuristic", Sensation="BodyProximityHeuristic | OlfactionHeuristic | WhiskerInteractionHeuristic"}
 
 [enclosure.RectanglePerimeter]
 class_name = "RectanglePerimeter"
-optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "recording_resolution", "video_path"]
+optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "manual_resolution", "video_path"]
 
 [enclosure.RectanglePerimeter.defined]
 [perimeter.familiar]
 class_name = "BaseSinglePerimeter"
-optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "recording_resolution", "video_path"]
+optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "manual_resolution", "video_path"]
 
 [perimeter.familiar.defined]
 
 [perimeter.variable]
 class_name = "BaseSinglePerimeter"
-optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "recording_resolution", "video_path"]
+optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "manual_resolution", "video_path"]
 
 [perimeter.variable.defined]
 
 [perimeter.novel]
 class_name = "BaseSinglePerimeter"
-optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "recording_resolution", "video_path"]
+optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "manual_resolution", "video_path"]
 
 [perimeter.novel.defined]
 
 [perimeter.common]
-optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "recording_resolution", "video_path"]
+optional = ["derive_meters_per_pixel", "derived_meters_per_pixel_source", "derived_meters_per_pixel_source_metric_length", "fps", "frame", "impenetrable", "inspect_arg", "inspect_image_path", "manual_inspect_image", "manual_video", "meters_per_pixel", "minimum_frame_length", "moving_field_name", "manual_resolution", "video_path"]
 
 [perimeter.common.defined]
 [plugin.PluginEnclosure]
@@ -90,13 +90,13 @@ optional = ["compressed_pickle_suffix", "debug", "disable_numba", "disable_proce
 
 [habituation]
 required = ["project_kit_config"]
-optional = ["analysis_series_cache_file_path", "analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "experiment_stage", "fps", "frame", "inspect_arg", "inspect_image_path", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
+optional = ["analysis_series_cache_file_path", "analysis_series_cache_format", "animal_profile", "center_periphery_tolerance_model", "center_rectangle_dimensions_to_spatial_resolution_ratio", "coordinate_timestamp_index", "experiment_stage", "fps", "frame", "inspect_arg", "inspect_image_path", "manual_center_pixels", "manual_center_rectangle_dimensions_meters", "manual_enclosure", "manual_inspect_image", "manual_reader_kwargs", "manual_video", "meters_per_pixel", "minimum_frame_length", "manual_resolution", "rectangle_2d_bin", "trial_start_perimeter", "video_path"]
 
 [habituation.defined]
 
 [reader]
 required = ["object_tracking_label_for_kinematics"]
-optional = ["cache_meters_augmented", "crop_seconds_from_end", "crop_seconds_from_start", "crop_target_from_end", "crop_target_trial_length_seconds", "df_is_timestamped", "df_read_kwargs", "export_timestamp_data_as_parquet", "fps", "frame", "future_scaling", "invert_y_axis", "label_to_plot_prepped_coordinates", "manual_video", "meters_per_pixel", "midpoint_groups", "min_likelihood", "minimum_frame_length", "model", "model_displacement_by_std", "model_kwargs", "model_method", "recording_resolution", "required_tail_likelihood", "video_path", "x_axis_crop_end_point", "y_axis_crop_end_point"]
+optional = ["cache_meters_augmented", "crop_seconds_from_end", "crop_seconds_from_start", "crop_target_from_end", "crop_target_trial_length_seconds", "df_is_timestamped", "df_read_kwargs", "export_timestamp_data_as_parquet", "fps", "frame", "future_scaling", "invert_y_axis", "label_to_plot_prepped_coordinates", "manual_video", "meters_per_pixel", "midpoint_groups", "min_likelihood", "minimum_frame_length", "model", "model_displacement_by_std", "model_kwargs", "model_method", "manual_resolution", "required_tail_likelihood", "video_path", "x_axis_crop_end_point", "y_axis_crop_end_point"]
 
 [reader.defined]
 midpoint_groups = {center_ear = ["left_ear", "right_ear"], torso = ["center_ear", "tail_base"]}
@@ -104,24 +104,24 @@ object_tracking_label_for_kinematics = "torso"
 
 [heuristics.BodyProximityHeuristic]
 class_name = "BodyProximityHeuristic"
-optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "tail_base_label", "torso_label", "video_path"]
+optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "manual_resolution", "tail_base_label", "torso_label", "video_path"]
 
 [heuristics.BodyProximityHeuristic.defined]
 
 [heuristics.OlfactionHeuristic]
 class_name = "OlfactionHeuristic"
-optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_nose_olfaction_rays", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "nose_label", "recording_resolution", "torso_label", "video_path"]
+optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_nose_olfaction_rays", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "nose_label", "manual_resolution", "torso_label", "video_path"]
 
 [heuristics.OlfactionHeuristic.defined]
 
 [heuristics.WhiskerInteractionHeuristic]
 class_name = "WhiskerInteractionHeuristic"
-optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "left_ear_label", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "right_ear_label", "video_path"]
+optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "left_ear_label", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "manual_resolution", "right_ear_label", "video_path"]
 
 [heuristics.WhiskerInteractionHeuristic.defined]
 
 [heuristics.common]
-optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "recording_resolution", "video_path"]
+optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "manual_resolution", "video_path"]
 
 [heuristics.common.defined]
 
@@ -214,7 +214,7 @@ object_tracking_label_for_kinematics = "string"
 only_one_instance_of_trial_class = "boolean(default: False)"
 only_physical_cores = "boolean(default: False)"
 project_kit_config = "object"
-recording_resolution = "np.ndarray[name='recording_resolution_0' type=int required=True]"
+manual_resolution = "np.ndarray[name='recording_resolution_0' type=int required=True]"
 rectangle_2d_bin = "array(default: (2, 2))"
 required_tail_likelihood = "number(default: 0.8)"
 right_ear_label = "string(default: right_ear)"

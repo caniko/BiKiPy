@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import cached_property, partial
 from itertools import chain
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -66,7 +65,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
             partial_heuristic_class = partial(
                 alias_to_heuristics_cls[heuristic_alias],
                 reader=self.reader,
-                manual_video=self.video,
+                manual_video=self.video_for_computation(),
                 **heuristic_config,
             )
             if heuristic_alias in alias_to_helper_heuristic:
@@ -74,17 +73,18 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
             else:
                 alias_to_solo_heuristics[heuristic_alias] = partial_heuristic_class
 
-        perimeter_sequenced_reduced_helper_heuristics = []
-        for perimeter in self.perimeters:
-            perimeter_sequenced_reduced_helper_heuristics.append(
+        if partial_helper_heuristics:
+            perimeter_sequenced_reduced_helper_heuristics = [
                 np.logical_or.reduce(
                     [
                         partial_heuristic_class(perimeter=perimeter)
                         for partial_heuristic_class in partial_helper_heuristics
                     ]
                 )
-            )
-        del partial_helper_heuristics
+                for perimeter in self.perimeters
+            ]
+        else:
+            perimeter_sequenced_reduced_helper_heuristics = [() for _perimeter in self.perimeters]
 
         for heuristic_alias, partial_heuristic_class in alias_to_solo_heuristics.items():
             result[heuristic_alias] = [
@@ -96,7 +96,6 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
 
         if self.inspection_fig_output_path:
             for heuristic_alias, physical_objects_heuristic in result.items():
-                self.inspection_fig_output_path: Optional[Path] = None
                 heuristic_inspect_arg = (
                     self.inspection_fig_output_path
                     if isinstance(self.inspection_fig_output_path, bool)
@@ -130,7 +129,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                     reader=self.reader,
                     label=heuristic_alias,
                     result=heuristic_result,
-                    manual_video=self.video,
+                    manual_video=self.video_for_computation(),
                 )
                 for perimeter, heuristic_result in zip(self.physical_object_perimeters, heuristic_results)
             ]
@@ -150,7 +149,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         result = {}
         for heuristic_alias, physical_objects_heuristic in self.alias_to_standalone_heuristic.items():
             result[heuristic_alias] = analysis_model(
-                manual_video=self.video,
+                manual_video=self.video_for_computation(),
                 po_label_to_qualia_boolean_index={
                     heuristic.physical_object_label: heuristic.result for heuristic in physical_objects_heuristic
                 },
@@ -184,7 +183,8 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         for heuristic, object_alternation_sequence in self.heuristic_to_object_alternation_sequence.items():
             rrs = np.array(
                 reduce_repeating_sequences(
-                    object_alternation_sequence, round(self.video.fps * self.minimum_seconds_tolerance)
+                    object_alternation_sequence,
+                    round(self.video_for_computation().fps * self.minimum_seconds_tolerance),
                 )
             )
             result[heuristic] = rrs[np.nonzero(rrs)]
@@ -205,7 +205,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                 continue
 
             make_inspection_video(
-                video_frames=self.video.video_read_frames(),
+                video_frames=self.video_for_computation().video_read_frames(),
                 reader=self.reader,
                 perimeter_to_boolean_index={po.perimeter: po.result for po in heuristics},
                 output_file_path=self._video_file_name(output_directory, context_label=heuristic_alias),
@@ -234,7 +234,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                         label_to_quiver_rays[label][heuristic.result] = ray_direction_points[heuristic.result]
 
             make_inspection_video(
-                video_frames=self.video.video_read_frames(),
+                video_frames=self.video_for_computation().video_read_frames(),
                 reader=self.reader,
                 perimeter_to_boolean_index=perimeter_to_boolean_index,
                 label_to_confinement_boolean_index=label_to_confinement_boolean_index,

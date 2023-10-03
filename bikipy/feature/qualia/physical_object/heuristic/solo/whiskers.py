@@ -59,7 +59,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
                 maximum_distance=self.maximum_distance_pixels,
                 inside_perimeter_border=self.reader[self.left_ear_label],
                 label="Left",
-                manual_video=self.video,
+                manual_video=self.video_for_computation(),
             )
         )
 
@@ -75,7 +75,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
                 ray_travel_direction_point=self.reader[self.left_ear_label],
                 max_radians=self.maximum_radians,
                 label="Left",
-                manual_video=self.video,
+                manual_video=self.video_for_computation(),
             )
         )
 
@@ -90,7 +90,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
                 maximum_distance=self.maximum_distance_pixels,
                 inside_perimeter_border=self.reader[self.right_ear_label],
                 label="Right",
-                manual_video=self.video,
+                manual_video=self.video_for_computation(),
             )
         )
 
@@ -106,7 +106,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
                 ray_travel_direction_point=self.reader[self.right_ear_label],
                 max_radians=self.maximum_radians,
                 label="Right",
-                manual_video=self.video,
+                manual_video=self.video_for_computation(),
             )
         )
 
@@ -114,13 +114,17 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
     @cached_property
     def left_result(self) -> NpNDArrayBool:
         result = self.left_proximity.result & self.leftward_observation.result
-        return result if self.filter_in_sequence else single_node_tolerance_model(result, self.video.fps)
+        return (
+            result if self.filter_in_sequence else single_node_tolerance_model(result, self.video_for_computation().fps)
+        )
 
     @computed_field  # type: ignore[misc]
     @cached_property
     def right_result(self) -> NpNDArrayBool:
         result = self.right_proximity.result & self.rightward_observation.result
-        return result if self.filter_in_sequence else single_node_tolerance_model(result, self.video.fps)
+        return (
+            result if self.filter_in_sequence else single_node_tolerance_model(result, self.video_for_computation().fps)
+        )
 
     @computed_field  # type: ignore[misc]
     @property
@@ -158,27 +162,29 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
         label = self.perimeter.label.capitalize()
         return pd.Series(
             (
-                self.video.boolean_array_to_seconds(self.left_result),
-                self.video.boolean_array_to_seconds(self.right_result),
-                self.video.boolean_array_to_seconds(self.result),
+                self.video_for_computation().boolean_array_to_seconds(self.left_result),
+                self.video_for_computation().boolean_array_to_seconds(self.right_result),
+                self.video_for_computation().boolean_array_to_seconds(self.result),
             ),
             index=[f"{label}LeftwardProxFOV", f"{label}RightwardProxFOV", f"{label}{self.heuristic_alias}Result"],
         )
 
     def plot(self) -> None:
-        fig, axes = self.video.subplots(ncols=3, nrows=3, exclude_imaging_from_rc_coord=((0, 2), (2, 2)))
+        fig, axes = self.video_for_computation().subplots(
+            ncols=3, nrows=3, exclude_imaging_from_rc_coord=((0, 2), (2, 2))
+        )
         fig.suptitle(self.heuristic_alias)
 
         # Left
-        self.left_proximity.plot(axes[0][0], self.video)
-        self.leftward_observation.plot(axes[0][1], self.video)
+        self.left_proximity.plot(axes[0][0], self.video_for_computation())
+        self.leftward_observation.plot(axes[0][1], self.video_for_computation())
 
         axes[0][2].set_title("LeftwardProximalFOV")
         self.reader.plot_boolean_index(self.left_result, axes[0][2], self.left_ear_label)
 
         # Right
-        self.right_proximity.plot(axes[1][0], self.video)
-        self.rightward_observation.plot(axes[1][1], self.video)
+        self.right_proximity.plot(axes[1][0], self.video_for_computation())
+        self.rightward_observation.plot(axes[1][1], self.video_for_computation())
 
         axes[1][2].set_title("RightwardProximalFOV")
         self.reader.plot_boolean_index(self.right_result, axes[1][2], self.right_ear_label)
