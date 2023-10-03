@@ -122,6 +122,7 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
         description="Quality of life improvements for the lazy developer. "
         "Currently changes the name of the inspection if there is an exception during analysis",
     )
+    no_inspection: bool = False
 
     trial_id_to_trial_class_name: dict[Label, str] = Field(default_factory=dict)
     common_trial_keyword_arguments: dict[str, Any] = Field(default_factory=dict)
@@ -479,7 +480,10 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def inspect_directory_path(self) -> DirectoryPath:
+    def inspect_directory_path(self) -> DirectoryPath | None:
+        if self.no_inspection:
+            return
+
         result = get_inspect_directory_path(self.project_directory)
         if (
             not runtime_settings.ignore_pre_existing_inspection_directory

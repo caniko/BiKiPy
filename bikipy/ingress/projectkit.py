@@ -30,6 +30,7 @@ from bikipy.feature.qualia.physical_object.heuristic.mapping import (
 from bikipy.ingress.plugin.perimeter.enclosure import PluginEnclosure
 from bikipy.ingress.workflow.animal import AnimalIngressWorkflow
 from bikipy.ingress.workflow.animal_day import AnimalDayIngressWorkflow
+from bikipy.ingress.workflow.base import BaseIngressWorkflow
 from bikipy.ingress.workflow.phase import PhaseIngressWorkflow
 from bikipy.reader import DeepLabCutReader
 
@@ -42,7 +43,7 @@ INGRESS_METHOD_NAME_TO_INGRESS_CLASS = {
 }
 
 
-class ProjectKitJITBikipyConfiguration(ProjectKitRootClassJITConfigurator):
+class ProjectKitJITBikipyConfiguration(ProjectKitRootClassJITConfigurator[BaseIngressWorkflow]):
     project_name = "bikipy"
 
     mapping_key_order = PROJECTKIT_CONFIG_KEY_ORDER

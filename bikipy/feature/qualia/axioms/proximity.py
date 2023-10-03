@@ -62,11 +62,6 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
     @computed_field  # type: ignore[misc]
     @cached_property
     def result(self) -> NpNDArrayBool:
-        """
-        Collecting data for my_perimeter_to_boolean_index along the way.
-
-        :return:
-        """
         if self.valid_border is not None and self.valid_perimeter is not None:
             return self.valid_border & self.valid_perimeter
 
@@ -102,11 +97,16 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
         if self.inside_perimeter_boolean_index is not None:
             return self.inside_perimeter_boolean_index
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(repr=False)  # type: ignore[misc]
     @property
     def perimeter_to_boolean_index(self) -> dict[BasePerimeter, NpNDArrayBool]:
-        assert self.result is not None
-        return self.my_perimeter_to_boolean_index
+        result = {}
+        if self.valid_border is not None:
+            result[self.perimeter_border] = self.valid_border
+
+        if self.valid_perimeter is not None:
+            result[self.perimeter] = self.valid_perimeter
+        return result
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
     def plot(self, ax: Axes, video: Optional[VideoMetadata] = None, coordinates_as_pixels: bool = False) -> None:
