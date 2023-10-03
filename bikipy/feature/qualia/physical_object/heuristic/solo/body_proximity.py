@@ -91,7 +91,7 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
         label = self.perimeter.label.capitalize()
 
         if self.center_ear_proximity:
-            data[f"{label}CenterEarProximity{label}"] = self.center_ear_proximity.result_seconds
+            data[f"{label}CenterEarProximity"] = self.center_ear_proximity.result_seconds
 
         if self.tail_base_proximity:
             data[f"{label}BaseTailProximity"] = self.tail_base_proximity.result_seconds

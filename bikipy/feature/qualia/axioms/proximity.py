@@ -67,17 +67,40 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
 
         :return:
         """
-        return self.valid_border & self.valid_perimeter
+        if self.valid_border is not None and self.valid_perimeter is not None:
+            return self.valid_border & self.valid_perimeter
+
+        if self.valid_border is not None:
+            return self.valid_border
+
+        if self.valid_perimeter is not None:
+            return self.valid_perimeter
+
+        assert False
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def valid_border(self) -> NpNDArrayBool:
-        return self.outside_perimeter_border_boolean_index & self.inside_perimeter_border_boolean_index
+    def valid_border(self) -> NpNDArrayBool | None:
+        if self.outside_perimeter_border_boolean_index is not None and self.inside_perimeter_border_boolean_index is not None:
+            return self.outside_perimeter_border_boolean_index & self.inside_perimeter_border_boolean_index
+
+        if self.outside_perimeter_border_boolean_index is not None:
+            return self.outside_perimeter_border_boolean_index
+
+        if self.inside_perimeter_border_boolean_index is not None:
+            return self.inside_perimeter_border_boolean_index
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def valid_perimeter(self) -> NpNDArrayBool:
-        return self.outside_perimeter_boolean_index & self.inside_perimeter_boolean_index
+    def valid_perimeter(self) -> NpNDArrayBool | None:
+        if self.outside_perimeter_boolean_index is not None and self.inside_perimeter_boolean_index is not None:
+            return self.outside_perimeter_boolean_index & self.inside_perimeter_boolean_index
+
+        if self.outside_perimeter_boolean_index is not None:
+            return self.outside_perimeter_boolean_index
+
+        if self.inside_perimeter_boolean_index is not None:
+            return self.inside_perimeter_boolean_index
 
     @computed_field  # type: ignore[misc]
     @property
@@ -102,9 +125,9 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
         self.perimeter_border.plot(ax=ax, coordinates_as_pixels=coordinates_as_pixels)
 
         color_count = 1
-        if self.outside_perimeter_border is not None:
+        if self.valid_border is not None:
             color_count += 1
-        if self.outside_perimeter is not None:
+        if self.valid_perimeter is not None:
             color_count += 1
         color_map_iter = iter(make_color_map(color_count))
 
@@ -117,7 +140,7 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
         )
 
         not_result = ~self.result
-        if self.outside_perimeter_border is not None:
+        if self.valid_border is not None:
             ax.scatter(
                 *inside_perimeter_border_plot_scaled[self.valid_border & not_result].T,
                 marker="x",
@@ -125,7 +148,7 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
                 label="ValidBorder",
                 color=next(color_map_iter),
             )
-        if self.outside_perimeter is not None:
+        if self.valid_perimeter is not None:
             ax.scatter(
                 *inside_perimeter_border_plot_scaled[self.valid_perimeter & not_result].T,
                 marker="x",
