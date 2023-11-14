@@ -52,6 +52,7 @@ from bikipy.utils.pandas import copycat_assumes_levels_of_icon
 if TYPE_CHECKING:
     from bikipy.ingress.plugin.core.base import BasePlugin, PluginType
 
+PROFILER_FILE_NAME = "performance_analysis.prof"
 
 defaultdict_dict = partial(defaultdict, dict)
 
@@ -488,7 +489,7 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
         if (
             not runtime_settings.ignore_pre_existing_inspection_directory
             and result.exists()
-            and tuple(result.glob("**/*"))
+            and any(bool(e) for e in result.glob("**/*") if e.name != PROFILER_FILE_NAME)
         ):
             if not self.lazy_dev_mode:
                 already_exists_prompt = input(
@@ -649,7 +650,7 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
             finally:
                 stats = pstats.Stats(pr)
                 stats.sort_stats(pstats.SortKey.TIME)
-                stats.dump_stats(self.inspect_directory_path / "performance_analysis.prof")
+                stats.dump_stats(self.inspect_directory_path / PROFILER_FILE_NAME)
 
         parquet_dir = (
             self.result_directory_path / "parquet" if len(self.trial_label_to_df) == 1 else self.result_directory_path

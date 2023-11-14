@@ -47,6 +47,8 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
         description="labels that consist of groups that should have their midpoints computed in the DataFrame"
     )
 
+    max_meters_per_second: Optional[float] = 0.5
+
     stat_model: bool = True
     stat_model_method: Literal["arima", "median", "spline"] = Field(
         "arima", description="Post-hoc filtration method label for improving data accuracy, adapted from DeepLabCut"
@@ -63,11 +65,6 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     )
 
     skeleton_edges: tuple[tuple[str, str], ...] = Field(default_factory=tuple)
-    skeleton_max_velocity: Optional[float] = None
-    skeleton_max_acceleration: Optional[float] = None
-    skeleton_acceleration_rigidity_filter: bool = Field(
-        True, description="When True, consider filter based on acceleration"
-    )
 
     cache_meters_augmented: bool = True
 
@@ -140,6 +137,12 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @abstractmethod
     def isolate_coordinates_from_native_df(df: pd.DataFrame, key: Iterable[str] | str) -> NpNDArrayFp64:
         ...
+
+    @computed_field # type: ignore[misc]
+    @cached_property
+    def max_meters_per_frame(self) -> float | None:
+        if self.max_meters_per_second:
+            return self.max_meters_per_second / self.fps
 
     @computed_field  # type: ignore[misc]
     @property
@@ -284,6 +287,11 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
                         result.loc[:, pd.IndexSlice[ptl, ("x", "y")]].values, potential_label="trial_enclosure"
                     )
                 ] = BAD_COORDINATE
+
+        if self.max_meters_per_second:
+            for ptl in self.physically_tracked_labels:
+                high_velocity_idx = np.where(np.diff(result[ptl]) >= self.max_meters_per_frame)[0] + 1
+                result.loc[high_velocity_idx, ptl] = BAD_COORDINATE
 
         if self.stat_model:
             logger.debug(f"Filtering {self.df_path.stem} with the {self.stat_model_method} method")

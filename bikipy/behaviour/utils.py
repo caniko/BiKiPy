@@ -37,11 +37,6 @@ def unique_with_counts_zipped(array: NpNDArray):
     return zip(*np.unique(array, return_counts=True))
 
 
-@validate_call
-def exclude_value_from_sequence(sequence: NpNDArrayFp64, exclude: Any):
-    return sequence[sequence != exclude]
-
-
 def feature_2d_multi_indexer(feature: str, groups: Iterable[str]):
     return [(str(feature), str(group)) for group in groups]
 

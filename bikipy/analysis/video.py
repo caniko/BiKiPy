@@ -20,7 +20,7 @@ def make_inspection_video(
     revert_crop: bool = False,
     output_file_path: Optional[Path] = None,
     frames_on_the_fly: bool = True,
-    codec: str = "hevc_nvenc",
+    codec: str = "h264",
     delete_old: bool = True,
 ) -> None:
     """
@@ -115,7 +115,7 @@ def make_inspection_video(
                 lambda t: make_frame(round(t * reader.video_for_computation().fps)), duration=reader.duration_seconds
             )
             .set_fps(reader.video_for_computation().fps)
-            .write_videofile(str(output_file_path), codec=codec)
+            .write_videofile(str(output_file_path), codec=codec, preset="slower")
         )
 
     raise NotImplementedError("not frames_on_the_fly; not implemented")
