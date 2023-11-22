@@ -20,6 +20,7 @@ from bikipy.core.base import BikipyHashable
 from bikipy.core.typing import ConfinementSequence
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.midpoint import recursive_midpoint
+from bikipy.math.high_velocity import high_velocity_removal
 from bikipy.perimeter.base import BasePerimeter
 from bikipy.reader.model import model_data
 from bikipy.reader.utils import compute_midpoint_label
@@ -140,9 +141,9 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
     @computed_field # type: ignore[misc]
     @cached_property
-    def max_meters_per_frame(self) -> float | None:
+    def max_pixels_per_frame(self) -> float | None:
         if self.max_meters_per_second:
-            return self.max_meters_per_second / self.fps
+            return self.video.pixels_per_meter * self.max_meters_per_second / self.video.fps
 
     @computed_field  # type: ignore[misc]
     @property
@@ -290,8 +291,10 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
         if self.max_meters_per_second:
             for ptl in self.physically_tracked_labels:
-                high_velocity_idx = np.where(np.diff(result[ptl]) >= self.max_meters_per_frame)[0] + 1
-                result.loc[high_velocity_idx, ptl] = BAD_COORDINATE
+                result.loc[:, pd.IndexSlice[ptl, ["x", "y"]]] = high_velocity_removal(
+                    result.loc[:, pd.IndexSlice[ptl, ["x", "y"]]].values,
+                    self.max_pixels_per_frame
+                )
 
         if self.stat_model:
             logger.debug(f"Filtering {self.df_path.stem} with the {self.stat_model_method} method")

@@ -1,12 +1,15 @@
 import numpy as np
+from numba import njit
 from pydantic_numpy.typing import Np2DArrayFp64
 
+from bikipy import runtime_settings
 
-def high_velocity_removal(position_array: Np2DArrayFp64, max_meters_per_frame: float) -> Np2DArrayFp64:
+
+def high_velocity_removal(position_array: Np2DArrayFp64, max_distance_per_frame: float) -> Np2DArrayFp64:
     """
     We have an array of coordinates, referred to as 'position_array', representing positions in each frame. Our goal is
     to identify and remove points where the movement speed between frames exceeds a certain limit,
-    defined as 'max_meters_per_frame'.
+    defined as 'max_distance_per_frame'.
 
     First, we calculate the velocity between each pair of consecutive points using the np.diff function.
     This gives us an array of velocities.
@@ -27,12 +30,12 @@ def high_velocity_removal(position_array: Np2DArrayFp64, max_meters_per_frame: f
     while keeping the rest of the data intact.
 
     :param position_array:
-    :param max_meters_per_frame:
+    :param max_distance_per_frame:
     :return:
     """
-    velocities = np.linalg.norm(np.diff(position_array, axis=0), axis=1)
+    velocities = np.abs(np.diff(np.linalg.norm(position_array, axis=1), axis=0))
 
-    high_velocity_indices = np.where(velocities >= max_meters_per_frame)[0]
+    high_velocity_indices = np.where(velocities >= max_distance_per_frame)[0]
 
     for idx in high_velocity_indices:
         # Skip if the index has already been evaluated and set to np.nan
@@ -43,14 +46,20 @@ def high_velocity_removal(position_array: Np2DArrayFp64, max_meters_per_frame: f
 
         check_idx = idx + 2
         # Continue checking until a point is found with velocity below the threshold or the end of the array is reached
+        current_max_distance = max_distance_per_frame
         while check_idx < len(position_array):
             velocity = np.linalg.norm(position_array[idx] - position_array[check_idx])
-            if velocity < max_meters_per_frame:
+            if velocity < current_max_distance:
                 break
-            else:
-                # Set the current checking point to np.nan and move to the next point
-                position_array[check_idx] = np.nan
+
+            # Set the current checking point to np.nan and move to the next point
+            position_array[check_idx] = np.nan
+
             check_idx += 1
+            current_max_distance += max_distance_per_frame
 
     return position_array
 
+
+if not runtime_settings.disable_numba:
+    high_velocity_removal = njit(cache=True)(high_velocity_removal)
