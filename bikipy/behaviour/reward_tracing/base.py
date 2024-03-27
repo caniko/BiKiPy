@@ -1,7 +1,7 @@
 from abc import ABC
 from functools import cached_property
 from logging import getLogger
-from typing import ClassVar, Generic, TypeVar
+from typing import ClassVar
 
 import numpy as np
 import pandas as pd
@@ -17,11 +17,10 @@ from bikipy.perimeter.base import BaseSinglePerimeter
 
 logger = getLogger(__name__)
 
-StartPerimeter = TypeVar("StartPerimeter", bound=BaseSinglePerimeter)
-RewardPerimeter = TypeVar("RewardPerimeter", bound=BaseSinglePerimeter)
 
-
-class RewardTraceTrialMixin(Generic[StartPerimeter, RewardPerimeter], BikipyModel, ABC):
+class RewardTraceTrialMixin[StartPerimeter: BaseSinglePerimeter, RewardPerimeter: BaseSinglePerimeter](
+    BikipyModel, ABC
+):
     start_perimeter: StartPerimeter
     reward_perimeter: RewardPerimeter
 

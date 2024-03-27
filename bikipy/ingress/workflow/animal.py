@@ -49,9 +49,9 @@ class AnimalIngressWorkflow(BaseIngressWorkflow):
                     except IndexError:
                         continue
 
-                    plugin_data[
-                        plugin_model.default_trial_argument_key or data_object.default_trial_argument_key
-                    ] = data_object
+                    plugin_data[plugin_model.default_trial_argument_key or data_object.default_trial_argument_key] = (
+                        data_object
+                    )
 
                 if self.experiment_class.has_stages:
                     self.trial_id_to_trial_class_name[trial_id] = self._trial_class_from_stage_index(

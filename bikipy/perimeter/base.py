@@ -3,7 +3,7 @@ from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar, Literal, Optional, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -104,8 +104,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         manual_video: Optional[VideoMetadata] = None,
         ax: Axes = None,
         **inspect_kwargs,
-    ) -> NpNDArrayBool:
-        ...
+    ) -> NpNDArrayBool: ...
 
     @abstractmethod
     def plot_perimeter_on_ax(
@@ -116,21 +115,17 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         x_pixel_offset: float = 0.0,
         y_pixel_offset: float = 0.0,
         **plot_kwargs,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
-    def change_reference(self, new_reference: NpNDArrayFp64, makesense_image_name: Optional[str] = None):
-        ...
+    def change_reference(self, new_reference: NpNDArrayFp64, makesense_image_name: Optional[str] = None): ...
 
     @property
     @abstractmethod
-    def centroid_meters(self) -> NpNDArrayFp64:
-        ...
+    def centroid_meters(self) -> NpNDArrayFp64: ...
 
 
 PerimeterCLS = type[BasePerimeter]
-Perimeter = TypeVar("Perimeter", bound=BasePerimeter)
 
 
 from bikipy.reader.base import BaseReader  # ruff ignore E402
@@ -218,22 +213,18 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         return
 
     @abstractmethod
-    def expand(self, perimeter_border_normal_meters: float | NpNDArrayFp64):
-        ...
+    def expand(self, perimeter_border_normal_meters: float | NpNDArrayFp64): ...
 
     @abstractmethod
-    def closest_point_on_edge_to_coordinates(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64:
-        ...
+    def closest_point_on_edge_to_coordinates(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64: ...
 
     @abstractmethod
-    def vector_to_closest_point_on_edge(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64:
-        ...
+    def vector_to_closest_point_on_edge(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64: ...
 
     @abstractmethod
     def ray_direction_filter(
         self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, **kwargs
-    ) -> NpNDArrayBool:
-        ...
+    ) -> NpNDArrayBool: ...
 
     @model_validator(mode="before")
     def mutually_exclusive(cls, values):
@@ -471,12 +462,14 @@ class PerimeterSet(BasePerimeter):
             perimeters=tuple(
                 perimeter.change_reference(**perimeter_change_reference_kwargs) for perimeter in self.perimeters
             ),
-            restricting_perimeters=tuple(
-                perimeter.change_reference(**perimeter_change_reference_kwargs)
-                for perimeter in self.restricting_perimeters
-            )
-            if self.restricting_perimeters
-            else None,
+            restricting_perimeters=(
+                tuple(
+                    perimeter.change_reference(**perimeter_change_reference_kwargs)
+                    for perimeter in self.restricting_perimeters
+                )
+                if self.restricting_perimeters
+                else None
+            ),
         )
 
     @computed_field  # type: ignore[misc]

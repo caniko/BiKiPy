@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import ClassVar, Generic, Optional, TypeVar
+from typing import ClassVar, Optional
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -12,10 +12,8 @@ from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.perimeter.base import BasePerimeter, BaseSinglePerimeter
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 
-ResultType = TypeVar("ResultType")
 
-
-class AbstractCompute(Generic[ResultType], BikipyModel, ABC, extra=Extra.allow):
+class AbstractCompute[ResultType](BikipyModel, ABC, extra=Extra.allow):
     label: str
 
     heuristic_data_sources: ClassVar[tuple[str, ...]]
@@ -36,12 +34,10 @@ class AbstractCompute(Generic[ResultType], BikipyModel, ABC, extra=Extra.allow):
 
     @property
     @abstractmethod
-    def result(self) -> ResultType:
-        ...
+    def result(self) -> ResultType: ...
 
     @abstractmethod
-    def plot(self, ax: Axes, *args, **kwargs) -> None:
-        ...
+    def plot(self, ax: Axes, *args, **kwargs) -> None: ...
 
     def plot_finalization(self, ax: Axes, video: Optional[VideoMetadata] = None) -> None:
         ax.set_title(self.label)
@@ -66,8 +62,7 @@ class AbstractComputePerimeterBooleanIndex(AbstractCompute[NpNDArrayBool], Video
 
     @property
     @abstractmethod
-    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, NpNDArrayBool]:
-        ...
+    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, NpNDArrayBool]: ...
 
     def video_gen_merge_perimeter_to_boolean_index(
         self, other: "AbstractComputePerimeterBooleanIndex", both_or_false: bool = False

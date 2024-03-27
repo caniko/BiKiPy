@@ -152,7 +152,7 @@ optional = ["cache_meters_augmented", "crop_from_end", "cropped_total_seconds", 
 
 [reader.defined]
 midpoint_groups = { center_ear = ["left_ear", "right_ear"], torso = ["center_ear", "tail_base"] }
-crop_seconds_from_start = 1.0
+seconds_to_try_to_crop_from_start = 1.0
 object_tracking_label_for_kinematics = "torso"
 
 [field]

@@ -3,12 +3,10 @@ from bikipy.perimeter.circle.model import (
     CircleFixedRadiusPerimeter,
     CircleVariableRadiusPerimeter,
 )
-from bikipy.perimeter.polygon.base import PolygonPerimeter
 from bikipy.perimeter.polygon.rectangle import RectanglePerimeter
 
 PERIMETERS = (
     BaseSinglePerimeter,
-    PolygonPerimeter,
     RectanglePerimeter,
     CircleVariableRadiusPerimeter,
     CircleFixedRadiusPerimeter,

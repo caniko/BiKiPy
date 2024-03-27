@@ -14,6 +14,7 @@ Test hypothesis:
 TG: Equal
 WT: 4 > 3 > 2 >~ 1
 """
+
 from pydantic import computed_field
 
 from bikipy.behaviour.core.constant import ExperimentStage

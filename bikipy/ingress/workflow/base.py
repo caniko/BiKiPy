@@ -7,7 +7,7 @@ from cProfile import Profile
 from functools import cached_property, partial
 from itertools import chain
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional
 
 import numpy as np
 import pandas as pd
@@ -836,6 +836,3 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
         if "-" in stem:
             stem = path.stem.split("-")[0]
         return int(stem) if stem.isdigit() else stem
-
-
-IngressWorkflow = TypeVar("IngressWorkflow", bound=BaseIngressWorkflow)

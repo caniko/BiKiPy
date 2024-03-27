@@ -1,6 +1,7 @@
 """
 Note that points in this context is the location of a region of interest across time.
 """
+
 import numpy as np
 from pydantic import validate_call
 from pydantic_numpy.typing import NpNDArrayFp64

@@ -11,8 +11,7 @@ class ProximityMixin(BaseModel, ABC):
 
     @property
     @abstractmethod
-    def label_to_proximity_boolean(self) -> dict[str, NpNDArrayBool]:
-        ...
+    def label_to_proximity_boolean(self) -> dict[str, NpNDArrayBool]: ...
 
     @computed_field  # type: ignore[misc]
     @property
@@ -30,8 +29,7 @@ class RayMixin(BaseModel, ABC):
 
     @property
     @abstractmethod
-    def label_to_ray_vector_direction_points(self) -> dict[str, NpNDArrayFp64]:
-        ...
+    def label_to_ray_vector_direction_points(self) -> dict[str, NpNDArrayFp64]: ...
 
 
 class SingleComponentMixin(BaseModel):

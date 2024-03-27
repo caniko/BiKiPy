@@ -108,7 +108,7 @@ manual_reader_kwargs = {crop_target_trial_length_seconds=280}
 
 [reader]
 required = ["object_tracking_label_for_kinematics"]
-optional = ["cache_meters_augmented", "crop_seconds_from_end", "crop_seconds_from_start", "crop_target_from_end", "crop_target_trial_length_seconds", "df_is_timestamped", "df_read_kwargs", "export_timestamp_data_as_parquet", "fps", "frame", "future_scaling", "invert_y_axis", "label_to_plot_prepped_coordinates", "manual_video", "meters_per_pixel", "midpoint_groups", "min_likelihood", "minimum_frame_length", "model", "model_displacement_by_std", "model_kwargs", "model_method", "manual_resolution", "required_tail_likelihood", "video_path", "x_axis_crop_end_point", "y_axis_crop_end_point"]
+optional = ["cache_meters_augmented", "seconds_to_try_to_crop_from_end", "seconds_to_try_to_crop_from_start", "crop_target_from_end", "crop_target_trial_length_seconds", "df_is_timestamped", "df_read_kwargs", "export_timestamp_data_as_parquet", "fps", "frame", "future_scaling", "invert_y_axis", "label_to_plot_prepped_coordinates", "manual_video", "meters_per_pixel", "midpoint_groups", "min_likelihood", "minimum_frame_length", "model", "model_displacement_by_std", "model_kwargs", "model_method", "manual_resolution", "required_tail_likelihood", "video_path", "x_axis_crop_end_point", "y_axis_crop_end_point"]
 
 [reader.defined]
 object_tracking_label_for_kinematics = "torso"
@@ -165,8 +165,8 @@ combined_helper_heuristic = "np.ndarray[name='combined_helper_heuristic_0' type=
 compressed_pickle_suffix = "string(default: .lz4)"
 coordinate_timestamp_index = "np.ndarray"
 create_inspection_plots = "boolean(default: True)"
-crop_seconds_from_end = "number(default: 0.0)"
-crop_seconds_from_start = "number(default: 0.0)"
+seconds_to_try_to_crop_from_end = "number(default: 0.0)"
+seconds_to_try_to_crop_from_start = "number(default: 0.0)"
 crop_target_from_end = "boolean(default: False)"
 crop_target_trial_length_seconds = "number"
 custom_trial_sequence = "array"

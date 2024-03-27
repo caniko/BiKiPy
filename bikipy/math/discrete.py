@@ -1,5 +1,5 @@
 from itertools import groupby
-from typing import Sequence, TypeVar
+from typing import Sequence
 
 import numpy as np
 from numba import njit
@@ -111,10 +111,7 @@ def tolerance_modeled_boolean_index_truth_sequence_start_end_length(
     return data, new_boolean_index
 
 
-T = TypeVar("T")
-
-
-def reduce_repeating_sequences(repeating_sequence: Sequence[T], minimum_repeating: int) -> list[T]:
+def reduce_repeating_sequences[T](repeating_sequence: Sequence[T], minimum_repeating: int) -> list[T]:
     reduced_seq = []
     for key, group in groupby(repeating_sequence):
         if len(tuple(group)) >= minimum_repeating:

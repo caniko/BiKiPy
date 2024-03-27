@@ -203,8 +203,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
 
     def generate_inspection_video(
         self, output_directory: Optional[DirectoryPath] = None, *, codec: Optional[str] = None, **kwargs
-    ) -> None:
-        ...
+    ) -> None: ...
 
     def _video_file_name(
         self, output_directory: Optional[DirectoryPath] = None, context_label: Optional[str] = None
@@ -744,7 +743,7 @@ class BaseExperiment(Behaviour):
                 VideoMetadata.join(
                     result.pop("manual_video"),
                     self.video_for_computation(),
-                    ignore_incongruity=True
+                    ignore_incongruity=True,
                     # TODO: Replace after computed_field exclude method added to model_dump
                 ).metadata
             )

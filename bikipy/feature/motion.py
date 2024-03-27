@@ -272,8 +272,8 @@ def merge_motion_island_data(motion_islands: TruthIslandMetadata, coordinate_seq
     return {
         "total_displacement": df["total_displacement"].sum(),
         "median_speed": 0.0 if np.all(np.isnan(df["median_speed"])) else nan_average(df["median_speed"], df["weight"]),
-        "median_acceleration": 0.0
-        if np.all(np.isnan(df["median_acceleration"]))
-        else nan_average(df["median_acceleration"], df["weight"]),
+        "median_acceleration": (
+            0.0 if np.all(np.isnan(df["median_acceleration"])) else nan_average(df["median_acceleration"], df["weight"])
+        ),
         "freezing_time": df["freezing_time"].sum(),
     }

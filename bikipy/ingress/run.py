@@ -43,6 +43,4 @@ def generate_inspection_videos(
     :return:
     """
     ingress = get_ingress(here_or_there(project_directory), root_class_init_kwargs=dict(no_inspection=True))
-    ingress.create_analysis_videos(
-        trial_ids, output_directory=ingress.result_directory_path, codec=codec, **kwargs
-    )
+    ingress.create_analysis_videos(trial_ids, output_directory=ingress.result_directory_path, codec=codec, **kwargs)

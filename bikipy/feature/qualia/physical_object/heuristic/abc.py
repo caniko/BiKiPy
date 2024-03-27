@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import ClassVar, Optional, TypeVar
+from typing import ClassVar, Optional
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -35,8 +35,7 @@ class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectModelMixin, ABC):
         return result
 
     @abstractmethod
-    def plot(self) -> None:
-        ...
+    def plot(self) -> None: ...
 
     @computed_field  # type: ignore[misc]
     @property
@@ -56,14 +55,12 @@ class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectModelMixin, ABC):
 
 
 HeuristicCLS = type[AbstractHeuristic]
-Heuristic = TypeVar("Heuristic", bound=AbstractHeuristic)
 
 
 class StandaloneHeuristic(AbstractHeuristic):
     @property
     @abstractmethod
-    def result(self) -> NpNDArrayBool:
-        ...
+    def result(self) -> NpNDArrayBool: ...
 
     def plot_result(self, ax: Axes, label_to_plot: Optional[str] = None) -> None:
         ax.set_title("Combined result")

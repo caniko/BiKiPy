@@ -1,10 +1,11 @@
 
 
 format:
-	black .
-	isort .
-	ruff check bikipy/ --fix
-	@echo "Formatting complete 🎉"
+    poetry run black .
+    poetry run isort .
+    poetry run ruff check --fix --exit-zero .
 
-mypy:
-	poetry run mypy -p bikipy
+typecheck:
+    poetry run pyright
+
+check: format typecheck

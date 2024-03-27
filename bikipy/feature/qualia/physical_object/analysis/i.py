@@ -1,6 +1,6 @@
 from functools import cached_property
 from logging import getLogger
-from typing import TypeVar
+from typing import Self
 
 import numpy as np
 import pandas as pd
@@ -21,7 +21,7 @@ AND_OR_HEURISTIC_INCONGRUENCE_ERROR_MSG = (
 class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMetadataMixin):
     po_label_to_qualia_boolean_index: dict[str, NpNDArrayBool]
 
-    def __and__(self, other: "QualiaAnalysis") -> "QualiaAnalysis":
+    def __and__(self, other) -> Self:
         assert self.__class__ == other.__class__
         try:
             return self.__class__(
@@ -34,7 +34,7 @@ class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMet
         except KeyError:
             raise KeyError(AND_OR_HEURISTIC_INCONGRUENCE_ERROR_MSG)
 
-    def __or__(self, other: "QualiaAnalysis") -> "QualiaAnalysis":
+    def __or__(self, other) -> Self:
         assert self.__class__ == other.__class__
         try:
             return self.__class__(
@@ -47,7 +47,7 @@ class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMet
         except KeyError:
             raise KeyError(AND_OR_HEURISTIC_INCONGRUENCE_ERROR_MSG)
 
-    def __invert__(self) -> "QualiaAnalysis":
+    def __invert__(self) -> Self:
         return self.__class__(
             po_label_to_qualia_boolean_index={
                 physical_object_label: ~qualia_boolean_index
@@ -115,4 +115,3 @@ class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMet
 
 
 QualiaAnalysisType = type[OnePhysicalObjectSetQualiaAnalysis]
-QualiaAnalysis = TypeVar("QualiaAnalysis", bound=OnePhysicalObjectSetQualiaAnalysis)

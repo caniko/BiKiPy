@@ -1,7 +1,7 @@
 from abc import ABC
 from functools import cached_property
 from logging import getLogger
-from typing import ClassVar, Literal, Optional, TypeVar
+from typing import ClassVar, Literal, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -306,10 +306,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         return in_string
 
 
-PolygonPerimeter = TypeVar("PolygonPerimeter", bound=BasePolygonPerimeter)
-
-
-def init_polygon(vertices_in_meters: NpNDArrayFp64, **kwargs) -> PolygonPerimeter:
+def init_polygon(vertices_in_meters: NpNDArrayFp64, **kwargs) -> BasePolygonPerimeter:
     match vertices_in_meters.shape[0]:  # polygon_order
         case 3:
             from bikipy.perimeter.polygon.triangle import TrianglePerimeter

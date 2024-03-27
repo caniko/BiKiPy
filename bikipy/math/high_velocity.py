@@ -1,8 +1,5 @@
 import numpy as np
-from numba import njit
 from pydantic_numpy.typing import Np2DArrayFp64
-
-from bikipy import runtime_settings
 
 
 def high_velocity_removal(position_array: Np2DArrayFp64, max_distance_per_frame: float) -> Np2DArrayFp64:
@@ -61,5 +58,6 @@ def high_velocity_removal(position_array: Np2DArrayFp64, max_distance_per_frame:
     return position_array
 
 
-if not runtime_settings.disable_numba:
-    high_velocity_removal = njit(cache=True)(high_velocity_removal)
+# AWAIT: https://github.com/numba/numba/issues/2558
+# if not runtime_settings.disable_numba:
+#     high_velocity_removal = njit(cache=True)(high_velocity_removal)

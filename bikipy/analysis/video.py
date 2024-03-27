@@ -110,15 +110,21 @@ def make_inspection_video(
         os.remove(output_file_path)
 
     if frames_on_the_fly:
-        return (
+        (
             VideoClip(
-                lambda t: make_frame(round(t * reader.video_for_computation().fps)), duration=reader.duration_seconds
+                lambda t: make_frame(round(t * reader.video_for_computation().fps)),
             )
             .set_fps(reader.video_for_computation().fps)
+            .subclip(
+                reader.seconds_to_try_to_crop_from_start / reader.video.fps,
+                -1 * reader.seconds_to_try_to_crop_from_end / reader.video.fps,
+            )
             .write_videofile(str(output_file_path), codec=codec, preset="slower")
         )
 
-    raise NotImplementedError("not frames_on_the_fly; not implemented")
+    return
+
+    # not frames_on_the_fly; not implemented
 
     # with ProcessPoolExecutor() as executor:
     #     frame_features = [executor.submit(make_frame, i) for i in range(reader.number_of_frames)]

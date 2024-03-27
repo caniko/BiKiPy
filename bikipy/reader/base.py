@@ -1,3 +1,4 @@
+import math
 from abc import ABC, abstractmethod
 from collections import abc, defaultdict
 from functools import cached_property
@@ -82,12 +83,12 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
         ),
     )
 
-    crop_seconds_from_start: float = 0.0
-    crop_seconds_from_end: float = 0.0
+    seconds_to_try_to_crop_from_start: float = 0.0
+    seconds_to_try_to_crop_from_end: float = 0.0
 
     crop_target_trial_length_seconds: Optional[float] = Field(
         description="Target seconds of the trial, achieved by cropping from start, "
-        "unless crop_target_from_end is True. When crop_seconds_from_start or crop_seconds_from_end is defined, "
+        "unless crop_target_from_end is True. When seconds_to_try_to_crop_from_start or seconds_to_try_to_crop_from_end is defined, "
         "they are considered as minimums, the target cropper may change these values."
     )
     crop_target_from_end: bool = Field(
@@ -131,15 +132,13 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
     @property
     @abstractmethod
-    def region_of_interest_to_boolean_index(self) -> dict[str, NpNDArrayBool]:
-        ...
+    def region_of_interest_to_boolean_index(self) -> dict[str, NpNDArrayBool]: ...
 
     @staticmethod
     @abstractmethod
-    def isolate_coordinates_from_native_df(df: pd.DataFrame, key: Iterable[str] | str) -> NpNDArrayFp64:
-        ...
+    def isolate_coordinates_from_native_df(df: pd.DataFrame, key: Iterable[str] | str) -> NpNDArrayFp64: ...
 
-    @computed_field # type: ignore[misc]
+    @computed_field  # type: ignore[misc]
     @cached_property
     def max_pixels_per_frame(self) -> float | None:
         if self.max_meters_per_second:
@@ -184,7 +183,11 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @property
     def required_video_metadata_fields(self) -> set:
         base = {"meters_per_pixel", "resolution"}
-        if self.crop_seconds_from_start or self.crop_seconds_from_end or self.crop_target_trial_length_seconds:
+        if (
+            self.seconds_to_try_to_crop_from_start
+            or self.seconds_to_try_to_crop_from_end
+            or self.crop_target_trial_length_seconds
+        ):
             base.add("fps")
         return base
 
@@ -207,7 +210,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @computed_field  # type: ignore[misc]
     @cached_property
     def crop_frames_from_start(self) -> int:
-        result = round(self.crop_seconds_from_start / self.video_for_computation().fps)
+        result = round(self.seconds_to_try_to_crop_from_start / self.video_for_computation().fps)
         if self.crop_target_trial_length_frames and not self.crop_target_from_end:
             if self.df_is_timestamped:
                 result += (
@@ -222,7 +225,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @computed_field  # type: ignore[misc]
     @property
     def crop_frames_from_end(self) -> int:
-        result = round(self.crop_seconds_from_end / self.video_for_computation().fps)
+        result = round(self.seconds_to_try_to_crop_from_end / self.video_for_computation().fps)
         if self.crop_target_trial_length_frames and self.crop_target_from_end:
             if self.df_is_timestamped:
                 result += (
@@ -292,8 +295,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
         if self.max_meters_per_second:
             for ptl in self.physically_tracked_labels:
                 result.loc[:, pd.IndexSlice[ptl, ["x", "y"]]] = high_velocity_removal(
-                    result.loc[:, pd.IndexSlice[ptl, ["x", "y"]]].values,
-                    self.max_pixels_per_frame
+                    result.loc[:, pd.IndexSlice[ptl, ["x", "y"]]].values, self.max_pixels_per_frame
                 )
 
         if self.stat_model:
@@ -421,6 +423,11 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             if self.manual_timestamp_index is None
             else self.manual_timestamp_index[-1]
         )
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def analysis_video_duration_seconds(self) -> int:
+        return math.floor(self.augmented.size / self.video.fps)
 
     @computed_field  # type: ignore[misc]
     @property

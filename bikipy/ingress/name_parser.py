@@ -31,8 +31,7 @@ class PluginFileStemParser(ABC):
         del self.split
 
     @abstractmethod
-    def __pop_split_till_empty__(self) -> None:
-        ...
+    def __pop_split_till_empty__(self) -> None: ...
 
 
 class PluginFileStemParseLastIsLabel(PluginFileStemParser):

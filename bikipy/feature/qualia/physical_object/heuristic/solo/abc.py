@@ -14,8 +14,7 @@ class AbstractSoloHeuristic(StandaloneHeuristic, ABC):
 
     @property
     @abstractmethod
-    def solo_result(self) -> NpNDArrayBool:
-        ...
+    def solo_result(self) -> NpNDArrayBool: ...
 
     @computed_field  # type: ignore[misc]
     @cached_property

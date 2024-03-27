@@ -1,10 +1,11 @@
 import unittest
+
 import numpy as np
 
 from bikipy.math.high_velocity import high_velocity_removal
 
-
 # Assuming the high_velocity_removal function is defined here or imported
+
 
 class TestHighVelocityRemoval(unittest.TestCase):
 

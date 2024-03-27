@@ -1,22 +1,19 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 from logging import getLogger
-from typing import Generic, Literal, Optional, TypeVarTuple
+from typing import Literal, Optional
 
 from pydantic import Field, PositiveInt, computed_field
 
 from bikipy.core.base import BikipyModel
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadata
-from bikipy.perimeter.base import Perimeter
+from bikipy.perimeter.base import BasePerimeter
 
 logger = getLogger(__name__)
 
 
-PerimeterInstances = TypeVarTuple("PerimeterInstances")
-
-
-class TrialWithPerimeterMixin(Generic[Perimeter, *PerimeterInstances], BikipyModel, ABC):
+class TrialWithPerimeterMixin[Perimeter: BasePerimeter, *PerimeterInstances](BikipyModel, ABC):
     # Derive meters per pixel from perimeter
     # TODO: Put this logic in the backend by prioritizing preferred sources
     meters_per_pixel_from_perimeter_source: Literal["side", "diagonal", "diameter", "radius", None] = Field(
@@ -33,8 +30,7 @@ class TrialWithPerimeterMixin(Generic[Perimeter, *PerimeterInstances], BikipyMod
 
     @property
     @abstractmethod
-    def perimeters(self) -> tuple[Perimeter, *PerimeterInstances]:
-        ...
+    def perimeters(self) -> tuple[Perimeter, *PerimeterInstances]: ...
 
     @computed_field  # type: ignore[misc]
     @property

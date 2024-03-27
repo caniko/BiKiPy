@@ -5,6 +5,7 @@ Purpose of VideoMetadataMixin
 Classes that define videos should have this mixin: VideoMetadata, BaseExperiment, and BaseTrial. This class is
 bare metadata, and its purpose is to either initialize or relay an existing VideoMetadata object
 """
+
 from collections.abc import Iterable
 from functools import cached_property
 from logging import getLogger
@@ -155,9 +156,9 @@ class VideoMetadata(_VideoMetadataBase):
 
         return cls(
             meters_per_pixel=meters_per_pixel,
-            manual_resolution=superior.manual_resolution
-            if superior.manual_resolution is not None
-            else inferior.manual_resolution,
+            manual_resolution=(
+                superior.manual_resolution if superior.manual_resolution is not None else inferior.manual_resolution
+            ),
             fps=superior.fps or inferior.fps,
             frame=superior.frame if superior.frame is not None else inferior.frame,
             video_path=superior.video_path if superior.video_path else inferior.video_path,

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from functools import cached_property, partial
 from itertools import chain
-from typing import Optional
+from typing import Optional, Self
 
 import numpy as np
 import pandas as pd
@@ -10,13 +10,12 @@ from pydantic import DirectoryPath, Field, computed_field
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT, PHYSICAL_OBJECT_MAP_NAME
 from bikipy.analysis.video import make_inspection_video
 from bikipy.core.typing import ConfinementSequence
-from bikipy.feature.qualia.physical_object.analysis.i import QualiaAnalysis
 from bikipy.feature.qualia.physical_object.analysis.mapping import (
     PO_NUMBER_TO_ANALYSIS_MODEL,
 )
 from bikipy.feature.qualia.physical_object.heuristic.abc import (
+    AbstractHeuristic,
     CombinedHeuristic,
-    Heuristic,
     StandaloneHeuristic,
 )
 from bikipy.feature.qualia.physical_object.heuristic.mapping import (
@@ -45,8 +44,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
 
     @property
     @abstractmethod
-    def physical_object_perimeters(self) -> tuple[BaseSinglePerimeter, ...]:
-        ...
+    def physical_object_perimeters(self) -> tuple[BaseSinglePerimeter, ...]: ...
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -138,12 +136,12 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
 
     @computed_field  # type: ignore[misc]
     @property
-    def alias_to_heuristic(self) -> dict[str, Heuristic]:
+    def alias_to_heuristic(self) -> dict[str, AbstractHeuristic]:
         return chain(self.alias_to_standalone_heuristic.items(), self.alias_to_combined_heuristic.items())
 
     @computed_field  # type: ignore[misc]
     @property
-    def physical_object_analysers(self) -> dict[str, QualiaAnalysis]:
+    def physical_object_analysers(self) -> dict[str, Self]:
         analysis_model = PO_NUMBER_TO_ANALYSIS_MODEL[len(self.physical_object_perimeters)]
 
         result = {}

@@ -26,13 +26,11 @@ class BasePlugin(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
     plural_entries: ClassVar[bool] = False
 
     @abstractmethod
-    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False):
-        ...
+    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False): ...
 
     @property
     @abstractmethod
-    def globally_defined(self):
-        ...
+    def globally_defined(self): ...
 
     def _assert_correct_scope_trialwise_metadata(self) -> None:
         assert self.plugin_scope == PluginScope.TRIALWISE or self.plugin_scope == PluginScope.METADATA

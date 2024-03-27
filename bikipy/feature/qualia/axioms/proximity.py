@@ -76,7 +76,10 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
     @computed_field  # type: ignore[misc]
     @cached_property
     def valid_border(self) -> NpNDArrayBool | None:
-        if self.outside_perimeter_border_boolean_index is not None and self.inside_perimeter_border_boolean_index is not None:
+        if (
+            self.outside_perimeter_border_boolean_index is not None
+            and self.inside_perimeter_border_boolean_index is not None
+        ):
             return self.outside_perimeter_border_boolean_index & self.inside_perimeter_border_boolean_index
 
         if self.outside_perimeter_border_boolean_index is not None:

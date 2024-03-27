@@ -1,8 +1,7 @@
 from logging import getLogger
-from typing import Any, Iterable
+from typing import Iterable
 
 import numpy as np
-from pydantic import validate_call
 from pydantic_numpy.typing import NpNDArray, NpNDArrayBool, NpNDArrayFp64
 
 from bikipy.feature.angle import angle_from_a_to_b
