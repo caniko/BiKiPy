@@ -10,7 +10,7 @@ from collections.abc import Iterable
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import ClassVar, Generator, Optional, Self, Sequence
+from typing import ClassVar, Generator, Optional, Self, Sequence, Any
 
 import cv2
 import matplotlib.pyplot as plt
@@ -70,6 +70,24 @@ class _VideoMetadataBase(BikipyModel):
             return read_image_from_path(value) if isinstance(value, Path) else value
 
     @computed_field  # type: ignore[misc]
+    @property
+    def metadata(self) -> dict[str, Any]:
+        result = {}
+        if self.meters_per_pixel is not None:
+            result["meters_per_pixel"] = self.meters_per_pixel
+        if self.manual_resolution is not None:
+            result["manual_resolution"] = self.manual_resolution
+        if self.fps is not None:
+            result["fps"] = self.fps
+        if self.frame is not None:
+            result["frame"] = self.frame
+        if self.video_path:
+            result["video_path"] = self.video_path
+        if self.minimum_frame_length:
+            result["minimum_frame_length"] = self.minimum_frame_length
+        return result
+
+    @computed_field  # type: ignore[misc]
     @cached_property
     def resolution(self) -> NpNDArrayInt16 | None:
         if self.manual_resolution is not None:
@@ -108,8 +126,8 @@ class VideoMetadata(_VideoMetadataBase):
     def __and__(self, other) -> bool:
         assert isinstance(other, self.__class__)
 
-        self_metadata = self.model_dump(exclude_unset=True)
-        other_metadata = other.model_dump(exclude_unset=True)
+        self_metadata = self.metadata
+        other_metadata = other.metadata
 
         for key in set(self_metadata).intersection(other_metadata):
             if np.any(self_metadata[key] != other_metadata[key]):
@@ -263,13 +281,13 @@ class VideoMetadata(_VideoMetadataBase):
         )
 
         # TODO: Replace after computed_field exclude method added to model_dump
-        metadata = self.model_dump(exclude={"frame", "resolution"}, exclude_unset=True)
+        metadata = self.metadata
         metadata["frame"] = new_frame
         metadata["manual_resolution"] = new_frame.shape[0:2:][::-1]
 
         return self.__class__(
             **metadata
-            # **self.model_dump(exclude={"frame", "resolution"}, exclude_unset=True),
+            # **self.metadata,
             # frame=new_frame,
             # manual_resolution=new_frame.shape[0:2:][::-1],
         )
@@ -390,7 +408,7 @@ class VideoMetadataMixin(_VideoMetadataBase):
 
     def video_for_computation(self) -> VideoMetadata:
         if self.required_video_metadata_fields and (
-            missing_fields := self.required_video_metadata_fields.difference(self.video.model_dump(exclude_unset=True))
+            missing_fields := self.required_video_metadata_fields.difference(self.video.metadata)
         ):
             if len(missing_fields) == 1 and "resolution" in missing_fields and self.video.resolution is not None:
                 # Resolution is derived from either frame or manual_resolution; there is no other OR logic

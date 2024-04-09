@@ -337,7 +337,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
                 codec=codec,
             )
 
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @computed_field  # type: ignore[misc]
     @property

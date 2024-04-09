@@ -160,4 +160,4 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
                 color=next(color_map_iter),
             )
 
-        self.plot_finalization(ax, video)
+        self.plot_finalization(ax)

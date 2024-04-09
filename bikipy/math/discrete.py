@@ -122,16 +122,22 @@ def reduce_repeating_sequences[T](repeating_sequence: Sequence[T], minimum_repea
 
 def start_all_true_end_main_false(main: Np1DArrayBool, *rest: Np1DArrayBool) -> Np1DArrayBool:
     all_true = np.all(np.vstack([main, rest]), axis=0)
+    return both_true_end_main_false(main, all_true)
 
-    result = np.zeros_like(all_true, dtype=bool)
+
+def both_true_end_main_false(main: Np1DArrayBool, other: Np1DArrayBool) -> Np1DArrayBool:
+    assert len(main) == len(other), "Both arrays must have the same length."
+
+    result = np.zeros_like(main, dtype=np.bool_)
+
     triggered = False
-    for idx, (main_value, every_value) in enumerate(zip(main, all_true)):
+    for idx, (main_value, other_value) in enumerate(zip(main, other)):
         if triggered:
             if main_value:
                 result[idx] = True
             else:
                 triggered = False
-        elif all_true:
+        elif other_value:
             result[idx] = True
             triggered = True
 
@@ -145,4 +151,4 @@ if not runtime_settings.disable_numba:
         tolerance_modeled_boolean_index_truth_sequence_start_end_length
     )
 
-    start_all_true_end_main_false = njit(cache=True)(start_all_true_end_main_false)
+    both_true_end_main_false = njit(cache=True)(both_true_end_main_false)

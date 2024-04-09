@@ -83,7 +83,7 @@ class DataWithLikelihoodReader(BaseReader):
 
 class DeepLabCutReader(DataWithLikelihoodReader):
     def _read_hdf(self, path: FilePath) -> pd.DataFrame:
-        df = pd.read_hdf(path)
+        df = super()._read_hdf(path)
         df.columns = df.columns.droplevel()
         return df
 

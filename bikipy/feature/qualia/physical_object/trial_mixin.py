@@ -194,10 +194,8 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         *,
         codec: Optional[str] = None,
         heuristics_to_use: Optional[list[str]] = None,
-        **kwargs,
+        **_kwargs,
     ) -> None:
-        super().generate_inspection_video(output_directory, codec=codec, **kwargs)
-
         for heuristic_alias, heuristics in self.alias_to_combined_heuristic.items():
             if heuristics_to_use and heuristic_alias not in heuristics_to_use:
                 continue

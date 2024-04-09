@@ -78,10 +78,6 @@ class BasePlugin(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
 
 PluginType = type[BasePlugin]
 
-from bikipy.ingress.workflow.animal import AnimalIngressWorkflow
-
-AnimalIngressWorkflow.model_rebuild()
-
 
 class BasePluginFile(BasePlugin, ABC):
     data_path: FilePath

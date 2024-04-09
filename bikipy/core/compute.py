@@ -39,7 +39,7 @@ class AbstractCompute[ResultType](BikipyModel, ABC, extra=Extra.allow):
     @abstractmethod
     def plot(self, ax: Axes, *args, **kwargs) -> None: ...
 
-    def plot_finalization(self, ax: Axes, video: Optional[VideoMetadata] = None) -> None:
+    def plot_finalization(self, ax: Axes) -> None:
         ax.set_title(self.label)
         ax.legend(**BOTTOM_LEGEND_KWARGS)
 

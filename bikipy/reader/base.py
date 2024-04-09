@@ -196,19 +196,22 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
     _df_is_timestamped: bool = False
 
+    def _read_hdf(self, path: FilePath) -> pd.DataFrame:
+        return pd.read_hdf(path, **self.df_read_kwargs)
+
     @computed_field  # type: ignore[misc]
     @cached_property
     def raw_df(self) -> pd.DataFrame:
         match self.df_path.suffix:
             case ".h5" | ".hdf":
-                df = pd.read_hdf(self.df_path, **self.df_read_kwargs)
+                df = self._read_hdf(self.df_path)
             case ".parquet":
                 df = pd.read_parquet(self.df_path, **self.df_read_kwargs)
             case _:
                 msg = f"{self.df_path.suffix}, is not natively supported by DeepLabCut."
                 raise ValueError(msg)
 
-        assert not self.raw_df.empty
+        assert not df.empty
 
         if "timestamped" in self.df_path.stem:
             self._df_is_timestamped = True
@@ -409,6 +412,14 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @property
     def trial_length_seconds(self) -> float:
         return self.trial_end_seconds - self.trial_start_seconds
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def info(self) -> pd.Series:
+        return pd.Series(
+            [len(self.raw_df), len(self.augmented)],
+            index=[("Reader", "RawFrames"), ("Reader", "AugmentedFrames")],
+        )
 
     label_to_plot_prepped_coordinates: dict[str, NpNDArrayFp64] | None = Field(default_factory=dict)
     label_to_plot_without_resized_coordinates: dict[str, NpNDArrayFp64] | None = Field(default_factory=dict)

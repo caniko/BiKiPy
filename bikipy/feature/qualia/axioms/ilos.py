@@ -80,4 +80,4 @@ class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
             **quiver_kwargs,
         )
 
-        self.plot_finalization(ax, video)
+        self.plot_finalization(ax)

@@ -126,7 +126,6 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
 
             return result
 
-    @computed_field(return_type=ReaderCLS)  # type: ignore[misc]
     @classmethod
     @property
     def reader_class(cls) -> ReaderCLS:
@@ -139,7 +138,6 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
             )
             raise AttributeError(msg) from e
 
-    @computed_field(return_type=str)  # type: ignore[misc]
     @classmethod
     @property
     def excel_sheet_name(cls) -> str:
@@ -191,11 +189,6 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def experiment_seconds(self) -> int:
-        return self.reader.kinematic_coordinates.shape[0] / self.video_for_computation().fps
-
-    @computed_field  # type: ignore[misc]
-    @cached_property
     def motion(self) -> Motion:
         return Motion(
             coordinate_sequence=self.reader.kinematic_coordinates,
@@ -204,7 +197,8 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
 
     def generate_inspection_video(
         self, output_directory: Optional[DirectoryPath] = None, *, codec: Optional[str] = None, **kwargs
-    ) -> None: ...
+    ) -> None:
+        raise NotImplementedError
 
     def _video_file_name(
         self, output_directory: Optional[DirectoryPath] = None, context_label: Optional[str] = None
