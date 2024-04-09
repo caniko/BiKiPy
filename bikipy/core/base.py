@@ -6,7 +6,7 @@ from schemantic import SchemanticProjectModelMixin
 from bikipy.core.typing import Label
 
 
-class BikipyConfigModel(BaseModel, arbitrary_types_allowed=True):
+class BikipyConfigModel(BaseModel):
     pass
 
 

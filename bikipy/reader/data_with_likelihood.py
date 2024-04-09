@@ -10,7 +10,7 @@ from pydantic import Field, FilePath, computed_field
 from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
 
 from bikipy.reader.base import BaseReader
-from bikipy.reader.utils import compute_midpoint_label
+from bikipy.reader.compute import compute_midpoint_label
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 
 DEEPLABCUT_DF_INIT_KWARGS = {

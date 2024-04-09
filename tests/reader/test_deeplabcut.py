@@ -17,7 +17,7 @@ def test_deeplabcut_reader_from_csv():
     assert DeepLabCutReader(
         df_path=CSV_PATH,
         manual_video=video,
-        future_scaling=True,
+
         midpoint_groups={"center_ear": ("left_ear", "right_ear")},
     )
 
@@ -26,7 +26,7 @@ def test_deeplabcut_reader_from_hdf():
     assert DeepLabCutReader(
         df_path=HDF_PATH,
         manual_video=video,
-        future_scaling=True,
+
         midpoint_groups={"center_ear": ("left_ear", "right_ear")},
     )
 
@@ -35,7 +35,7 @@ def test_deeplabcut_reader_augmented():
     df = DeepLabCutReader(
         df_path=HDF_PATH,
         manual_video=video,
-        future_scaling=True,
+
         midpoint_groups={"center_ear": ("left_ear", "right_ear")},
     )
     assert not df.augmented.empty
@@ -45,7 +45,7 @@ def test_deeplabcut_reader_getitem():
     df = DeepLabCutReader(
         df_path=HDF_PATH,
         manual_video=video,
-        future_scaling=True,
+
         midpoint_groups={"center_ear": ("left_ear", "right_ear")},
     )
     assert df["center_ear"] is not None

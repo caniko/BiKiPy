@@ -3,14 +3,14 @@ from abc import ABC, abstractmethod
 from collections import abc, defaultdict
 from functools import cached_property
 from logging import getLogger
-from typing import Hashable, Iterable, Optional
+from typing import Any, Hashable, Iterable, Optional
 
 import matplotlib
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
-from pydantic import Field, FilePath, computed_field, validate_call
+from pydantic import ConfigDict, Field, FilePath, computed_field, validate_call
 from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
 from typing_extensions import Literal
 
@@ -24,7 +24,7 @@ from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.math.high_velocity import high_velocity_removal
 from bikipy.perimeter.base import BasePerimeter
 from bikipy.reader.model import model_data
-from bikipy.reader.utils import compute_midpoint_label
+from bikipy.reader.compute import compute_midpoint_label
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.color import make_color_map
@@ -37,6 +37,8 @@ logger = getLogger(__name__)
 
 
 class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
+    model_config = ConfigDict(extra='allow')
+
     df_path: FilePath = Field(description="Path to kinematic data, that will be " "converted to pd.DataFrame")
     df_read_kwargs: Optional[dict] = Field(
         default_factory=dict, description="Keyword arguments to pass to the padnas dataframe reader"
@@ -107,7 +109,6 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
         description="This is a flagg used by the developer to signal the use of bikipy ingress to the class. "
         "Currently, it only affects augmented df caching",
     )
-
     # TODO: Convert back to private
     post_read_midpoints: set = Field(default_factory=set)
 
@@ -126,9 +127,6 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
         result = super().fields_to_exclude_from_single_schema
         result.update(("df_path", "trial_enclosure", "manual_timestamp_index", "using_bikipy_ingress"))
         return result
-
-    def _isolate_coordinates(self, key: Iterable[str] | str) -> NpNDArrayFp64:
-        return self.isolate_coordinates_from_native_df(self.df, key)
 
     @property
     @abstractmethod
@@ -191,74 +189,68 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             base.add("fps")
         return base
 
+
     @computed_field  # type: ignore[misc]
     @property
-    def augmented_file_name(self) -> str:
-        stem = self.df_path.stem.replace("coordinates-", f"coordinates-{AUGMENTED_COORDINATE_CACHED_FILE_LABEL}-")
-        return f"{stem}.parquet"
+    def raw_frames(self) -> int:
+        return len(self.raw_df)
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def likelihood_columns(self) -> NpNDArrayFp64:
+        return self.raw_df.loc[:, pd.IndexSlice[:, "likelihood"]]
+
+    _df_is_timestamped: bool = False
+
+    @computed_field  # type: ignore[misc]
+    @cached_property
+    def raw_df(self) -> pd.DataFrame:
+        match self.df_path.suffix:
+            case ".h5" | ".hdf":
+                df = pd.read_hdf(self.df_path, **self.df_read_kwargs)
+            case ".parquet":
+                df = pd.read_parquet(self.df_path, **self.df_read_kwargs)
+            case _:
+                msg = f"{self.df_path.suffix}, is not natively supported by DeepLabCut."
+                raise ValueError(msg)
+
+        assert not self.raw_df.empty
+
+        if "timestamped" in self.df_path.stem:
+            self._df_is_timestamped = True
+
+        if self.manual_timestamp_index is not None:
+            df.set_index(self.manual_timestamp_index, inplace=True)
+            self._df_is_timestamped = True
+
+        if isinstance(df.index, (np.timedelta64, pd.TimedeltaIndex)):
+            # Converting the timestamps to nanoseconds and then to seconds.
+            df.index = df.index.values.astype(float) / 10.0**9.0
+            self._df_is_timestamped = True
+
+        return df
+
+    @computed_field  # type: ignore[misc]
+    @cached_property
+    def df_is_timestamped(self) -> bool:
+        """
+        When True, the reader will interpret the DataFrame index as timestamps in seconds
+
+        :return:
+        """
+        assert not self.raw_df.empty
+        return self._df_is_timestamped
 
     @computed_field  # type: ignore[misc]
     @property
     def cached_augmented_df_path(self) -> FilePath:
-        return self.df_path.with_name(self.augmented_file_name)
-
-    @computed_field  # type: ignore[misc]
-    @cached_property
-    def crop_target_trial_length_frames(self) -> int:
-        return min(round(self.crop_target_trial_length_seconds * self.video_for_computation().fps), self.raw_frames)
-
-    @computed_field  # type: ignore[misc]
-    @cached_property
-    def crop_frames_from_start(self) -> int:
-        result = round(self.seconds_to_try_to_crop_from_start / self.video_for_computation().fps)
-        if self.crop_target_trial_length_frames and not self.crop_target_from_end:
-            if self.df_is_timestamped:
-                result += (
-                    self.raw_frames - np.where(self.raw_df.index.values >= self.crop_target_trial_length_seconds)[0][0]
-                )
-            else:
-                result += round(
-                    self.raw_frames - self.crop_target_trial_length_seconds * self.video_for_computation().fps
-                )
-        return result
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def crop_frames_from_end(self) -> int:
-        result = round(self.seconds_to_try_to_crop_from_end / self.video_for_computation().fps)
-        if self.crop_target_trial_length_frames and self.crop_target_from_end:
-            if self.df_is_timestamped:
-                result += (
-                    self.raw_frames
-                    - np.where(
-                        self.raw_df.index.values[::-1]
-                        <= self.raw_df.index.values[-1] - self.crop_target_trial_length_seconds
-                    )[0][0]
-                )
-            else:
-                result += round(
-                    self.raw_frames - self.crop_target_trial_length_seconds * self.video_for_computation().fps
-                )
-        return result
+        stem = self.df_path.stem.replace("coordinates-", f"coordinates-{AUGMENTED_COORDINATE_CACHED_FILE_LABEL}-")
+        return self.df_path.with_name(f"{stem}.parquet")
 
     @computed_field  # type: ignore[misc]
     @cached_property
     def crop_frames_slice(self) -> slice | None:
-        start = self.crop_frames_from_start
-        stop = self.crop_frames_from_end
-
-        return slice(start, -stop if stop else None) if start or stop else None
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def video_start_frame_index(self) -> int:
-        return self.start_end_idx_capped_likelihood[0] + self.crop_frames_from_start
-
-    @computed_field  # type: ignore[misc]
-    @cached_property
-    def start_end_idx_capped_likelihood(self) -> tuple[int, int]:
-        tail_likelihood_capped_boolean_idx = np.where(self.combined_raw_likelihood >= self.required_tail_likelihood)[0]
-        return tail_likelihood_capped_boolean_idx[0], tail_likelihood_capped_boolean_idx[-1]
+        return slice(self.crop_start_frame_idx, self.crop_end_frame_idx)
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -271,14 +263,6 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             return pd.read_parquet(self.cached_augmented_df_path)
 
         result = self.raw_df.copy()
-
-        # Remove warm up tail with low likelihoods
-        start_idx, end_idx = self.start_end_idx_capped_likelihood
-
-        logger.debug(
-            f"Likelihood filtering (>={self.required_tail_likelihood}): " f"Slicing [{start_idx}:] from coordinates"
-        )
-        result = result.iloc[start_idx:end_idx]
 
         if self.trial_enclosure:
             logger.debug(
@@ -373,11 +357,15 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
         return self.augmented
 
     @computed_field  # type: ignore[misc]
+    @property
+    def frames(self) -> int:
+        return len(self.df)
+
+    @computed_field  # type: ignore[misc]
     @cached_property
     def timestamp_index(self) -> NpNDArrayFp64 | None:
-        assert not self.raw_df.empty
         if not self.df_is_timestamped:
-            return None
+            return
 
         result = self.raw_df.index.values
 
@@ -405,90 +393,6 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
         return float(np.mean(per_second_counts))
 
-    @computed_field  # type: ignore[misc]
-    @property
-    def raw_frames(self) -> int:
-        return len(self.raw_df)
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def number_of_frames(self) -> int:
-        return len(self.df)
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def duration_seconds(self) -> float:
-        return (
-            self.number_of_frames / self.video_for_computation().fps
-            if self.manual_timestamp_index is None
-            else self.manual_timestamp_index[-1]
-        )
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def analysis_video_duration_seconds(self) -> int:
-        return math.floor(self.augmented.size / self.video.fps)
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def info(self) -> pd.Series:
-        return pd.Series(
-            [self.raw_frames, self.number_of_frames, self.duration_seconds],
-            index=[("Reader", "RawFrames"), ("Reader", "AugmentedFrames"), ("Reader", "DurationSeconds")],
-        )
-
-    @staticmethod
-    def _read_hdf(path: FilePath) -> pd.DataFrame:
-        return pd.read_hdf(path)
-
-    @staticmethod
-    def _read_parquet(path: FilePath) -> pd.DataFrame:
-        return pd.read_parquet(path)
-
-    _df_is_timestamped: bool = False
-
-    @computed_field  # type: ignore[misc]
-    @cached_property
-    def raw_df(self) -> pd.DataFrame:
-        match self.df_path.suffix:
-            case ".h5" | ".hdf":
-                df = self._read_hdf(self.df_path, **self.df_read_kwargs)
-            case ".parquet":
-                df = self._read_parquet(self.df_path, **self.df_read_kwargs)
-            case _:
-                msg = f"{self.df_path.suffix}, is not natively supported by DeepLabCut."
-                raise ValueError(msg)
-
-        if "timestamped" in self.df_path.stem:
-            self._df_is_timestamped = True
-
-        if self.manual_timestamp_index is not None:
-            df.set_index(self.manual_timestamp_index, inplace=True)
-            self._df_is_timestamped = True
-
-        if isinstance(df.index, (np.timedelta64, pd.TimedeltaIndex)):
-            # Converting the timestamps to nanoseconds and then to seconds.
-            df.index = df.index.values.astype(float) / 10.0**9.0
-            self._df_is_timestamped = True
-
-        return df
-
-    @computed_field  # type: ignore[misc]
-    @cached_property
-    def df_is_timestamped(self) -> bool:
-        """
-        When True, the reader will interpret the DataFrame index as timestamps in seconds
-
-        :return:
-        """
-        assert not self.raw_df.empty
-        return self._df_is_timestamped
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def combined_raw_likelihood(self) -> NpNDArrayFp64:
-        return np.multiply.reduce(self.raw_df.loc[:, pd.IndexSlice[:, "likelihood"]], axis=1)
-
     label_to_plot_prepped_coordinates: dict[str, NpNDArrayFp64] | None = Field(default_factory=dict)
     label_to_plot_without_resized_coordinates: dict[str, NpNDArrayFp64] | None = Field(default_factory=dict)
 
@@ -509,7 +413,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             self.label_to_plot_without_resized_coordinates[label_to_plot] = result
             return result
 
-    @validate_call(config={"arbitrary_types_allowed": True})
+    @validate_call(config=ConfigDict(arbitrary_types_allowed=True))
     def plot_boolean_index(self, boolean_index: NpNDArrayBool, ax: Axes, label_to_plot: Optional[str] = None) -> None:
         coordinates_for_plot = self.coordinates_for_plot(label_to_plot or self.object_tracking_label_for_kinematics)
         ax_plot_coordinate_with_boolean_index(
@@ -518,13 +422,13 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
         plt.legend(**BOTTOM_LEGEND_KWARGS)
 
     def plot_skeleton_in_frame(
-        self, frame_idx: int, ax: Axes, labels_to_exclude: Optional[Iterable[str]] = None, revert_crop: bool = False
+        self, frame_index: int, ax: Axes, labels_to_exclude: Optional[Iterable[str]] = None, revert_crop: bool = False
     ) -> None:
         for label in self.all_tracked_labels:
             if labels_to_exclude and label in labels_to_exclude:
                 continue
 
-            coordinates = self.coordinates_for_plot(label, with_resize=False)[frame_idx]
+            coordinates = self.coordinates_for_plot(label, with_resize=False)[frame_index]
             if revert_crop:
                 coordinates = coordinates - np.array([self.x_axis_crop_end_point, self.y_axis_crop_end_point])
 
@@ -532,14 +436,14 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
         ax.legend(bbox_to_anchor=(1.01, 0.5), loc="center left")
 
-    def confinement_index_defaultdict(self) -> defaultdict[NpNDArrayBool]:
+    def confinement_index_defaultdict(self) -> defaultdict[str, NpNDArrayBool]:
         return defaultdict(lambda: np.zeros(len(self.augmented), dtype=bool))
 
-    def confinement_sequence_defaultdict(self, more_than_254: bool = False) -> defaultdict[ConfinementSequence]:
+    def confinement_sequence_defaultdict(self, more_than_254: bool = False) -> defaultdict[str, ConfinementSequence]:
         data_type = np.uint16 if more_than_254 else np.uint8
         return defaultdict(lambda: np.zeros(len(self.augmented), dtype=data_type))
 
-    def coordinate_sequence_defaultdict(self) -> defaultdict[ConfinementSequence]:
+    def coordinate_sequence_defaultdict(self) -> defaultdict[str, ConfinementSequence]:
         return defaultdict(lambda: np.zeros((len(self.augmented), 2), dtype=np.float64))
 
     def flush_reads(self) -> None:
@@ -560,6 +464,9 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             columns=[(midpoint_label, "x"), (midpoint_label, "y")],
             index=df.index,
         )
+
+    def _isolate_coordinates(self, key: Iterable[str] | str) -> NpNDArrayFp64:
+        return self.isolate_coordinates_from_native_df(self.df, key)
 
     def _cache_augmented(self, df: pd.DataFrame) -> None:
         df.to_parquet(self.cached_augmented_df_path, **TO_PARQUET_KWARGS)

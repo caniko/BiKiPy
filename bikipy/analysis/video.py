@@ -1,4 +1,5 @@
 import os
+from logging import getLogger
 from pathlib import Path
 from typing import Iterator, Optional
 
@@ -9,6 +10,8 @@ from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64, NpNDArrayUint8
 
 from bikipy.perimeter.base import BasePerimeter
 from bikipy.reader.base import BaseReader
+
+logger = getLogger(__file__)
 
 
 def make_inspection_video(
@@ -109,16 +112,21 @@ def make_inspection_video(
     if delete_old and output_file_path.exists():
         os.remove(output_file_path)
 
+    print(
+        f"Creating video from trial data: {output_file_path}."
+        f"Frames on the fly: {frames_on_the_fly}."
+        f"Codec: {codec}."
+        f"Duration: {reader.total_duration}."
+        f"FPS: {reader.video_for_computation().fps}."
+    )
+
     if frames_on_the_fly:
         (
             VideoClip(
                 lambda t: make_frame(round(t * reader.video_for_computation().fps)),
+                duration=reader.total_duration,
             )
             .set_fps(reader.video_for_computation().fps)
-            .subclip(
-                reader.seconds_to_try_to_crop_from_start / reader.video.fps,
-                -1 * reader.seconds_to_try_to_crop_from_end / reader.video.fps,
-            )
             .write_videofile(str(output_file_path), codec=codec, preset="slower")
         )
 

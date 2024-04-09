@@ -10,7 +10,7 @@ from collections.abc import Iterable
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, ClassVar, Generator, Optional, Self, Sequence
+from typing import ClassVar, Generator, Optional, Self, Sequence
 
 import cv2
 import matplotlib.pyplot as plt
@@ -51,6 +51,7 @@ class _VideoMetadataBase(BikipyModel):
         None, description="1D array defining the resolution of the recording"
     )
     fps: Optional[float] = Field(None, description="Frames per second of the recording")
+    duration: Optional[float] = Field(None, description="Duration of the video in seconds")
     frame: Optional[Frame] = Field(
         None, description="Frame from the video stored in numpy array, use read_image_from_path to read from file paths"
     )
@@ -64,26 +65,9 @@ class _VideoMetadataBase(BikipyModel):
     category = "video_metadata"
 
     @field_validator("frame")
-    def make_sure_frame_is_read(cls, value: Frame) -> NpNDArrayUint8:
-        return read_image_from_path(value) if isinstance(value, Path) else value
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def metadata(self) -> dict[str, Any]:
-        result = {}
-        if self.meters_per_pixel is not None:
-            result["meters_per_pixel"] = self.meters_per_pixel
-        if self.manual_resolution is not None:
-            result["manual_resolution"] = self.manual_resolution
-        if self.fps is not None:
-            result["fps"] = self.fps
-        if self.frame is not None:
-            result["frame"] = self.frame
-        if self.video_path:
-            result["video_path"] = self.video_path
-        if self.minimum_frame_length:
-            result["minimum_frame_length"] = self.minimum_frame_length
-        return result
+    def make_sure_frame_is_read(cls, value: Optional[Frame]) -> NpNDArrayUint8 | None:
+        if value is not None:
+            return read_image_from_path(value) if isinstance(value, Path) else value
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -121,23 +105,28 @@ class _VideoMetadataBase(BikipyModel):
 
 
 class VideoMetadata(_VideoMetadataBase):
-    def __and__(self, other: "VideoMetadata") -> bool:
-        for key in set(self.metadata).intersection(other.metadata):
-            if np.any(self.metadata[key] != other.metadata[key]):
+    def __and__(self, other) -> bool:
+        assert isinstance(other, self.__class__)
+
+        self_metadata = self.model_dump(exclude_unset=True)
+        other_metadata = other.model_dump(exclude_unset=True)
+
+        for key in set(self_metadata).intersection(other_metadata):
+            if np.any(self_metadata[key] != other_metadata[key]):
                 logger.debug(
-                    f"self and other are incongruent on {key}: " f"{self.metadata[key]} != {other.metadata[key]}"
+                    f"self and other are incongruent on {key}: " f"{self_metadata[key]} != {other_metadata[key]}"
                 )
                 return False
         return True
 
-    def __add__(self, other: "VideoMetadata") -> "VideoMetadata":
+    def __add__(self, other) -> Self:
         return self.join(self, other)
 
     @classmethod
     def join(
         cls,
-        superior: "VideoMetadata",
-        inferior: "VideoMetadata",
+        superior: Self,
+        inferior: Self,
         ignore_incongruity: bool = False,
         meters_per_pixel_mean: bool = False,
     ) -> Self:
@@ -256,10 +245,11 @@ class VideoMetadata(_VideoMetadataBase):
             return cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         if len(self.frame.shape) == 2:
             return self.frame
+
         msg = f"The frame has an unsupported shape, {self.frame.shape}"
         raise AttributeError(msg)
 
-    @computed_field(repr=False, return_type="VideoMetadata")  # type: ignore[misc]
+    @computed_field(repr=False)  # type: ignore[misc]
     @cached_property
     def upscaled_video(self) -> Self:
         if self.image_resize_multiplier == 1:
@@ -273,7 +263,7 @@ class VideoMetadata(_VideoMetadataBase):
         )
 
         # TODO: Replace after computed_field exclude method added to model_dump
-        metadata = self.metadata
+        metadata = self.model_dump(exclude={"frame", "resolution"}, exclude_unset=True)
         metadata["frame"] = new_frame
         metadata["manual_resolution"] = new_frame.shape[0:2:][::-1]
 
@@ -399,27 +389,17 @@ class VideoMetadataMixin(_VideoMetadataBase):
         return video
 
     def video_for_computation(self) -> VideoMetadata:
-        video = self.video
         if self.required_video_metadata_fields and (
-            missing_fields := self.required_video_metadata_fields.difference(video.metadata)
+            missing_fields := self.required_video_metadata_fields.difference(self.video.model_dump(exclude_unset=True))
         ):
-            if len(missing_fields) == 1 and "resolution" in missing_fields and video.resolution is not None:
+            if len(missing_fields) == 1 and "resolution" in missing_fields and self.video.resolution is not None:
                 # Resolution is derived from either frame or manual_resolution; there is no other OR logic
                 # Hence the hands-on implementation
-                return video
+                return self.video
 
             msg = (
                 f"{self.__class__.__name__} requires {self.required_video_metadata_fields}, "
                 f"but is missing {missing_fields}"
             )
             raise AttributeError(msg)
-        return video
-
-
-def inspect_video_is_none_during_inspection(inspect_video: VideoMetadata | None) -> None:
-    if inspect_video is None:
-        msg = (
-            "inspect_video is required to map the result from pixels to meters; "
-            "required for generating inspection figure"
-        )
-        raise ValueError(msg)
+        return self.video

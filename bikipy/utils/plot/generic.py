@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import colors, patches
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
-from pydantic import validate_call
+from pydantic import ConfigDict, validate_call
 from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
 
 from bikipy.math.discrete import boolean_index_truth_sequence_start_end
@@ -63,18 +63,18 @@ def plot_coordinates(
     ax.plot(*coordinates.T, color=color, **plot_kwargs)
 
 
-@validate_call(config={"arbitrary_types_allowed": True})
+@validate_call(config=ConfigDict(arbitrary_types_allowed=True))
 def plot_ellipse(ax: Axes, center: tuple[float, float], radius: tuple[float, float] | float, color: Any = None) -> None:
     if isinstance(radius, tuple) and np.isclose(radius[0], radius[1]):
         radius = radius[0]
 
-    color = color or "g"
+    color_to_assign = color or "g"
 
     if isinstance(radius, float):
-        circle = plt.Circle(center, radius, fill=False, color=colors.to_rgba(color) if color else None)
+        circle = plt.Circle(center, radius, fill=False, color=colors.to_rgba(color_to_assign))
         ax.add_artist(circle)
     elif isinstance(radius, tuple):
-        ellipse = patches.Ellipse(center, *radius, edgecolor=color, facecolor="none")
+        ellipse = patches.Ellipse(center, *radius, edgecolor=color_to_assign, facecolor="none")
         ax.add_patch(ellipse)
     else:
         msg = f"Provided radius has invalid type: {type(radius)}"

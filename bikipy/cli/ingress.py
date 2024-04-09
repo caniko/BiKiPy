@@ -5,7 +5,7 @@ from pydantic import DirectoryPath, validate_call
 
 from bikipy.behaviour.mapping import experiment_name_to_class
 from bikipy.cli import cli_root
-from bikipy.reader.utils import merge_timestamps_with_dlc
+from bikipy.reader.compute import merge_timestamps_with_dlc
 from bikipy.utils.misc import current_path_or_arg_path
 
 

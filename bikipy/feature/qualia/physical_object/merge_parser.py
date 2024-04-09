@@ -6,14 +6,14 @@ from pydantic_numpy import NpNDArrayBool
 # TODO: Fix arg > 2-"A and not B or C" is incorrectly evaluated
 
 _heuristic_merge_grammar = Grammar(
-    r"""
+    """
     expr = and_expr / or_expr / var
     or_expr = var ws ("or" / "OR" / "|") ws expr
     and_expr = var ws ("and" / "AND" / "&") ws expr
     var = not_var / var_atom
     not_var = ("not" / "~") ws var_atom
-    var_atom = ~"\w+"
-    ws = ~"\s*"
+    var_atom = ~"\\w+"
+    ws = ~"\\s*"
     """
 )
 

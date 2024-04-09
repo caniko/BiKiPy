@@ -139,6 +139,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
             )
             raise AttributeError(msg) from e
 
+    @computed_field(return_type=str)  # type: ignore[misc]
     @classmethod
     @property
     def excel_sheet_name(cls) -> str:

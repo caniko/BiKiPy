@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from bikipy.reader.utils import merge_timestamps_with_dlc
+from bikipy.reader.compute import merge_timestamps_with_dlc
 
 
 def file_to_timeseries_sequence(file_path):

@@ -3,7 +3,7 @@ from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar, Literal, Optional
+from typing import TYPE_CHECKING, ClassVar, Literal, Optional, Self
 
 import numpy as np
 import pandas as pd
@@ -348,7 +348,6 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         self.plot_perimeter_on_ax(ax, **perimeter_plot_kwargs)
 
 
-# TODO: Variadic generic
 class PerimeterSet(BasePerimeter):
     perimeters: list[BaseSinglePerimeter]
     restricting_perimeters: Optional[list[BaseSinglePerimeter]] = None
@@ -367,20 +366,20 @@ class PerimeterSet(BasePerimeter):
         result.extend(perimeter._to_hash for perimeter in self.all_perimeters)
         return result
 
-    def __mod__(self, other: "PerimeterSet") -> "PerimeterSet":
+    def __mod__(self, other: Self) -> Self:
         return PerimeterSet(
             perimeters=self.perimeters + other.perimeters,
             restricting_perimeters=self.restricting_perimeters + other.restricting_perimeters,
         )
 
-    def __add__(self, other: BaseSinglePerimeter) -> "PerimeterSet":
+    def __add__(self, other: BaseSinglePerimeter) -> Self:
         # Subtraction includes the area in the PerimeterSet
         return PerimeterSet(
             perimeters=self.perimeters + other,
             restricting_perimeters=self.restricting_perimeters,
         )
 
-    def __sub__(self, other: BaseSinglePerimeter) -> "PerimeterSet":
+    def __sub__(self, other: BaseSinglePerimeter) -> Self:
         # Subtraction excludes the area from the PerimeterSet
         return PerimeterSet(
             perimeters=self.perimeters,
@@ -457,7 +456,7 @@ class PerimeterSet(BasePerimeter):
 
         return result
 
-    def change_reference(self, **perimeter_change_reference_kwargs) -> "PerimeterSet":
+    def change_reference(self, **perimeter_change_reference_kwargs) -> Self:
         return self.__class__(
             perimeters=tuple(
                 perimeter.change_reference(**perimeter_change_reference_kwargs) for perimeter in self.perimeters
