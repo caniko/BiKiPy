@@ -2,7 +2,7 @@ from functools import cached_property
 from typing import Optional
 
 from pydantic import computed_field
-from pydantic_numpy import NpNDArrayBool
+from pydantic_numpy import Np1DArrayBool
 
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.physical_object.heuristic.helper.abc import (
@@ -23,7 +23,7 @@ class OutsideObjectPerimeterHeuristic(SingleComponentMixin, ProximityMixin, Abst
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def result(self) -> NpNDArrayBool:
+    def result(self) -> Np1DArrayBool:
         if self.manual_torso is not None:
             return self.manual_torso
 
@@ -40,5 +40,5 @@ class OutsideObjectPerimeterHeuristic(SingleComponentMixin, ProximityMixin, Abst
 
     @computed_field  # type: ignore[misc]
     @property
-    def label_to_proximity_boolean(self) -> dict[str, NpNDArrayBool]:
+    def label_to_proximity_boolean(self) -> dict[str, Np1DArrayBool]:
         return {self.torso_label: self.result}

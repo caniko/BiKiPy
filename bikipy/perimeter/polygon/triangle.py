@@ -3,7 +3,7 @@ from typing import Optional
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field
-from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
 
 from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
@@ -38,7 +38,7 @@ class TrianglePerimeter(BasePolygonPerimeter):
         manual_video: Optional[VideoMetadata] = None,
         ax: Axes = None,
         **inspect_kwargs,
-    ) -> NpNDArrayBool:
+    ) -> Np1DArrayBool:
         """
         indices of the coordinates that are inside the respective perimeter
 
@@ -70,7 +70,7 @@ class TrianglePerimeter(BasePolygonPerimeter):
 
     def ray_direction_filter(
         self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, **kwargs
-    ) -> NpNDArrayBool:
+    ) -> Np1DArrayBool:
         if self.equilateral:
             return self.circle.ray_direction_filter_circle_triangle(
                 ray_travel_direction_point=ray_travel_direction_point,

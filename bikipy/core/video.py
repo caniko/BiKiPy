@@ -22,8 +22,8 @@ from mextractor.extractors import extract_video
 from pydantic import DirectoryPath, Field, FilePath, computed_field, field_validator
 from pydantic_numpy import NpNDArrayFp64
 from pydantic_numpy.typing import (
+    Np1DArrayBool,
     NpNDArray,
-    NpNDArrayBool,
     NpNDArrayInt16,
     NpNDArrayUint8,
 )
@@ -77,7 +77,7 @@ class _VideoMetadataBase(BikipyModel):
         if self.frame is not None:
             return np.array([self.frame.shape[1], self.frame.shape[0]], dtype=np.int16)
 
-    def boolean_array_to_seconds(self, boolean_array: NpNDArrayBool) -> float:
+    def boolean_array_to_seconds(self, boolean_array: Np1DArrayBool) -> float:
         return np.sum(boolean_array) / self.fps
 
     def video_read_frames(self) -> Generator[NpNDArrayUint8, None, None]:

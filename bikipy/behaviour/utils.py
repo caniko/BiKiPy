@@ -2,7 +2,7 @@ from logging import getLogger
 from typing import Iterable
 
 import numpy as np
-from pydantic_numpy.typing import NpNDArray, NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, NpNDArrayFp64
 
 from bikipy.feature.angle import angle_from_a_to_b
 from bikipy.perimeter.base import BaseSinglePerimeter
@@ -15,7 +15,7 @@ def ray_direction_filter_circle_triangle(
     ray_travel_direction_point: NpNDArrayFp64,
     ray_start_point: NpNDArrayFp64,
     max_radians: float,
-) -> NpNDArrayBool:
+) -> Np1DArrayBool:
     ray_vectors = ray_travel_direction_point - ray_start_point
 
     closest_points_on_edges = perimeter.closest_point_on_edge_to_coordinates(ray_travel_direction_point)

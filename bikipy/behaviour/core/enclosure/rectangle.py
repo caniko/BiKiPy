@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, computed_field
-from pydantic_numpy.typing import NpNDArray, NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, NpNDArrayFp64
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.behaviour.core.base import HabituationTrialMixin
@@ -210,7 +210,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     # Center vs Periphery ==============================================================
     @cached_property
-    def _center_boolean_index_motion_island(self) -> tuple[TruthIslandMetadata, NpNDArrayBool]:
+    def _center_boolean_index_motion_island(self) -> tuple[TruthIslandMetadata, Np1DArrayBool]:
         raw_center_boolean_index = self.center_rectangle.confinement_coordinate_boolean_index(
             self.reader.kinematic_coordinates,
             inspection_fig_output_path=self.inspection_fig_output_path,
@@ -222,7 +222,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @computed_field  # type: ignore[misc]
     @property
-    def center_boolean_index(self) -> NpNDArrayBool:
+    def center_boolean_index(self) -> Np1DArrayBool:
         return self._center_boolean_index_motion_island[1]
 
     @computed_field  # type: ignore[misc]
@@ -236,7 +236,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def periphery_boolean_index(self) -> NpNDArrayBool:
+    def periphery_boolean_index(self) -> Np1DArrayBool:
         return ~self.center_boolean_index
 
     @computed_field  # type: ignore[misc]

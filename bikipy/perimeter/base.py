@@ -19,7 +19,7 @@ from pydantic import (
     validate_call,
 )
 from pydantic_numpy.typing import (
-    NpNDArrayBool,
+    Np1DArrayBool,
     NpNDArrayFp64,
     NpNDArrayInt16,
     NpNDArrayUint8,
@@ -57,7 +57,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
     def post_confinement_analysis_inspect_plot(
         self,
-        boolean_index: NpNDArrayBool,
+        boolean_index: Np1DArrayBool,
         coordinates: Optional[NpNDArrayFp64] = None,
         ax: Axes = None,
         inspection_fig_output_path: Path | None = None,
@@ -104,7 +104,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         manual_video: Optional[VideoMetadata] = None,
         ax: Axes = None,
         **inspect_kwargs,
-    ) -> NpNDArrayBool: ...
+    ) -> Np1DArrayBool: ...
 
     @abstractmethod
     def plot_perimeter_on_ax(
@@ -224,7 +224,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     @abstractmethod
     def ray_direction_filter(
         self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, **kwargs
-    ) -> NpNDArrayBool: ...
+    ) -> Np1DArrayBool: ...
 
     @model_validator(mode="before")
     def mutually_exclusive(cls, values):
@@ -235,7 +235,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
     def confinement_coordinate_boolean_index(
         self, coordinates: NpNDArrayFp64, reader: Optional["BaseReader"] = None, **inspect_kwargs
-    ) -> NpNDArrayBool:
+    ) -> Np1DArrayBool:
         """
         This function integrates moving perimeter routine into the static perimeter workflow
         """
@@ -432,7 +432,7 @@ class PerimeterSet(BasePerimeter):
         """
         return np.mean([perimeter.centroid_meters for perimeter in self.all_perimeters], axis=0)
 
-    def combined_framewise_confinement_coordinates(self, coordinates: NpNDArrayFp64) -> NpNDArrayBool:
+    def combined_framewise_confinement_coordinates(self, coordinates: NpNDArrayFp64) -> Np1DArrayBool:
         present = np.any([perimeter.confinement_coordinate_boolean_index(coordinates) for perimeter in self.perimeters])
         if self.restricting_perimeters:
             present = present & ~np.any(
@@ -449,7 +449,7 @@ class PerimeterSet(BasePerimeter):
         manual_video: Optional[VideoMetadata] = None,
         ax: Axes = None,
         **inspect_kwargs,
-    ) -> NpNDArrayBool:
+    ) -> Np1DArrayBool:
         result = self.combined_framewise_confinement_coordinates(coordinates)
 
         self.post_confinement_analysis_inspect_plot(result, coordinates, ax, **inspect_kwargs)

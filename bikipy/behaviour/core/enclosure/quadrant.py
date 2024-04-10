@@ -2,7 +2,7 @@ from functools import cached_property
 
 import numpy as np
 from pydantic import computed_field
-from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
 
 from bikipy.core.base import BikipyModel
 from bikipy.core.video import VideoMetadata
@@ -23,7 +23,7 @@ class Quadrant(BikipyModel):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def _motion_island_confinement_boolean_index(self) -> tuple[TruthIslandMetadata, NpNDArrayBool]:
+    def _motion_island_confinement_boolean_index(self) -> tuple[TruthIslandMetadata, Np1DArrayBool]:
         return tolerance_modeled_boolean_index_truth_sequence_start_end_length(
             parallel_point_inside_polygon(self.kinematic_coordinates, clockwise_sort_points(self.vertices_in_meters)),
             self.fps,
@@ -34,7 +34,7 @@ class Quadrant(BikipyModel):
 
     @computed_field  # type: ignore[misc]
     @property
-    def confinement_boolean_index(self) -> NpNDArrayBool:
+    def confinement_boolean_index(self) -> Np1DArrayBool:
         return self._motion_island_confinement_boolean_index[1]
 
     @computed_field  # type: ignore[misc]

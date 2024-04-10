@@ -69,7 +69,14 @@ def merge_timestamps_with_dlc(
             os.remove(coord_file)
 
 
-def trial_video_frame_slice(likelihoods: pd.DataFrame, required_tail_likelihood: float, crop_target_trial_length_frames: int, frames_to_try_to_crop_from_start: Optional[int] = None, frames_to_try_to_crop_from_end: Optional[int] = None, crop_target_from_end: bool = True) -> slice:
+def trial_video_frame_slice(
+    likelihoods: pd.DataFrame,
+    required_tail_likelihood: float,
+    crop_target_trial_length_frames: int,
+    frames_to_try_to_crop_from_start: Optional[int] = None,
+    frames_to_try_to_crop_from_end: Optional[int] = None,
+    crop_target_from_end: bool = True,
+) -> slice:
     combined_raw_likelihood = likelihoods.mean(axis=1).values
 
     valid_likelihood_index = np.where(combined_raw_likelihood >= required_tail_likelihood)[0]
@@ -98,10 +105,12 @@ def trial_video_frame_slice(likelihoods: pd.DataFrame, required_tail_likelihood:
         return slice(naive_start, naive_end)
 
     if crop_minus_duration < crop_target_trial_length_frames:
-        logger.warning((
-            f"Trial length ({crop_target_trial_length_frames}) is greater than the "
-            f"duration_frames of the video ({raw_duration_frames - frames_to_try_to_crop})."
-        ))
+        logger.warning(
+            (
+                f"Trial length ({crop_target_trial_length_frames}) is greater than the "
+                f"duration_frames of the video ({raw_duration_frames - frames_to_try_to_crop})."
+            )
+        )
 
     rest_to_target = crop_minus_duration - crop_target_trial_length_frames
 

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.axes import Axes
 from pydantic import Field, computed_field
-from pydantic_numpy.typing import NpNDArrayBool
+from pydantic_numpy.typing import Np1DArrayBool
 from schemantic import SchemanticProjectModelMixin
 
 from bikipy.core.video import VideoMetadataMixin
@@ -39,7 +39,7 @@ class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectModelMixin, ABC):
 
     @computed_field  # type: ignore[misc]
     @property
-    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, NpNDArrayBool]:
+    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, Np1DArrayBool]:
         return {self.perimeter: self.result}
 
     @computed_field  # type: ignore[misc]
@@ -60,7 +60,7 @@ HeuristicCLS = type[AbstractHeuristic]
 class StandaloneHeuristic(AbstractHeuristic):
     @property
     @abstractmethod
-    def result(self) -> NpNDArrayBool: ...
+    def result(self) -> Np1DArrayBool: ...
 
     def plot_result(self, ax: Axes, label_to_plot: Optional[str] = None) -> None:
         ax.set_title("Combined result")
@@ -77,7 +77,7 @@ class StandaloneHeuristic(AbstractHeuristic):
 
 class CombinedHeuristic(SingleComponentMixin, AbstractHeuristic):
     label: str
-    result: NpNDArrayBool
+    result: Np1DArrayBool
 
     @computed_field  # type: ignore[misc]
     @property

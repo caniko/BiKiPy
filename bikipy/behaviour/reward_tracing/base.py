@@ -6,7 +6,7 @@ from typing import ClassVar
 import numpy as np
 import pandas as pd
 from pydantic import computed_field
-from pydantic_numpy.typing import NpNDArrayBool
+from pydantic_numpy.typing import Np1DArrayBool
 
 from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.behaviour.core.enclosure.base import EnclosedExperiment, EnclosedTrial
@@ -72,7 +72,7 @@ class RewardTraceTrialMixin[StartPerimeter: BaseSinglePerimeter, RewardPerimeter
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def reward_boolean(self) -> NpNDArrayBool:
+    def reward_boolean(self) -> Np1DArrayBool:
         confinement_bool = self.reward_perimeter.compute_confinement_boolean_index(
             self.reader.kinematic_coordinates,
             potential_label=f"{self.label}_reward",

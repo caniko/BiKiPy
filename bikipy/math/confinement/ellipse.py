@@ -1,10 +1,10 @@
 from numba import njit
-from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
 
 from bikipy import runtime_settings
 
 
-def point_inside_ellipse(points: NpNDArrayFp64, center: NpNDArrayFp64, ellipse_radius: NpNDArrayFp64) -> NpNDArrayBool:
+def point_inside_ellipse(points: NpNDArrayFp64, center: NpNDArrayFp64, ellipse_radius: NpNDArrayFp64) -> Np1DArrayBool:
     center_x, center_y = center
     radius_x, radius_y = ellipse_radius
 

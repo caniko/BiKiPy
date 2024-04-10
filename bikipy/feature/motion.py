@@ -5,7 +5,7 @@ from typing import Iterable, Optional
 import numpy as np
 import pandas as pd
 from pydantic import Field, computed_field, validate_call
-from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
 
 from bikipy.core.base import BikipyModel
 from bikipy.math.calculus import np_abs_diff
@@ -184,7 +184,7 @@ class Motion(BikipyModel):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def frozen_boolean_index(self) -> NpNDArrayBool:
+    def frozen_boolean_index(self) -> Np1DArrayBool:
         if not self.total_displacement:
             return np.nan
         return frozen_frames(self.fps, (self.meters_per_frame,))

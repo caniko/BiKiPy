@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
-from pydantic_numpy.typing import NpNDArray, NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, NpNDArrayFp64
 
 from bikipy.core.video import VideoMetadata
 from bikipy.math.confinement.polygon import parallel_point_inside_polygon
@@ -173,7 +173,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         manual_video: Optional[VideoMetadata] = None,
         ax: Axes = None,
         **inspect_kwargs,
-    ) -> NpNDArrayBool:
+    ) -> Np1DArrayBool:
         result = parallel_point_inside_polygon(coordinates, self.metric_graph.linked_vertices, merge_ends=False)
 
         self.post_confinement_analysis_inspect_plot(result, coordinates, ax, **inspect_kwargs)
@@ -202,7 +202,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         ray_travel_direction_point: NpNDArrayFp64,
         max_radians: float,
         angular_resolution: int = 400,
-    ) -> NpNDArrayBool:
+    ) -> Np1DArrayBool:
         """
         Determine if the object is within the ray cone
 

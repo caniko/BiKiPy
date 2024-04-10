@@ -1,7 +1,7 @@
 import numpy as np
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
-from pydantic_numpy import NpNDArrayBool
+from pydantic_numpy import Np1DArrayBool
 
 # TODO: Fix arg > 2-"A and not B or C" is incorrectly evaluated
 
@@ -26,14 +26,14 @@ class HeuristicMergeVisitor(NodeVisitor):
         return children[0]
 
     def visit_or_expr(self, node, children):
-        lhs: list[NpNDArrayBool]
-        rhs: list[NpNDArrayBool]
+        lhs: list[Np1DArrayBool]
+        rhs: list[Np1DArrayBool]
         lhs, _, _, _, rhs = children
         return [np.logical_or(po_lhs, po_rhs) for po_lhs, po_rhs in zip(lhs, rhs)]
 
     def visit_and_expr(self, node, children):
-        lhs: list[NpNDArrayBool]
-        rhs: list[NpNDArrayBool]
+        lhs: list[Np1DArrayBool]
+        rhs: list[Np1DArrayBool]
         lhs, _, _, _, rhs = children
         return [np.logical_and(po_lhs, po_rhs) for po_lhs, po_rhs in zip(lhs, rhs)]
 
@@ -41,7 +41,7 @@ class HeuristicMergeVisitor(NodeVisitor):
         return children[0]
 
     def visit_not_var(self, node, children):
-        var_atom: list[NpNDArrayBool]
+        var_atom: list[Np1DArrayBool]
         _, _, var_atom = children
         return [np.logical_not(po_var_atom) for po_var_atom in var_atom]
 
@@ -55,7 +55,7 @@ class HeuristicMergeVisitor(NodeVisitor):
         return children or node
 
 
-def parse_heuristic_merge_equation(formula: str, alias_to_heuristic_result: dict[str, NpNDArrayBool]) -> NpNDArrayBool:
+def parse_heuristic_merge_equation(formula: str, alias_to_heuristic_result: dict[str, Np1DArrayBool]) -> Np1DArrayBool:
     visitor = HeuristicMergeVisitor(alias_to_heuristic_result)
     tree = _heuristic_merge_grammar.parse(formula)
     return visitor.visit(tree)

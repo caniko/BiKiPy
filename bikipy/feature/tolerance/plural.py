@@ -1,7 +1,7 @@
 import numpy as np
 from numba import njit
 from pydantic import validate_call
-from pydantic_numpy.typing import NpNDArrayBool
+from pydantic_numpy.typing import Np1DArrayBool
 
 from bikipy import runtime_settings
 from bikipy.feature.tolerance.common import (
@@ -12,11 +12,11 @@ from bikipy.feature.tolerance.common import (
 
 @validate_call
 def plural_node_tolerance_model(
-    *boolean_indices: NpNDArrayBool,
+    *boolean_indices: Np1DArrayBool,
     fps: float,
     minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
     maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
-) -> NpNDArrayBool | None:
+) -> Np1DArrayBool | None:
     all_true = np.logical_and.reduce(boolean_indices)
     any_true = np.logical_or.reduce(boolean_indices)
 
@@ -32,12 +32,12 @@ def plural_node_tolerance_model(
 
 
 def _filter(
-    all_true: NpNDArrayBool,
-    any_true: NpNDArrayBool,
+    all_true: Np1DArrayBool,
+    any_true: Np1DArrayBool,
     fps: float,
     minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
     maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
-) -> NpNDArrayBool | None:
+) -> Np1DArrayBool | None:
     """
     Combines boolean indices into one boolean index into one. We do this with both an AND and OR filter, yielding two
     datasets; "all_true" and "any_true". We also flip the "any_true" dataset to get "any_".

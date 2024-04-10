@@ -3,7 +3,7 @@ from typing import Sequence
 
 import numpy as np
 from numba import njit
-from pydantic_numpy.typing import NpNDArrayBool
+from pydantic_numpy.typing import Np1DArrayBool
 
 from bikipy import runtime_settings
 from bikipy.feature.tolerance.common import common_preparation
@@ -11,7 +11,7 @@ from bikipy.feature.tolerance.common import common_preparation
 TruthIslandMetadata = list[tuple[int, int, int]]
 
 
-def boolean_index_truth_sequence_start_end(boolean_index: NpNDArrayBool) -> list[tuple[int, int]]:
+def boolean_index_truth_sequence_start_end(boolean_index: Np1DArrayBool) -> list[tuple[int, int]]:
     result = []
 
     array_length = len(boolean_index)
@@ -33,7 +33,7 @@ def boolean_index_truth_sequence_start_end(boolean_index: NpNDArrayBool) -> list
     return result
 
 
-def boolean_index_truth_sequence_start_end_length(boolean_index: NpNDArrayBool) -> TruthIslandMetadata:
+def boolean_index_truth_sequence_start_end_length(boolean_index: Np1DArrayBool) -> TruthIslandMetadata:
     result = []
 
     array_length = len(boolean_index)
@@ -57,11 +57,11 @@ def boolean_index_truth_sequence_start_end_length(boolean_index: NpNDArrayBool) 
 
 
 def tolerance_modeled_boolean_index_truth_sequence_start_end_length(
-    boolean_index: NpNDArrayBool,
+    boolean_index: Np1DArrayBool,
     fps: float,
     minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
     maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
-) -> tuple[TruthIslandMetadata, NpNDArrayBool]:
+) -> tuple[TruthIslandMetadata, Np1DArrayBool]:
     """
     Deal with islands of data that need to be aggregated for analysis. These islands
     of data have to be merged arbitrarily.
@@ -118,6 +118,24 @@ def reduce_repeating_sequences[T](repeating_sequence: Sequence[T], minimum_repea
             reduced_seq.append(key)
 
     return reduced_seq
+
+
+def start_all_true_end_main_false(main: Np1DArrayBool, *rest: Np1DArrayBool) -> Np1DArrayBool:
+    all_true = np.all(np.vstack([main, rest]), axis=0)
+
+    result = np.zeros_like(all_true, dtype=bool)
+    triggered = False
+    for idx, (main_value, every_value) in enumerate(zip(main, all_true)):
+        if triggered:
+            if main_value:
+                result[idx] = True
+            else:
+                triggered = False
+        elif all_true:
+            result[idx] = True
+            triggered = True
+
+    return result
 
 
 if not runtime_settings.disable_numba:

@@ -4,7 +4,7 @@ from typing import Optional
 
 from matplotlib.axes import Axes
 from pydantic import computed_field, validate_call
-from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
 
 from bikipy import runtime_settings
 from bikipy.core.compute import AbstractComputePerimeterBooleanIndex
@@ -22,11 +22,11 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
     maximum_distance: float | NpNDArrayFp64
     inside_perimeter_border: NpNDArrayFp64
     outside_perimeter_border: Optional[NpNDArrayFp64] = None
-    outside_perimeter: Optional[NpNDArrayBool] = None
+    outside_perimeter: Optional[Np1DArrayBool] = None
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def result(self) -> NpNDArrayBool:
+    def result(self) -> Np1DArrayBool:
         self.perimeter_border = self.perimeter.expand(self.maximum_distance)
         self.inside_perimeter_border = self.perimeter_border.compute_confinement_boolean_index(
             coordinates=self.inside_perimeter_border

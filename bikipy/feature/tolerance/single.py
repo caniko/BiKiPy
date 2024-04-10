@@ -1,7 +1,7 @@
 import numpy as np
 from numba import njit
 from pydantic import validate_call
-from pydantic_numpy.typing import NpNDArrayBool
+from pydantic_numpy.typing import Np1DArrayBool
 
 from bikipy import runtime_settings
 from bikipy.feature.tolerance.common import (
@@ -12,22 +12,22 @@ from bikipy.feature.tolerance.common import (
 
 @validate_call
 def single_node_tolerance_model(
-    boolean_index: NpNDArrayBool,
+    boolean_index: Np1DArrayBool,
     fps: float,
     minimum_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
     maximum_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
-) -> NpNDArrayBool | None:
+) -> Np1DArrayBool | None:
     return tolerance_model_warning_wrapper(
         _filter, len(boolean_index), boolean_index, fps, minimum_seconds_attention, maximum_seconds_distraction
     )
 
 
 def _filter(
-    boolean_index: NpNDArrayBool,
+    boolean_index: Np1DArrayBool,
     fps: float,
     minimum_seconds_attention: float,
     maximum_seconds_distraction: float,
-) -> NpNDArrayBool | None:
+) -> Np1DArrayBool | None:
     """
     MinFA and MaxFD are used to tolerance model the provided binary sequence as follows:
 

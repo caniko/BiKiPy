@@ -3,7 +3,7 @@ from typing import Optional, Sequence
 
 import numpy as np
 import seaborn as sb
-from pydantic_numpy.typing import NpNDArray, NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, NpNDArrayFp64
 
 from bikipy import runtime_settings
 from bikipy.core.typing import ConfinementSequence
@@ -73,7 +73,7 @@ def inspect_sequential_confinement(
     perimeter_set: PerimeterSet,
     coordinates: NpNDArrayFp64,
     presence: NpNDArray,
-    overlap_boolean_index: NpNDArrayBool,
+    overlap_boolean_index: Np1DArrayBool,
     **inspect_kwargs,
 ):
     if not inspection_fig_output_path:

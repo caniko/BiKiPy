@@ -1,9 +1,8 @@
-import math
 from abc import ABC, abstractmethod
 from collections import abc, defaultdict
 from functools import cached_property
 from logging import getLogger
-from typing import Any, Hashable, Iterable, Optional
+from typing import Hashable, Iterable, Optional
 
 import matplotlib
 import numpy as np
@@ -11,7 +10,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from pydantic import ConfigDict, Field, FilePath, computed_field, validate_call
-from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
 from typing_extensions import Literal
 
 from bikipy import runtime_settings
@@ -24,8 +23,8 @@ from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.math.high_velocity import high_velocity_removal
 from bikipy.math.shortcut import seconds_to_frames
 from bikipy.perimeter.base import BasePerimeter
-from bikipy.reader.model import model_data
 from bikipy.reader.compute import compute_midpoint_label, trial_video_frame_slice
+from bikipy.reader.model import model_data
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.color import make_color_map
@@ -38,7 +37,7 @@ logger = getLogger(__name__)
 
 
 class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
-    model_config = ConfigDict(extra='allow')
+    model_config = ConfigDict(extra="allow")
 
     df_path: FilePath = Field(description="Path to kinematic data, that will be " "converted to pd.DataFrame")
     df_read_kwargs: Optional[dict] = Field(
@@ -131,7 +130,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
     @property
     @abstractmethod
-    def region_of_interest_to_boolean_index(self) -> dict[str, NpNDArrayBool]: ...
+    def region_of_interest_to_boolean_index(self) -> dict[str, Np1DArrayBool]: ...
 
     @staticmethod
     @abstractmethod
@@ -432,7 +431,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             return result
 
     @validate_call(config=ConfigDict(arbitrary_types_allowed=True))
-    def plot_boolean_index(self, boolean_index: NpNDArrayBool, ax: Axes, label_to_plot: Optional[str] = None) -> None:
+    def plot_boolean_index(self, boolean_index: Np1DArrayBool, ax: Axes, label_to_plot: Optional[str] = None) -> None:
         coordinates_for_plot = self.coordinates_for_plot(label_to_plot or self.object_tracking_label_for_kinematics)
         ax_plot_coordinate_with_boolean_index(
             ax, boolean_index, coordinates_for_plot, plot_line=True, plot_non_confinement=False
@@ -454,7 +453,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
         ax.legend(bbox_to_anchor=(1.01, 0.5), loc="center left")
 
-    def confinement_index_defaultdict(self) -> defaultdict[str, NpNDArrayBool]:
+    def confinement_index_defaultdict(self) -> defaultdict[str, Np1DArrayBool]:
         return defaultdict(lambda: np.zeros(len(self.augmented), dtype=bool))
 
     def confinement_sequence_defaultdict(self, more_than_254: bool = False) -> defaultdict[str, ConfinementSequence]:

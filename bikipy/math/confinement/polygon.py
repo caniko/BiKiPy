@@ -2,7 +2,7 @@ import numba
 import numpy as np
 from numba import njit
 from pydantic import validate_call
-from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
 
 from bikipy import runtime_settings
 
@@ -10,7 +10,7 @@ from bikipy import runtime_settings
 @validate_call
 def parallel_point_inside_polygon(
     points: NpNDArrayFp64, polygon: NpNDArrayFp64, merge_ends: bool = True
-) -> NpNDArrayBool:
+) -> Np1DArrayBool:
     if merge_ends:
         polygon = np.append(polygon, np.expand_dims(polygon[0], 0), axis=0)
 
@@ -64,7 +64,7 @@ def is_inside_sm(point: NpNDArrayFp64, polygon: NpNDArrayFp64):
 
 if runtime_settings.disable_numba:
 
-    def is_inside_sm_parallel(points: NpNDArrayFp64, polygon: NpNDArrayFp64) -> NpNDArrayBool:
+    def is_inside_sm_parallel(points: NpNDArrayFp64, polygon: NpNDArrayFp64) -> Np1DArrayBool:
         ln = len(points)
         result = np.empty(ln, dtype=bool)
         for i in range(ln):
@@ -75,7 +75,7 @@ else:
     is_inside_sm = njit(nogil=True, cache=True)(is_inside_sm)
 
     @njit(parallel=True, cache=True)
-    def is_inside_sm_parallel(points: NpNDArrayFp64, polygon: NpNDArrayFp64) -> NpNDArrayBool:
+    def is_inside_sm_parallel(points: NpNDArrayFp64, polygon: NpNDArrayFp64) -> Np1DArrayBool:
         ln = len(points)
         result = np.empty(ln, dtype=numba.boolean)
         for i in numba.prange(ln):

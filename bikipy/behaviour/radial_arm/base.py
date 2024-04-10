@@ -9,7 +9,7 @@ import pandas as pd
 from ordered_set import OrderedSet
 from pydantic import DirectoryPath, PositiveInt, computed_field, field_validator
 from pydantic_numpy import NpNDArrayFp64
-from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayUint8
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayUint8
 
 from bikipy._constant import INSPECT_SIMPLE_FIG_FILE_FORMAT
 from bikipy.analysis.video import make_inspection_video
@@ -210,7 +210,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def area_to_confinement_boolean_index(self) -> dict[str, NpNDArrayBool]:
+    def area_to_confinement_boolean_index(self) -> dict[str, Np1DArrayBool]:
         return {label: self.alternation_sequence_with_center == label for label in self._center_arm_int_ids}
 
     @computed_field  # type: ignore[misc]

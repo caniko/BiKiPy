@@ -4,7 +4,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 from pydantic import computed_field
-from pydantic_numpy import NpNDArrayBool
+from pydantic_numpy import Np1DArrayBool
 
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.physical_object.heuristic.mixin import ProximityMixin
@@ -66,14 +66,14 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
 
     @computed_field  # type: ignore[misc]
     @property
-    def solo_result(self) -> NpNDArrayBool:
+    def solo_result(self) -> Np1DArrayBool:
         return np.logical_or.reduce(
             [node.result for node in (self.center_ear_proximity, self.tail_base_proximity) if node is not None]
         )
 
     @computed_field  # type: ignore[misc]
     @property
-    def label_to_proximity_boolean(self) -> dict[str, NpNDArrayBool]:
+    def label_to_proximity_boolean(self) -> dict[str, Np1DArrayBool]:
         return {
             self.center_ear_label: self.center_ear_proximity.result,
             self.tail_base_label: self.tail_base_proximity.result,
@@ -81,7 +81,7 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
 
     @computed_field  # type: ignore[misc]
     @property
-    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, NpNDArrayBool]:
+    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, Np1DArrayBool]:
         return self.center_ear_proximity.video_gen_merge_perimeter_to_boolean_index(self.tail_base_proximity)
 
     @computed_field  # type: ignore[misc]

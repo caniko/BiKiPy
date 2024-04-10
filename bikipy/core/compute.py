@@ -5,7 +5,7 @@ from typing import ClassVar, Optional
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import Extra, computed_field, model_validator, validate_call
-from pydantic_numpy.typing import NpNDArrayBool
+from pydantic_numpy.typing import Np1DArrayBool
 
 from bikipy.core.base import BikipyModel
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
@@ -51,7 +51,7 @@ class AbstractCompute[ResultType](BikipyModel, ABC, extra=Extra.allow):
         fig.savefig(path)
 
 
-class AbstractComputePerimeterBooleanIndex(AbstractCompute[NpNDArrayBool], VideoMetadataMixin, ABC):
+class AbstractComputePerimeterBooleanIndex(AbstractCompute[Np1DArrayBool], VideoMetadataMixin, ABC):
     perimeter: BaseSinglePerimeter
     tolerance_modelling: bool = True
 
@@ -62,11 +62,11 @@ class AbstractComputePerimeterBooleanIndex(AbstractCompute[NpNDArrayBool], Video
 
     @property
     @abstractmethod
-    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, NpNDArrayBool]: ...
+    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, Np1DArrayBool]: ...
 
     def video_gen_merge_perimeter_to_boolean_index(
         self, other: "AbstractComputePerimeterBooleanIndex", both_or_false: bool = False
-    ) -> dict[BasePerimeter, NpNDArrayBool]:
+    ) -> dict[BasePerimeter, Np1DArrayBool]:
         return video_gen_merge_perimeter_to_boolean_index_from_dict(
             self.perimeter_to_boolean_index, other.perimeter_to_boolean_index, both_or_false
         )
@@ -74,9 +74,9 @@ class AbstractComputePerimeterBooleanIndex(AbstractCompute[NpNDArrayBool], Video
 
 def video_gen_merge_perimeter_to_boolean_index_from_dict(
     a_perimeter_to_boolean_index,
-    b_perimeter_to_boolean_index: dict[BasePerimeter, NpNDArrayBool],
+    b_perimeter_to_boolean_index: dict[BasePerimeter, Np1DArrayBool],
     both_or_false: bool = False,
-) -> dict[BasePerimeter, NpNDArrayBool]:
+) -> dict[BasePerimeter, Np1DArrayBool]:
     result = {**a_perimeter_to_boolean_index, **b_perimeter_to_boolean_index}
 
     logical_method = np.logical_and if both_or_false else np.logical_or

@@ -6,7 +6,7 @@ from matplotlib import colors, patches
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from pydantic import ConfigDict, validate_call
-from pydantic_numpy.typing import NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
 
 from bikipy.math.discrete import boolean_index_truth_sequence_start_end
 
@@ -19,7 +19,7 @@ logger = getLogger(__file__)
 
 def ax_plot_coordinate_with_boolean_index(
     ax,
-    boolean_index: NpNDArrayBool,
+    boolean_index: Np1DArrayBool,
     coordinates: NpNDArrayFp64,
     plot_non_confinement: bool = False,
     plot_line: bool = False,

@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 from matplotlib.axes import Axes
 from pydantic import computed_field, validate_call
-from pydantic_numpy import NpNDArrayBool
+from pydantic_numpy import Np1DArrayBool
 from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy import runtime_settings
@@ -21,10 +21,10 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
     inside_perimeter_border: Optional[NpNDArrayFp64] = None
     outside_perimeter_border: Optional[NpNDArrayFp64] = None
 
-    inside_perimeter_boolean_index: Optional[NpNDArrayBool] = None
-    outside_perimeter_boolean_index: Optional[NpNDArrayBool] = None
-    inside_perimeter_border_boolean_index: Optional[NpNDArrayBool] = None
-    outside_perimeter_border_boolean_index: Optional[NpNDArrayBool] = None
+    inside_perimeter_boolean_index: Optional[Np1DArrayBool] = None
+    outside_perimeter_boolean_index: Optional[Np1DArrayBool] = None
+    inside_perimeter_border_boolean_index: Optional[Np1DArrayBool] = None
+    outside_perimeter_border_boolean_index: Optional[Np1DArrayBool] = None
 
     heuristic_data_sources = (
         "inside_perimeter",
@@ -61,7 +61,7 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def result(self) -> NpNDArrayBool:
+    def result(self) -> Np1DArrayBool:
         if self.valid_border is not None and self.valid_perimeter is not None:
             return self.valid_border & self.valid_perimeter
 
@@ -75,7 +75,7 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def valid_border(self) -> NpNDArrayBool | None:
+    def valid_border(self) -> Np1DArrayBool | None:
         if (
             self.outside_perimeter_border_boolean_index is not None
             and self.inside_perimeter_border_boolean_index is not None
@@ -90,7 +90,7 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def valid_perimeter(self) -> NpNDArrayBool | None:
+    def valid_perimeter(self) -> Np1DArrayBool | None:
         if self.outside_perimeter_boolean_index is not None and self.inside_perimeter_boolean_index is not None:
             return self.outside_perimeter_boolean_index & self.inside_perimeter_boolean_index
 
@@ -102,7 +102,7 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
 
     @computed_field(repr=False)  # type: ignore[misc]
     @property
-    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, NpNDArrayBool]:
+    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, Np1DArrayBool]:
         result = {}
         if self.valid_border is not None:
             result[self.perimeter_border] = self.valid_border

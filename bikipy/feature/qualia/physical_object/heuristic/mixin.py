@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from pydantic import BaseModel, computed_field
-from pydantic_numpy import NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy import Np1DArrayBool, NpNDArrayFp64
 
 from bikipy.math.cached import cached_deg2rad, meters2pixels
 
@@ -11,7 +11,7 @@ class ProximityMixin(BaseModel, ABC):
 
     @property
     @abstractmethod
-    def label_to_proximity_boolean(self) -> dict[str, NpNDArrayBool]: ...
+    def label_to_proximity_boolean(self) -> dict[str, Np1DArrayBool]: ...
 
     @computed_field  # type: ignore[misc]
     @property

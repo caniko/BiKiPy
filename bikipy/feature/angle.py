@@ -3,7 +3,7 @@ from warnings import warn
 
 import numpy as np
 from numba import njit, prange
-from pydantic_numpy import NpNDArrayBool
+from pydantic_numpy import Np1DArrayBool
 from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy import runtime_settings
@@ -97,7 +97,7 @@ def inner_angle(vector_set_a: NpNDArrayFp64, vector_set_b: NpNDArrayFp64):
 
 
 @njit(cache=True, parallel=True)
-def _numba_inner_angle_loop(vector_set_a: NpNDArrayFp64, vector_set_b: NpNDArrayFp64, to_skip: NpNDArrayBool):
+def _numba_inner_angle_loop(vector_set_a: NpNDArrayFp64, vector_set_b: NpNDArrayFp64, to_skip: Np1DArrayBool):
     result = np.zeros(len(vector_set_a), dtype=np.float64)
     for i in prange(len(vector_set_a)):
         if to_skip[i]:

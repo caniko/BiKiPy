@@ -4,24 +4,24 @@ from typing import Iterable, Optional
 
 from matplotlib.axes import Axes
 from pydantic import computed_field
-from pydantic_numpy.typing import NpNDArrayBool
+from pydantic_numpy.typing import Np1DArrayBool
 
 from bikipy.feature.qualia.physical_object.heuristic.abc import StandaloneHeuristic
 
 
 class AbstractSoloHeuristic(StandaloneHeuristic, ABC):
-    combined_helper_heuristic: Optional[NpNDArrayBool] = None
+    combined_helper_heuristic: Optional[Np1DArrayBool] = None
 
     @property
     @abstractmethod
-    def solo_result(self) -> NpNDArrayBool: ...
+    def solo_result(self) -> Np1DArrayBool: ...
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def result(self) -> NpNDArrayBool:
+    def result(self) -> Np1DArrayBool:
         return self._apply_helper_heuristics(self.solo_result)
 
-    def _apply_helper_heuristics(self, target: NpNDArrayBool) -> NpNDArrayBool:
+    def _apply_helper_heuristics(self, target: Np1DArrayBool) -> Np1DArrayBool:
         if self.combined_helper_heuristic:
             return target & self.combined_helper_heuristic
         return target

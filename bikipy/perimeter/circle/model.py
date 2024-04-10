@@ -4,7 +4,7 @@ from typing import Optional
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
-from pydantic_numpy import NpNDArrayBool
+from pydantic_numpy import Np1DArrayBool
 from pydantic_numpy.typing import NpNDArrayFp64, NpNDArrayInt16
 
 from bikipy.core.video import VideoMetadata
@@ -65,7 +65,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         manual_video: Optional[VideoMetadata] = None,
         ax: Axes = None,
         **inspect_kwargs,
-    ) -> NpNDArrayBool:
+    ) -> Np1DArrayBool:
         if isinstance(self.radius_length_meters, float):
             distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
             result = np.abs(distance_of_point_from_center) <= self.radius_length_meters
@@ -93,7 +93,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
 
     def ray_direction_filter(
         self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, **kwargs
-    ) -> NpNDArrayBool:
+    ) -> Np1DArrayBool:
         from bikipy.behaviour.utils import ray_direction_filter_circle_triangle
 
         return ray_direction_filter_circle_triangle(self, ray_travel_direction_point, ray_start_point, max_radians)

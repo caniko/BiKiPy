@@ -3,7 +3,7 @@ from typing import Optional
 
 import pandas as pd
 from pydantic import computed_field
-from pydantic_numpy import NpNDArrayBool, NpNDArrayFp64
+from pydantic_numpy import Np1DArrayBool, NpNDArrayFp64
 
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
@@ -14,12 +14,15 @@ from bikipy.feature.qualia.physical_object.heuristic.mixin import (
 from bikipy.feature.qualia.physical_object.heuristic.solo.abc import (
     AbstractSoloHeuristic,
 )
+from bikipy.math.discrete import start_all_true_end_main_false
 from bikipy.perimeter.base import BasePerimeter
 
 
 class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
     maximum_distance_meters: float = 0.05
     maximum_degrees: float = 45.0
+
+    nose_direction_naive: bool = True
 
     nose_label: str | None = "nose"
     center_ear_label: str = "center_ear"
@@ -71,12 +74,15 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
 
     @computed_field  # type: ignore[misc]
     @property
-    def solo_result(self) -> NpNDArrayBool:
+    def solo_result(self) -> Np1DArrayBool:
+        if self.nose_direction_naive:
+            return start_all_true_end_main_false(self.nose_proximity.result, self.snout_towards_object_rays.result)
+
         return self.nose_proximity.result & self.snout_towards_object_rays.result
 
     @computed_field  # type: ignore[misc]
     @property
-    def label_to_proximity_boolean(self) -> dict[str, NpNDArrayBool]:
+    def label_to_proximity_boolean(self) -> dict[str, Np1DArrayBool]:
         return {self.nose_label: self.nose_proximity.result}
 
     @computed_field  # type: ignore[misc]
@@ -86,7 +92,7 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
 
     @computed_field  # type: ignore[misc]
     @property
-    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, NpNDArrayBool]:
+    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, Np1DArrayBool]:
         return self.nose_proximity.video_gen_merge_perimeter_to_boolean_index(
             self.snout_towards_object_rays, both_or_false=True
         )

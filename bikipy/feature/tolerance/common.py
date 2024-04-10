@@ -4,7 +4,7 @@ from typing import Callable
 import numpy as np
 from numba import njit
 from pydantic import validate_call
-from pydantic_numpy.typing import NpNDArrayBool
+from pydantic_numpy.typing import Np1DArrayBool
 
 from bikipy import runtime_settings
 
@@ -12,7 +12,7 @@ logger = getLogger(__name__)
 
 
 @validate_call
-def tolerance_model_warning_wrapper(tolerance_model: Callable, result_length: int, *args, **kwargs) -> NpNDArrayBool:
+def tolerance_model_warning_wrapper(tolerance_model: Callable, result_length: int, *args, **kwargs) -> Np1DArrayBool:
     attention_boolean_index = tolerance_model(*args, **kwargs)
 
     if attention_boolean_index is None:
@@ -27,7 +27,7 @@ def tolerance_model_warning_wrapper(tolerance_model: Callable, result_length: in
 
 
 def common_preparation(
-    minimum_seconds_attention: float, maximum_seconds_distraction: float, fps: float, boolean_sequence: NpNDArrayBool
+    minimum_seconds_attention: float, maximum_seconds_distraction: float, fps: float, boolean_sequence: Np1DArrayBool
 ) -> tuple[float, float, int]:
     return round(minimum_seconds_attention * fps), round(maximum_seconds_distraction * fps), len(boolean_sequence)
 

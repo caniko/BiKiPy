@@ -3,7 +3,7 @@ from typing import Optional
 
 from matplotlib.axes import Axes
 from pydantic import computed_field
-from pydantic_numpy import NpNDArrayBool
+from pydantic_numpy import Np1DArrayBool
 from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy import runtime_settings
@@ -26,7 +26,7 @@ class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def result(self) -> NpNDArrayBool:
+    def result(self) -> Np1DArrayBool:
         result = self.perimeter.ray_direction_filter(
             self.ray_start_point, self.ray_travel_direction_point, self.max_radians
         )
@@ -36,7 +36,7 @@ class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
 
     @computed_field  # type: ignore[misc]
     @property
-    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, NpNDArrayBool]:
+    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, Np1DArrayBool]:
         return {self.perimeter: self.result}
 
     def plot(self, ax: Axes, video: Optional[VideoMetadata] = None, coordinates_as_pixels: bool = False) -> None:
