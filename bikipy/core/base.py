@@ -1,13 +1,13 @@
 from typing import ClassVar, Optional
 
-from pydantic import BaseModel, NonNegativeInt, computed_field
+from pydantic import BaseModel, ConfigDict, NonNegativeInt, computed_field
 from schemantic import SchemanticProjectModelMixin
 
 from bikipy.core.typing import Label
 
 
 class BikipyConfigModel(BaseModel):
-    pass
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class BikipyModel(BikipyConfigModel):

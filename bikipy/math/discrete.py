@@ -144,3 +144,5 @@ if not runtime_settings.disable_numba:
     tolerance_modeled_boolean_index_truth_sequence_start_end_length = njit(cache=True)(
         tolerance_modeled_boolean_index_truth_sequence_start_end_length
     )
+
+    start_all_true_end_main_false = njit(cache=True)(start_all_true_end_main_false)
