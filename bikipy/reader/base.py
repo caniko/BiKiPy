@@ -22,9 +22,10 @@ from bikipy.core.typing import ConfinementSequence
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.math.high_velocity import high_velocity_removal
+from bikipy.math.shortcut import seconds_to_frames
 from bikipy.perimeter.base import BasePerimeter
 from bikipy.reader.model import model_data
-from bikipy.reader.compute import compute_midpoint_label
+from bikipy.reader.compute import compute_midpoint_label, trial_video_frame_slice
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.color import make_color_map
@@ -189,12 +190,6 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             base.add("fps")
         return base
 
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def raw_frames(self) -> int:
-        return len(self.raw_df)
-
     @computed_field  # type: ignore[misc]
     @property
     def likelihood_columns(self) -> NpNDArrayFp64:
@@ -249,8 +244,17 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def crop_frames_slice(self) -> slice | None:
-        return slice(self.crop_start_frame_idx, self.crop_end_frame_idx)
+    def crop_frames_slice(self) -> slice:
+        fps = self.video_for_computation().fps
+
+        return trial_video_frame_slice(
+            self.likelihood_columns,
+            self.required_tail_likelihood,
+            seconds_to_frames(self.crop_target_trial_length_seconds, fps),
+            seconds_to_frames(self.seconds_to_try_to_crop_from_start, fps),
+            seconds_to_frames(self.seconds_to_try_to_crop_from_end, fps),
+            self.crop_target_from_end,
+        )
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -263,6 +267,8 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             return pd.read_parquet(self.cached_augmented_df_path)
 
         result = self.raw_df.copy()
+
+        result = result.iloc[self.crop_frames_slice]
 
         if self.trial_enclosure:
             logger.debug(
@@ -285,9 +291,6 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
         if self.stat_model:
             logger.debug(f"Filtering {self.df_path.stem} with the {self.stat_model_method} method")
             result = model_data(result, self.stat_model_method, **self.stat_model_kwargs)
-
-        if self.crop_frames_slice:
-            result = result.iloc[self.crop_frames_slice]
 
         if self.invert_y_axis:
             result.loc[:, pd.IndexSlice[:, "y"]] = (
@@ -392,6 +395,21 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
                 cum_sum = cum_sum - 1.0
 
         return float(np.mean(per_second_counts))
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def trial_start_seconds(self) -> float:
+        return self.crop_frames_slice.start / self.fps
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def trial_end_seconds(self) -> float:
+        return self.crop_frames_slice.stop / self.fps
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def trial_length_seconds(self) -> float:
+        return self.trial_end_seconds - self.trial_start_seconds
 
     label_to_plot_prepped_coordinates: dict[str, NpNDArrayFp64] | None = Field(default_factory=dict)
     label_to_plot_without_resized_coordinates: dict[str, NpNDArrayFp64] | None = Field(default_factory=dict)
