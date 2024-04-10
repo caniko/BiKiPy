@@ -382,9 +382,6 @@ class VideoMetadata(_VideoMetadataBase):
             del self.upscaled_video, self.greyscale_frame
 
 
-VideoMetadata.model_rebuild()
-
-
 class VideoMetadataMixin(_VideoMetadataBase):
     manual_video: Optional[VideoMetadata] = Field(
         None, description="Video metadata defined from another video metadata object"

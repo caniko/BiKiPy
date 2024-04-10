@@ -128,11 +128,6 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 PerimeterCLS = type[BasePerimeter]
 
 
-from bikipy.reader.base import BaseReader  # ruff ignore E402
-
-BaseReader.model_rebuild()
-
-
 class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     impenetrable: bool = Field(
         False,

@@ -247,14 +247,12 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @computed_field  # type: ignore[misc]
     @cached_property
     def crop_frames_slice(self) -> slice:
-        fps = self.fps
-
         return trial_video_frame_slice(
             self.likelihood_columns,
             self.required_tail_likelihood,
-            seconds_to_frames(self.crop_target_trial_length_seconds, fps),
-            seconds_to_frames(self.seconds_to_try_to_crop_from_start, fps),
-            seconds_to_frames(self.seconds_to_try_to_crop_from_end, fps),
+            seconds_to_frames(self.crop_target_trial_length_seconds, self.fps),
+            seconds_to_frames(self.seconds_to_try_to_crop_from_start, self.fps),
+            seconds_to_frames(self.seconds_to_try_to_crop_from_end, self.fps),
             self.crop_target_from_end,
         )
 
@@ -271,6 +269,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
         result = self.raw_df.copy()
 
         result = result.iloc[self.crop_frames_slice]
+        assert len(result) == self.crop_frames_slice.stop - self.crop_frames_slice.start
 
         if self.trial_enclosure:
             logger.debug(
