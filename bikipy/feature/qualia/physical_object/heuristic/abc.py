@@ -70,7 +70,7 @@ class StandaloneHeuristic(AbstractHeuristic):
     @property
     def summary_series(self) -> pd.Series:
         return pd.Series(
-            [self.video_for_computation().boolean_array_to_seconds(self.result)],
+            [self.video.boolean_array_to_seconds(self.result)],
             index=[f"{self.perimeter.label.capitalize()}{self.heuristic_alias}"],
         )
 
@@ -82,4 +82,4 @@ class CombinedHeuristic(SingleComponentMixin, AbstractHeuristic):
     @computed_field  # type: ignore[misc]
     @property
     def summary_series(self) -> pd.Series:
-        return pd.Series([self.video_for_computation().boolean_array_to_seconds(self.result)], index=[self.label])
+        return pd.Series([self.video.boolean_array_to_seconds(self.result)], index=[self.label])

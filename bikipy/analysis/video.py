@@ -112,21 +112,22 @@ def make_inspection_video(
     if delete_old and output_file_path.exists():
         os.remove(output_file_path)
 
+    fps = reader.fps
     print(
         f"Creating video from trial data: {output_file_path}."
         f"Frames on the fly: {frames_on_the_fly}."
         f"Codec: {codec}."
-        f"Duration: {reader.total_duration}."
-        f"FPS: {reader.video_for_computation().fps}."
+        f"Duration: {reader.trial_length_seconds}."
+        f"FPS: {fps}."
     )
 
     if frames_on_the_fly:
         (
             VideoClip(
-                lambda t: make_frame(round(t * reader.video_for_computation().fps)),
+                lambda t: make_frame(round(t * fps)),
                 duration=reader.trial_length_seconds,
             )
-            .set_fps(reader.video_for_computation().fps)
+            .set_fps(fps)
             .write_videofile(str(output_file_path), codec=codec, preset="slower")
         )
 
@@ -139,7 +140,7 @@ def make_inspection_video(
     #
     # try:
     #     ImageSequenceClip(
-    #         [frame_feature.result() for frame_feature in frame_features], fps=reader.video_for_computation().fps
+    #         [frame_feature.result() for frame_feature in frame_features], fps=fps
     #     ).write_videofile(output_file_path, codec=codec)
     # except Exception as e:
     #     if output_file_path.exists():

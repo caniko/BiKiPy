@@ -41,7 +41,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
     @computed_field  # type: ignore[misc]
     @cached_property
     def center_meters(self) -> NpNDArrayFp64:
-        return self.center_pixels * self.video_for_computation().meters_per_pixel
+        return self.center_pixels * self.meters_per_pixel
 
     def change_reference(self, new_reference: NpNDArrayFp64, makesense_image_name: Optional[str] = None):
         return self.copy(
@@ -117,8 +117,8 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         center[1] += y_pixel_offset
 
         if coordinates_as_pixels and with_resize:
-            center *= self.video_for_computation().image_resize_multiplier
-            radius *= self.video_for_computation().image_resize_multiplier
+            center *= self.video.image_resize_multiplier
+            radius *= self.video.image_resize_multiplier
 
         if isinstance(radius, np.ndarray):
             radius = tuple(radius)
@@ -146,7 +146,7 @@ class CircleVariableRadiusPerimeter(BaseCirclePerimeter):
     @computed_field  # type: ignore[misc]
     @property
     def radius_length_pixels(self) -> float:
-        return meters2pixels(self.radius_length_meters, self.video_for_computation().pixels_per_meter)
+        return meters2pixels(self.radius_length_meters, self.video.pixels_per_meter)
 
     @computed_field  # type: ignore[misc]
     @property
@@ -168,7 +168,7 @@ class CircleFixedRadiusPerimeter(BaseCirclePerimeter):
     @computed_field  # type: ignore[misc]
     @cached_property
     def radius_length_meters(self) -> float:
-        return np.mean(self.radius_length_pixels * self.video_for_computation().meters_per_pixel)
+        return np.mean(self.radius_length_pixels * self.meters_per_pixel)
 
     @classmethod
     @property

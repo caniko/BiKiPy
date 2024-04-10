@@ -151,11 +151,11 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
             self.perimeter_set,
             (False, True, True, True),
             tolerance_filter=True,
-            tolerance_fps=self.video_for_computation().fps,
+            tolerance_fps=self.fps,
         )
 
         # TODO: Pydantic v2, put this in model_post_init
-        fig, ax = self.video_for_computation().subplot()
+        fig, ax = self.video.subplot()
         ax.scatter(*self.reader.kinematic_coordinates_prepared_for_plotting.T)
         self.perimeter_set.plot(ax, coordinates_as_pixels=True)
         generic_inspection_finalization(
@@ -167,7 +167,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
         inspect_sequential_confinement(
             self.inspection_fig_output_path,
-            self.video_for_computation(),
+            self.video,
             self.perimeter_set,
             self.reader.kinematic_coordinates_prepared_for_plotting,
             result,
@@ -189,7 +189,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         result = np.array(
             reduce_repeating_sequences(
                 self.cleaned_arm_alternation_sequence,
-                round(self.video_for_computation().fps * self.minimum_seconds_for_entry),
+                round(self.fps * self.minimum_seconds_for_entry),
             )
         )
         return result[result != self.center.int_id]
@@ -219,7 +219,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         return {
             label: Motion(
                 coordinate_sequence=self.reader.kinematic_coordinates[confinement_boolean_index],
-                fps=self.video_for_computation().fps,
+                fps=self.fps,
             ).as_tuple
             for label, confinement_boolean_index in self.area_to_confinement_boolean_index.items()
         }
@@ -228,7 +228,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
     @cached_property
     def area_to_seconds_spent(self) -> dict[str, int]:
         return {
-            label: self.video_for_computation().boolean_array_to_seconds(confinement_boolean_index)
+            label: self.video.boolean_array_to_seconds(confinement_boolean_index)
             for label, confinement_boolean_index in self.area_to_confinement_boolean_index.items()
         }
 
@@ -327,7 +327,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
     ) -> None:
         if not self.minimum_seconds_for_entry:
             return make_inspection_video(
-                video_frames=self.video_for_computation().video_read_frames(),
+                video_frames=self.video.video_read_frames(),
                 reader=self.reader,
                 perimeter_to_boolean_index={
                     perimeter: self.alternation_sequence_with_center == perimeter.int_id

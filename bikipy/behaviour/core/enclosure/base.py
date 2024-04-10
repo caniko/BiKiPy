@@ -69,7 +69,7 @@ class EnclosedTrial(BaseTrial):
     @cached_property
     def gaussian_center_to_periphery_score(self) -> float:
         func = gaussian_scoring_field(
-            self.video_for_computation().metric_resolution,
+            self.metric_resolution,
             gaussian_dividend_multiplayer=self.gaussian_dividend_multiplayer,
         )
         scores = np.array(

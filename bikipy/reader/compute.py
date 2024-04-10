@@ -77,6 +77,16 @@ def trial_video_frame_slice(
     frames_to_try_to_crop_from_end: Optional[int] = None,
     crop_target_from_end: bool = True,
 ) -> slice:
+    """
+
+    :param likelihoods:
+    :param required_tail_likelihood:
+    :param crop_target_trial_length_frames:
+    :param frames_to_try_to_crop_from_start:
+    :param frames_to_try_to_crop_from_end:
+    :param crop_target_from_end:
+    :return:
+    """
     combined_raw_likelihood = likelihoods.mean(axis=1).values
 
     valid_likelihood_index = np.where(combined_raw_likelihood >= required_tail_likelihood)[0]

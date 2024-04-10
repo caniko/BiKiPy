@@ -16,7 +16,7 @@ class ProximityMixin(BaseModel, ABC):
     @computed_field  # type: ignore[misc]
     @property
     def maximum_distance_pixels(self) -> float:
-        return meters2pixels(self.maximum_distance_meters, self.video_for_computation().pixels_per_meter)
+        return meters2pixels(self.maximum_distance_meters, self.video.pixels_per_meter)
 
 
 class RayMixin(BaseModel, ABC):
@@ -34,5 +34,5 @@ class RayMixin(BaseModel, ABC):
 
 class SingleComponentMixin(BaseModel):
     def plot(self) -> None:
-        fig, ax = self.video_for_computation().subplot()
+        fig, ax = self.video.subplot()
         self.plot_result(ax)

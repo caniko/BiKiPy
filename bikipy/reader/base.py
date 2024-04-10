@@ -140,7 +140,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @cached_property
     def max_pixels_per_frame(self) -> float | None:
         if self.max_meters_per_second:
-            return self.video.pixels_per_meter * self.max_meters_per_second / self.video.fps
+            return self.pixels_per_meter * self.max_meters_per_second / self.video.fps
 
     @computed_field  # type: ignore[misc]
     @property
@@ -150,7 +150,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @computed_field  # type: ignore[misc]
     @cached_property
     def kinematic_coordinates_prepared_for_plotting(self) -> NpNDArrayFp64:
-        return self.video_for_computation().prepare_coordinates_for_plotting(self.kinematic_coordinates)
+        return self.video.prepare_coordinates_for_plotting(self.kinematic_coordinates)
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -247,7 +247,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @computed_field  # type: ignore[misc]
     @cached_property
     def crop_frames_slice(self) -> slice:
-        fps = self.video_for_computation().fps
+        fps = self.fps
 
         return trial_video_frame_slice(
             self.likelihood_columns,
@@ -296,7 +296,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
         if self.invert_y_axis:
             result.loc[:, pd.IndexSlice[:, "y"]] = (
-                self.video_for_computation().vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
+                self.video.vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
             )
             self.y_axis_crop_end_point = -self.y_axis_crop_end_point
 
@@ -306,20 +306,20 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] + self.y_axis_crop_end_point
 
         # convert to meters
-        if isinstance(self.video_for_computation().meters_per_pixel, float):
+        if isinstance(self.meters_per_pixel, float):
             result.loc[:, pd.IndexSlice[:, ("x", "y")]] = (
-                result.loc[:, pd.IndexSlice[:, ("x", "y")]] * self.video_for_computation().meters_per_pixel
+                result.loc[:, pd.IndexSlice[:, ("x", "y")]] * self.meters_per_pixel
             )
-        elif isinstance(self.video_for_computation().meters_per_pixel, np.ndarray):
+        elif isinstance(self.meters_per_pixel, np.ndarray):
             result.loc[:, pd.IndexSlice[:, "x"]] = (
-                result.loc[:, pd.IndexSlice[:, "x"]] * self.video_for_computation().meters_per_pixel[0]
+                result.loc[:, pd.IndexSlice[:, "x"]] * self.meters_per_pixel[0]
             )
             result.loc[:, pd.IndexSlice[:, "y"]] = (
-                result.loc[:, pd.IndexSlice[:, "y"]] * self.video_for_computation().meters_per_pixel[1]
+                result.loc[:, pd.IndexSlice[:, "y"]] * self.meters_per_pixel[1]
             )
         else:
             raise TypeError(
-                f"Could not match video.meters_per_pixel type: {type(self.video_for_computation().meters_per_pixel)}"
+                f"Could not match video.meters_per_pixel type: {type(self.meters_per_pixel)}"
             )
 
         if self.midpoint_groups:
@@ -429,13 +429,13 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             try:
                 return self.label_to_plot_prepped_coordinates[label_to_plot]
             except KeyError:
-                result = self.video_for_computation().prepare_coordinates_for_plotting(self[label_to_plot])
+                result = self.video.prepare_coordinates_for_plotting(self[label_to_plot])
                 self.label_to_plot_prepped_coordinates[label_to_plot] = result
                 return result
         try:
             return self.label_to_plot_without_resized_coordinates[label_to_plot]
         except KeyError:
-            result = self.video_for_computation().prepare_coordinates_for_plotting(
+            result = self.video.prepare_coordinates_for_plotting(
                 self[label_to_plot], with_resize=False
             )
             self.label_to_plot_without_resized_coordinates[label_to_plot] = result

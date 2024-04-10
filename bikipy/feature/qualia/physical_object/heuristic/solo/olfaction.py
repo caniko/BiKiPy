@@ -53,7 +53,7 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
             maximum_distance=self.maximum_distance_pixels,
             inside_perimeter_border=self.reader[self.nose_label],
             label="NoseProximity",
-            manual_video=self.video_for_computation(),
+            manual_video=self.video,
         )
 
     @computed_field  # type: ignore[misc]
@@ -68,7 +68,7 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
                 ray_travel_direction_point=self.reader[self.nose_label],
                 max_radians=self.maximum_radians,
                 label="SnoutTowardsObject",
-                manual_video=self.video_for_computation(),
+                manual_video=self.video,
             )
         )
 
@@ -105,15 +105,15 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
             [
                 self.nose_proximity.result_seconds,
                 self.snout_towards_object_rays.result_seconds,
-                self.video_for_computation().boolean_array_to_seconds(self.result),
+                self.video.boolean_array_to_seconds(self.result),
             ],
             index=[f"{label}NoseProximity", f"{label}NoseToObjectRay", f"{label}{self.heuristic_alias}Result"],
         )
 
     def plot(self) -> None:
-        fig, axes = self.video_for_computation().subplots(nrows=3)
+        fig, axes = self.video.subplots(nrows=3)
         fig.suptitle(self.heuristic_alias)
 
-        self.nose_proximity.plot(axes[0], self.video_for_computation())
-        self.snout_towards_object_rays.plot(axes[1], self.video_for_computation())
+        self.nose_proximity.plot(axes[0], self.video)
+        self.snout_towards_object_rays.plot(axes[1], self.video)
         self.plot_result(axes[2], self.nose_label)

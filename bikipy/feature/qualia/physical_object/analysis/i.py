@@ -95,7 +95,7 @@ class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMet
     @computed_field  # type: ignore[misc]
     @cached_property
     def po_total_seconds_observing(self) -> float:
-        return self.frames_observing / self.video_for_computation().fps
+        return self.frames_observing / self.fps
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -109,7 +109,7 @@ class OnePhysicalObjectSetQualiaAnalysis(AbstractFeatureCollectorMixin, VideoMet
     @cached_property
     def po_label_to_seconds_observing(self) -> dict[str, int]:
         return {
-            physical_object_label: frames_observing / self.video_for_computation().fps
+            physical_object_label: frames_observing / self.fps
             for physical_object_label, frames_observing in self.po_label_to_frames_observing.items()
         }
 

@@ -38,7 +38,7 @@ class RectanglePerimeter(BasePolygonPerimeter):
         )
 
         if any(
-            np.any(expanded_vertex > self.video_for_computation().resolution) for expanded_vertex in expanded_vertices
+            np.any(expanded_vertex > self.video.resolution) for expanded_vertex in expanded_vertices
         ):
             msg = "The expanded vertex is out of bounds with respect to the video"
             raise ValueError(msg)

@@ -31,7 +31,7 @@ class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
             self.ray_start_point, self.ray_travel_direction_point, self.max_radians
         )
         if self.tolerance_modelling:
-            result = single_node_tolerance_model(result, self.video_for_computation().fps)
+            result = single_node_tolerance_model(result, self.fps)
         return result
 
     @computed_field  # type: ignore[misc]

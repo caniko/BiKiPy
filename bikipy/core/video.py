@@ -19,7 +19,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from mextractor.base import load
 from mextractor.extractors import extract_video
-from pydantic import DirectoryPath, Field, FilePath, computed_field, field_validator
+from pydantic import DirectoryPath, Field, FilePath, computed_field, field_validator, model_validator
 from pydantic_numpy import NpNDArrayFp64
 from pydantic_numpy.typing import (
     Np1DArrayBool,
@@ -400,24 +400,33 @@ class VideoMetadataMixin(_VideoMetadataBase):
             fps=self.fps,
             manual_resolution=self.resolution,
             frame=self.frame,
-            video_path=self.video_path,
+            video_path=self.video_path
         )
         if self.manual_video:
             video = VideoMetadata.join(self.manual_video, video, ignore_incongruity=True)
+
         return video
 
-    def video_for_computation(self) -> VideoMetadata:
-        if self.required_video_metadata_fields and (
-            missing_fields := self.required_video_metadata_fields.difference(self.video.metadata)
-        ):
-            if len(missing_fields) == 1 and "resolution" in missing_fields and self.video.resolution is not None:
-                # Resolution is derived from either frame or manual_resolution; there is no other OR logic
-                # Hence the hands-on implementation
-                return self.video
+    @model_validator(mode="after")
+    def validate_and_propagate_video_metadata(self) -> Self:
+        if self.required_video_metadata_fields:
+            missing_fields = self.required_video_metadata_fields.difference(self.video.metadata)
 
-            msg = (
-                f"{self.__class__.__name__} requires {self.required_video_metadata_fields}, "
-                f"but is missing {missing_fields}"
-            )
-            raise AttributeError(msg)
-        return self.video
+            if "resolution" in missing_fields and self.video.resolution is not None:
+                # Resolution can be derived from either frame or manual_resolution
+                missing_fields.remove("resolution")
+
+            if missing_fields:
+                msg = (
+                    f"{self.__class__.__name__} requires {self.required_video_metadata_fields}, "
+                    f"but is missing {missing_fields}"
+                )
+                raise ValueError(msg)
+
+        self.meters_per_pixel = self.video.meters_per_pixel
+        self.fps = self.video.fps
+        self.manual_resolution = self.video.resolution
+        self.frame = self.video.frame
+        self.video_path = self.video.video_path
+
+        return self

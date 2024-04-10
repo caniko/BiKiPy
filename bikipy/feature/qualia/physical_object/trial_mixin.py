@@ -63,7 +63,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
             partial_heuristic_class = partial(
                 alias_to_heuristics_cls[heuristic_alias],
                 reader=self.reader,
-                manual_video=self.video_for_computation(),
+                manual_video=self.video,
                 **heuristic_config,
             )
             if heuristic_alias in alias_to_helper_heuristic:
@@ -127,7 +127,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                     reader=self.reader,
                     label=heuristic_alias,
                     result=heuristic_result,
-                    manual_video=self.video_for_computation(),
+                    manual_video=self.video,
                 )
                 for perimeter, heuristic_result in zip(self.physical_object_perimeters, heuristic_results)
             ]
@@ -147,7 +147,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
         result = {}
         for heuristic_alias, physical_objects_heuristic in self.alias_to_standalone_heuristic.items():
             result[heuristic_alias] = analysis_model(
-                manual_video=self.video_for_computation(),
+                manual_video=self.video,
                 po_label_to_qualia_boolean_index={
                     heuristic.physical_object_label: heuristic.result for heuristic in physical_objects_heuristic
                 },
@@ -182,7 +182,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
             rrs = np.array(
                 reduce_repeating_sequences(
                     object_alternation_sequence,
-                    round(self.video_for_computation().fps * self.minimum_seconds_tolerance),
+                    round(self.fps * self.minimum_seconds_tolerance),
                 )
             )
             result[heuristic] = rrs[np.nonzero(rrs)]
@@ -201,7 +201,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                 continue
 
             make_inspection_video(
-                video_frames=self.video_for_computation().video_read_frames(),
+                video_frames=self.video.video_read_frames(),
                 reader=self.reader,
                 perimeter_to_boolean_index={po.perimeter: po.result for po in heuristics},
                 output_file_path=self._video_file_name(output_directory, context_label=heuristic_alias),
@@ -230,7 +230,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                         label_to_quiver_rays[label][heuristic.result] = ray_direction_points[heuristic.result]
 
             make_inspection_video(
-                video_frames=self.video_for_computation().video_read_frames(),
+                video_frames=self.video.video_read_frames(),
                 reader=self.reader,
                 perimeter_to_boolean_index=perimeter_to_boolean_index,
                 label_to_confinement_boolean_index=label_to_confinement_boolean_index,

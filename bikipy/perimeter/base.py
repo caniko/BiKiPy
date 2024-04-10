@@ -67,12 +67,12 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
             return
 
         if ax is None:
-            fig, ax = self.video_for_computation().subplot()
+            fig, ax = self.video.subplot()
 
         self.plot_perimeter_on_ax(ax)
 
         if coordinates is not None:
-            coordinates = self.video_for_computation().prepare_coordinates_for_plotting(coordinates)
+            coordinates = self.video.prepare_coordinates_for_plotting(coordinates)
             ax_plot_coordinate_with_boolean_index(ax, boolean_index, coordinates)
 
         generic_inspection_finalization(
@@ -86,14 +86,14 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         return (
             manual_video.subplots(**plot_kwargs)
             if manual_video
-            else self.video_for_computation().subplots(**plot_kwargs)
+            else self.video.subplots(**plot_kwargs)
         )
 
     def plot_perimeter(self, manual_video: Optional[VideoMetadata] = None, manual_ax=None, **plot_kwargs):
         if manual_ax:
             ax = manual_ax
         else:
-            fig, ax = (manual_video or self.video_for_computation()).subplot()
+            fig, ax = (manual_video or self.video).subplot()
 
         self.plot_perimeter_on_ax(ax, **plot_kwargs)
 
@@ -337,11 +337,11 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         Axes object with plots
         """
         if not ax:
-            fig, ax = self.video_for_computation().subplot()
+            fig, ax = self.video.subplot()
             ax.set_title(self.label)
 
         if coordinates is not None:
-            plot_coordinates(ax, coordinates, coordinates_as_pixels, self.video_for_computation())
+            plot_coordinates(ax, coordinates, coordinates_as_pixels, self.video)
 
         ax.set_title(self.label)
 
@@ -404,7 +404,7 @@ class PerimeterSet(BasePerimeter):
     @cached_property
     def mean_meters_per_pixel(self) -> float:
         if self.number_of_perimeters == 1:
-            return self.video_for_computation().meters_per_pixel
+            return self.meters_per_pixel
         join_func = partial(VideoMetadata.join, meters_per_pixel_mean=True, ignore_incongruity=True)
         return reduce(join_func, (perimeter.video for perimeter in self.perimeters)).meters_per_pixel
 
@@ -571,7 +571,7 @@ class PerimeterSet(BasePerimeter):
         **perimeter_plot_kwargs,
     ):
         if manual_ax is None:
-            fig, ax = self.video_for_computation().subplot(constrained_layout=True)
+            fig, ax = self.video.subplot(constrained_layout=True)
         else:
             ax = manual_ax
 
@@ -580,7 +580,7 @@ class PerimeterSet(BasePerimeter):
                 perimeter.plot_perimeter_on_ax(ax, coordinates_as_pixels=coordinates_as_pixels, **perimeter_plot_kwargs)
 
             if coordinates is not None:
-                plot_coordinates(ax, coordinates, coordinates_as_pixels, self.video_for_computation())
+                plot_coordinates(ax, coordinates, coordinates_as_pixels, self.video)
 
 
 @validate_call

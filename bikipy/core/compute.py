@@ -58,7 +58,7 @@ class AbstractComputePerimeterBooleanIndex(AbstractCompute[Np1DArrayBool], Video
     @computed_field  # type: ignore[misc]
     @property
     def result_seconds(self) -> float:
-        return self.video_for_computation().boolean_array_to_seconds(self.result)
+        return self.video.boolean_array_to_seconds(self.result)
 
     @property
     @abstractmethod
