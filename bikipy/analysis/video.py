@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Iterator, Optional
 
 import matplotlib.pyplot as plt
+import numpy as np
 from moviepy.video.io.bindings import mplfig_to_npimage
 from moviepy.video.VideoClip import VideoClip
 from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64, NpNDArrayUint8
@@ -73,12 +74,12 @@ def make_inspection_video(
         fig, ax = plt.subplots()
 
         ax.imshow(next(video_frames))
-        reader.plot_skeleton_in_frame(next_frame_idx, ax, labels_to_exclude, revert_crop)
+        reader.plot_skeleton_in_frame(next_frame_idx, ax, labels_to_exclude, revert_crop, marker=".")
 
         for label, confinement_boolean_index in label_to_confinement_boolean_index.items():
-            color = "g" if confinement_boolean_index[next_frame_idx] else reader.label_to_plot_color[label]
-            if label in label_to_quiver_rays:
-                # We draw arrows only when confinement
+            color = reader.label_to_plot_color[label]
+            if confinement_boolean_index[next_frame_idx]:
+                # We draw arrows only while confined
                 ax.quiver(
                     *reader.coordinates_for_plot(label, with_resize=False)[next_frame_idx],
                     *label_to_quiver_rays[label][next_frame_idx],
@@ -86,7 +87,7 @@ def make_inspection_video(
                     color=color,
                 )
             else:
-                ax.scatter(*reader.coordinates_for_plot(label, with_resize=False)[next_frame_idx], c=color, label=label)
+                ax.scatter(*reader.coordinates_for_plot(label, with_resize=False)[next_frame_idx], color=color, label=label, marker=".")
 
         for perimeter, confinement_boolean_index in perimeter_to_boolean_index.items():
             perimeter.plot_perimeter_on_ax(
@@ -125,7 +126,8 @@ def make_inspection_video(
         (
             VideoClip(
                 lambda t: make_frame(round(t * fps)),
-                duration=reader.trial_length_seconds,
+                # duration=reader.trial_length_seconds,
+                duration=10
             )
             .set_fps(fps)
             .write_videofile(str(output_file_path), codec=codec, preset="slower")

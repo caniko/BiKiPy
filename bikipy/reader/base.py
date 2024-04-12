@@ -449,7 +449,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
         plt.legend(**BOTTOM_LEGEND_KWARGS)
 
     def plot_skeleton_in_frame(
-        self, frame_index: int, ax: Axes, labels_to_exclude: Optional[Iterable[str]] = None, revert_crop: bool = False
+        self, frame_index: int, ax: Axes, labels_to_exclude: Optional[Iterable[str]] = None, revert_crop: bool = False, **scatter_kwargs
     ) -> None:
         for label in self.all_tracked_labels:
             if labels_to_exclude and label in labels_to_exclude:
@@ -459,7 +459,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             if revert_crop:
                 coordinates = coordinates - np.array([self.x_axis_crop_end_point, self.y_axis_crop_end_point])
 
-            ax.scatter(*coordinates.T, c=self.label_to_plot_color[label], label=label)
+            ax.scatter(*coordinates.T, color=self.label_to_plot_color[label], label=label, **scatter_kwargs)
 
         ax.legend(bbox_to_anchor=(1.01, 0.5), loc="center left")
 

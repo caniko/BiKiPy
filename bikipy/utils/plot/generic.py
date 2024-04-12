@@ -33,7 +33,7 @@ def ax_plot_coordinate_with_boolean_index(
                 zip(y[start:end], y[start + 1 : end]),
                 plt.cm.winter(np.linspace(0, 1, end - start - 1)),
             ):
-                ax.plot(line_x, line_y, c=color, linewidth=3.0)
+                ax.plot(line_x, line_y, color=color, linewidth=3.0)
 
         if plot_non_confinement:
             for start, end in boolean_index_truth_sequence_start_end(~boolean_index):
@@ -42,7 +42,7 @@ def ax_plot_coordinate_with_boolean_index(
                     zip(y[start:end], y[start + 1 : end]),
                     plt.cm.Wistia(np.linspace(0, 1, end - start - 1)),
                 ):
-                    ax.plot(line_x, line_y, c=color, linewidth=3.0)
+                    ax.plot(line_x, line_y, color=color, linewidth=3.0)
 
     else:
         ax.scatter(*coordinates[boolean_index].T, label="Valid", color="dodgerblue")

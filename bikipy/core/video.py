@@ -115,7 +115,7 @@ class _VideoMetadataBase(BikipyModel):
         while cap.isOpened():
             ret, frame = cap.read()
             if ret:
-                yield frame
+                yield cv2.cvtColor(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2BGR)
             else:
                 break
 
