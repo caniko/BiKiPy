@@ -3,7 +3,7 @@ from typing import Optional
 
 import pandas as pd
 from pydantic import computed_field
-from pydantic_numpy import Np1DArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
 
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity

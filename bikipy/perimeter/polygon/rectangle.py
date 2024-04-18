@@ -37,9 +37,7 @@ class RectanglePerimeter(BasePolygonPerimeter):
             inspection_fig_output_path=self.inspection_fig_output_path,
         )
 
-        if any(
-            np.any(expanded_vertex > self.video.resolution) for expanded_vertex in expanded_vertices
-        ):
+        if any(np.any(expanded_vertex > self.video.resolution) for expanded_vertex in expanded_vertices):
             msg = "The expanded vertex is out of bounds with respect to the video"
             raise ValueError(msg)
 

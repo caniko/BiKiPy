@@ -4,7 +4,7 @@ from glob import iglob
 import numpy as np
 import pandas as pd
 from pydantic import computed_field
-from pydantic_numpy import NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy import runtime_settings
 from bikipy.core.typing import Label

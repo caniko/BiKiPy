@@ -4,7 +4,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 from pydantic import computed_field
-from pydantic_numpy import Np1DArrayBool
+from pydantic_numpy.typing import Np1DArrayBool
 
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.physical_object.heuristic.mixin import ProximityMixin
@@ -96,9 +96,7 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
         if self.tail_base_proximity:
             data[f"{label}BaseTailProximity"] = self.tail_base_proximity.result_seconds
 
-        data[f"{label}{self.heuristic_alias}Result"] = self.video.boolean_array_to_seconds(
-            self.result
-        )
+        data[f"{label}{self.heuristic_alias}Result"] = self.video.boolean_array_to_seconds(self.result)
 
         return pd.Series(data)
 

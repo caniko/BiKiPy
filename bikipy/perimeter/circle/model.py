@@ -4,8 +4,7 @@ from typing import Optional
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
-from pydantic_numpy import Np1DArrayBool
-from pydantic_numpy.typing import NpNDArrayFp64, NpNDArrayInt16
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64, NpNDArrayInt16
 
 from bikipy.core.video import VideoMetadata
 from bikipy.math.cached import meters2pixels

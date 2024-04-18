@@ -1,7 +1,7 @@
 import numpy as np
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
-from pydantic_numpy import Np1DArrayBool
+from pydantic_numpy.typing import Np1DArrayBool
 
 # TODO: Fix arg > 2-"A and not B or C" is incorrectly evaluated
 

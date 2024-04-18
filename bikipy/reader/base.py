@@ -294,9 +294,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             result = model_data(result, self.stat_model_method, **self.stat_model_kwargs)
 
         if self.invert_y_axis:
-            result.loc[:, pd.IndexSlice[:, "y"]] = (
-                self.video.vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
-            )
+            result.loc[:, pd.IndexSlice[:, "y"]] = self.video.vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
             self.y_axis_crop_end_point = -self.y_axis_crop_end_point
 
         if self.x_axis_crop_end_point:
@@ -310,16 +308,10 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
                 result.loc[:, pd.IndexSlice[:, ("x", "y")]] * self.meters_per_pixel
             )
         elif isinstance(self.meters_per_pixel, np.ndarray):
-            result.loc[:, pd.IndexSlice[:, "x"]] = (
-                result.loc[:, pd.IndexSlice[:, "x"]] * self.meters_per_pixel[0]
-            )
-            result.loc[:, pd.IndexSlice[:, "y"]] = (
-                result.loc[:, pd.IndexSlice[:, "y"]] * self.meters_per_pixel[1]
-            )
+            result.loc[:, pd.IndexSlice[:, "x"]] = result.loc[:, pd.IndexSlice[:, "x"]] * self.meters_per_pixel[0]
+            result.loc[:, pd.IndexSlice[:, "y"]] = result.loc[:, pd.IndexSlice[:, "y"]] * self.meters_per_pixel[1]
         else:
-            raise TypeError(
-                f"Could not match video.meters_per_pixel type: {type(self.meters_per_pixel)}"
-            )
+            raise TypeError(f"Could not match video.meters_per_pixel type: {type(self.meters_per_pixel)}")
 
         if self.midpoint_groups:
             generated_midpoints = set()
@@ -434,9 +426,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
         try:
             return self.label_to_plot_without_resized_coordinates[label_to_plot]
         except KeyError:
-            result = self.video.prepare_coordinates_for_plotting(
-                self[label_to_plot], with_resize=False
-            )
+            result = self.video.prepare_coordinates_for_plotting(self[label_to_plot], with_resize=False)
             self.label_to_plot_without_resized_coordinates[label_to_plot] = result
             return result
 
@@ -449,7 +439,12 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
         plt.legend(**BOTTOM_LEGEND_KWARGS)
 
     def plot_skeleton_in_frame(
-        self, frame_index: int, ax: Axes, labels_to_exclude: Optional[Iterable[str]] = None, revert_crop: bool = False, **scatter_kwargs
+        self,
+        frame_index: int,
+        ax: Axes,
+        labels_to_exclude: Optional[Iterable[str]] = None,
+        revert_crop: bool = False,
+        **scatter_kwargs,
     ) -> None:
         for label in self.all_tracked_labels:
             if labels_to_exclude and label in labels_to_exclude:

@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Iterator, Optional
 
 import matplotlib.pyplot as plt
-import numpy as np
 from moviepy.video.io.bindings import mplfig_to_npimage
 from moviepy.video.VideoClip import VideoClip
 from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64, NpNDArrayUint8
@@ -23,7 +22,6 @@ def make_inspection_video(
     label_to_quiver_rays: Optional[dict[str, NpNDArrayFp64]] = None,
     revert_crop: bool = False,
     output_file_path: Optional[Path] = None,
-    frames_on_the_fly: bool = True,
     codec: str = "h264",
     delete_old: bool = True,
 ) -> None:
@@ -87,7 +85,12 @@ def make_inspection_video(
                     color=color,
                 )
             else:
-                ax.scatter(*reader.coordinates_for_plot(label, with_resize=False)[next_frame_idx], color=color, label=label, marker=".")
+                ax.scatter(
+                    *reader.coordinates_for_plot(label, with_resize=False)[next_frame_idx],
+                    color=color,
+                    label=label,
+                    marker=".",
+                )
 
         for perimeter, confinement_boolean_index in perimeter_to_boolean_index.items():
             perimeter.plot_perimeter_on_ax(
@@ -116,35 +119,16 @@ def make_inspection_video(
     fps = reader.fps
     print(
         f"Creating video from trial data: {output_file_path}."
-        f"Frames on the fly: {frames_on_the_fly}."
         f"Codec: {codec}."
         f"Duration: {reader.trial_length_seconds}."
         f"FPS: {fps}."
     )
 
-    if frames_on_the_fly:
-        (
-            VideoClip(
-                lambda t: make_frame(round(t * fps)),
-                # duration=reader.trial_length_seconds,
-                duration=10
-            )
-            .set_fps(fps)
-            .write_videofile(str(output_file_path), codec=codec, preset="slower")
+    (
+        VideoClip(
+            lambda t: make_frame(round(t * fps)),
+            duration=reader.trial_length_seconds,
         )
-
-    return
-
-    # not frames_on_the_fly; not implemented
-
-    # with ProcessPoolExecutor() as executor:
-    #     frame_features = [executor.submit(make_frame, i) for i in range(reader.number_of_frames)]
-    #
-    # try:
-    #     ImageSequenceClip(
-    #         [frame_feature.result() for frame_feature in frame_features], fps=fps
-    #     ).write_videofile(output_file_path, codec=codec)
-    # except Exception as e:
-    #     if output_file_path.exists():
-    #         os.remove(output_file_path)
-    #     raise e
+        .set_fps(fps)
+        .write_videofile(str(output_file_path), codec=codec, preset="slower")
+    )

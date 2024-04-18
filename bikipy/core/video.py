@@ -10,7 +10,7 @@ from collections.abc import Iterable
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import ClassVar, Generator, Optional, Self, Sequence, Any
+from typing import Any, ClassVar, Generator, Optional, Self, Sequence
 
 import cv2
 import matplotlib.pyplot as plt
@@ -19,11 +19,18 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from mextractor.base import load
 from mextractor.extractors import extract_video
-from pydantic import DirectoryPath, Field, FilePath, computed_field, field_validator, model_validator
-from pydantic_numpy import NpNDArrayFp64
+from pydantic import (
+    DirectoryPath,
+    Field,
+    FilePath,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 from pydantic_numpy.typing import (
     Np1DArrayBool,
     NpNDArray,
+    NpNDArrayFp64,
     NpNDArrayInt16,
     NpNDArrayUint8,
 )
@@ -397,7 +404,7 @@ class VideoMetadataMixin(_VideoMetadataBase):
             fps=self.fps,
             manual_resolution=self.resolution,
             frame=self.frame,
-            video_path=self.video_path
+            video_path=self.video_path,
         )
         if self.manual_video:
             video = VideoMetadata.join(self.manual_video, video, ignore_incongruity=True)

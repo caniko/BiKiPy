@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from pydantic import BaseModel, computed_field
-from pydantic_numpy import Np1DArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
 
 from bikipy.math.cached import cached_deg2rad, meters2pixels
 

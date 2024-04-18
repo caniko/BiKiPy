@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import numpy as np
 from matplotlib.axes import Axes

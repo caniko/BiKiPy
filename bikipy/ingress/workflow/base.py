@@ -20,7 +20,7 @@ from pydantic import (
     computed_field,
     validate_call,
 )
-from pydantic_numpy import NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArrayFp64
 from schemantic import SchemanticProjectModelMixin
 
 from bikipy import runtime_settings

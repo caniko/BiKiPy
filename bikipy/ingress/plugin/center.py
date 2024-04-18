@@ -1,7 +1,7 @@
 from functools import cached_property
 
 from pydantic import computed_field
-from pydantic_numpy import NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.core.base import BasePluginFile

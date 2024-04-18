@@ -8,8 +8,7 @@ import numpy as np
 import pandas as pd
 from ordered_set import OrderedSet
 from pydantic import DirectoryPath, PositiveInt, computed_field, field_validator
-from pydantic_numpy import NpNDArrayFp64
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayUint8
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64, NpNDArrayUint8
 
 from bikipy._constant import INSPECT_SIMPLE_FIG_FILE_FORMAT
 from bikipy.analysis.video import make_inspection_video

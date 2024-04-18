@@ -3,8 +3,7 @@ from warnings import warn
 
 import numpy as np
 from numba import njit, prange
-from pydantic_numpy import Np1DArrayBool
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
 
 from bikipy import runtime_settings
 from bikipy.math.vector import dot_axis_1_1d, unit_vector

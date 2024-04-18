@@ -6,7 +6,7 @@ from typing import ClassVar
 import numpy as np
 import pandas as pd
 from pydantic import computed_field
-from pydantic_numpy import NpNDArrayUint8
+from pydantic_numpy.typing import NpNDArrayUint8
 
 from bikipy.feature.qualia.physical_object.analysis.i import (
     OnePhysicalObjectSetQualiaAnalysis,

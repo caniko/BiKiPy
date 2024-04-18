@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from pydantic_numpy import NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArrayFp64
 
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.core.base import BasePluginFile

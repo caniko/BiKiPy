@@ -2,7 +2,7 @@ from functools import cached_property
 from typing import Optional
 
 from pydantic import computed_field
-from pydantic_numpy import Np1DArrayBool
+from pydantic_numpy.typing import Np1DArrayBool
 
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.physical_object.heuristic.helper.abc import (

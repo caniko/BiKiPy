@@ -3,8 +3,7 @@ from typing import Optional
 
 from matplotlib.axes import Axes
 from pydantic import computed_field
-from pydantic_numpy import Np1DArrayBool
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
 
 from bikipy import runtime_settings
 from bikipy.core.compute import AbstractComputePerimeterBooleanIndex

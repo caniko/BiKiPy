@@ -1,8 +1,6 @@
 from functools import lru_cache
 
-import numpy as np
 import seaborn
-from matplotlib import cm
 
 
 @lru_cache

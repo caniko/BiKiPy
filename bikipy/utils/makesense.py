@@ -6,8 +6,7 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 from pydantic import FilePath
-from pydantic_numpy import NpNDArrayInt16
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArrayFp64, NpNDArrayInt16
 
 from bikipy import runtime_settings
 

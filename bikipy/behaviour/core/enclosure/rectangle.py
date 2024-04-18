@@ -70,9 +70,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
     def quadrant_grid_coordinate_to_vertices(
         self,
     ) -> dict[quadrant_grid_typing, NpNDArrayFp64]:
-        horizontal_uniform_distance = (
-            self.video.metric_horizontal_resolution / self.rectangle_2d_bin[0]
-        )
+        horizontal_uniform_distance = self.video.metric_horizontal_resolution / self.rectangle_2d_bin[0]
         vertical_uniform_distance = self.video.metric_vertical_resolution / self.rectangle_2d_bin[1]
         result = {}
         for h in range(1, self.rectangle_2d_bin[0] + 1):
@@ -139,9 +137,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             fig, ax = self.video.subplot()
             ax.set_title(f"Quadrants_Trial_#{self.label}")
 
-            coordinates = self.video.prepare_coordinates_for_plotting(
-                self.reader.kinematic_coordinates
-            )
+            coordinates = self.video.prepare_coordinates_for_plotting(self.reader.kinematic_coordinates)
 
             confinement = np.zeros(self.reader.frames, dtype=bool)
 
@@ -188,9 +184,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
             raw_location_sequence_quadrant[quadrant.confinement_boolean_index] = quadrant_index
 
-        return np.array(
-            reduce_repeating_sequences(raw_location_sequence_quadrant, round(self.fps * 0.35))
-        )
+        return np.array(reduce_repeating_sequences(raw_location_sequence_quadrant, round(self.fps * 0.35)))
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -216,9 +210,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
             inspection_fig_output_path=self.inspection_fig_output_path,
             potential_label=self.label,
         )
-        return tolerance_modeled_boolean_index_truth_sequence_start_end_length(
-            raw_center_boolean_index, self.fps
-        )
+        return tolerance_modeled_boolean_index_truth_sequence_start_end_length(raw_center_boolean_index, self.fps)
 
     @computed_field  # type: ignore[misc]
     @property
@@ -256,10 +248,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
         if self.manual_center_rectangle_dimensions_meters is not None:
             return self.manual_center_rectangle_dimensions_meters
         if self.center_rectangle_dimensions_to_spatial_resolution_ratio is not None:
-            return (
-                self.metric_resolution
-                / self.center_rectangle_dimensions_to_spatial_resolution_ratio
-            )
+            return self.metric_resolution / self.center_rectangle_dimensions_to_spatial_resolution_ratio
 
     @computed_field  # type: ignore[misc]
     @cached_property

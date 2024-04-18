@@ -10,8 +10,12 @@ import pandas as pd
 from ordered_set import OrderedSet
 from pydantic import BaseModel, DirectoryPath, Field, FilePath, ValidationError
 from pydantic.fields import FieldInfo, computed_field
-from pydantic_numpy import NpNDArrayUint8
-from pydantic_numpy.typing import NpNDArray, NpNDArrayFp64, NpNDArrayInt16
+from pydantic_numpy.typing import (
+    NpNDArray,
+    NpNDArrayFp64,
+    NpNDArrayInt16,
+    NpNDArrayUint8,
+)
 from tqdm import tqdm
 from typing_inspect import is_generic_type
 from yaspin import yaspin
@@ -216,6 +220,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
         return output_directory / f"{'_'.join(stem_components)}.mp4"
 
     # Miscellaneous
+    @computed_field  # type: ignore[misc]
     @property
     def _analysis_series_list(self) -> list[pd.Series]:
         return [self.reader.info, pd.Series(self.motion.as_tuple, index=motion_analysis_indexer("All", 2))]

@@ -3,8 +3,7 @@ from typing import Optional
 
 import pandas as pd
 from pydantic import computed_field
-from pydantic_numpy import NpNDArrayFp64
-from pydantic_numpy.typing import Np1DArrayBool
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
 
 from bikipy.core.compute import video_gen_merge_perimeter_to_boolean_index_from_dict
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
@@ -114,17 +113,13 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
     @cached_property
     def left_result(self) -> Np1DArrayBool:
         result = self.left_proximity.result & self.leftward_observation.result
-        return (
-            result if self.filter_in_sequence else single_node_tolerance_model(result, self.fps)
-        )
+        return result if self.filter_in_sequence else single_node_tolerance_model(result, self.fps)
 
     @computed_field  # type: ignore[misc]
     @cached_property
     def right_result(self) -> Np1DArrayBool:
         result = self.right_proximity.result & self.rightward_observation.result
-        return (
-            result if self.filter_in_sequence else single_node_tolerance_model(result, self.fps)
-        )
+        return result if self.filter_in_sequence else single_node_tolerance_model(result, self.fps)
 
     @computed_field  # type: ignore[misc]
     @property
@@ -170,9 +165,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
         )
 
     def plot(self) -> None:
-        fig, axes = self.video.subplots(
-            ncols=3, nrows=3, exclude_imaging_from_rc_coord=((0, 2), (2, 2))
-        )
+        fig, axes = self.video.subplots(ncols=3, nrows=3, exclude_imaging_from_rc_coord=((0, 2), (2, 2)))
         fig.suptitle(self.heuristic_alias)
 
         # Left
