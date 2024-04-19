@@ -62,16 +62,16 @@ def get_plugin_directory_path(project_directory: DirectoryPath) -> DirectoryPath
 
 @lru_cache(1)
 @validate_call
-def get_inspect_directory_path(project_directory: DirectoryPath) -> DirectoryPath:
-    return project_directory / "inspect"
-
-
-@lru_cache(1)
-@validate_call
 def result_directory_path(project_directory: DirectoryPath) -> DirectoryPath:
     result_directory = project_directory / "result"
     result_directory.mkdir(exist_ok=True)
     return result_directory
+
+
+@lru_cache(1)
+@validate_call
+def get_inspect_directory_path(project_directory: DirectoryPath) -> DirectoryPath:
+    return result_directory_path(project_directory) / "inspect"
 
 
 def analysis_cache_file_name_from_trial_id(trial_id: Label) -> str:

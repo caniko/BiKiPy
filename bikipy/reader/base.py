@@ -37,8 +37,6 @@ logger = getLogger(__name__)
 
 
 class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
-    model_config = ConfigDict(extra="allow")
-
     df_path: FilePath = Field(description="Path to kinematic data, that will be " "converted to pd.DataFrame")
     df_read_kwargs: Optional[dict] = Field(
         default_factory=dict, description="Keyword arguments to pass to the padnas dataframe reader"
@@ -140,7 +138,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @cached_property
     def max_pixels_per_frame(self) -> float | None:
         if self.max_meters_per_second:
-            return self.pixels_per_meter * self.max_meters_per_second / self.video.fps
+            return self.video.pixels_per_meter * self.max_meters_per_second / self.video.fps
 
     @computed_field  # type: ignore[misc]
     @property
@@ -355,7 +353,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @computed_field  # type: ignore[misc]
     @property
     def frames(self) -> int:
-        return len(self.df)
+        return len(self.augmented)
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -408,7 +406,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @property
     def info(self) -> pd.Series:
         return pd.Series(
-            [len(self.raw_df), len(self.augmented)],
+            [len(self.raw_df), self.frames],
             index=[("Reader", "RawFrames"), ("Reader", "AugmentedFrames")],
         )
 
@@ -436,7 +434,10 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
         ax_plot_coordinate_with_boolean_index(
             ax, boolean_index, coordinates_for_plot, plot_line=True, plot_non_confinement=False
         )
-        plt.legend(**BOTTOM_LEGEND_KWARGS)
+
+        _handles, labels = plt.gca().get_legend_handles_labels()
+        if labels:
+            plt.legend(**BOTTOM_LEGEND_KWARGS)
 
     def plot_skeleton_in_frame(
         self,
@@ -446,6 +447,8 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
         revert_crop: bool = False,
         **scatter_kwargs,
     ) -> None:
+        assert self.all_tracked_labels, "No labels to plot"
+
         for label in self.all_tracked_labels:
             if labels_to_exclude and label in labels_to_exclude:
                 continue
@@ -459,14 +462,14 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
         ax.legend(bbox_to_anchor=(1.01, 0.5), loc="center left")
 
     def confinement_index_defaultdict(self) -> defaultdict[str, Np1DArrayBool]:
-        return defaultdict(lambda: np.zeros(len(self.augmented), dtype=bool))
+        return defaultdict(lambda: np.zeros(self.frames, dtype=bool))
 
     def confinement_sequence_defaultdict(self, more_than_254: bool = False) -> defaultdict[str, ConfinementSequence]:
         data_type = np.uint16 if more_than_254 else np.uint8
-        return defaultdict(lambda: np.zeros(len(self.augmented), dtype=data_type))
+        return defaultdict(lambda: np.zeros(self.frames, dtype=data_type))
 
     def coordinate_sequence_defaultdict(self) -> defaultdict[str, ConfinementSequence]:
-        return defaultdict(lambda: np.zeros((len(self.augmented), 2), dtype=np.float64))
+        return defaultdict(lambda: np.zeros((self.frames, 2), dtype=np.float64))
 
     def flush_reads(self) -> None:
         try:

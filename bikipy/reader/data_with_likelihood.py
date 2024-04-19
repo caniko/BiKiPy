@@ -75,11 +75,6 @@ class DataWithLikelihoodReader(BaseReader):
     def region_of_interest_to_boolean_index(self) -> dict[str, Np1DArrayBool]:
         return {roi: self.df[(roi, "likelihood")].values >= self.min_likelihood for roi in self.all_tracked_labels}
 
-    @computed_field  # type: ignore[misc]
-    @property
-    def frames(self) -> int:
-        return self.df.shape[0]
-
 
 class DeepLabCutReader(DataWithLikelihoodReader):
     def _read_hdf(self, path: FilePath) -> pd.DataFrame:

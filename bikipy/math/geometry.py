@@ -97,10 +97,10 @@ def clockwise_sort_points(points: NpNDArrayFp64, inspect: bool = False) -> NpNDA
 
     if inspect:
         fig, ax = plt.subplots()
-        for point in result:
-            ax.scatter(*point)
-        plt.legend([f"result_{i}" for i in range(1, len(points) + 1)])
-        plt.show()
+        for idx, point in enumerate(result, start=1):
+            ax.scatter(*point, label=f"result_{idx}")
+
+        plt.legend()
 
     return result
 

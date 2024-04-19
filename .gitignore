@@ -1,5 +1,16 @@
+## SynDB
+### Example data
+dataset/
+bikipy_ingress_cache/
+plugin_files/
+inspect/
+inspect*
+
+### Exclude video
+*.avi
+
 # Created by .ignore support plugin (hsz.mobi)
-### Python template
+## Python template
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -205,10 +216,3 @@ modules.xml
 ### Excel
 *.ods#
 *.xlsx#
-
-### Example data
-dataset/
-#*bikipy_ingress_cache/
-*inspect/
-inspect.7z
-inspect.tar.gz

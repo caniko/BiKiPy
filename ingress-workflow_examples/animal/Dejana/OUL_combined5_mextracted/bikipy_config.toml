@@ -116,10 +116,10 @@ optional = ["compressed_pickle_suffix", "debug", "disable_numba", "disable_proce
 
 [runtime_settings.defined]
 #disable_numba = true
-disable_process_pooling = true
+#disable_process_pooling = true
 
 [heuristics.BodyProximityHeuristic]
-class_name = "BodyProximityHeuristic"
+class_nae = "BodyProximityHeuristic"
 optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "manual_resolution", "tail_base_label", "torso_label", "video_path"]
 
 [heuristics.BodyProximityHeuristic.defined]
