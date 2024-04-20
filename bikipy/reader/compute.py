@@ -5,7 +5,7 @@ from typing import Callable, Iterable, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath, validate_call, NonNegativeInt, PositiveInt
+from pydantic import DirectoryPath, NonNegativeInt, PositiveInt, validate_call
 
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 

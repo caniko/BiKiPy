@@ -23,8 +23,11 @@ from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.math.high_velocity import high_velocity_removal
 from bikipy.math.shortcut import seconds_to_frames
 from bikipy.perimeter.base import BasePerimeter
-from bikipy.reader.compute import compute_midpoint_label, trial_video_target_length_frame_slice, \
-    trial_video_likelihood_based_frame_slice
+from bikipy.reader.compute import (
+    compute_midpoint_label,
+    trial_video_likelihood_based_frame_slice,
+    trial_video_target_length_frame_slice,
+)
 from bikipy.reader.model import model_data
 from bikipy.utils.collection_utils import apply_slice_on_slice
 from bikipy.utils.constants import TO_PARQUET_KWARGS
