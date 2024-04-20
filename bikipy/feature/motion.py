@@ -201,7 +201,7 @@ class Motion(BikipyModel):
     def acceleration(self) -> NpNDArrayFp64:
         if not self.total_displacement:
             return np.nan
-        return np_abs_diff(self.meters_per_second)
+        return np_abs_diff(self.coordinate_sequence)
 
     @computed_field  # type: ignore[misc]
     @cached_property

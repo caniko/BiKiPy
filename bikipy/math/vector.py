@@ -6,9 +6,10 @@ from matplotlib import pyplot as plt
 from numba import njit
 from numpy.linalg import LinAlgError
 from pydantic import validate_call
-from pydantic_numpy.typing import NpNDArray, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, NpNDArrayFp64
 
 from bikipy import runtime_settings
+from bikipy.perimeter import BaseSinglePerimeter
 from bikipy.utils.collection_utils import (
     evenly_spaced_indices,
     evenly_spaced_indices_from_sequence,
@@ -301,10 +302,52 @@ def rotate_vectors_with_angle(vectors: NpNDArrayFp64, angle: NpNDArrayFp64) -> N
     return np.array([np.dot(vector, rotation_matrix) for vector in vectors]).transpose(1, 0, 2)
 
 
+def ray_direction_filter_circle_triangle(
+    perimeter: BaseSinglePerimeter,
+    ray_travel_direction_point: NpNDArrayFp64,
+    ray_start_point: NpNDArrayFp64,
+    max_radians: float,
+) -> Np1DArrayBool:
+    """
+    This function is used to filter rays that are within a certain angle of the normal of the perimeter.
+
+    :param perimeter:
+    :param ray_travel_direction_point:
+    :param ray_start_point:
+    :param max_radians:
+    :return:
+    """
+    ray_vectors = ray_travel_direction_point - ray_start_point
+
+    closest_points_on_edges = perimeter.closest_point_on_edge_to_coordinates(ray_travel_direction_point)
+    vector_to_closest_point_on_edge = perimeter.vector_to_closest_point_on_edge(ray_travel_direction_point)
+
+    direction_point_is_closer_than_start_point = np.linalg.norm(
+        closest_points_on_edges - ray_travel_direction_point, axis=1
+    ) <= np.linalg.norm(closest_points_on_edges - ray_start_point, axis=1)
+
+    angle_from_normal_to_ray = _angle_from_a_to_b(vector_to_closest_point_on_edge, ray_vectors)
+
+    result = direction_point_is_closer_than_start_point & (np.abs(angle_from_normal_to_ray) <= max_radians)
+
+    return result
+
+
+def _angle_from_a_to_b(vector_a: NpNDArrayFp64, vector_b: NpNDArrayFp64) -> NpNDArrayFp64:
+    b_x, b_y = vector_b.T
+    vector_p = np.array([-b_y, b_x]).T
+
+    b_coord = dot_axis_1_1d(vector_a, vector_b)
+    p_coord = dot_axis_1_1d(vector_a, vector_p)
+
+    return np.arctan2(p_coord, b_coord)
+
+
 if not runtime_settings.disable_numba:
     # rotation_matrix_from_radians = njit(cache=True)(rotation_matrix_from_radians)
     # dot_axis_1_1d = njit(cache=True)(dot_axis_1_1d)   https://github.com/numba/numba/issues/1269
     # orthogonal_unit_vector = njit(cache=True)(orthogonal_unit_vector)
+    # _angle_from_a_to_b = njit(cache=True)(_angle_from_a_to_b)
 
     @njit(parallel=True, nogil=True, cache=True)
     def rotate_vectors_with_rotation_matrix(vectors: NpNDArrayFp64, rotation_matrices: NpNDArrayFp64) -> NpNDArrayFp64:

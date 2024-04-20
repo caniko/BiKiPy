@@ -16,12 +16,12 @@ def tolerance_model_warning_wrapper(tolerance_model: Callable, result_length: in
     attention_boolean_index = tolerance_model(*args, **kwargs)
 
     if attention_boolean_index is None:
-        logger.warning("Tolerance model is completely False")
+        logger.debug("Tolerance model is completely False")
         return np.zeros(result_length, dtype=bool)
 
-    truth_percentage = len(attention_boolean_index) / np.sum(attention_boolean_index)
+    truth_percentage = np.sum(attention_boolean_index) / len(attention_boolean_index)
     if truth_percentage < 0.01:
-        logger.warning(f"Tolerance model has less than 1% True, {truth_percentage}")
+        logger.debug(f"Tolerance model has less than 1% True, {truth_percentage}")
 
     return attention_boolean_index
 

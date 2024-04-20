@@ -9,7 +9,7 @@ from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64, NpNDArrayInt16
 from bikipy.core.video import VideoMetadata
 from bikipy.math.cached import meters2pixels
 from bikipy.math.confinement.ellipse import point_inside_ellipse
-from bikipy.math.vector import unit_vector
+from bikipy.math.vector import ray_direction_filter_circle_triangle, unit_vector
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.utils.plot.generic import plot_ellipse
 
@@ -93,8 +93,6 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
     def ray_direction_filter(
         self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, **kwargs
     ) -> Np1DArrayBool:
-        from bikipy.behaviour.utils import ray_direction_filter_circle_triangle
-
         return ray_direction_filter_circle_triangle(self, ray_travel_direction_point, ray_start_point, max_radians)
 
     def plot_perimeter_on_ax(

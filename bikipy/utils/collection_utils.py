@@ -74,4 +74,10 @@ def dict_deep_update(source: dict, subsumed: dict) -> dict:
 
 
 def apply_slice_on_slice(source: slice, target: slice) -> slice:
-    return slice(target.start - source.start, target.stop - source.stop)
+    assert target.start >= source.start, "Target start must be greater or equal to source start"
+
+    start = target.start - source.start
+
+    if source.stop == target.stop:
+        return slice(start, target.stop)
+    return slice(start, source.stop - target.stop)

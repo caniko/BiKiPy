@@ -9,7 +9,6 @@ from bikipy import runtime_settings
 from bikipy.core.compute import AbstractComputePerimeterBooleanIndex
 from bikipy.core.video import VideoMetadata
 from bikipy.feature.tolerance.single import single_node_tolerance_model
-from bikipy.math.vector import unit_vector
 from bikipy.perimeter.base import BasePerimeter
 
 
@@ -39,21 +38,24 @@ class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
         return {self.perimeter: self.result}
 
     def plot(self, ax: Axes, video: Optional[VideoMetadata] = None, coordinates_as_pixels: bool = False) -> None:
+        if video and coordinates_as_pixels:
+            video.upscaled_video.ax_ticks_metric_to_pixel(ax)
+
         ray_travel_direction_point = (
             video.prepare_coordinates_for_plotting(self.ray_travel_direction_point, coordinates_as_pixels)
             if video
             else self.ray_travel_direction_point
         )
-        ray_vectors = self.manual_ray_vectors or (ray_travel_direction_point - self.ray_start_point)
-
-        if video:
-            ray_vectors = (
-                video.prepare_coordinates_for_plotting(unit_vector(ray_vectors), coordinates_as_pixels) * 0.025
+        if self.manual_ray_vectors is None:
+            ray_start_point = (
+                video.prepare_coordinates_for_plotting(self.ray_start_point, coordinates_as_pixels)
+                if video
+                else self.ray_start_point
             )
-            if coordinates_as_pixels:
-                video.upscaled_video.ax_ticks_metric_to_pixel(ax)
+            ray_vectors = ray_travel_direction_point - ray_start_point
 
-        self.perimeter.plot(coordinates_as_pixels=coordinates_as_pixels, ax=ax)
+        else:
+            ray_vectors = self.manual_ray_vectors
 
         quiver_kwargs = {
             "angles": "xy",
@@ -78,5 +80,7 @@ class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
             color="r",
             **quiver_kwargs,
         )
+
+        self.perimeter.plot(coordinates_as_pixels=coordinates_as_pixels, ax=ax)
 
         self.plot_finalization(ax)

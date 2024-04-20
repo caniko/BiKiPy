@@ -182,16 +182,6 @@ def compute_angles_from_points_abc(
     return computation
 
 
-def angle_from_a_to_b(vector_a: NpNDArrayFp64, vector_b: NpNDArrayFp64) -> NpNDArrayFp64:
-    b_x, b_y = vector_b.T
-    vector_p = np.array([-b_y, b_x]).T
-
-    b_coord = dot_axis_1_1d(vector_a, vector_b)
-    p_coord = dot_axis_1_1d(vector_a, vector_p)
-
-    return np.arctan2(p_coord, b_coord)
-
-
 ANGLE_METHOD_TO_FUNC = {
     "inner": inner_angle,
     "counterclockwise": clockwise_angel_2d,
@@ -200,4 +190,3 @@ ANGLE_METHOD_TO_FUNC = {
 
 if not runtime_settings.disable_numba:
     _inner_angle_compute = njit(cache=True)(_inner_angle_compute)
-    # angle_from_a_to_b = njit(cache=True)(angle_from_a_to_b)
