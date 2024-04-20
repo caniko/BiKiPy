@@ -5,7 +5,7 @@ from typing import Callable, Iterable, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import DirectoryPath, validate_call
+from pydantic import DirectoryPath, validate_call, NonNegativeInt, PositiveInt
 
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 
@@ -69,22 +69,14 @@ def merge_timestamps_with_dlc(
             os.remove(coord_file)
 
 
-def trial_video_frame_slice(
+def trial_video_likelihood_based_frame_slice(
     likelihoods: pd.DataFrame,
     required_tail_likelihood: float,
-    crop_target_trial_length_frames: int,
-    frames_to_try_to_crop_from_start: Optional[int] = None,
-    frames_to_try_to_crop_from_end: Optional[int] = None,
-    crop_target_from_end: bool = True,
 ) -> slice:
     """
 
     :param likelihoods:
     :param required_tail_likelihood:
-    :param crop_target_trial_length_frames:
-    :param frames_to_try_to_crop_from_start:
-    :param frames_to_try_to_crop_from_end:
-    :param crop_target_from_end:
     :return:
     """
     combined_raw_likelihood = likelihoods.mean(axis=1).values
@@ -96,23 +88,32 @@ def trial_video_frame_slice(
     # last_full_body_detection_frame_index
     last_frame = int(valid_likelihood_index[-1])
 
+    return slice(start_frame, last_frame)
+
+
+def trial_video_target_length_frame_slice(
+    start_frame: NonNegativeInt,
+    last_frame: PositiveInt,
+    crop_target_trial_length_frames: PositiveInt,
+    frames_to_try_to_crop_from_start: Optional[NonNegativeInt] = None,
+    frames_to_try_to_crop_from_end: Optional[NonNegativeInt] = None,
+    crop_target_from_end: bool = True,
+) -> slice:
     raw_duration_frames = last_frame - start_frame
 
-    naive_start = start_frame
-    naive_end = last_frame
     frames_to_try_to_crop = 0
     if frames_to_try_to_crop_from_start:
         frames_to_try_to_crop += frames_to_try_to_crop_from_start
-        naive_start += frames_to_try_to_crop_from_start
+        start_frame += frames_to_try_to_crop_from_start
 
     if frames_to_try_to_crop_from_end:
         frames_to_try_to_crop += frames_to_try_to_crop_from_end
-        naive_end -= frames_to_try_to_crop_from_end
+        last_frame -= frames_to_try_to_crop_from_end
 
     crop_minus_duration = raw_duration_frames - frames_to_try_to_crop
 
     if crop_minus_duration == crop_target_trial_length_frames:
-        return slice(naive_start, naive_end)
+        return slice(start_frame, last_frame)
 
     if crop_minus_duration < crop_target_trial_length_frames:
         logger.warning(
@@ -121,15 +122,16 @@ def trial_video_frame_slice(
                 f"duration_frames of the video ({raw_duration_frames - frames_to_try_to_crop})."
             )
         )
+        return slice(start_frame, last_frame)
 
     rest_to_target = crop_minus_duration - crop_target_trial_length_frames
 
     if crop_target_from_end:
-        crop_start_frames = naive_start
-        crop_end_frames = naive_end - rest_to_target
+        crop_start_frames = start_frame
+        crop_end_frames = last_frame - rest_to_target
 
     else:
-        crop_start_frames = naive_start + rest_to_target
-        crop_end_frames = naive_end
+        crop_start_frames = start_frame + rest_to_target
+        crop_end_frames = last_frame
 
     return slice(crop_start_frames, crop_end_frames)

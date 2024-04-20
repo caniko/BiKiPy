@@ -23,8 +23,10 @@ from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.math.high_velocity import high_velocity_removal
 from bikipy.math.shortcut import seconds_to_frames
 from bikipy.perimeter.base import BasePerimeter
-from bikipy.reader.compute import compute_midpoint_label, trial_video_frame_slice
+from bikipy.reader.compute import compute_midpoint_label, trial_video_target_length_frame_slice, \
+    trial_video_likelihood_based_frame_slice
 from bikipy.reader.model import model_data
+from bikipy.utils.collection_utils import apply_slice_on_slice
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.color import make_color_map
@@ -244,10 +246,18 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def crop_frames_slice(self) -> slice:
-        return trial_video_frame_slice(
+    def trial_data_slice(self) -> slice:
+        return trial_video_likelihood_based_frame_slice(
             self.likelihood_columns,
             self.required_tail_likelihood,
+        )
+
+    @computed_field  # type: ignore[misc]
+    @cached_property
+    def video_target_length_slice(self) -> slice:
+        return trial_video_target_length_frame_slice(
+            self.trial_data_slice.start,
+            self.trial_data_slice.stop,
             seconds_to_frames(self.crop_target_trial_length_seconds, self.fps),
             seconds_to_frames(self.seconds_to_try_to_crop_from_start, self.fps),
             seconds_to_frames(self.seconds_to_try_to_crop_from_end, self.fps),
@@ -266,8 +276,8 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
         result = self.raw_df.copy()
 
-        result = result.iloc[self.crop_frames_slice]
-        assert len(result) == self.crop_frames_slice.stop - self.crop_frames_slice.start
+        # Remove data that is not part of the trial
+        result = result.iloc[self.trial_data_slice]
 
         if self.trial_enclosure:
             logger.debug(
@@ -290,6 +300,12 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
         if self.stat_model:
             logger.debug(f"Filtering {self.df_path.stem} with the {self.stat_model_method} method")
             result = model_data(result, self.stat_model_method, **self.stat_model_kwargs)
+
+        if self.trial_data_slice != self.video_target_length_slice:
+            # Remove data that won't be used in analysis the analysis of the trial
+            # This data is valid, but have been cropped out of the trial
+            applied_slice = apply_slice_on_slice(self.trial_data_slice, self.video_target_length_slice)
+            result = result.iloc[applied_slice]
 
         if self.invert_y_axis:
             result.loc[:, pd.IndexSlice[:, "y"]] = self.video.vertical_resolution - result.loc[:, pd.IndexSlice[:, "y"]]
@@ -363,7 +379,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
         result = self.raw_df.index.values
 
-        return result[self.crop_frames_slice] if self.crop_frames_slice else result
+        return result[self.video_target_length_slice] if self.video_target_length_slice else result
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -390,12 +406,12 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @computed_field  # type: ignore[misc]
     @property
     def trial_start_seconds(self) -> float:
-        return self.crop_frames_slice.start / self.fps
+        return self.video_target_length_slice.start / self.fps
 
     @computed_field  # type: ignore[misc]
     @property
     def trial_end_seconds(self) -> float:
-        return self.crop_frames_slice.stop / self.fps
+        return self.video_target_length_slice.stop / self.fps
 
     @computed_field  # type: ignore[misc]
     @property

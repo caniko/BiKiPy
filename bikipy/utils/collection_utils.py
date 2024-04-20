@@ -71,3 +71,7 @@ def dict_deep_update(source: dict, subsumed: dict) -> dict:
         else:
             source[key] = value
     return source
+
+
+def apply_slice_on_slice(source: slice, target: slice) -> slice:
+    return slice(target.start - source.start, target.stop - source.stop)
