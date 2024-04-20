@@ -78,9 +78,10 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         return result
 
     def closest_point_on_edge_to_coordinates(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64:
-        return self.center_meters + self.radius_length_meters * unit_vector(
+        result = self.center_meters + self.radius_length_meters * unit_vector(
             self.vector_to_closest_point_on_edge(coordinates)
         )
+        return result
 
     def vector_to_closest_point_on_edge(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64:
         """

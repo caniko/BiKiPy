@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 from functools import cached_property
 from pathlib import Path
@@ -7,9 +8,11 @@ import pandas as pd
 from compress_pickle import compress_pickle
 from pydantic import DirectoryPath, Field, FilePath, computed_field, validate_call
 from pydantic_numpy.typing import NpNDArrayUint8
+from matplotlib.pyplot import Figure
 
 from bikipy import runtime_settings
 from bikipy.core.base import BikipyConfigModel, BikipyHashable
+from bikipy.utils.misc import int_file_stem_incrementor
 from bikipy.utils.plot.inspect import inspect_arg_description
 
 
@@ -71,21 +74,14 @@ class InspectPlotMixin(BikipyConfigModel):
         description="Path to image to use as background in the plots for visualising the analysis data",
     )
 
-    @validate_call
-    def inspect_subdir_or_bool(self, subdir_name: str) -> DirectoryPath | bool:
-        if isinstance(self.inspection_fig_output_path, Path):
-            return self.inspection_fig_output_path / subdir_name
-        assert isinstance(self.inspection_fig_output_path, bool)
-        return self.inspection_fig_output_path
+    def save_fig(self, *subdir_branches: str, base_filename: str, fig: Figure) -> FilePath:
+        result = self.inspection_fig_output_path / self.__class__.__name__
+        for subdir_branch in subdir_branches:
+            result = result / subdir_branch
 
-    @validate_call
-    def save(self, manual_save_path: Optional[DirectoryPath] = None) -> None:
-        if manual_save_path:
-            save_directory_path = manual_save_path
-        elif isinstance(self.inspection_fig_output_path, Path):
-            save_directory_path = self.inspection_fig_output_path
-        else:
-            msg = "No path provided to save method"
-            raise ValueError(msg)
+        os.makedirs(result, exist_ok=True)
 
-        compress_pickle.dump(self, save_directory_path / "experiment.pickle.lzma")
+        save_path = int_file_stem_incrementor(result / f"0-{base_filename}")
+
+        fig.savefig(save_path, bbox_inches="tight")
+        fig.clear()
