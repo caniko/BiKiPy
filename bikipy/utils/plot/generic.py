@@ -21,7 +21,7 @@ def color_map_by_number(number: int, cmap: Any = plt.cm.cool) -> Iterator:
     return cmap(np.linspace(0, 1, number))
 
 
-def ax_plot_coordinate_with_boolean_index(
+def ax_hue_plot_coordinate_with_boolean_index(
     ax,
     boolean_index: Np1DArrayBool,
     coordinates: NpNDArrayFp64,
@@ -54,10 +54,15 @@ def ax_plot_coordinate_with_boolean_index(
             ax.scatter(*coordinates[~boolean_index].T, label="Invalid", color="crimson")
 
 
-def ax_plot_coordinate_pairs(ax: Axes, coordinates_a: NpNDArrayFp64, coordinates_b: NpNDArrayFp64) -> None:
+def ax_hue_plot_coordinates(ax: Axes, coordinates: NpNDArrayFp64, marker: str = "x") -> None:
+    for color, coord in zip(color_map_by_number(len(coordinates)), coordinates):
+        ax.scatter(*coord.T, color=color, marker=marker)
+
+
+def ax_hue_plot_coordinate_pairs(ax: Axes, coordinates_a: NpNDArrayFp64, coordinates_b: NpNDArrayFp64) -> None:
     paired_coordiantes = np.dstack((coordinates_a, coordinates_b))
     for color, pair in zip(color_map_by_number(len(paired_coordiantes)), paired_coordiantes):
-        ax.plot(*pair.T, color=color)
+        ax.plot(*pair, color=color)
 
 
 def plot_coordinates(

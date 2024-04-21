@@ -10,13 +10,7 @@ import pandas as pd
 import seaborn as sb
 from matplotlib.axes import Axes
 from numpy import unsignedinteger
-from pydantic import (
-    Field,
-    FilePath,
-    computed_field,
-    model_validator,
-    validate_call,
-)
+from pydantic import Field, FilePath, computed_field, model_validator, validate_call
 from pydantic_numpy.typing import (
     Np1DArrayBool,
     NpNDArrayFp64,
@@ -29,6 +23,7 @@ from bikipy.core.base import BikipyHashable
 from bikipy.core.mixin import InspectPlotMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
+from bikipy.math.vector import unit_vector
 from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_coco_polygon,
     init_polygon_from_makesense_csv_rectangle,
@@ -36,9 +31,10 @@ from bikipy.perimeter.polygon.makesense import (
 from bikipy.perimeter.utils.misc import get_coco_array_from_path_or_array
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
 from bikipy.utils.plot.generic import (
-    ax_plot_coordinate_pairs,
-    ax_plot_coordinate_with_boolean_index,
-    plot_coordinates, color_map_by_number,
+    ax_hue_plot_coordinate_pairs,
+    ax_hue_plot_coordinate_with_boolean_index,
+    color_map_by_number,
+    plot_coordinates, ax_hue_plot_coordinates,
 )
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 
@@ -73,7 +69,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
         if coordinates is not None:
             coordinates = self.video.prepare_coordinates_for_plotting(coordinates)
-            ax_plot_coordinate_with_boolean_index(ax, boolean_index, coordinates)
+            ax_hue_plot_coordinate_with_boolean_index(ax, boolean_index, coordinates)
 
         generic_inspection_finalization(
             inspection_fig_output_path,
@@ -84,16 +80,6 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
     def subplot(self, manual_video: Optional[VideoMetadata] = None, **plot_kwargs):
         return manual_video.subplots(**plot_kwargs) if manual_video else self.video.subplots(**plot_kwargs)
-
-    def plot_perimeter(
-        self, manual_video: Optional[VideoMetadata] = None, manual_ax: Optional[Axes] = None, **plot_kwargs
-    ) -> None:
-        if manual_ax:
-            ax = manual_ax
-        else:
-            fig, ax = (manual_video or self.video).subplot()
-
-        self.plot_perimeter_on_ax(ax, **plot_kwargs)
 
     @abstractmethod
     def compute_confinement_boolean_index(
@@ -182,18 +168,18 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         else:
             fig = None
 
-        self.plot_perimeter_on_ax(ax, coordinates_as_pixels=False, with_resize=False)
+        self.plot_perimeter_on_ax(ax, coordinates_as_pixels=False)
 
         if self.video:
-            coordinates = self.video.prepare_coordinates_for_plotting(coordinates)
-            closest_point = self.video.prepare_coordinates_for_plotting(closest_point)
+            coordinates = self.video.prepare_coordinates_for_plotting(coordinates, step=True)
+            closest_point = self.video.prepare_coordinates_for_plotting(closest_point, step=True)
 
-        ax_plot_coordinate_pairs(ax, coordinates, closest_point)
+        ax_hue_plot_coordinates(ax, coordinates)
+        ax_hue_plot_coordinate_pairs(ax, coordinates, closest_point)
 
         if not fig:
-            self.save_fig("closest_point_on_edge_to_coordinates", base_filename=self.label, fig=fig)
-        else:
             return ax
+        self.save_fig("closest_point_on_edge_to_coordinates", base_filename=self.label, fig=fig)
 
     def vector_to_closest_point_on_edge(
         self, coordinates: NpNDArrayFp64, closest_edge_points: Optional[NpNDArrayFp64] = None
@@ -207,7 +193,11 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         """
         if closest_edge_points is None:
             closest_edge_points = self.closest_point_on_edge_to_coordinates(coordinates)
-        return closest_edge_points - coordinates
+        result = unit_vector(closest_edge_points - coordinates)
+
+        self.plot_vector_to_closest_point_on_edge(coordinates, closest_edge_points, result)
+
+        return result
 
     def plot_vector_to_closest_point_on_edge(
         self,
@@ -224,20 +214,21 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         else:
             fig = None
 
-        self.plot_perimeter_on_ax(ax, coordinates_as_pixels=False, with_resize=False)
+        self.plot_perimeter_on_ax(ax, coordinates_as_pixels=False)
 
         coordinates = self.video.prepare_coordinates_for_plotting(coordinates, step=True)
         closest_edge_points = self.video.prepare_coordinates_for_plotting(closest_edge_points, step=True)
-        vectors = self.video.prepare_coordinates_for_plotting(vectors, step=True)
+        vectors = vectors[self.video.plot_stepper] * self.video.image_resize_multiplier
 
-        for color, coord, closest_edge_point, vector in zip(color_map_by_number(len(coordinates)), coordinates, closest_edge_points, vectors):
-            ax.scatter(*closest_edge_point, color=color)
+        for color, coord, closest_edge_point, vector in zip(
+            color_map_by_number(len(coordinates)), coordinates, closest_edge_points, vectors
+        ):
+            ax.scatter(*closest_edge_point, color=color, marker="x")
             ax.arrow(*coord, *vector, color=color)
 
         if not fig:
-            self.save_fig("vector_to_closest_point_on_edge", base_filename=self.label, fig=fig)
-        else:
             return ax
+        self.save_fig("vector_to_closest_point_on_edge", base_filename=self.label, fig=fig)
 
     @abstractmethod
     def ray_direction_filter(

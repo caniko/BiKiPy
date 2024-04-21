@@ -4,12 +4,13 @@ from functools import cached_property
 from pathlib import Path
 from typing import ClassVar, Optional
 
+import matplotlib.pyplot as plt
 import pandas as pd
 from compress_pickle import compress_pickle
-from matplotlib.pyplot import Figure
 from pydantic import DirectoryPath, Field, FilePath, computed_field
 from pydantic_numpy.typing import NpNDArrayUint8
 
+from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy import runtime_settings
 from bikipy.core.base import BikipyConfigModel, BikipyHashable
 from bikipy.utils.misc import int_file_stem_incrementor
@@ -74,14 +75,14 @@ class InspectPlotMixin(BikipyConfigModel):
         description="Path to image to use as background in the plots for visualising the analysis data",
     )
 
-    def save_fig(self, *subdir_branches: str, base_filename: str, fig: Figure) -> FilePath:
+    def save_fig(self, *subdir_branches: str, base_filename: str, fig: plt.Figure) -> FilePath:
         result = self.inspection_fig_output_path / self.__class__.__name__
         for subdir_branch in subdir_branches:
             result = result / subdir_branch
 
         os.makedirs(result, exist_ok=True)
 
-        save_path = int_file_stem_incrementor(result / f"0-{base_filename}")
+        save_path = int_file_stem_incrementor(result / f"0-{base_filename}{INSPECT_FIG_FILE_FORMAT}")
 
         fig.savefig(save_path, bbox_inches="tight")
-        fig.clear()
+        plt.close("all")

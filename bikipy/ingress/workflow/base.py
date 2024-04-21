@@ -516,7 +516,10 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
     @computed_field  # type: ignore[misc]
     @cached_property
     def cache_directory_path(self) -> DirectoryPath:
-        os.makedirs(result := self.project_directory / "bikipy_ingress_cache", exist_ok=True)
+        result = self.project_directory / "bikipy_ingress_cache"
+        if self.lazy_dev_mode:
+            shutil.rmtree(result, ignore_errors=True)
+        os.makedirs(result, exist_ok=True)
         return result
 
     # Plugin methods ============================== Read more about plugins in respective __init__.py file

@@ -33,7 +33,7 @@ from bikipy.utils.collection_utils import apply_slice_on_slice
 from bikipy.utils.constants import TO_PARQUET_KWARGS
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.color import make_color_map
-from bikipy.utils.plot.generic import ax_plot_coordinate_with_boolean_index
+from bikipy.utils.plot.generic import ax_hue_plot_coordinate_with_boolean_index
 
 BAD_COORDINATE = (np.nan, np.nan, 0.0)  # x, y, likelihood
 
@@ -450,7 +450,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
     @validate_call(config=ConfigDict(arbitrary_types_allowed=True))
     def plot_boolean_index(self, boolean_index: Np1DArrayBool, ax: Axes, label_to_plot: Optional[str] = None) -> None:
         coordinates_for_plot = self.coordinates_for_plot(label_to_plot or self.object_tracking_label_for_kinematics)
-        ax_plot_coordinate_with_boolean_index(
+        ax_hue_plot_coordinate_with_boolean_index(
             ax, boolean_index, coordinates_for_plot, plot_line=True, plot_non_confinement=False
         )
 

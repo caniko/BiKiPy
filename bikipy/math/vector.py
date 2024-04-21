@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
 import numba
 import numpy as np
@@ -9,12 +9,13 @@ from pydantic import validate_call
 from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, NpNDArrayFp64
 
 from bikipy import runtime_settings
-from bikipy.perimeter import BaseSinglePerimeter
 from bikipy.utils.collection_utils import (
     evenly_spaced_indices,
     evenly_spaced_indices_from_sequence,
     flatten_sequence,
 )
+if TYPE_CHECKING:
+    from bikipy.perimeter import BaseSinglePerimeter
 
 
 @validate_call
@@ -303,7 +304,7 @@ def rotate_vectors_with_angle(vectors: NpNDArrayFp64, angle: NpNDArrayFp64) -> N
 
 
 def ray_direction_filter_circle_triangle(
-    perimeter: BaseSinglePerimeter,
+    perimeter: "BaseSinglePerimeter",
     ray_travel_direction_point: NpNDArrayFp64,
     ray_start_point: NpNDArrayFp64,
     max_radians: float,

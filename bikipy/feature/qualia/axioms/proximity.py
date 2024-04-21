@@ -123,8 +123,8 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
             if coordinates_as_pixels:
                 video.upscaled_video.ax_ticks_metric_to_pixel(ax)
 
-        self.perimeter.plot(ax=ax, coordinates_as_pixels=coordinates_as_pixels)
-        self.perimeter_border.plot(ax=ax, coordinates_as_pixels=coordinates_as_pixels)
+        self.perimeter.plot_perimeter_on_ax(ax=ax, coordinates_as_pixels=coordinates_as_pixels)
+        self.perimeter_border.plot_perimeter_on_ax(ax=ax, coordinates_as_pixels=coordinates_as_pixels)
 
         color_count = 1
         if self.valid_border is not None:

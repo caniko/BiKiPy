@@ -312,7 +312,7 @@ class VideoMetadata(_VideoMetadataBase):
     @computed_field  # type: ignore[misc]
     @cached_property
     def plot_stepper(self) -> slice:
-        return slice(None, None, round(2 * self.fps / 3 * runtime_settings.plot_fps))
+        return slice(None, None, round(2 * self.fps / 3))
 
     def ax_ticks_metric_to_pixel(self, ax: Axes, number_of_ticks: int = 5) -> None:
         ax.set_xticks(

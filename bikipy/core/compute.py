@@ -1,14 +1,13 @@
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import ClassVar
 
 import numpy as np
 from matplotlib.axes import Axes
-from pydantic import Extra, computed_field, model_validator, validate_call
+from pydantic import Extra, computed_field, model_validator
 from pydantic_numpy.typing import Np1DArrayBool
 
 from bikipy.core.base import BikipyModel
-from bikipy.core.video import VideoMetadata, VideoMetadataMixin
+from bikipy.core.video import VideoMetadataMixin
 from bikipy.perimeter.base import BasePerimeter, BaseSinglePerimeter
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 
@@ -32,23 +31,16 @@ class AbstractCompute[ResultType](BikipyModel, ABC, extra=Extra.allow):
 
         return values
 
+    def plot_finalization(self, ax: Axes) -> None:
+        ax.set_title(self.label)
+        ax.legend(**BOTTOM_LEGEND_KWARGS)
+
     @property
     @abstractmethod
     def result(self) -> ResultType: ...
 
     @abstractmethod
     def plot(self, ax: Axes, *args, **kwargs) -> None: ...
-
-    def plot_finalization(self, ax: Axes) -> None:
-        ax.set_title(self.label)
-        ax.legend(**BOTTOM_LEGEND_KWARGS)
-
-    @validate_call
-    def save_fig(self, path: Path, video: VideoMetadata, **plot_kwargs) -> None:
-        fig, ax = video.subplot()
-        self.plot(ax, **plot_kwargs)
-        fig.tight_layout()
-        fig.savefig(path)
 
 
 class AbstractComputePerimeterBooleanIndex(AbstractCompute[Np1DArrayBool], VideoMetadataMixin, ABC):

@@ -3,7 +3,6 @@ from functools import cached_property
 from logging import getLogger
 from typing import ClassVar, Literal, Optional
 
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
@@ -20,11 +19,7 @@ from bikipy.math.vector import (
 )
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.perimeter.circle.model import CircleFixedRadiusPerimeter
-from bikipy.utils.collection_utils import (
-    evenly_spaced_indices_from_sequence,
-    project_mask_to_original,
-)
-from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS, TIGHT_LAYOUT_KWARGS
+from bikipy.utils.collection_utils import project_mask_to_original
 
 logger = getLogger(__name__)
 
@@ -132,28 +127,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
         result = closest_edge_point_to_coordinates_matrix[closest_boolean_index]
 
-        if inspect:
-            indexable_t = closest_edge_point_to_coordinates_matrix.transpose(1, 2, 0)
-
-            for i in evenly_spaced_indices_from_sequence(coordinates, 9):
-                fig, ax = self.video.subplot()
-                to_skip = []
-                for y, point in enumerate(indexable_t[i].T):
-                    if y in to_skip:
-                        continue
-                    duplicates_boolean_indices = np.all(
-                        np.apply_along_axis(np.isclose, 0, point, indexable_t[i].T, atol=1.0e-4),
-                        axis=1,
-                    )
-                    sort_indices = ", ".join(argsorted_distance.T[i][duplicates_boolean_indices].astype(str))
-                    ax.scatter(*point, label=sort_indices)
-
-                    to_skip.extend(np.where(duplicates_boolean_indices)[0].tolist())
-
-                ax.scatter(*coordinates[i], label="coordinate")
-                fig.legend(**BOTTOM_LEGEND_KWARGS)
-                fig.tight_layout(**TIGHT_LAYOUT_KWARGS)
-                plt.show()
+        self.plot_closest_point_on_edge_to_coordinates(coordinates, result)
 
         return result
 

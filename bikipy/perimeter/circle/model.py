@@ -78,8 +78,9 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         return result
 
     def closest_point_on_edge_to_coordinates(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64:
-        circle_center_to_point_uv = unit_vector(self.center_meters - coordinates)
+        circle_center_to_point_uv = unit_vector(coordinates - self.center_meters)
         result = self.center_meters + self.radius_length_meters * circle_center_to_point_uv
+        self.plot_closest_point_on_edge_to_coordinates(coordinates, result)
         return result
 
     def ray_direction_filter(

@@ -48,7 +48,7 @@ class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectModelMixin, ABC):
         return self.perimeter.label
 
     def plot_result(self, ax: Axes, label_to_plot: Optional[str] = None) -> None:
-        self.perimeter.plot(ax=ax, coordinates_as_pixels=False)
+        self.perimeter.plot_perimeter_on_ax(ax=ax, coordinates_as_pixels=False)
         self.reader.plot_boolean_index(self.result, ax, label_to_plot)
 
         plt.tight_layout(**TIGHT_LAYOUT_KWARGS)

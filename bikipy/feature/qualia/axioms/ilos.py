@@ -81,6 +81,6 @@ class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
             **quiver_kwargs,
         )
 
-        self.perimeter.plot(coordinates_as_pixels=coordinates_as_pixels, ax=ax)
+        self.perimeter.plot_perimeter_on_ax(ax=ax, coordinates_as_pixels=coordinates_as_pixels)
 
         self.plot_finalization(ax)
