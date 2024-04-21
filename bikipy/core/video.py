@@ -309,6 +309,11 @@ class VideoMetadata(_VideoMetadataBase):
     def coordinates_need_to_be_scaled_for_plot(self) -> bool:
         return self.frame is not None
 
+    @computed_field  # type: ignore[misc]
+    @cached_property
+    def plot_stepper(self) -> slice:
+        return slice(None, None, round(2 * self.fps / 3 * runtime_settings.plot_fps))
+
     def ax_ticks_metric_to_pixel(self, ax: Axes, number_of_ticks: int = 5) -> None:
         ax.set_xticks(
             ticks=np.linspace(0, self.horizontal_resolution * _TICK_END_OFFSET_RATIO, number_of_ticks),
@@ -374,8 +379,15 @@ class VideoMetadata(_VideoMetadataBase):
         return fig, ax
 
     def prepare_coordinates_for_plotting(
-        self, data: NpNDArray | float, manual_coordinates_as_pixels: bool = False, with_resize: bool = True
+        self,
+        data: NpNDArray | float,
+        manual_coordinates_as_pixels: bool = False,
+        with_resize: bool = True,
+        step: bool = False,
     ) -> NpNDArrayFp64 | float:
+        if step:
+            data = data[self.plot_stepper]
+
         if manual_coordinates_as_pixels or self.coordinates_need_to_be_scaled_for_plot:
             result = data * self.pixels_per_meter
             if with_resize:

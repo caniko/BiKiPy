@@ -6,9 +6,9 @@ from typing import ClassVar, Optional
 
 import pandas as pd
 from compress_pickle import compress_pickle
-from pydantic import DirectoryPath, Field, FilePath, computed_field, validate_call
-from pydantic_numpy.typing import NpNDArrayUint8
 from matplotlib.pyplot import Figure
+from pydantic import DirectoryPath, Field, FilePath, computed_field
+from pydantic_numpy.typing import NpNDArrayUint8
 
 from bikipy import runtime_settings
 from bikipy.core.base import BikipyConfigModel, BikipyHashable

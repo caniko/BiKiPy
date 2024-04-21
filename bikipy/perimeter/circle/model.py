@@ -78,18 +78,9 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         return result
 
     def closest_point_on_edge_to_coordinates(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64:
-        result = self.center_meters + self.radius_length_meters * unit_vector(
-            self.vector_to_closest_point_on_edge(coordinates)
-        )
+        circle_center_to_point_uv = unit_vector(self.center_meters - coordinates)
+        result = self.center_meters + self.radius_length_meters * circle_center_to_point_uv
         return result
-
-    def vector_to_closest_point_on_edge(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64:
-        """
-        Strictly for circles, these vectors are the closest normals from the circle
-        :param coordinates:
-        :return:
-        """
-        return unit_vector(self.center_meters - coordinates)
 
     def ray_direction_filter(
         self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, **kwargs

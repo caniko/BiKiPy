@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Optional, Iterator
+from typing import TYPE_CHECKING, Any, Iterator, Optional
 
 import numpy as np
 from matplotlib import colors, patches

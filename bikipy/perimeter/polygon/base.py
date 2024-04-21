@@ -17,7 +17,6 @@ from bikipy.math.vector import (
     nearest_point_on_line_segment_to_coordinates,
     ray_and_line_segment_intersection,
     rotate_vectors_with_angle,
-    unit_vector,
 )
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.perimeter.circle.model import CircleFixedRadiusPerimeter
@@ -157,15 +156,6 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
                 plt.show()
 
         return result
-
-    def vector_to_closest_point_on_edge(
-        self,
-        coordinates: NpNDArrayFp64,
-        closest_point_on_edge_to_coordinates: Optional[NpNDArrayFp64] = None,
-    ) -> NpNDArrayFp64:
-        if closest_point_on_edge_to_coordinates is None:
-            closest_point_on_edge_to_coordinates = self.closest_point_on_edge_to_coordinates(coordinates)
-        return unit_vector(closest_point_on_edge_to_coordinates - coordinates)
 
     def compute_confinement_boolean_index(
         self,

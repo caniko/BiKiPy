@@ -11,7 +11,6 @@ import seaborn as sb
 from matplotlib.axes import Axes
 from numpy import unsignedinteger
 from pydantic import (
-    DirectoryPath,
     Field,
     FilePath,
     computed_field,
@@ -37,8 +36,9 @@ from bikipy.perimeter.polygon.makesense import (
 from bikipy.perimeter.utils.misc import get_coco_array_from_path_or_array
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
 from bikipy.utils.plot.generic import (
+    ax_plot_coordinate_pairs,
     ax_plot_coordinate_with_boolean_index,
-    plot_coordinates, ax_plot_coordinate_pairs,
+    plot_coordinates, color_map_by_number,
 )
 from bikipy.utils.plot.inspect import generic_inspection_finalization
 
@@ -85,7 +85,9 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
     def subplot(self, manual_video: Optional[VideoMetadata] = None, **plot_kwargs):
         return manual_video.subplots(**plot_kwargs) if manual_video else self.video.subplots(**plot_kwargs)
 
-    def plot_perimeter(self, manual_video: Optional[VideoMetadata] = None, manual_ax=None, **plot_kwargs):
+    def plot_perimeter(
+        self, manual_video: Optional[VideoMetadata] = None, manual_ax: Optional[Axes] = None, **plot_kwargs
+    ) -> None:
         if manual_ax:
             ax = manual_ax
         else:
@@ -162,38 +164,80 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
             raise AttributeError(msg)
         return values
 
-    @abstractmethod
-    def expand(self, perimeter_border_normal_meters: float | NpNDArrayFp64): ...
+    @computed_field  # type: ignore[misc]
+    @property
+    def _to_hash(self) -> list:
+        result = super()._to_hash
+        result.append(self.int_id)
+        return result
 
-    @abstractmethod
-    def closest_point_on_edge_to_coordinates(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64: ...
-
-    def _plot_closest_point_on_edge_to_coordinates(self, coordinates: NpNDArrayFp64, closest_point: NpNDArrayFp64) -> None:
+    def plot_closest_point_on_edge_to_coordinates(
+        self, coordinates: NpNDArrayFp64, closest_point: NpNDArrayFp64, ax: Optional[Axes] = None
+    ) -> Axes | None:
         if not self.inspection_fig_output_path:
             return
 
-        fig, ax = self.video.subplot()
+        if not ax:
+            fig, ax = self.video.subplot()
+        else:
+            fig = None
 
         self.plot_perimeter_on_ax(ax, coordinates_as_pixels=False, with_resize=False)
 
+        if self.video:
+            coordinates = self.video.prepare_coordinates_for_plotting(coordinates)
+            closest_point = self.video.prepare_coordinates_for_plotting(closest_point)
+
         ax_plot_coordinate_pairs(ax, coordinates, closest_point)
 
-        self.save_fig("closest_point_on_edge_to_coordinates", base_filename=self.label, fig=fig)
+        if not fig:
+            self.save_fig("closest_point_on_edge_to_coordinates", base_filename=self.label, fig=fig)
+        else:
+            return ax
 
-    @abstractmethod
-    def vector_to_closest_point_on_edge(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64: ...
+    def vector_to_closest_point_on_edge(
+        self, coordinates: NpNDArrayFp64, closest_edge_points: Optional[NpNDArrayFp64] = None
+    ) -> NpNDArrayFp64:
+        """
+        Strictly for circles, these vectors are the closest normals from the circle
 
-    def _plot_vector_to_closest_point_on_edge(self, coordinates: NpNDArrayFp64, closest_point: NpNDArrayFp64) -> None:
+        :param coordinates:
+        :param closest_edge_points:
+        :return:
+        """
+        if closest_edge_points is None:
+            closest_edge_points = self.closest_point_on_edge_to_coordinates(coordinates)
+        return closest_edge_points - coordinates
+
+    def plot_vector_to_closest_point_on_edge(
+        self,
+        coordinates: NpNDArrayFp64,
+        closest_edge_points: NpNDArrayFp64,
+        vectors: NpNDArrayFp64,
+        ax: Optional[Axes] = None,
+    ) -> Axes | None:
         if not self.inspection_fig_output_path:
             return
 
-        fig, ax = self.video.subplot()
+        if not ax:
+            fig, ax = self.video.subplot()
+        else:
+            fig = None
 
         self.plot_perimeter_on_ax(ax, coordinates_as_pixels=False, with_resize=False)
 
-        ax_plot_coordinate_pairs(ax, coordinates, closest_point)
+        coordinates = self.video.prepare_coordinates_for_plotting(coordinates, step=True)
+        closest_edge_points = self.video.prepare_coordinates_for_plotting(closest_edge_points, step=True)
+        vectors = self.video.prepare_coordinates_for_plotting(vectors, step=True)
 
-        self.save_fig("closest_point_on_edge_to_coordinates", base_filename=self.label, fig=fig)
+        for color, coord, closest_edge_point, vector in zip(color_map_by_number(len(coordinates)), coordinates, closest_edge_points, vectors):
+            ax.scatter(*closest_edge_point, color=color)
+            ax.arrow(*coord, *vector, color=color)
+
+        if not fig:
+            self.save_fig("vector_to_closest_point_on_edge", base_filename=self.label, fig=fig)
+        else:
+            return ax
 
     @abstractmethod
     def ray_direction_filter(
@@ -214,39 +258,6 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
             }
         )
         return result
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def _to_hash(self) -> list:
-        result = super()._to_hash
-        result.append(self.int_id)
-        return result
-
-    @computed_field(return_type=VideoMetadata)  # type: ignore[misc]
-    @property
-    def video(self) -> VideoMetadata:
-        upstream_video = super().video
-
-        if self.derive_meters_per_pixel:
-            logger.debug("derive_meters_per_pixel -> True: Deriving meters_per_pixel from perimeter")
-            if not self.derived_meters_per_pixel_source:
-                msg = "Derivation source, meters_per_pixel_from_perimeter_source, for meters_per_pixel undefined"
-                raise AttributeError(msg)
-            if not self.derived_meters_per_pixel_source_metric_length:
-                msg = (
-                    "Length of source, length_meters_of_meters_per_pixel_source, "
-                    "for deriving meters_per_pixel is undefined"
-                )
-                raise AttributeError(msg)
-
-            upstream_video.meters_per_pixel = self.derived_meters_per_pixel
-
-        return upstream_video
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def derived_meters_per_pixel(self) -> float | None:
-        return
 
     def confinement_coordinate_boolean_index(
         self, coordinates: NpNDArrayFp64, reader: Optional["BaseReader"] = None, **inspect_kwargs
@@ -322,10 +333,36 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
             for img_name, reference_point in img_name_to_reference_points.items()
         ]
 
-    def _method_name_inspect_arg(self, method_name: str) -> str:
-        if self.makesense_image_name:
-            return f"{self.makesense_image_name.split('.')[0]}-{method_name}"
-        return method_name
+    @computed_field(return_type=VideoMetadata)  # type: ignore[misc]
+    @property
+    def video(self) -> VideoMetadata:
+        upstream_video = super().video
+
+        if self.derive_meters_per_pixel:
+            logger.debug("derive_meters_per_pixel -> True: Deriving meters_per_pixel from perimeter")
+            if not self.derived_meters_per_pixel_source:
+                msg = "Derivation source, meters_per_pixel_from_perimeter_source, for meters_per_pixel undefined"
+                raise AttributeError(msg)
+            if not self.derived_meters_per_pixel_source_metric_length:
+                msg = (
+                    "Length of source, length_meters_of_meters_per_pixel_source, "
+                    "for deriving meters_per_pixel is undefined"
+                )
+                raise AttributeError(msg)
+
+            upstream_video.meters_per_pixel = self.derived_meters_per_pixel
+
+        return upstream_video
+
+    @abstractmethod
+    def expand(self, perimeter_border_normal_meters: float | NpNDArrayFp64): ...
+
+    @abstractmethod
+    def closest_point_on_edge_to_coordinates(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64: ...
+
+    @property
+    @abstractmethod
+    def derived_meters_per_pixel(self) -> float | None: ...
 
 
 class PerimeterSet(BasePerimeter):
