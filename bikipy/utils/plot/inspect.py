@@ -11,19 +11,15 @@ from bikipy.utils.misc import int_file_stem_incrementor
 
 logger = getLogger(__file__)
 
-inspect_arg_description = (
-    "When path to a directory it is used to define the save directory of figures that will be used for inspection"
-)
 
-
-@validate_call
-def generic_inspection_finalization(
+def generic_figure_finalization(
     inspection_fig_output_path: Path,
     potential_dir: Optional[str] = None,
     potential_label: Optional[str] = None,
     inspect_fig_file_format: Literal[".svgz", ".jpg"] = INSPECT_FIG_FILE_FORMAT,
+    close: bool = True,
 ) -> None:
-    if inspection_fig_output_path.suffix:
+    if inspection_fig_output_path.is_file():
         file_path = inspection_fig_output_path / potential_label if potential_label else inspection_fig_output_path
 
         logger.debug(f"Ensuring that {file_path.parent} directory exists")
@@ -34,7 +30,9 @@ def generic_inspection_finalization(
 
         file_path = file_path.with_suffix(inspect_fig_file_format)
 
-    else:  # Treated as directory
+    else:
+        assert inspection_fig_output_path.is_dir()
+
         if potential_dir:
             inspection_fig_output_path = inspection_fig_output_path / potential_dir
 
@@ -46,5 +44,8 @@ def generic_inspection_finalization(
 
     logger.debug(f"Saving inspection figure, file path: {file_path}")
 
+    plt.tight_layout()
     plt.savefig(file_path)
-    plt.close()
+
+    if close:
+        plt.close("all")

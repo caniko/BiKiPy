@@ -12,7 +12,7 @@ from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import PerimeterSet
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.generic import plot_coordinates
-from bikipy.utils.plot.inspect import generic_inspection_finalization
+from bikipy.utils.plot.inspect import generic_figure_finalization
 
 
 def detect_multi_node_sequential_perimeter_presence(
@@ -23,7 +23,7 @@ def detect_multi_node_sequential_perimeter_presence(
     tolerance_fps: Optional[float] = None,
     tolerance_seconds_attention: float = runtime_settings.minimum_seconds_tolerance,
     tolerance_seconds_distraction: float = runtime_settings.maximum_seconds_distraction,
-) -> ConfinementSequence:
+) -> tuple[ConfinementSequence, Np1DArrayBool]:
     presence = np.zeros(
         coordinate_set[0].shape[0],
         dtype=inferior2superior_perimeter_set.size_respective_dtype,
@@ -43,7 +43,7 @@ def detect_multi_node_sequential_perimeter_presence(
 
         confinement_data = []
         for coordinates in coordinate_set:
-            specific_confinement_boolean_index = perimeter.confinement_coordinate_boolean_index(coordinates)
+            specific_confinement_boolean_index = perimeter.compute_confinement_boolean_index(coordinates)
             if tolerance_filter:
                 assert tolerance_fps
                 confinement_data.append(
@@ -99,4 +99,4 @@ def inspect_sequential_confinement(
     ax.legend(**BOTTOM_LEGEND_KWARGS)
     fig.tight_layout()
 
-    generic_inspection_finalization(inspection_fig_output_path, **inspect_kwargs)
+    generic_figure_finalization(inspection_fig_output_path, **inspect_kwargs)

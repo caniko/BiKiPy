@@ -10,7 +10,7 @@ from pydantic import validate_call
 from pydantic_numpy.typing import NpNDArray, NpNDArrayFp64
 
 from bikipy.feature.angle import clockwise_angel_2d
-from bikipy.utils.plot.inspect import generic_inspection_finalization
+from bikipy.utils.plot.inspect import generic_figure_finalization
 
 if TYPE_CHECKING:
     from bikipy.perimeter.base import BasePerimeter
@@ -214,7 +214,7 @@ def expand_rectangle(
             loc="center left",
         )
 
-        generic_inspection_finalization(inspection_fig_output_path, potential_dir="rectangle_expansion")
+        generic_figure_finalization(inspection_fig_output_path, potential_dir="rectangle_expansion")
 
     result = (off_down_left, off_down_right, off_up_right, off_up_left)
 

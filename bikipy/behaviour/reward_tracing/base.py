@@ -1,7 +1,7 @@
 from abc import ABC
 from functools import cached_property
 from logging import getLogger
-from typing import ClassVar
+from typing import ClassVar, Union
 
 import numpy as np
 import pandas as pd
@@ -30,11 +30,10 @@ class RewardTraceTrialMixin[StartPerimeter: BaseSinglePerimeter, RewardPerimeter
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def _start_frame_idx(self) -> int:
+    def _start_frame_idx(self) -> Union[int, np.nan]:
         confinement_bool = self.start_perimeter.compute_confinement_boolean_index(
+            "reward-trace-start",
             self.reader.kinematic_coordinates,
-            potential_label=f"{self.label}_start",
-            manual_video=self.video,
         )
         if not np.any(confinement_bool):
             return np.nan
@@ -74,9 +73,8 @@ class RewardTraceTrialMixin[StartPerimeter: BaseSinglePerimeter, RewardPerimeter
     @cached_property
     def reward_boolean(self) -> Np1DArrayBool:
         confinement_bool = self.reward_perimeter.compute_confinement_boolean_index(
+            "reward-trace-target",
             self.reader.kinematic_coordinates,
-            potential_label=f"{self.label}_reward",
-            manual_video=self.video,
         )
         if self.tolerate_boolean_index:
             confinement_bool = single_node_tolerance_model(confinement_bool, self.fps)

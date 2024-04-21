@@ -1,11 +1,9 @@
-from typing import Optional
 
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field
 from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
 
-from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 
 
@@ -32,25 +30,7 @@ class TrianglePerimeter(BasePolygonPerimeter):
     def expand(self, perimeter_border_normal_meters: float | NpNDArrayFp64):
         raise NotImplementedError()
 
-    def compute_confinement_boolean_index(
-        self,
-        coordinates: NpNDArrayFp64,
-        manual_video: Optional[VideoMetadata] = None,
-        ax: Axes = None,
-        **inspect_kwargs,
-    ) -> Np1DArrayBool:
-        """
-        indices of the coordinates that are inside the respective perimeter
-
-        Parameters
-        ----------
-        coordinates
-            Sequence of coordinates
-
-        Returns
-        -------
-        NpNDArrayFp64 of all the indices
-        """
+    def compute_confinement_boolean_index(self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None) -> Np1DArrayBool:
         coord_x_comp, coord_y_comp = np.asarray(coordinates).T
 
         c1 = (self.base_b[0] - self.base_a[0]) * (coord_y_comp - self.base_a[1]) - (self.base_b[1] - self.base_a[1]) * (

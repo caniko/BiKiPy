@@ -9,6 +9,7 @@ from pydantic import DirectoryPath, Field, computed_field
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT, PHYSICAL_OBJECT_MAP_NAME
 from bikipy.analysis.video import make_inspection_video
+from bikipy.core.mixin import InspectPlotMixin
 from bikipy.core.typing import ConfinementSequence
 from bikipy.feature.qualia.physical_object.analysis.mapping import (
     PO_NUMBER_TO_ANALYSIS_MODEL,
@@ -26,13 +27,15 @@ from bikipy.feature.qualia.physical_object.heuristic.mixin import (
     ProximityMixin,
     RayMixin,
 )
+from bikipy.feature.qualia.physical_object.heuristic.solo.abc import (
+    AbstractSoloHeuristic,
+)
 from bikipy.feature.qualia.physical_object.merge_parser import (
     parse_heuristic_merge_equation,
 )
 from bikipy.math.discrete import reduce_repeating_sequences
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.perimeter.trial_mixin import TrialWithPerimeterMixin
-from bikipy.utils.plot.inspect import generic_inspection_finalization
 
 
 class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
@@ -55,7 +58,7 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
     @computed_field  # type: ignore[misc]
     @cached_property
     def alias_to_standalone_heuristic(self) -> dict[str, list[StandaloneHeuristic]]:
-        result = {}
+        result: dict[str, list[AbstractSoloHeuristic]] = {}
 
         partial_helper_heuristics = []
         alias_to_solo_heuristics = {}
@@ -92,20 +95,14 @@ class PhysicalObjectTrialMixin(TrialWithPerimeterMixin, ABC):
                 )
             ]
 
-        if self.inspection_fig_output_path:
+        if self.is_inspecting:
             for heuristic_alias, physical_objects_heuristic in result.items():
-                heuristic_inspect_arg = (
-                    self.inspection_fig_output_path
-                    if isinstance(self.inspection_fig_output_path, bool)
-                    else self.inspection_fig_output_path / heuristic_alias
-                )
-
                 for physical_object_heuristic in physical_objects_heuristic:
-                    physical_object_heuristic.plot()
-                    generic_inspection_finalization(
-                        heuristic_inspect_arg,
-                        potential_label=f"{self.label}_{physical_object_heuristic.physical_object_label}_{heuristic_alias}",
-                        inspect_fig_file_format=INSPECT_FIG_FILE_FORMAT,
+                    fig = physical_object_heuristic.plot()
+                    self.save_fig(
+                        heuristic_alias,
+                        base_filename=f"{self.label}_{physical_object_heuristic.physical_object_label}",
+                        fig=fig,
                     )
 
         return result

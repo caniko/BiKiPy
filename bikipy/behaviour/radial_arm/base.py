@@ -7,7 +7,13 @@ from typing import ClassVar, Optional
 import numpy as np
 import pandas as pd
 from ordered_set import OrderedSet
-from pydantic import DirectoryPath, PositiveInt, computed_field, field_validator
+from pydantic import (
+    DirectoryPath,
+    PositiveInt,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64, NpNDArrayUint8
 
 from bikipy._constant import INSPECT_SIMPLE_FIG_FILE_FORMAT
@@ -25,7 +31,7 @@ from bikipy.perimeter.utils.multi_node_confinement import (
     detect_multi_node_sequential_perimeter_presence,
     inspect_sequential_confinement,
 )
-from bikipy.utils.plot.inspect import generic_inspection_finalization
+from bikipy.utils.plot.inspect import generic_figure_finalization
 
 logger = getLogger(__name__)
 
@@ -59,6 +65,31 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
         for i, arm in enumerate(value):
             arm.int_id = cls._arm_int_ids[i]
         return tuple(value)
+
+    @model_validator(mode="after")
+    def create_inspect_figures(self):
+        fig, ax = self.video.subplot()
+
+        self.perimeter_set.plot(ax, coordinates_as_pixels=True)
+        ax.scatter(*self.reader.kinematic_coordinates_prepared_for_plotting.T)
+
+        generic_figure_finalization(
+            self.inspection_fig_output_path,
+            potential_dir="radial_arm",
+            potential_label=self.label,
+            inspect_fig_file_format=INSPECT_SIMPLE_FIG_FILE_FORMAT,
+        )
+        inspect_sequential_confinement(
+            self.inspection_fig_output_path,
+            self.video,
+            self.perimeter_set,
+            self.reader.kinematic_coordinates_prepared_for_plotting,
+            self.alternation_sequence_with_center,
+            self.overlap_boolean_index,
+            potential_dir="alternation_sequence_with_center",
+            inspect_fig_file_format=INSPECT_SIMPLE_FIG_FILE_FORMAT,
+        )
+        return self
 
     @classmethod
     @property
@@ -142,10 +173,10 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
     def perimeter_set(self) -> PerimeterSet:
         return PerimeterSet(perimeters=self.perimeters)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field(repr=False)  # type: ignore[misc]
     @cached_property
-    def alternation_sequence_with_center(self) -> NpNDArrayUint8:
-        result, overlap_boolean_index = detect_multi_node_sequential_perimeter_presence(
+    def _sequential_maze_presence_overlap(self) -> tuple[ConfinementSequence, NpNDArrayUint8]:
+        return detect_multi_node_sequential_perimeter_presence(
             self.confinement_coordinates,
             self.perimeter_set,
             (False, True, True, True),
@@ -153,34 +184,16 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
             tolerance_fps=self.fps,
         )
 
-        # TODO: Pydantic v2, put this in model_post_init
-        fig, ax = self.video.subplot()
-        ax.scatter(*self.reader.kinematic_coordinates_prepared_for_plotting.T)
-        self.perimeter_set.plot(ax, coordinates_as_pixels=True)
-        generic_inspection_finalization(
-            self.inspection_fig_output_path,
-            potential_dir="radial_arm",
-            potential_label=self.label,
-            inspect_fig_file_format=INSPECT_SIMPLE_FIG_FILE_FORMAT,
-        )
-
-        inspect_sequential_confinement(
-            self.inspection_fig_output_path,
-            self.video,
-            self.perimeter_set,
-            self.reader.kinematic_coordinates_prepared_for_plotting,
-            result,
-            overlap_boolean_index,
-            potential_dir="alternation_sequence_with_center",
-            inspect_fig_file_format=INSPECT_SIMPLE_FIG_FILE_FORMAT,
-        )
-        return result
+    @computed_field  # type: ignore[misc]
+    @property
+    def alternation_sequence_with_center(self) -> ConfinementSequence:
+        return self._sequential_maze_presence_overlap[0]
 
     @computed_field  # type: ignore[misc]
     @property
-    def cleaned_arm_alternation_sequence(self) -> ConfinementSequence:
+    def overlap_boolean_index(self) -> NpNDArrayUint8:
         # When it is nowhere it must be on center; we can safely remove undefined instances
-        return self.alternation_sequence_with_center[self.alternation_sequence_with_center != 0]
+        return self._sequential_maze_presence_overlap[1]
 
     @computed_field  # type: ignore[misc]
     @cached_property

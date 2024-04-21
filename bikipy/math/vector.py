@@ -1,4 +1,4 @@
-from typing import Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 import numba
 import numpy as np
@@ -14,6 +14,7 @@ from bikipy.utils.collection_utils import (
     evenly_spaced_indices_from_sequence,
     flatten_sequence,
 )
+
 if TYPE_CHECKING:
     from bikipy.perimeter import BaseSinglePerimeter
 

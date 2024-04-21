@@ -335,6 +335,7 @@ class VideoMetadata(_VideoMetadataBase):
         nrows: int = 1,
         ncols: int = 1,
         exclude_imaging_from_rc_coord: Optional[tuple[tuple[int, int], ...]] = None,
+        title: str = "",
         **kwargs,
     ) -> tuple[Figure, Sequence[Axes]]:
         # TODO: Minimum dpi is set to 300
@@ -370,6 +371,9 @@ class VideoMetadata(_VideoMetadataBase):
 
             ax_imshow_gray(ax, self.upscaled_video.greyscale_frame)
             self.ax_ticks_metric_to_pixel(ax)
+
+        if title:
+            fig.suptitle(title)
 
         return fig, axes
 

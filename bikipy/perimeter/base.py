@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
-from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, Literal, Optional, Self
 
 import numpy as np
@@ -18,7 +17,6 @@ from pydantic_numpy.typing import (
     NpNDArrayUint8,
 )
 
-from bikipy._constant import INSPECT_SIMPLE_FIG_FILE_FORMAT
 from bikipy.core.base import BikipyHashable
 from bikipy.core.mixin import InspectPlotMixin
 from bikipy.core.typing import Label
@@ -33,10 +31,10 @@ from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_
 from bikipy.utils.plot.generic import (
     ax_hue_plot_coordinate_pairs,
     ax_hue_plot_coordinate_with_boolean_index,
+    ax_hue_plot_coordinates,
     color_map_by_number,
-    plot_coordinates, ax_hue_plot_coordinates,
+    plot_coordinates,
 )
-from bikipy.utils.plot.inspect import generic_inspection_finalization
 
 if TYPE_CHECKING:
     from bikipy.reader.base import BaseReader
@@ -53,42 +51,35 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
     def post_confinement_analysis_inspect_plot(
         self,
+        op_label: str,
         boolean_index: Np1DArrayBool,
-        coordinates: Optional[NpNDArrayFp64] = None,
-        ax: Axes = None,
-        inspection_fig_output_path: Path | None = None,
-        **inspect_kwargs,
+        coordinates: NpNDArrayFp64,
+        extra_ax: Optional[Axes] = None,
     ):
-        if not inspection_fig_output_path:
+        if not self.is_inspecting:
             return
 
-        if ax is None:
-            fig, ax = self.video.subplot()
+        fig, ax = self.video.subplot()
 
         self.plot_perimeter_on_ax(ax)
 
-        if coordinates is not None:
-            coordinates = self.video.prepare_coordinates_for_plotting(coordinates)
-            ax_hue_plot_coordinate_with_boolean_index(ax, boolean_index, coordinates)
+        coordinates = self.video.prepare_coordinates_for_plotting(coordinates)
 
-        generic_inspection_finalization(
-            inspection_fig_output_path,
-            potential_dir=f"{self.perimeter_label}_{self.label}_confinement",
-            inspect_fig_file_format=INSPECT_SIMPLE_FIG_FILE_FORMAT,
-            **inspect_kwargs,
+        if extra_ax:
+            ax_hue_plot_coordinate_with_boolean_index(extra_ax, boolean_index, coordinates)
+            self.plot_perimeter_on_ax(extra_ax)
+        ax_hue_plot_coordinate_with_boolean_index(ax, boolean_index, coordinates)
+        self.plot_perimeter_on_ax(ax)
+
+        self.save_fig(
+            "perimeter-confinement",
+            op_label,
+            base_filename=f"{self.perimeter_label}-{self.label}",
+            fig=fig,
         )
 
-    def subplot(self, manual_video: Optional[VideoMetadata] = None, **plot_kwargs):
-        return manual_video.subplots(**plot_kwargs) if manual_video else self.video.subplots(**plot_kwargs)
-
     @abstractmethod
-    def compute_confinement_boolean_index(
-        self,
-        coordinates: NpNDArrayFp64,
-        manual_video: Optional[VideoMetadata] = None,
-        ax: Axes = None,
-        **inspect_kwargs,
-    ) -> Np1DArrayBool: ...
+    def compute_confinement_boolean_index(self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None) -> Np1DArrayBool: ...
 
     @abstractmethod
     def plot_perimeter_on_ax(
@@ -160,7 +151,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     def plot_closest_point_on_edge_to_coordinates(
         self, coordinates: NpNDArrayFp64, closest_point: NpNDArrayFp64, ax: Optional[Axes] = None
     ) -> Axes | None:
-        if not self.inspection_fig_output_path:
+        if not self.is_inspecting:
             return
 
         if not ax:
@@ -206,7 +197,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         vectors: NpNDArrayFp64,
         ax: Optional[Axes] = None,
     ) -> Axes | None:
-        if not self.inspection_fig_output_path:
+        if not self.is_inspecting:
             return
 
         if not ax:
@@ -218,7 +209,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
         coordinates = self.video.prepare_coordinates_for_plotting(coordinates, step=True)
         closest_edge_points = self.video.prepare_coordinates_for_plotting(closest_edge_points, step=True)
-        vectors = vectors[self.video.plot_stepper] * self.video.image_resize_multiplier
+        vectors = vectors[self.video.plot_stepper] * 10
 
         for color, coord, closest_edge_point, vector in zip(
             color_map_by_number(len(coordinates)), coordinates, closest_edge_points, vectors
@@ -249,20 +240,6 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
             }
         )
         return result
-
-    def confinement_coordinate_boolean_index(
-        self, coordinates: NpNDArrayFp64, reader: Optional["BaseReader"] = None, **inspect_kwargs
-    ) -> Np1DArrayBool:
-        """
-        This function integrates moving perimeter routine into the static perimeter workflow
-        """
-        if not self.moving_field_name:
-            return self.compute_confinement_boolean_index(coordinates, **inspect_kwargs)
-        if not reader:
-            msg = "reader must be passed to BasePerimeter when moving field name is utilized"
-            raise AttributeError(msg)
-
-        # if self.moving_field_name == "reference_point_array":
 
     @computed_field  # type: ignore[misc]
     @property
@@ -440,27 +417,21 @@ class PerimeterSet(BasePerimeter):
         """
         return np.mean([perimeter.centroid_meters for perimeter in self.all_perimeters], axis=0)
 
-    def combined_framewise_confinement_coordinates(self, coordinates: NpNDArrayFp64) -> Np1DArrayBool:
-        present = np.any([perimeter.confinement_coordinate_boolean_index(coordinates) for perimeter in self.perimeters])
+    def combined_framewise_confinement(self, coordinates: NpNDArrayFp64) -> Np1DArrayBool:
+        present = np.any([perimeter.compute_confinement_boolean_index("combined-framewise-confinement", coordinates) for perimeter in self.perimeters])
         if self.restricting_perimeters:
             present = present & ~np.any(
                 [
-                    perimeter.confinement_coordinate_boolean_index(coordinates)
+                    perimeter.compute_confinement_boolean_index("restricted-combined-framewise-confinement", coordinates)
                     for perimeter in self.restricting_perimeters
                 ]
             )
         return present
 
-    def compute_confinement_boolean_index(
-        self,
-        coordinates: NpNDArrayFp64,
-        manual_video: Optional[VideoMetadata] = None,
-        ax: Axes = None,
-        **inspect_kwargs,
-    ) -> Np1DArrayBool:
-        result = self.combined_framewise_confinement_coordinates(coordinates)
+    def compute_confinement_boolean_index(self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None) -> Np1DArrayBool:
+        result = self.combined_framewise_confinement(coordinates)
 
-        self.post_confinement_analysis_inspect_plot(result, coordinates, ax, **inspect_kwargs)
+        self.post_confinement_analysis_inspect_plot(op_label, result, coordinates, ax)
 
         return result
 

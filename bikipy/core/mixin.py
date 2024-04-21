@@ -8,13 +8,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from compress_pickle import compress_pickle
 from pydantic import DirectoryPath, Field, FilePath, computed_field
-from pydantic_numpy.typing import NpNDArrayUint8
 
-from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy import runtime_settings
+from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.core.base import BikipyConfigModel, BikipyHashable
 from bikipy.utils.misc import int_file_stem_incrementor
-from bikipy.utils.plot.inspect import inspect_arg_description
 
 
 class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
@@ -65,17 +63,16 @@ class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
 
 
 class InspectPlotMixin(BikipyConfigModel):
-    inspection_fig_output_path: Optional[Path] = Field(False, description=inspect_arg_description)
-    manual_inspect_image: Optional[NpNDArrayUint8] = Field(
-        None,
-        description="Image to use as background in the plots for visualising the analysis data",
-    )
-    inspect_image_path: Optional[FilePath] = Field(
-        None,
-        description="Path to image to use as background in the plots for visualising the analysis data",
+    inspection_fig_output_path: Optional[Path] = Field(
+        None, description="When path to a directory it is used to define the save directory of figures that will be used for inspection"
     )
 
-    def save_fig(self, *subdir_branches: str, base_filename: str, fig: plt.Figure) -> FilePath:
+    @computed_field  # type: ignore[misc]
+    @cached_property
+    def is_inspecting(self) -> bool:
+        return bool(self.inspection_fig_output_path)
+
+    def save_fig(self, *subdir_branches: str, base_filename: str, fig: plt.Figure, close: bool = True) -> FilePath:
         result = self.inspection_fig_output_path / self.__class__.__name__
         for subdir_branch in subdir_branches:
             result = result / subdir_branch
@@ -85,4 +82,5 @@ class InspectPlotMixin(BikipyConfigModel):
         save_path = int_file_stem_incrementor(result / f"0-{base_filename}{INSPECT_FIG_FILE_FORMAT}")
 
         fig.savefig(save_path, bbox_inches="tight")
-        plt.close("all")
+        if close:
+            plt.close(fig)

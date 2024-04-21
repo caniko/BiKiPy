@@ -1,6 +1,7 @@
 from functools import cached_property
 from typing import Optional
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pydantic import computed_field
@@ -100,10 +101,11 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
 
         return pd.Series(data)
 
-    def plot(self) -> None:
+    def plot(self) -> plt.Figure:
         fig, axes = self.video.subplots(
             ncols=sum((bool(self.center_ear_proximity), bool(self.tail_base_proximity))) + 1,
             nrows=1,
+            title=self.heuristic_alias,
         )
 
         ax_idx = 0
@@ -119,3 +121,5 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
             ax_idx += 1
 
         self.plot_result(axes[ax_idx], self.center_ear_label or self.tail_base_label)
+
+        return fig

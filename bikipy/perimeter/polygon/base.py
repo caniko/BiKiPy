@@ -8,7 +8,6 @@ from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
 from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, NpNDArrayFp64
 
-from bikipy.core.video import VideoMetadata
 from bikipy.math.confinement.polygon import parallel_point_inside_polygon
 from bikipy.math.geometry import clockwise_sort_points
 from bikipy.math.graph import Graph
@@ -131,16 +130,10 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
         return result
 
-    def compute_confinement_boolean_index(
-        self,
-        coordinates: NpNDArrayFp64,
-        manual_video: Optional[VideoMetadata] = None,
-        ax: Axes = None,
-        **inspect_kwargs,
-    ) -> Np1DArrayBool:
+    def compute_confinement_boolean_index(self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None) -> Np1DArrayBool:
         result = parallel_point_inside_polygon(coordinates, self.metric_graph.linked_vertices, merge_ends=False)
 
-        self.post_confinement_analysis_inspect_plot(result, coordinates, ax, **inspect_kwargs)
+        self.post_confinement_analysis_inspect_plot(op_label, result, coordinates, ax)
 
         return result
 

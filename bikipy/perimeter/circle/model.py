@@ -1,3 +1,4 @@
+from abc import ABC
 from functools import cached_property
 from typing import Optional
 
@@ -14,7 +15,7 @@ from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.utils.plot.generic import plot_ellipse
 
 
-class BaseCirclePerimeter(BaseSinglePerimeter):
+class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
     center_pixels: NpNDArrayInt16
 
     perimeter_label = "circle"
@@ -58,13 +59,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
             manual_video=self.video,
         )
 
-    def compute_confinement_boolean_index(
-        self,
-        coordinates: NpNDArrayFp64,
-        manual_video: Optional[VideoMetadata] = None,
-        ax: Axes = None,
-        **inspect_kwargs,
-    ) -> Np1DArrayBool:
+    def compute_confinement_boolean_index(self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None) -> Np1DArrayBool:
         if isinstance(self.radius_length_meters, float):
             distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
             result = np.abs(distance_of_point_from_center) <= self.radius_length_meters
@@ -73,7 +68,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter):
         else:
             raise RuntimeError
 
-        self.post_confinement_analysis_inspect_plot(result, coordinates, ax, **inspect_kwargs)
+        self.post_confinement_analysis_inspect_plot(op_label, result, coordinates, ax)
 
         return result
 
@@ -137,6 +132,11 @@ class CircleVariableRadiusPerimeter(BaseCirclePerimeter):
     @property
     def radius_length_pixels(self) -> float:
         return meters2pixels(self.radius_length_meters, self.video.pixels_per_meter)
+
+    @computed_field(repr=False)  # type: ignore[misc]
+    @property
+    def derived_meters_per_pixel(self) -> float | None:
+        raise NotImplementedError
 
     @computed_field  # type: ignore[misc]
     @property

@@ -1,6 +1,7 @@
 from functools import cached_property
 from typing import Optional
 
+import matplotlib.pyplot as plt
 import pandas as pd
 from pydantic import computed_field
 from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
@@ -164,9 +165,10 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
             index=[f"{label}LeftwardProxFOV", f"{label}RightwardProxFOV", f"{label}{self.heuristic_alias}Result"],
         )
 
-    def plot(self) -> None:
-        fig, axes = self.video.subplots(ncols=3, nrows=3, exclude_imaging_from_rc_coord=((0, 2), (2, 2)))
-        fig.suptitle(self.heuristic_alias)
+    def plot(self) -> plt.Figure:
+        fig, axes = self.video.subplots(
+            ncols=3, nrows=3, exclude_imaging_from_rc_coord=((0, 2), (2, 2)), title=self.heuristic_alias
+        )
 
         # Left
         self.left_proximity.plot(axes[0][0], self.video)
@@ -183,3 +185,5 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
         self.reader.plot_boolean_index(self.right_result, axes[1][2], self.right_ear_label)
 
         self.plot_result(axes[2][1], self.center_ear_label)
+
+        return fig

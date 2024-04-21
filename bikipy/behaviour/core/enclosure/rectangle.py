@@ -24,7 +24,7 @@ from bikipy.math.shortcut import np_sum_int
 from bikipy.perimeter import RectanglePerimeter
 from bikipy.utils.pandas import motion_analysis_indexer_for_subsection
 from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
-from bikipy.utils.plot.inspect import generic_inspection_finalization
+from bikipy.utils.plot.inspect import generic_figure_finalization
 
 logger = getLogger(__name__)
 quadrant_grid_typing = tuple[int, int]
@@ -164,7 +164,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
             plt.legend(**BOTTOM_LEGEND_KWARGS)
 
-            generic_inspection_finalization(
+            generic_figure_finalization(
                 self._inspect_quadrant_directory,
                 potential_label=self.label,
                 inspect_fig_file_format=INSPECT_FIG_FILE_FORMAT,
@@ -205,10 +205,9 @@ class RectangleEnclosedTrial(EnclosedTrial):
     # Center vs Periphery ==============================================================
     @cached_property
     def _center_boolean_index_motion_island(self) -> tuple[TruthIslandMetadata, Np1DArrayBool]:
-        raw_center_boolean_index = self.center_rectangle.confinement_coordinate_boolean_index(
+        raw_center_boolean_index = self.center_rectangle.compute_confinement_boolean_index(
+            "rectangle-centre-motion-island",
             self.reader.kinematic_coordinates,
-            inspection_fig_output_path=self.inspection_fig_output_path,
-            potential_label=self.label,
         )
         return tolerance_modeled_boolean_index_truth_sequence_start_end_length(raw_center_boolean_index, self.fps)
 

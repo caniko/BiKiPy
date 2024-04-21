@@ -35,7 +35,7 @@ class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectModelMixin, ABC):
         return result
 
     @abstractmethod
-    def plot(self) -> None: ...
+    def plot(self) -> plt.Figure: ...
 
     @computed_field  # type: ignore[misc]
     @property

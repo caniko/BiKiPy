@@ -1,6 +1,7 @@
 from functools import cached_property
 from typing import Optional
 
+import matplotlib.pyplot as plt
 import pandas as pd
 from pydantic import computed_field
 from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
@@ -20,7 +21,7 @@ from bikipy.perimeter.base import BasePerimeter
 
 class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
     maximum_distance_meters: float = 0.05
-    maximum_degrees: float = 45.0
+    maximum_degrees: float = 60.0
 
     nose_direction_naive: bool = True
 
@@ -110,10 +111,11 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
             index=[f"{label}NoseProximity", f"{label}NoseToObjectRay", f"{label}{self.heuristic_alias}Result"],
         )
 
-    def plot(self) -> None:
-        fig, axes = self.video.subplots(nrows=3)
-        fig.suptitle(self.heuristic_alias)
+    def plot(self) -> plt.Figure:
+        fig, axes = self.video.subplots(nrows=3, title=self.heuristic_alias)
 
         self.nose_proximity.plot(axes[0], self.video)
         self.snout_towards_object_rays.plot(axes[1], self.video)
         self.plot_result(axes[2], self.nose_label)
+
+        return fig
