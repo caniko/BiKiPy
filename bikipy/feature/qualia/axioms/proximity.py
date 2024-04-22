@@ -37,22 +37,22 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
     @model_validator(mode="after")
     def perform_computation(self) -> Self:
         if self.inside_perimeter is not None and self.inside_perimeter_boolean_index is None:
-            self.inside_perimeter_boolean_index = self.perimeter.compute_confinement_boolean_index(
+            self.inside_perimeter_boolean_index = self.perimeter.confinement_boolean_index(
                 _PROXIMITY_COMPUTE_OP_LABEL.format("inside"), self.inside_perimeter
             )
 
         if self.outside_perimeter is not None and self.outside_perimeter_boolean_index is None:
-            self.outside_perimeter_boolean_index = ~self.perimeter.compute_confinement_boolean_index(
+            self.outside_perimeter_boolean_index = ~self.perimeter.confinement_boolean_index(
                 _PROXIMITY_COMPUTE_OP_LABEL.format("outside"), self.outside_perimeter
             )
 
         if self.inside_perimeter_border is not None and self.inside_perimeter_border_boolean_index is None:
-            self.inside_perimeter_border_boolean_index = self.perimeter_border.compute_confinement_boolean_index(
+            self.inside_perimeter_border_boolean_index = self.perimeter_border.confinement_boolean_index(
                 _PROXIMITY_COMPUTE_OP_LABEL.format("inside-border"), self.inside_perimeter_border
             )
 
         if self.outside_perimeter_border is not None and self.outside_perimeter_border_boolean_index is None:
-            self.outside_perimeter_border_boolean_index = ~self.perimeter_border.compute_confinement_boolean_index(
+            self.outside_perimeter_border_boolean_index = ~self.perimeter_border.confinement_boolean_index(
                 _PROXIMITY_COMPUTE_OP_LABEL.format("outside-border"), self.outside_perimeter_border
             )
         return self

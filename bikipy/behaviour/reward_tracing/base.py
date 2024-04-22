@@ -31,7 +31,7 @@ class RewardTraceTrialMixin[StartPerimeter: BaseSinglePerimeter, RewardPerimeter
     @computed_field  # type: ignore[misc]
     @cached_property
     def _start_frame_idx(self) -> Union[int, np.nan]:
-        confinement_bool = self.start_perimeter.compute_confinement_boolean_index(
+        confinement_bool = self.start_perimeter.confinement_boolean_index(
             "reward-trace-start",
             self.reader.kinematic_coordinates,
         )
@@ -72,7 +72,7 @@ class RewardTraceTrialMixin[StartPerimeter: BaseSinglePerimeter, RewardPerimeter
     @computed_field  # type: ignore[misc]
     @cached_property
     def reward_boolean(self) -> Np1DArrayBool:
-        confinement_bool = self.reward_perimeter.compute_confinement_boolean_index(
+        confinement_bool = self.reward_perimeter.confinement_boolean_index(
             "reward-trace-target",
             self.reader.kinematic_coordinates,
         )

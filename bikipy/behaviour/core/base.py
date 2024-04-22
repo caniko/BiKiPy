@@ -3,7 +3,7 @@ from concurrent.futures import ProcessPoolExecutor
 from functools import cached_property, lru_cache
 from operator import attrgetter
 from time import sleep
-from typing import Any, ClassVar, Hashable, Literal, Optional
+from typing import Any, ClassVar, Hashable, Literal, Optional, Self
 
 import numpy as np
 import pandas as pd
@@ -94,7 +94,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
         return result
 
     @classmethod
-    def experiment_class(cls) -> "ExperimentCLS":
+    def experiment_class(cls) -> type[Self]:
         from bikipy.behaviour.mapping import experiment_name_to_class
 
         return experiment_name_to_class[cls.experiment_class_name]
@@ -302,7 +302,7 @@ class BaseExperiment(Behaviour):
         return OrderedSet(cls.trial_sequence)
 
     @classmethod
-    def set_first_trial_to_habituation(cls) -> "ExperimentCLS":
+    def set_first_trial_to_habituation(cls) -> type[Self]:
         if not cls.habituation_trial_class:
             msg = f"Habituation trial class for {cls.__name__} has not been defined, contact the maintainers"
             raise AttributeError(msg)
@@ -317,12 +317,12 @@ class BaseExperiment(Behaviour):
         return cls
 
     @classmethod
-    def trial_sequence_repetition(cls, repetitions: int) -> "ExperimentCLS":
+    def trial_sequence_repetition(cls, repetitions: int) -> type[Self]:
         cls.trial_sequence = tuple(cls.trial_classes) * repetitions
         return cls
 
     @classmethod
-    def set_custom_trial_sequence(cls, custom_trial_sequence: tuple[TrialCLS | str, ...]) -> "ExperimentCLS":
+    def set_custom_trial_sequence(cls, custom_trial_sequence: tuple[TrialCLS | str, ...]) -> type[Self]:
         from bikipy.behaviour.mapping import resolve_trial
 
         new_sequence = []

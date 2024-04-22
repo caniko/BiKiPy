@@ -124,17 +124,17 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
     @classmethod
     @property
-    def _arm_int_id_permutations(cls):
+    def _arm_int_id_permutations(cls) -> int:
         return permutations(cls._arm_int_ids)
 
     @classmethod
     @property
-    def _arm_label_permutations(cls):
+    def _arm_label_permutations(cls) -> int:
         return permutations(cls.arm_labels)
 
     @classmethod
     @property
-    def _arm_label_permutations_as_string(cls):
+    def _arm_label_permutations_as_string(cls) -> str:
         return map("".join, cls._arm_label_permutations)
 
     @classmethod

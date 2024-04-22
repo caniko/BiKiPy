@@ -29,8 +29,8 @@ class TrianglePerimeter(BasePolygonPerimeter):
     def expand(self, perimeter_border_normal_meters: float | NpNDArrayFp64):
         raise NotImplementedError()
 
-    def compute_confinement_boolean_index(
-        self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None
+    def _compute_confinement_boolean_index(
+        self, coordinates: NpNDArrayFp64
     ) -> Np1DArrayBool:
         coord_x_comp, coord_y_comp = np.asarray(coordinates).T
 
@@ -49,7 +49,7 @@ class TrianglePerimeter(BasePolygonPerimeter):
             (c1 < 0.0) & (c2 < 0.0) & (c3 < 0.0),
         )
 
-    def ray_direction_filter(
+    def _compute_ray_direction_filter(
         self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, **kwargs
     ) -> Np1DArrayBool:
         if self.equilateral:

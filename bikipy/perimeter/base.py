@@ -47,25 +47,28 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
     perimeter_label: ClassVar[str]
 
-    def post_confinement_analysis_inspect_plot(
+    def confinement_boolean_index(
         self,
         op_label: str,
         boolean_index: Np1DArrayBool,
         coordinates: NpNDArrayFp64,
         extra_ax: Optional[Axes] = None,
     ):
+        result = self._compute_confinement_boolean_index(coordinates)
+
         if not self.is_inspecting:
-            return
+            return result
 
         fig, ax = self.video.subplot()
-
-        self.plot_perimeter_on_ax(ax=ax)
 
         coordinates = self.video.prepare_coordinates_for_plotting(coordinates)
 
         if extra_ax:
+            self.plot_perimeter_on_ax(ax=extra_ax)
             ax_hue_plot_coordinate_with_boolean_index(extra_ax, boolean_index, coordinates)
             self.plot_perimeter_on_ax(ax=extra_ax)
+
+        self.plot_perimeter_on_ax(ax=ax)
         ax_hue_plot_coordinate_with_boolean_index(ax, boolean_index, coordinates)
         self.plot_perimeter_on_ax(ax=ax)
 
@@ -76,9 +79,33 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
             fig=fig,
         )
 
+        return result
+
+    def ray_direction_filter(self, op_label: str, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, extra_ax: Optional[Axes] = None) -> Np1DArrayBool:
+        result = self._compute_ray_direction_filter(ray_start_point, ray_travel_direction_point, max_radians)
+
+        if not self.is_inspecting:
+            return result
+
+        fig, ax = self.video.subplot()
+
+        self.save_fig(
+            "ray-direction-filter",
+            op_label,
+            base_filename=f"{self.perimeter_label}-{self.label}",
+            fig=fig,
+        )
+
+        return result
+
     @abstractmethod
-    def compute_confinement_boolean_index(
-        self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None
+    def _compute_confinement_boolean_index(
+        self, coordinates: NpNDArrayFp64
+    ) -> Np1DArrayBool: ...
+
+    @abstractmethod
+    def _compute_ray_direction_filter(
+        self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float
     ) -> Np1DArrayBool: ...
 
     @abstractmethod
@@ -221,11 +248,6 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         if not fig:
             return ax
         self.save_fig("vector_to_closest_point_on_edge", base_filename=self.label, fig=fig)
-
-    @abstractmethod
-    def ray_direction_filter(
-        self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, **kwargs
-    ) -> Np1DArrayBool: ...
 
     @classmethod
     @property
@@ -418,30 +440,45 @@ class PerimeterSet(BasePerimeter):
         """
         return np.mean([perimeter.centroid_meters for perimeter in self.all_perimeters], axis=0)
 
-    def combined_framewise_confinement(self, coordinates: NpNDArrayFp64) -> Np1DArrayBool:
-        present = np.any(
+    def _compute_confinement_boolean_index(
+        self, coordinates: NpNDArrayFp64
+    ) -> Np1DArrayBool:
+        result = np.any(
             [
-                perimeter.compute_confinement_boolean_index("combined-framewise-confinement", coordinates)
+                perimeter.confinement_boolean_index("framewise-confinement", coordinates)
                 for perimeter in self.perimeters
             ]
         )
         if self.restricting_perimeters:
-            present = present & ~np.any(
+            result = result & ~np.any(
                 [
-                    perimeter.compute_confinement_boolean_index(
-                        "restricted-combined-framewise-confinement", coordinates
+                    perimeter.confinement_boolean_index(
+                        "restricted-framewise-confinement", coordinates
                     )
                     for perimeter in self.restricting_perimeters
                 ]
             )
-        return present
 
-    def compute_confinement_boolean_index(
-        self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None
+        return result
+
+    def _compute_ray_direction_filter(
+        self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, **kwargs
     ) -> Np1DArrayBool:
-        result = self.combined_framewise_confinement(coordinates)
-
-        self.post_confinement_analysis_inspect_plot(op_label, result, coordinates, ax)
+        result = np.any(
+            [
+                perimeter.ray_direction_filter(ray_start_point, ray_travel_direction_point, max_radians)
+                for perimeter in self.perimeters
+            ]
+        )
+        if self.restricting_perimeters:
+            result = result & ~np.any(
+                [
+                    perimeter.ray_direction_filter(
+                        ray_start_point, ray_travel_direction_point, max_radians
+                    )
+                    for perimeter in self.restricting_perimeters
+                ]
+            )
 
         return result
 

@@ -130,13 +130,10 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
         return result
 
-    def compute_confinement_boolean_index(
-        self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None
+    def _compute_confinement_boolean_index(
+        self, coordinates: NpNDArrayFp64
     ) -> Np1DArrayBool:
         result = parallel_point_inside_polygon(coordinates, self.metric_graph.linked_vertices, merge_ends=False)
-
-        self.post_confinement_analysis_inspect_plot(op_label, result, coordinates, ax)
-
         return result
 
     def ray_intersects_on_polygon(
@@ -155,7 +152,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             return np.any(result, axis=0)
         return result
 
-    def ray_direction_filter(
+    def _compute_ray_direction_filter(
         self,
         ray_start_point: NpNDArrayFp64,
         ray_travel_direction_point: NpNDArrayFp64,

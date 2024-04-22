@@ -289,7 +289,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             )
             for ptl in self.physically_tracked_labels:
                 result.loc[:, ptl][
-                    ~self.trial_enclosure.compute_confinement_boolean_index(
+                    ~self.trial_enclosure.confinement_boolean_index(
                         "trial_enclosure", result.loc[:, pd.IndexSlice[ptl, ("x", "y")]].values
                     )
                 ] = BAD_COORDINATE

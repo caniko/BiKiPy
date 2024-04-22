@@ -205,7 +205,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
     # Center vs Periphery ==============================================================
     @cached_property
     def _center_boolean_index_motion_island(self) -> tuple[TruthIslandMetadata, Np1DArrayBool]:
-        raw_center_boolean_index = self.center_rectangle.compute_confinement_boolean_index(
+        raw_center_boolean_index = self.center_rectangle.confinement_boolean_index(
             "rectangle-centre-motion-island",
             self.reader.kinematic_coordinates,
         )

@@ -43,7 +43,7 @@ def detect_multi_node_sequential_perimeter_presence(
 
         confinement_data = []
         for coordinates in coordinate_set:
-            specific_confinement_boolean_index = perimeter.compute_confinement_boolean_index(coordinates)
+            specific_confinement_boolean_index = perimeter.confinement_boolean_index(coordinates)
             if tolerance_filter:
                 assert tolerance_fps
                 confinement_data.append(

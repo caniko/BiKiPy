@@ -1,6 +1,6 @@
 from abc import ABC
 from functools import cached_property
-from typing import Optional
+from typing import Optional, Self
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -42,7 +42,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
     def center_meters(self) -> NpNDArrayFp64:
         return self.center_pixels * self.meters_per_pixel
 
-    def change_reference(self, new_reference: NpNDArrayFp64, makesense_image_name: Optional[str] = None):
+    def change_reference(self, new_reference: NpNDArrayFp64, makesense_image_name: Optional[str] = None) -> Self:
         return self.copy(
             update={
                 "center_meters": self.center_meters + new_reference - self.reference_point_array,
@@ -58,8 +58,8 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
             manual_video=self.video,
         )
 
-    def compute_confinement_boolean_index(
-        self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None
+    def _compute_confinement_boolean_index(
+        self, coordinates: NpNDArrayFp64
     ) -> Np1DArrayBool:
         if isinstance(self.radius_length_meters, float):
             distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
@@ -69,8 +69,6 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
         else:
             raise RuntimeError
 
-        self.post_confinement_analysis_inspect_plot(op_label, result, coordinates, ax)
-
         return result
 
     def closest_point_on_edge_to_coordinates(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64:
@@ -79,7 +77,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
         self.plot_closest_point_on_edge_to_coordinates(coordinates, result)
         return result
 
-    def ray_direction_filter(
+    def _compute_ray_direction_filter(
         self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, **kwargs
     ) -> Np1DArrayBool:
         return ray_direction_filter_circle_triangle(self, ray_travel_direction_point, ray_start_point, max_radians)

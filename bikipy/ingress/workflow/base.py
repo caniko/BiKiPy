@@ -1,13 +1,14 @@
 import os
 import pstats
 import shutil
+import sys
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from cProfile import Profile
 from functools import cached_property, partial
 from itertools import chain
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, Final
 
 import numpy as np
 import pandas as pd
@@ -32,9 +33,14 @@ from bikipy._constant import (
     TRIAL_MAP_NAME,
 )
 from bikipy.behaviour.core.base import BaseExperiment, ExperimentCLS, TrialCLS
+from bikipy.behaviour.mapping import experiment_name_to_class
 from bikipy.core.base import BikipyConfigModel
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.core.plugin_scope import PluginScope
+from bikipy.ingress.plugin.meters_per_pixel import (
+    PluginMeterPerPixel,
+    detect_meters_per_pixel_in_perimeter_directory,
+)
 from bikipy.ingress.plugin.perimeter.constant import LABEL_TO_TRIAL_SHEET_NAME
 from bikipy.ingress.utils.io import (
     get_inspect_directory_path,
@@ -52,7 +58,7 @@ from bikipy.utils.pandas import copycat_assumes_levels_of_icon
 if TYPE_CHECKING:
     from bikipy.ingress.plugin.core.base import BasePlugin, PluginType
 
-PROFILER_FILE_NAME = "performance_analysis.prof"
+PROFILER_FILE_NAME: Final[str] = "performance_analysis.prof"
 
 defaultdict_dict = partial(defaultdict, dict)
 
@@ -240,8 +246,7 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
 
     @computed_field(return_type=type)  # type: ignore[misc]
     @cached_property
-    def experiment_class(self) -> "ExperimentCLS":
-        from bikipy.behaviour.mapping import experiment_name_to_class
+    def experiment_class(self) -> ExperimentCLS:
 
         try:
             experiment = experiment_name_to_class[self.experiment_class_name]
@@ -498,7 +503,6 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
                     f"Would you like to proceed? y/N "
                 )
                 if already_exists_prompt.strip().lower() != "y":
-                    import sys
 
                     print("Aborted by user, inspection directory already exists")
                     sys.exit(0)
@@ -711,11 +715,6 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
 
     def get_meter_per_pixel(self, trial_id: Optional[Label] = None) -> NpNDArrayFp64:
-        from bikipy.ingress.plugin.meters_per_pixel import (
-            PluginMeterPerPixel,
-            detect_meters_per_pixel_in_perimeter_directory,
-        )
-
         if PluginScope.OTHER in self.plugin_definitions.meters_per_pixel:
             if self.plugin_definitions.radial:
                 # Radial defines the meters per pixel on the respective PerimeterSet
