@@ -5,13 +5,16 @@ from typing import Optional, Self
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64, NpNDArrayInt16
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64, NpNDArrayInt16
 
 from bikipy.math.cached import meters2pixels
 from bikipy.math.confinement.ellipse import point_inside_ellipse
 from bikipy.math.vector import ray_direction_filter_circle_triangle, unit_vector
 from bikipy.perimeter.base import BaseSinglePerimeter
-from bikipy.utils.plot.generic import plot_ellipse
+from bikipy.utils.plot.generic import (
+    boolean_index_colormap,
+    plot_ellipse,
+)
 
 
 class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
@@ -34,15 +37,15 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
 
     @computed_field  # type: ignore[misc]
     @property
-    def centroid_meters(self) -> NpNDArrayFp64:
+    def centroid_meters(self) -> Np2DArrayFp64:
         return self.center_meters
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def center_meters(self) -> NpNDArrayFp64:
+    def center_meters(self) -> Np2DArrayFp64:
         return self.center_pixels * self.meters_per_pixel
 
-    def change_reference(self, new_reference: NpNDArrayFp64, makesense_image_name: Optional[str] = None) -> Self:
+    def change_reference(self, new_reference: Np2DArrayFp64, makesense_image_name: Optional[str] = None) -> Self:
         return self.copy(
             update={
                 "center_meters": self.center_meters + new_reference - self.reference_point_array,
@@ -51,36 +54,18 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
             }
         )
 
-    def expand(self, perimeter_border_normal_pixels: float | NpNDArrayFp64) -> "CircleFixedRadiusPerimeter":
+    def expand(self, perimeter_border_normal_pixels: float | Np2DArrayFp64) -> "CircleFixedRadiusPerimeter":
         return CircleFixedRadiusPerimeter(
             center_pixels=self.center_pixels,
             radius_length_pixels=self.radius_length_pixels + perimeter_border_normal_pixels,
             manual_video=self.video,
         )
 
-    def _compute_confinement_boolean_index(
-        self, coordinates: NpNDArrayFp64
-    ) -> Np1DArrayBool:
-        if isinstance(self.radius_length_meters, float):
-            distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
-            result = np.abs(distance_of_point_from_center) <= self.radius_length_meters
-        elif isinstance(self.radius_length_meters, np.ndarray):
-            result = point_inside_ellipse(coordinates, self.center_meters, self.radius_length_meters)
-        else:
-            raise RuntimeError
-
-        return result
-
-    def closest_point_on_edge_to_coordinates(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64:
+    def closest_point_on_edge_to_coordinates(self, coordinates: Np2DArrayFp64) -> Np2DArrayFp64:
         circle_center_to_point_uv = unit_vector(coordinates - self.center_meters)
         result = self.center_meters + self.radius_length_meters * circle_center_to_point_uv
         self.plot_closest_point_on_edge_to_coordinates(coordinates, result)
         return result
-
-    def _compute_ray_direction_filter(
-        self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, **kwargs
-    ) -> Np1DArrayBool:
-        return ray_direction_filter_circle_triangle(self, ray_travel_direction_point, ray_start_point, max_radians)
 
     def plot_perimeter_on_ax(
         self,
@@ -108,6 +93,74 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
             radius = tuple(radius)
 
         plot_ellipse(ax, tuple(center), radius, **plot_kwargs)
+
+    def _compute_confinement_boolean_index(self, coordinates: Np2DArrayFp64) -> Np1DArrayBool:
+        if isinstance(self.radius_length_meters, float):
+            distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
+            result = np.abs(distance_of_point_from_center) <= self.radius_length_meters
+        elif isinstance(self.radius_length_meters, np.ndarray):
+            result = point_inside_ellipse(coordinates, self.center_meters, self.radius_length_meters)
+        else:
+            raise RuntimeError
+
+        return result
+
+    def ray_direction_filter(
+        self,
+        op_label: str,
+        ray_start_points: Np2DArrayFp64,
+        ray_travel_direction_points: Np2DArrayFp64,
+        max_radians: float,
+        extra_ax: Optional[Axes] = None,
+    ) -> Np1DArrayBool:
+        closest_points_on_edges = self.closest_point_on_edge_to_coordinates(ray_travel_direction_points)
+        vector_to_closest_point_on_edge = self.vector_to_closest_point_on_edge(ray_travel_direction_points, closest_points_on_edges)
+
+        result = ray_direction_filter_circle_triangle(
+            ray_travel_direction_points,
+            ray_start_points,
+            closest_points_on_edges,
+            vector_to_closest_point_on_edge,
+            max_radians,
+        )
+
+        if not self.is_inspecting:
+            return result
+
+        fig, ax = self.video.subplot()
+
+        if extra_ax:
+            self.plot_perimeter_on_ax(ax=extra_ax)
+            self._plot_ray_direction_filter(extra_ax, ray_start_points, ray_travel_direction_points, vector_to_closest_point_on_edge)
+
+        self.plot_perimeter_on_ax(ax=ax)
+        self._plot_ray_direction_filter(ax, ray_start_points, ray_travel_direction_points, closest_points_on_edges, vector_to_closest_point_on_edge)
+
+        self.save_fig(
+            "ray-direction-filter",
+            op_label,
+            base_filename=f"{self.perimeter_label}-{self.label}",
+            fig=fig,
+        )
+
+        return result
+
+    def _plot_ray_direction_filter(
+        self,
+        ax: Axes,
+        filter_boolean_index: Np1DArrayBool,
+        ray_start_points: Np2DArrayFp64,
+        ray_travel_direction_points: Np2DArrayFp64,
+        closest_points_on_edges: Np2DArrayFp64,
+        vector_to_closest_point_on_edge: Np2DArrayFp64,
+    ) -> None:
+
+        for color, ray_start_point, ray_travel_direction_point in zip(
+            boolean_index_colormap(filter_boolean_index), ray_start_points, ray_travel_direction_points
+        ):
+            ax.quiver(*coord, *vector, color=color, **QUIVER_KWARGS)
+            ax.quiver(*coord, *vector, color=color, **QUIVER_KWARGS)
+            ax.quiver()
 
     @classmethod
     @property

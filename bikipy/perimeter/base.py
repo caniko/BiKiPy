@@ -12,7 +12,7 @@ from numpy import unsignedinteger
 from pydantic import Field, FilePath, computed_field, model_validator, validate_call
 from pydantic_numpy.typing import (
     Np1DArrayBool,
-    NpNDArrayFp64,
+    Np2DArrayFp64,
     NpNDArrayInt16,
     NpNDArrayUint8,
 )
@@ -30,7 +30,7 @@ from bikipy.perimeter.polygon.makesense import (
 from bikipy.perimeter.utils.misc import get_coco_array_from_path_or_array
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
 from bikipy.utils.plot.generic import (
-    ax_hue_plot_coordinate_pairs,
+    ax_hue_plot_coordinate_pair_as_lines,
     ax_hue_plot_coordinate_with_boolean_index,
     ax_hue_plot_coordinates,
     color_map_by_number,
@@ -51,7 +51,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         self,
         op_label: str,
         boolean_index: Np1DArrayBool,
-        coordinates: NpNDArrayFp64,
+        coordinates: Np2DArrayFp64,
         extra_ax: Optional[Axes] = None,
     ):
         result = self._compute_confinement_boolean_index(coordinates)
@@ -64,11 +64,9 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         coordinates = self.video.prepare_coordinates_for_plotting(coordinates)
 
         if extra_ax:
-            self.plot_perimeter_on_ax(ax=extra_ax)
             ax_hue_plot_coordinate_with_boolean_index(extra_ax, boolean_index, coordinates)
             self.plot_perimeter_on_ax(ax=extra_ax)
 
-        self.plot_perimeter_on_ax(ax=ax)
         ax_hue_plot_coordinate_with_boolean_index(ax, boolean_index, coordinates)
         self.plot_perimeter_on_ax(ax=ax)
 
@@ -81,32 +79,18 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
         return result
 
-    def ray_direction_filter(self, op_label: str, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, extra_ax: Optional[Axes] = None) -> Np1DArrayBool:
-        result = self._compute_ray_direction_filter(ray_start_point, ray_travel_direction_point, max_radians)
-
-        if not self.is_inspecting:
-            return result
-
-        fig, ax = self.video.subplot()
-
-        self.save_fig(
-            "ray-direction-filter",
-            op_label,
-            base_filename=f"{self.perimeter_label}-{self.label}",
-            fig=fig,
-        )
-
-        return result
-
     @abstractmethod
-    def _compute_confinement_boolean_index(
-        self, coordinates: NpNDArrayFp64
+    def ray_direction_filter(
+        self,
+        op_label: str,
+        ray_start_points: Np2DArrayFp64,
+        ray_travel_direction_points: Np2DArrayFp64,
+        max_radians: float,
+        extra_ax: Optional[Axes] = None,
     ) -> Np1DArrayBool: ...
 
     @abstractmethod
-    def _compute_ray_direction_filter(
-        self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float
-    ) -> Np1DArrayBool: ...
+    def _compute_confinement_boolean_index(self, coordinates: Np2DArrayFp64) -> Np1DArrayBool: ...
 
     @abstractmethod
     def plot_perimeter_on_ax(
@@ -120,11 +104,11 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
     ) -> None: ...
 
     @abstractmethod
-    def change_reference(self, new_reference: NpNDArrayFp64, makesense_image_name: Optional[str] = None): ...
+    def change_reference(self, new_reference: Np2DArrayFp64, makesense_image_name: Optional[str] = None): ...
 
     @property
     @abstractmethod
-    def centroid_meters(self) -> NpNDArrayFp64: ...
+    def centroid_meters(self) -> Np2DArrayFp64: ...
 
 
 PerimeterCLS = type[BasePerimeter]
@@ -176,7 +160,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         return result
 
     def plot_closest_point_on_edge_to_coordinates(
-        self, coordinates: NpNDArrayFp64, closest_point: NpNDArrayFp64, ax: Optional[Axes] = None
+        self, coordinates: Np2DArrayFp64, closest_point: Np2DArrayFp64, ax: Optional[Axes] = None
     ) -> Axes | None:
         if not self.is_inspecting:
             return
@@ -193,15 +177,15 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
             closest_point = self.video.prepare_coordinates_for_plotting(closest_point, step=True)
 
         ax_hue_plot_coordinates(ax, coordinates)
-        ax_hue_plot_coordinate_pairs(ax, coordinates, closest_point)
+        ax_hue_plot_coordinate_pair_as_lines(ax, coordinates, closest_point)
 
         if not fig:
             return ax
         self.save_fig("closest_point_on_edge_to_coordinates", base_filename=self.label, fig=fig)
 
     def vector_to_closest_point_on_edge(
-        self, coordinates: NpNDArrayFp64, closest_edge_points: Optional[NpNDArrayFp64] = None
-    ) -> NpNDArrayFp64:
+        self, coordinates: Np2DArrayFp64, closest_edge_points: Optional[Np2DArrayFp64] = None
+    ) -> Np2DArrayFp64:
         """
         Strictly for circles, these vectors are the closest normals from the circle
 
@@ -220,9 +204,9 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
     def plot_vector_to_closest_point_on_edge(
         self,
-        coordinates: NpNDArrayFp64,
-        closest_edge_points: NpNDArrayFp64,
-        vectors: NpNDArrayFp64,
+        coordinates: Np2DArrayFp64,
+        closest_edge_points: Np2DArrayFp64,
+        vectors: Np2DArrayFp64,
         ax: Optional[Axes] = None,
     ) -> Axes | None:
         if not self.is_inspecting:
@@ -282,7 +266,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     def change_reference_with_coco(
         self,
         metadata_path: Optional[FilePath],
-        coco_array: Optional[NpNDArrayFp64],
+        coco_array: Optional[Np2DArrayFp64],
         **kwargs,
     ):
         coco_array = get_coco_array_from_path_or_array(metadata_path, coco_array)
@@ -299,7 +283,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     def change_reference_with_coco_with_plural_references(
         self,
         metadata_path: Optional[FilePath],
-        coco_array: Optional[NpNDArrayFp64],
+        coco_array: Optional[Np2DArrayFp64],
         map_to_image_names: bool = True,
     ):
         def _change_reference_loop_func(reference_point, img_name):
@@ -346,10 +330,10 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         return upstream_video
 
     @abstractmethod
-    def expand(self, perimeter_border_normal_meters: float | NpNDArrayFp64): ...
+    def expand(self, perimeter_border_normal_meters: float | Np2DArrayFp64): ...
 
     @abstractmethod
-    def closest_point_on_edge_to_coordinates(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64: ...
+    def closest_point_on_edge_to_coordinates(self, coordinates: Np2DArrayFp64) -> Np2DArrayFp64: ...
 
     @property
     @abstractmethod
@@ -434,27 +418,20 @@ class PerimeterSet(BasePerimeter):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def centroid_meters(self) -> NpNDArrayFp64:
+    def centroid_meters(self) -> Np2DArrayFp64:
         """
         :return: The mean of all perimeter centroids in the set
         """
         return np.mean([perimeter.centroid_meters for perimeter in self.all_perimeters], axis=0)
 
-    def _compute_confinement_boolean_index(
-        self, coordinates: NpNDArrayFp64
-    ) -> Np1DArrayBool:
+    def _compute_confinement_boolean_index(self, coordinates: Np2DArrayFp64) -> Np1DArrayBool:
         result = np.any(
-            [
-                perimeter.confinement_boolean_index("framewise-confinement", coordinates)
-                for perimeter in self.perimeters
-            ]
+            [perimeter.confinement_boolean_index("framewise-confinement", coordinates) for perimeter in self.perimeters]
         )
         if self.restricting_perimeters:
             result = result & ~np.any(
                 [
-                    perimeter.confinement_boolean_index(
-                        "restricted-framewise-confinement", coordinates
-                    )
+                    perimeter.confinement_boolean_index("restricted-framewise-confinement", coordinates)
                     for perimeter in self.restricting_perimeters
                 ]
             )
@@ -462,25 +439,28 @@ class PerimeterSet(BasePerimeter):
         return result
 
     def _compute_ray_direction_filter(
-        self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, **kwargs
+        self, ray_start_points: Np2DArrayFp64, ray_travel_direction_points: Np2DArrayFp64, max_radians: float, **kwargs
     ) -> Np1DArrayBool:
         result = np.any(
             [
-                perimeter.ray_direction_filter(ray_start_point, ray_travel_direction_point, max_radians)
+                perimeter.ray_direction_filter(ray_start_points, ray_travel_direction_points, max_radians)
                 for perimeter in self.perimeters
             ]
         )
         if self.restricting_perimeters:
             result = result & ~np.any(
                 [
-                    perimeter.ray_direction_filter(
-                        ray_start_point, ray_travel_direction_point, max_radians
-                    )
+                    perimeter.ray_direction_filter(ray_start_points, ray_travel_direction_points, max_radians)
                     for perimeter in self.restricting_perimeters
                 ]
             )
 
         return result
+
+    def _plot_ray_direction_filter(
+        self, ax: Axes, ray_start_points: Np2DArrayFp64, ray_travel_direction_points: Np2DArrayFp64
+    ) -> None:
+        raise NotImplementedError("This method is not implemented for PerimeterSet")
 
     def change_reference(self, **perimeter_change_reference_kwargs) -> Self:
         return self.__class__(
@@ -519,7 +499,7 @@ class PerimeterSet(BasePerimeter):
 
     @computed_field  # type: ignore[misc]
     @property
-    def reference_point(self) -> NpNDArrayFp64:
+    def reference_point(self) -> Np2DArrayFp64:
         expected_reference_point = self.all_perimeters[0].reference_point
         if equality := np.all(
             expected_reference_point == perimeter.reference_point for perimeter in self.all_perimeters
@@ -592,7 +572,7 @@ class PerimeterSet(BasePerimeter):
     def plot(
         self,
         manual_ax: Axes = None,
-        coordinates: Optional[NpNDArrayFp64] = None,
+        coordinates: Optional[Np2DArrayFp64] = None,
         coordinates_as_pixels: bool = False,
         **perimeter_plot_kwargs,
     ):

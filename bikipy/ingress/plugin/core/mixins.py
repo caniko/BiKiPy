@@ -3,7 +3,7 @@ from typing import Optional
 
 import pandas as pd
 from pydantic import BaseModel, Field, computed_field
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import Np2DArrayFp64
 
 from bikipy.core.base import BikipyConfigModel
 from bikipy.ingress.workflow.base import BaseIngressWorkflow
@@ -17,7 +17,7 @@ class IngressRequiredMixin(BaseModel):
 
 
 class HasReferenceMixin(BikipyConfigModel):
-    manual_reference: Optional[NpNDArrayFp64] = Field(
+    manual_reference: Optional[Np2DArrayFp64] = Field(
         None, description="Override the perimeter detection with values defined outside model"
     )
 

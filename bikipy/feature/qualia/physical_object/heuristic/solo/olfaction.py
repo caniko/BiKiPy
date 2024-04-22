@@ -4,7 +4,7 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import pandas as pd
 from pydantic import computed_field
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
 
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
@@ -65,8 +65,8 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
             if self.manual_nose_olfaction_rays
             else ComputeInLineOfSight(
                 perimeter=self.perimeter,
-                ray_start_point=self.reader[self.center_ear_label],
-                ray_travel_direction_point=self.reader[self.nose_label],
+                ray_start_points=self.reader[self.center_ear_label],
+                ray_travel_direction_points=self.reader[self.nose_label],
                 max_radians=self.maximum_radians,
                 label="SnoutTowardsObject",
                 manual_video=self.video,
@@ -88,7 +88,7 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
 
     @computed_field  # type: ignore[misc]
     @property
-    def label_to_ray_vector_direction_points(self) -> dict[str, NpNDArrayFp64]:
+    def label_to_ray_vector_direction_points(self) -> dict[str, Np2DArrayFp64]:
         return {self.nose_label: self.reader[self.nose_label] - self.reader[self.center_ear_label]}
 
     @computed_field  # type: ignore[misc]

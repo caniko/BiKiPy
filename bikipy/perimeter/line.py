@@ -5,7 +5,7 @@ from pydantic import Field, PositiveInt, computed_field
 
 # 0: Use the x coordinate(s) as the perimeter
 # 1: Use the y coordinate(s) as the perimeter
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import Np2DArrayFp64
 
 from bikipy.core.base import BikipyHashable
 from bikipy.core.video import VideoMetadataMixin
@@ -58,7 +58,7 @@ class LinePerimeter(BikipyHashable, VideoMetadataMixin):
         """Given name of orientation"""
         return INDEX_TO_ORIENTATION[self.orientation]
 
-    def __mod__(self, other: NpNDArrayFp64) -> NpNDArrayFp64:
+    def __mod__(self, other: Np2DArrayFp64) -> Np2DArrayFp64:
         """
         Compute values that are true to the perimeter logic
 
@@ -79,5 +79,5 @@ class LinePerimeter(BikipyHashable, VideoMetadataMixin):
     def __repr__(self):
         return f"{self.logic}{self.location}; {self.orientation_label}"
 
-    def true_values(self, coordinates: NpNDArrayFp64) -> NpNDArrayFp64:
+    def true_values(self, coordinates: Np2DArrayFp64) -> Np2DArrayFp64:
         return np.asarray(coordinates)[self.location % coordinates]

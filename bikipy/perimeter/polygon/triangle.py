@@ -1,7 +1,6 @@
 import numpy as np
-from matplotlib.axes import Axes
 from pydantic import computed_field
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
 
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
 
@@ -26,12 +25,10 @@ class TrianglePerimeter(BasePolygonPerimeter):
     def apex(self):
         return self.vertices_in_meters[2]
 
-    def expand(self, perimeter_border_normal_meters: float | NpNDArrayFp64):
+    def expand(self, perimeter_border_normal_meters: float | Np2DArrayFp64):
         raise NotImplementedError()
 
-    def _compute_confinement_boolean_index(
-        self, coordinates: NpNDArrayFp64
-    ) -> Np1DArrayBool:
+    def _compute_confinement_boolean_index(self, coordinates: Np2DArrayFp64) -> Np1DArrayBool:
         coord_x_comp, coord_y_comp = np.asarray(coordinates).T
 
         c1 = (self.base_b[0] - self.base_a[0]) * (coord_y_comp - self.base_a[1]) - (self.base_b[1] - self.base_a[1]) * (
@@ -50,18 +47,18 @@ class TrianglePerimeter(BasePolygonPerimeter):
         )
 
     def _compute_ray_direction_filter(
-        self, ray_start_point: NpNDArrayFp64, ray_travel_direction_point: NpNDArrayFp64, max_radians: float, **kwargs
+        self, ray_start_points: Np2DArrayFp64, ray_travel_direction_points: Np2DArrayFp64, max_radians: float, **kwargs
     ) -> Np1DArrayBool:
         if self.equilateral:
             return self.circle.ray_direction_filter_circle_triangle(
-                ray_travel_direction_point=ray_travel_direction_point,
-                ray_start_point=ray_start_point,
+                ray_travel_direction_points=ray_travel_direction_points,
+                ray_start_points=ray_start_points,
                 max_radians=max_radians,
                 **kwargs,
             )
         return super().ray_direction_filter(
-            ray_start_point=ray_start_point,
-            ray_travel_direction_point=ray_travel_direction_point,
+            ray_start_points=ray_start_points,
+            ray_travel_direction_points=ray_travel_direction_points,
             max_radians=max_radians,
             **kwargs,
         )

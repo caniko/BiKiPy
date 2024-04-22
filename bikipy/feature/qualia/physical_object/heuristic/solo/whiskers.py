@@ -4,7 +4,7 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import pandas as pd
 from pydantic import computed_field
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
 
 from bikipy.core.compute import video_gen_merge_perimeter_to_boolean_index_from_dict
 from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
@@ -71,8 +71,8 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
             if self.manual_leftward_observation
             else ComputeInLineOfSight(
                 perimeter=self.perimeter,
-                ray_start_point=self.reader[self.center_ear_label],
-                ray_travel_direction_point=self.reader[self.left_ear_label],
+                ray_start_points=self.reader[self.center_ear_label],
+                ray_travel_direction_points=self.reader[self.left_ear_label],
                 max_radians=self.maximum_radians,
                 label="Left",
                 manual_video=self.video,
@@ -102,8 +102,8 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
             if self.manual_rightward_observation
             else ComputeInLineOfSight(
                 perimeter=self.perimeter,
-                ray_start_point=self.reader[self.center_ear_label],
-                ray_travel_direction_point=self.reader[self.right_ear_label],
+                ray_start_points=self.reader[self.center_ear_label],
+                ray_travel_direction_points=self.reader[self.right_ear_label],
                 max_radians=self.maximum_radians,
                 label="Right",
                 manual_video=self.video,
@@ -134,7 +134,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
 
     @computed_field  # type: ignore[misc]
     @property
-    def label_to_ray_vector_direction_points(self) -> dict[str, NpNDArrayFp64]:
+    def label_to_ray_vector_direction_points(self) -> dict[str, Np2DArrayFp64]:
         return {
             self.left_ear_label: self.reader[self.left_ear_label] - self.reader[self.center_ear_label],
             self.right_ear_label: self.reader[self.right_ear_label] - self.reader[self.center_ear_label],

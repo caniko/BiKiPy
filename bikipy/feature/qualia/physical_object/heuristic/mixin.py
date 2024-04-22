@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from pydantic import BaseModel, computed_field
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
 
 from bikipy.math.cached import cached_deg2rad, meters2pixels
 
@@ -29,7 +29,7 @@ class RayMixin(BaseModel, ABC):
 
     @property
     @abstractmethod
-    def label_to_ray_vector_direction_points(self) -> dict[str, NpNDArrayFp64]: ...
+    def label_to_ray_vector_direction_points(self) -> dict[str, Np2DArrayFp64]: ...
 
 
 class SingleComponentMixin(BaseModel):

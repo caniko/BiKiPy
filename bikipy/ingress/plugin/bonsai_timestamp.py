@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import Np2DArrayFp64
 
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.core.base import BasePluginFile
@@ -13,7 +13,7 @@ class PluginBonsaiTimestamp(TrialWiseMetadataOnlyMixin, BasePluginFile):
     default_trial_argument_key = "coordinate_timestamp_index"
     human_readable_index = "Timestamp"
 
-    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> NpNDArrayFp64:
+    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> Np2DArrayFp64:
         self._assert_correct_scope_trialwise_metadata()
         datetime_array = (
             pd.read_csv(self.data_path, header=None, usecols=[16], parse_dates=[0]).values.T[0].astype(np.datetime64)

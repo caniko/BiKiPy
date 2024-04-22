@@ -6,7 +6,7 @@ from typing import ClassVar, Literal, Optional
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, Np2DArrayFp64
 
 from bikipy.math.confinement.polygon import parallel_point_inside_polygon
 from bikipy.math.geometry import clockwise_sort_points
@@ -24,7 +24,7 @@ logger = getLogger(__name__)
 
 
 class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
-    vertices_in_pixels: NpNDArrayFp64
+    vertices_in_pixels: Np2DArrayFp64
     derived_meters_per_pixel_source: Optional[Literal["side"]] = None
 
     polygon_order: ClassVar[Optional[int]]
@@ -44,7 +44,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         return result
 
     @field_validator("vertices_in_pixels")
-    def vertices_polygon_order_validator(cls, value: NpNDArrayFp64):
+    def vertices_polygon_order_validator(cls, value: Np2DArrayFp64):
         if cls.polygon_order and (n := len(value)) != int(cls.polygon_order):
             msg = (
                 f"The polygon class is in the {cls.polygon_order}th order. However, "
@@ -72,12 +72,12 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
     @computed_field  # type: ignore[misc]
     @property
-    def centroid_meters(self) -> NpNDArrayFp64:
+    def centroid_meters(self) -> Np2DArrayFp64:
         return self.metric_graph.centroid
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def vertices_in_meters(self) -> NpNDArrayFp64:
+    def vertices_in_meters(self) -> Np2DArrayFp64:
         return self.vertices_in_pixels * self.meters_per_pixel
 
     @computed_field  # type: ignore[misc]
@@ -109,7 +109,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             manual_video=self.video,
         )
 
-    def closest_point_on_edge_to_coordinates(self, coordinates: NpNDArrayFp64, inspect: bool = False) -> NpNDArrayFp64:
+    def closest_point_on_edge_to_coordinates(self, coordinates: Np2DArrayFp64, inspect: bool = False) -> Np2DArrayFp64:
         # Closest point on the index-respective edge along axis 0, and coordinates along 1.
         closest_edge_point_to_coordinates_matrix = np.array(
             [
@@ -130,16 +130,14 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
         return result
 
-    def _compute_confinement_boolean_index(
-        self, coordinates: NpNDArrayFp64
-    ) -> Np1DArrayBool:
+    def _compute_confinement_boolean_index(self, coordinates: Np2DArrayFp64) -> Np1DArrayBool:
         result = parallel_point_inside_polygon(coordinates, self.metric_graph.linked_vertices, merge_ends=False)
         return result
 
     def ray_intersects_on_polygon(
         self,
-        ray_origins: NpNDArrayFp64,
-        ray_directions: NpNDArrayFp64,
+        ray_origins: Np2DArrayFp64,
+        ray_directions: Np2DArrayFp64,
         return_points: bool = False,
     ) -> NpNDArray:
         result = np.array(
@@ -154,8 +152,8 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
     def _compute_ray_direction_filter(
         self,
-        ray_start_point: NpNDArrayFp64,
-        ray_travel_direction_point: NpNDArrayFp64,
+        ray_start_points: Np2DArrayFp64,
+        ray_travel_direction_points: Np2DArrayFp64,
         max_radians: float,
         angular_resolution: int = 400,
     ) -> Np1DArrayBool:
@@ -167,16 +165,16 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         The solution is to emit rays from the point representing the region of interest, and checking for collisions
         with the perimeter.
 
-        :param ray_travel_direction_point:
-        :param ray_start_point:
+        :param ray_travel_direction_points:
+        :param ray_start_points:
         :param max_radians:
         :param angular_resolution:
         :return:
         """
-        ray_vectors = ray_travel_direction_point - ray_start_point
+        ray_vectors = ray_travel_direction_points - ray_start_points
 
         in_direct_los = self.ray_intersects_on_polygon(
-            ray_travel_direction_point,
+            ray_travel_direction_points,
             ray_vectors,
         )
         if np.all(in_direct_los):
@@ -192,7 +190,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         in_tolerable_los = np.empty(rotated_ray_vectors.shape[:2])
         for i in range(angular_resolution * 2):
             in_tolerable_los[i] = self.ray_intersects_on_polygon(
-                ray_travel_direction_point[not_in_direct_los],
+                ray_travel_direction_points[not_in_direct_los],
                 rotated_ray_vectors[i],
             )
         in_tolerable_los = np.any(in_tolerable_los, axis=0)
@@ -200,7 +198,16 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
         return result
 
-    def change_reference(self, new_reference: NpNDArrayFp64, makesense_image_name: Optional[str] = None):
+    def _plot_ray_direction_filter(
+        self,
+        ax: Axes,
+        filter_boolean_index: Np1DArrayBool,
+        ray_start_points: Np2DArrayFp64,
+        ray_travel_direction_points: Np2DArrayFp64,
+    ) -> None:
+        raise NotImplementedError()
+
+    def change_reference(self, new_reference: Np2DArrayFp64, makesense_image_name: Optional[str] = None):
         if self.reference_point is None:
             msg = "Reference without defining a reference for the source perimeter object is disallowed"
             raise AttributeError(msg)
@@ -262,7 +269,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         return in_string
 
 
-def init_polygon(vertices_in_meters: NpNDArrayFp64, **kwargs) -> BasePolygonPerimeter:
+def init_polygon(vertices_in_meters: Np2DArrayFp64, **kwargs) -> BasePolygonPerimeter:
     match vertices_in_meters.shape[0]:  # polygon_order
         case 3:
             from bikipy.perimeter.polygon.triangle import TrianglePerimeter

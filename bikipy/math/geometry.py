@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Optional, Sequence
 import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import validate_call
-from pydantic_numpy.typing import NpNDArray, NpNDArrayFp64
+from pydantic_numpy.typing import NpNDArray, Np2DArrayFp64
 
 from bikipy.feature.angle import clockwise_angel_2d
 from bikipy.utils.plot.inspect import generic_figure_finalization
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 UPWARDS_VECTOR = np.array([0.0, 1.0])
 
 
-def normalize_hypotenuse_to_origin(hypotenuse_start: NpNDArrayFp64, hypotenuse_end: NpNDArrayFp64) -> NpNDArrayFp64:
+def normalize_hypotenuse_to_origin(hypotenuse_start: Np2DArrayFp64, hypotenuse_end: Np2DArrayFp64) -> Np2DArrayFp64:
     return np.abs(hypotenuse_end - hypotenuse_start).astype(float)
 
 
@@ -70,7 +70,7 @@ def cathetus_from_similar_triangle_with_hypotenuse_points_from_original_triangle
     return similar_a, similar_b
 
 
-def meter_per_pixel_from_diagonal(diagonal_a: NpNDArrayFp64, diagonal_b: NpNDArrayFp64, length_meters: float):
+def meter_per_pixel_from_diagonal(diagonal_a: Np2DArrayFp64, diagonal_b: Np2DArrayFp64, length_meters: float):
     pixel_x, pixel_y = normalize_hypotenuse_to_origin(diagonal_b, diagonal_a)
     (
         meter_x,
@@ -85,7 +85,7 @@ def meter_per_pixel_from_diagonal(diagonal_a: NpNDArrayFp64, diagonal_b: NpNDArr
     return result
 
 
-def clockwise_argsort_points(points: NpNDArrayFp64):
+def clockwise_argsort_points(points: Np2DArrayFp64):
     points = np.asarray(points)
     assert points.ndim == 2
     centroid_meters = np.mean(points, axis=0)
@@ -94,7 +94,7 @@ def clockwise_argsort_points(points: NpNDArrayFp64):
 
 
 @validate_call
-def clockwise_sort_points(points: NpNDArrayFp64, inspect: bool = False) -> NpNDArray:
+def clockwise_sort_points(points: Np2DArrayFp64, inspect: bool = False) -> NpNDArray:
     # Sort from top-right point
     result = points[clockwise_argsort_points(points)]
 

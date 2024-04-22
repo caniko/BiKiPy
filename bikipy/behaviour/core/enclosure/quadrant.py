@@ -2,7 +2,7 @@ from functools import cached_property
 
 import numpy as np
 from pydantic import computed_field
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
 
 from bikipy.core.base import BikipyModel
 from bikipy.core.video import VideoMetadata
@@ -16,8 +16,8 @@ from bikipy.math.geometry import clockwise_sort_points
 
 
 class Quadrant(BikipyModel):
-    vertices_in_meters: NpNDArrayFp64
-    kinematic_coordinates: NpNDArrayFp64
+    vertices_in_meters: Np2DArrayFp64
+    kinematic_coordinates: Np2DArrayFp64
     fps: float
     quadrant_index: int
 
@@ -29,7 +29,7 @@ class Quadrant(BikipyModel):
             self.fps,
         )
 
-    def plot_vertices(self, video: VideoMetadata) -> NpNDArrayFp64:
+    def plot_vertices(self, video: VideoMetadata) -> Np2DArrayFp64:
         return video.prepare_coordinates_for_plotting(self.vertices_in_meters)
 
     @computed_field  # type: ignore[misc]

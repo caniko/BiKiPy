@@ -10,7 +10,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from pydantic import ConfigDict, Field, FilePath, computed_field, validate_call
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
 from typing_extensions import Literal
 
 from bikipy import runtime_settings
@@ -75,7 +75,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
     cache_meters_augmented: bool = True
 
-    manual_timestamp_index: Optional[NpNDArrayFp64] = timestamp_index_field
+    manual_timestamp_index: Optional[Np2DArrayFp64] = timestamp_index_field
 
     x_axis_crop_end_point: float = Field(0.0, description="x component of the raw video crop of video")
     y_axis_crop_end_point: float = Field(0.0, description="y component of the raw video crop of video")
@@ -137,7 +137,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
     @staticmethod
     @abstractmethod
-    def isolate_coordinates_from_native_df(df: pd.DataFrame, key: Iterable[str] | str) -> NpNDArrayFp64: ...
+    def isolate_coordinates_from_native_df(df: pd.DataFrame, key: Iterable[str] | str) -> Np2DArrayFp64: ...
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -152,7 +152,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def kinematic_coordinates_prepared_for_plotting(self) -> NpNDArrayFp64:
+    def kinematic_coordinates_prepared_for_plotting(self) -> Np2DArrayFp64:
         return self.video.prepare_coordinates_for_plotting(self.kinematic_coordinates)
 
     @computed_field  # type: ignore[misc]
@@ -194,7 +194,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
     @computed_field  # type: ignore[misc]
     @property
-    def likelihood_columns(self) -> NpNDArrayFp64:
+    def likelihood_columns(self) -> Np2DArrayFp64:
         return self.raw_df.loc[:, pd.IndexSlice[:, "likelihood"]]
 
     _df_is_timestamped: bool = False
@@ -376,7 +376,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def timestamp_index(self) -> NpNDArrayFp64 | None:
+    def timestamp_index(self) -> Np2DArrayFp64 | None:
         if not self.df_is_timestamped:
             return
 
@@ -429,10 +429,10 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             index=[("Reader", "RawFrames"), ("Reader", "AugmentedFrames")],
         )
 
-    label_to_plot_prepped_coordinates: dict[str, NpNDArrayFp64] | None = Field(default_factory=dict)
-    label_to_plot_without_resized_coordinates: dict[str, NpNDArrayFp64] | None = Field(default_factory=dict)
+    label_to_plot_prepped_coordinates: dict[str, Np2DArrayFp64] | None = Field(default_factory=dict)
+    label_to_plot_without_resized_coordinates: dict[str, Np2DArrayFp64] | None = Field(default_factory=dict)
 
-    def coordinates_for_plot(self, label_to_plot: str, with_resize: bool = True) -> NpNDArrayFp64:
+    def coordinates_for_plot(self, label_to_plot: str, with_resize: bool = True) -> Np2DArrayFp64:
         if with_resize:
             try:
                 return self.label_to_plot_prepped_coordinates[label_to_plot]
@@ -509,7 +509,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
             index=df.index,
         )
 
-    def _isolate_coordinates(self, key: Iterable[str] | str) -> NpNDArrayFp64:
+    def _isolate_coordinates(self, key: Iterable[str] | str) -> Np2DArrayFp64:
         return self.isolate_coordinates_from_native_df(self.df, key)
 
     def _cache_augmented(self, df: pd.DataFrame) -> None:

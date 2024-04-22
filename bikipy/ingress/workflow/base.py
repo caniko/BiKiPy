@@ -8,7 +8,7 @@ from cProfile import Profile
 from functools import cached_property, partial
 from itertools import chain
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, Final
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Iterable, Optional
 
 import numpy as np
 import pandas as pd
@@ -21,7 +21,7 @@ from pydantic import (
     computed_field,
     validate_call,
 )
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import Np2DArrayFp64
 from schemantic import SchemanticProjectModelMixin
 
 from bikipy import runtime_settings
@@ -714,7 +714,7 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
 
     # Plugin methods ============================== Read more about plugins in respective __init__.py file
 
-    def get_meter_per_pixel(self, trial_id: Optional[Label] = None) -> NpNDArrayFp64:
+    def get_meter_per_pixel(self, trial_id: Optional[Label] = None) -> Np2DArrayFp64:
         if PluginScope.OTHER in self.plugin_definitions.meters_per_pixel:
             if self.plugin_definitions.radial:
                 # Radial defines the meters per pixel on the respective PerimeterSet

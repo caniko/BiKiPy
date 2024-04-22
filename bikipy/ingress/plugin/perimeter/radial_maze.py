@@ -4,7 +4,7 @@ from glob import iglob
 import numpy as np
 import pandas as pd
 from pydantic import computed_field
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import Np2DArrayFp64
 
 from bikipy import runtime_settings
 from bikipy.core.typing import Label
@@ -50,7 +50,7 @@ class PluginRadial(BasePluginDirectory, HasReferenceMixin, IngressRequiredMixin)
 
     @computed_field  # type: ignore[misc]
     @property
-    def lines(self) -> NpNDArrayFp64:
+    def lines(self) -> Np2DArrayFp64:
         return get_all_lines_from_makesense_line_df(self.line_data)
 
     @computed_field  # type: ignore[misc]

@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import FilePath, validate_call
-from pydantic_numpy.typing import NpNDArray, NpNDArrayFp64, NpNDArrayUint8
+from pydantic_numpy.typing import NpNDArray, Np2DArrayFp64, NpNDArrayUint8
 
 from bikipy.utils.plot.io import ax_imshow_gray
 
@@ -28,7 +28,7 @@ def read_image(image: FilePath | NpNDArrayUint8, imread_flagg: Optional[list] = 
         assert image_path.exists(), image_path
         image = read_image_from_path(image_path, flags=imread_flagg)
     else:
-        assert isinstance(image, NpNDArrayFp64), f"image must be either path or NpNDArrayFp64, but got:\n{image}"
+        assert isinstance(image, Np2DArrayFp64), f"image must be either path or Np2DArrayFp64, but got:\n{image}"
 
     return image
 

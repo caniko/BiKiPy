@@ -3,7 +3,7 @@ from warnings import warn
 
 import numpy as np
 from numba import njit, prange
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
 
 from bikipy import runtime_settings
 from bikipy.math.vector import dot_axis_1_1d, unit_vector
@@ -11,7 +11,7 @@ from bikipy.math.vector import dot_axis_1_1d, unit_vector
 POINT_NAME_TO_INDEX = {"a": 0, "b": 1, "c": 2}
 
 
-def _find_median_vector(row_vectors: NpNDArrayFp64) -> NpNDArrayFp64:
+def _find_median_vector(row_vectors: Np2DArrayFp64) -> Np2DArrayFp64:
     """
     Computes the median point from a row vectors
 
@@ -19,29 +19,29 @@ def _find_median_vector(row_vectors: NpNDArrayFp64) -> NpNDArrayFp64:
 
     Parameters
     ----------
-    row_vectors: NpNDArrayFp64
+    row_vectors: Np2DArrayFp64
         Array of row vectors
 
     Returns
     -------
-    NpNDArrayFp64
+    Np2DArrayFp64
     """
     return np.array([np.median(component) for component in row_vectors.T])
 
 
 def clockwise_angel_2d(
-    start_vector: NpNDArrayFp64,
-    end_vector: NpNDArrayFp64,
-) -> NpNDArrayFp64:
+    start_vector: Np2DArrayFp64,
+    end_vector: Np2DArrayFp64,
+) -> Np2DArrayFp64:
     """
     Computes the counterclockwise angle, [0, 2pi], from start to end in radians
 
     :param start_vector: Array of row vectors in which "the clock starts turning", counterclockwise
     :param end_vector: Array of row vectors in which the clock stops
-    :type start_vector: NpNDArrayFp64
-    :type end_vector: NpNDArrayFp64
+    :type start_vector: Np2DArrayFp64
+    :type end_vector: Np2DArrayFp64
     :return: counterclockwise angle between start and end vector per frame
-    :rtype: NpNDArrayFp64
+    :rtype: Np2DArrayFp64
 
     >>> clockwise_angel_2d((1, 0), (0, 1))
     1.5707963267948966      # pi / 2.
@@ -83,7 +83,7 @@ def clockwise_angel_2d(
     return angles
 
 
-def inner_angle(vector_set_a: NpNDArrayFp64, vector_set_b: NpNDArrayFp64):
+def inner_angle(vector_set_a: Np2DArrayFp64, vector_set_b: Np2DArrayFp64):
     # Skip where either vector has NaN
     to_skip = np.any(np.isnan(vector_set_a), axis=1) | np.any(np.isnan(vector_set_b), axis=1)
     if runtime_settings.disable_numba:
@@ -96,7 +96,7 @@ def inner_angle(vector_set_a: NpNDArrayFp64, vector_set_b: NpNDArrayFp64):
 
 
 @njit(cache=True, parallel=True)
-def _numba_inner_angle_loop(vector_set_a: NpNDArrayFp64, vector_set_b: NpNDArrayFp64, to_skip: Np1DArrayBool):
+def _numba_inner_angle_loop(vector_set_a: Np2DArrayFp64, vector_set_b: Np2DArrayFp64, to_skip: Np1DArrayBool):
     result = np.zeros(len(vector_set_a), dtype=np.float64)
     for i in prange(len(vector_set_a)):
         if to_skip[i]:
@@ -106,7 +106,7 @@ def _numba_inner_angle_loop(vector_set_a: NpNDArrayFp64, vector_set_b: NpNDArray
     return result
 
 
-def _inner_angle_compute(vector_a: NpNDArrayFp64, vector_b: NpNDArrayFp64) -> NpNDArrayFp64:
+def _inner_angle_compute(vector_a: Np2DArrayFp64, vector_b: Np2DArrayFp64) -> Np2DArrayFp64:
     minor = np.linalg.det(np.stack((vector_a, vector_b)))
     sign = 1 if minor == 0 else -np.sign(minor)
 
@@ -117,13 +117,13 @@ def _inner_angle_compute(vector_a: NpNDArrayFp64, vector_b: NpNDArrayFp64) -> Np
 
 
 def compute_angles_from_points_abc(
-    row_vectors_point_a: NpNDArrayFp64,
-    row_vectors_point_b: NpNDArrayFp64,
-    row_vectors_point_c: NpNDArrayFp64,
+    row_vectors_point_a: Np2DArrayFp64,
+    row_vectors_point_b: Np2DArrayFp64,
+    row_vectors_point_c: Np2DArrayFp64,
     median_points: Optional[Sequence[str] | str] = None,
     method: str = "inner",
     degrees: bool = False,
-) -> NpNDArrayFp64:
+) -> Np2DArrayFp64:
     """
     Computes the angle between three groups of vectors
 
@@ -134,14 +134,14 @@ def compute_angles_from_points_abc(
                             computation in _find_median_vector()
     :param method: The method for computing angle, supported methods are inner; counterclockwise.
     :param degrees: If True, convert resulting angle data to degrees
-    :type row_vectors_point_a: NpNDArrayFp64
-    :type row_vectors_point_b: NpNDArrayFp64
-    :type row_vectors_point_c: NpNDArrayFp64
+    :type row_vectors_point_a: Np2DArrayFp64
+    :type row_vectors_point_b: Np2DArrayFp64
+    :type row_vectors_point_c: Np2DArrayFp64
     :type median_points: Iterable, str
     :type method: str
     :type degrees: bool
     :return: Angle per frame
-    :rtype: NpNDArrayFp64
+    :rtype: Np2DArrayFp64
     """
 
     points = [

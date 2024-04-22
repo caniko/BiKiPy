@@ -1,8 +1,8 @@
 import numpy as np
 from pydantic import PositiveInt
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import Np2DArrayFp64
 
-MetersPerPixel = float | NpNDArrayFp64
+MetersPerPixel = float | Np2DArrayFp64
 Label = str | PositiveInt
 
 # uint8 when there are 255 or fewer perimeters in the trial.

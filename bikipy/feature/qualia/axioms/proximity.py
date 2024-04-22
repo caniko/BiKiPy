@@ -3,7 +3,7 @@ from typing import Final, Optional, Self
 
 from matplotlib.axes import Axes
 from pydantic import computed_field, model_validator, validate_call
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
 
 from bikipy import runtime_settings
 from bikipy.core.compute import AbstractComputePerimeterBooleanIndex
@@ -15,12 +15,12 @@ _PROXIMITY_COMPUTE_OP_LABEL: Final[str] = "compute_proximity-{}"
 
 
 class ComputeProximity(AbstractComputePerimeterBooleanIndex):
-    maximum_distance: float | NpNDArrayFp64
+    maximum_distance: float | Np2DArrayFp64
 
-    inside_perimeter: Optional[NpNDArrayFp64] = None
-    outside_perimeter: Optional[NpNDArrayFp64] = None
-    inside_perimeter_border: Optional[NpNDArrayFp64] = None
-    outside_perimeter_border: Optional[NpNDArrayFp64] = None
+    inside_perimeter: Optional[Np2DArrayFp64] = None
+    outside_perimeter: Optional[Np2DArrayFp64] = None
+    inside_perimeter_border: Optional[Np2DArrayFp64] = None
+    outside_perimeter_border: Optional[Np2DArrayFp64] = None
 
     inside_perimeter_boolean_index: Optional[Np1DArrayBool] = None
     outside_perimeter_boolean_index: Optional[Np1DArrayBool] = None

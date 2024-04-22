@@ -12,7 +12,7 @@ from pydantic import BaseModel, DirectoryPath, Field, FilePath, ValidationError
 from pydantic.fields import FieldInfo, computed_field
 from pydantic_numpy.typing import (
     NpNDArray,
-    NpNDArrayFp64,
+    Np2DArrayFp64,
     NpNDArrayInt16,
     NpNDArrayUint8,
 )
@@ -151,15 +151,15 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
             else cls.experiment_stage.value.capitalize()
         )
 
-    @computed_field(return_type=NpNDArrayFp64 | None)  # type: ignore[misc]
+    @computed_field(return_type=Np2DArrayFp64 | None)  # type: ignore[misc]
     @cached_property
-    def manual_center_meters(self) -> NpNDArrayFp64 | None:
+    def manual_center_meters(self) -> Np2DArrayFp64 | None:
         if self.manual_center_pixels is not None:
             return self.manual_center_pixels * self.meters_per_pixel
 
-    @computed_field(return_type=NpNDArrayFp64 | None)  # type: ignore[misc]
+    @computed_field(return_type=Np2DArrayFp64 | None)  # type: ignore[misc]
     @cached_property
-    def center_meter_translation(self) -> NpNDArrayFp64 | None:
+    def center_meter_translation(self) -> Np2DArrayFp64 | None:
         if self.manual_center_meters is not None:
             return self.manual_center_meters - self.video.center_meters
 

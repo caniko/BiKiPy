@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from numba import njit
 from numpy.linalg import LinAlgError
 from pydantic import validate_call
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, Np2DArrayFp64
 
 from bikipy import runtime_settings
 from bikipy._constant import QUIVER_KWARGS
@@ -17,17 +17,17 @@ from bikipy.utils.collection_utils import (
 )
 
 if TYPE_CHECKING:
-    from bikipy.perimeter import BaseSinglePerimeter
+    pass
 
 
-def unit_vector(row_vectors: NpNDArrayFp64, force_1d: bool = False) -> NpNDArrayFp64:
+def unit_vector(row_vectors: Np2DArrayFp64, force_1d: bool = False) -> Np2DArrayFp64:
     """
     Computes unit vector, i.e. vector/<norm of the vector>
 
     :param row_vectors: Array of row vector(s)
-    :param force_1d: If True, make sure that the results are sent back as a NpNDArrayFp64 within an array
+    :param force_1d: If True, make sure that the results are sent back as a Np2DArrayFp64 within an array
         important when working with single vectors within functions that expect
-        a NpNDArrayFp64 of vectors
+        a Np2DArrayFp64 of vectors
     :return: All unit vectors along the rows of row_vectors
     """
     if len(row_vectors.shape) != 2:
@@ -43,12 +43,12 @@ def unit_vector(row_vectors: NpNDArrayFp64, force_1d: bool = False) -> NpNDArray
     return (row_vectors.T / np.linalg.norm(row_vectors, axis=1)).T
 
 
-def orthogonal_vector(row_vectors: NpNDArrayFp64) -> NpNDArrayFp64:
+def orthogonal_vector(row_vectors: Np2DArrayFp64) -> Np2DArrayFp64:
     """
     Computes the orthogonal row_vectors of the given 2D row_vectors
 
     :param row_vectors: Array of row vector(s)
-    :type row_vectors: NpNDArrayFp64-like
+    :type row_vectors: Np2DArrayFp64-like
     :return: Orthogonal vectors with respect to row_vectors
     """
 
@@ -57,7 +57,7 @@ def orthogonal_vector(row_vectors: NpNDArrayFp64) -> NpNDArrayFp64:
     return np.ascontiguousarray((-row_vectors.T[1], row_vectors.T[0])).T
 
 
-def orthogonal_unit_vector(row_vectors: NpNDArrayFp64) -> NpNDArrayFp64:
+def orthogonal_unit_vector(row_vectors: Np2DArrayFp64) -> Np2DArrayFp64:
     """
     Computes the orthogonal unit row_vectors of the given 2D row_vectors
 
@@ -67,7 +67,7 @@ def orthogonal_unit_vector(row_vectors: NpNDArrayFp64) -> NpNDArrayFp64:
     return unit_vector(orthogonal_vector(row_vectors))
 
 
-def dot_axis_1_1d(row_vectors_a: NpNDArrayFp64, row_vectors_b: NpNDArrayFp64) -> NpNDArrayFp64:
+def dot_axis_1_1d(row_vectors_a: Np2DArrayFp64, row_vectors_b: Np2DArrayFp64) -> Np2DArrayFp64:
     """
     Convenience function to perform dot product of vectors in stored in arrays of row vectors.
     The two row vector arrays must have the same shape; numpy will raise an error in cases when this is not true
@@ -80,7 +80,7 @@ def dot_axis_1_1d(row_vectors_a: NpNDArrayFp64, row_vectors_b: NpNDArrayFp64) ->
     return np.nansum(row_vectors_a * row_vectors_b, axis=1)
 
 
-def normal_from_line_to_point(line_vector: NpNDArrayFp64, line_start: NpNDArrayFp64, point: NpNDArrayFp64):
+def normal_from_line_to_point(line_vector: Np2DArrayFp64, line_start: Np2DArrayFp64, point: Np2DArrayFp64):
     """
     Computes the magnitude of two vectors. Vector nr. 1 with line vector as unit,
     from 'line_start' to the beginning of the normal, and,
@@ -89,9 +89,9 @@ def normal_from_line_to_point(line_vector: NpNDArrayFp64, line_start: NpNDArrayF
 
     Parameters
     ----------
-    line_vector: NpNDArrayFp64-like
-    line_start: NpNDArrayFp64-like
-    point: NpNDArrayFp64-like
+    line_vector: Np2DArrayFp64-like
+    line_start: Np2DArrayFp64-like
+    point: Np2DArrayFp64-like
 
     Returns
     -------
@@ -117,7 +117,7 @@ def normal_from_line_to_point(line_vector: NpNDArrayFp64, line_start: NpNDArrayF
     return sol
 
 
-def distance_between_line_and_point(*args, **kwargs) -> NpNDArrayFp64:
+def distance_between_line_and_point(*args, **kwargs) -> Np2DArrayFp64:
     """
     Compute distance between point and a line.
 
@@ -128,11 +128,11 @@ def distance_between_line_and_point(*args, **kwargs) -> NpNDArrayFp64:
 
 @validate_call
 def nearest_point_on_line_segment_to_coordinates(
-    line_segment_start: NpNDArrayFp64,
-    line_segment_end: NpNDArrayFp64,
-    coordinates: NpNDArrayFp64,
+    line_segment_start: Np2DArrayFp64,
+    line_segment_end: Np2DArrayFp64,
+    coordinates: Np2DArrayFp64,
     inspect: bool = False,
-) -> NpNDArrayFp64:
+) -> Np2DArrayFp64:
     # # https://stackoverflow.com/a/47484153/9793651
     start_end_vector = line_segment_end - line_segment_start
     start_coordinate_vectors = coordinates - line_segment_start
@@ -163,14 +163,14 @@ def nearest_point_on_line_segment_to_coordinates(
 
 @validate_call
 def ray_and_line_segment_intersection(
-    ray_origins: NpNDArrayFp64,
-    ray_directions: NpNDArrayFp64,
-    line_segment_start: NpNDArrayFp64,
-    line_segment_end: NpNDArrayFp64,
+    ray_origins: Np2DArrayFp64,
+    ray_directions: Np2DArrayFp64,
+    line_segment_start: Np2DArrayFp64,
+    line_segment_end: Np2DArrayFp64,
     return_points: bool = False,
     inspect: bool = False,
     number_of_vectors: int = 150,
-) -> NpNDArrayFp64:
+) -> Np2DArrayFp64:
     # Ray-Line Segment Intersection Test in 2D
     # http://bit.ly/1CoxdrG
     v1 = ray_origins - line_segment_start
@@ -217,7 +217,7 @@ def ray_and_line_segment_intersection(
 
 
 @validate_call
-def closest_line_to_point(line_vectors: NpNDArrayFp64, line_starts: NpNDArrayFp64, point: NpNDArrayFp64):
+def closest_line_to_point(line_vectors: Np2DArrayFp64, line_starts: Np2DArrayFp64, point: Np2DArrayFp64):
     distances = [
         distance_between_line_and_point(line_vector, line_start, point)
         for line_vector, line_start in zip(line_vectors, line_starts)
@@ -228,11 +228,11 @@ def closest_line_to_point(line_vectors: NpNDArrayFp64, line_starts: NpNDArrayFp6
 
 @validate_call
 def intersection_between_two_lines(
-    vector_a: NpNDArrayFp64,
-    vector_b: NpNDArrayFp64,
-    vector_a_start: NpNDArrayFp64,
-    vector_b_start: NpNDArrayFp64,
-) -> NpNDArrayFp64 | None:
+    vector_a: Np2DArrayFp64,
+    vector_b: Np2DArrayFp64,
+    vector_a_start: Np2DArrayFp64,
+    vector_b_start: Np2DArrayFp64,
+) -> Np2DArrayFp64 | None:
     """
     Compute the intersection between two lines designated by a starting point
     and a direction/unit vector
@@ -243,18 +243,18 @@ def intersection_between_two_lines(
 
     Parameters
     ----------
-    vector_a: NpNDArrayFp64
+    vector_a: Np2DArrayFp64
         Unit vector of line A
-    vector_b: NpNDArrayFp64
+    vector_b: Np2DArrayFp64
         Unit vector of line B
-    vector_a_start: NpNDArrayFp64
+    vector_a_start: Np2DArrayFp64
         Origin or starting point of line A
-    vector_b_start: NpNDArrayFp64
+    vector_b_start: Np2DArrayFp64
         Origin or starting point of line B
 
     Returns
     -------
-    NpNDArrayFp64: The intersection point between lina A and B
+    Np2DArrayFp64: The intersection point between lina A and B
     """
     rhs = np.array(((vector_a[0], -vector_b[0]), (vector_a[1], -vector_b[1])))
     lhs = np.array(
@@ -290,50 +290,37 @@ def numpy_bin(
     return np.array(data).transpose(arg_dims)
 
 
-def rotation_matrix_from_radians(radians: NpNDArrayFp64) -> NpNDArrayFp64:
+def rotation_matrix_from_radians(radians: Np2DArrayFp64) -> Np2DArrayFp64:
     cos, sin = np.cos(radians), np.sin(radians)
     return np.array(([cos, -sin], [sin, cos])).transpose(2, 0, 1)
 
 
-def rotate_vectors_with_angle(vectors: NpNDArrayFp64, angle: NpNDArrayFp64) -> NpNDArrayFp64:
+def rotate_vectors_with_angle(vectors: Np2DArrayFp64, angle: Np2DArrayFp64) -> Np2DArrayFp64:
     rotation_matrix = rotation_matrix_from_radians(angle)
     return np.array([np.dot(vector, rotation_matrix) for vector in vectors]).transpose(1, 0, 2)
 
 
 def ray_direction_filter_circle_triangle(
-    perimeter: "BaseSinglePerimeter",
-    ray_travel_direction_point: NpNDArrayFp64,
-    ray_start_point: NpNDArrayFp64,
+    ray_travel_direction_points: Np2DArrayFp64,
+    ray_start_points: Np2DArrayFp64,
+    closest_points_on_edges: Np2DArrayFp64,
+    vector_to_closest_point_on_edge: Np2DArrayFp64,
     max_radians: float,
-) -> Np1DArrayBool:
-    """
-    This function is used to filter rays that are within a certain angle of the normal of the perimeter.
-
-    :param perimeter:
-    :param ray_travel_direction_point:
-    :param ray_start_point:
-    :param max_radians:
-    :return:
-    """
-    ray_vectors = ray_travel_direction_point - ray_start_point
-
-    closest_points_on_edges = perimeter.closest_point_on_edge_to_coordinates(ray_travel_direction_point)
-    vector_to_closest_point_on_edge = perimeter.vector_to_closest_point_on_edge(ray_travel_direction_point)
-
+) -> tuple[Np1DArrayBool, Np2DArrayFp64, Np2DArrayFp64]:
     direction_point_is_closer_than_start_point = np.linalg.norm(
-        closest_points_on_edges - ray_travel_direction_point, axis=1
-    ) <= np.linalg.norm(closest_points_on_edges - ray_start_point, axis=1)
+        closest_points_on_edges - ray_travel_direction_points, axis=1
+    ) <= np.linalg.norm(closest_points_on_edges - ray_start_points, axis=1)
 
-    angle_from_normal_to_ray = _angle_from_a_to_b(vector_to_closest_point_on_edge, ray_vectors)
+    ray_vectors = ray_travel_direction_points - ray_start_points
+    radians_from_normal_to_ray = _radians_from_a_to_b(vector_to_closest_point_on_edge, ray_vectors)
 
-    result = direction_point_is_closer_than_start_point & (np.abs(angle_from_normal_to_ray) <= max_radians)
+    result = direction_point_is_closer_than_start_point & (np.abs(radians_from_normal_to_ray) <= max_radians)
 
-    return result
+    return result, ray_vectors, radians_from_normal_to_ray
 
 
-def _angle_from_a_to_b(vector_a: NpNDArrayFp64, vector_b: NpNDArrayFp64) -> NpNDArrayFp64:
-    b_x, b_y = vector_b.T
-    vector_p = np.array([-b_y, b_x]).T
+def _radians_from_a_to_b(vector_a: Np2DArrayFp64, vector_b: Np2DArrayFp64) -> Np2DArrayFp64:
+    vector_p = np.column_stack((-vector_b[:, 1], vector_b[:, 0]))
 
     b_coord = dot_axis_1_1d(vector_a, vector_b)
     p_coord = dot_axis_1_1d(vector_a, vector_p)
@@ -345,10 +332,10 @@ if not runtime_settings.disable_numba:
     # rotation_matrix_from_radians = njit(cache=True)(rotation_matrix_from_radians)
     # dot_axis_1_1d = njit(cache=True)(dot_axis_1_1d)   https://github.com/numba/numba/issues/1269
     # orthogonal_unit_vector = njit(cache=True)(orthogonal_unit_vector)
-    # _angle_from_a_to_b = njit(cache=True)(_angle_from_a_to_b)
+    # _radians_from_a_to_b = njit(cache=True)(_radians_from_a_to_b)
 
     @njit(parallel=True, nogil=True, cache=True)
-    def rotate_vectors_with_rotation_matrix(vectors: NpNDArrayFp64, rotation_matrices: NpNDArrayFp64) -> NpNDArrayFp64:
+    def rotate_vectors_with_rotation_matrix(vectors: Np2DArrayFp64, rotation_matrices: Np2DArrayFp64) -> Np2DArrayFp64:
         result = np.empty_like(vectors)
         for i in numba.prange(len(vectors)):
             result[i] = np.dot(vectors[i], rotation_matrices[i])

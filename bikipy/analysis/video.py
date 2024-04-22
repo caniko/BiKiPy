@@ -6,7 +6,7 @@ from typing import Iterator, Optional
 import matplotlib.pyplot as plt
 from moviepy.video.io.bindings import mplfig_to_npimage
 from moviepy.video.VideoClip import VideoClip
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64, NpNDArrayUint8
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64, NpNDArrayUint8
 
 from bikipy._constant import QUIVER_KWARGS
 from bikipy.perimeter.base import BasePerimeter
@@ -20,7 +20,7 @@ def make_inspection_video(
     reader: BaseReader,
     perimeter_to_boolean_index: Optional[dict[BasePerimeter, Np1DArrayBool]] = None,
     label_to_confinement_boolean_index: Optional[dict[str, Np1DArrayBool]] = None,
-    label_to_quiver_rays: Optional[dict[str, NpNDArrayFp64]] = None,
+    label_to_quiver_rays: Optional[dict[str, Np2DArrayFp64]] = None,
     revert_crop: bool = False,
     output_file_path: Optional[Path] = None,
     codec: str = "h264",

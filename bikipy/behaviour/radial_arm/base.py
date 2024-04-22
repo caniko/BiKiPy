@@ -14,7 +14,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64, NpNDArrayUint8
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64, NpNDArrayUint8
 
 from bikipy._constant import INSPECT_SIMPLE_FIG_FILE_FORMAT
 from bikipy.analysis.video import make_inspection_video
@@ -331,7 +331,7 @@ class BaseRadialMazeTrial(TrialWithPerimeterMixin, RadialMazeBase, BaseTrial):
 
     @computed_field  # type: ignore[misc]
     @property
-    def confinement_coordinates(self) -> tuple[NpNDArrayFp64, ...]:
+    def confinement_coordinates(self) -> tuple[Np2DArrayFp64, ...]:
         return tuple(self.reader[node_label] for node_label in self.tracking_labels_for_radial_arm_confinement)
 
     def generate_inspection_video(

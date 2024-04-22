@@ -7,7 +7,7 @@ from typing import Hashable, Iterable, Optional
 import numpy as np
 import pandas as pd
 from pydantic import Field, FilePath, computed_field
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
 
 from bikipy.reader.base import BaseReader
 from bikipy.reader.compute import compute_midpoint_label
@@ -66,7 +66,7 @@ class DataWithLikelihoodReader(BaseReader):
         )
 
     @staticmethod
-    def isolate_coordinates_from_native_df(df: pd.DataFrame, key: Iterable[str] | str) -> NpNDArrayFp64:
+    def isolate_coordinates_from_native_df(df: pd.DataFrame, key: Iterable[str] | str) -> Np2DArrayFp64:
         # remove likelihood column
         return np.delete(df[key].values, 2, 1)
 

@@ -1,14 +1,14 @@
 from typing import Optional, Sequence
 
 import numpy as np
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import Np2DArrayFp64
 
 
 def feature_scale(
     data: Sequence,
     real_min: Optional[float],
     real_max: Optional[float],
-) -> NpNDArrayFp64:
+) -> Np2DArrayFp64:
     """
     Scale the data to [0, 1]; 0 is the smallest and 1 is the highest
 

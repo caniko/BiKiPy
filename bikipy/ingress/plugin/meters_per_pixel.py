@@ -3,7 +3,7 @@ from logging import getLogger
 
 import numpy as np
 from pydantic import DirectoryPath, FilePath, computed_field, field_validator
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import Np2DArrayFp64
 
 from bikipy.core.typing import Label
 from bikipy.ingress.name_parser import PluginFileStemParser
@@ -71,7 +71,7 @@ class PluginMeterPerPixel(BasePluginFile):
 
 
 @lru_cache
-def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath) -> dict[str, NpNDArrayFp64]:
+def detect_meters_per_pixel_in_perimeter_directory(perimeter_dir: DirectoryPath) -> dict[str, Np2DArrayFp64]:
     return {
         (mpp := PluginMeterPerPixel(data_path=meters_per_pixel_file_path)).stem_info.label or i: mpp.ratio
         for i, meters_per_pixel_file_path in enumerate(perimeter_dir.glob("meters_per_pixel-*.csv"))

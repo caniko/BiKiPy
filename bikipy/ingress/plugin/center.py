@@ -1,7 +1,7 @@
 from functools import cached_property
 
 from pydantic import computed_field
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import Np2DArrayFp64
 
 from bikipy.core.typing import Label
 from bikipy.ingress.plugin.core.base import BasePluginFile
@@ -16,15 +16,15 @@ class PluginCenter(BasePluginFile):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def only_center(self) -> NpNDArrayFp64:
+    def only_center(self) -> Np2DArrayFp64:
         return get_only_point_from_makesense(self.data_path)
 
-    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> NpNDArrayFp64:
+    def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> Np2DArrayFp64:
         self._assert_correct_scope_trialwise_metadata()
         return self.only_center
 
     @computed_field(repr=False)  # type: ignore[misc]
     @property
-    def globally_defined(self) -> NpNDArrayFp64:
+    def globally_defined(self) -> Np2DArrayFp64:
         self._assert_correct_scope_global()
         return self.only_center

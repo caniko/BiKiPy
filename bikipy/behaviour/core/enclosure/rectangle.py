@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, computed_field
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, Np2DArrayFp64
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.behaviour.core.base import HabituationTrialMixin
@@ -39,7 +39,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     trial_perimeter_enclosure_class = RectanglePerimeter
 
-    manual_center_rectangle_dimensions_meters: Optional[NpNDArrayFp64] = None
+    manual_center_rectangle_dimensions_meters: Optional[Np2DArrayFp64] = None
     center_rectangle_dimensions_to_spatial_resolution_ratio: Optional[float] = None
     center_periphery_tolerance_model: bool = False
 
@@ -69,7 +69,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
     @cached_property
     def quadrant_grid_coordinate_to_vertices(
         self,
-    ) -> dict[quadrant_grid_typing, NpNDArrayFp64]:
+    ) -> dict[quadrant_grid_typing, Np2DArrayFp64]:
         horizontal_uniform_distance = self.video.metric_horizontal_resolution / self.rectangle_2d_bin[0]
         vertical_uniform_distance = self.video.metric_vertical_resolution / self.rectangle_2d_bin[1]
         result = {}
@@ -174,7 +174,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def location_sequence_quadrant(self) -> NpNDArrayFp64:
+    def location_sequence_quadrant(self) -> Np2DArrayFp64:
         raw_location_sequence_quadrant = np.zeros(self.number_of_frames, dtype=np.uint8)
         for quadrant_index, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items():
             quadrant = self.quadrant_grid_coordinate_to_quadrant[quadrant_grid_coordinate]
@@ -241,7 +241,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def center_rectangle_dimensions_meters(self) -> NpNDArrayFp64 | None:
+    def center_rectangle_dimensions_meters(self) -> Np2DArrayFp64 | None:
         if self._center_periphery_is_defined is None:
             return None
         if self.manual_center_rectangle_dimensions_meters is not None:

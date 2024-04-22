@@ -30,7 +30,7 @@ from pydantic import (
 from pydantic_numpy.typing import (
     Np1DArrayBool,
     NpNDArray,
-    NpNDArrayFp64,
+    Np2DArrayFp64,
     NpNDArrayInt16,
     NpNDArrayUint8,
 )
@@ -218,17 +218,17 @@ class VideoMetadata(_VideoMetadataBase):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def metric_resolution(self) -> NpNDArrayFp64:
+    def metric_resolution(self) -> Np2DArrayFp64:
         return self.resolution * self.meters_per_pixel
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def center_meters(self) -> NpNDArrayFp64:
+    def center_meters(self) -> Np2DArrayFp64:
         return self.metric_resolution / 2.0
 
     @computed_field  # type: ignore[misc]
     @property
-    def center_for_plot(self) -> NpNDArrayFp64:
+    def center_for_plot(self) -> Np2DArrayFp64:
         return self.center_pixels if self.coordinates_need_to_be_scaled_for_plot else self.center_meters
 
     @computed_field  # type: ignore[misc]
@@ -388,7 +388,7 @@ class VideoMetadata(_VideoMetadataBase):
         manual_coordinates_as_pixels: bool = False,
         with_resize: bool = True,
         step: bool = False,
-    ) -> NpNDArrayFp64 | float:
+    ) -> Np2DArrayFp64 | float:
         if step:
             data = data[self.plot_stepper]
 

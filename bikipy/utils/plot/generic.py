@@ -1,12 +1,12 @@
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Iterator, Optional
+from typing import TYPE_CHECKING, Any, Generator, Iterator, Optional, Sequence
 
 import numpy as np
 from matplotlib import colors, patches
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from pydantic import ConfigDict, validate_call
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
 
 from bikipy.math.discrete import boolean_index_truth_sequence_start_end
 
@@ -21,10 +21,20 @@ def color_map_by_number(number: int, cmap: Any = plt.cm.cool) -> Iterator:
     return cmap(np.linspace(0, 1, number))
 
 
+def boolean_index_colormap(
+    boolean_index: Sequence[bool], cmap_true: Any = plt.cm.cool, cmap_false: Any = plt.cm.warm
+) -> Generator:
+    length = len(boolean_index)
+    for state, color_true, color_false in zip(
+        boolean_index, color_map_by_number(length, cmap_true), color_map_by_number(length, cmap_false)
+    ):
+        yield color_true if state else color_false
+
+
 def ax_hue_plot_coordinate_with_boolean_index(
     ax,
     boolean_index: Np1DArrayBool,
-    coordinates: NpNDArrayFp64,
+    coordinates: Np2DArrayFp64,
     plot_non_confinement: bool = False,
     plot_line: bool = False,
 ) -> None:
@@ -54,12 +64,12 @@ def ax_hue_plot_coordinate_with_boolean_index(
             ax.scatter(*coordinates[~boolean_index].T, label="Invalid", color="crimson")
 
 
-def ax_hue_plot_coordinates(ax: Axes, coordinates: NpNDArrayFp64, marker: str = "x") -> None:
+def ax_hue_plot_coordinates(ax: Axes, coordinates: Np2DArrayFp64, marker: str = "x") -> None:
     for color, coord in zip(color_map_by_number(len(coordinates)), coordinates):
         ax.scatter(*coord.T, color=color, marker=marker)
 
 
-def ax_hue_plot_coordinate_pairs(ax: Axes, coordinates_a: NpNDArrayFp64, coordinates_b: NpNDArrayFp64) -> None:
+def ax_hue_plot_coordinate_pair_as_lines(ax: Axes, coordinates_a: Np2DArrayFp64, coordinates_b: Np2DArrayFp64) -> None:
     paired_coordiantes = np.dstack((coordinates_a, coordinates_b))
     for color, pair in zip(color_map_by_number(len(paired_coordiantes)), paired_coordiantes):
         ax.plot(*pair, color=color)
@@ -67,7 +77,7 @@ def ax_hue_plot_coordinate_pairs(ax: Axes, coordinates_a: NpNDArrayFp64, coordin
 
 def plot_coordinates(
     ax: Axes,
-    coordinates: NpNDArrayFp64,
+    coordinates: Np2DArrayFp64,
     coordinates_as_pixels: bool = False,
     video: Optional["VideoMetadata"] = None,
     color: Any = None,

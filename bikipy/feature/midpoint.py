@@ -4,11 +4,11 @@ Note that points in this context is the location of a region of interest across 
 
 import numpy as np
 from pydantic import validate_call
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import Np2DArrayFp64
 
 
 @validate_call
-def compute_midpoint(point_1: NpNDArrayFp64, point_2: NpNDArrayFp64, midpoint_multiplier: float = 0.5) -> NpNDArrayFp64:
+def compute_midpoint(point_1: Np2DArrayFp64, point_2: Np2DArrayFp64, midpoint_multiplier: float = 0.5) -> Np2DArrayFp64:
     """
     Computes the point(s) between two points, midpoint(s), with respect to the index.
 
@@ -16,7 +16,7 @@ def compute_midpoint(point_1: NpNDArrayFp64, point_2: NpNDArrayFp64, midpoint_mu
     :param point_2: Set of points part of the pair used for computing the midpoint(s)
     :param midpoint_multiplier:
     :return: midpoint(s)
-    :rtype: NpNDArrayFp64
+    :rtype: Np2DArrayFp64
     """
     if len(point_1.shape) == 1:
         point_1 = np.expand_dims(point_1, 0)
@@ -40,7 +40,7 @@ def compute_midpoint(point_1: NpNDArrayFp64, point_2: NpNDArrayFp64, midpoint_mu
     return compute
 
 
-def recursive_midpoint(*point_sets: NpNDArrayFp64, midpoint_multiplier: float = 0.5) -> NpNDArrayFp64:
+def recursive_midpoint(*point_sets: Np2DArrayFp64, midpoint_multiplier: float = 0.5) -> Np2DArrayFp64:
     """
     Compute midpoint(s) using last midpoint as first in the pair,
     and the upcoming point as the second in the pair in compute_midpoint.
@@ -52,7 +52,7 @@ def recursive_midpoint(*point_sets: NpNDArrayFp64, midpoint_multiplier: float = 
     :param point_sets: Iterable of points used for computing the midpoint(s) recursively.
     :param midpoint_multiplier:
     :return: midpoint(s)
-    :rtype: NpNDArrayFp64
+    :rtype: Np2DArrayFp64
     """
     try:
         midpoint = compute_midpoint(point_sets[0], point_sets[1])

@@ -4,7 +4,7 @@ from typing import Literal, Optional, Self
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field
-from pydantic_numpy.typing import NpNDArrayFp64
+from pydantic_numpy.typing import Np2DArrayFp64
 
 from bikipy.math.geometry import expand_rectangle
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
@@ -29,7 +29,7 @@ class RectanglePerimeter(BasePolygonPerimeter):
                 self.vertices_in_pixels.edge_lengths[0] - self.vertices_in_pixels.edge_lengths[2]
             )
 
-    def expand(self, perimeter_border_normal_pixels: float | NpNDArrayFp64, ax: Axes = None, **inspect_kwargs) -> Self:
+    def expand(self, perimeter_border_normal_pixels: float | Np2DArrayFp64, ax: Axes = None, **inspect_kwargs) -> Self:
         expanded_vertices = expand_rectangle(
             self.vertices_in_pixels,
             x_offset=perimeter_border_normal_pixels,

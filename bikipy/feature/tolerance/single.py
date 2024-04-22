@@ -50,11 +50,11 @@ def _filter(
     :param minimum_seconds_attention: Minimum number of seconds that the sequence has to be True
     for it to be defined as an attention sequence. Filtered sequences will be converted to False.
     :param maximum_seconds_distraction:
-    :type boolean_index: NpNDArrayFp64
+    :type boolean_index: Np2DArrayFp64
     :type fps: float
     :type minimum_seconds_attention: float
     :return: Boolean index filtered with respect to attention
-    :rtype NpNDArrayFp64
+    :rtype Np2DArrayFp64
     """
     if np.sum(boolean_index) < fps:
         return None
