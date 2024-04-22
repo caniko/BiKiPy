@@ -1,4 +1,3 @@
-
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field
@@ -30,7 +29,9 @@ class TrianglePerimeter(BasePolygonPerimeter):
     def expand(self, perimeter_border_normal_meters: float | NpNDArrayFp64):
         raise NotImplementedError()
 
-    def compute_confinement_boolean_index(self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None) -> Np1DArrayBool:
+    def compute_confinement_boolean_index(
+        self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None
+    ) -> Np1DArrayBool:
         coord_x_comp, coord_y_comp = np.asarray(coordinates).T
 
         c1 = (self.base_b[0] - self.base_a[0]) * (coord_y_comp - self.base_a[1]) - (self.base_b[1] - self.base_a[1]) * (

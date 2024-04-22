@@ -8,6 +8,7 @@ from moviepy.video.io.bindings import mplfig_to_npimage
 from moviepy.video.VideoClip import VideoClip
 from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64, NpNDArrayUint8
 
+from bikipy._constant import QUIVER_KWARGS
 from bikipy.perimeter.base import BasePerimeter
 from bikipy.reader.base import BaseReader
 
@@ -83,6 +84,7 @@ def make_inspection_video(
                     *label_to_quiver_rays[label][next_frame_idx],
                     label=label,
                     color=color,
+                    **QUIVER_KWARGS,
                 )
             else:
                 ax.scatter(
@@ -94,7 +96,7 @@ def make_inspection_video(
 
         for perimeter, confinement_boolean_index in perimeter_to_boolean_index.items():
             perimeter.plot_perimeter_on_ax(
-                ax,
+                ax=ax,
                 color="b" if confinement_boolean_index[next_frame_idx] else "r",
                 coordinates_as_pixels=True,
                 with_resize=False,

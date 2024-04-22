@@ -1,5 +1,7 @@
 from ordered_set import OrderedSet
 
+from bikipy import runtime_settings
+
 INGRESS_MAP_NAME = "ingress"
 READER_MAP_NAME = "reader"
 EXPERIMENT_MAP_NAME = "experiment"
@@ -35,4 +37,9 @@ INSPECT_SIMPLE_FIG_FILE_FORMAT = ".jpg"
 MINIMUM_FIG_DPI = 300
 ANALYSIS_CACHE_STEM_ID = "analysis_cache"
 
-plt_subplots_kwargs = {"dpi": MINIMUM_FIG_DPI}
+QUIVER_KWARGS = {
+    "alpha": runtime_settings.matplotlib_scatter_alpha,
+    # "scale_units": "xy",
+    "angles": "xy",
+    "units": "xy",
+}

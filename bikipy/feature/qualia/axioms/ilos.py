@@ -5,10 +5,11 @@ from matplotlib.axes import Axes
 from pydantic import computed_field
 from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
 
-from bikipy import runtime_settings
+from bikipy._constant import QUIVER_KWARGS
 from bikipy.core.compute import AbstractComputePerimeterBooleanIndex
 from bikipy.core.video import VideoMetadata
 from bikipy.feature.tolerance.single import single_node_tolerance_model
+from bikipy.math.vector import unit_vector
 from bikipy.perimeter.base import BasePerimeter
 
 
@@ -16,8 +17,6 @@ class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
     ray_start_point: NpNDArrayFp64
     ray_travel_direction_point: NpNDArrayFp64
     max_radians: float
-
-    manual_ray_vectors: Optional[NpNDArrayFp64] = None
 
     heuristic_data_sources = ("ray_start_point", "ray_travel_direction_point", "max_radians")
     heuristic_data_sources_all_required = True
@@ -38,38 +37,26 @@ class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
         return {self.perimeter: self.result}
 
     def plot(self, ax: Axes, video: Optional[VideoMetadata] = None, coordinates_as_pixels: bool = False) -> None:
-        if video and coordinates_as_pixels:
-            video.upscaled_video.ax_ticks_metric_to_pixel(ax)
+        if video:
+            if coordinates_as_pixels:
+                video.upscaled_video.ax_ticks_metric_to_pixel(ax)
 
-        ray_travel_direction_point = (
-            video.prepare_coordinates_for_plotting(self.ray_travel_direction_point, coordinates_as_pixels)
-            if video
-            else self.ray_travel_direction_point
-        )
-        if self.manual_ray_vectors is None:
-            ray_start_point = (
-                video.prepare_coordinates_for_plotting(self.ray_start_point, coordinates_as_pixels)
-                if video
-                else self.ray_start_point
+            ray_travel_direction_point = video.prepare_coordinates_for_plotting(
+                self.ray_travel_direction_point, coordinates_as_pixels
             )
-            ray_vectors = ray_travel_direction_point - ray_start_point
-
+            ray_start_point = video.prepare_coordinates_for_plotting(self.ray_start_point, coordinates_as_pixels)
         else:
-            ray_vectors = self.manual_ray_vectors
+            ray_travel_direction_point = self.ray_travel_direction_point
+            ray_start_point = self.ray_start_point
 
-        quiver_kwargs = {
-            "angles": "xy",
-            "scale_units": "dots",
-            "scale": 1.0,
-            "alpha": runtime_settings.matplotlib_scatter_alpha,
-        }
+        ray_vectors = unit_vector(ray_travel_direction_point - ray_start_point)
 
         ax.quiver(
             *ray_travel_direction_point[self.result].T,
             *ray_vectors[self.result].T,
             label="Valid",
             color="b",
-            **quiver_kwargs,
+            **QUIVER_KWARGS,
         )
 
         not_result = ~self.result
@@ -78,7 +65,7 @@ class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
             *ray_vectors[not_result].T,
             label="Invalid",
             color="r",
-            **quiver_kwargs,
+            **QUIVER_KWARGS,
         )
 
         self.perimeter.plot_perimeter_on_ax(ax=ax, coordinates_as_pixels=coordinates_as_pixels)

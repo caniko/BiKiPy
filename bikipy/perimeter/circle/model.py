@@ -7,7 +7,6 @@ from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
 from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64, NpNDArrayInt16
 
-from bikipy.core.video import VideoMetadata
 from bikipy.math.cached import meters2pixels
 from bikipy.math.confinement.ellipse import point_inside_ellipse
 from bikipy.math.vector import ray_direction_filter_circle_triangle, unit_vector
@@ -59,7 +58,9 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
             manual_video=self.video,
         )
 
-    def compute_confinement_boolean_index(self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None) -> Np1DArrayBool:
+    def compute_confinement_boolean_index(
+        self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None
+    ) -> Np1DArrayBool:
         if isinstance(self.radius_length_meters, float):
             distance_of_point_from_center = np.linalg.norm(coordinates - self.center_meters, axis=1)
             result = np.abs(distance_of_point_from_center) <= self.radius_length_meters

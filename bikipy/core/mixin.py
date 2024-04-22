@@ -64,7 +64,8 @@ class AbstractFeatureCollectorMixin(BikipyHashable, ABC):
 
 class InspectPlotMixin(BikipyConfigModel):
     inspection_fig_output_path: Optional[Path] = Field(
-        None, description="When path to a directory it is used to define the save directory of figures that will be used for inspection"
+        None,
+        description="When path to a directory it is used to define the save directory of figures that will be used for inspection",
     )
 
     @computed_field  # type: ignore[misc]

@@ -1,8 +1,8 @@
 from functools import cached_property
-from typing import Self, Optional, Final
+from typing import Final, Optional, Self
 
 from matplotlib.axes import Axes
-from pydantic import computed_field, validate_call, model_validator
+from pydantic import computed_field, model_validator, validate_call
 from pydantic_numpy.typing import Np1DArrayBool, NpNDArrayFp64
 
 from bikipy import runtime_settings
@@ -10,7 +10,6 @@ from bikipy.core.compute import AbstractComputePerimeterBooleanIndex
 from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.base import BasePerimeter, BaseSinglePerimeter
 from bikipy.utils.plot.color import make_color_map
-
 
 _PROXIMITY_COMPUTE_OP_LABEL: Final[str] = "compute_proximity-{}"
 
@@ -39,26 +38,22 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
     def perform_computation(self) -> Self:
         if self.inside_perimeter is not None and self.inside_perimeter_boolean_index is None:
             self.inside_perimeter_boolean_index = self.perimeter.compute_confinement_boolean_index(
-                _PROXIMITY_COMPUTE_OP_LABEL.format("inside"),
-                self.inside_perimeter
+                _PROXIMITY_COMPUTE_OP_LABEL.format("inside"), self.inside_perimeter
             )
 
         if self.outside_perimeter is not None and self.outside_perimeter_boolean_index is None:
             self.outside_perimeter_boolean_index = ~self.perimeter.compute_confinement_boolean_index(
-                _PROXIMITY_COMPUTE_OP_LABEL.format("outside"),
-                self.outside_perimeter
+                _PROXIMITY_COMPUTE_OP_LABEL.format("outside"), self.outside_perimeter
             )
 
         if self.inside_perimeter_border is not None and self.inside_perimeter_border_boolean_index is None:
             self.inside_perimeter_border_boolean_index = self.perimeter_border.compute_confinement_boolean_index(
-                _PROXIMITY_COMPUTE_OP_LABEL.format("inside-border"),
-                self.inside_perimeter_border
+                _PROXIMITY_COMPUTE_OP_LABEL.format("inside-border"), self.inside_perimeter_border
             )
 
         if self.outside_perimeter_border is not None and self.outside_perimeter_border_boolean_index is None:
             self.outside_perimeter_border_boolean_index = ~self.perimeter_border.compute_confinement_boolean_index(
-                _PROXIMITY_COMPUTE_OP_LABEL.format("outside-border"),
-                self.outside_perimeter_border
+                _PROXIMITY_COMPUTE_OP_LABEL.format("outside-border"), self.outside_perimeter_border
             )
         return self
 

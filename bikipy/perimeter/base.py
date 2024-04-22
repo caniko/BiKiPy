@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
-from typing import TYPE_CHECKING, ClassVar, Literal, Optional, Self
+from typing import ClassVar, Literal, Optional, Self
 
 import numpy as np
 import pandas as pd
@@ -17,6 +17,7 @@ from pydantic_numpy.typing import (
     NpNDArrayUint8,
 )
 
+from bikipy._constant import QUIVER_KWARGS
 from bikipy.core.base import BikipyHashable
 from bikipy.core.mixin import InspectPlotMixin
 from bikipy.core.typing import Label
@@ -35,9 +36,6 @@ from bikipy.utils.plot.generic import (
     color_map_by_number,
     plot_coordinates,
 )
-
-if TYPE_CHECKING:
-    from bikipy.reader.base import BaseReader
 
 logger = getLogger(__name__)
 
@@ -61,15 +59,15 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
         fig, ax = self.video.subplot()
 
-        self.plot_perimeter_on_ax(ax)
+        self.plot_perimeter_on_ax(ax=ax)
 
         coordinates = self.video.prepare_coordinates_for_plotting(coordinates)
 
         if extra_ax:
             ax_hue_plot_coordinate_with_boolean_index(extra_ax, boolean_index, coordinates)
-            self.plot_perimeter_on_ax(extra_ax)
+            self.plot_perimeter_on_ax(ax=extra_ax)
         ax_hue_plot_coordinate_with_boolean_index(ax, boolean_index, coordinates)
-        self.plot_perimeter_on_ax(ax)
+        self.plot_perimeter_on_ax(ax=ax)
 
         self.save_fig(
             "perimeter-confinement",
@@ -79,7 +77,9 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         )
 
     @abstractmethod
-    def compute_confinement_boolean_index(self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None) -> Np1DArrayBool: ...
+    def compute_confinement_boolean_index(
+        self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None
+    ) -> Np1DArrayBool: ...
 
     @abstractmethod
     def plot_perimeter_on_ax(
@@ -159,7 +159,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         else:
             fig = None
 
-        self.plot_perimeter_on_ax(ax, coordinates_as_pixels=False)
+        self.plot_perimeter_on_ax(ax=ax, coordinates_as_pixels=False)
 
         if self.video:
             coordinates = self.video.prepare_coordinates_for_plotting(coordinates, step=True)
@@ -184,6 +184,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
         """
         if closest_edge_points is None:
             closest_edge_points = self.closest_point_on_edge_to_coordinates(coordinates)
+
         result = unit_vector(closest_edge_points - coordinates)
 
         self.plot_vector_to_closest_point_on_edge(coordinates, closest_edge_points, result)
@@ -209,13 +210,13 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
         coordinates = self.video.prepare_coordinates_for_plotting(coordinates, step=True)
         closest_edge_points = self.video.prepare_coordinates_for_plotting(closest_edge_points, step=True)
-        vectors = vectors[self.video.plot_stepper] * 10
+        vectors = self.video.prepare_coordinates_for_plotting(vectors[self.video.plot_stepper] * 8)
 
         for color, coord, closest_edge_point, vector in zip(
             color_map_by_number(len(coordinates)), coordinates, closest_edge_points, vectors
         ):
             ax.scatter(*closest_edge_point, color=color, marker="x")
-            ax.arrow(*coord, *vector, color=color)
+            ax.quiver(*coord, *vector, color=color, **QUIVER_KWARGS)
 
         if not fig:
             return ax
@@ -418,17 +419,26 @@ class PerimeterSet(BasePerimeter):
         return np.mean([perimeter.centroid_meters for perimeter in self.all_perimeters], axis=0)
 
     def combined_framewise_confinement(self, coordinates: NpNDArrayFp64) -> Np1DArrayBool:
-        present = np.any([perimeter.compute_confinement_boolean_index("combined-framewise-confinement", coordinates) for perimeter in self.perimeters])
+        present = np.any(
+            [
+                perimeter.compute_confinement_boolean_index("combined-framewise-confinement", coordinates)
+                for perimeter in self.perimeters
+            ]
+        )
         if self.restricting_perimeters:
             present = present & ~np.any(
                 [
-                    perimeter.compute_confinement_boolean_index("restricted-combined-framewise-confinement", coordinates)
+                    perimeter.compute_confinement_boolean_index(
+                        "restricted-combined-framewise-confinement", coordinates
+                    )
                     for perimeter in self.restricting_perimeters
                 ]
             )
         return present
 
-    def compute_confinement_boolean_index(self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None) -> Np1DArrayBool:
+    def compute_confinement_boolean_index(
+        self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None
+    ) -> Np1DArrayBool:
         result = self.combined_framewise_confinement(coordinates)
 
         self.post_confinement_analysis_inspect_plot(op_label, result, coordinates, ax)
@@ -556,7 +566,9 @@ class PerimeterSet(BasePerimeter):
 
         with sb.color_palette("cubehelix", n_colors=self.number_of_vertices):
             for perimeter in self.all_perimeters:
-                perimeter.plot_perimeter_on_ax(ax, coordinates_as_pixels=coordinates_as_pixels, **perimeter_plot_kwargs)
+                perimeter.plot_perimeter_on_ax(
+                    ax=ax, coordinates_as_pixels=coordinates_as_pixels, **perimeter_plot_kwargs
+                )
 
             if coordinates is not None:
                 plot_coordinates(ax, coordinates, coordinates_as_pixels, self.video)

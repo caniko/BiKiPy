@@ -130,7 +130,9 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
         return result
 
-    def compute_confinement_boolean_index(self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None) -> Np1DArrayBool:
+    def compute_confinement_boolean_index(
+        self, op_label: str, coordinates: NpNDArrayFp64, ax: Optional[Axes] = None
+    ) -> Np1DArrayBool:
         result = parallel_point_inside_polygon(coordinates, self.metric_graph.linked_vertices, merge_ends=False)
 
         self.post_confinement_analysis_inspect_plot(op_label, result, coordinates, ax)

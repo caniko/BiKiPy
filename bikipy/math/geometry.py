@@ -16,6 +16,9 @@ if TYPE_CHECKING:
     from bikipy.perimeter.base import BasePerimeter
 
 
+UPWARDS_VECTOR = np.array([0.0, 1.0])
+
+
 def normalize_hypotenuse_to_origin(hypotenuse_start: NpNDArrayFp64, hypotenuse_end: NpNDArrayFp64) -> NpNDArrayFp64:
     return np.abs(hypotenuse_end - hypotenuse_start).astype(float)
 
@@ -87,7 +90,7 @@ def clockwise_argsort_points(points: NpNDArrayFp64):
     assert points.ndim == 2
     centroid_meters = np.mean(points, axis=0)
 
-    return np.argsort(clockwise_angel_2d((0.0, 1.0), points - centroid_meters))
+    return np.argsort(clockwise_angel_2d(UPWARDS_VECTOR, points - centroid_meters))
 
 
 @validate_call

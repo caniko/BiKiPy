@@ -7,9 +7,8 @@ import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, Field, computed_field
 
-from bikipy._constant import INSPECT_FIG_FILE_FORMAT, PHYSICAL_OBJECT_MAP_NAME
+from bikipy._constant import PHYSICAL_OBJECT_MAP_NAME
 from bikipy.analysis.video import make_inspection_video
-from bikipy.core.mixin import InspectPlotMixin
 from bikipy.core.typing import ConfinementSequence
 from bikipy.feature.qualia.physical_object.analysis.mapping import (
     PO_NUMBER_TO_ANALYSIS_MODEL,

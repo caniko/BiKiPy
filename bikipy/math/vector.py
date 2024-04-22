@@ -9,6 +9,7 @@ from pydantic import validate_call
 from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, NpNDArrayFp64
 
 from bikipy import runtime_settings
+from bikipy._constant import QUIVER_KWARGS
 from bikipy.utils.collection_utils import (
     evenly_spaced_indices,
     evenly_spaced_indices_from_sequence,
@@ -19,7 +20,6 @@ if TYPE_CHECKING:
     from bikipy.perimeter import BaseSinglePerimeter
 
 
-@validate_call
 def unit_vector(row_vectors: NpNDArrayFp64, force_1d: bool = False) -> NpNDArrayFp64:
     """
     Computes unit vector, i.e. vector/<norm of the vector>
@@ -190,11 +190,9 @@ def ray_and_line_segment_intersection(
         ax.quiver(
             *ray_origins[line_segment_intersection_bool][indices].T,
             *ray_directions[line_segment_intersection_bool][indices].T,
-            angles="xy",
-            scale_units="xy",
-            alpha=runtime_settings.matplotlib_scatter_alpha,
             label="Valid",
             color="b",
+            **QUIVER_KWARGS,
         )
 
         non_intersection_bool = ~line_segment_intersection_bool
@@ -202,11 +200,9 @@ def ray_and_line_segment_intersection(
         ax.quiver(
             *ray_origins[non_intersection_bool][indices].T,
             *ray_directions[non_intersection_bool][indices].T,
-            angles="xy",
-            scale_units="xy",
-            alpha=runtime_settings.matplotlib_scatter_alpha,
             label="Invalid",
             color="r",
+            **QUIVER_KWARGS,
         )
         ax.legend()
         ax.plot(*np.vstack([line_segment_start, line_segment_end]).T)
