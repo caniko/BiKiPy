@@ -117,7 +117,7 @@ optional = ["compressed_pickle_suffix", "debug", "disable_numba", "disable_proce
 
 [runtime_settings.defined]
 #disable_numba = true
-disable_process_pooling = true
+#disable_process_pooling = true
 
 [heuristics.BodyProximityHeuristic]
 class_name = "BodyProximityHeuristic"

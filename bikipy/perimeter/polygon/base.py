@@ -151,12 +151,14 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             return np.any(result, axis=0)
         return result
 
-    def _compute_ray_direction_filter(
+    def ray_direction_filter(
         self,
+        op_label: str,
         ray_start_points: Np2DArrayFp64,
         ray_travel_direction_points: Np2DArrayFp64,
         max_radians: float,
         angular_resolution: int = 400,
+        extra_ax: Optional[Axes] = None,
     ) -> Np1DArrayBool:
         """
         Determine if the object is within the ray cone

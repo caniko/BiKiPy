@@ -1,3 +1,6 @@
+from typing import Optional
+
+import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import computed_field
 from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
@@ -46,19 +49,16 @@ class TrianglePerimeter(BasePolygonPerimeter):
             (c1 < 0.0) & (c2 < 0.0) & (c3 < 0.0),
         )
 
-    def _compute_ray_direction_filter(
-        self, ray_start_points: Np2DArrayFp64, ray_travel_direction_points: Np2DArrayFp64, max_radians: float, **kwargs
+    def ray_direction_filter(
+        self,
+        op_label: str,
+        ray_start_points: Np2DArrayFp64,
+        ray_travel_direction_points: Np2DArrayFp64,
+        max_radians: float,
+        angular_resolution: int = 400,
+        extra_ax: Optional[plt.Axes] = None,
     ) -> Np1DArrayBool:
-        if self.equilateral:
-            return self.circle.ray_direction_filter_circle_triangle(
-                ray_travel_direction_points=ray_travel_direction_points,
-                ray_start_points=ray_start_points,
-                max_radians=max_radians,
-                **kwargs,
-            )
-        return super().ray_direction_filter(
-            ray_start_points=ray_start_points,
-            ray_travel_direction_points=ray_travel_direction_points,
-            max_radians=max_radians,
-            **kwargs,
+        ray_direction_filter = self.circle.ray_direction_filter if self.equilateral else super().ray_direction_filter
+        return ray_direction_filter(
+            self.__class__.__name__, ray_start_points, ray_travel_direction_points, max_radians, extra_ax
         )

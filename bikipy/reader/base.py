@@ -10,7 +10,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from pydantic import ConfigDict, Field, FilePath, computed_field, validate_call
-from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, Np1DArrayFp64, Np2DArrayFp64
 from typing_extensions import Literal
 
 from bikipy import runtime_settings
@@ -75,7 +75,7 @@ class BaseReader(BikipyHashable, VideoMetadataMixin, ABC):
 
     cache_meters_augmented: bool = True
 
-    manual_timestamp_index: Optional[Np2DArrayFp64] = timestamp_index_field
+    manual_timestamp_index: Optional[Np1DArrayFp64] = timestamp_index_field
 
     x_axis_crop_end_point: float = Field(0.0, description="x component of the raw video crop of video")
     y_axis_crop_end_point: float = Field(0.0, description="y component of the raw video crop of video")

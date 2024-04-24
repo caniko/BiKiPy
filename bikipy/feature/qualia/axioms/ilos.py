@@ -25,7 +25,7 @@ class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
     @cached_property
     def result(self) -> Np1DArrayBool:
         result = self.perimeter.ray_direction_filter(
-            self.ray_start_points, self.ray_travel_direction_points, self.max_radians
+            "InLineOfSight", self.ray_start_points, self.ray_travel_direction_points, self.max_radians
         )
         if self.tolerance_modelling:
             result = single_node_tolerance_model(result, self.fps)

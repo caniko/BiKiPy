@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, computed_field
-from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64, NpNDArray
+from pydantic_numpy.typing import Np1DArrayBool, Np1DArrayFp64, Np2DArrayFp64, NpNDArray
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.behaviour.core.base import HabituationTrialMixin
@@ -39,7 +39,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     trial_perimeter_enclosure_class = RectanglePerimeter
 
-    manual_center_rectangle_dimensions_meters: Optional[Np2DArrayFp64] = None
+    manual_center_rectangle_dimensions_meters: Optional[Np1DArrayFp64] = None
     center_rectangle_dimensions_to_spatial_resolution_ratio: Optional[float] = None
     center_periphery_tolerance_model: bool = False
 

@@ -7,6 +7,7 @@ from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
 from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64, NpNDArrayInt16
 
+from bikipy._constant import QUIVER_KWARGS
 from bikipy.math.cached import meters2pixels
 from bikipy.math.confinement.ellipse import point_inside_ellipse
 from bikipy.math.vector import ray_direction_filter_circle_triangle, unit_vector
@@ -116,28 +117,46 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
             ray_travel_direction_points, closest_points_on_edges
         )
 
-        result = ray_direction_filter_circle_triangle(
+        result, travel_direction_rays, _angles = ray_direction_filter_circle_triangle(
             ray_travel_direction_points,
             ray_start_points,
-            closest_points_on_edges,
             vector_to_closest_point_on_edge,
             max_radians,
         )
 
-        if not self.is_inspecting:
+        if not self.is_inspecting and not extra_ax and not self.inspect_ray_direction_filter:
             return result
 
-        fig, ax = self.video.subplot()
+        ray_travel_direction_points = self.video.prepare_coordinates_for_plotting(
+            ray_travel_direction_points, step=True
+        )
+        vector_to_closest_point_on_edge = self.video.prepare_coordinates_for_plotting(
+            vector_to_closest_point_on_edge, step=True
+        )
+        reduced_result = result[self.video.plot_stepper]
 
         if extra_ax:
             self.plot_perimeter_on_ax(ax=extra_ax)
             self._plot_ray_direction_filter(
-                extra_ax, ray_start_points, ray_travel_direction_points, vector_to_closest_point_on_edge
+                extra_ax,
+                reduced_result,
+                ray_travel_direction_points,
+                travel_direction_rays,
+                vector_to_closest_point_on_edge,
             )
+
+        if not self.inspect_ray_direction_filter:
+            return result
+
+        fig, ax = self.video.subplot()
 
         self.plot_perimeter_on_ax(ax=ax)
         self._plot_ray_direction_filter(
-            ax, ray_start_points, ray_travel_direction_points, closest_points_on_edges, vector_to_closest_point_on_edge
+            ax,
+            reduced_result,
+            ray_travel_direction_points,
+            travel_direction_rays,
+            vector_to_closest_point_on_edge,
         )
 
         self.save_fig(
@@ -153,18 +172,23 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
         self,
         ax: Axes,
         filter_boolean_index: Np1DArrayBool,
-        ray_start_points: Np2DArrayFp64,
         ray_travel_direction_points: Np2DArrayFp64,
-        closest_points_on_edges: Np2DArrayFp64,
-        vector_to_closest_point_on_edge: Np2DArrayFp64,
+        travel_direction_rays: Np2DArrayFp64,
+        vectors_to_closest_point_on_edge: Np2DArrayFp64,
     ) -> None:
-
-        for color, ray_start_point, ray_travel_direction_point in zip(
-            boolean_index_colormap(filter_boolean_index), ray_start_points, ray_travel_direction_points
+        for (
+            color,
+            ray_travel_direction_point,
+            travel_direction_ray,
+            vector_to_closest_point_on_edge,
+        ) in zip(
+            boolean_index_colormap(filter_boolean_index),
+            ray_travel_direction_points,
+            travel_direction_rays,
+            vectors_to_closest_point_on_edge,
         ):
-            ax.quiver(*coord, *vector, color=color, **QUIVER_KWARGS)
-            ax.quiver(*coord, *vector, color=color, **QUIVER_KWARGS)
-            ax.quiver()
+            ax.quiver(*ray_travel_direction_point, *travel_direction_ray, color=color, **QUIVER_KWARGS)
+            ax.quiver(*ray_travel_direction_point, *vector_to_closest_point_on_edge, color=color, **QUIVER_KWARGS)
 
     @classmethod
     @property

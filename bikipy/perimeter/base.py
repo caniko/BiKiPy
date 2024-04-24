@@ -48,14 +48,13 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
     def confinement_boolean_index(
         self,
         op_label: str,
-        boolean_index: Np1DArrayBool,
         coordinates: Np2DArrayFp64,
         extra_ax: Optional[Axes] = None,
     ):
-        result = self._compute_confinement_boolean_index(coordinates)
+        boolean_index = self._compute_confinement_boolean_index(coordinates)
 
         if not self.is_inspecting:
-            return result
+            return boolean_index
 
         fig, ax = self.video.subplot()
 
@@ -75,7 +74,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
             fig=fig,
         )
 
-        return result
+        return boolean_index
 
     @abstractmethod
     def ray_direction_filter(
@@ -141,6 +140,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
     inspect_closest_point_on_edge: bool = False
     inspect_closest_vector_on_edge: bool = False
+    inspect_ray_direction_filter: bool = False
 
     required_video_metadata_fields = {"resolution"}
 
@@ -438,19 +438,23 @@ class PerimeterSet(BasePerimeter):
 
         return result
 
-    def _compute_ray_direction_filter(
+    def ray_direction_filter(
         self, ray_start_points: Np2DArrayFp64, ray_travel_direction_points: Np2DArrayFp64, max_radians: float, **kwargs
     ) -> Np1DArrayBool:
         result = np.any(
             [
-                perimeter.ray_direction_filter(ray_start_points, ray_travel_direction_points, max_radians)
+                perimeter.ray_direction_filter(
+                    self.__class__.__name__, ray_start_points, ray_travel_direction_points, max_radians
+                )
                 for perimeter in self.perimeters
             ]
         )
         if self.restricting_perimeters:
             result = result & ~np.any(
                 [
-                    perimeter.ray_direction_filter(ray_start_points, ray_travel_direction_points, max_radians)
+                    perimeter.ray_direction_filter(
+                        self.__class__.__name__, ray_start_points, ray_travel_direction_points, max_radians
+                    )
                     for perimeter in self.restricting_perimeters
                 ]
             )

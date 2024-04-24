@@ -5,7 +5,7 @@ from typing import Iterable, Optional
 import numpy as np
 import pandas as pd
 from pydantic import Field, computed_field, validate_call
-from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, Np1DArrayFp64, Np2DArrayFp64
 
 from bikipy.core.base import BikipyModel
 from bikipy.math.calculus import np_abs_diff
@@ -141,7 +141,7 @@ def frozen_frames(
 
 class Motion(BikipyModel):
     coordinate_sequence: Np2DArrayFp64
-    timestamp_sequence: Optional[Np2DArrayFp64] = None
+    timestamp_sequence: Optional[Np1DArrayFp64] = None
     fps: Optional[float] = None
     weight: Optional[int] = Field(
         None, description="The weight of the Motion instance defines relative weight to related Motion instances"

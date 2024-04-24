@@ -303,29 +303,30 @@ def rotate_vectors_with_angle(vectors: Np2DArrayFp64, angle: Np2DArrayFp64) -> N
 def ray_direction_filter_circle_triangle(
     ray_travel_direction_points: Np2DArrayFp64,
     ray_start_points: Np2DArrayFp64,
-    closest_points_on_edges: Np2DArrayFp64,
     vector_to_closest_point_on_edge: Np2DArrayFp64,
     max_radians: float,
 ) -> tuple[Np1DArrayBool, Np2DArrayFp64, Np2DArrayFp64]:
-    direction_point_is_closer_than_start_point = np.linalg.norm(
-        closest_points_on_edges - ray_travel_direction_points, axis=1
-    ) <= np.linalg.norm(closest_points_on_edges - ray_start_points, axis=1)
-
-    ray_vectors = ray_travel_direction_points - ray_start_points
+    ray_vectors = unit_vector(ray_travel_direction_points - ray_start_points)
     radians_from_normal_to_ray = _radians_from_a_to_b(vector_to_closest_point_on_edge, ray_vectors)
 
-    result = direction_point_is_closer_than_start_point & (np.abs(radians_from_normal_to_ray) <= max_radians)
+    result = radians_from_normal_to_ray <= max_radians
 
     return result, ray_vectors, radians_from_normal_to_ray
 
 
-def _radians_from_a_to_b(vector_a: Np2DArrayFp64, vector_b: Np2DArrayFp64) -> Np2DArrayFp64:
-    vector_p = np.column_stack((-vector_b[:, 1], vector_b[:, 0]))
+# def _radians_from_a_to_b(vector_a: Np2DArrayFp64, vector_b: Np2DArrayFp64) -> Np2DArrayFp64:
+#     vector_p = np.column_stack((-vector_b[:, 1], vector_b[:, 0]))
+#
+#     b_coord = dot_axis_1_1d(vector_a, vector_b)
+#     p_coord = dot_axis_1_1d(vector_a, vector_p)
+#
+#     return np.abs(np.arctan2(p_coord, b_coord))
 
-    b_coord = dot_axis_1_1d(vector_a, vector_b)
-    p_coord = dot_axis_1_1d(vector_a, vector_p)
 
-    return np.arctan2(p_coord, b_coord)
+def _radians_from_a_to_b(unit_vector_a: Np2DArrayFp64, unit_vector_b: Np2DArrayFp64) -> Np2DArrayFp64:
+    dot_product = dot_axis_1_1d(unit_vector_a, unit_vector_b)
+    angle = np.arccos(np.clip(dot_product, -1.0, 1.0))
+    return angle
 
 
 if not runtime_settings.disable_numba:
