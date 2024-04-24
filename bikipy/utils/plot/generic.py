@@ -22,7 +22,7 @@ def color_map_by_number(number: int, cmap: Any = plt.cm.cool) -> Iterator:
 
 
 def boolean_index_colormap(
-    boolean_index: Sequence[bool], cmap_true: Any = plt.cm.cool, cmap_false: Any = plt.cm.warm
+    boolean_index: Sequence[bool], cmap_true: Any = plt.cm.cool, cmap_false: Any = plt.cm.Wistia
 ) -> Generator:
     length = len(boolean_index)
     for state, color_true, color_false in zip(

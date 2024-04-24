@@ -6,7 +6,7 @@ from typing import ClassVar, Literal, Optional
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, Np2DArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64, NpNDArray
 
 from bikipy.math.confinement.polygon import parallel_point_inside_polygon
 from bikipy.math.geometry import clockwise_sort_points
@@ -126,7 +126,8 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
 
         result = closest_edge_point_to_coordinates_matrix[closest_boolean_index]
 
-        self.plot_closest_point_on_edge_to_coordinates(coordinates, result)
+        if self.inspect_closest_point_on_edge:
+            self.plot_closest_point_on_edge_to_coordinates(coordinates, result)
 
         return result
 

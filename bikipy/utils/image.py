@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import FilePath, validate_call
-from pydantic_numpy.typing import NpNDArray, Np2DArrayFp64, NpNDArrayUint8
+from pydantic_numpy.typing import Np2DArrayFp64, NpNDArray, NpNDArrayUint8
 
 from bikipy.utils.plot.io import ax_imshow_gray
 

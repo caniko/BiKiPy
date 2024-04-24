@@ -11,8 +11,8 @@ from ordered_set import OrderedSet
 from pydantic import BaseModel, DirectoryPath, Field, FilePath, ValidationError
 from pydantic.fields import FieldInfo, computed_field
 from pydantic_numpy.typing import (
-    NpNDArray,
     Np2DArrayFp64,
+    NpNDArray,
     NpNDArrayInt16,
     NpNDArrayUint8,
 )

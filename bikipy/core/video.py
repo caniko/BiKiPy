@@ -29,8 +29,8 @@ from pydantic import (
 )
 from pydantic_numpy.typing import (
     Np1DArrayBool,
-    NpNDArray,
     Np2DArrayFp64,
+    NpNDArray,
     NpNDArrayInt16,
     NpNDArrayUint8,
 )

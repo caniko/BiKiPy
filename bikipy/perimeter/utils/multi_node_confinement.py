@@ -3,7 +3,7 @@ from typing import Optional, Sequence
 
 import numpy as np
 import seaborn as sb
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, Np2DArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64, NpNDArray
 
 from bikipy import runtime_settings
 from bikipy.core.typing import ConfinementSequence

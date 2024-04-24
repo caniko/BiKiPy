@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, computed_field
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, Np2DArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64, NpNDArray
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.behaviour.core.base import HabituationTrialMixin

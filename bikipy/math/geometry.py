@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Optional, Sequence
 import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import validate_call
-from pydantic_numpy.typing import NpNDArray, Np2DArrayFp64
+from pydantic_numpy.typing import Np2DArrayFp64, NpNDArray
 
 from bikipy.feature.angle import clockwise_angel_2d
 from bikipy.utils.plot.inspect import generic_figure_finalization

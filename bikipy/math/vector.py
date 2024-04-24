@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from numba import njit
 from numpy.linalg import LinAlgError
 from pydantic import validate_call
-from pydantic_numpy.typing import Np1DArrayBool, NpNDArray, Np2DArrayFp64
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64, NpNDArray
 
 from bikipy import runtime_settings
 from bikipy._constant import QUIVER_KWARGS

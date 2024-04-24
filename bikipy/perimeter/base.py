@@ -6,7 +6,6 @@ from typing import ClassVar, Literal, Optional, Self
 
 import numpy as np
 import pandas as pd
-import seaborn as sb
 from matplotlib.axes import Axes
 from numpy import unsignedinteger
 from pydantic import Field, FilePath, computed_field, model_validator, validate_call
@@ -34,7 +33,6 @@ from bikipy.utils.plot.generic import (
     ax_hue_plot_coordinate_with_boolean_index,
     ax_hue_plot_coordinates,
     color_map_by_number,
-    plot_coordinates,
 )
 
 logger = getLogger(__name__)
@@ -141,7 +139,8 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     reference_point_coco_path: Optional[FilePath] = None
     reference_point_array: Optional[NpNDArrayInt16] = None
 
-    moving_field_name: Optional[str] = None
+    inspect_closest_point_on_edge: bool = False
+    inspect_closest_vector_on_edge: bool = False
 
     required_video_metadata_fields = {"resolution"}
 
@@ -198,7 +197,8 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
         result = unit_vector(closest_edge_points - coordinates)
 
-        self.plot_vector_to_closest_point_on_edge(coordinates, closest_edge_points, result)
+        if self.inspect_closest_vector_on_edge:
+            self.plot_vector_to_closest_point_on_edge(coordinates, closest_edge_points, result)
 
         return result
 
@@ -569,26 +569,15 @@ class PerimeterSet(BasePerimeter):
                 ax, coordinates_as_pixels, with_resize, x_pixel_offset, y_pixel_offset, **plot_kwargs
             )
 
-    def plot(
+    def ray_direction_filter(
         self,
-        manual_ax: Axes = None,
-        coordinates: Optional[Np2DArrayFp64] = None,
-        coordinates_as_pixels: bool = False,
-        **perimeter_plot_kwargs,
-    ):
-        if manual_ax is None:
-            fig, ax = self.video.subplot(constrained_layout=True)
-        else:
-            ax = manual_ax
-
-        with sb.color_palette("cubehelix", n_colors=self.number_of_vertices):
-            for perimeter in self.all_perimeters:
-                perimeter.plot_perimeter_on_ax(
-                    ax=ax, coordinates_as_pixels=coordinates_as_pixels, **perimeter_plot_kwargs
-                )
-
-            if coordinates is not None:
-                plot_coordinates(ax, coordinates, coordinates_as_pixels, self.video)
+        op_label: str,
+        ray_start_points: Np2DArrayFp64,
+        ray_travel_direction_points: Np2DArrayFp64,
+        max_radians: float,
+        extra_ax: Optional[Axes] = None,
+    ) -> Np1DArrayBool:
+        raise NotImplementedError("This method is not implemented for PerimeterSet")
 
 
 @validate_call

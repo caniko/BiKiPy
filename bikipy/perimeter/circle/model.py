@@ -11,10 +11,7 @@ from bikipy.math.cached import meters2pixels
 from bikipy.math.confinement.ellipse import point_inside_ellipse
 from bikipy.math.vector import ray_direction_filter_circle_triangle, unit_vector
 from bikipy.perimeter.base import BaseSinglePerimeter
-from bikipy.utils.plot.generic import (
-    boolean_index_colormap,
-    plot_ellipse,
-)
+from bikipy.utils.plot.generic import boolean_index_colormap, plot_ellipse
 
 
 class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
@@ -64,7 +61,8 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
     def closest_point_on_edge_to_coordinates(self, coordinates: Np2DArrayFp64) -> Np2DArrayFp64:
         circle_center_to_point_uv = unit_vector(coordinates - self.center_meters)
         result = self.center_meters + self.radius_length_meters * circle_center_to_point_uv
-        self.plot_closest_point_on_edge_to_coordinates(coordinates, result)
+        if self.inspect_closest_point_on_edge:
+            self.plot_closest_point_on_edge_to_coordinates(coordinates, result)
         return result
 
     def plot_perimeter_on_ax(
@@ -114,7 +112,9 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
         extra_ax: Optional[Axes] = None,
     ) -> Np1DArrayBool:
         closest_points_on_edges = self.closest_point_on_edge_to_coordinates(ray_travel_direction_points)
-        vector_to_closest_point_on_edge = self.vector_to_closest_point_on_edge(ray_travel_direction_points, closest_points_on_edges)
+        vector_to_closest_point_on_edge = self.vector_to_closest_point_on_edge(
+            ray_travel_direction_points, closest_points_on_edges
+        )
 
         result = ray_direction_filter_circle_triangle(
             ray_travel_direction_points,
@@ -131,10 +131,14 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
 
         if extra_ax:
             self.plot_perimeter_on_ax(ax=extra_ax)
-            self._plot_ray_direction_filter(extra_ax, ray_start_points, ray_travel_direction_points, vector_to_closest_point_on_edge)
+            self._plot_ray_direction_filter(
+                extra_ax, ray_start_points, ray_travel_direction_points, vector_to_closest_point_on_edge
+            )
 
         self.plot_perimeter_on_ax(ax=ax)
-        self._plot_ray_direction_filter(ax, ray_start_points, ray_travel_direction_points, closest_points_on_edges, vector_to_closest_point_on_edge)
+        self._plot_ray_direction_filter(
+            ax, ray_start_points, ray_travel_direction_points, closest_points_on_edges, vector_to_closest_point_on_edge
+        )
 
         self.save_fig(
             "ray-direction-filter",
