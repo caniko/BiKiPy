@@ -146,11 +146,11 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
     @abstractmethod
     def _dataset_reader(self) -> None:
         """
-        This component reads the contents of the dataset folder. It is an abstractmethod because projects often have
-        different layouts. Refer to submodules in the same directory as this module
-        to explore the different implementations
+        This component reads the contents of the dataset folder. It is an abstractmethod because projects have
+        differing layouts. Refer to submodules in the same directory as this file to explore
+        the different implementations
         """
-        ...
+        pass
 
     def model_post_init(self, __context: Any) -> None:
         self.common_trial_keyword_arguments["project_kit_config"] = self.project_kit_config
@@ -247,7 +247,6 @@ class BaseIngressWorkflow(BikipyConfigModel, SchemanticProjectModelMixin, ABC):
     @computed_field(return_type=type)  # type: ignore[misc]
     @cached_property
     def experiment_class(self) -> ExperimentCLS:
-
         try:
             experiment = experiment_name_to_class[self.experiment_class_name]
         except KeyError:

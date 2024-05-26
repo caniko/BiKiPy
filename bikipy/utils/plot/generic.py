@@ -98,9 +98,11 @@ def plot_ellipse(ax: Axes, center: tuple[float, float], radius: tuple[float, flo
     if isinstance(radius, float):
         circle = plt.Circle(center, radius, fill=False, color=colors.to_rgba(color_to_assign))
         ax.add_artist(circle)
+
     elif isinstance(radius, tuple):
         ellipse = patches.Ellipse(center, *radius, edgecolor=color_to_assign, facecolor="none")
         ax.add_patch(ellipse)
+
     else:
         msg = f"Provided radius has invalid type: {type(radius)}"
         raise ValueError(msg)

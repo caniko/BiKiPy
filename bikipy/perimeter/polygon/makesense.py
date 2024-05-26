@@ -106,6 +106,8 @@ def init_polygon_from_makesense_csv_rectangle(
         start = np.array(row[:2], dtype=int)
         end = start + np.array(row[2:4], dtype=int)
 
+        image_name = row[5]
+
         if "reference_point_array" not in perimeter_kwargs:
             perimeter_kwargs["reference_point_array"] = (
                 image_name_to_reference_point[image_name] if reference_point_csv_path else None

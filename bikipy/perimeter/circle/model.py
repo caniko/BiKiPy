@@ -5,7 +5,7 @@ from typing import Optional, Self
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
-from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64, NpNDArrayInt16
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64, Np1DArrayFp64, NpNDArrayInt16
 
 from bikipy._constant import QUIVER_KWARGS
 from bikipy.math.cached import meters2pixels
@@ -75,11 +75,8 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
         y_pixel_offset: float = 0.0,
         **plot_kwargs,
     ) -> None:
-        center, radius = (
-            (self.center_pixels, self.radius_length_pixels)
-            if coordinates_as_pixels
-            else (self.center_meters, self.radius_length_meters)
-        )
+        center = self.center_pixels
+        radius = self.radius_length_pixels
 
         center[0] += x_pixel_offset
         center[1] += y_pixel_offset
@@ -109,7 +106,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
         op_label: str,
         ray_start_points: Np2DArrayFp64,
         ray_travel_direction_points: Np2DArrayFp64,
-        max_radians: float,
+        max_radians_sequence: float,
         extra_ax: Optional[Axes] = None,
     ) -> Np1DArrayBool:
         closest_points_on_edges = self.closest_point_on_edge_to_coordinates(ray_travel_direction_points)
@@ -117,11 +114,11 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
             ray_travel_direction_points, closest_points_on_edges
         )
 
-        result, travel_direction_rays, _angles = ray_direction_filter_circle_triangle(
+        result, travel_direction_rays, radians_sequence = ray_direction_filter_circle_triangle(
             ray_travel_direction_points,
             ray_start_points,
             vector_to_closest_point_on_edge,
-            max_radians,
+            max_radians_sequence,
         )
 
         if not self.is_inspecting and not extra_ax and not self.inspect_ray_direction_filter:
@@ -143,6 +140,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
                 ray_travel_direction_points,
                 travel_direction_rays,
                 vector_to_closest_point_on_edge,
+                radians_sequence,
             )
 
         if not self.inspect_ray_direction_filter:
@@ -157,6 +155,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
             ray_travel_direction_points,
             travel_direction_rays,
             vector_to_closest_point_on_edge,
+            radians_sequence
         )
 
         self.save_fig(
@@ -175,20 +174,25 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
         ray_travel_direction_points: Np2DArrayFp64,
         travel_direction_rays: Np2DArrayFp64,
         vectors_to_closest_point_on_edge: Np2DArrayFp64,
+        radians_sequence: Np1DArrayFp64
     ) -> None:
+        degree_sequence = np.rad2deg(radians_sequence[self.video.plot_stepper])
         for (
             color,
             ray_travel_direction_point,
             travel_direction_ray,
             vector_to_closest_point_on_edge,
+            degrees,
         ) in zip(
-            boolean_index_colormap(filter_boolean_index),
-            ray_travel_direction_points,
-            travel_direction_rays,
-            vectors_to_closest_point_on_edge,
+            boolean_index_colormap(filter_boolean_index[self.video.plot_stepper]),
+            ray_travel_direction_points[self.video.plot_stepper],
+            travel_direction_rays[self.video.plot_stepper],
+            vectors_to_closest_point_on_edge[self.video.plot_stepper],
+            degree_sequence,
         ):
             ax.quiver(*ray_travel_direction_point, *travel_direction_ray, color=color, **QUIVER_KWARGS)
-            ax.quiver(*ray_travel_direction_point, *vector_to_closest_point_on_edge, color=color, **QUIVER_KWARGS)
+            ax.quiver(*ray_travel_direction_point, *vector_to_closest_point_on_edge, color="green", **QUIVER_KWARGS)
+            ax.text(*ray_travel_direction_point, f"{degrees}°", fontsize=8)
 
     @classmethod
     @property

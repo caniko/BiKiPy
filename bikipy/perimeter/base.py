@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
-from typing import ClassVar, Literal, Optional, Self
+from typing import ClassVar, Literal, Optional, Self, Sequence
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
@@ -44,6 +45,16 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
     category = "perimeter"
 
     perimeter_label: ClassVar[str]
+
+    def subplots(
+        self, nrows: int = 1, ncols: int = 1, *subplots_args, **subplots_kwargs
+    ) -> tuple[plt.Figure, Sequence[Sequence[Axes]]]:
+        fig, axes = self.video.subplots(nrows, ncols, *subplots_args, **subplots_kwargs)
+
+        for ax in np.array(axes).flatten():
+            self.plot_perimeter_on_ax(ax=ax)
+
+        return fig, axes
 
     def confinement_boolean_index(
         self,
@@ -138,9 +149,9 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     reference_point_coco_path: Optional[FilePath] = None
     reference_point_array: Optional[NpNDArrayInt16] = None
 
-    inspect_closest_point_on_edge: bool = False
-    inspect_closest_vector_on_edge: bool = False
-    inspect_ray_direction_filter: bool = False
+    inspect_closest_point_on_edge: bool = True
+    inspect_closest_vector_on_edge: bool = True
+    inspect_ray_direction_filter: bool = True
 
     required_video_metadata_fields = {"resolution"}
 

@@ -102,7 +102,7 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
         return pd.Series(data)
 
     def plot(self) -> plt.Figure:
-        fig, axes = self.video.subplots(
+        fig, axes = self.perimeter.subplots(
             ncols=sum((bool(self.center_ear_proximity), bool(self.tail_base_proximity))) + 1,
             nrows=1,
             title=self.heuristic_alias,

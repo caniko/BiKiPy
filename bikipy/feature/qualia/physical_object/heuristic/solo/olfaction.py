@@ -112,7 +112,7 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
         )
 
     def plot(self) -> plt.Figure:
-        fig, axes = self.video.subplots(nrows=3, title=self.heuristic_alias)
+        fig, axes = self.perimeter.subplots(nrows=3, title=self.heuristic_alias)
 
         self.nose_proximity.plot(axes[0], self.video)
         self.snout_towards_object_rays.plot(axes[1], self.video)

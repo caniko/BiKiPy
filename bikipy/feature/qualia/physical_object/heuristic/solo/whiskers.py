@@ -166,7 +166,7 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
         )
 
     def plot(self) -> plt.Figure:
-        fig, axes = self.video.subplots(
+        fig, axes = self.perimeter.subplots(
             ncols=3, nrows=3, exclude_imaging_from_rc_coord=((0, 2), (2, 2)), title=self.heuristic_alias
         )
 
