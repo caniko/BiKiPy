@@ -41,25 +41,28 @@ class ComputeInLineOfSight(AbstractComputePerimeterBooleanIndex):
             if coordinates_as_pixels:
                 video.upscaled_video.ax_ticks_metric_to_pixel(ax)
 
+            ray_start_points = video.prepare_coordinates_for_plotting(self.ray_start_points, coordinates_as_pixels)
             ray_travel_direction_points = video.prepare_coordinates_for_plotting(
                 self.ray_travel_direction_points, coordinates_as_pixels
             )
-            ray_start_points = video.prepare_coordinates_for_plotting(self.ray_start_points, coordinates_as_pixels)
         else:
-            ray_travel_direction_points = self.ray_travel_direction_points
             ray_start_points = self.ray_start_points
+            ray_travel_direction_points = self.ray_travel_direction_points
 
-        ray_vectors = unit_vector(ray_travel_direction_points - ray_start_points)
+        plot_result = self.result[self.video.plot_slice]
+        ray_start_points = ray_start_points[self.video.plot_slice]
+        ray_travel_direction_points = ray_travel_direction_points[self.video.plot_slice]
+        ray_vectors = unit_vector(ray_travel_direction_points - ray_start_points)[self.video.plot_slice]
 
         ax.quiver(
-            *ray_travel_direction_points[self.result].T,
-            *ray_vectors[self.result].T,
+            *ray_travel_direction_points[plot_result].T,
+            *ray_vectors[plot_result].T,
             label="Valid",
             color="b",
             **QUIVER_KWARGS,
         )
 
-        not_result = ~self.result
+        not_result = ~plot_result
         ax.quiver(
             *ray_travel_direction_points[not_result].T,
             *ray_vectors[not_result].T,

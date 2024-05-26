@@ -5,7 +5,12 @@ from typing import Optional, Self
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
-from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64, Np1DArrayFp64, NpNDArrayInt16
+from pydantic_numpy.typing import (
+    Np1DArrayBool,
+    Np1DArrayFp64,
+    Np2DArrayFp64,
+    NpNDArrayInt16,
+)
 
 from bikipy._constant import QUIVER_KWARGS
 from bikipy.math.cached import meters2pixels
@@ -106,7 +111,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
         op_label: str,
         ray_start_points: Np2DArrayFp64,
         ray_travel_direction_points: Np2DArrayFp64,
-        max_radians_sequence: float,
+        max_radians: float,
         extra_ax: Optional[Axes] = None,
     ) -> Np1DArrayBool:
         closest_points_on_edges = self.closest_point_on_edge_to_coordinates(ray_travel_direction_points)
@@ -115,32 +120,36 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
         )
 
         result, travel_direction_rays, radians_sequence = ray_direction_filter_circle_triangle(
-            ray_travel_direction_points,
-            ray_start_points,
-            vector_to_closest_point_on_edge,
-            max_radians_sequence,
+            ray_travel_direction_points=ray_travel_direction_points,
+            ray_start_points=ray_start_points,
+            vector_to_closest_point_on_edge=vector_to_closest_point_on_edge,
+            max_radians=max_radians,
         )
 
         if not self.is_inspecting and not extra_ax and not self.inspect_ray_direction_filter:
             return result
 
-        ray_travel_direction_points = self.video.prepare_coordinates_for_plotting(
+        plot_prepped_result = result[self.video.plot_slice]
+        plot_prepared_travel_direction_rays = self.video.prepare_coordinates_for_plotting(
+            travel_direction_rays, step=True
+        )
+        plot_prepped_ray_travel_direction_points = self.video.prepare_coordinates_for_plotting(
             ray_travel_direction_points, step=True
         )
-        vector_to_closest_point_on_edge = self.video.prepare_coordinates_for_plotting(
+        plot_prepped_vector_to_closest_point_on_edge = self.video.prepare_coordinates_for_plotting(
             vector_to_closest_point_on_edge, step=True
         )
-        reduced_result = result[self.video.plot_stepper]
+        plot_prepped_radians_sequence = radians_sequence[self.video.plot_slice]
 
         if extra_ax:
             self.plot_perimeter_on_ax(ax=extra_ax)
             self._plot_ray_direction_filter(
-                extra_ax,
-                reduced_result,
-                ray_travel_direction_points,
-                travel_direction_rays,
-                vector_to_closest_point_on_edge,
-                radians_sequence,
+                ax=extra_ax,
+                filter_boolean_index=plot_prepped_result,
+                ray_travel_direction_points=plot_prepped_ray_travel_direction_points,
+                travel_direction_rays=plot_prepared_travel_direction_rays,
+                vectors_to_closest_point_on_edge=plot_prepped_vector_to_closest_point_on_edge,
+                radians_sequence=plot_prepped_radians_sequence,
             )
 
         if not self.inspect_ray_direction_filter:
@@ -150,12 +159,12 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
 
         self.plot_perimeter_on_ax(ax=ax)
         self._plot_ray_direction_filter(
-            ax,
-            reduced_result,
-            ray_travel_direction_points,
-            travel_direction_rays,
-            vector_to_closest_point_on_edge,
-            radians_sequence
+            ax=ax,
+            filter_boolean_index=plot_prepped_result,
+            ray_travel_direction_points=plot_prepped_ray_travel_direction_points,
+            travel_direction_rays=plot_prepared_travel_direction_rays,
+            vectors_to_closest_point_on_edge=plot_prepped_vector_to_closest_point_on_edge,
+            radians_sequence=plot_prepped_radians_sequence,
         )
 
         self.save_fig(
@@ -174,9 +183,17 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
         ray_travel_direction_points: Np2DArrayFp64,
         travel_direction_rays: Np2DArrayFp64,
         vectors_to_closest_point_on_edge: Np2DArrayFp64,
-        radians_sequence: Np1DArrayFp64
+        radians_sequence: Np1DArrayFp64,
     ) -> None:
-        degree_sequence = np.rad2deg(radians_sequence[self.video.plot_stepper])
+        assert (
+            len(filter_boolean_index)
+            == len(ray_travel_direction_points)
+            == len(travel_direction_rays)
+            == len(vectors_to_closest_point_on_edge)
+            == len(radians_sequence)
+        )
+
+        degree_sequence = np.rad2deg(radians_sequence)
         for (
             color,
             ray_travel_direction_point,
@@ -184,15 +201,17 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
             vector_to_closest_point_on_edge,
             degrees,
         ) in zip(
-            boolean_index_colormap(filter_boolean_index[self.video.plot_stepper]),
-            ray_travel_direction_points[self.video.plot_stepper],
-            travel_direction_rays[self.video.plot_stepper],
-            vectors_to_closest_point_on_edge[self.video.plot_stepper],
+            boolean_index_colormap(filter_boolean_index),
+            ray_travel_direction_points,
+            travel_direction_rays,
+            vectors_to_closest_point_on_edge,
             degree_sequence,
         ):
-            ax.quiver(*ray_travel_direction_point, *travel_direction_ray, color=color, **QUIVER_KWARGS)
-            ax.quiver(*ray_travel_direction_point, *vector_to_closest_point_on_edge, color="green", **QUIVER_KWARGS)
-            ax.text(*ray_travel_direction_point, f"{degrees}°", fontsize=8)
+            rtdx, rtdy = ray_travel_direction_point
+
+            ax.quiver(rtdx, rtdy, *travel_direction_ray, color=color, **QUIVER_KWARGS)
+            ax.quiver(rtdx, rtdy, *vector_to_closest_point_on_edge, color="green", **QUIVER_KWARGS)
+            ax.text(rtdx, rtdy, f"{degrees:.1f}°", fontsize=8, color="green")
 
     @classmethod
     @property

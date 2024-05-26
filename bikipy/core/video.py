@@ -311,8 +311,8 @@ class VideoMetadata(_VideoMetadataBase):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def plot_stepper(self) -> slice:
-        return slice(None, None, round(2 * self.fps / 3))
+    def plot_slice(self) -> slice:
+        return slice(None, None, round(4 * self.fps / 5))
 
     def ax_ticks_metric_to_pixel(self, ax: Axes, number_of_ticks: int = 5) -> None:
         ax.set_xticks(
@@ -390,7 +390,7 @@ class VideoMetadata(_VideoMetadataBase):
         step: bool = False,
     ) -> Np2DArrayFp64 | float:
         if step:
-            data = data[self.plot_stepper]
+            data = data[self.plot_slice]
 
         if manual_coordinates_as_pixels or self.coordinates_need_to_be_scaled_for_plot:
             result = data * self.pixels_per_meter

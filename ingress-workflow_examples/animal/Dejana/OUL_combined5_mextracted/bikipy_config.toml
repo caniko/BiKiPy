@@ -121,6 +121,7 @@ optional = ["compressed_pickle_suffix", "debug", "disable_numba", "disable_proce
 
 [heuristics.BodyProximityHeuristic]
 class_name = "BodyProximityHeuristic"
+maximum_distance_meters = 0.06
 optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "manual_resolution", "tail_base_label", "torso_label", "video_path"]
 
 [heuristics.BodyProximityHeuristic.defined]

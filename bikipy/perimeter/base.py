@@ -149,9 +149,9 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     reference_point_coco_path: Optional[FilePath] = None
     reference_point_array: Optional[NpNDArrayInt16] = None
 
-    inspect_closest_point_on_edge: bool = True
-    inspect_closest_vector_on_edge: bool = True
-    inspect_ray_direction_filter: bool = True
+    inspect_closest_point_on_edge: bool = False
+    inspect_closest_vector_on_edge: bool = False
+    inspect_ray_direction_filter: bool = False
 
     required_video_metadata_fields = {"resolution"}
 
@@ -232,7 +232,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
 
         coordinates = self.video.prepare_coordinates_for_plotting(coordinates, step=True)
         closest_edge_points = self.video.prepare_coordinates_for_plotting(closest_edge_points, step=True)
-        vectors = self.video.prepare_coordinates_for_plotting(vectors[self.video.plot_stepper] * 8)
+        vectors = self.video.prepare_coordinates_for_plotting(vectors[self.video.plot_slice] * 8)
 
         for color, coord, closest_edge_point, vector in zip(
             color_map_by_number(len(coordinates)), coordinates, closest_edge_points, vectors

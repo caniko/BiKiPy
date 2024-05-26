@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Callable
+from typing import Callable
 
 import numba
 import numpy as np
@@ -15,9 +15,6 @@ from bikipy.utils.collection_utils import (
     evenly_spaced_indices_from_sequence,
     flatten_sequence,
 )
-
-if TYPE_CHECKING:
-    pass
 
 
 def unit_vector(row_vectors: Np2DArrayFp64, force_1d: bool = False) -> Np2DArrayFp64:
@@ -39,8 +36,13 @@ def unit_vector(row_vectors: Np2DArrayFp64, force_1d: bool = False) -> Np2DArray
 
         return result
 
-    # Multiple vectors
-    return (row_vectors.T / np.linalg.norm(row_vectors, axis=1)).T
+    norms = np.linalg.norm(row_vectors, axis=1, keepdims=True)
+    # Handle the case where the norm is zero to avoid division by zero
+    norms[norms == 0] = 1
+    # Divide each row vector by its norm to get the unit vector
+    unit_vectors = row_vectors / norms
+
+    return unit_vectors
 
 
 def orthogonal_vector(row_vectors: Np2DArrayFp64) -> Np2DArrayFp64:
@@ -76,8 +78,9 @@ def dot_axis_1_1d(row_vectors_a: Np2DArrayFp64, row_vectors_b: Np2DArrayFp64) ->
     :param row_vectors_b: Array of row vectors
     :return: Dot product of the row vectors
     """
-    # np.einsum("ij,ij->i", vector_a, vector_b)
-    return np.nansum(row_vectors_a * row_vectors_b, axis=1)
+    dot_products = np.einsum("ij,ij->i", row_vectors_a, row_vectors_b)
+    clipped = np.clip(dot_products, -1.0, 1.0)
+    return clipped
 
 
 def normal_from_line_to_point(line_vector: Np2DArrayFp64, line_start: Np2DArrayFp64, point: Np2DArrayFp64):
@@ -314,19 +317,10 @@ def ray_direction_filter_circle_triangle(
     return result, ray_vectors, radians_from_normal_to_ray
 
 
-# def _radians_from_a_to_b(vector_a: Np2DArrayFp64, vector_b: Np2DArrayFp64) -> Np2DArrayFp64:
-#     vector_p = np.column_stack((-vector_b[:, 1], vector_b[:, 0]))
-#
-#     b_coord = dot_axis_1_1d(vector_a, vector_b)
-#     p_coord = dot_axis_1_1d(vector_a, vector_p)
-#
-#     return np.abs(np.arctan2(p_coord, b_coord))
-
-
 def _radians_from_a_to_b(unit_vector_a: Np2DArrayFp64, unit_vector_b: Np2DArrayFp64) -> Np2DArrayFp64:
-    dot_product = dot_axis_1_1d(unit_vector_a, unit_vector_b)
-    angle = np.arccos(np.clip(dot_product, -1.0, 1.0))
-    return angle
+    dot_products = dot_axis_1_1d(unit_vector_a, unit_vector_b)
+    result = np.arccos(dot_products)
+    return result
 
 
 if not runtime_settings.disable_numba:

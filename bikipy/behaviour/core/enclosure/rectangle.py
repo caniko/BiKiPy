@@ -6,7 +6,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pydantic import DirectoryPath, computed_field
-from pydantic_numpy.typing import Np1DArrayBool, Np1DArrayFp64, Np2DArrayFp64, NpNDArray
+from pydantic_numpy.typing import (
+    Np1DArrayBool,
+    Np1DArrayFp64,
+    Np1DArrayUint8,
+    Np2DArrayFp64,
+)
 
 from bikipy._constant import INSPECT_FIG_FILE_FORMAT
 from bikipy.behaviour.core.base import HabituationTrialMixin
@@ -27,7 +32,8 @@ from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
 from bikipy.utils.plot.inspect import generic_figure_finalization
 
 logger = getLogger(__name__)
-quadrant_grid_typing = tuple[int, int]
+
+QuadrantGrid = tuple[int, int]
 
 
 class RectangleEnclosedExperiment(EnclosedExperiment):
@@ -35,7 +41,7 @@ class RectangleEnclosedExperiment(EnclosedExperiment):
 
 
 class RectangleEnclosedTrial(EnclosedTrial):
-    rectangle_2d_bin: quadrant_grid_typing = (2, 2)
+    rectangle_2d_bin: QuadrantGrid = (2, 2)
 
     trial_perimeter_enclosure_class = RectanglePerimeter
 
@@ -69,7 +75,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
     @cached_property
     def quadrant_grid_coordinate_to_vertices(
         self,
-    ) -> dict[quadrant_grid_typing, Np2DArrayFp64]:
+    ) -> dict[QuadrantGrid, Np2DArrayFp64]:
         horizontal_uniform_distance = self.video.metric_horizontal_resolution / self.rectangle_2d_bin[0]
         vertical_uniform_distance = self.video.metric_vertical_resolution / self.rectangle_2d_bin[1]
         result = {}
@@ -103,7 +109,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def quadrant_index_to_quadrant_grid_coordinate(self) -> dict[int, quadrant_grid_typing]:
+    def quadrant_index_to_quadrant_grid_coordinate(self) -> dict[int, QuadrantGrid]:
         return {
             i: quadrant_grid_coordinate
             for i, quadrant_grid_coordinate in enumerate(self.quadrant_grid_coordinate_to_vertices, start=1)
@@ -111,7 +117,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def quadrant_grid_coordinate_to_quadrant_index(self) -> dict[quadrant_grid_typing, int]:
+    def quadrant_grid_coordinate_to_quadrant_index(self) -> dict[QuadrantGrid, int]:
         return {
             quadrant_grid_coordinate: i
             for i, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items()
@@ -119,7 +125,7 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def quadrant_grid_coordinate_to_quadrant(self) -> dict[quadrant_grid_typing, Quadrant]:
+    def quadrant_grid_coordinate_to_quadrant(self) -> dict[QuadrantGrid, Quadrant]:
         """
         Left to right, top to down
         :return:
@@ -188,21 +194,22 @@ class RectangleEnclosedTrial(EnclosedTrial):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def quadrant_grid_coordinate_to_entries(self) -> dict[quadrant_grid_typing, int]:
-        result = {}
-        for quadrant_index, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items():
-            result[quadrant_grid_coordinate] = np.sum(self.location_sequence_quadrant == quadrant_index)
+    def quadrant_grid_coordinate_to_entries(self) -> dict[QuadrantGrid, int]:
+        result = {
+            quadrant_grid_coordinate: np.sum(self.location_sequence_quadrant == quadrant_index)
+            for quadrant_index, quadrant_grid_coordinate in self.quadrant_index_to_quadrant_grid_coordinate.items()
+        }
         return result
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def quadrant_grid_coordinate_to_seconds_present(self) -> dict[quadrant_grid_typing, float]:
+    def quadrant_grid_coordinate_to_seconds_present(self) -> dict[QuadrantGrid, float]:
         return {
             quadrant_grid_coordinate: quadrant.seconds_present
             for quadrant_grid_coordinate, quadrant in self.quadrant_grid_coordinate_to_quadrant.items()
         }
 
-    # Center vs Periphery ==============================================================
+    @computed_field  # type: ignore[misc]
     @cached_property
     def _center_boolean_index_motion_island(self) -> tuple[TruthIslandMetadata, Np1DArrayBool]:
         raw_center_boolean_index = self.center_rectangle.confinement_boolean_index(
@@ -273,15 +280,13 @@ class RectangleEnclosedTrial(EnclosedTrial):
         x_long, y_short = center + center_point_to_center_rectangle_side_normal_lengths
         x_short, y_long = center - center_point_to_center_rectangle_side_normal_lengths
 
-        return RectanglePerimeter(
-            vertices_in_pixels=np.array(((x_short, y_short), (x_short, y_long), (x_long, y_long), (x_long, y_short))),
-            manual_video=self.video,
-            label="center",
-        )
+        vertices = np.array(((x_short, y_short), (x_short, y_long), (x_long, y_long), (x_long, y_short)))
+
+        return RectanglePerimeter(vertices_in_pixels=vertices, manual_video=self.video, label="center")
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def location_sequence_center_periphery(self) -> NpNDArray:
+    def location_sequence_center_periphery(self) -> Np1DArrayUint8:
         # 1 is center, 2 is periphery, 0 is unknown
         location_sequence_center_periphery = np.zeros_like(self.center_boolean_index, dtype=np.uint8)
         location_sequence_center_periphery[self.center_boolean_index] = 1

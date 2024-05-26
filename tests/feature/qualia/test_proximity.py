@@ -71,7 +71,7 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
         self.perimeter_border.plot_perimeter_on_ax(ax=ax, coordinates_as_pixels=coordinates_as_pixels)
 
         color_count = 1
-        if self.perimeter.impenetrable:
+        if self.perimeter.impenetrable is not None:
             color_count += 1
         if self.outside_perimeter_border is not None:
             color_count += 1
