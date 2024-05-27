@@ -31,7 +31,7 @@ from bikipy.perimeter.utils.multi_node_confinement import (
     detect_multi_node_sequential_perimeter_presence,
     inspect_sequential_confinement,
 )
-from bikipy.utils.plot.inspect import generic_figure_finalization
+from bikipy.plot.generic import generic_figure_finalization
 
 logger = getLogger(__name__)
 

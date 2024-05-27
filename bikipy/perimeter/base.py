@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
-from typing import ClassVar, Literal, Optional, Self, Sequence
+from typing import Any, ClassVar, Literal, Optional, Self, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,19 +22,20 @@ from bikipy.core.base import BikipyHashable
 from bikipy.core.mixin import InspectPlotMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
+from bikipy.feature.qualia.axioms.ray_offset_filter import AbstractComputeRayOffsetFilter
 from bikipy.math.vector import unit_vector
 from bikipy.perimeter.polygon.makesense import (
     init_polygon_from_makesense_coco_polygon,
     init_polygon_from_makesense_csv_rectangle,
 )
 from bikipy.perimeter.utils.misc import get_coco_array_from_path_or_array
-from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
-from bikipy.utils.plot.generic import (
+from bikipy.plot.generic import (
     ax_hue_plot_coordinate_pair_as_lines,
     ax_hue_plot_coordinate_with_boolean_index,
     ax_hue_plot_coordinates,
     color_map_by_number,
 )
+from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
 
 logger = getLogger(__name__)
 
@@ -48,7 +49,7 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
 
     def subplots(
         self, nrows: int = 1, ncols: int = 1, *subplots_args, **subplots_kwargs
-    ) -> tuple[plt.Figure, Sequence[Sequence[Axes]]]:
+    ) -> tuple[plt.Figure, Any]:
         fig, axes = self.video.subplots(nrows, ncols, *subplots_args, **subplots_kwargs)
 
         for ax in np.array(axes).flatten():
@@ -88,14 +89,54 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         return boolean_index
 
     @abstractmethod
-    def ray_direction_filter(
+    @property
+    def video(self) -> VideoMetadata: ...
+
+    def
+
+    def filter_by_ray_direction_offset_filter(
         self,
         op_label: str,
         ray_start_points: Np2DArrayFp64,
         ray_travel_direction_points: Np2DArrayFp64,
         max_radians: float,
         extra_ax: Optional[Axes] = None,
-    ) -> Np1DArrayBool: ...
+    ) -> AbstractComputeRayOffsetFilter:
+        if not self.is_inspecting and not extra_ax and not self.inspect_ray_direction_filter:
+            return result
+
+        if extra_ax:
+            self.plot_perimeter_on_ax(ax=extra_ax)
+            plot_ray_direction_filter_circle_triangle(
+                ax=extra_ax,
+                filter_boolean_index=result,
+                ray_travel_direction_points=ray_travel_direction_points,
+                travel_direction_rays=plot_prepared_travel_direction_rays,
+                vectors_to_closest_point_on_edge=vector_to_closest_point_on_edge,
+                normal_to_ray_radians_offset=normal_to_ray_radians_offset,
+            )
+
+        if not self.inspect_ray_direction_filter:
+            return result
+
+        fig, ax = self.video.subplot()
+
+        self.plot_perimeter_on_ax(ax=ax)
+        plot_ray_direction_filter_circle_triangle(
+            ax=ax,
+            filter_boolean_index=result,
+            ray_travel_direction_points=ray_travel_direction_points,
+            travel_direction_rays=plot_prepared_travel_direction_rays,
+            vectors_to_closest_point_on_edge=vector_to_closest_point_on_edge,
+            normal_to_ray_radians_offset=normal_to_ray_radians_offset,
+        )
+
+        self.save_fig(
+            "ray-direction-filter",
+            op_label,
+            base_filename=f"{self.perimeter_label}-{self.label}",
+            fig=fig,
+        )
 
     @abstractmethod
     def _compute_confinement_boolean_index(self, coordinates: Np2DArrayFp64) -> Np1DArrayBool: ...
@@ -449,23 +490,23 @@ class PerimeterSet(BasePerimeter):
 
         return result
 
-    def ray_direction_filter(
+    def filter_by_ray_direction_offset_filter(
         self, ray_start_points: Np2DArrayFp64, ray_travel_direction_points: Np2DArrayFp64, max_radians: float, **kwargs
     ) -> Np1DArrayBool:
         result = np.any(
             [
-                perimeter.ray_direction_filter(
+                perimeter.filter_by_ray_direction_offset_filter(
                     self.__class__.__name__, ray_start_points, ray_travel_direction_points, max_radians
-                )
+                )[0]
                 for perimeter in self.perimeters
             ]
         )
         if self.restricting_perimeters:
             result = result & ~np.any(
                 [
-                    perimeter.ray_direction_filter(
+                    perimeter.filter_by_ray_direction_offset_filter(
                         self.__class__.__name__, ray_start_points, ray_travel_direction_points, max_radians
-                    )
+                    )[0]
                     for perimeter in self.restricting_perimeters
                 ]
             )
@@ -584,7 +625,7 @@ class PerimeterSet(BasePerimeter):
                 ax, coordinates_as_pixels, with_resize, x_pixel_offset, y_pixel_offset, **plot_kwargs
             )
 
-    def ray_direction_filter(
+    def filter_by_ray_direction_offset_filter(
         self,
         op_label: str,
         ray_start_points: Np2DArrayFp64,

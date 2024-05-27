@@ -1,7 +1,7 @@
 from abc import ABC
 from functools import cached_property
 from logging import getLogger
-from typing import ClassVar, Literal, Optional
+from typing import Any, ClassVar, Literal, Optional
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -151,26 +151,30 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             return np.any(result, axis=0)
         return result
 
-    def ray_direction_filter(
+    def filter_by_ray_direction_offset_filter(
         self,
         op_label: str,
         ray_start_points: Np2DArrayFp64,
         ray_travel_direction_points: Np2DArrayFp64,
         max_radians: float,
-        angular_resolution: int = 400,
         extra_ax: Optional[Axes] = None,
-    ) -> Np1DArrayBool:
+        *,
+        angular_resolution: int = 200,
+    ) -> tuple[Np1DArrayBool, dict[str, Any]]:
         """
         Determine if the object is within the ray cone
 
-        This problem is called the "in line of sight" (ilos) problem, and is non-trivial. This is not the best solution
-        in terms of speed for our application; nevertheless, it is quite robust and had the lowest implementation time.
-        The solution is to emit rays from the point representing the region of interest, and checking for collisions
+        Emit rays from the point representing the region of interest, and checking for collisions
         with the perimeter.
 
-        :param ray_travel_direction_points:
+        This problem is non-trivial for polygons. This is not the best solution in terms of speed for our application;
+        nevertheless, it is quite robust and had the lowest implementation time.
+
+        :param op_label:
         :param ray_start_points:
+        :param ray_travel_direction_points:
         :param max_radians:
+        :param extra_ax:
         :param angular_resolution:
         :return:
         """
@@ -183,12 +187,10 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         if np.all(in_direct_los):
             return in_direct_los
 
-        positive_angles = np.linspace(max_radians, 0.0, angular_resolution)
-        negative_angles = -positive_angles
-        angles = np.concatenate([negative_angles, positive_angles])
+        radians_to_check = np.linspace(-max_radians, max_radians, angular_resolution)
 
         not_in_direct_los = ~in_direct_los
-        rotated_ray_vectors = rotate_vectors_with_angle(ray_vectors[not_in_direct_los], angles)
+        rotated_ray_vectors = rotate_vectors_with_angle(ray_vectors[not_in_direct_los], radians_to_check)
 
         in_tolerable_los = np.empty(rotated_ray_vectors.shape[:2])
         for i in range(angular_resolution * 2):
@@ -199,16 +201,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         in_tolerable_los = np.any(in_tolerable_los, axis=0)
         result = project_mask_to_original(in_tolerable_los, in_direct_los) | in_direct_los
 
-        return result
-
-    def _plot_ray_direction_filter(
-        self,
-        ax: Axes,
-        filter_boolean_index: Np1DArrayBool,
-        ray_start_points: Np2DArrayFp64,
-        ray_travel_direction_points: Np2DArrayFp64,
-    ) -> None:
-        raise NotImplementedError()
+        return result, dict()
 
     def change_reference(self, new_reference: Np2DArrayFp64, makesense_image_name: Optional[str] = None):
         if self.reference_point is None:

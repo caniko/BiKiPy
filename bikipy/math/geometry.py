@@ -10,7 +10,7 @@ from pydantic import validate_call
 from pydantic_numpy.typing import Np2DArrayFp64, NpNDArray
 
 from bikipy.feature.angle import clockwise_angel_2d
-from bikipy.utils.plot.inspect import generic_figure_finalization
+from bikipy.plot.generic import generic_figure_finalization
 
 if TYPE_CHECKING:
     from bikipy.perimeter.base import BasePerimeter

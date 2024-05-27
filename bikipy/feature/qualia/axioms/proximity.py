@@ -9,7 +9,7 @@ from bikipy import runtime_settings
 from bikipy.core.compute import AbstractComputePerimeterBooleanIndex
 from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.base import BasePerimeter, BaseSinglePerimeter
-from bikipy.utils.plot.color import make_color_map
+from bikipy.plot.color import make_color_map
 
 _PROXIMITY_COMPUTE_OP_LABEL: Final[str] = "compute_proximity-{}"
 

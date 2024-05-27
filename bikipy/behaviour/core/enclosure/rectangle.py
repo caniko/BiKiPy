@@ -27,9 +27,9 @@ from bikipy.math.discrete import (
 )
 from bikipy.math.shortcut import np_sum_int
 from bikipy.perimeter import RectanglePerimeter
+from bikipy.plot import BOTTOM_LEGEND_KWARGS
+from bikipy.plot.generic import generic_figure_finalization
 from bikipy.utils.pandas import motion_analysis_indexer_for_subsection
-from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
-from bikipy.utils.plot.inspect import generic_figure_finalization
 
 logger = getLogger(__name__)
 

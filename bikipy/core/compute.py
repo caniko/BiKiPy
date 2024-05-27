@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import ClassVar
+from typing import ClassVar, Self
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -9,7 +9,7 @@ from pydantic_numpy.typing import Np1DArrayBool
 from bikipy.core.base import BikipyModel
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.perimeter.base import BasePerimeter, BaseSinglePerimeter
-from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
+from bikipy.plot import BOTTOM_LEGEND_KWARGS
 
 
 class AbstractCompute[ResultType](BikipyModel, ABC, extra=Extra.allow):
@@ -43,8 +43,8 @@ class AbstractCompute[ResultType](BikipyModel, ABC, extra=Extra.allow):
     def plot(self, ax: Axes, *args, **kwargs) -> None: ...
 
 
-class AbstractComputePerimeterBooleanIndex(AbstractCompute[Np1DArrayBool], VideoMetadataMixin, ABC):
-    perimeter: BaseSinglePerimeter
+class AbstractComputePerimeterBooleanIndex[P: BasePerimeter](AbstractCompute[Np1DArrayBool], VideoMetadataMixin, ABC):
+    perimeter: P
     tolerance_modelling: bool = True
 
     @computed_field  # type: ignore[misc]
@@ -54,21 +54,21 @@ class AbstractComputePerimeterBooleanIndex(AbstractCompute[Np1DArrayBool], Video
 
     @property
     @abstractmethod
-    def perimeter_to_boolean_index(self) -> dict[BasePerimeter, Np1DArrayBool]: ...
+    def perimeter_to_boolean_index(self) -> dict[P, Np1DArrayBool]: ...
 
     def video_gen_merge_perimeter_to_boolean_index(
-        self, other: "AbstractComputePerimeterBooleanIndex", both_or_false: bool = False
-    ) -> dict[BasePerimeter, Np1DArrayBool]:
+        self, other: Self, both_or_false: bool = False
+    ) -> dict[P, Np1DArrayBool]:
         return video_gen_merge_perimeter_to_boolean_index_from_dict(
             self.perimeter_to_boolean_index, other.perimeter_to_boolean_index, both_or_false
         )
 
 
-def video_gen_merge_perimeter_to_boolean_index_from_dict(
+def video_gen_merge_perimeter_to_boolean_index_from_dict[P: BasePerimeter](
     a_perimeter_to_boolean_index,
-    b_perimeter_to_boolean_index: dict[BasePerimeter, Np1DArrayBool],
+    b_perimeter_to_boolean_index: dict[P, Np1DArrayBool],
     both_or_false: bool = False,
-) -> dict[BasePerimeter, Np1DArrayBool]:
+) -> dict[P, Np1DArrayBool]:
     result = {**a_perimeter_to_boolean_index, **b_perimeter_to_boolean_index}
 
     logical_method = np.logical_and if both_or_false else np.logical_or

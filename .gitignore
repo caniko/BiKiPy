@@ -4,7 +4,6 @@ dataset/
 bikipy_ingress_cache/
 plugin_files/
 inspect/
-inspect*
 
 ### Exclude video
 *.avi

@@ -38,8 +38,8 @@ from pydantic_numpy.typing import (
 from bikipy import runtime_settings
 from bikipy.core.base import BikipyModel
 from bikipy.core.typing import MetersPerPixel
+from bikipy.plot.io import ax_imshow_gray
 from bikipy.utils.image import read_image_from_path
-from bikipy.utils.plot.io import ax_imshow_gray
 
 Frame = FilePath | NpNDArrayUint8
 
@@ -337,7 +337,7 @@ class VideoMetadata(_VideoMetadataBase):
         exclude_imaging_from_rc_coord: Optional[tuple[tuple[int, int], ...]] = None,
         title: str = "",
         **kwargs,
-    ) -> tuple[Figure, Sequence[Axes]]:
+    ) -> tuple[Figure, Any]:
         # TODO: Minimum dpi is set to 300
         # kwargs["dpi"] = max(MINIMUM_FIG_DPI, kwargs["dpi"]) if "dpi" in kwargs else MINIMUM_FIG_DPI
 

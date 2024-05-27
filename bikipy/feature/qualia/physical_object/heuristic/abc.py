@@ -11,8 +11,8 @@ from schemantic import SchemanticProjectModelMixin
 from bikipy.core.video import VideoMetadataMixin
 from bikipy.feature.qualia.physical_object.heuristic.mixin import SingleComponentMixin
 from bikipy.perimeter.base import BasePerimeter, BaseSinglePerimeter
+from bikipy.plot import TIGHT_LAYOUT_KWARGS
 from bikipy.reader.base import BaseReader
-from bikipy.utils.plot import TIGHT_LAYOUT_KWARGS
 
 
 class AbstractHeuristic(VideoMetadataMixin, SchemanticProjectModelMixin, ABC):

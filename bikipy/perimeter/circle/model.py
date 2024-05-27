@@ -1,23 +1,22 @@
 from abc import ABC
 from functools import cached_property
-from typing import Optional, Self
+from typing import Any, Optional, Self
 
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
 from pydantic_numpy.typing import (
     Np1DArrayBool,
-    Np1DArrayFp64,
     Np2DArrayFp64,
     NpNDArrayInt16,
 )
 
-from bikipy._constant import QUIVER_KWARGS
 from bikipy.math.cached import meters2pixels
 from bikipy.math.confinement.ellipse import point_inside_ellipse
 from bikipy.math.vector import ray_direction_filter_circle_triangle, unit_vector
 from bikipy.perimeter.base import BaseSinglePerimeter
-from bikipy.utils.plot.generic import boolean_index_colormap, plot_ellipse
+from bikipy.plot.generic import plot_ellipse
+from bikipy.plot.inspect import plot_ray_direction_filter_circle_triangle
 
 
 class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
@@ -106,20 +105,20 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
 
         return result
 
-    def ray_direction_filter(
+    def filter_by_ray_direction_offset_filter(
         self,
         op_label: str,
         ray_start_points: Np2DArrayFp64,
         ray_travel_direction_points: Np2DArrayFp64,
         max_radians: float,
         extra_ax: Optional[Axes] = None,
-    ) -> Np1DArrayBool:
+    ) -> tuple[Np1DArrayBool, dict[str, Any]]:
         closest_points_on_edges = self.closest_point_on_edge_to_coordinates(ray_travel_direction_points)
         vector_to_closest_point_on_edge = self.vector_to_closest_point_on_edge(
             ray_travel_direction_points, closest_points_on_edges
         )
 
-        result, travel_direction_rays, radians_sequence = ray_direction_filter_circle_triangle(
+        result, travel_direction_rays, normal_to_ray_radians_offset = ray_direction_filter_circle_triangle(
             ray_travel_direction_points=ray_travel_direction_points,
             ray_start_points=ray_start_points,
             vector_to_closest_point_on_edge=vector_to_closest_point_on_edge,
@@ -139,17 +138,17 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
         plot_prepped_vector_to_closest_point_on_edge = self.video.prepare_coordinates_for_plotting(
             vector_to_closest_point_on_edge, step=True
         )
-        plot_prepped_radians_sequence = radians_sequence[self.video.plot_slice]
+        plot_prepped_radians_sequence = normal_to_ray_radians_offset[self.video.plot_slice]
 
         if extra_ax:
             self.plot_perimeter_on_ax(ax=extra_ax)
-            self._plot_ray_direction_filter(
+            plot_ray_direction_filter_circle_triangle(
                 ax=extra_ax,
                 filter_boolean_index=plot_prepped_result,
                 ray_travel_direction_points=plot_prepped_ray_travel_direction_points,
                 travel_direction_rays=plot_prepared_travel_direction_rays,
                 vectors_to_closest_point_on_edge=plot_prepped_vector_to_closest_point_on_edge,
-                radians_sequence=plot_prepped_radians_sequence,
+                normal_to_ray_radians_offset=plot_prepped_radians_sequence,
             )
 
         if not self.inspect_ray_direction_filter:
@@ -158,13 +157,13 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
         fig, ax = self.video.subplot()
 
         self.plot_perimeter_on_ax(ax=ax)
-        self._plot_ray_direction_filter(
+        plot_ray_direction_filter_circle_triangle(
             ax=ax,
             filter_boolean_index=plot_prepped_result,
             ray_travel_direction_points=plot_prepped_ray_travel_direction_points,
             travel_direction_rays=plot_prepared_travel_direction_rays,
             vectors_to_closest_point_on_edge=plot_prepped_vector_to_closest_point_on_edge,
-            radians_sequence=plot_prepped_radians_sequence,
+            normal_to_ray_radians_offset=plot_prepped_radians_sequence,
         )
 
         self.save_fig(
@@ -175,43 +174,6 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
         )
 
         return result
-
-    def _plot_ray_direction_filter(
-        self,
-        ax: Axes,
-        filter_boolean_index: Np1DArrayBool,
-        ray_travel_direction_points: Np2DArrayFp64,
-        travel_direction_rays: Np2DArrayFp64,
-        vectors_to_closest_point_on_edge: Np2DArrayFp64,
-        radians_sequence: Np1DArrayFp64,
-    ) -> None:
-        assert (
-            len(filter_boolean_index)
-            == len(ray_travel_direction_points)
-            == len(travel_direction_rays)
-            == len(vectors_to_closest_point_on_edge)
-            == len(radians_sequence)
-        )
-
-        degree_sequence = np.rad2deg(radians_sequence)
-        for (
-            color,
-            ray_travel_direction_point,
-            travel_direction_ray,
-            vector_to_closest_point_on_edge,
-            degrees,
-        ) in zip(
-            boolean_index_colormap(filter_boolean_index),
-            ray_travel_direction_points,
-            travel_direction_rays,
-            vectors_to_closest_point_on_edge,
-            degree_sequence,
-        ):
-            rtdx, rtdy = ray_travel_direction_point
-
-            ax.quiver(rtdx, rtdy, *travel_direction_ray, color=color, **QUIVER_KWARGS)
-            ax.quiver(rtdx, rtdy, *vector_to_closest_point_on_edge, color="green", **QUIVER_KWARGS)
-            ax.text(rtdx, rtdy, f"{degrees:.1f}°", fontsize=8, color="green")
 
     @classmethod
     @property

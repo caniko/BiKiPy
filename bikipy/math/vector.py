@@ -211,12 +211,7 @@ def ray_and_line_segment_intersection(
         ax.plot(*np.vstack([line_segment_start, line_segment_end]).T)
         plt.show()
 
-    if return_points:
-        raise NotImplementedError()
-        result = np.full_like(ray_origins, np.nan)
-        result[line_segment_intersection_bool] = ray_origins + t1 * ray_directions
-    else:
-        return line_segment_intersection_bool
+    return line_segment_intersection_bool
 
 
 @validate_call
@@ -303,21 +298,7 @@ def rotate_vectors_with_angle(vectors: Np2DArrayFp64, angle: Np2DArrayFp64) -> N
     return np.array([np.dot(vector, rotation_matrix) for vector in vectors]).transpose(1, 0, 2)
 
 
-def ray_direction_filter_circle_triangle(
-    ray_travel_direction_points: Np2DArrayFp64,
-    ray_start_points: Np2DArrayFp64,
-    vector_to_closest_point_on_edge: Np2DArrayFp64,
-    max_radians: float,
-) -> tuple[Np1DArrayBool, Np2DArrayFp64, Np2DArrayFp64]:
-    ray_vectors = unit_vector(ray_travel_direction_points - ray_start_points)
-    radians_from_normal_to_ray = _radians_from_a_to_b(vector_to_closest_point_on_edge, ray_vectors)
-
-    result = radians_from_normal_to_ray <= max_radians
-
-    return result, ray_vectors, radians_from_normal_to_ray
-
-
-def _radians_from_a_to_b(unit_vector_a: Np2DArrayFp64, unit_vector_b: Np2DArrayFp64) -> Np2DArrayFp64:
+def radians_from_a_to_b(unit_vector_a: Np2DArrayFp64, unit_vector_b: Np2DArrayFp64) -> Np2DArrayFp64:
     dot_products = dot_axis_1_1d(unit_vector_a, unit_vector_b)
     result = np.arccos(dot_products)
     return result
@@ -327,7 +308,7 @@ if not runtime_settings.disable_numba:
     # rotation_matrix_from_radians = njit(cache=True)(rotation_matrix_from_radians)
     # dot_axis_1_1d = njit(cache=True)(dot_axis_1_1d)   https://github.com/numba/numba/issues/1269
     # orthogonal_unit_vector = njit(cache=True)(orthogonal_unit_vector)
-    # _radians_from_a_to_b = njit(cache=True)(_radians_from_a_to_b)
+    # radians_from_a_to_b = njit(cache=True)(radians_from_a_to_b)
 
     @njit(parallel=True, nogil=True, cache=True)
     def rotate_vectors_with_rotation_matrix(vectors: Np2DArrayFp64, rotation_matrices: Np2DArrayFp64) -> Np2DArrayFp64:

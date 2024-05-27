@@ -23,6 +23,9 @@ from bikipy.feature.midpoint import recursive_midpoint
 from bikipy.math.high_velocity import high_velocity_removal
 from bikipy.math.shortcut import seconds_to_frames
 from bikipy.perimeter.base import BasePerimeter
+from bikipy.plot import BOTTOM_LEGEND_KWARGS
+from bikipy.plot.color import make_color_map
+from bikipy.plot.generic import ax_hue_plot_coordinate_with_boolean_index
 from bikipy.reader.compute import (
     compute_midpoint_label,
     trial_video_likelihood_based_frame_slice,
@@ -31,9 +34,6 @@ from bikipy.reader.compute import (
 from bikipy.reader.model import model_data
 from bikipy.utils.collection_utils import apply_slice_on_slice
 from bikipy.utils.constants import TO_PARQUET_KWARGS
-from bikipy.utils.plot import BOTTOM_LEGEND_KWARGS
-from bikipy.utils.plot.color import make_color_map
-from bikipy.utils.plot.generic import ax_hue_plot_coordinate_with_boolean_index
 
 BAD_COORDINATE = (np.nan, np.nan, 0.0)  # x, y, likelihood
 
