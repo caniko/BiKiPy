@@ -1,6 +1,4 @@
-from bikipy.feature.qualia.analysis.iii import (
-    ThreePhysicalObjectSetQualiaAnalysis,
-)
+from bikipy.feature.qualia.analysis.iii import ThreePhysicalObjectSetQualiaAnalysis
 
 
 class FourPhysicalObjectSetQualiaAnalysis(ThreePhysicalObjectSetQualiaAnalysis):

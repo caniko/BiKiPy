@@ -1,25 +1,24 @@
 from abc import ABC
 from functools import cached_property
 from logging import getLogger
-from typing import Any, ClassVar, Literal, Optional
+from typing import ClassVar, Literal, Optional
 
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
 from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64, NpNDArray
 
+from bikipy.core.video import VideoMetadata
 from bikipy.math.confinement.polygon import parallel_point_inside_polygon
 from bikipy.math.geometry import clockwise_sort_points
 from bikipy.math.graph import Graph
 from bikipy.math.vector import (
     nearest_point_on_line_segment_to_coordinates,
     ray_and_line_segment_intersection,
-    rotate_vectors_with_angle,
 )
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.perimeter.circle.model import CircleFixedRadiusPerimeter
 from bikipy.perimeter.ray_offset_filter import ComputeRayOffsetFilterPolygon
-from bikipy.utils.collection_utils import project_mask_to_original
 
 logger = getLogger(__name__)
 
@@ -158,6 +157,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
         ray_start_points: Np2DArrayFp64,
         ray_travel_direction_points: Np2DArrayFp64,
         max_radians: float,
+        trial_video: VideoMetadata,
     ) -> ComputeRayOffsetFilterPolygon:
         return ComputeRayOffsetFilterPolygon(
             label=op_label,
@@ -165,6 +165,7 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             ray_start_points=ray_start_points,
             ray_travel_direction_points=ray_travel_direction_points,
             max_radians=max_radians,
+            manual_video=trial_video,
         )
 
     def change_reference(self, new_reference: Np2DArrayFp64, makesense_image_name: Optional[str] = None):

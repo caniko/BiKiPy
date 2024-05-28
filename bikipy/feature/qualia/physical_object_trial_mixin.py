@@ -10,9 +10,7 @@ from pydantic import DirectoryPath, Field, computed_field
 from bikipy._constant import PHYSICAL_OBJECT_MAP_NAME
 from bikipy.analysis.video import make_inspection_video
 from bikipy.core.typing import ConfinementSequence
-from bikipy.feature.qualia.analysis.mapping import (
-    PO_NUMBER_TO_ANALYSIS_MODEL,
-)
+from bikipy.feature.qualia.analysis.mapping import PO_NUMBER_TO_ANALYSIS_MODEL
 from bikipy.feature.qualia.heuristic.abc import (
     AbstractHeuristic,
     CombinedHeuristic,
@@ -22,16 +20,9 @@ from bikipy.feature.qualia.heuristic.mapping import (
     alias_to_helper_heuristic,
     alias_to_heuristics_cls,
 )
-from bikipy.feature.qualia.heuristic.mixin import (
-    ProximityMixin,
-    RayMixin,
-)
-from bikipy.feature.qualia.heuristic.solo.abc import (
-    AbstractSoloHeuristic,
-)
-from bikipy.feature.qualia.heuristic.merge_parser import (
-    parse_heuristic_merge_equation,
-)
+from bikipy.feature.qualia.heuristic.merge_parser import parse_heuristic_merge_equation
+from bikipy.feature.qualia.heuristic.mixin import ProximityMixin, RayMixin
+from bikipy.feature.qualia.heuristic.solo.abc import AbstractSoloHeuristic
 from bikipy.math.discrete import reduce_repeating_sequences
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.perimeter.trial_mixin import TrialWithPerimeterMixin

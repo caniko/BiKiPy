@@ -9,9 +9,7 @@ from pydantic_numpy.typing import Np1DArrayBool
 
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
 from bikipy.feature.qualia.heuristic.mixin import ProximityMixin
-from bikipy.feature.qualia.heuristic.solo.abc import (
-    AbstractSoloHeuristic,
-)
+from bikipy.feature.qualia.heuristic.solo.abc import AbstractSoloHeuristic
 from bikipy.perimeter.base import BasePerimeter
 
 
@@ -112,12 +110,12 @@ class BodyProximityHeuristic(AbstractSoloHeuristic, ProximityMixin):
 
         if self.center_ear_proximity:
             axes[ax_idx].set_title("Center ear")
-            self.center_ear_proximity.plot(axes[ax_idx], self.video)
+            self.center_ear_proximity.plot(axes[ax_idx])
             ax_idx += 1
 
         if self.tail_base_proximity:
             axes[ax_idx].set_title("Tail base")
-            self.tail_base_proximity.plot(axes[ax_idx], self.video)
+            self.tail_base_proximity.plot(axes[ax_idx])
             ax_idx += 1
 
         self.plot_result(axes[ax_idx], self.center_ear_label or self.tail_base_label)

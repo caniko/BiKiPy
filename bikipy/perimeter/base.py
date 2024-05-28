@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from functools import cached_property, partial, reduce
 from logging import getLogger
-from typing import Any, ClassVar, Literal, Optional, Self
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Self
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,9 +21,10 @@ from bikipy._constant import QUIVER_KWARGS
 from bikipy.core.base import BikipyHashable
 from bikipy.core.mixin import InspectPlotMixin
 from bikipy.core.typing import Label
-from bikipy.core.video import VideoMetadata, VideoMetadataMixin
-from bikipy.perimeter.ray_offset_filter import (
-    AbstractComputeRayOffsetFilter,
+from bikipy.core.video import (
+    VideoMetadata,
+    VideoMetadataMixin,
+    resolve_video_from_metadata_and_manual_input,
 )
 from bikipy.math.vector import unit_vector
 from bikipy.perimeter.polygon.makesense import (
@@ -38,6 +39,9 @@ from bikipy.plot.generic import (
     color_map_by_number,
 )
 from bikipy.utils.makesense import get_point_from_makesense_row, read_makesense_point
+
+if TYPE_CHECKING:
+    from bikipy.perimeter.ray_offset_filter import AbstractComputeRayOffsetFilter
 
 logger = getLogger(__name__)
 
@@ -102,13 +106,15 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         ray_start_points: Np2DArrayFp64,
         ray_travel_direction_points: Np2DArrayFp64,
         max_radians: float,
+        trial_video: VideoMetadata,
         extra_ax: Optional[Axes] = None,
-    ) -> AbstractComputeRayOffsetFilter:
+    ) -> "AbstractComputeRayOffsetFilter":
         compute = self.compute_filter_by_ray_direction_offset_filter(
             op_label=op_label,
             ray_start_points=ray_start_points,
             ray_travel_direction_points=ray_travel_direction_points,
             max_radians=max_radians,
+            trial_video=trial_video,
         )
 
         if not self.is_inspecting and not extra_ax and not self.inspect_ray_direction_filter:
@@ -140,7 +146,8 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
         ray_start_points: Np2DArrayFp64,
         ray_travel_direction_points: Np2DArrayFp64,
         max_radians: float,
-    ) -> AbstractComputeRayOffsetFilter: ...
+        trial_video: VideoMetadata,
+    ) -> "AbstractComputeRayOffsetFilter": ...
 
     @abstractmethod
     def _compute_confinement_boolean_index(self, coordinates: Np2DArrayFp64) -> Np1DArrayBool: ...
@@ -157,11 +164,11 @@ class BasePerimeter(BikipyHashable, InspectPlotMixin, ABC):
     ) -> None: ...
 
     @abstractmethod
-    @property
-    def video(self) -> VideoMetadata: ...
-
-    @abstractmethod
     def change_reference(self, new_reference: Np2DArrayFp64, makesense_image_name: Optional[str] = None): ...
+
+    @property
+    @abstractmethod
+    def video(self) -> VideoMetadata: ...
 
     @property
     @abstractmethod
@@ -367,7 +374,7 @@ class BaseSinglePerimeter(BasePerimeter, VideoMetadataMixin, ABC):
     @computed_field(return_type=VideoMetadata)  # type: ignore[misc]
     @property
     def video(self) -> VideoMetadata:
-        upstream_video = super().video
+        upstream_video = resolve_video_from_metadata_and_manual_input(self)
 
         if self.derive_meters_per_pixel:
             logger.debug("derive_meters_per_pixel -> True: Deriving meters_per_pixel from perimeter")
@@ -495,22 +502,24 @@ class PerimeterSet(BasePerimeter):
         return result
 
     def compute_filter_by_ray_direction_offset_filter(
-        self, ray_start_points: Np2DArrayFp64, ray_travel_direction_points: Np2DArrayFp64, max_radians: float, **kwargs
+        self, op_label: str, ray_start_points: Np2DArrayFp64, ray_travel_direction_points: Np2DArrayFp64, max_radians: float, trial_video: VideoMetadata,
     ) -> Np1DArrayBool:
         # TODO: Create combining compute class for PerimeterSet
+        inclusive_op_label = f"{op_label}-{self.__class__.__name__}-inclusive"
         result = np.any(
             [
                 perimeter.compute_filter_by_ray_direction_offset_filter(
-                    self.__class__.__name__, ray_start_points, ray_travel_direction_points, max_radians
+                    inclusive_op_label, ray_start_points, ray_travel_direction_points, max_radians, trial_video
                 ).result
                 for perimeter in self.perimeters
             ]
         )
         if self.restricting_perimeters:
+            restricted_op_label = f"{op_label}-{self.__class__.__name__}-restricted"
             result = result & ~np.any(
                 [
                     perimeter.compute_filter_by_ray_direction_offset_filter(
-                        self.__class__.__name__, ray_start_points, ray_travel_direction_points, max_radians
+                        restricted_op_label, ray_start_points, ray_travel_direction_points, max_radians, trial_video
                     ).result
                     for perimeter in self.restricting_perimeters
                 ]

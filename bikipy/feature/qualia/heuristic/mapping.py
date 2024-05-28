@@ -2,15 +2,9 @@ from bikipy.feature.qualia.heuristic.abc import HeuristicCLS
 from bikipy.feature.qualia.heuristic.helper.outside_object_perimeter import (
     OutsideObjectPerimeterHeuristic,
 )
-from bikipy.feature.qualia.heuristic.solo.body_proximity import (
-    BodyProximityHeuristic,
-)
-from bikipy.feature.qualia.heuristic.solo.olfaction import (
-    OlfactionHeuristic,
-)
-from bikipy.feature.qualia.heuristic.solo.whiskers import (
-    WhiskerInteractionHeuristic,
-)
+from bikipy.feature.qualia.heuristic.solo.body_proximity import BodyProximityHeuristic
+from bikipy.feature.qualia.heuristic.solo.olfaction import OlfactionHeuristic
+from bikipy.feature.qualia.heuristic.solo.whiskers import WhiskerInteractionHeuristic
 
 SOLO_HEURISTICS = (
     BodyProximityHeuristic,

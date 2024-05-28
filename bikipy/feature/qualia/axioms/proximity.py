@@ -7,7 +7,6 @@ from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
 
 from bikipy import runtime_settings
 from bikipy.core.compute import AbstractComputePerimeterBooleanIndex
-from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.base import BasePerimeter, BaseSinglePerimeter
 from bikipy.plot.color import make_color_map
 
@@ -115,20 +114,18 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
         return result
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
-    def plot(self, ax: Axes, video: Optional[VideoMetadata] = None, coordinates_as_pixels: bool = False) -> None:
+    def plot(self, ax: Axes) -> None:
         assert self.result is not None
 
         inside_perimeter_border_plot_scaled = self.inside_perimeter_border
 
-        if video:
-            inside_perimeter_border_plot_scaled = video.prepare_coordinates_for_plotting(
-                inside_perimeter_border_plot_scaled, coordinates_as_pixels
+        if self.perimeter.video:
+            inside_perimeter_border_plot_scaled = self.perimeter.video.prepare_coordinates_for_plotting(
+                inside_perimeter_border_plot_scaled, False
             )
-            if coordinates_as_pixels:
-                video.upscaled_video.ax_ticks_metric_to_pixel(ax)
 
-        self.perimeter.plot_perimeter_on_ax(ax=ax, coordinates_as_pixels=coordinates_as_pixels)
-        self.perimeter_border.plot_perimeter_on_ax(ax=ax, coordinates_as_pixels=coordinates_as_pixels)
+        self.perimeter.plot_perimeter_on_ax(ax=ax, coordinates_as_pixels=False)
+        self.perimeter_border.plot_perimeter_on_ax(ax=ax, coordinates_as_pixels=False)
 
         color_count = 1
         if self.valid_border is not None:

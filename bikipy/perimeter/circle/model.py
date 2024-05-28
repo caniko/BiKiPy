@@ -7,13 +7,12 @@ from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
 from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64, NpNDArrayInt16
 
+from bikipy.core.video import VideoMetadata
 from bikipy.math.cached import meters2pixels
 from bikipy.math.confinement.ellipse import point_inside_ellipse
 from bikipy.math.vector import unit_vector
 from bikipy.perimeter.base import BaseSinglePerimeter
-from bikipy.perimeter.ray_offset_filter import (
-    ComputeRayOffsetFilterCircleTriangle,
-)
+from bikipy.perimeter.ray_offset_filter import ComputeRayOffsetFilterCircleTriangle
 from bikipy.plot.generic import plot_ellipse
 
 
@@ -109,6 +108,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
         ray_start_points: Np2DArrayFp64,
         ray_travel_direction_points: Np2DArrayFp64,
         max_radians: float,
+        trial_video: VideoMetadata,
     ) -> ComputeRayOffsetFilterCircleTriangle:
         return ComputeRayOffsetFilterCircleTriangle(
             label=op_label,
@@ -116,6 +116,7 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
             ray_start_points=ray_start_points,
             ray_travel_direction_points=ray_travel_direction_points,
             max_radians=max_radians,
+            manual_video=trial_video,
         )
 
     @classmethod

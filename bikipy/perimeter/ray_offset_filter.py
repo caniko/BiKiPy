@@ -1,3 +1,4 @@
+from abc import ABC
 from functools import cached_property
 
 import numpy as np
@@ -6,17 +7,14 @@ from pydantic import computed_field
 from pydantic_numpy.typing import Np1DArrayBool, Np1DArrayFp64, Np2DArrayFp64
 
 from bikipy._constant import QUIVER_KWARGS
-from bikipy.math.vector import radians_from_a_to_b, unit_vector, rotate_vectors_with_angle
-from bikipy.plot.generic import boolean_index_colormap
-from abc import ABC
-from functools import cached_property
-
-from pydantic import computed_field
-from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
-
 from bikipy.core.compute import AbstractComputePerimeterBooleanIndex
-from bikipy.math.vector import unit_vector
+from bikipy.math.vector import (
+    radians_from_a_to_b,
+    rotate_vectors_with_angle,
+    unit_vector,
+)
 from bikipy.perimeter.base import BasePerimeter
+from bikipy.plot.generic import boolean_index_colormap
 from bikipy.utils.collection_utils import project_mask_to_original
 
 
@@ -49,6 +47,7 @@ class ComputeRayOffsetFilterPolygon(AbstractComputeRayOffsetFilter):
     This problem is non-trivial for polygons. This is not the best solution in terms of speed for our application;
     nevertheless, it is quite robust and had the lowest implementation time.
     """
+
     angular_resolution: int = 100
 
     @computed_field  # type: ignore[misc]
@@ -81,7 +80,7 @@ class ComputeRayOffsetFilterPolygon(AbstractComputeRayOffsetFilter):
 
         return result
 
-    def plot(self, ax: Axes, *args, **kwargs) -> None:
+    def plot(self, ax: Axes) -> None:
         raise NotImplementedError()
 
 
@@ -128,7 +127,7 @@ class ComputeRayOffsetFilterCircleTriangle(AbstractComputeRayOffsetFilter):
     def plot_normal_to_ray_degree_offset(self) -> np.ndarray:
         return np.rad2deg(self.normal_to_ray_radians_offset[self.video.plot_slice])
 
-    def plot(self, ax: Axes, **kwargs) -> None:
+    def plot(self, ax: Axes) -> None:
         for (
             color,
             ray_travel_direction_point,

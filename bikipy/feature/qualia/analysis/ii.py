@@ -8,9 +8,7 @@ import pandas as pd
 from pydantic import computed_field
 from pydantic_numpy.typing import NpNDArrayUint8
 
-from bikipy.feature.qualia.analysis.i import (
-    OnePhysicalObjectSetQualiaAnalysis,
-)
+from bikipy.feature.qualia.analysis.i import OnePhysicalObjectSetQualiaAnalysis
 from bikipy.math.discrete import reduce_repeating_sequences
 
 logger = getLogger(__name__)

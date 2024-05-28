@@ -178,6 +178,9 @@ class VideoMetadata(_VideoMetadataBase):
             video_path=superior.video_path if superior.video_path else inferior.video_path,
         )
 
+    def fill(self, other: Self) -> Self:
+        return self.join(self, other, ignore_incongruity=True)
+
     @classmethod
     def from_path(cls, video_path: FilePath, **kwargs) -> Self:
         info = extract_video(path_to_video=video_path)
@@ -415,22 +418,13 @@ class VideoMetadataMixin(_VideoMetadataBase):
     @computed_field(return_type=VideoMetadata)
     @property
     def video(self) -> VideoMetadata:
-        video = VideoMetadata(
-            meters_per_pixel=self.meters_per_pixel,
-            fps=self.fps,
-            manual_resolution=self.resolution,
-            frame=self.frame,
-            video_path=self.video_path,
-        )
-        if self.manual_video:
-            video = VideoMetadata.join(self.manual_video, video, ignore_incongruity=True)
-
-        return video
+        return resolve_video_from_metadata_and_manual_input(self)
 
     @model_validator(mode="after")
     def validate_and_propagate_video_metadata(self) -> Self:
         if self.required_video_metadata_fields:
-            missing_fields = self.required_video_metadata_fields.difference(self.video.metadata)
+            video = self.video
+            missing_fields = self.required_video_metadata_fields.difference(video.metadata)
 
             if "resolution" in missing_fields and self.video.resolution is not None:
                 # Resolution can be derived from either frame or manual_resolution
@@ -450,3 +444,17 @@ class VideoMetadataMixin(_VideoMetadataBase):
         self.video_path = self.video.video_path
 
         return self
+
+
+def resolve_video_from_metadata_and_manual_input(video: VideoMetadataMixin) -> VideoMetadata:
+    result = VideoMetadata(
+        meters_per_pixel=video.meters_per_pixel,
+        fps=video.fps,
+        manual_resolution=video.resolution,
+        frame=video.frame,
+        video_path=video.video_path,
+    )
+    if video.manual_video:
+        result = VideoMetadata.join(video.manual_video, result, ignore_incongruity=True)
+
+    return result

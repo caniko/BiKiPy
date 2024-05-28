@@ -7,17 +7,12 @@ from pydantic import computed_field
 from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
 
 from bikipy.core.compute import video_gen_merge_perimeter_to_boolean_index_from_dict
-from bikipy.perimeter.ray_offset_filter import AbstractComputeRayOffsetFilter
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
-from bikipy.feature.qualia.heuristic.mixin import (
-    ProximityMixin,
-    RayMixin,
-)
-from bikipy.feature.qualia.heuristic.solo.abc import (
-    AbstractSoloHeuristic,
-)
+from bikipy.feature.qualia.heuristic.mixin import ProximityMixin, RayMixin
+from bikipy.feature.qualia.heuristic.solo.abc import AbstractSoloHeuristic
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import BasePerimeter
+from bikipy.perimeter.ray_offset_filter import AbstractComputeRayOffsetFilter
 
 
 class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
@@ -69,13 +64,12 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
         return (
             self.manual_leftward_observation
             if self.manual_leftward_observation
-            else AbstractComputeRayOffsetFilter(
-                perimeter=self.perimeter,
+            else self.perimeter.compute_filter_by_ray_direction_offset_filter(
+                op_label="Left",
                 ray_start_points=self.reader[self.center_ear_label],
                 ray_travel_direction_points=self.reader[self.left_ear_label],
                 max_radians=self.maximum_radians,
-                label="Left",
-                manual_video=self.video,
+                trial_video=self.video,
             )
         )
 
@@ -100,13 +94,12 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
         return (
             self.manual_rightward_observation
             if self.manual_rightward_observation
-            else AbstractComputeRayOffsetFilter(
-                perimeter=self.perimeter,
+            else self.perimeter.compute_filter_by_ray_direction_offset_filter(
+                op_label="Right",
                 ray_start_points=self.reader[self.center_ear_label],
                 ray_travel_direction_points=self.reader[self.right_ear_label],
                 max_radians=self.maximum_radians,
-                label="Right",
-                manual_video=self.video,
+                trial_video=self.video,
             )
         )
 
@@ -145,10 +138,10 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
     def perimeter_to_boolean_index(self) -> dict[BasePerimeter, Np1DArrayBool]:
         return video_gen_merge_perimeter_to_boolean_index_from_dict(
             self.left_proximity.video_gen_merge_perimeter_to_boolean_index(
-                self.leftward_observation, both_or_false=True
+                self.leftward_observation.result, both_or_false=True
             ),
             self.right_proximity.video_gen_merge_perimeter_to_boolean_index(
-                self.rightward_observation, both_or_false=True
+                self.rightward_observation.result, both_or_false=True
             ),
         )
 
@@ -171,15 +164,15 @@ class WhiskerInteractionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixi
         )
 
         # Left
-        self.left_proximity.plot(axes[0][0], self.video)
-        self.leftward_observation.plot(axes[0][1], self.video)
+        self.left_proximity.plot(axes[0][0])
+        self.leftward_observation.plot(axes[0][1])
 
         axes[0][2].set_title("LeftwardProximalFOV")
         self.reader.plot_boolean_index(self.left_result, axes[0][2], self.left_ear_label)
 
         # Right
-        self.right_proximity.plot(axes[1][0], self.video)
-        self.rightward_observation.plot(axes[1][1], self.video)
+        self.right_proximity.plot(axes[1][0])
+        self.rightward_observation.plot(axes[1][1])
 
         axes[1][2].set_title("RightwardProximalFOV")
         self.reader.plot_boolean_index(self.right_result, axes[1][2], self.right_ear_label)

@@ -5,13 +5,8 @@ from pydantic import computed_field
 from pydantic_numpy.typing import Np1DArrayBool
 
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
-from bikipy.feature.qualia.heuristic.helper.abc import (
-    AbstractQualiaHelperHeuristic,
-)
-from bikipy.feature.qualia.heuristic.mixin import (
-    ProximityMixin,
-    SingleComponentMixin,
-)
+from bikipy.feature.qualia.heuristic.helper.abc import AbstractQualiaHelperHeuristic
+from bikipy.feature.qualia.heuristic.mixin import ProximityMixin, SingleComponentMixin
 
 
 class OutsideObjectPerimeterHeuristic(SingleComponentMixin, ProximityMixin, AbstractQualiaHelperHeuristic):

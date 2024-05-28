@@ -6,17 +6,12 @@ import pandas as pd
 from pydantic import computed_field
 from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
 
-from bikipy.perimeter.ray_offset_filter import AbstractComputeRayOffsetFilter
 from bikipy.feature.qualia.axioms.proximity import ComputeProximity
-from bikipy.feature.qualia.heuristic.mixin import (
-    ProximityMixin,
-    RayMixin,
-)
-from bikipy.feature.qualia.heuristic.solo.abc import (
-    AbstractSoloHeuristic,
-)
+from bikipy.feature.qualia.heuristic.mixin import ProximityMixin, RayMixin
+from bikipy.feature.qualia.heuristic.solo.abc import AbstractSoloHeuristic
 from bikipy.math.discrete import start_all_true_end_main_false
 from bikipy.perimeter.base import BasePerimeter
+from bikipy.perimeter.ray_offset_filter import AbstractComputeRayOffsetFilter
 
 
 class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
@@ -68,6 +63,7 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
                 ray_start_points=self.reader[self.center_ear_label],
                 ray_travel_direction_points=self.reader[self.nose_label],
                 max_radians=self.maximum_radians,
+                trial_video=self.video,
             )
         )
 
@@ -93,7 +89,7 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
     @property
     def perimeter_to_boolean_index(self) -> dict[BasePerimeter, Np1DArrayBool]:
         return self.nose_proximity.video_gen_merge_perimeter_to_boolean_index(
-            self.snout_towards_object_rays, both_or_false=True
+            self.snout_towards_object_rays.result, both_or_false=True
         )
 
     @computed_field  # type: ignore[misc]
@@ -112,8 +108,8 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
     def plot(self) -> plt.Figure:
         fig, axes = self.perimeter.subplots(nrows=3, title=self.heuristic_alias)
 
-        self.nose_proximity.plot(axes[0], self.video)
-        self.snout_towards_object_rays.plot(axes[1], self.video)
+        self.nose_proximity.plot(axes[0])
+        self.snout_towards_object_rays.plot(axes[1])
         self.plot_result(axes[2], self.nose_label)
 
         return fig
