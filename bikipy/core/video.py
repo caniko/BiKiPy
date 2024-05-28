@@ -10,7 +10,7 @@ from collections.abc import Iterable
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import Any, ClassVar, Generator, Optional, Self, Sequence
+from typing import Any, ClassVar, Generator, Optional, Self
 
 import cv2
 import matplotlib.pyplot as plt
@@ -69,7 +69,7 @@ class _VideoMetadataBase(BikipyModel):
         "This might be done during bikipy ingress",
     )
 
-    category = "video_metadata"
+    category: ClassVar[str] = "video_metadata"
 
     @field_validator("frame")
     def make_sure_frame_is_read(cls, value: Optional[Frame]) -> NpNDArrayUint8 | None:

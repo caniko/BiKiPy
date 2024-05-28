@@ -1,22 +1,20 @@
 from abc import ABC
 from functools import cached_property
-from typing import Any, Optional, Self
+from typing import Optional, Self
 
 import numpy as np
 from matplotlib.axes import Axes
 from pydantic import computed_field, field_validator
-from pydantic_numpy.typing import (
-    Np1DArrayBool,
-    Np2DArrayFp64,
-    NpNDArrayInt16,
-)
+from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64, NpNDArrayInt16
 
 from bikipy.math.cached import meters2pixels
 from bikipy.math.confinement.ellipse import point_inside_ellipse
-from bikipy.math.vector import ray_direction_filter_circle_triangle, unit_vector
+from bikipy.math.vector import unit_vector
 from bikipy.perimeter.base import BaseSinglePerimeter
+from bikipy.perimeter.ray_offset_filter import (
+    ComputeRayOffsetFilterCircleTriangle,
+)
 from bikipy.plot.generic import plot_ellipse
-from bikipy.plot.inspect import plot_ray_direction_filter_circle_triangle
 
 
 class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
@@ -105,75 +103,20 @@ class BaseCirclePerimeter(BaseSinglePerimeter, ABC):
 
         return result
 
-    def filter_by_ray_direction_offset_filter(
+    def compute_filter_by_ray_direction_offset_filter(
         self,
         op_label: str,
         ray_start_points: Np2DArrayFp64,
         ray_travel_direction_points: Np2DArrayFp64,
         max_radians: float,
-        extra_ax: Optional[Axes] = None,
-    ) -> tuple[Np1DArrayBool, dict[str, Any]]:
-        closest_points_on_edges = self.closest_point_on_edge_to_coordinates(ray_travel_direction_points)
-        vector_to_closest_point_on_edge = self.vector_to_closest_point_on_edge(
-            ray_travel_direction_points, closest_points_on_edges
-        )
-
-        result, travel_direction_rays, normal_to_ray_radians_offset = ray_direction_filter_circle_triangle(
-            ray_travel_direction_points=ray_travel_direction_points,
+    ) -> ComputeRayOffsetFilterCircleTriangle:
+        return ComputeRayOffsetFilterCircleTriangle(
+            label=op_label,
+            perimeter=self,
             ray_start_points=ray_start_points,
-            vector_to_closest_point_on_edge=vector_to_closest_point_on_edge,
+            ray_travel_direction_points=ray_travel_direction_points,
             max_radians=max_radians,
         )
-
-        if not self.is_inspecting and not extra_ax and not self.inspect_ray_direction_filter:
-            return result
-
-        plot_prepped_result = result[self.video.plot_slice]
-        plot_prepared_travel_direction_rays = self.video.prepare_coordinates_for_plotting(
-            travel_direction_rays, step=True
-        )
-        plot_prepped_ray_travel_direction_points = self.video.prepare_coordinates_for_plotting(
-            ray_travel_direction_points, step=True
-        )
-        plot_prepped_vector_to_closest_point_on_edge = self.video.prepare_coordinates_for_plotting(
-            vector_to_closest_point_on_edge, step=True
-        )
-        plot_prepped_radians_sequence = normal_to_ray_radians_offset[self.video.plot_slice]
-
-        if extra_ax:
-            self.plot_perimeter_on_ax(ax=extra_ax)
-            plot_ray_direction_filter_circle_triangle(
-                ax=extra_ax,
-                filter_boolean_index=plot_prepped_result,
-                ray_travel_direction_points=plot_prepped_ray_travel_direction_points,
-                travel_direction_rays=plot_prepared_travel_direction_rays,
-                vectors_to_closest_point_on_edge=plot_prepped_vector_to_closest_point_on_edge,
-                normal_to_ray_radians_offset=plot_prepped_radians_sequence,
-            )
-
-        if not self.inspect_ray_direction_filter:
-            return result
-
-        fig, ax = self.video.subplot()
-
-        self.plot_perimeter_on_ax(ax=ax)
-        plot_ray_direction_filter_circle_triangle(
-            ax=ax,
-            filter_boolean_index=plot_prepped_result,
-            ray_travel_direction_points=plot_prepped_ray_travel_direction_points,
-            travel_direction_rays=plot_prepared_travel_direction_rays,
-            vectors_to_closest_point_on_edge=plot_prepped_vector_to_closest_point_on_edge,
-            normal_to_ray_radians_offset=plot_prepped_radians_sequence,
-        )
-
-        self.save_fig(
-            "ray-direction-filter",
-            op_label,
-            base_filename=f"{self.perimeter_label}-{self.label}",
-            fig=fig,
-        )
-
-        return result
 
     @classmethod
     @property

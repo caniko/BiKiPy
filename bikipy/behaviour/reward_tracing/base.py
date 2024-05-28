@@ -114,7 +114,7 @@ class RewardTraceTrialMixin[StartPerimeter: BaseSinglePerimeter, RewardPerimeter
     def _analysis_series_list(self) -> list[pd.Series]:
         upstream_list = super()._analysis_series_list
 
-        category = "Cheeseboard"
+        category: ClassVar[str] = "Cheeseboard"
         upstream_list.append(
             pd.Series(
                 [self.seconds_spent_in_reward_area, self.seconds_to_find_reward, *self.start_to_reward_motion],

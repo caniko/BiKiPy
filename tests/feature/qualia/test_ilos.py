@@ -1,6 +1,6 @@
 import numpy as np
 
-from bikipy.feature.qualia.axioms.ilos import ComputeInLineOfSight
+from bikipy.perimeter.ray_offset_filter import AbstractComputeRayOffsetFilter
 from tests.test_data.perimeter.test_perimeter_readers import (
     rectangle_perimeter_rectangle_test_object,
 )
@@ -25,7 +25,7 @@ def test_compute_compute_in_line_of_sight():
     corner_start_point_off_by_1 = [corner_x + 50, corner_y + 1]
     corner_direction_point_off_by_1 = [corner_x + 40, corner_y + 1]
 
-    c_ilos = ComputeInLineOfSight(
+    c_ilos = AbstractComputeRayOffsetFilter(
         perimeter=perimeter,
         ray_start_point=np.array(
             [mid_ray_start_point, mid_ray_start_point, corner_start_point, corner_start_point_off_by_1]

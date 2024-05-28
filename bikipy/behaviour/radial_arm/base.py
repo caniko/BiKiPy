@@ -37,7 +37,7 @@ logger = getLogger(__name__)
 
 
 class RadialMazeBase(BikipyHashable):
-    category = "radial_maze"
+    category: ClassVar[str] = "radial_maze"
 
 
 class BaseRadialMazeExperiment(RadialMazeBase, BaseExperiment):

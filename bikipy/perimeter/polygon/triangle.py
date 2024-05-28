@@ -49,7 +49,7 @@ class TrianglePerimeter(BasePolygonPerimeter):
             (c1 < 0.0) & (c2 < 0.0) & (c3 < 0.0),
         )
 
-    def filter_by_ray_direction_offset_filter(
+    def compute_filter_by_ray_direction_offset_filter(
         self,
         op_label: str,
         ray_start_points: Np2DArrayFp64,

@@ -11,8 +11,7 @@ from bikipy.core.video import VideoMetadata
 from bikipy.feature.tolerance.single import single_node_tolerance_model
 from bikipy.perimeter.base import PerimeterSet
 from bikipy.plot import BOTTOM_LEGEND_KWARGS
-from bikipy.plot.generic import plot_coordinates
-from bikipy.plot.generic import generic_figure_finalization
+from bikipy.plot.generic import generic_figure_finalization, plot_coordinates
 
 
 def detect_multi_node_sequential_perimeter_presence(

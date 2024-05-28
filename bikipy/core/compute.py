@@ -8,7 +8,7 @@ from pydantic_numpy.typing import Np1DArrayBool
 
 from bikipy.core.base import BikipyModel
 from bikipy.core.video import VideoMetadataMixin
-from bikipy.perimeter.base import BasePerimeter, BaseSinglePerimeter
+from bikipy.perimeter.base import BasePerimeter
 from bikipy.plot import BOTTOM_LEGEND_KWARGS
 
 
@@ -64,7 +64,9 @@ class AbstractComputePerimeterBooleanIndex[P: BasePerimeter](AbstractCompute[Np1
         )
 
 
-def video_gen_merge_perimeter_to_boolean_index_from_dict[P: BasePerimeter](
+def video_gen_merge_perimeter_to_boolean_index_from_dict[
+    P: BasePerimeter
+](
     a_perimeter_to_boolean_index,
     b_perimeter_to_boolean_index: dict[P, Np1DArrayBool],
     both_or_false: bool = False,

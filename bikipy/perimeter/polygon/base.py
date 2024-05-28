@@ -18,6 +18,7 @@ from bikipy.math.vector import (
 )
 from bikipy.perimeter.base import BaseSinglePerimeter
 from bikipy.perimeter.circle.model import CircleFixedRadiusPerimeter
+from bikipy.perimeter.ray_offset_filter import ComputeRayOffsetFilterPolygon
 from bikipy.utils.collection_utils import project_mask_to_original
 
 logger = getLogger(__name__)
@@ -151,57 +152,20 @@ class BasePolygonPerimeter(BaseSinglePerimeter, ABC):
             return np.any(result, axis=0)
         return result
 
-    def filter_by_ray_direction_offset_filter(
+    def compute_filter_by_ray_direction_offset_filter(
         self,
         op_label: str,
         ray_start_points: Np2DArrayFp64,
         ray_travel_direction_points: Np2DArrayFp64,
         max_radians: float,
-        extra_ax: Optional[Axes] = None,
-        *,
-        angular_resolution: int = 200,
-    ) -> tuple[Np1DArrayBool, dict[str, Any]]:
-        """
-        Determine if the object is within the ray cone
-
-        Emit rays from the point representing the region of interest, and checking for collisions
-        with the perimeter.
-
-        This problem is non-trivial for polygons. This is not the best solution in terms of speed for our application;
-        nevertheless, it is quite robust and had the lowest implementation time.
-
-        :param op_label:
-        :param ray_start_points:
-        :param ray_travel_direction_points:
-        :param max_radians:
-        :param extra_ax:
-        :param angular_resolution:
-        :return:
-        """
-        ray_vectors = ray_travel_direction_points - ray_start_points
-
-        in_direct_los = self.ray_intersects_on_polygon(
-            ray_travel_direction_points,
-            ray_vectors,
+    ) -> ComputeRayOffsetFilterPolygon:
+        return ComputeRayOffsetFilterPolygon(
+            label=op_label,
+            perimeter=self,
+            ray_start_points=ray_start_points,
+            ray_travel_direction_points=ray_travel_direction_points,
+            max_radians=max_radians,
         )
-        if np.all(in_direct_los):
-            return in_direct_los
-
-        radians_to_check = np.linspace(-max_radians, max_radians, angular_resolution)
-
-        not_in_direct_los = ~in_direct_los
-        rotated_ray_vectors = rotate_vectors_with_angle(ray_vectors[not_in_direct_los], radians_to_check)
-
-        in_tolerable_los = np.empty(rotated_ray_vectors.shape[:2])
-        for i in range(angular_resolution * 2):
-            in_tolerable_los[i] = self.ray_intersects_on_polygon(
-                ray_travel_direction_points[not_in_direct_los],
-                rotated_ray_vectors[i],
-            )
-        in_tolerable_los = np.any(in_tolerable_los, axis=0)
-        result = project_mask_to_original(in_tolerable_los, in_direct_los) | in_direct_los
-
-        return result, dict()
 
     def change_reference(self, new_reference: Np2DArrayFp64, makesense_image_name: Optional[str] = None):
         if self.reference_point is None:

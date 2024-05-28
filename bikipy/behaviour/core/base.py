@@ -30,7 +30,7 @@ from bikipy.core.mixin import AbstractFeatureCollectorMixin, InspectPlotMixin
 from bikipy.core.typing import Label
 from bikipy.core.video import VideoMetadata, VideoMetadataMixin
 from bikipy.feature.motion import Motion, motion_analysis_indexer
-from bikipy.feature.qualia.physical_object.trial_mixin import PhysicalObjectTrialMixin
+from bikipy.feature.qualia.physical_object_trial_mixin import PhysicalObjectTrialMixin
 from bikipy.perimeter import PERIMETER_CLASS_NAME_TO_CLASS
 from bikipy.perimeter.base import BaseSinglePerimeter, PerimeterCLS, PerimeterSet
 from bikipy.perimeter.trial_mixin import TrialWithPerimeterMixin
@@ -59,7 +59,7 @@ class BaseTrial(Behaviour, AbstractFeatureCollectorMixin):
     # enclosure: Optional[BasePerimeter] = enclosure_field
 
     # Class variables
-    category = "trial"
+    category: ClassVar[str] = "trial"
 
     perimeter_labels: ClassVar[set[str]] = set()
     label_to_perimeter: ClassVar[dict[str, BaseSinglePerimeter] | None]
@@ -265,7 +265,7 @@ class BaseExperiment(Behaviour):
         False, description="Skip the habituation class during analysis, practically skipping the the habituation class"
     )
 
-    category = "experiment"
+    category: ClassVar[str] = "experiment"
 
     experiment_labels: ClassVar[set[str]]
 
