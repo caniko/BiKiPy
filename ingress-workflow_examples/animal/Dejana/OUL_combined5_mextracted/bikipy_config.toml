@@ -12,7 +12,7 @@ dataset_directory = "/data/can/Projects/bikipy/ingress-workflow_examples/animal/
 create_inspection_plots = true
 only_one_instance_of_trial_class = false
 custom_trial_sequence = ["training", "training", "training", "update", "test"]
-trial_ids_to_analyse = ["1332_4"]
+#trial_ids_to_analyse = ["1332_4"]
 #trial_ids_to_analyse = ["1330_4"]
 lazy_dev_mode = true
 

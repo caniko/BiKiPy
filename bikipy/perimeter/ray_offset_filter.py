@@ -36,6 +36,11 @@ class AbstractComputeRayOffsetFilter(AbstractComputePerimeterBooleanIndex, ABC):
     def offset_rays(self) -> Np2DArrayFp64:
         return unit_vector(self.ray_travel_direction_points - self.ray_start_points)
 
+    @computed_field  # type: ignore[misc]
+    @cached_property
+    def plot_offset_rays(self) -> np.ndarray:
+        return self.video.prepare_coordinates_for_plotting(self.offset_rays, step=True)
+
 
 class ComputeRayOffsetFilterPolygon(AbstractComputeRayOffsetFilter):
     """
@@ -99,13 +104,13 @@ class ComputeRayOffsetFilterCircleTriangle(AbstractComputeRayOffsetFilter):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def normal_to_ray_radians_offset(self) -> Np1DArrayFp64:
+    def normal_to_ray_offset_radians(self) -> Np1DArrayFp64:
         return radians_from_a_to_b(self.vector_to_closest_point_on_edge, self.offset_rays)
 
     @computed_field  # type: ignore[misc]
     @cached_property
     def result(self) -> Np1DArrayBool:
-        return self.normal_to_ray_radians_offset <= self.max_radians
+        return self.normal_to_ray_offset_radians <= self.max_radians
 
     @computed_field  # type: ignore[misc]
     @cached_property
@@ -114,35 +119,30 @@ class ComputeRayOffsetFilterCircleTriangle(AbstractComputeRayOffsetFilter):
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def plot_travel_direction_rays(self) -> np.ndarray:
-        return self.video.prepare_coordinates_for_plotting(self.travel_direction_rays, step=True)
-
-    @computed_field  # type: ignore[misc]
-    @cached_property
     def plot_vectors_to_closest_point_on_edge(self) -> np.ndarray:
         return self.video.prepare_coordinates_for_plotting(self.vector_to_closest_point_on_edge, step=True)
 
     @computed_field  # type: ignore[misc]
     @cached_property
-    def plot_normal_to_ray_degree_offset(self) -> np.ndarray:
-        return np.rad2deg(self.normal_to_ray_radians_offset[self.video.plot_slice])
+    def plot_normal_to_ray_offset_degrees(self) -> np.ndarray:
+        return np.rad2deg(self.normal_to_ray_offset_radians[self.video.plot_slice])
 
     def plot(self, ax: Axes) -> None:
         for (
             color,
             ray_travel_direction_point,
-            travel_direction_ray,
+            offset_ray,
             vector_to_closest_point_on_edge,
-            degrees,
+            offset_degree,
         ) in zip(
             boolean_index_colormap(self.result[self.video.plot_slice]),
             self.plot_ray_travel_direction_points,
-            self.plot_travel_direction_rays,
+            self.plot_offset_rays,
             self.plot_vectors_to_closest_point_on_edge,
-            self.plot_normal_to_ray_degree_offset,
+            self.plot_normal_to_ray_offset_degrees,
         ):
             rtdx, rtdy = ray_travel_direction_point
 
-            ax.quiver(rtdx, rtdy, *travel_direction_ray, color=color, **QUIVER_KWARGS)
+            ax.quiver(rtdx, rtdy, *offset_ray, color=color, **QUIVER_KWARGS)
             ax.quiver(rtdx, rtdy, *vector_to_closest_point_on_edge, color="green", **QUIVER_KWARGS)
-            ax.text(rtdx, rtdy, f"{degrees:.1f}°", fontsize=8, color="green")
+            ax.text(rtdx, rtdy, f"{offset_degree:.1f}°", fontsize=8, color="green")

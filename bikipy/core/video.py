@@ -315,7 +315,7 @@ class VideoMetadata(_VideoMetadataBase):
     @computed_field  # type: ignore[misc]
     @cached_property
     def plot_slice(self) -> slice:
-        return slice(None, None, round(4 * self.fps / 5))
+        return slice(None, None, round(2 * self.fps))
 
     def ax_ticks_metric_to_pixel(self, ax: Axes, number_of_ticks: int = 5) -> None:
         ax.set_xticks(
