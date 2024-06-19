@@ -1,14 +1,12 @@
-from functools import cached_property, lru_cache
-from typing import ClassVar, Optional
+from functools import cached_property
+from typing import ClassVar, Optional, Type
 
-import numpy as np
-from pydantic import computed_field, field_validator, validate_call
-from pydantic_numpy.typing import NpNDArrayInt16
-from skg import ngauss_fit
+from pydantic import computed_field, field_validator
 
 from bikipy._dev_utils.fields import enclosure_field
 from bikipy._dev_utils.message import report_to_github
 from bikipy.behaviour.core.base import BaseExperiment, BaseTrial, HabituationTrialMixin
+from bikipy.behaviour.core.constant import ExperimentStage
 from bikipy.perimeter.base import BasePerimeter, PerimeterCLS, PerimeterSet
 
 
@@ -65,18 +63,6 @@ class EnclosedTrial(BaseTrial):
 
         return PerimeterSet(perimeters=enclosures)
 
-    @computed_field  # type: ignore[misc]
-    @cached_property
-    def gaussian_center_to_periphery_score(self) -> float:
-        func = gaussian_scoring_field(
-            self.metric_resolution,
-            gaussian_dividend_multiplayer=self.gaussian_dividend_multiplayer,
-        )
-        scores = np.array(
-            [func(*coordinate) for coordinate in self.reader.kinematic_coordinates if not np.any(np.isnan(coordinate))]
-        )
-        return np.sum(scores) / (self.gaussian_dividend_multiplayer * self.number_of_frames)
-
 
 class EnclosedHabituationTrial(HabituationTrialMixin, EnclosedTrial):
     pass
@@ -85,26 +71,9 @@ class EnclosedHabituationTrial(HabituationTrialMixin, EnclosedTrial):
 class EnclosedExperiment(BaseExperiment):
     @classmethod
     @property
-    def trial_perimeter_enclosure_classes(cls) -> dict[str, PerimeterCLS]:
+    def trial_perimeter_enclosure_classes(cls) -> dict[ExperimentStage, Type[BasePerimeter]]:
         return {
             enclosed_trial_class.experiment_stage: enclosed_trial_class.trial_perimeter_enclosure_class
             for enclosed_trial_class in cls.trial_classes
             if issubclass(enclosed_trial_class, EnclosedTrial)
         }
-
-
-@lru_cache
-@validate_call
-def gaussian_scoring_field(resolution: NpNDArrayInt16, scale: int = 1, gaussian_dividend_multiplayer: int = 1):
-    resolution *= scale
-
-    model = ngauss_fit.model(
-        x=np.indices(resolution, dtype=float),
-        a=gaussian_dividend_multiplayer,
-        mu=resolution / 2.0,
-        sigma=np.array([[resolution[0] ** 2, 0.0], [0.0, resolution[1] ** 2]]),
-        axis=0,
-    )
-
-    scale_as_float = float(scale)
-    return lambda x, y: model[round(x * scale_as_float)][round(y * scale_as_float)]

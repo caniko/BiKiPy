@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import ClassVar, Self
+from typing import ClassVar
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -57,7 +57,7 @@ class AbstractComputePerimeterBooleanIndex[P: BasePerimeter](AbstractCompute[Np1
     def perimeter_to_boolean_index(self) -> dict[P, Np1DArrayBool]: ...
 
     def video_gen_merge_perimeter_to_boolean_index(
-        self, other: Self, both_or_false: bool = False
+        self, other: "AbstractComputePerimeterBooleanIndex", both_or_false: bool = False
     ) -> dict[P, Np1DArrayBool]:
         return video_gen_merge_perimeter_to_boolean_index_from_dict(
             self.perimeter_to_boolean_index, other.perimeter_to_boolean_index, both_or_false

@@ -502,7 +502,12 @@ class PerimeterSet(BasePerimeter):
         return result
 
     def compute_filter_by_ray_direction_offset_filter(
-        self, op_label: str, ray_start_points: Np2DArrayFp64, ray_travel_direction_points: Np2DArrayFp64, max_radians: float, trial_video: VideoMetadata,
+        self,
+        op_label: str,
+        ray_start_points: Np2DArrayFp64,
+        ray_travel_direction_points: Np2DArrayFp64,
+        max_radians: float,
+        trial_video: VideoMetadata,
     ) -> Np1DArrayBool:
         # TODO: Create combining compute class for PerimeterSet
         inclusive_op_label = f"{op_label}-{self.__class__.__name__}-inclusive"

@@ -89,7 +89,7 @@ class OlfactionHeuristic(AbstractSoloHeuristic, ProximityMixin, RayMixin):
     @property
     def perimeter_to_boolean_index(self) -> dict[BasePerimeter, Np1DArrayBool]:
         return self.nose_proximity.video_gen_merge_perimeter_to_boolean_index(
-            self.snout_towards_object_rays.result, both_or_false=True
+            self.snout_towards_object_rays, both_or_false=True
         )
 
     @computed_field  # type: ignore[misc]

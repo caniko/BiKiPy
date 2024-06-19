@@ -138,6 +138,7 @@ class_name = "OlfactionHeuristic"
 optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_nose_olfaction_rays", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "nose_label", "manual_resolution", "torso_label", "video_path"]
 
 [heuristics.OlfactionHeuristic.defined]
+maximum_distance_meters = 0.06
 
 [heuristics.common]
 optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "manual_resolution", "video_path"]

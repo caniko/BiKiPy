@@ -73,7 +73,7 @@ class ComputeProximity(AbstractComputePerimeterBooleanIndex):
         if self.valid_perimeter is not None:
             return self.valid_perimeter
 
-        assert False
+        raise AttributeError(f"{self.label}: No valid perimeter or border found")
 
     @computed_field  # type: ignore[misc]
     @cached_property

@@ -1,13 +1,13 @@
-from typing import Any, Optional
-
-import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import computed_field
 from pydantic_numpy.typing import Np1DArrayBool, Np2DArrayFp64
 
 from bikipy.core.video import VideoMetadata
 from bikipy.perimeter.polygon.base import BasePolygonPerimeter
-from bikipy.perimeter.ray_offset_filter import ComputeRayOffsetFilterCircleTriangle, ComputeRayOffsetFilterPolygon
+from bikipy.perimeter.ray_offset_filter import (
+    ComputeRayOffsetFilterCircleTriangle,
+    ComputeRayOffsetFilterPolygon,
+)
 
 
 class TrianglePerimeter(BasePolygonPerimeter):
@@ -57,7 +57,7 @@ class TrianglePerimeter(BasePolygonPerimeter):
         ray_start_points: Np2DArrayFp64,
         ray_travel_direction_points: Np2DArrayFp64,
         max_radians: float,
-        trial_video: VideoMetadata
+        trial_video: VideoMetadata,
     ) -> ComputeRayOffsetFilterCircleTriangle | ComputeRayOffsetFilterPolygon:
         method = (
             self.circle.filter_by_ray_direction_offset_filter

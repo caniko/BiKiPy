@@ -15,7 +15,6 @@ class PluginBonsaiTimestamp(TrialWiseMetadataOnlyMixin, BasePluginFile):
 
     def trialwise_and_metadata(self, trial_id: Label, naive: bool = False) -> Np2DArrayFp64:
         self._assert_correct_scope_trialwise_metadata()
-        datetime_array = (
-            pd.read_csv(self.data_path, header=None, usecols=[16], parse_dates=[0]).values.T[0].astype(np.datetime64)
-        )
+        datetime_series = pd.read_csv(self.data_path, header=None, usecols=[16], parse_dates=[0]).iloc[:, 0]
+        datetime_array = datetime_series.values
         return (datetime_array - datetime_array[0]).astype(np.float64) / 10**6
