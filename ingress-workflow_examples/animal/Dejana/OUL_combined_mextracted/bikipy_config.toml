@@ -8,12 +8,11 @@ required = ["dataset_directory", "definition_meters_per_pixel", "project_kit_con
 optional = ["create_inspection_plots", "custom_trial_sequence", "definition_center", "definition_change_reference", "definition_enclosure", "definition_frame", "definition_radial", "definition_single_perimeter", "definition_timestamp", "definition_video", "first_stage_is_habituation", "ingress_defined_perimeters", "lazy_dev_mode", "metadata_trial_ids_are_higher_level", "no_cache", "only_one_instance_of_trial_class", "trial_ids_to_analyse", "trial_sequence_loops"]
 
 [ingress.defined]
-dataset_directory = "/data/can/Projects/bikipy/ingress-workflow_examples/animal/Dejana/OUL_combined5_mextracted/dataset"
+dataset_directory = "/data/can/Projects/bikipy/ingress-workflow_examples/animal/Dejana/OUL_combined_mextracted/dataset"
 create_inspection_plots = true
 only_one_instance_of_trial_class = false
 custom_trial_sequence = ["training", "training", "training", "update", "test"]
-#trial_ids_to_analyse = ["1332_4"]
-#trial_ids_to_analyse = ["1330_4"]
+trial_ids_to_analyse = ["1033_0", "1033_1", "1033_2", "1033_3", "1033_4"]
 lazy_dev_mode = true
 
 [ingress.defined.plugin_definitions]
@@ -124,21 +123,21 @@ class_name = "BodyProximityHeuristic"
 optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "manual_resolution", "tail_base_label", "torso_label", "video_path"]
 
 [heuristics.BodyProximityHeuristic.defined]
-maximum_distance_meters = 0.06
+maximum_distance_meters = 0.05
 
 [heuristics.WhiskerInteractionHeuristic]
 class_name = "WhiskerInteractionHeuristic"
 optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "left_ear_label", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "manual_resolution", "right_ear_label", "video_path"]
 
 [heuristics.WhiskerInteractionHeuristic.defined]
-maximum_distance_meters = 0.06
+maximum_distance_meters = 0.05
 
 [heuristics.OlfactionHeuristic]
 class_name = "OlfactionHeuristic"
 optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_nose_olfaction_rays", "manual_video", "maximum_degrees", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "nose_label", "manual_resolution", "torso_label", "video_path"]
 
 [heuristics.OlfactionHeuristic.defined]
-maximum_distance_meters = 0.06
+maximum_distance_meters = 0.05
 
 [heuristics.common]
 optional = ["center_ear_label", "filter_in_sequence", "fps", "frame", "manual_video", "maximum_distance_meters", "meters_per_pixel", "minimum_frame_length", "manual_resolution", "video_path"]
