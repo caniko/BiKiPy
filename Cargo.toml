@@ -1,0 +1,66 @@
+[workspace]
+resolver = "2"
+# Wildcard members so crane can build individual crates as separate derivations
+# without triggering rebuilds of unrelated packages.
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+authors = ["Can H. Tartanoglu <canhtart@gmail.com>"]
+
+[workspace.metadata.crane]
+name = "bikipy-workspace"
+
+[workspace.dependencies]
+# Workspace crates
+bikipy-core = { path = "crates/bikipy-core" }
+bikipy-math = { path = "crates/bikipy-math" }
+bikipy-perimeter = { path = "crates/bikipy-perimeter" }
+bikipy-reader = { path = "crates/bikipy-reader" }
+bikipy-feature = { path = "crates/bikipy-feature" }
+bikipy-behaviour = { path = "crates/bikipy-behaviour" }
+bikipy-ingress = { path = "crates/bikipy-ingress" }
+
+# Data processing
+polars = { version = "0.53", features = [
+    "lazy",
+    "csv",
+    "parquet",
+    "ipc",
+    "dtype-struct",
+    "is_in",
+    "new_streaming",
+    "round_series",
+    "abs",
+    "concat_str",
+    "rolling_window",
+    "interpolate",
+    "trigonometry",
+    "rle",
+] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.9"
+serde_yaml = "0.9"
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Async & parallelism
+tokio = { version = "1", features = ["full"] }
+rayon = "1"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Progress
+indicatif = "0.18"

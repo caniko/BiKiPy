@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \":*)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''bikipy/ingress/plugin/map.py''\\).read\\(\\)\\); print\\(''map.py OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''bikipy/ingress/plugin/perimeter/auto_detect.py''\\).read\\(\\)\\); print\\(''auto_detect.py OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''bikipy/ingress/workflow/base.py''\\).read\\(\\)\\); print\\(''base.py OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''bikipy/ingress/projectkit.py''\\).read\\(\\)\\); print\\(''projectkit.py OK''\\)\")"
+    ]
+  }
+}

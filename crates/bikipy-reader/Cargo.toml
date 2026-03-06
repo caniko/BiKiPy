@@ -1,0 +1,15 @@
+[package]
+name = "bikipy-reader"
+description = "Data loading and augmented DataFrame pipeline for bikipy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+bikipy-core.workspace = true
+bikipy-math.workspace = true
+bikipy-perimeter.workspace = true
+polars.workspace = true
+serde.workspace = true
+tracing.workspace = true

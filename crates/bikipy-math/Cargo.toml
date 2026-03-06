@@ -1,0 +1,11 @@
+[package]
+name = "bikipy-math"
+description = "Vectorized math operations as Polars expressions for bikipy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+bikipy-core.workspace = true
+polars.workspace = true

@@ -2,19 +2,30 @@ root = true
 
 [*]
 charset = utf-8
-end_of_line = crlf
-indent_size = 4
-max_line_length = 120
+end_of_line = lf
 insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.rs]
+indent_style = space
+indent_size = 4
+
+[*.toml]
+indent_style = space
+indent_size = 2
 
 [*.py]
 indent_style = space
-tab_width = 4
+indent_size = 4
+max_line_length = 120
 
-[*.rst]
+[*.nix]
 indent_style = space
-indent_size = 3
-tab_width = 3
-
-[*.yaml]
 indent_size = 2
+
+[*.{yaml,yml}]
+indent_style = space
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

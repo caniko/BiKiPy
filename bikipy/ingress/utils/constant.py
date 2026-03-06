@@ -1,1 +1,0 @@
-METHOD_SPECIFIC_SETTINGS_MUST_INCLUDE = {"ingress_method"}

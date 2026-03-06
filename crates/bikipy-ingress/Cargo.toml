@@ -1,0 +1,21 @@
+[package]
+name = "bikipy-ingress"
+description = "Data ingestion, configuration, and workflow orchestration for bikipy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+bikipy-behaviour.workspace = true
+bikipy-core.workspace = true
+bikipy-reader.workspace = true
+polars.workspace = true
+rayon.workspace = true
+serde.workspace = true
+serde_yaml.workspace = true
+toml.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
