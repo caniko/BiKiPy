@@ -1,6 +1,6 @@
 use bikipy_feature::heuristic::Heuristic;
-use bikipy_perimeter::radial_maze::RadialMaze;
 use bikipy_perimeter::perimeter::Perimeter;
+use bikipy_perimeter::radial_maze::RadialMaze;
 
 use crate::BehaviouralTask;
 

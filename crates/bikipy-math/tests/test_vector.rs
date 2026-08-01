@@ -31,7 +31,9 @@ fn unit_vector_normalizes() {
 #[test]
 fn orthogonal_vector_perpendicular() {
     let df = make_df(&[1.0, 0.0], &[0.0, 1.0]);
-    let lf = df.lazy().with_columns(orthogonal_vector_exprs("x", "y", "o"));
+    let lf = df
+        .lazy()
+        .with_columns(orthogonal_vector_exprs("x", "y", "o"));
     let result = lf.collect().unwrap();
 
     let ox = result.column("o_ortho_x").unwrap().f64().unwrap();

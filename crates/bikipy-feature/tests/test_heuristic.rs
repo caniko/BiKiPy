@@ -1,9 +1,9 @@
 use polars::prelude::*;
 
 use bikipy_core::types::CoordinateColumns;
+use bikipy_feature::axiom::proximity::ComputeProximity;
 use bikipy_feature::heuristic::Heuristic;
 use bikipy_feature::heuristic::solo::body_proximity::BodyProximityHeuristic;
-use bikipy_feature::axiom::proximity::ComputeProximity;
 use bikipy_perimeter::circle::Circle;
 use bikipy_perimeter::perimeter::Perimeter;
 

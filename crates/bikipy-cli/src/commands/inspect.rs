@@ -65,25 +65,16 @@ pub fn run(args: InspectArgs) -> anyhow::Result<()> {
             dir,
             output,
             format,
-        } => {
-            crate::python::run_inspect_plot(&dir, output.as_deref(), &format)
-        }
+        } => crate::python::run_inspect_plot(&dir, output.as_deref(), &format),
         InspectCommand::Video {
             dir,
             output,
             codec,
             heuristic,
         } => {
-            crate::python::run_inspect_video(
-                &dir,
-                output.as_deref(),
-                &codec,
-                heuristic.as_deref(),
-            )
+            crate::python::run_inspect_video(&dir, output.as_deref(), &codec, heuristic.as_deref())
         }
-        InspectCommand::Info { dir } => {
-            crate::python::run_inspect_info(&dir)
-        }
+        InspectCommand::Info { dir } => crate::python::run_inspect_info(&dir),
         InspectCommand::CheckAnnotation { path } => {
             tracing::info!(?path, "checking annotations");
             // TODO: Load and validate annotations

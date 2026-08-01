@@ -30,9 +30,8 @@ impl PipelineStep for MidpointComputer {
                     .reduce(|a, b| a + b)
                     .expect("midpoint group must have at least one source");
 
-                lf = lf.with_column(
-                    (sum / lit(n)).alias(&format!("{}_{coord}", group.output_label)),
-                );
+                lf = lf
+                    .with_column((sum / lit(n)).alias(&format!("{}_{coord}", group.output_label)));
             }
         }
         lf

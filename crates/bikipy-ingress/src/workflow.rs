@@ -82,10 +82,7 @@ fn export_inspection_artifacts(
         let manifest = InspectionManifest {
             video: bikipy_core::video::VideoMetadata {
                 fps,
-                total_frames: result
-                    .summaries
-                    .first()
-                    .map_or(0, |s| s.total_frames),
+                total_frames: result.summaries.first().map_or(0, |s| s.total_frames),
                 resolution: (0, 0), // TODO: populate from video file
                 meters_per_pixel: bikipy_core::types::MetersPerPixel(mpp),
             },

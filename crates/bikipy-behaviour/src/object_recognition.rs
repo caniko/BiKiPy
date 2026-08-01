@@ -1,9 +1,9 @@
+use bikipy_core::types::CoordinateColumns;
 use bikipy_feature::heuristic::Heuristic;
 use bikipy_feature::heuristic::helper::outside_perimeter::OutsidePerimeterHeuristic;
 use bikipy_feature::heuristic::solo::body_proximity::BodyProximityHeuristic;
 use bikipy_feature::heuristic::solo::olfaction::OlfactionHeuristic;
 use bikipy_feature::heuristic::solo::whiskers::WhiskerHeuristic;
-use bikipy_core::types::CoordinateColumns;
 use bikipy_perimeter::circle::Circle;
 use bikipy_perimeter::perimeter::Perimeter;
 

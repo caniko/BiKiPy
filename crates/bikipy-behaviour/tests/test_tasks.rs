@@ -1,8 +1,8 @@
+use bikipy_behaviour::BehaviouralTask;
 use bikipy_behaviour::mapping::task_names;
 use bikipy_behaviour::object_recognition::ObjectRecognition;
 use bikipy_behaviour::radial_arm::YMaze;
 use bikipy_behaviour::reward_tracing::Cheeseboard;
-use bikipy_behaviour::BehaviouralTask;
 use bikipy_perimeter::circle::Circle;
 use bikipy_perimeter::perimeter::Perimeter;
 use bikipy_perimeter::polygon::Polygon;

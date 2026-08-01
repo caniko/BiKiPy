@@ -6,11 +6,7 @@ use polars::prelude::*;
 /// than `max_gap_frames`. This mirrors the Python tolerance model:
 /// 1. Bridge short false-gaps (distraction tolerance)
 /// 2. Remove short true-runs (minimum bout duration)
-pub fn tolerance_filter_expr(
-    bool_col: &str,
-    _min_frames: u32,
-    _max_gap_frames: u32,
-) -> Expr {
+pub fn tolerance_filter_expr(bool_col: &str, _min_frames: u32, _max_gap_frames: u32) -> Expr {
     // Step 1: Bridge short gaps — if a false-run is shorter than max_gap_frames,
     // flip it to true (the animal briefly looked away but came back).
     // Step 2: Remove short bouts — if a true-run is shorter than min_frames,

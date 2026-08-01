@@ -16,11 +16,7 @@ pub fn high_velocity_mask_expr(x_col: &str, y_col: &str, max_velocity: f64) -> E
 
 /// Mark high-velocity points as null (for interpolation later).
 /// Returns expressions that replace x and y with null where velocity is too high.
-pub fn null_high_velocity_exprs(
-    x_col: &str,
-    y_col: &str,
-    max_velocity: f64,
-) -> Vec<Expr> {
+pub fn null_high_velocity_exprs(x_col: &str, y_col: &str, max_velocity: f64) -> Vec<Expr> {
     let mask = high_velocity_mask_expr(x_col, y_col, max_velocity);
     vec![
         when(mask.clone())

@@ -7,9 +7,7 @@ use std::process::Command;
 /// in a single seamless CLI flow. The user never needs to know two
 /// languages are involved.
 pub fn invoke_bkpy_inspect(args: &[&str]) -> anyhow::Result<()> {
-    let status = Command::new("bkpy-inspect")
-        .args(args)
-        .status();
+    let status = Command::new("bkpy-inspect").args(args).status();
 
     match status {
         Ok(s) if s.success() => Ok(()),

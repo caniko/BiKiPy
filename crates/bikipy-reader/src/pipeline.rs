@@ -35,12 +35,10 @@ impl AugmentedBuilder {
     /// Build the augmented LazyFrame by chaining all steps.
     /// Does NOT collect — returns a lazy plan for further composition.
     pub fn build(&self, raw: LazyFrame) -> LazyFrame {
-        self.steps
-            .iter()
-            .fold(raw, |lf, step| {
-                tracing::debug!(step = step.name(), "applying pipeline step");
-                step.apply(lf)
-            })
+        self.steps.iter().fold(raw, |lf, step| {
+            tracing::debug!(step = step.name(), "applying pipeline step");
+            step.apply(lf)
+        })
     }
 
     /// Build and collect to a materialized DataFrame.

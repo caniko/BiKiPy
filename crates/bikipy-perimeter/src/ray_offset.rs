@@ -30,7 +30,11 @@ impl<S: RayIntersectable + Clone + 'static> RayOffsetFilter<S> {
         heading_direction: &CoordinateColumns,
     ) -> Expr {
         // Check ray intersection with shape
-        self.shape
-            .ray_filter_expr(&origin.x, &origin.y, &heading_direction.x, &heading_direction.y)
+        self.shape.ray_filter_expr(
+            &origin.x,
+            &origin.y,
+            &heading_direction.x,
+            &heading_direction.y,
+        )
     }
 }

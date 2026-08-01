@@ -5,9 +5,9 @@ use bikipy_core::shape::{Expandable, RayIntersectable};
 use bikipy_core::types::{CoordinateColumns, RaySpec};
 use bikipy_perimeter::perimeter::Perimeter;
 
+use crate::heuristic::Heuristic;
 use crate::heuristic::proximity::ProximityHeuristic;
 use crate::heuristic::ray::RayHeuristic;
-use crate::heuristic::Heuristic;
 
 /// Detects olfactory investigation of objects.
 ///

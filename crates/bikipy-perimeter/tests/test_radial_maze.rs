@@ -3,24 +3,9 @@ use bikipy_perimeter::polygon::Polygon;
 use bikipy_perimeter::radial_maze::RadialMaze;
 
 fn sample_maze() -> RadialMaze {
-    let center = Polygon::new(vec![
-        (-1.0, -1.0),
-        (1.0, -1.0),
-        (1.0, 1.0),
-        (-1.0, 1.0),
-    ]);
-    let arm1 = Polygon::new(vec![
-        (1.0, -0.5),
-        (4.0, -0.5),
-        (4.0, 0.5),
-        (1.0, 0.5),
-    ]);
-    let arm2 = Polygon::new(vec![
-        (-0.5, 1.0),
-        (0.5, 1.0),
-        (0.5, 4.0),
-        (-0.5, 4.0),
-    ]);
+    let center = Polygon::new(vec![(-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0)]);
+    let arm1 = Polygon::new(vec![(1.0, -0.5), (4.0, -0.5), (4.0, 0.5), (1.0, 0.5)]);
+    let arm2 = Polygon::new(vec![(-0.5, 1.0), (0.5, 1.0), (0.5, 4.0), (-0.5, 4.0)]);
     RadialMaze::new(center, vec![arm1, arm2])
 }
 

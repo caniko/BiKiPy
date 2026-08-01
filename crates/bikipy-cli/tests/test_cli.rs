@@ -104,10 +104,7 @@ fn parse_ingress_analyze_with_inspect_output() {
     ])
     .unwrap();
     if let TestCli::Ingress(args) = cli {
-        if let TestIngressCommand::Analyze {
-            inspect_output, ..
-        } = args.command
-        {
+        if let TestIngressCommand::Analyze { inspect_output, .. } = args.command {
             assert_eq!(inspect_output.unwrap().to_str().unwrap(), "/tmp/inspect");
         } else {
             panic!("expected Analyze");

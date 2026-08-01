@@ -33,12 +33,7 @@ where
     }
 
     /// Apply proximity check to a LazyFrame, adding a boolean column.
-    pub fn apply(
-        &self,
-        lf: LazyFrame,
-        coords: &CoordinateColumns,
-        output_col: &str,
-    ) -> LazyFrame {
+    pub fn apply(&self, lf: LazyFrame, coords: &CoordinateColumns, output_col: &str) -> LazyFrame {
         lf.with_column(self.is_proximate(coords).alias(output_col))
     }
 }

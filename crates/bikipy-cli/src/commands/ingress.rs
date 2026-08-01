@@ -75,10 +75,8 @@ pub fn run(args: IngressArgs) -> anyhow::Result<()> {
                 Some(inspect_dir.unwrap_or(default_inspect_dir))
             };
 
-            let results = bikipy_ingress::workflow::run_project(
-                &config,
-                inspect_output.as_deref(),
-            )?;
+            let results =
+                bikipy_ingress::workflow::run_project(&config, inspect_output.as_deref())?;
             println!("Analysis complete: {} results", results.len());
 
             // Seamlessly generate inspection figures via Python

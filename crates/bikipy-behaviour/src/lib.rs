@@ -41,7 +41,9 @@ pub trait BehaviouralTask: Send + Sync {
         // Polars fuses them into a single optimized plan.
         let evaluated = heuristics.iter().fold(lf, |lf, h| h.evaluate(lf));
 
-        let df = evaluated.collect().expect("failed to collect heuristic results");
+        let df = evaluated
+            .collect()
+            .expect("failed to collect heuristic results");
 
         let summaries = heuristics.iter().map(|h| h.summary(&df, fps)).collect();
 

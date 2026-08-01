@@ -32,9 +32,8 @@ impl PipelineStep for CoordinateTransform {
                         .alias(y_col),
                 );
             } else {
-                lf = lf.with_column(
-                    pixel_to_meters_expr(y_col, self.meters_per_pixel).alias(y_col),
-                );
+                lf =
+                    lf.with_column(pixel_to_meters_expr(y_col, self.meters_per_pixel).alias(y_col));
             }
         }
 

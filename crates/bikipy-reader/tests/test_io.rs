@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use bikipy_reader::io::{scan_file, write_parquet, InputFormat};
+use bikipy_reader::io::{InputFormat, scan_file, write_parquet};
 use polars::prelude::*;
 
 #[test]

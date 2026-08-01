@@ -145,9 +145,7 @@ fn perimeter_spec_radial_maze_tagged_serde() {
     let spec = PerimeterSpec::RadialMaze {
         label: "ymaze".into(),
         center_vertices: vec![(0.0, 0.0), (1.0, 0.0), (0.5, 1.0)],
-        arms: vec![
-            vec![(2.0, 0.0), (3.0, 0.0), (3.0, 1.0), (2.0, 1.0)],
-        ],
+        arms: vec![vec![(2.0, 0.0), (3.0, 0.0), (3.0, 1.0), (2.0, 1.0)]],
     };
     let json = serde_json::to_string(&spec).unwrap();
     assert!(json.contains(r#""shape":"radial_maze"#));

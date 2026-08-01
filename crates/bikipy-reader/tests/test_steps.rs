@@ -1,12 +1,12 @@
 use polars::prelude::*;
 
+use bikipy_core::types::MidpointGroup;
 use bikipy_reader::pipeline::PipelineStep;
 use bikipy_reader::steps::likelihood::LikelihoodFilter;
 use bikipy_reader::steps::midpoint::MidpointComputer;
 use bikipy_reader::steps::smoothing::MedianSmoother;
 use bikipy_reader::steps::transform::CoordinateTransform;
 use bikipy_reader::steps::velocity::HighVelocityFilter;
-use bikipy_core::types::MidpointGroup;
 
 #[test]
 fn likelihood_filter_nulls_low_confidence() {
@@ -16,11 +16,7 @@ fn likelihood_filter_nulls_low_confidence() {
     }
     .unwrap();
 
-    let step = LikelihoodFilter::new(
-        0.5,
-        vec!["nose_likelihood".into()],
-        vec!["nose_x".into()],
-    );
+    let step = LikelihoodFilter::new(0.5, vec!["nose_likelihood".into()], vec!["nose_x".into()]);
     assert_eq!(step.name(), "likelihood_filter");
 
     let result = step.apply(df.lazy()).collect().unwrap();

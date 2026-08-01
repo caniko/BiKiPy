@@ -5,12 +5,7 @@ use bikipy_math::vector::direction_exprs;
 
 /// Compute the heading angle of the animal from two body-part coordinate pairs.
 /// E.g., center_ear → nose defines the snout direction.
-pub fn heading_angle_expr(
-    _from_x: &str,
-    _from_y: &str,
-    _to_x: &str,
-    _to_y: &str,
-) -> Expr {
+pub fn heading_angle_expr(_from_x: &str, _from_y: &str, _to_x: &str, _to_y: &str) -> Expr {
     signed_angle_expr(
         &format!("_dir_x"),
         &format!("_dir_y"),

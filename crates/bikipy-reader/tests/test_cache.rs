@@ -16,7 +16,11 @@ fn cache_path_generation() {
 fn cache_path_with_different_suffix() {
     let cache = AugmentedCache::new("/tmp/cache");
     let path = cache.cache_path(Path::new("data.parquet"), "aug");
-    assert!(path.to_str().unwrap().contains("data_aug_augmented.parquet"));
+    assert!(
+        path.to_str()
+            .unwrap()
+            .contains("data_aug_augmented.parquet")
+    );
 }
 
 #[test]

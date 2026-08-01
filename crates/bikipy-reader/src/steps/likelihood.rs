@@ -33,7 +33,11 @@ impl PipelineStep for LikelihoodFilter {
         // For each likelihood column, null out the corresponding coordinate
         // columns where likelihood < threshold.
         let mut lf = lf;
-        for (lik_col, coord_col) in self.likelihood_columns.iter().zip(self.coordinate_columns.iter()) {
+        for (lik_col, coord_col) in self
+            .likelihood_columns
+            .iter()
+            .zip(self.coordinate_columns.iter())
+        {
             lf = lf.with_column(
                 when(col(lik_col).lt(lit(self.threshold)))
                     .then(lit(NULL))

@@ -5,8 +5,8 @@ use bikipy_core::shape::Expandable;
 use bikipy_core::types::CoordinateColumns;
 use bikipy_perimeter::perimeter::Perimeter;
 
-use crate::heuristic::proximity::ProximityHeuristic;
 use crate::heuristic::Heuristic;
+use crate::heuristic::proximity::ProximityHeuristic;
 
 /// Detects when center_ear or tail_base are within proximity of an object.
 ///

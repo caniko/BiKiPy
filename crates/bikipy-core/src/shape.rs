@@ -63,13 +63,7 @@ pub trait RayIntersectable: Shape {
 
     /// Polars boolean expression: true where the ray from origin columns
     /// in direction columns intersects this shape.
-    fn ray_filter_expr(
-        &self,
-        origin_x: &str,
-        origin_y: &str,
-        dir_x: &str,
-        dir_y: &str,
-    ) -> Expr
+    fn ray_filter_expr(&self, origin_x: &str, origin_y: &str, dir_x: &str, dir_y: &str) -> Expr
     where
         Self: Clone + 'static,
     {

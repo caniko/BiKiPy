@@ -94,7 +94,6 @@ impl InspectionManifest {
     /// Read a manifest from a JSON file.
     pub fn from_json(path: &Path) -> Result<Self> {
         let content = std::fs::read_to_string(path)?;
-        serde_json::from_str(&content)
-            .map_err(|e| crate::error::BikipyError::Config(e.to_string()))
+        serde_json::from_str(&content).map_err(|e| crate::error::BikipyError::Config(e.to_string()))
     }
 }

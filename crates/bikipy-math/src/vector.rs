@@ -43,10 +43,8 @@ pub fn rotate_exprs(x_col: &str, y_col: &str, angle_rad: f64, prefix: &str) -> V
     let cos_a = angle_rad.cos();
     let sin_a = angle_rad.sin();
     vec![
-        (col(x_col) * lit(cos_a) - col(y_col) * lit(sin_a))
-            .alias(&format!("{prefix}_rot_x")),
-        (col(x_col) * lit(sin_a) + col(y_col) * lit(cos_a))
-            .alias(&format!("{prefix}_rot_y")),
+        (col(x_col) * lit(cos_a) - col(y_col) * lit(sin_a)).alias(&format!("{prefix}_rot_x")),
+        (col(x_col) * lit(sin_a) + col(y_col) * lit(cos_a)).alias(&format!("{prefix}_rot_y")),
     ]
 }
 
