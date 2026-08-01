@@ -10,7 +10,7 @@ fn ray_offset_filter_new() {
 #[test]
 fn ray_offset_filter_stores_shape() {
     let c = Circle::new(10.0, 10.0, 2.0);
-    let filter = RayOffsetFilter::new(c.clone(), 30.0);
+    let filter = RayOffsetFilter::new(c, 30.0);
     assert!((filter.shape.center_x - 10.0).abs() < 1e-10);
     assert!((filter.shape.radius - 2.0).abs() < 1e-10);
 }

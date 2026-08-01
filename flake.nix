@@ -40,7 +40,11 @@
 
         inherit (pkgs) lib;
 
-        toolchain = rs-harbor.lib.mkToolchain { inherit pkgs; toolchainProfile = "nightly"; };
+        toolchain = rs-harbor.lib.mkToolchain {
+          inherit pkgs;
+          toolchainProfile = "nightly";
+          cache.cacheRoot = "/tmp/sccache";
+        };
         craneLib = toolchain.craneLib;
         src = craneLib.cleanCargoSource ./.;
 

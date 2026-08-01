@@ -1,6 +1,9 @@
-# Sorts `Cargo.toml` dependencies. All other `.toml` files are formatted with the default config.
+# Example configs are generated fixtures, not formatter-owned source.
+# Sorts `Cargo.toml` dependencies. Other source `.toml` files use the default config.
 #
 # https://taplo.tamasfe.dev/configuration/file.html#configuration-file
+
+exclude = ["examples/**"]
 
 [formatting]
 reorder_keys = false

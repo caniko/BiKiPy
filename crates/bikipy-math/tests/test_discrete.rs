@@ -51,9 +51,9 @@ fn any_of_logical_or() {
         .unwrap();
 
     let any_col = result.column("any").unwrap().bool().unwrap();
-    assert_eq!(any_col.get(0).unwrap(), true);
-    assert_eq!(any_col.get(1).unwrap(), true);
-    assert_eq!(any_col.get(2).unwrap(), false);
+    assert!(any_col.get(0).unwrap());
+    assert!(any_col.get(1).unwrap());
+    assert!(!any_col.get(2).unwrap());
 }
 
 #[test]
@@ -71,7 +71,7 @@ fn all_of_logical_and() {
         .unwrap();
 
     let all_col = result.column("all").unwrap().bool().unwrap();
-    assert_eq!(all_col.get(0).unwrap(), true);
-    assert_eq!(all_col.get(1).unwrap(), false);
-    assert_eq!(all_col.get(2).unwrap(), false);
+    assert!(all_col.get(0).unwrap());
+    assert!(!all_col.get(1).unwrap());
+    assert!(!all_col.get(2).unwrap());
 }

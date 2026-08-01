@@ -63,7 +63,7 @@ fn compute_proximity_axiom() {
     let near = result.column("near_obj").unwrap().bool().unwrap();
     assert_eq!(near.len(), 3);
     // Point at (5,5) should be near the object at (5,5) with radius 0.5 + distance 1.0
-    assert_eq!(near.get(0).unwrap(), true);
+    assert!(near.get(0).unwrap());
     // Point at (0,0) should not be near
-    assert_eq!(near.get(1).unwrap(), false);
+    assert!(!near.get(1).unwrap());
 }

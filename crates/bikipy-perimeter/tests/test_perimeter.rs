@@ -27,9 +27,9 @@ fn perimeter_confinement_mask() {
         .unwrap();
 
     let inside = result.column("inside").unwrap().bool().unwrap();
-    assert_eq!(inside.get(0).unwrap(), true); // center
-    assert_eq!(inside.get(1).unwrap(), false); // far away
-    assert_eq!(inside.get(2).unwrap(), true); // within radius
+    assert!(inside.get(0).unwrap()); // center
+    assert!(!inside.get(1).unwrap()); // far away
+    assert!(inside.get(2).unwrap()); // within radius
 }
 
 #[test]

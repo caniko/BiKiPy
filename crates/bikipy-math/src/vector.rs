@@ -5,16 +5,16 @@ use polars::prelude::*;
 pub fn unit_vector_exprs(x_col: &str, y_col: &str, prefix: &str) -> Vec<Expr> {
     let magnitude = (col(x_col).pow(2) + col(y_col).pow(2)).sqrt();
     vec![
-        (col(x_col) / magnitude.clone()).alias(&format!("{prefix}_ux")),
-        (col(y_col) / magnitude).alias(&format!("{prefix}_uy")),
+        (col(x_col) / magnitude.clone()).alias(format!("{prefix}_ux")),
+        (col(y_col) / magnitude).alias(format!("{prefix}_uy")),
     ]
 }
 
 /// Compute the orthogonal (perpendicular) vector: (-y, x).
 pub fn orthogonal_vector_exprs(x_col: &str, y_col: &str, prefix: &str) -> Vec<Expr> {
     vec![
-        (lit(0.0) - col(y_col)).alias(&format!("{prefix}_ortho_x")),
-        col(x_col).alias(&format!("{prefix}_ortho_y")),
+        (lit(0.0) - col(y_col)).alias(format!("{prefix}_ortho_x")),
+        col(x_col).alias(format!("{prefix}_ortho_y")),
     ]
 }
 
@@ -32,8 +32,8 @@ pub fn direction_exprs(
     prefix: &str,
 ) -> Vec<Expr> {
     vec![
-        (col(to_x) - col(from_x)).alias(&format!("{prefix}_dx")),
-        (col(to_y) - col(from_y)).alias(&format!("{prefix}_dy")),
+        (col(to_x) - col(from_x)).alias(format!("{prefix}_dx")),
+        (col(to_y) - col(from_y)).alias(format!("{prefix}_dy")),
     ]
 }
 
@@ -43,8 +43,8 @@ pub fn rotate_exprs(x_col: &str, y_col: &str, angle_rad: f64, prefix: &str) -> V
     let cos_a = angle_rad.cos();
     let sin_a = angle_rad.sin();
     vec![
-        (col(x_col) * lit(cos_a) - col(y_col) * lit(sin_a)).alias(&format!("{prefix}_rot_x")),
-        (col(x_col) * lit(sin_a) + col(y_col) * lit(cos_a)).alias(&format!("{prefix}_rot_y")),
+        (col(x_col) * lit(cos_a) - col(y_col) * lit(sin_a)).alias(format!("{prefix}_rot_x")),
+        (col(x_col) * lit(sin_a) + col(y_col) * lit(cos_a)).alias(format!("{prefix}_rot_y")),
     ]
 }
 

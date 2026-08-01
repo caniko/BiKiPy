@@ -21,7 +21,7 @@ impl PipelineStep for MidpointComputer {
                 let source_cols: Vec<Expr> = group
                     .source_labels
                     .iter()
-                    .map(|label| col(&format!("{label}_{coord}")))
+                    .map(|label| col(format!("{label}_{coord}")))
                     .collect();
 
                 let n = source_cols.len() as f64;
@@ -30,8 +30,8 @@ impl PipelineStep for MidpointComputer {
                     .reduce(|a, b| a + b)
                     .expect("midpoint group must have at least one source");
 
-                lf = lf
-                    .with_column((sum / lit(n)).alias(&format!("{}_{coord}", group.output_label)));
+                lf =
+                    lf.with_column((sum / lit(n)).alias(format!("{}_{coord}", group.output_label)));
             }
         }
         lf

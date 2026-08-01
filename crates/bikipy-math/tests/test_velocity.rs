@@ -40,8 +40,8 @@ fn high_velocity_mask_flags_teleportation() {
     let high = result.column("high").unwrap().bool().unwrap();
     // Frame 0: null (no previous), Frame 1: speed=100 > 50 → true, Frame 2: speed=1 ≤ 50 → false
     assert!(high.get(0).is_none());
-    assert_eq!(high.get(1).unwrap(), true);
-    assert_eq!(high.get(2).unwrap(), false);
+    assert!(high.get(1).unwrap());
+    assert!(!high.get(2).unwrap());
 }
 
 #[test]

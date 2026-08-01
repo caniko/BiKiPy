@@ -25,20 +25,20 @@ bikipy-ingress = { path = "crates/bikipy-ingress" }
 
 # Data processing
 polars = { version = "0.53", features = [
-    "lazy",
-    "csv",
-    "parquet",
-    "ipc",
-    "dtype-struct",
-    "is_in",
-    "new_streaming",
-    "round_series",
-    "abs",
-    "concat_str",
-    "rolling_window",
-    "interpolate",
-    "trigonometry",
-    "rle",
+  "lazy",
+  "csv",
+  "parquet",
+  "ipc",
+  "dtype-struct",
+  "is_in",
+  "new_streaming",
+  "round_series",
+  "abs",
+  "concat_str",
+  "rolling_window",
+  "interpolate",
+  "trigonometry",
+  "rle",
 ] }
 
 # Serialization

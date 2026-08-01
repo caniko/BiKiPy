@@ -31,7 +31,7 @@ pub trait Shape: Send + Sync {
 
                 let out: BooleanChunked = xs
                     .into_iter()
-                    .zip(ys.into_iter())
+                    .zip(ys)
                     .map(|(x, y)| match (x, y) {
                         (Some(x), Some(y)) => Some(shape.contains(x, y)),
                         _ => Some(false),
@@ -82,9 +82,9 @@ pub trait RayIntersectable: Shape {
 
                 let out: BooleanChunked = oxs
                     .into_iter()
-                    .zip(oys.into_iter())
-                    .zip(dxs.into_iter())
-                    .zip(dys.into_iter())
+                    .zip(oys)
+                    .zip(dxs)
+                    .zip(dys)
                     .map(|(((ox, oy), dx), dy)| match (ox, oy, dx, dy) {
                         (Some(ox), Some(oy), Some(dx), Some(dy)) => {
                             Some(shape.ray_intersects((ox, oy), (dx, dy)))
