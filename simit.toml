@@ -1,0 +1,20 @@
+[prebuild]
+publish_attic = true
+attic_app = ".#push-flake-inputs"
+
+[prebuild.system_runners]
+"x86_64-linux" = "ubuntu-24.04"
+
+[ci]
+runner = "ubuntu-24.04"
+workspace = true
+workspace_strategy = "aggregate"
+runtime = "nix"
+provider = "actions"
+platform = "github"
+
+[release.attic]
+cache = "canix"
+url = "https://attic.candee.baby"
+token_name = "bikipy"
+token_secret = "ATTIC_TOKEN"

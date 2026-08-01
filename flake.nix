@@ -6,6 +6,12 @@
 
     crane.url = "github:ipetkov/crane";
 
+    rs-harbor = {
+      url = "github:caniko/rs-harbor/e2778ff3beca1bd4c1f5183313251d1fb5b46dd6";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.crane.follows = "crane";
+    };
+
     flake-utils.url = "github:numtide/flake-utils";
 
     advisory-db = {
@@ -19,6 +25,7 @@
       self,
       nixpkgs,
       crane,
+      rs-harbor,
       flake-utils,
       advisory-db,
       ...
@@ -26,11 +33,15 @@
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ (import rs-harbor.inputs.rust-overlay) ];
+        };
 
         inherit (pkgs) lib;
 
-        craneLib = crane.mkLib pkgs;
+        toolchain = rs-harbor.lib.mkToolchain { inherit pkgs; toolchainProfile = "nightly"; };
+        craneLib = toolchain.craneLib;
         src = craneLib.cleanCargoSource ./.;
 
         commonArgs = {
@@ -166,6 +177,16 @@
             drv = bikipy;
           };
           default = self.apps.${system}.bikipy;
+          push-flake-inputs = rs-harbor.lib.mkAtticPush {
+            inherit pkgs;
+            adapter = rs-harbor.lib.mkAdapter {
+              attic = {
+                endpoint = "https://attic.candee.baby";
+                cache = "canix";
+              };
+            };
+            flake = ".";
+          };
         };
 
         devShells.default = craneLib.devShell {
