@@ -110,6 +110,9 @@
             opencv4
             click
           ];
+
+          # nixpkgs' opencv4 provides cv2 under a different distribution name.
+          pythonRemoveDeps = [ "opencv-python" ];
         };
 
         # Combined wrapper that puts both bkpy (Rust) and bkpy-inspect (Python)
